@@ -43,3 +43,9 @@ migrate-dist
 autoimport-dist
 
 whisper-builds/
+
+# next-intl typescript augmentations
+messages/*.d.json.ts
+src/icons/editor/
+# grid-bench artifacts
+scripts/grid-bench/out/

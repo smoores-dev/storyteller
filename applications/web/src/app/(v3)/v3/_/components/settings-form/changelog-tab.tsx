@@ -1,12 +1,6 @@
 "use client"
 
-import { IconEye, IconEyeOff, IconLoader } from "@tabler/icons-react"
-import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
-
-import { type ChangelogEntry } from "@/database/changelog"
-import { api, useGetLatestVersionQuery } from "@/store/api"
-import { BETA_TAGS, compareVersions } from "@/versions"
 
 import { Badge } from "@v3/_/components/ui/badge"
 import { Button } from "@v3/_/components/ui/button"
@@ -17,7 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@v3/_/components/ui/card"
-import { TabsContent } from "@v3/_/components/ui/tabs"
+import { useTranslation } from "@v3/_/hooks/use-translation"
+
+import { type ChangelogEntry } from "@/database/changelog"
+import * as icon from "@/icons"
+import { api, useGetLatestChangelogQuery } from "@/store/api"
+import { BETA_TAGS, compareVersions } from "@/versions"
 
 export const DISMISSED_VERSION_KEY = "storyteller_dismissed_changelog_version"
 
@@ -31,6 +30,15 @@ function formatDate(dateString: string): string {
   })
 }
 
+export function formatChangelogDescription(description?: string | null) {
+  if (!description) return
+
+  const descriptionWithoutHeader = description
+    .replace(/<h2+ .*<\/h2>/gm, "")
+    .replaceAll('href="/', 'href="https://gitlab.com/')
+  return descriptionWithoutHeader
+}
+
 function ChangelogEntryCard({
   entry,
   currentVersion,
@@ -40,11 +48,9 @@ function ChangelogEntryCard({
 }) {
   const v = compareVersions(entry.version, currentVersion)
 
-  const descriptionWithoutHeader = entry.description
-    ?.replace(/<h2+ .*<\/h2>/gm, "")
-    .replaceAll('href="/', 'href="https://gitlab.com/')
+  const descriptionWithoutHeader = formatChangelogDescription(entry.description)
 
-  const t = useTranslations("SettingsPage.changelog")
+  const t = useTranslation("SettingsPage.changelog")
 
   return (
     <Card>
@@ -86,15 +92,13 @@ export function ChangelogTab({ currentVersion }: { currentVersion: string }) {
   const { fetchNextPage, data, isFetching, hasNextPage } =
     api.endpoints.getInfiniteChangelog.useInfiniteQuery("web")
 
-  const t = useTranslations("SettingsPage.changelog")
+  const t = useTranslation("SettingsPage.changelog")
 
-  const { data: latestVersionData } = useGetLatestVersionQuery({
+  const { data: latestVersionData } = useGetLatestChangelogQuery({
     component: "web",
   })
 
-  const isBeta = BETA_TAGS.some((tag) =>
-    latestVersionData?.version?.includes(tag),
-  )
+  const isBeta = BETA_TAGS.some((tag) => currentVersion.includes(tag))
   const [showBeta, setShowBeta] = useState(isBeta)
 
   const filteredData =
@@ -110,7 +114,7 @@ export function ChangelogTab({ currentVersion }: { currentVersion: string }) {
   }, [latestVersionData])
 
   return (
-    <TabsContent value="changelog" className="relative flex flex-col gap-4">
+    <div className="relative flex flex-col gap-4">
       <div className="bg-background sticky -top-2 z-10 flex flex-col gap-2 py-2 md:flex-row md:items-center md:justify-between">
         <p>
           {t("currentlyOn", {
@@ -125,7 +129,7 @@ export function ChangelogTab({ currentVersion }: { currentVersion: string }) {
             setShowBeta(!showBeta)
           }}
         >
-          {showBeta ? <IconEyeOff /> : <IconEye />}
+          {showBeta ? <icon.EyeOff /> : <icon.Eye />}
           {showBeta ? t("hideBetaVersions") : t("showBetaVersions")}
         </Button>
       </div>
@@ -140,7 +144,7 @@ export function ChangelogTab({ currentVersion }: { currentVersion: string }) {
 
       {isFetching && (
         <div className="flex justify-center py-4">
-          <IconLoader className="text-muted-foreground size-5 animate-spin" />
+          <icon.LoaderIOSish className="text-muted-foreground size-5 animate-spin" />
         </div>
       )}
 
@@ -157,6 +161,6 @@ export function ChangelogTab({ currentVersion }: { currentVersion: string }) {
           </Button>
         </div>
       )}
-    </TabsContent>
+    </div>
   )
 }

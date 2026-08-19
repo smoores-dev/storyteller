@@ -40,11 +40,17 @@ export async function createOPDSAuthenticationDocument(): Promise<OPDSAuthentica
     description:
       "Enter your email or username and password to access your library.",
     links: [
-      {
-        rel: "logo",
-        href: `/Storyteller_Logo.png`,
-        type: "image/png",
-      },
+      settings.serverIconSha256
+        ? {
+            rel: "logo",
+            href: `/api/v2/server/icon?s=512`,
+            type: "image/webp",
+          }
+        : {
+            rel: "logo",
+            href: `/Storyteller_Logo.png`,
+            type: "image/png",
+          },
     ],
     authentication: [
       // {

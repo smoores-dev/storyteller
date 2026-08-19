@@ -325,3 +325,38 @@ export type CreatorRole = Exclude<Role, "aut" | "nrt">
 export const creatorRelators = marcRelators.filter(
   (r) => r.value !== "aut" && r.value !== "nrt",
 ) as { value: CreatorRole; label: string }[]
+
+/**
+ * The roles that are common to all books
+ */
+const COMMON_ROLE_CODES = [
+  "aut",
+  "nrt",
+  "trl",
+  "edt",
+  "ill",
+  "wfw",
+  "win",
+  "wpr",
+  "waw",
+  "com",
+  "adp",
+  "cov",
+  "pbl",
+  "ctb",
+] as const satisfies readonly Role[]
+
+export type MarcRelator = { value: Role; label: string }
+
+export const commonMarcRelators: MarcRelator[] = COMMON_ROLE_CODES.flatMap(
+  (code) =>
+    marcRelators.filter(
+      (r): r is (typeof marcRelators)[number] => r.value === code,
+    ),
+)
+
+export const commonCreatorRelators: MarcRelator[] = commonMarcRelators.filter(
+  (r) => r.value !== "aut" && r.value !== "nrt",
+)
+
+export const DEFAULT_CREATOR_ROLE: CreatorRole = "ctb"

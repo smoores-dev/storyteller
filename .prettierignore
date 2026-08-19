@@ -80,10 +80,19 @@ flake.*
 /applications/web/migrations/29_insert_deepgrapm_settings.sql
 /applications/web/migrations/30_insert_parellelization_settings.sql
 /applications/web/migrations/31_insert_parallel_whisper_build_setting.sql
+applications/web/migrations/87_home_sections.sql
+applications/web/migrations/93_add_formats_sidebar.sql
+
 
 **/dist
 
 /libraries/opds/schemas/ajv/standalone.cjs
+
+/applications/tauri/.staging
+/applications/tauri/.cache
+/applications/tauri/src-tauri
+
+/applications/web/next-env.d.ts
 
 /applications/clients/XCodeApps/Assets.xcassets/
 

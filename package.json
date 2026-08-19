@@ -20,6 +20,7 @@
     "check:types": "tsc --build",
     "check": "yarn check:types && yarn check:lint && yarn check:format",
     "deps": "yarn install && npm rebuild --build-from-source sqlite3",
+    "tauri:build": "yarn workspace @storyteller-platform/tauri build",
     "dev:docs": "yarn workspace @storyteller-platform/docs start",
     "dev:web": "yarn workspace @storyteller-platform/web dev",
     "fix:format": "yarn prettier --write . && yarn workspace @storyteller-platform/mobile prettier --write .",
@@ -60,7 +61,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "husky": "^9.0.6",
     "lint-staged": "^15.2.0",
-    "next": "15.5.18",
+    "next": "^16.2.6",
     "prettier": "^3.2.5",
     "prettier-plugin-sql": "^0.19.0",
     "prettier-plugin-tailwindcss": "^0.6.9",
@@ -76,6 +77,7 @@
     "react-native-css-interop@npm:0.1.22": "patch:react-native-css-interop@npm%3A0.1.22#~/.yarn/patches/react-native-css-interop-npm-0.1.22-9770293dfb.patch",
     "expo-file-system@npm:~19.0.17": "patch:expo-file-system@npm%3A19.0.17#~/.yarn/patches/expo-file-system-npm-19.0.17-cda362f0b1.patch",
     "expo-file-system@npm:~19.0.19": "patch:expo-file-system@npm%3A19.0.19#~/.yarn/patches/expo-file-system-npm-19.0.19-800f9ff305.patch",
-    "expo-file-system@npm:~19.0.21": "patch:expo-file-system@npm%3A19.0.21#~/.yarn/patches/expo-file-system-npm-19.0.21-64dc8cb1bc.patch"
+    "expo-file-system@npm:~19.0.21": "patch:expo-file-system@npm%3A19.0.21#~/.yarn/patches/expo-file-system-npm-19.0.21-64dc8cb1bc.patch",
+    "@storyteller-platform/mapping": "workspace:*"
   }
 }

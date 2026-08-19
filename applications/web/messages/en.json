@@ -1,4 +1,15 @@
 {
+  "Announcements": {
+    "dismiss": "Got it",
+    "v3-beta-welcome": {
+      "title": "Welcome to the v3 beta",
+      "p1": "We've made a backup of your database automatically, but making your own before you rely on the beta is never a bad idea. Data loss is not expected, but this is a beta, so it can happen.",
+      "p2": "Please understand that this is a work in progress. There will be many style and functionality changes that happen very rapidly. When we change something, we've done it thoughtfully.",
+      "p3": "We welcome suggestions, but we're already trying to contain our own scope-creep impulses. New features are unlikely to be added until after v3 is official.",
+      "p4": "That said, we are very eager for bug reports, input on ergonomics, and feedback about what is confusing.",
+      "p5": "We're very happy to entertain merge requests, but please first raise them as a feature request on Discord or GitLab so we can discuss it. Things are changing very rapidly behind the scenes and we want to avoid duplicated effort."
+    }
+  },
   "Layout": {
     "description": "A simple tool for syncing audiobooks and ebooks",
     "title": "Storyteller"
@@ -16,27 +27,609 @@
     "invalidUsernameOrPassword": "Invalid username or password",
     "loggingIn": "Logging in..."
   },
+  "InitPage": {
+    "title": "Setup",
+    "welcomeToStoryteller": "Welcome to Storyteller!",
+    "createYourAdminAccount": "Create your admin account to get started",
+    "email": "Email",
+    "fullName": "Full name",
+    "username": "Username",
+    "password": "Password",
+    "createAdminUser": "Create admin user",
+    "creatingAdminUser": "Creating admin user...",
+    "somethingWentWrongPleaseTryAgain": "Something went wrong. Please try again."
+  },
   "HomePage": {
-    "title": "Home"
+    "title": "Home",
+    "hero": {
+      "eyebrow": "Where you left off",
+      "by": "by {authors}",
+      "narratedBy": "narrated by {narrators}",
+      "readAlong": "Read aloud",
+      "read": "Read",
+      "listen": "Listen",
+      "viewDetails": "View details",
+      "percent": "{percent, number}%",
+      "timeLeft": "about {time} left"
+    },
+    "stats": {
+      "inProgress": "In progress",
+      "finishedThisYear": "Finished this year",
+      "inLibrary": "In the library",
+      "tags": "Tags",
+      "authors": "{count, plural, one {# author} other {# authors}}"
+    },
+    "shelf": {
+      "seeAll": "See all"
+    },
+    "actions": {
+      "scrollLeft": "Scroll left",
+      "scrollRight": "Scroll right"
+    },
+    "sections": {
+      "empty": "No sections configured yet.",
+      "customize": "Customize",
+      "title": "Customize Home Page",
+      "description": "Add, remove, and reorder the sections shown on your home page.",
+      "createNewShelf": "Create New Shelf",
+      "hidden": "Hidden sections ({count, number})",
+      "show": "Show",
+      "save": "Save Changes",
+      "hideFromHome": "Hide from home",
+      "deletePermanently": "Delete shelf permanently",
+      "deletePermanentlyDescription": "This will permanently delete this shelf. All books will remain in your library.",
+      "customShelf": "Custom shelf",
+      "sectionMenu": "Section options",
+      "hideSection": "Hide this section",
+      "editShelf": "Edit shelf",
+      "deleteShelf": "Delete shelf"
+    },
+    "getStarted": {
+      "title": "Get started",
+      "description": "Add books to your library and organize them into shelves.",
+      "uploadBook": "Upload a book",
+      "importBook": "Import a book",
+      "createShelf": "Create a shelf",
+      "importSettings": "Setup import rules",
+      "dismiss": "Dismiss",
+      "farewell": {
+        "title": "Good luck!",
+        "body": "You can add this section back by clicking the customize icon in the top right of this page again."
+      }
+    },
+    "addSection": {
+      "label": "Add a section or shelf"
+    },
+    "kinds": {
+      "hero": {
+        "name": "Where You Left Off",
+        "description": "Highlights the book you most recently read"
+      },
+      "stats": {
+        "name": "Stats",
+        "description": "Shows a summary of your library"
+      },
+      "currentlyReading": {
+        "name": "Currently Reading",
+        "description": "Shows books with 'Reading' status"
+      },
+      "nextUpInSeries": {
+        "name": "Next Up in Series",
+        "description": "Shows next unread books in series you've started"
+      },
+      "recentlyAdded": {
+        "name": "Recently Added",
+        "description": "Shows recently added books"
+      },
+      "custom": {
+        "name": "Custom Shelf",
+        "description": "Custom shelf"
+      },
+      "getStarted": {
+        "name": "Get Started",
+        "description": "Quick actions to add books and shelves"
+      },
+      "addSection": {
+        "name": "Add Section",
+        "description": "A button to add a new section or shelf"
+      }
+    }
   },
   "CollectionsPage": {
     "title": "Collections"
   },
+  "NotFoundPage": {
+    "title": "Page not found",
+    "description": "We couldn't find the page you were looking for. It may have moved or no longer exists.",
+    "goBack": "Go back",
+    "home": "Home"
+  },
+  "ForbiddenPage": {
+    "title": "Forbidden",
+    "description": "Halt! You have violated the law. You are not authorized to access this page. If you believe this is an error, please contact your administrator.",
+    "goBack": "Go back in shame",
+    "home": "Home"
+  },
   "BooksPage": {
-    "title": "Books"
+    "title": "Books",
+    "addBook": "Add Book",
+    "uploadBook": "Upload Book",
+    "importBook": "Import Book from server",
+    "seachBooksPlaceholder": "Search books, authors, series, description...",
+    "filters": {
+      "filters": "Filters",
+      "search": "Search",
+      "media": "Media",
+      "allMediaTypes": "All media types",
+      "collection": "Collection",
+      "allCollections": "All collections",
+      "series": "Series",
+      "allSeries": "All series",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "clearAllFilters": "Clear all filters",
+      "advanced": "Advanced filter",
+      "closeAdvanced": "Hide advanced filter",
+      "advancedSummary": "Advanced filter ({count, number})",
+      "saveAsShelf": "Save as shelf"
+    },
+    "sortBy": {
+      "createdAt": "Date added",
+      "updatedAt": "Date updated",
+      "title": "Title",
+      "publicationDate": "Publication date",
+      "searchHint": "Search sort options...",
+      "tooltip": "Sort by",
+      "reset": "Reset sorting"
+    },
+    "toggleSort": {
+      "tooltip": "Toggle sort direction"
+    },
+    "displayOptions": {
+      "layout": "Layout",
+      "view": "View",
+      "auto": "Auto",
+      "searchHint": "Search display options...",
+      "hint": "Show on item",
+      "tooltip": "Display options",
+      "grid": "Grid",
+      "list": "List",
+      "cards": "Cards",
+      "coversOnly": "Covers only",
+      "cardSize": {
+        "title": "Card size",
+        "extraSmall": "Extra small",
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "extraLarge": "Extra large"
+      },
+      "coverFit": {
+        "title": "Cover fit"
+      },
+      "coverType": {
+        "title": "Cover type",
+        "doubleCover": "Double cover",
+        "ebookCover": "Ebook cover",
+        "audiobookCover": "Audiobook cover"
+      },
+      "cardSpacing": {
+        "title": "Card spacing",
+        "compact": "Compact",
+        "cozy": "Cozy",
+        "spacious": "Spacious"
+      },
+      "rows": "Rows",
+      "table": "Table",
+      "thumbnails": "Thumbnails",
+      "appearance": "Appearance",
+      "intensity": "Colors",
+      "badges": "Badges",
+      "card": "Card",
+      "row": "Row",
+      "readaloudIcon": "Readaloud icon",
+      "processingIcon": "Processing icon",
+      "missingFiles": "Missing files"
+    },
+    "count": {
+      "summary": "{shown, number} of {total, number}",
+      "allLoaded": "{total, number} books",
+      "loaded": "{shown, number} loaded",
+      "loadRemaining": "Load remaining ({count, number})",
+      "loadingAll": "Loading all…",
+      "alwaysLoadAll": "Always load all books",
+      "alwaysLoadAllHint": "Loads every match at once. Slower on large libraries."
+    }
+  },
+  "BookList": {
+    "emptyState": "No books found",
+    "emptyStateSub": "Try adjusting your search or filters",
+    "columnMenu": {
+      "autofit": "Fit to content",
+      "resetWidth": "Reset width",
+      "moveLeft": "Move left",
+      "moveRight": "Move right",
+      "hide": "Hide column"
+    }
+  },
+  "LibraryPage": {
+    "Identifier": {
+      "plain": "Identifier",
+      "by": "By Identifier",
+      "none": "(no identifier)"
+    },
+    "emptyStateSub": "Select an item in the sidebar to see its books",
+    "allItems": "All",
+    "Shelves": {
+      "plain": "Shelves",
+      "by": "By Shelf",
+      "none": "(no shelf)"
+    },
+    "Series": {
+      "plain": "Series",
+      "by": "By Series",
+      "none": "(no series)"
+    },
+    "Authors": {
+      "plain": "Authors",
+      "by": "By Author",
+      "none": "(no author)"
+    },
+    "Narrators": {
+      "plain": "Narrators",
+      "by": "By Narrator",
+      "none": "(no narrator)"
+    },
+    "Translators": {
+      "plain": "Translators",
+      "by": "By Translator",
+      "none": "(no translator)"
+    },
+    "Tags": {
+      "plain": "Tags",
+      "by": "By Tag",
+      "none": "(no tags)"
+    },
+    "Collections": {
+      "plain": "Collections",
+      "by": "By Collection",
+      "none": "(no collection)"
+    },
+    "PublicationYear": {
+      "plain": "Year",
+      "by": "By Year",
+      "none": "(no year)"
+    },
+    "Rating": {
+      "plain": "Rating",
+      "by": "By Rating",
+      "none": "(unrated)"
+    },
+    "Status": {
+      "plain": "Status",
+      "by": "By Status",
+      "none": "(no status)"
+    },
+    "Formats": {
+      "plain": "Format",
+      "by": "By Format"
+    },
+    "BookReports": {
+      "title": "Book Reports",
+      "by": "By Grade",
+      "none": "(no grade)",
+      "emptyState": "No graded books yet, try aligning some books",
+      "all": "All graded"
+    },
+    "search": "Search...",
+    "pinAsShelf": "Pin as shelf",
+    "sortByCount": "Sort by count",
+    "sortByName": "Sort by name"
+  },
+  "FacetOverview": {
+    "noResults": "No items match your search",
+    "empty": "No items found"
+  },
+  "EntityActions": {
+    "mergeInto": "Merge into...",
+    "createShelfWith": "Create shelf with selected",
+    "deleteTitle": "Delete {count, number} {entity}?",
+    "deleteDescription": "This will remove the selected items and unlink them from all books. This cannot be undone.",
+    "mergeTitle": "Merge {target1} + {target2}?",
+    "mergeSuccess": "Books merged successfully",
+    "mergeFailed": "Failed to merge books",
+    "mergeDescription": "All books from the other selected items will be reassigned to the target. The other items will be deleted.",
+    "shiftSkipHint": "hold shift to skip this next time",
+    "editTag": "Edit Tag",
+    "editTagDescription": "Update the tag name, icon, and color.",
+    "tagName": "Tag name",
+    "iconAndColor": "Icon & Color",
+    "createCollection": "Create collection",
+    "createTag": "Create tag",
+    "createSeries": "Create series",
+    "editCreator": "Edit Creator",
+    "editCreatorDescription": "Update the creator name and sort name.",
+    "creatorName": "Creator name",
+    "sortAs": "Sort as (file as)",
+    "sortAsPlaceholder": "e.g. Martin, G. R. R.",
+    "nameRequired": "Name is required",
+    "editStatus": "Edit Status Label",
+    "editStatusDescription": "Change the display name for this status. The internal identifier stays the same.",
+    "statusLabel": "Display label",
+    "statusKind": "Internal name",
+    "createStatus": "Create status",
+    "createStatusDescription": "Add a new status that can be assigned to books.",
+    "statusName": "Status name",
+    "statusNameHint": "This is the permanent internal identifier. It cannot be changed later.",
+    "deleteStatusConfirm": "Books with this status will become unset.",
+    "coreStatus": "Core",
+    "entityTypes": {
+      "tag": "{count, plural, one {tag} other {tags}}",
+      "creator": "{count, plural, one {creator} other {creators}}",
+      "series": "{count, plural, one {series} other {series}}",
+      "collection": "{count, plural, one {collection} other {collections}}",
+      "status": "{count, plural, one {status} other {statuses}}",
+      "shelf": "{count, plural, one {shelf} other {shelves}}",
+      "identifier": "{count, plural, one {identifier} other {identifiers}}"
+    },
+    "editIdentifier": "Edit Identifier",
+    "editIdentifierDescription": "Update the identifier name and link template.",
+    "identifierName": "Identifier name",
+    "identifierUrlTemplate": "Link template",
+    "identifierUrlTemplateHint": "Used to link identifier values to a website. '{value}' is replaced with the identifier's value.",
+    "hiddenFromSidebar": "Hidden from sidebar",
+    "showInSidebar": "Show in sidebar",
+    "hideFromSidebar": "Hide from sidebar",
+    "sidebarVisibilityFailed": "Could not change sidebar visibility"
+  },
+  "SelectionToolbar": {
+    "selectAll": "Select all",
+    "selectVisible": "Select visible",
+    "selectNone": "Select none",
+    "invertSelection": "Invert selection",
+    "selectedBooks": "{count, plural, one {# book} other {# books}} <sel>selected</sel>",
+    "actions": "Actions",
+    "addToCollection": "Add to Collection",
+    "addToSeries": "Add to Series",
+    "deleteTitle": "Delete {count, number} book(s)?",
+    "deleteDescription": "This cannot be undone.",
+    "cancelSelection": "Stop selecting"
+  },
+  "BookActions": {
+    "bulkCoverColors": {
+      "title": "Set cover colors",
+      "description": "Give all {count, plural, one {# selected book} other {# selected books}} the same pair of cover colors.",
+      "copyFrom": "Copy the colors from",
+      "fromSelection": "Colors already in the selection",
+      "apply": "Apply to all",
+      "resetAll": "Reset all to default",
+      "applied": "Cover colors set on {count, plural, one {# book} other {# books}}",
+      "failed": "Could not set cover colors"
+    },
+    "openFullPage": "Open full page",
+    "search": "Search...",
+    "addToCollection": "Add to collection",
+    "editCollections": "Edit collections",
+    "newCollection": "New collection...",
+    "removeFromCollection": "Remove from collection",
+    "addToSeries": "Add to series",
+    "editSeries": "Edit series",
+    "newSeries": "New series...",
+    "removeFromSeries": "Remove from series",
+    "addTag": "Add tag",
+    "editTags": "Edit tags",
+    "newTag": "New tag...",
+    "removeTag": "Remove tag",
+    "editAuthors": "Edit authors",
+    "newAuthor": "Add author {input}",
+    "editNarrators": "Edit narrators",
+    "newNarrator": "Add narrator {input}",
+    "editTranslators": "Edit translators",
+    "newTranslator": "Add translator {input}",
+    "setStatus": "Set status",
+    "upgradeEpub": "Upgrade EPUB",
+    "clearCache": "Clear cache",
+    "merge": "Merge books",
+    "mergeInto": "Merge into",
+    "deleteTitle": "Delete {count, number} book(s)?",
+    "deleteDescription": "Files in your assets folder will be deleted. This cannot be undone.",
+    "clearCacheTitle": "Clear cache for {count, number} book(s)?",
+    "clearCacheDescription": "Deletes processed audio and transcription cache files. Source files are kept.",
+    "processTitle": "Begin processing {count, number} book(s)?",
+    "processDescription": "Starts the audiobook processing pipeline for the selected books.",
+    "upgradeTitle": "Upgrade EPUB for {count, number} book(s)?",
+    "upgradeDescription": "Converts EPUB 2 files to EPUB 3 in place.",
+    "upgradeStarted": "EPUB upgrade started",
+    "mergeTitle": "Merge {target1} + {target2}?",
+    "mergeSuccess": "Books merged successfully",
+    "mergeFailed": "Failed to merge books",
+    "mergeDescription": "The other selected books are merged into this one and then deleted. This cannot be undone.",
+    "relocateToInternal": "Relocate to internal storage",
+    "relocateToInternalTitle": "Relocate {count, number} book(s) to internal storage?",
+    "relocateToInternalDescription": "Transfers external reference-mode files into the library's internal asset directory. An ignore rule is added for the original location so the scanner won't re-import it.",
+    "relocateToInternalSuccess": "Files relocated to internal storage",
+    "relocateToInternalFailed": "Failed to relocate files",
+    "relocateModeCopy": "Copy (keep originals)",
+    "relocateModeMove": "Move (delete originals)",
+    "relocateModeHardlink": "Hard link (share disk blocks)",
+    "relocateModeLabel": "Transfer mode",
+    "addToShelf": "Add to shelf",
+    "newShelf": "New shelf...",
+    "addedToShelf": "Added {count, number} book(s) to {name}",
+    "addToShelfFailed": "Failed to add to shelf",
+    "clearStatus": "Clear status",
+    "editShelves": "Edit shelves",
+    "removedFromShelf": "Removed {count, number} book(s) from {name}",
+    "processingUnavailable": "Not available for: {books}",
+    "updateShelfFailed": "Failed to update shelf"
+  },
+  "ShelfPage": {
+    "breadcrumb": "Shelves",
+    "emptyShelf": "This shelf is empty",
+    "adjustFilters": "Try adjusting your search or filters",
+    "goToAllShelves": "All shelves"
+  },
+  "ShelvesPage": {
+    "title": "Shelves",
+    "emptyShelf": "This shelf is empty",
+    "adjustFilters": "Try adjusting your search or filters",
+    "selectAShelf": "Select a shelf to view its books"
+  },
+  "CollectionPage": {
+    "breadcrumb": "Collections",
+    "goToAllCollections": "All collections",
+    "emptyCollection": "This collection is empty",
+    "adjustFilters": "Try adjusting your search or filters"
+  },
+  "ShelfFilterEditor": {
+    "condition": "Condition",
+    "andGroup": "AND group",
+    "orGroup": "OR group",
+    "not": "NOT",
+    "allMatch": "all match",
+    "anyMatch": "any match",
+    "mustNotMatch": "must not match",
+    "loadingPreview": "Loading preview...",
+    "completeFilter": "Complete the filter to see preview",
+    "noMatches": "No books match this filter",
+    "matchCount": "{count, plural, one {# book matches} other {# books match}}",
+    "to": "to",
+    "axisDimension": "Axis...",
+    "qualifier": {
+      "overall": "Overall",
+      "anyType": "Any type",
+      "anyRole": "Any role"
+    },
+    "countToggle": "Filter by how many",
+    "noItemsFound": "No items found",
+    "commaSeparatedValues": "Comma-separated values...",
+    "enterValue": "Enter value...",
+    "selectTags": "Search tags...",
+    "selectCollections": "Search collections...",
+    "selectSeries": "Search series...",
+    "selectCreators": "Search creators...",
+    "selectStatuses": "Search statuses...",
+    "selectStatus": "Select status...",
+    "selectMediaType": "Select...",
+    "searchFormats": "Search formats...",
+    "operators": {
+      "is": "is",
+      "isNot": "is not",
+      "contains": "contains",
+      "notContains": "does not contain",
+      "startsWith": "starts with",
+      "endsWith": "ends with",
+      "greaterThan": "greater than",
+      "lessThan": "less than",
+      "greaterOrEqual": "at least",
+      "lessOrEqual": "at most",
+      "between": "between",
+      "before": "before",
+      "after": "after",
+      "includes": "includes any of",
+      "includesAll": "includes all of",
+      "excludes": "excludes",
+      "isAnyOf": "is any of",
+      "isNoneOf": "is none of",
+      "isEmpty": "is empty",
+      "isNotEmpty": "is not empty",
+      "count": "Count"
+    },
+    "numericPlaceholders": {
+      "rating": "Rating...",
+      "duration": "Seconds...",
+      "pageCount": "Pages...",
+      "fileSize": "Bytes...",
+      "default": "Value..."
+    },
+    "units": {
+      "sec": "sec",
+      "pages": "pages",
+      "bytes": "bytes"
+    },
+    "fieldGroups": {
+      "text": "Text",
+      "dates": "Dates",
+      "review": "Ratings & Reviews",
+      "relations": "Relations",
+      "creators": "Authors / Creators",
+      "media": "Media & Size",
+      "alignment": "Alignment"
+    },
+    "duplicate": "Duplicate",
+    "pickValue": "Pick a value",
+    "presets": "Quick add",
+    "preset": {
+      "highlyRated": "Highly rated (4+)",
+      "audiobooksOnly": "Audiobooks only",
+      "ebooksOnly": "Ebooks only",
+      "hasReadaloud": "Has readaloud",
+      "hasReview": "Has review",
+      "unrated": "Unrated",
+      "longBooks": "Long books (300+ pages)",
+      "authorIsNarrator": "Author is the narrator"
+    },
+    "durationHours": "h",
+    "durationMinutes": "m",
+    "fileSizeUnit": {
+      "bytes": "B",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB"
+    },
+    "selectValues": "Search values..."
+  },
+  "ShelfEditor": {
+    "editTitle": "Edit Shelf",
+    "createTitle": "Create Shelf",
+    "editDescription": "Update your shelf settings.",
+    "createDescription": "Create a shelf with dynamic filters or manual selection.",
+    "name": "Name",
+    "namePlaceholder": "My Shelf",
+    "nameRequired": "Name is required",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description...",
+    "iconAndColor": "Icon & Color",
+    "bookSelection": "Book Selection",
+    "clearFilter": "Clear filter",
+    "dynamicFilter": "Dynamic Filter",
+    "manual": "Manual",
+    "clearSelection": "Clear selection",
+    "sortAndLimit": "Sort & Limit",
+    "sortBy": "Sort by",
+    "limit": "Limit",
+    "limitAll": "All",
+    "searchBooks": "Search by title or author...",
+    "noBooksFound": "No books found",
+    "searchToAdd": "Search to add books to this shelf",
+    "orderBy": {
+      "createdAt": "Date Added",
+      "updatedAt": "Date Updated",
+      "title": "Title",
+      "publicationDate": "Publication Date",
+      "rating": "Rating"
+    },
+    "orderDirection": {
+      "desc": "Descending",
+      "asc": "Ascending"
+    }
   },
   "SettingsPage": {
     "title": "Settings",
     "breadcrumb": "Settings",
+    "preferences": "Preferences",
     "saveSettings": "Save settings",
     "exportSettings": "Export settings as JSON",
     "lockedSettings": "Some settings are managed via the configuration file and cannot be changed here.",
     "lockedSettingTooltip": "This setting is locked because it is managed via the settings configuration file.",
-    "saving": "Saving...",
     "settingsSavedSuccessfully": "Settings saved successfully",
     "failedToSaveSettings": "Failed to save settings",
     "searchSettings": "Search settings...",
     "formHasErrors": "{count, plural, one {# error} other {# errors}}",
+    "sidebar": {
+      "settings": "Settings",
+      "administration": "Administration"
+    },
     "changelog": {
       "title": "Changelog",
       "noChangelogEntriesFound": "No changelog entries found.",
@@ -55,7 +648,20 @@
             "title": "Library Settings",
             "description": "Configure your library name and web URL. These are used in for instance emails and the OPDS feed.",
             "libraryName": "Library name",
-            "webUrl": "Web URL"
+            "webUrl": "Web URL",
+            "serverIcon": "Server icon",
+            "serverIconDescription": "Shown in clients that connect to this server, and used as the favicon.",
+            "serverIconUpload": "Upload icon",
+            "serverIconReplace": "Replace icon",
+            "serverIconRemove": "Remove",
+            "serverIconError": "Could not upload that image"
+          },
+          "defaultStatus": {
+            "title": "Default Status",
+            "description": "Choose which status newly imported books start with.",
+            "label": "Default status for new books",
+            "hint": "When set, all new books are assigned this status for every user. Users can override this in their own preferences.",
+            "none": "None (no status)"
           },
           "autoImport": {
             "title": "Auto-Import",
@@ -66,11 +672,43 @@
             "useDefault": "default",
             "defaultImportMode": "Default import mode",
             "defaultImportModeDescription": "How to handle files found in import directories. Individual paths can override this.",
+            "defaultEpub2Strategy": "Default EPUB 2 strategy",
+            "defaultEpub2StrategyDescription": "What to do when an EPUB 2 file is found during auto-import. Individual watch rules can override this. Copy mode always upgrades automatically.",
+            "epub2Strategy": "EPUB 2 strategy",
+            "epub2BackupSuffix": "EPUB 2 backup suffix",
+            "epub2BackupSuffixDescription": "Appended to the original filename when creating a backup before converting.",
             "addPath": "Add path",
-            "modeReference": "Reference in place",
-            "modeCopy": "Copy to library",
-            "modeMove": "Move to library",
-            "modeHardlink": "Hard link"
+            "importMode": "Import mode",
+            "importModeDescription": "How to handle files found in import directories. Individual paths can override this.",
+            "importCollectionsDescription": "Add new books to collections when they are imported.",
+            "importCollectionsPlaceholder": "No collection",
+            "importCollectionsAdd": "Add collection",
+            "addWatchRule": "Add import rule",
+            "addWatchRuleDescription": "Storyteller will scan this folder for new books.",
+            "addIgnoreRule": "Add ignore rule",
+            "searchWatchRules": "Search watch rules…",
+            "noWatchRules": "No watch rules.",
+            "noWatchRulesMatchSearch": "No watch rules match your search.",
+            "searchIgnoreRules": "Search ignore rules…",
+            "searchAutoIgnoreRules": "Search auto-ignore rules…",
+            "addIgnoreRuleDescription": "Storyteller will skip this path during scans.",
+            "noIgnoreRules": "No ignore rules.",
+            "noIgnoreRulesMatchSearch": "No ignore rules match your search.",
+            "addAutoIgnoreRule": "Add auto-ignore rule",
+            "autoIgnoreRulesDescription": "Auto-ignore rules are added by Storyteller when books are relocated, backed up, or removed with re-import prevention. If a book isn't importing, search here for its path or title.",
+            "noAutoIgnoreRules": "No auto-ignore rules.",
+            "noAutoIgnoreRulesMatchSearch": "No auto-ignore rules match your search.",
+            "showingRules": "Showing {start, number}–{end, number} of {total, number}",
+            "showingRulesTotal": "Showing {total, number} of {totalAuto, number}.",
+            "watch": "Import",
+            "ignore": "Ignore",
+            "autoIgnore": "Auto-ignore",
+            "ignoreSources": {
+              "config": "Config",
+              "importRelocated": "Relocated",
+              "importBackup": "Backup copy",
+              "importPreventReimport": "Re-import prevention"
+            }
           },
           "scanControls": {
             "title": "Library Scanning",
@@ -85,26 +723,7 @@
             "showSimpleInterval": "Use a simple interval instead",
             "cronExpression": "Cron expression",
             "cronExpressionDescription": "Standard cron syntax (minute hour day month weekday). The expression is evaluated in the server's timezone.",
-            "cronHelper": "Cron expression reference (crontab.guru)",
-            "metadataFieldOverrides": "Metadata read behavior",
-            "metadataFieldOverridesDescription": "Controls how Storyteller handles metadata from book files during scans. The default (fill empty) is suitable for most users. If you also manage your books with other tools (e.g. Calibre, Audiobookshelf) and want those changes reflected in Storyteller, consider using always override.",
-            "fieldTitle": "Title",
-            "fieldSubtitle": "Subtitle",
-            "fieldDescription": "Description",
-            "fieldLanguage": "Language",
-            "fieldPublicationDate": "Publication date",
-            "fieldCover": "Cover",
-            "fieldAuthors": "Authors",
-            "fieldNarrators": "Narrators",
-            "fieldCreators": "Other creators",
-            "fieldSeries": "Series",
-            "fieldTags": "Tags",
-            "modeSkip": "Skip",
-            "modeMerge": "Merge",
-            "modeAlways": "Always override",
-            "modeCustom": "Custom",
-            "showAdvancedOverrides": "Show per-field settings",
-            "showSimpleOverrides": "Use a single setting for all fields"
+            "cronHelper": "Cron expression reference (crontab.guru)"
           },
           "skippedImportPaths": {
             "title": "Skipped import paths",
@@ -131,7 +750,6 @@
             "clearCacheConfirmTitle": "Clear cache for all books",
             "clearCacheConfirmDescription": "Delete processed audio and transcription files for every book in the library? This frees disk space but means a full restart is needed to re-align books later. Original files are left untouched.",
             "clearCacheConfirm": "Clear cache",
-            "clearCacheCancel": "Cancel",
             "clearCacheSuccess": "Cleared processed cache",
             "clearCacheError": "Failed to clear cache"
           },
@@ -158,13 +776,22 @@
             "title": "Transcription Settings",
             "description": "Configure how Storyteller transcribes audiobook narration to text. By default, transcription runs locally using whisper.cpp. You can also use paid third-party services.",
             "engine": "Transcription engine",
-            "whisperCpp": "whisper.cpp (local)",
-            "whisperServer": "whisper.cpp (remote)",
+            "tabLocal": "On this device",
+            "tabRemote": "On another device",
+            "tabThirdParty": "Third-party services",
+            "whisperCpp": "Whisper (whisper.cpp)",
+            "whisperCppDescription": "Runs directly on the server hosting Storyteller. No extra setup and nothing leaves this machine; speed depends on its hardware.",
+            "whisperServer": "Storyteller server (Ghost Story)",
             "googleCloud": "Google Cloud",
+            "googleCloudDescription": "Google Cloud Speech-to-Text. Paid cloud API; requires an API key.",
             "microsoftAzure": "Azure Cognitive Services",
+            "microsoftAzureDescription": "Azure AI speech recognition. Paid cloud API; requires a subscription key and service region.",
             "amazonTranscribe": "Amazon Transcribe",
+            "amazonTranscribeDescription": "AWS transcription via an S3 bucket. Paid cloud API; requires AWS credentials.",
             "openaiCloud": "OpenAI Cloud Platform",
+            "openaiCloudDescription": "OpenAI's hosted transcription API. Also works with any OpenAI-compatible endpoint via a custom base URL.",
             "deepgram": "Deepgram Speech to Text",
+            "deepgramDescription": "Deepgram's hosted speech-to-text API. Paid cloud API; requires an API key.",
             "whisperBuild": "Whisper build",
             "whisperBuildCpu": "CPU",
             "whisperBuildCublas126": "cuBLAS 12.6 (NVIDIA GPU)",
@@ -187,7 +814,7 @@
             "whisperServerUrlDescription": "e.g. http://192.168.1.19:8080 for the local whisper.cpp server.",
             "whisperServerApiKey": "API key",
             "whisperServerApiKeyDescription": "Only necessary if your server requires an API key.",
-            "whisperServerDescription": "Use a remote, self-hosted whisper.cpp server for transcription. Useful if you have a powerful machine to offload transcription to.",
+            "whisperServerDescription": "Offload transcription to a Ghost Story server running on another, faster machine. Any whisper.cpp-compatible server works too.",
             "apiKey": "API key *",
             "subscriptionKey": "Subscription key *",
             "serviceRegion": "Service region *",
@@ -289,9 +916,9 @@
         "sections": {
           "opds": {
             "title": "OPDS Settings",
-            "description": "Configure the OPDS feed for your library. OPDS is a standard for publishing e-book catalogs.",
+            "description": "Configure the OPDS feed for your library. OPDS is a standard for publishing ebook catalogs.",
             "enabled": "Enable OPDS",
-            "enabledDescription": "Enable the OPDS feed for your library. This allows compatible e-book readers to browse your library and download books. You can access the OPDS feed at {url}.",
+            "enabledDescription": "Enable the OPDS feed for your library. This allows compatible ebook readers to browse your library and download books. You can access the OPDS feed at {url}.",
             "pageSize": "Page size",
             "pageSizeDescription": "The number of books per page in the OPDS feed. Default is 25.",
             "format": "Preferred ebook",
@@ -305,29 +932,1034 @@
             "formatBoth": "Both read-aloud and ebook"
           }
         }
+      },
+      "app": {
+        "title": "App",
+        "sections": {
+          "updates": {
+            "title": "Updates",
+            "description": "Storyteller Server app {version}",
+            "channelLabel": "Update channel",
+            "channelStable": "Stable",
+            "channelStableDescription": "Only stable releases. Preview versions are never installed automatically.",
+            "channelBeta": "Beta",
+            "channelBetaDescription": "Beta and release-candidate versions, plus every stable release. Switching back to Stable will not downgrade you, you will need to manually install the latest stable version.",
+            "channelEdge": "Latest",
+            "channelEdgeDescription": "Every release, including alpha and experimental builds. Switching back to Stable or Beta will not downgrade you, you will need to manually install the latest stable or beta version.",
+            "channelSaveFailed": "Could not save the update channel",
+            "checkNow": "Check for Updates…"
+          }
+        }
+      },
+      "changelog": {
+        "title": "Changelog"
+      },
+      "logs": {
+        "title": "Logs",
+        "noLogs": "No log entries found.",
+        "searchLogs": "Search logs...",
+        "allLevels": "All levels",
+        "wrapLines": "Toggle line wrapping",
+        "highlighting": "Toggle highlighting",
+        "hideTime": "Hide timestamps",
+        "showTime": "Show timestamps",
+        "lineCount": "{count, number} lines",
+        "enableDebug": "Enable debug logging",
+        "disableDebug": "Disable debug logging",
+        "follow": "Follow new logs",
+        "scrollToBottom": "Scroll to bottom",
+        "clearLogs": "Clear logs",
+        "clearLogsConfirm": "This will permanently delete the current log file. New logs will continue to be written.",
+        "logsCleared": "Logs cleared"
+      },
+      "backups": {
+        "title": "Data & backups",
+        "databaseTitle": "Database",
+        "databaseDescription": "Download a snapshot of the live database or store a backup on the server.",
+        "downloadDatabase": "Download database",
+        "backUpNow": "Back up now",
+        "backingUp": "Backing up…",
+        "backupCreated": "Backup created",
+        "backupFailed": "Failed to create backup",
+        "noBackups": "No stored backups yet.",
+        "downloadBackup": "Download backup",
+        "deleteBackup": "Delete backup",
+        "deleteBackupConfirm": "This backup file will be permanently deleted.",
+        "deleteFailed": "Failed to delete backup",
+        "scheduleTitle": "Scheduled backups",
+        "scheduleDescription": "Automatically back up the database on a schedule. Old scheduled backups are pruned; manual backups are never touched.",
+        "enableScheduledBackups": "Enable scheduled backups",
+        "backupInterval": "Backup interval (minutes)",
+        "cronExpression": "Cron expression",
+        "showAdvancedCron": "Use a cron expression instead",
+        "hideAdvancedCron": "Use a simple interval instead",
+        "retention": "Backups to keep",
+        "retentionDescription": "Older scheduled backups beyond this count are deleted after each run.",
+        "saveSchedule": "Save schedule",
+        "saving": "Saving…",
+        "scheduleSaved": "Backup schedule saved",
+        "scheduleSaveFailed": "Failed to save backup schedule",
+        "rewriteTitle": "Rewrite file paths",
+        "rewriteDescription": "Update stored absolute file paths after moving your library or importing a database from another machine. Paths starting with the old prefix are rewritten to the new one.",
+        "anchorMismatch": "This database was last used with data directory \"{anchor}\", but the server is now running with \"{current}\". Stored file paths may point to the old location.",
+        "prefillFromAnchor": "Prefill old → new",
+        "dismissAnchor": "Paths are fine — dismiss",
+        "rewriteFrom": "Paths starting with",
+        "rewriteTo": "Become paths starting with",
+        "previewRewrite": "Preview",
+        "previewing": "Previewing…",
+        "previewFailed": "Failed to preview rewrite",
+        "noMatches": "No stored paths match this prefix.",
+        "matchSummary": "{count, number} matching · {existing, number} of {checked, number} checked targets exist",
+        "applyRewrite": "Rewrite paths",
+        "applyRewriteConfirm": "All matching paths in the database will be rewritten. A pre-rewrite backup is recommended.",
+        "applyRewriteCount": "Rewrite {count, number} paths",
+        "applying": "Rewriting…",
+        "applyFailed": "Failed to rewrite paths",
+        "applySucceeded": "Rewrote {count, number} paths"
+      },
+      "users": {
+        "title": "Users",
+        "permissions": {
+          "admin": "Admin",
+          "basic": "Basic",
+          "save": "Save permissions",
+          "bookCreate": "Upload new books",
+          "bookRead": "See book info",
+          "bookProcess": "Manage book syncing",
+          "bookDownload": "Download synced books",
+          "bookList": "List all books",
+          "bookDelete": "Delete books",
+          "bookUpdate": "Change book info",
+          "collectionCreate": "Create collections",
+          "inviteList": "See user invites",
+          "inviteDelete": "Delete user invites",
+          "userCreate": "Invite new users",
+          "userList": "List all users",
+          "userRead": "See other users' info",
+          "userDelete": "Delete users",
+          "userUpdate": "Update other users' permissions",
+          "settingsUpdate": "Change server settings",
+          "createCollections": "Create collections",
+          "userPasswordReset": "Reset user passwords"
+        },
+        "sections": {
+          "users-invites": {
+            "title": "Invites",
+            "description": "Manage pending invitations to your server.",
+            "invites": "Invites",
+            "email": "Email",
+            "inviteUser": "Invite user",
+            "inviteSent": "Invite sent.",
+            "inviteAnother": "Invite another user",
+            "inviteFailed": "Invite failed",
+            "inviteFailedDescription": "Something went wrong when sending the invite. Check the server logs for more information.",
+            "inviteFailedButton": "Try again",
+            "enablePasswordLogin": "Enable password login to invite users by email",
+            "createInvite": "Create invite"
+          },
+          "users-list": {
+            "title": "Users",
+            "description": "Manage your users."
+          }
+        }
+      }
+    }
+  },
+  "PreferencesPage": {
+    "title": "Preferences",
+    "settingsPage": "Global settings",
+    "savedSuccessfully": "Preferences saved",
+    "failedToSave": "Failed to save preferences",
+    "searchPreferences": "Search preferences...",
+    "libraryDefault": {
+      "setAsDefault": "Set as default for everyone",
+      "isDefault": "Current default",
+      "isDefaultValue": "Current default ({value})",
+      "saved": "Saved as the default for all users",
+      "cleared": "Removed the default for all users",
+      "failed": "Couldn't save the default",
+      "clearDefault": "Remove the default for everyone",
+      "clearDefaultValue": "Remove the default for everyone ({value})",
+      "restoreDefault": "Restore default",
+      "restoreDefaultValue": "Restore default ({value})",
+      "locked": "Set in config",
+      "lockedHint": "This default is managed by the server config file and can't be changed here."
+    },
+    "sidebar": {
+      "user": "User",
+      "preferences": "Preferences"
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "Manage your account details.",
+      "username": "Username",
+      "email": "Email",
+      "name": "Name",
+      "changePassword": "Change password",
+      "addPassword": "Add password",
+      "saveProfile": "Save profile",
+      "savedSuccessfully": "Profile saved",
+      "failedToSave": "Failed to save profile",
+      "linkedAccounts": "Linked accounts",
+      "linkedAccountsDescription": "Manage your linked OAuth accounts.",
+      "unlink": "Unlink",
+      "linkWith": "Link with {provider}",
+      "accountUnlinked": "Account unlinked",
+      "failedToUnlink": "Failed to unlink account"
+    },
+    "tabs": {
+      "profile": {
+        "title": "Profile"
+      },
+      "general": {
+        "title": "General",
+        "sections": {
+          "language": {
+            "title": "Language",
+            "description": "Choose your preferred display language.",
+            "label": "Language",
+            "hint": "This setting syncs across all your devices.",
+            "systemDefault": "System default"
+          },
+          "view": {
+            "title": "Default view",
+            "description": "How your library is laid out by default.",
+            "label": "View",
+            "hint": "List and table views are coming soon.",
+            "kinds": {
+              "grid": "Grid",
+              "list": "List",
+              "table": "Table"
+            }
+          }
+        }
+      },
+      "appearance": {
+        "title": "Appearance",
+        "sections": {
+          "accent": {
+            "title": "Accent & shell",
+            "description": "The color the app leans on, and how the frame around your library is dressed.",
+            "label": "Accent color",
+            "hint": "Applies to buttons, highlights and the sidebar.",
+            "useDefault": "Use default color",
+            "custom": "Custom color",
+            "shell": {
+              "label": "Shell",
+              "hint": "Light or dark sidebar",
+              "lightOnly": "Light mode only",
+              "options": {
+                "paper": "Paper",
+                "spine": "Spine"
+              }
+            }
+          },
+          "colorfulness": {
+            "title": "Colorfulness",
+            "description": "How much cover colors bleed into the interface.",
+            "label": "Color level",
+            "hint": "Full uses cover colors everywhere; minimal keeps a neutral theme.",
+            "levels": {
+              "full": "Full",
+              "minimal": "Minimal"
+            }
+          },
+          "motion": {
+            "title": "Motion",
+            "description": "How the library responds to opening and resizing panels.",
+            "label": "Layout animations",
+            "hint": "Slide the detail panel open and glide books to their new spots. When off, panels snap into place instantly.",
+            "panelLabel": "Slide the detail panel open",
+            "panelHint": "Animate the detail panel opening when you click a book. When off, it appears at full width instantly (dragging the edge still animates)."
+          }
+        }
+      },
+      "books": {
+        "title": "Books",
+        "sections": {
+          "gridDisplay": {
+            "title": "Grid display",
+            "description": "How books are shown in the library grid.",
+            "coverLabel": "Cover display",
+            "coverHint": "Both arranges the ebook and audiobook covers inside the card, and centres the one cover a single-format book has. Pinning a format instead fills the whole card with that cover.",
+            "coverOptions": {
+              "auto": "Both covers",
+              "ebook": "Ebook only",
+              "audiobook": "Audiobook only"
+            },
+            "alignmentLabel": "Double cover style",
+            "alignmentHint": "Controls whether the two covers appear tilted or straight.",
+            "alignmentOptions": {
+              "auto": "Tilted when unsynced",
+              "straight": "Always straight"
+            },
+            "sizeLabel": "Card size",
+            "sizeHint": "Smaller fits more books per row.",
+            "sizeOptions": {
+              "smallest": "Smallest",
+              "small": "Small",
+              "medium": "Medium",
+              "large": "Large",
+              "largest": "Largest"
+            },
+            "fitLabel": "Odd-shaped covers",
+            "fitHint": "How a cover whose art is not the usual book shape is displayed. True size keeps the art's own shape, so it only applies when covers sit inside the card.",
+            "fitOptions": {
+              "true-size": "True size",
+              "stretch": "Stretch",
+              "cover": "Zoom to fill",
+              "contain": "Fit with backdrop"
+            }
+          },
+          "opening": {
+            "title": "Opening books",
+            "description": "What clicking a book on the home page or in search results does.",
+            "label": "Open books in",
+            "hint": "The side panel floats over the page for a quick look; the full book page is always one more click away. In the library's grid and list views a click always opens the side panel there.",
+            "options": {
+              "panel": "Side panel",
+              "page": "Book page"
+            }
+          },
+          "detail": {
+            "title": "Details display",
+            "description": "How a book is shown on its details page.",
+            "display": {
+              "label": "Book display",
+              "hint": "The flat cover falls back to your grid cover choice.",
+              "options": {
+                "3d": "3D book",
+                "cover": "Flat cover"
+              }
+            },
+            "view": {
+              "hint": "The angle the 3D book starts at. Click a book to change it.",
+              "label": "View",
+              "options": {
+                "cover": "Cover",
+                "spine": "Spine",
+                "pages": "Pages",
+                "back": "Back",
+                "hover": "Hover"
+              }
+            }
+          },
+          "ratingIcon": {
+            "title": "Rating icon",
+            "description": "Choose the glyph used to show ratings.",
+            "label": "Icon",
+            "hint": "Switch between stars and hearts. The rating value stays the same.",
+            "options": {
+              "star": "Stars",
+              "heart": "Hearts"
+            }
+          },
+          "ratingDimensions": {
+            "title": "Rating dimensions",
+            "description": "Customize the axes of the multidimensional book rating.",
+            "label": "Dimensions",
+            "hint": "Each book can be scored 0-5 on every axis; the average becomes its rating.",
+            "add": "Add dimension",
+            "placeholder": "Dimension name",
+            "remove": "Remove dimension",
+            "customize": "Customize"
+          },
+          "ratings": {
+            "title": "Ratings and Reviews",
+            "description": "Change how ratings and reviews display and work"
+          },
+          "defaultStatus": {
+            "title": "Default Status",
+            "description": "Choose which status newly added books start with for you.",
+            "label": "Default status for new books",
+            "hint": "Overrides the library-wide default set by an admin. Choose \"Use library default\" to follow the admin setting.",
+            "useLibraryDefault": "Use library default"
+          }
+        }
       }
     }
   },
   "AppSidebar": {
     "home": "Home",
     "books": "Books",
+    "alignmentQuality": "Book Reports",
     "allBooks": "All books",
     "collections": "Collections",
     "allCollections": "All collections",
     "series": "Series",
+    "library": "Library",
     "search": "Search",
     "settings": "Settings",
+    "customize": "Customize sidebar",
     "documentation": "Documentation",
-    "account": "Account",
+    "account": "Account & Preferences",
     "logout": "Logout",
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System",
+    "toggleTheme": "Toggle theme",
+    "system": "System theme",
     "language": "Language",
     "localeChanger": {
       "en": "English",
       "nl": "Dutch"
+    },
+    "switchToClassic": "Switch to classic UI",
+    "switchToNew": "Try new interface",
+    "hideCollections": "Hide all collections",
+    "hideShelves": "Hide all shelves",
+    "createNewCollection": "Create new collection",
+    "createNewShelf": "Create new shelf",
+    "editItem": "Edit",
+    "removeFromSidebar": "Remove from sidebar",
+    "seeAllCollections": "See all collections",
+    "seeAllShelves": "See all shelves"
+  },
+  "CommandPalette": {
+    "searchPlaceholder": "Search or run a command...",
+    "empty": "No results",
+    "createCollection": "Create collection",
+    "createShelf": "Create shelf",
+    "organizeHome": "Organize home",
+    "continueReading": "Continue reading {title}",
+    "switchToList": "Switch to list view",
+    "switchToGrid": "Switch to grid view",
+    "bookContext": "Book · {title}",
+    "sectionActions": "Actions",
+    "sectionCommands": "Commands",
+    "sectionGoto": "Go to",
+    "sectionBooks": "Books",
+    "sectionSeries": "Series",
+    "sectionCollections": "Collections",
+    "sectionShelves": "Shelves",
+    "sectionRecent": "Jump back in",
+    "createShelfNamed": "Create shelf \"{name}\"",
+    "createCollectionNamed": "Create collection \"{name}\"",
+    "hintOpen": "Open",
+    "hintOpenPage": "Open page",
+    "hintOpenPanel": "Open panel",
+    "hintClose": "Close"
+  },
+  "SidebarManager": {
+    "add": "Add",
+    "customize": "Customize sidebar",
+    "title": "Edit sidebar",
+    "description": "Reorder items, hide what you don't use, and add collections or shelves.",
+    "available": "Add to sidebar",
+    "addGroup": "New section",
+    "newSection": "New section",
+    "removeSection": "Remove section",
+    "hideFromSidebar": "Hide from sidebar",
+    "showInSidebar": "Show in sidebar",
+    "editItem": "Edit",
+    "hidden": "Hidden items",
+    "hiddenEmpty": "Drag items here to hide them",
+    "collection": "Collection",
+    "shelf": "Shelf",
+    "createShelf": "New shelf",
+    "customizeHome": "Customize homepage",
+    "moveSection": "Move section",
+    "hideSection": "Hide section",
+    "showSection": "Show section",
+    "hiddenSections": "Hidden sections"
+  },
+  "BookDetailsPage": {
+    "bookNotFound": "Book not found",
+    "noDescriptionAvailable": "No description available",
+    "coverColors": {
+      "title": "Cover colors",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "reset": "Reread from cover",
+      "resetHint": "Drop the override and take both colors from the cover art again",
+      "pickFromCover": "Pick a color from anywhere on screen",
+      "formats": {
+        "ebook": "From the ebook cover",
+        "audiobook": "From the audiobook cover",
+        "readaloud": "From the read-along cover"
+      }
+    },
+    "cover": {
+      "edit": "Edit cover",
+      "uploadEbook": "Upload ebook cover",
+      "uploadAudiobook": "Upload audiobook cover",
+      "setDefaultPosition": "Set as default position",
+      "savedDefaultPosition": "Saved default position",
+      "resize": "Drag to resize the cover, double-click to reset",
+      "oddShapeWarning": "That image is {width}x{height}, which is further from a normal cover shape than we can display. It will be cropped or letterboxed wherever it appears."
+    },
+    "narratedBy": "narrated by",
+    "writtenBy": "by",
+    "addAuthor": "Add author...",
+    "addNarrator": "Add narrator...",
+    "invalidLanguageCode": "Unknown language code",
+    "deleteBook": "Delete book",
+    "editing": "Editing…",
+    "saveFailed": "Failed to save changes",
+    "more": "+ {count, number} more",
+    "review": {
+      "title": "My rating & review",
+      "addReview": "Add a review",
+      "yourRating": "Your rating",
+      "yourReview": "Your review",
+      "reviewPlaceholder": "What did you think of this book?",
+      "clear": "Clear",
+      "ratePlaceholder": "Rate",
+      "addAdvanced": "Add multidimensional rating",
+      "removeAdvanced": "Remove multidimensional rating",
+      "avg": "Avg",
+      "useAverage": "use average",
+      "revertManual": "Revert to {rating}",
+      "overrideTitle": "Override multidimensional rating?",
+      "overrideDescription": "Rating manually replaces your multidimensional rating with a single value.",
+      "overrideConfirm": "Override",
+      "apply": "Apply",
+      "adjustScores": "Adjust scores",
+      "addDimension": "Add {label}",
+      "removeDimension": "Remove {label}"
+    },
+    "scan": {
+      "title": "Scan",
+      "scanning": "Scanning...",
+      "cancelScan": "Cancel scan",
+      "scanningComplete": "Scan complete",
+      "scanningFailed": "Scan failed"
+    },
+    "downloads": {
+      "download": "Download",
+      "downloadReadaloud": "Download Readaloud",
+      "downloadEbook": "Download Ebook",
+      "downloadAudiobook": "Download Audiobook"
+    },
+    "series": {
+      "notInAnySeries": "Not in any series",
+      "seachOrCreateSeries": "Search or create series...",
+      "addToSeriesTitle": "Add to series",
+      "addToSeriesDescription": "Set this book's position in {series}.",
+      "position": "Position",
+      "positionPlaceholder": "e.g. 1",
+      "positionHint": "Leave blank to add without a position.",
+      "editPositionTitle": "Edit position",
+      "editPositionDescription": "Change this book's position in {series}."
+    },
+    "collections": {
+      "notInAnyCollections": "Not in any collections",
+      "seachOrCreateCollection": "Search or create collection..."
+    },
+    "tags": {
+      "notInAnyTags": "Not tags",
+      "seachOrCreateTag": "Search or create tag..."
+    },
+    "fileInformation": {
+      "addFile": "New file",
+      "importFromServer": "Import from server",
+      "upload": "Upload",
+      "readaloud": "Readaloud file",
+      "ebook": "Ebook file",
+      "audiobook": "Audiobook file",
+      "title": "Files",
+      "assetFolder": "Asset folder",
+      "editAssetFolder": "Edit asset folder",
+      "editAssetFolderDescription": "Change the name of this book's internal asset directory. Files will be moved to the new location.",
+      "assetFolderLabel": "Folder name",
+      "conflictOwnedByOther": "This folder name is already used by \"{title}\".",
+      "conflictFilesExist": "The target folder already has files. Choose which to keep for each format.",
+      "keepCurrent": "Keep current",
+      "keepTarget": "Keep from target folder",
+      "assetFolderUpdated": "Asset folder updated"
+    },
+    "alignment": {
+      "title": "Alignment",
+      "queued": "Queued for alignment",
+      "aligned": "Aligned",
+      "processing": "Processing",
+      "error": "Processing failed",
+      "stopped": "Processing stopped",
+      "unprocessed": "Unprocessed",
+      "retry": "Retry",
+      "createReadaloud": "Create readaloud",
+      "lastAligned": "Last aligned",
+      "alignedIn": "Aligned in",
+      "estimatedRemaining": "{duration} left",
+      "transcriptionEngine": "Transcription engine",
+      "storytellerVersion": "Storyteller version"
+    },
+    "identifiers": {
+      "title": "Identifiers",
+      "edit": "Edit identifiers",
+      "editDescription": "Manage the identifiers attached to the {format}.",
+      "type": "Type",
+      "value": "Value",
+      "add": "Add identifier",
+      "newType": "New type…",
+      "newTypeName": "New type name",
+      "invalidValue": "Doesn't look like a valid {name}",
+      "empty": "No identifiers",
+      "copied": "Copied",
+      "copyValue": "Copy value",
+      "openLink": "Open link"
+    },
+    "addContributor": "Add contributor",
+    "moreByAuthor": "More by {name}",
+    "moreInSeries": "More in {name}",
+    "customize": {
+      "action": "Customize sections",
+      "title": "Customize sections",
+      "description": "Reorder the sections of this page, or hide the ones you don't use.",
+      "hidden": "Hidden sections",
+      "hiddenEmpty": "Drag sections here to hide them",
+      "reset": "Reset to default",
+      "hide": "Hide section",
+      "show": "Show section",
+      "move": "Move section",
+      "moreByAuthor": "More by author",
+      "moreInSeries": "More in series"
+    }
+  },
+  "Common": {
+    "Nouns": {
+      "ebook": "{count, plural, one {Ebook} other {Ebooks}}",
+      "audiobook": "{count, plural, one {Audiobook} other {Audiobooks}}",
+      "readaloud": "{count, plural, one {Readaloud} other {Readalouds}}",
+      "book": "{count, plural, one {Book} other {Books}}",
+      "chapter": "{count, plural, one {Chapter} other {Chapters}}",
+      "sentence": "{count, plural, one {Sentence} other {Sentences}}",
+      "note": "{count, plural, one {Note} other {Notes}}",
+      "transcription": "{count, plural, one {Transcription} other {Transcriptions}}",
+      "transcript": "{count, plural, one {Transcript} other {Transcripts}}",
+      "author": "{count, plural, one {Author} other {Authors}}",
+      "narrator": "{count, plural, one {Narrator} other {Narrators}}",
+      "creator": "{count, plural, one {Creator} other {Creators}}",
+      "series": "{count, plural, one {Series} other {Series}}",
+      "tag": "{count, plural, one {Tag} other {Tags}}",
+      "collection": "{count, plural, one {Collection} other {Collections}}",
+      "shelf": "{count, plural, one {Shelf} other {Shelves}}",
+      "file": "{count, plural, one {File} other {Files}}"
+    },
+    "Duration": {
+      "lessThanAMinute": "< 1 min",
+      "minutes": "{minutes} min",
+      "hours": "{hours} h",
+      "hoursAndMinutes": "{hours} h {minutes} min",
+      "approximate": "~{duration}",
+      "compactHours": "{hours}h",
+      "compactMinutes": "{minutes}m",
+      "compactHoursAndMinutes": "{hours}h {minutes}m"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "add": "Add",
+      "create": "Create",
+      "back": "Back",
+      "home": "Home",
+      "scan": "Scan",
+      "upload": "Upload",
+      "merge": "Merge",
+      "import": "Import",
+      "replace": "Replace",
+      "done": "Done",
+      "discard": "Discard",
+      "reset": "Reset",
+      "remove": "Remove",
+      "search": "Search",
+      "select": "Select",
+      "deselect": "Deselect",
+      "confirm": "Confirm",
+      "selectFolder": "Select folder",
+      "download": "Download",
+      "resetToDefaults": "Reset to defaults",
+      "none": "None",
+      "showMore": "Show more",
+      "showLess": "Show less"
+    },
+    "states": {
+      "saving": "Saving...",
+      "deleting": "Deleting...",
+      "creating": "Creating...",
+      "loading": "Loading...",
+      "processing": "Processing"
+    },
+    "fields": {
+      "label": {
+        "title": "Title",
+        "authors": "Authors",
+        "createdAt": "Date Added",
+        "updatedAt": "Last Updated",
+        "publicationDate": "Publication Date",
+        "userRating": "My Rating",
+        "pageCount": "Page Count",
+        "duration": "Duration",
+        "fileSize": "File Size",
+        "language": "Language",
+        "alignmentScore": "Alignment Score",
+        "alignmentGrade": "Alignment Grade",
+        "alignmentMissingSentences": "Missing Sentences",
+        "alignmentMutedChapters": "Muted Chapters",
+        "alignmentMissingChapters": "Missing Chapters",
+        "alignmentUnalignedFiles": "Unaligned Audio Files",
+        "alignedAt": "Date Aligned",
+        "alignedWith": "Transcription engine",
+        "alignedByStorytellerVersion": "Aligner version",
+        "lastRead": "Last Read",
+        "readingPosition": "Reading Progress",
+        "seriesPosition": "Series Position",
+        "subtitle": "Subtitle",
+        "description": "Description",
+        "status": "Status",
+        "tags": "Tags",
+        "collections": "Collections",
+        "series": "Series",
+        "creators": "Other Creators",
+        "identifiers": "Identifiers",
+        "format": "Format",
+        "review": "My Review",
+        "search": "Search (any field)",
+        "narrators": "Narrators",
+        "translators": "Translators",
+        "alignment": "Alignment"
+      },
+      "options": {
+        "format": {
+          "ebook": "Has ebook",
+          "audiobook": "Has audiobook",
+          "readaloud": "Has readaloud",
+          "ebook-only": "Ebook only",
+          "audiobook-only": "Audiobook only",
+          "readaloud-only": "Readaloud only",
+          "missing-readaloud": "Missing readaloud",
+          "missing-files": "Missing files",
+          "no-media": "No media"
+        },
+        "alignmentGrade": {
+          "A+": "A+",
+          "A": "A",
+          "A-": "A-",
+          "B": "B",
+          "B-": "B-",
+          "C": "C",
+          "D": "D",
+          "F": "F"
+        }
+      },
+      "short": {
+        "title": "Title",
+        "authors": "Authors",
+        "createdAt": "Added",
+        "updatedAt": "Updated",
+        "publicationDate": "Year",
+        "userRating": "Rating",
+        "pageCount": "Pages",
+        "duration": "Dur.",
+        "fileSize": "Size",
+        "language": "Lang.",
+        "alignmentScore": "Score",
+        "alignmentGrade": "Grade",
+        "alignmentMissingSentences": "Missing",
+        "alignmentMutedChapters": "Muted",
+        "alignmentMissingChapters": "Missing Ch.",
+        "alignmentUnalignedFiles": "Unaligned",
+        "alignedAt": "Aligned",
+        "lastRead": "Read",
+        "readingPosition": "Progress",
+        "seriesPosition": "Pos.",
+        "narrators": "Narrators",
+        "translators": "Translators",
+        "creators": "Creators",
+        "alignedWith": "Engine",
+        "alignedByStorytellerVersion": "Version"
+      }
+    },
+    "empty": {
+      "noItemsFound": "No items found",
+      "noResults": "No results",
+      "noCollections": "No collections",
+      "noSeries": "No series",
+      "noTags": "No tags"
+    },
+    "importMode": {
+      "reference": "Reference in place",
+      "copy": "Copy to library",
+      "move": "Move to library",
+      "hardlink": "Hard link"
+    },
+    "metadataBehavior": {
+      "merge": "Merge with existing",
+      "keep": "Keep existing",
+      "overwrite": "Overwrite from new file"
+    },
+    "selectedCount": "{count, number} <em>selected</em>",
+    "outOf": "{count, number} of {total, number}",
+    "units": {
+      "pages": "{count, number} pages",
+      "pagesShort": "{count, number} pp."
+    }
+  },
+  "Labels": {
+    "bookDetails": "Book Details",
+    "narrators": "Narrators",
+    "otherContributors": "Other Contributors",
+    "downloads": "Downloads",
+    "fileInformation": "File Information",
+    "folder": "Folder",
+    "selected": {
+      "withInput": "Selected {input}",
+      "plain": "Selected"
+    },
+    "importMode": {
+      "modeDefault": "Default",
+      "modeReference": "Reference in place",
+      "modeCopy": "Copy to library",
+      "modeMove": "Move to library",
+      "modeHardlink": "Hard link"
+    },
+    "metadata": {
+      "metadataFieldOverrides": "Metadata read behavior",
+      "metadataFieldOverridesDescription": "Controls how Storyteller handles metadata from book files during scans. The default (fill empty) is suitable for most users. If you also manage your books with other tools (e.g. Calibre, Audiobookshelf) and want those changes reflected in Storyteller, consider using always override.",
+      "fieldTitle": "Title",
+      "fieldSubtitle": "Subtitle",
+      "fieldDescription": "Description",
+      "fieldLanguage": "Language",
+      "fieldPublicationDate": "Publication date",
+      "fieldCover": "Cover",
+      "fieldAuthors": "Authors",
+      "fieldNarrators": "Narrators",
+      "fieldCreators": "Other creators",
+      "fieldSeries": "Series",
+      "fieldTags": "Tags",
+      "modeDefault": "Default",
+      "modeSkip": "Skip",
+      "modeMerge": "Merge",
+      "modeAlways": "Always override",
+      "modeCustom": "Custom",
+      "showAdvancedOverrides": "Show per-field settings",
+      "showSimpleOverrides": "Use a single setting for all fields",
+      "fieldIdentifiers": "Identifiers"
+    },
+    "create": {
+      "withInput": "Create {input}"
+    },
+    "delete": {
+      "withInput": "Delete {input}"
+    },
+    "update": {
+      "withInput": "Update {input}",
+      "plain": "Update"
+    },
+    "edit": {
+      "withInput": "Edit {input}"
+    },
+    "add": {
+      "withInput": "Add {input}"
+    },
+    "dateUpdated": "Date updated",
+    "missing": "Missing",
+    "epub2Strategy": {
+      "strategyDefault": "Use default",
+      "strategyBackupAndConvert": "Backup & convert",
+      "strategyReplace": "Replace in place",
+      "strategySkip": "Skip"
+    },
+    "commonRoles": "Common roles",
+    "allRoles": "All roles"
+  },
+  "UploadDialog": {
+    "metadataBehavior": "Metadata behavior",
+    "failedFiles": "{count, number} file(s) failed to upload, process the rest anyway",
+    "uploadFormat": "Upload {format}",
+    "uploadReplacementFormat": "Upload replacement {format}",
+    "audioDescription": "Upload audio files from your device.",
+    "audioReplaceDescription": "Upload audio files from your device. Existing tracks will be replaced.",
+    "ebookDescription": "Upload a .epub file to {action} the {format}.",
+    "add": "add",
+    "replace": "replace",
+    "audioHint": "Audio files (mp3, m4a, m4b…)",
+    "ebookHint": ".epub file",
+    "uploadBookTitle": "Upload book",
+    "uploadBookDescription": "Upload an EPUB file or audio files to create a new book.",
+    "uploadBookHint": "EPUB, M4B, MP3, or other audio files",
+    "zoneEbook": "Drop an EPUB here or click to browse",
+    "zoneEbookHint": "One EPUB file",
+    "zoneAudio": "Drop audio files here or click to browse",
+    "zoneAudioHint": "M4B, MP3 or other audio files, or a zip archive"
+  },
+  "ImportFromServerDialog": {
+    "importMode": "Import mode",
+    "importModeHardlink": "Hard link to library",
+    "metadataBehavior": "Metadata behavior",
+    "selected": "Selected",
+    "importFormatTitle": "Import {format} from server",
+    "replaceFormatTitle": "Replace {format} from server",
+    "audioDescription": "Pick a directory of audio files, or a file to use its parent directory.",
+    "ebookDescription": "Pick a .epub file on the server.",
+    "useThisDirectory": "Use this directory",
+    "replaceWarning": "Replace will delete the current {format} files in this book's asset folder before importing the new source.",
+    "insideAssetDirWarning": "The selected path is inside this book's asset folder. The replace would delete the source before reading it. Pick a path outside the library.",
+    "errorPickFile": "Pick a file or directory",
+    "errorGeneric": "Failed. Check server logs.",
+    "importBooksTitle": "Import books from server",
+    "importBooksDescription": "Pick EPUB or audio files on the server to import as new books."
+  },
+  "AlignmentReport": {
+    "notAvailable": "No alignment report is available for this book.",
+    "title": "Alignment report",
+    "loading": "Loading report…",
+    "openFullPage": "Open full page",
+    "createdByJob": "Created {relativeTime}",
+    "heading": {
+      "excellentAlignment": "Excellent alignment",
+      "nearlyEverySentenceMatched": "nearly every sentence matched",
+      "almostEverythingLinedUp": "almost everything lined up",
+      "strongAlignment": "Strong Alignment",
+      "withOnlyAFewGaps": "with only a handful of gaps",
+      "goodAlignment": "Good alignment",
+      "withAFewRoughPatches": "with a few rough patches",
+      "roughAlignment": "Rough alignment",
+      "noticeableGapsRemain": "noticeable gaps remain",
+      "patchyAlignment": "Patchy alignment",
+      "largeStretchesDrifted": "large stretches drifted",
+      "alignmentFailed": "Alignment failed",
+      "muchOfTheBookDidNotMatch": "much of the book did not match",
+      "partAlignedScore": "{score}% of the ebook aligned to the narration across {chapters} chapters.",
+      "partNotAlignedScore": "Across {chapters} chapters, no sentence-level alignment was recorded.",
+      "partAllAudioPlaced": "All audio was placed.",
+      "partSomeAudioNotPlaced": "{count, number} audio file(s) could not be placed.",
+      "partFewGaps": "The few gaps are scattered single sentences, not whole sections.",
+      "partManyGaps": "{count, number} sentences went unmatched."
+    },
+    "marks": {
+      "score": "% Sentences aligned",
+      "alignmentGrade": "Grade",
+      "audioIncluded": "Audio included",
+      "excludedClips": "{count, number} excluded clips",
+      "mutedChapters": "{count, number} muted",
+      "sentencesAligned": "Sentences aligned",
+      "significantMisalignment": "{count, number} chapters with significant misalignment",
+      "unalignedChapters": "Unaligned chapters"
+    },
+    "overrides": {
+      "menu": "Chapter options",
+      "markOk": "Mark as OK",
+      "ok": "OK",
+      "excludeFromScore": "Exclude from score",
+      "excluded": "Excluded",
+      "markIntended": "Mark intended",
+      "intended": "Intended",
+      "excludeClip": "Exclude clip",
+      "clipExcluded": "Excluded"
+    },
+    "table": {
+      "flaggedOnly": "Flagged only",
+      "detail": {
+        "transcript": "Transcript"
+      },
+      "columns": {
+        "chapter": "Chapter",
+        "audio": "Audio",
+        "duration": "Dur.",
+        "sentences": "Sentences",
+        "notes": "Notes"
+      }
+    },
+    "lastGraded": "Last graded {date}",
+    "unalignedChapters": "Unaligned chapters",
+    "unalignedAudio": {
+      "title": "Unaligned audio",
+      "noTranscription": "no transcription on file",
+      "heard": "heard"
+    }
+  },
+  "Processing": {
+    "menuTitle": "Processing",
+    "startProcessing": "Start processing",
+    "continue": "Continue",
+    "resync": "Re-sync (keep all files)",
+    "fromSync": "From sync step (keep transcriptions)",
+    "fromTranscription": "From transcription step (keep audio)",
+    "fullRestart": "Full restart (delete all cache)",
+    "reprocess": "Reprocess",
+    "deleteCache": "Delete cache files",
+    "dialogTitle": "Process “{title}”",
+    "dialogTitleReprocess": "Reprocess “{title}”",
+    "dialogDescription": "These settings apply to this run only, unless you save them as defaults.",
+    "language": "Language",
+    "autoLanguage": "Auto (detect from book)",
+    "start": "Start processing",
+    "starting": "Starting…",
+    "saveAsDefaults": "Start and save as defaults",
+    "moreStartOptions": "More start options",
+    "toastStarted": "Started processing",
+    "toastSavedAndStarted": "Saved as defaults and started processing",
+    "toastFailed": "Failed to start processing",
+    "estimatedTime": "Estimated time: {duration}",
+    "noEstimateHistory": "Not enough history to estimate",
+    "stage": {
+      "SPLIT_TRACKS": "Pre-processing audio",
+      "TRANSCRIBE_CHAPTERS": "Transcribing tracks",
+      "SYNC_CHAPTERS": "Aligning chapters"
+    },
+    "viewReport": "View alignment report"
+  },
+  "Queue": {
+    "title": "Processing queue",
+    "subtitle": "{count, number} books currently processing or waiting.",
+    "empty": "Nothing is processing right now.",
+    "finishedTitle": "Finished jobs",
+    "searchPlaceholder": "Search by title",
+    "noFinished": "No finished jobs.",
+    "previous": "Previous",
+    "next": "Next",
+    "untitled": "Untitled",
+    "sort": {
+      "recent": "Recently finished",
+      "oldest": "Oldest first",
+      "title": "Title A–Z",
+      "status": "Status"
+    },
+    "status": {
+      "RUNNING": "running",
+      "QUEUED": "queued",
+      "PAUSED": "paused",
+      "ERROR": "error",
+      "DONE": "done",
+      "CANCELED": "canceled"
+    },
+    "detail": {
+      "waiting": "Waiting",
+      "paused": "Paused",
+      "finished": "Finished {time}",
+      "runTime": "Took {duration}",
+      "remaining": "{duration} left"
+    },
+    "actions": {
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "resume": "Resume job",
+      "pause": "Pause job",
+      "cancel": "Cancel job",
+      "alignmentReport": "Alignment report"
+    },
+    "toast": {
+      "processing": "Processing",
+      "paused": "Paused",
+      "queued": "Queued",
+      "manageQueue": "Manage queue",
+      "pause": "Pause",
+      "resume": "Resume",
+      "moreActions": "More actions",
+      "expand": "Expand",
+      "minimize": "Minimize",
+      "dismiss": "Dismiss",
+      "queuedSuffix": "+{count, number} queued",
+      "ready": "{title} is ready",
+      "open": "Open",
+      "notifyReadyTitle": "Book ready",
+      "notifyReadyBody": "{title} has finished aligning.",
+      "failed": "{title} failed to process",
+      "aBook": "A book"
     }
   }
 }

@@ -1,0 +1,2 @@
+ALTER TABLE sidebar_group
+ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0;

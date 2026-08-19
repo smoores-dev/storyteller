@@ -1,15 +1,10 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { IconEye, IconEyeOff } from "@tabler/icons-react"
 import { useSearchParams } from "next/navigation"
-import { useTranslations } from "next-intl"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod/v4"
-
-import { type Providers, type PublicProvider } from "@/auth/providers"
-import { FallbackIcon, ProviderIcons } from "@/components/icons/ProviderIcons"
 
 import { Button } from "@v3/_/components/ui/button"
 import { Card, CardContent } from "@v3/_/components/ui/card"
@@ -26,7 +21,14 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@v3/_/components/ui/input-group"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
+
+import { type Providers, type PublicProvider } from "@/auth/providers"
+import { FallbackIcon, ProviderIcons } from "@/components/icons/ProviderIcons"
+import * as icon from "@/icons"
+import { api } from "@/store/api"
+import { useAppDispatch } from "@/store/appState"
 
 const loginSchema = z.object({
   usernameOrEmail: z.string().min(1, "Username or email is required"),
@@ -36,12 +38,14 @@ const loginSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>
 
 export function LoginForm({
+  disablePasswordLogin,
   className,
   credentialsLoginAction,
   oauthLoginAction,
   providers,
   ...props
 }: React.ComponentProps<"div"> & {
+  disablePasswordLogin: boolean
   credentialsLoginAction: (
     data: LoginFormData,
     callbackUrl?: string,
@@ -49,7 +53,8 @@ export function LoginForm({
   oauthLoginAction: (providerId: string, callbackUrl?: string) => Promise<void>
   providers: PublicProvider[]
 }) {
-  const t = useTranslations("LoginPage")
+  const t = useTranslation("LoginPage")
+  const dispatch = useAppDispatch()
 
   const {
     register,
@@ -61,6 +66,11 @@ export function LoginForm({
   })
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
+
+  const [isHydrated, setIsHydrated] = useState(false)
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   async function onSubmit(data: LoginFormData) {
     try {
@@ -74,9 +84,10 @@ export function LoginForm({
         setIsLoading(false)
         return
       }
-    } catch {
+    } catch (e) {
       setIsLoading(false)
-      // error is handled via the error state from useLoginMutation
+      dispatch(api.util.invalidateTags(["CurrentUser"]))
+      throw e
     }
   }
 
@@ -87,75 +98,86 @@ export function LoginForm({
 
   return (
     <div
-      className={cn("flex flex-col items-center gap-6", className)}
+      className={cn("flex flex-col items-center gap-0", className)}
       {...props}
     >
-      <Card className="w-md overflow-hidden bg-transparent p-0 ring-0">
+      <img
+        src="/Storyteller_Logo.png"
+        alt="Storyteller Logo"
+        width={100}
+        height={100}
+      />
+      <Card className="w-md max-w-sm overflow-hidden bg-transparent p-0 ring-0">
         <CardContent className="grid p-0">
-          <form className="p-6 md:p-8" onSubmit={handleSubmit(onSubmit)}>
-            <FieldGroup>
-              <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="font-heading text-3xl font-bold">
-                  {t("welcomeBack")}
-                </h1>
-                <p className="text-muted-foreground text-balance">
-                  {t("loginToYourStorytellerAccount")}
-                </p>
-              </div>
-              {hasError && (
-                <p className="text-destructive text-center text-sm">
-                  {errors.root?.message !== "bad-creds"
-                    ? t("somethingWentWrongPleaseTryAgain")
-                    : t("invalidUsernameOrPassword")}
-                </p>
-              )}
-              <Field>
-                <FieldLabel htmlFor="usernameOrEmail">
-                  {t("usernameOrEmail")}
-                </FieldLabel>
-                <Input
-                  id="usernameOrEmail"
-                  type="text"
-                  placeholder={t("usernameOrEmail")}
-                  autoComplete="username"
-                  {...register("usernameOrEmail")}
-                />
-                {errors.usernameOrEmail && (
-                  <FieldError>{errors.usernameOrEmail.message}</FieldError>
+          {!disablePasswordLogin && (
+            <form className="p-2" onSubmit={handleSubmit(onSubmit)}>
+              <FieldGroup>
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <h1 className="font-heading text-3xl font-bold">
+                    {t("welcomeBack")}
+                  </h1>
+                  <p className="text-muted-foreground text-balance">
+                    {t("loginToYourStorytellerAccount")}
+                  </p>
+                </div>
+                {hasError && (
+                  <p className="text-destructive text-center text-sm">
+                    {errors.root?.message !== "bad-creds"
+                      ? t("somethingWentWrongPleaseTryAgain")
+                      : t("invalidUsernameOrPassword")}
+                  </p>
                 )}
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="password">{t("password")}</FieldLabel>
-                <InputGroup>
-                  <InputGroupInput
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    {...register("password")}
+                <Field>
+                  <FieldLabel htmlFor="usernameOrEmail">
+                    {t("usernameOrEmail")}
+                  </FieldLabel>
+                  <Input
+                    id="usernameOrEmail"
+                    type="text"
+                    placeholder={t("usernameOrEmail")}
+                    autoComplete="username"
+                    {...register("usernameOrEmail")}
                   />
-                  <InputGroupButton
-                    variant="ghost"
-                    onClick={() => {
-                      setShowPassword(!showPassword)
-                    }}
-                  >
-                    {showPassword ? <IconEyeOff /> : <IconEye />}
-                  </InputGroupButton>
-                </InputGroup>
-                {errors.password && (
-                  <FieldError>{errors.password.message}</FieldError>
+                  {errors.usernameOrEmail && (
+                    <FieldError>{errors.usernameOrEmail.message}</FieldError>
+                  )}
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="password">{t("password")}</FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      {...register("password")}
+                    />
+                    <InputGroupButton
+                      variant="ghost"
+                      onClick={() => {
+                        setShowPassword(!showPassword)
+                      }}
+                    >
+                      {showPassword ? <icon.EyeOff /> : <icon.Eye />}
+                    </InputGroupButton>
+                  </InputGroup>
+                  {errors.password && (
+                    <FieldError>{errors.password.message}</FieldError>
+                  )}
+                </Field>
+                <Field>
+                  <Button type="submit" disabled={isLoading || !isHydrated}>
+                    {isLoading ? t("loggingIn") : t("login")}
+                  </Button>
+                </Field>
+                {providers.length > 0 && (
+                  <>
+                    <FieldSeparator className="*:data-[slot=field-separator-content]:bg-transparent" />
+                    {t("continueWith")}
+                  </>
                 )}
-              </Field>
-              <Field>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? t("loggingIn") : t("login")}
-                </Button>
-              </Field>
-              <FieldSeparator className="*:data-[slot=field-separator-content]:bg-transparent">
-                {t("continueWith")}
-              </FieldSeparator>
-            </FieldGroup>
-          </form>
+              </FieldGroup>
+            </form>
+          )}
 
           <Field className="grid gap-4 px-8 pb-8">
             {providers.map((provider) => {

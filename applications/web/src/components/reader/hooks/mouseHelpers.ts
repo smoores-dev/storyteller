@@ -10,6 +10,13 @@ export const isMouseEvent = (e: Event): e is MouseEvent => {
     e.type === "mouseleave" ||
     e.type === "mouseenter" ||
     e.type === "mouseover" ||
+    e.type === "pointerdown" ||
+    e.type === "pointerup" ||
+    e.type === "pointermove" ||
+    e.type === "pointerleave" ||
+    e.type === "pointerenter" ||
+    e.type === "pointerover" ||
+    e.type === "pointerout" ||
     e.type === "mouseout"
   )
 }

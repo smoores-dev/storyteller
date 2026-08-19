@@ -1,6 +1,5 @@
 "use client"
 
-import { useTranslations } from "next-intl"
 import { useWatch } from "react-hook-form"
 
 import {
@@ -13,7 +12,7 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@v3/_/components/ui/field"
 import { Input } from "@v3/_/components/ui/input"
 import { Switch } from "@v3/_/components/ui/switch"
-import { TabsContent } from "@v3/_/components/ui/tabs"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import {
   LockTooltip,
@@ -28,7 +27,7 @@ export function UploadTab({
   maxUploadChunkSize: { overriden: boolean } | undefined
 }) {
   const { form, lockedSettings } = useSettingsForm()
-  const t = useTranslations("SettingsPage.tabs.upload.sections.upload")
+  const t = useTranslation("SettingsPage.tabs.upload.sections.upload")
   const maxUploadChunkSizeValue = useWatch({
     control: form.control,
     name: "maxUploadChunkSize",
@@ -37,7 +36,7 @@ export function UploadTab({
   const isMaxUploadChunkSizeLocked = lockedSettings.has("maxUploadChunkSize")
 
   return (
-    <TabsContent value="upload" className="space-y-6">
+    <div className="space-y-6">
       <SettingsSection tab="upload" section="upload">
         <Card>
           <CardHeader>
@@ -64,9 +63,13 @@ export function UploadTab({
                 checked={maxUploadChunkSizeValue !== null}
                 onCheckedChange={(checked) => {
                   if (checked) {
-                    form.setValue("maxUploadChunkSize", 100_000_000)
+                    form.setValue("maxUploadChunkSize", 100_000_000, {
+                      shouldDirty: true,
+                    })
                   } else {
-                    form.setValue("maxUploadChunkSize", null)
+                    form.setValue("maxUploadChunkSize", null, {
+                      shouldDirty: true,
+                    })
                   }
                 }}
               />
@@ -105,6 +108,6 @@ export function UploadTab({
           </CardContent>
         </Card>
       </SettingsSection>
-    </TabsContent>
+    </div>
   )
 }

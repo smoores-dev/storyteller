@@ -2,4 +2,4 @@
 
 yarn workspace @storyteller-platform/web db:dump
 
-git add schema.sql web/src/database/schema.ts
+git add applications/web/schema.sql applications/web/src/database/schema.ts

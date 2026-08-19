@@ -1,1 +1,1 @@
-export const apiHost = "http://localhost:8001"
+export const apiHost = `http://127.0.0.1:${process.env["PORT"] ?? "8001"}`

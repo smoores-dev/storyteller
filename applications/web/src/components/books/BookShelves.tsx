@@ -5,6 +5,7 @@ import { useMemo, useState } from "react"
 
 import { CollectionToolbar } from "@/components/collections/toolbar/CollectionToolbar"
 import { type BookWithRelations } from "@/database/books"
+import { STATUS_READING, STATUS_TO_READ } from "@/database/statusKinds"
 import { useListBooksQuery, useListStatusesQuery } from "@/store/api"
 import { type UUID } from "@/uuid"
 
@@ -51,9 +52,9 @@ export function BookShelves() {
   const { data: books = EMPTY_BOOKS, isLoading } = useListBooksQuery()
   const { data: statuses } = useListStatusesQuery()
   const toReadStatus =
-    statuses?.find((status) => status.name === "To read") ?? null
+    statuses?.find((status) => status.name === STATUS_TO_READ) ?? null
   const readingStatus =
-    statuses?.find((status) => status.name === "Reading") ?? null
+    statuses?.find((status) => status.name === STATUS_READING) ?? null
 
   const [selected, setSelected] = useState(() => new Set<UUID>())
   const [isEditing, setIsEditing] = useState(false)

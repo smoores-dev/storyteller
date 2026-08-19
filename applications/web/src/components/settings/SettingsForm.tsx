@@ -1177,6 +1177,8 @@ export function SettingsForm({
     opdsPageSize: settings.opdsPageSize,
     opdsFormat: settings.opdsFormat,
     scanCronExpression: settings.scanCronExpression ?? null,
+    backupCronExpression: settings.backupCronExpression ?? null,
+    backupRetentionCount: settings.backupRetentionCount ?? null,
     metadataFieldOverrides: settings.metadataFieldOverrides,
     epub2ImportStrategy: settings.epub2ImportStrategy,
     epub2BackupSuffix: settings.epub2BackupSuffix,

@@ -1,0 +1,26 @@
+{
+  "name": "@storyteller-platform/tauri",
+  "version": "0.0.0-alpha.22",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch-binaries": "tsx scripts/fetch-binaries.ts",
+    "assemble-runtime": "tsx scripts/assemble-runtime.ts",
+    "dev": "tauri dev",
+    "build": "yarn fetch-binaries && yarn assemble-runtime && tauri build",
+    "build:debug": "yarn fetch-binaries && yarn assemble-runtime && tauri build --debug",
+    "build:app-only": "tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@storyteller-platform/web": "workspace:*",
+    "@tauri-apps/cli": "^2.5.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.7.2"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
+    "@tauri-apps/plugin-os": "^2.3.2"
+  }
+}

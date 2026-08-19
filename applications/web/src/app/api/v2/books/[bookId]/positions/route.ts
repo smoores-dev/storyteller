@@ -31,6 +31,7 @@ export const POST = withHasPermission<Params>("bookRead")(async (
   const body = (await request.json()) as Position
   const { bookId } = await context.params
   let bookUuid: UUID
+
   try {
     bookUuid = await getBookUuid(bookId)
   } catch {
@@ -62,6 +63,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   context,
 ) => {
   const { bookId } = await context.params
+
   const bookUuid = await getBookUuid(bookId)
   const user = request.auth.user
   const position = await getPosition(user.id, bookUuid)

@@ -24,6 +24,7 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
@@ -32,6 +33,7 @@
   "[nix]": {
     "editor.defaultFormatter": "jnoortheen.nix-ide"
   },
+  "tailwindCSS.experimental.configFile": "../applications/web/src/app/(v3)/v3/globals.css",
   "eslint.workingDirectories": [
     "audiobook",
     "config/eslint",

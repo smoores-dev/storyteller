@@ -27,8 +27,39 @@ export interface Account {
   userId: string
 }
 
+export interface AlignmentReport {
+  bookUuid: import("@/uuid").UUID | null
+  chapters: number | null
+  createdAt: Generated<string>
+  failedChapters: number | null
+  grade: import("@/shelves").AlignmentGrade
+  jobUuid: import("@/uuid").UUID | null
+  missingSentences: number | null
+  mutedChapters: number | null
+  overrides: string | null
+  report: ColumnType<
+    import("@storyteller-platform/align").Report | null,
+    string | null,
+    string | null
+  >
+  score: number | null
+  unalignedAudio: number | null
+  uuid: Generated<import("@/uuid").UUID>
+}
+
 export interface Audiobook {
   bookUuid: import("@/uuid").UUID
+  coverBlurhash: string | null
+  coverColors:
+    | import("kysely").ColumnType<
+        import("@/database/coverColors").StoredCoverColor[],
+        string,
+        string
+      >
+    | null
+  coverExtractedFrom: string | null
+  coverImageUuid: import("@/uuid").UUID | null
+  coverOrigin: Generated<import("@/database/images").CoverOrigin>
   createdAt: Generated<string>
   duration: number | null
   filepath: string
@@ -45,6 +76,13 @@ export interface Book {
   alignedByStorytellerVersion: string | null
   alignedWith: string | null
   assetDir: Generated<string>
+  coverColorsOverride:
+    | import("kysely").ColumnType<
+        import("@/database/coverColors").StoredCoverColor[],
+        string,
+        string
+      >
+    | null
   createdAt: Generated<string>
   description: string | null
   duration: number | null
@@ -115,8 +153,10 @@ export interface Changelog {
 }
 
 export interface Collection {
+  color: string | null
   createdAt: Generated<string>
   description: string | null
+  icon: string | null
   name: string
   public: Generated<boolean>
   updatedAt: Generated<string>
@@ -155,6 +195,17 @@ export interface DeviceAuthorization {
 
 export interface Ebook {
   bookUuid: import("@/uuid").UUID
+  coverBlurhash: string | null
+  coverColors:
+    | import("kysely").ColumnType<
+        import("@/database/coverColors").StoredCoverColor[],
+        string,
+        string
+      >
+    | null
+  coverExtractedFrom: string | null
+  coverImageUuid: import("@/uuid").UUID | null
+  coverOrigin: Generated<import("@/database/images").CoverOrigin>
   createdAt: Generated<string>
   filepath: string
   fileSize: number | null
@@ -191,6 +242,27 @@ export interface ExternalSource {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface HomeSection {
+  config: string | null
+  createdAt: Generated<string>
+  enabled: Generated<number>
+  kind: Generated<
+    | "hero"
+    | "stats"
+    | "currentlyReading"
+    | "nextUpInSeries"
+    | "recentlyAdded"
+    | "custom"
+    | "getStarted"
+    | "addSection"
+  >
+  position: number
+  shelfUuid: import("@/uuid").UUID | null
+  updatedAt: Generated<string>
+  userId: import("@/uuid").UUID
+  uuid: Generated<import("@/uuid").UUID>
+}
+
 export interface Identifier {
   audiobookUuid: import("@/uuid").UUID | null
   bookUuid: import("@/uuid").UUID
@@ -213,6 +285,26 @@ export interface IdentifierType {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface Image {
+  blurhash: string | null
+  byteSize: number
+  colors:
+    | import("kysely").ColumnType<
+        import("@/database/coverColors").StoredCoverColor[],
+        string,
+        string
+      >
+    | null
+  createdAt: Generated<string>
+  height: number
+  mimeType: string
+  sha256: string
+  sourceName: string | null
+  updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
+  width: number
+}
+
 export interface ImportRule {
   bookUuid: import("@/uuid").UUID | null
   createdAt: Generated<string>
@@ -232,6 +324,28 @@ export interface ImportRule {
 export interface ImportRuleToCollection {
   collectionUuid: import("@/uuid").UUID
   importRuleUuid: import("@/uuid").UUID
+}
+
+export interface Job {
+  bookUuid: import("@/uuid").UUID | null
+  config: ColumnType<
+    import("@/work/runConfig").RunConfig,
+    string,
+    string
+  > | null
+  createdAt: Generated<string>
+  error: string | null
+  finishedAt: string | null
+  position: Generated<number>
+  progress: Generated<number>
+  restart: import("@/work/distributor").RestartMode | null
+  stage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS" | null
+  startedAt: string | null
+  stats: ColumnType<import("@/work/jobStats").JobStats, string, string> | null
+  status: Generated<import("@/database/jobs").JobStatus>
+  type: import("@/database/jobs").JobType
+  updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface Migration {
@@ -258,6 +372,17 @@ export interface Position {
 
 export interface Readaloud {
   bookUuid: import("@/uuid").UUID
+  coverBlurhash: string | null
+  coverColors:
+    | import("kysely").ColumnType<
+        import("@/database/coverColors").StoredCoverColor[],
+        string,
+        string
+      >
+    | null
+  coverExtractedFrom: string | null
+  coverImageUuid: import("@/uuid").UUID | null
+  coverOrigin: Generated<import("@/database/images").CoverOrigin>
   createdAt: Generated<string>
   currentStage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS"
   duration: number | null
@@ -286,6 +411,15 @@ export interface Series {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface ServerIdentity {
+  createdAt: Generated<string>
+  id: Generated<number | null>
+  privateKey: string
+  publicKey: string
+  serverId: import("@/uuid").UUID
+  updatedAt: Generated<string>
+}
+
 export interface Session {
   createdAt: Generated<string>
   expires: Date
@@ -304,16 +438,81 @@ export interface Settings {
   value: string
 }
 
+export interface Shelf {
+  color: string | null
+  createdAt: Generated<string>
+  description: string | null
+  filter: import("kysely").ColumnType<
+    import("@/shelves").ShelfFilter | null,
+    string | null,
+    string | null
+  >
+  icon: string | null
+  limitCount: number | null
+  name: string
+  orderBy: Generated<import("@/shelves").ShelfOrderBy>
+  orderDirection: Generated<"asc" | "desc">
+  updatedAt: Generated<string>
+  userId: import("@/uuid").UUID
+  uuid: Generated<import("@/uuid").UUID>
+}
+
+export interface ShelfBook {
+  bookUuid: import("@/uuid").UUID
+  createdAt: Generated<string>
+  position: number | null
+  shelfUuid: import("@/uuid").UUID
+  updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
+}
+
+export interface ShelfFilterReference {
+  createdAt: Generated<string>
+  entityType: import("@/fields").FilterEntityType
+  entityUuid: import("@/uuid").UUID
+  shelfUuid: import("@/uuid").UUID
+  updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
+}
+
+export interface SidebarGroup {
+  createdAt: Generated<string>
+  hidden: Generated<number>
+  kind: string | null
+  name: string
+  position: number
+  updatedAt: Generated<string>
+  userId: string
+  uuid: Generated<string>
+}
+
+export interface SidebarItem {
+  builtinKey: string | null
+  collectionUuid: string | null
+  createdAt: Generated<string>
+  groupUuid: string | null
+  hidden: Generated<number>
+  kind: string
+  position: number
+  shelfUuid: string | null
+  updatedAt: Generated<string>
+  userId: string
+  uuid: Generated<string>
+}
+
 export interface Status {
   createdAt: Generated<string>
   isDefault: Generated<boolean>
+  label: string | null
   name: string
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
 }
 
 export interface Tag {
+  color: string | null
   createdAt: Generated<string>
+  icon: string | null
   name: string
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
@@ -342,6 +541,13 @@ export interface User {
 export interface UserBookRating {
   bookUuid: import("@/uuid").UUID
   createdAt: Generated<string>
+  dimensions:
+    | import("kysely").ColumnType<
+        import("@/database/ratingDimensions").RatingDimensionScores,
+        string,
+        string
+      >
+    | null
   rating: number | null
   review: string | null
   updatedAt: Generated<string>
@@ -392,6 +598,7 @@ export interface VerificationToken {
 
 export interface DB {
   account: Account
+  alignmentReport: AlignmentReport
   audiobook: Audiobook
   book: Book
   bookToCollection: BookToCollection
@@ -407,16 +614,25 @@ export interface DB {
   ebook: Ebook
   externalData: ExternalData
   externalSource: ExternalSource
+  homeSection: HomeSection
   identifier: Identifier
   identifierType: IdentifierType
+  image: Image
   importRule: ImportRule
   importRuleToCollection: ImportRuleToCollection
+  job: Job
   migration: Migration
   position: Position
   readaloud: Readaloud
   series: Series
+  serverIdentity: ServerIdentity
   session: Session
   settings: Settings
+  shelf: Shelf
+  shelfBook: ShelfBook
+  shelfFilterReference: ShelfFilterReference
+  sidebarGroup: SidebarGroup
+  sidebarItem: SidebarItem
   status: Status
   tag: Tag
   tokenRevokation: TokenRevokation

@@ -1,12 +1,14 @@
-import type { Insertable, Selectable, Updateable } from "kysely"
+import { type Insertable, type Selectable, type Updateable, sql } from "kysely"
 
 import { BookEvents } from "@/events"
 import type { UUID } from "@/uuid"
 import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 
 import { type NewBookToSeries, getBooks } from "./books"
+import { type ListOptions } from "./collections"
 import { db } from "./connection"
 import type { BookToSeries, DB } from "./schema"
+import { cleanShelfFiltersForDeletedEntity } from "./shelfFilter"
 
 export type Series = Selectable<DB["series"]>
 export type NewSeries = Insertable<DB["series"]>
@@ -56,8 +58,16 @@ export function getSeriesByUuid(seriesUuid: UUID, userId?: UUID) {
     .executeTakeFirst()
 }
 
-export async function getSeries(userId?: UUID) {
-  return await seriesQuery(userId).execute()
+export async function getSeries(
+  userId?: UUID,
+  { order = "asc", limit }: ListOptions = {},
+) {
+  const query = seriesQuery(userId).orderBy(
+    sql`series.name collate nocase`,
+    order,
+  )
+
+  return await (limit !== undefined ? query.limit(limit) : query).execute()
 }
 
 export async function addBooksToSeries(
@@ -65,7 +75,15 @@ export async function addBooksToSeries(
   relations: NewSeriesRelation[],
 ) {
   await db.transaction().execute(async (tr) => {
-    let existing = await tr
+    let existing = series.uuid
+      ? await tr
+          .selectFrom("series")
+          .select(["uuid"])
+          .where("uuid", "=", series.uuid)
+          .executeTakeFirst()
+      : undefined
+
+    existing ??= await tr
       .selectFrom("series")
       .select(["uuid"])
       .where("name", "=", series.name)
@@ -97,18 +115,23 @@ export async function addBooksToSeries(
         .execute()
     }
 
-    await tr
-      .insertInto("bookToSeries")
-      .values(
-        relations.map((relation) => ({
-          bookUuid: relation.bookUuid,
-          seriesUuid: existing.uuid,
-          position: relation.position,
-          featured: relation.featured,
-        })),
-      )
-      .execute()
+    if (relations.length) {
+      await tr
+        .insertInto("bookToSeries")
+        .values(
+          relations.map((relation) => ({
+            bookUuid: relation.bookUuid,
+            seriesUuid: existing.uuid,
+            position: relation.position,
+            featured: relation.featured,
+          })),
+        )
+        .onConflict((oc) => oc.columns(["bookUuid", "seriesUuid"]).doNothing())
+        .execute()
+    }
   })
+
+  if (!relations.length) return
 
   const books = await getBooks(relations.map((relation) => relation.bookUuid))
 
@@ -189,18 +212,19 @@ export async function updateSeries(
             seriesUuid: uuid,
           })),
         )
+        .onConflict((oc) => oc.columns(["bookUuid", "seriesUuid"]).doNothing())
         .returning(["bookToSeries.bookUuid"])
         .execute()
     }
 
-    // check if series is now empty
-    const isEmpty = await tr
+    const hasBooks = await tr
       .selectFrom("bookToSeries")
       .select(["bookToSeries.bookUuid"])
+      .limit(1)
       .where("seriesUuid", "=", uuid)
       .executeTakeFirst()
 
-    if (isEmpty) {
+    if (!hasBooks) {
       await tr.deleteFrom("series").where("uuid", "=", uuid).execute()
     }
 
@@ -247,6 +271,8 @@ export async function deleteSeries(uuid: UUID) {
     return bookUuids
   })
 
+  await cleanShelfFiltersForDeletedEntity("series", uuid)
+
   const books = await getBooks(bookUuids.map((book) => book.bookUuid))
 
   books.forEach((book) => {
@@ -259,4 +285,76 @@ export async function deleteSeries(uuid: UUID) {
     })
     void queueWritesToFiles(book.uuid)
   })
+}
+
+export async function mergeSeries(targetUuid: UUID, sourceUuids: UUID[]) {
+  const affectedBookUuids = await db.transaction().execute(async (tr) => {
+    const existingLinks = await tr
+      .selectFrom("bookToSeries")
+      .select(["bookUuid"])
+      .where("seriesUuid", "=", targetUuid)
+      .execute()
+
+    const existingSet = new Set(existingLinks.map((r) => r.bookUuid))
+
+    const sourceLinks = await tr
+      .selectFrom("bookToSeries")
+      .select(["bookUuid", "position", "featured"])
+      .where("seriesUuid", "in", sourceUuids)
+      .execute()
+
+    const toInsert = sourceLinks.filter((r) => !existingSet.has(r.bookUuid))
+
+    const seen = new Set<string>()
+    const uniqueToInsert = toInsert.filter((r) => {
+      if (seen.has(r.bookUuid)) return false
+      seen.add(r.bookUuid)
+      return true
+    })
+
+    if (uniqueToInsert.length > 0) {
+      await tr
+        .insertInto("bookToSeries")
+        .values(
+          uniqueToInsert.map((r) => ({
+            bookUuid: r.bookUuid,
+            seriesUuid: targetUuid,
+            position: r.position,
+            featured: r.featured,
+          })),
+        )
+        .onConflict((oc) => oc.columns(["bookUuid", "seriesUuid"]).doNothing())
+        .execute()
+    }
+
+    await tr
+      .deleteFrom("bookToSeries")
+      .where("seriesUuid", "in", sourceUuids)
+      .execute()
+
+    await tr.deleteFrom("series").where("uuid", "in", sourceUuids).execute()
+
+    return [
+      ...new Set([
+        ...existingLinks.map((r) => r.bookUuid),
+        ...sourceLinks.map((r) => r.bookUuid),
+      ]),
+    ]
+  })
+
+  for (const sourceUuid of sourceUuids) {
+    await cleanShelfFiltersForDeletedEntity("series", sourceUuid)
+  }
+
+  if (affectedBookUuids.length > 0) {
+    const books = await getBooks(affectedBookUuids)
+
+    books.forEach((book) => {
+      BookEvents.emit("message", {
+        type: "bookUpdated",
+        bookUuid: book.uuid,
+        payload: { series: book.series },
+      })
+    })
+  }
 }

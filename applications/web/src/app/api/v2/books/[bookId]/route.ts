@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
-import { type CoverData, persistCover } from "@/assets/covers"
+import { type JsColor } from "@storyteller-platform/okmain"
+
 import { deleteAssets } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -13,12 +14,16 @@ import {
   getBookUuid,
   updateBook,
 } from "@/database/books"
+import { toIsoDateString } from "@/dates"
+import { ingestImage } from "@/images"
+import {
+  attachCover,
+  audioCoverTargets,
+  textCoverTargets,
+} from "@/images/covers"
+import { sweepUnreferencedImages } from "@/images/gc"
 import { type UUID } from "@/uuid"
 import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
-
-function isIso8601(dateString: string) {
-  return dateString === new Date(dateString).toISOString()
-}
 
 // This is just a convenience to avoid type casting at the call site
 /* eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters */
@@ -65,8 +70,15 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const duration = getField<number | null>(formData, "duration") ?? null
 
   // null means delete the rating
-  const rating = getField<UserBookRatingRelation | null>(formData, "rating")
-  if (rating && rating.rating == null && rating.review == null) {
+  const userBookRating = getField<UserBookRatingRelation | null>(
+    formData,
+    "userBookRating",
+  )
+  if (
+    userBookRating &&
+    userBookRating.rating == null &&
+    userBookRating.review == null
+  ) {
     return NextResponse.json(
       {
         message:
@@ -78,10 +90,10 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
 
   // zod where are you i need you
   if (
-    rating &&
-    rating.rating != null &&
-    !isNaN(rating.rating) &&
-    (rating.rating < 0 || rating.rating > 5)
+    userBookRating &&
+    userBookRating.rating != null &&
+    !isNaN(userBookRating.rating) &&
+    (userBookRating.rating < 0 || userBookRating.rating > 5)
   ) {
     return NextResponse.json(
       {
@@ -91,17 +103,26 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     )
   }
 
-  const publicationDate =
+  const coverColorsOverride = getField<JsColor[] | null>(
+    formData,
+    "coverColorsOverride",
+  )
+
+  const publicationDateInput =
     getField<string | null>(formData, "publicationDate") ?? null
 
+  const publicationDate = publicationDateInput
+    ? toIsoDateString(publicationDateInput)
+    : null
+
   if (
-    publicationDate &&
+    publicationDateInput &&
     fields.has("publicationDate") &&
-    !isIso8601(publicationDate)
+    !publicationDate
   ) {
     return NextResponse.json(
       {
-        message: "Invalid publicationDate",
+        message: `"${publicationDateInput}" is not a valid publication date. Use a year, YYYY-MM-DD, or a full ISO timestamp.`,
       },
       { status: 405 },
     )
@@ -181,6 +202,12 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
       ...(fields.has("publicationDate") && { publicationDate }),
       ...(fields.has("pageCount") && { pageCount }),
       ...(fields.has("duration") && { duration }),
+      ...(fields.has("coverColorsOverride") && {
+        coverColorsOverride:
+          coverColorsOverride && coverColorsOverride.length > 0
+            ? JSON.stringify(coverColorsOverride)
+            : null,
+      }),
     },
     {
       ...(fields.has("creators") && { creators }),
@@ -191,9 +218,9 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         status: { statusUuid: status!, userId: request.auth.user.id },
       }),
-      ...(fields.has("rating") && {
-        rating: rating
-          ? { ...rating, userId: request.auth.user.id }
+      ...(fields.has("userBookRating") && {
+        userBookRating: userBookRating
+          ? { ...userBookRating, userId: request.auth.user.id }
           : { userId: request.auth.user.id },
       }),
       ...(fields.has("identifiers") && { identifiers }),
@@ -205,15 +232,17 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const audioCover = formData.get("audioCover")?.valueOf() as File | undefined
 
   if (textCover) {
-    await persistCover(updated, "ebook", await coverDataFromFile(textCover))
+    const image = await ingestCoverFile(textCover)
+    if (image) {
+      await attachCover(updated.uuid, textCoverTargets(updated), image, "user")
+    }
   }
 
   if (audioCover) {
-    await persistCover(
-      updated,
-      "audiobook",
-      await coverDataFromFile(audioCover),
-    )
+    const image = await ingestCoverFile(audioCover)
+    if (image) {
+      await attachCover(updated.uuid, audioCoverTargets(updated), image, "user")
+    }
   }
 
   void queueWritesToFiles(book.uuid, textCover, audioCover)
@@ -221,12 +250,10 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   return NextResponse.json(updated)
 })
 
-async function coverDataFromFile(file: File): Promise<CoverData> {
-  return {
-    filename: file.name,
-    mimeType: file.type || "image/jpeg",
-    data: await file.bytes(),
-  }
+async function ingestCoverFile(file: File) {
+  return await ingestImage(Buffer.from(await file.arrayBuffer()), {
+    sourceName: file.name,
+  })
 }
 
 /**
@@ -273,6 +300,7 @@ export const DELETE = withHasPermission<Params>("bookDelete")(async (
 
   await deleteBook(book.uuid, { preventReImport })
   await deleteAssets(book)
+  await sweepUnreferencedImages()
 
   return new Response(null, { status: 204 })
 })

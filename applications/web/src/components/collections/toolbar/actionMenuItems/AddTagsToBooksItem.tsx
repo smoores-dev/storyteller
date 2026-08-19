@@ -41,7 +41,7 @@ export function AddTagsToBooksItem({ selected }: Props) {
           className="flex flex-col gap-4"
           onSubmit={form.onSubmit(async (values) => {
             await addTagsToBooks({
-              tags: values.tags,
+              tags: values.tags.map((name) => ({ name })),
               books: Array.from(selected),
             })
             await refetch()

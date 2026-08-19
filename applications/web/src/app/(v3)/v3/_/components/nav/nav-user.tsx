@@ -1,15 +1,6 @@
 "use client"
 
-import {
-  IconDotsVertical,
-  IconLogout,
-  IconMoon,
-  IconSun,
-  IconUser,
-} from "@tabler/icons-react"
 import Link from "next/link"
-import { useTranslations } from "next-intl"
-import { useTheme } from "next-themes"
 
 import { LocaleChanger } from "@v3/_/components/locale-changer"
 import {
@@ -19,9 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
 import {
@@ -30,6 +18,12 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@v3/_/components/ui/sidebar"
+import { useVersionBasePath } from "@v3/_/components/version-context"
+import { useTranslation } from "@v3/_/hooks/use-translation"
+
+import * as icon from "@/icons"
+import { api } from "@/store/api"
+import { useAppDispatch } from "@/store/appState"
 
 export function NavUser({
   user,
@@ -41,12 +35,12 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-  const { setTheme, theme } = useTheme()
+  const basePath = useVersionBasePath()
 
   const displayName = user.name ?? user.username ?? "User"
-  const displayEmail = user.email ?? user.username ?? ""
 
-  const t = useTranslations("AppSidebar")
+  const t = useTranslation("AppSidebar")
+  const dispatch = useAppDispatch()
 
   return (
     <SidebarMenu>
@@ -55,88 +49,85 @@ export function NavUser({
           <DropdownMenuTrigger
             render={
               <SidebarMenuButton
-                size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                size="default"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!"
+                style={{ scrollbarWidth: "none" }}
+                aria-label={t("account")}
               >
                 <div className="grid w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden data-[state=open]:w-auto">
                   <span className="truncate font-medium">{displayName}</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {displayEmail}
-                  </span>
+                  {user.name && (
+                    <span className="text-sidebar-foreground/60 truncate font-sans text-xs">
+                      {user.username}
+                    </span>
+                  )}
                 </div>
-                <IconDotsVertical className="ml-auto size-4 group-data-[collapsible=icon]:ml-2" />
+                <icon.DotsVertical className="size-4 data-[collapsible=icon]:-ml-4!" />
               </SidebarMenuButton>
             }
           />
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="z-0 min-w-56 rounded-lg"
             side={isMobile ? "bottom" : "right"}
             align="end"
-            sideOffset={4}
+            sideOffset={12}
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{displayName}</span>
-                    <span className="text-muted-foreground truncate text-xs">
-                      {displayEmail}
-                    </span>
+
+                    {user.username && (
+                      <span className="text-muted-foreground truncate text-xs">
+                        {user.username}
+                      </span>
+                    )}
                   </div>
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUser />
-                {t("account")}
-              </DropdownMenuItem>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  {theme === "dark" ? (
-                    <IconMoon className="size-4" />
-                  ) : (
-                    <IconSun className="size-4" />
-                  )}
-                  {t("theme")}
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setTheme("light")
-                    }}
+              <DropdownMenuItem
+                nativeButton={false}
+                render={
+                  <Link
+                    href={`${basePath}/preferences?tab=general`}
+                    className="flex items-center gap-2"
                   >
-                    <IconSun className="size-4" />
-                    {t("light")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setTheme("dark")
-                    }}
+                    <icon.Settings2 />
+                    {t("account")}
+                  </Link>
+                }
+              />
+
+              <DropdownMenuItem
+                nativeButton={false}
+                render={
+                  <Link
+                    href="https://storyteller-platform.gitlab.io/storyteller/"
+                    className="flex items-center gap-2"
                   >
-                    <IconMoon className="size-4" />
-                    {t("dark")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setTheme("system")
-                    }}
-                  >
-                    {t("system")}
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+                    <icon.HelpCircle />
+                    {t("documentation")}
+                  </Link>
+                }
+              />
               <LocaleChanger nested />
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               render={
                 <Link
-                  href={`/logout?redirectTo=${encodeURIComponent("/v3/login")}`}
+                  href={`/logout?redirectTo=${encodeURIComponent(`${basePath}/login`)}`}
+                  prefetch={false}
                   className="flex items-center gap-2"
+                  onClick={() => {
+                    dispatch(api.util.invalidateTags(["CurrentUser"]))
+                  }}
                 >
-                  <IconLogout />
+                  <icon.Logout />
                   {t("logout")}
                 </Link>
               }

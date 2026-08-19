@@ -1,7 +1,7 @@
 "use server"
 
 import { pathBelongsTo } from "@/assets/library/scanner/folder"
-import { hasPermission, nextAuth } from "@/auth/auth"
+import { getCurrentUser } from "@/auth/auth"
 import { ASSETS_DIR } from "@/directories"
 
 /**
@@ -11,8 +11,8 @@ import { ASSETS_DIR } from "@/directories"
 export async function getReferencePathsAction(
   paths: string[],
 ): Promise<string[]> {
-  const session = await nextAuth.auth()
-  if (!hasPermission("bookDelete", session?.user)) {
+  const user = await getCurrentUser()
+  if (!user?.permissions.bookDelete) {
     throw new Error("Forbidden")
   }
   return paths.filter((p) => !pathBelongsTo(ASSETS_DIR, p))

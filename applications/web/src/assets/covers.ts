@@ -17,7 +17,6 @@ import {
 import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
 import { type Book, touchBook } from "@/database/books"
 
-import { deleteCachedCoverImagesByKind } from "./fs"
 import { getAudioCoverItem } from "./metadata"
 import { getAudiobookCoverDirectory, getEbookCoverDirectory } from "./paths"
 
@@ -265,10 +264,6 @@ export async function persistCover(
 
   await mkdir(coverDir, { recursive: true })
   await writeFile(join(coverDir, cover.filename), cover.data)
-  await deleteCachedCoverImagesByKind(
-    book.uuid,
-    kind === "ebook" ? "text" : "audio",
-  )
   await touchBook(book.uuid)
 }
 

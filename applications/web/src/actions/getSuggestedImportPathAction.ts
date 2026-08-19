@@ -2,7 +2,7 @@
 
 import { dirname, resolve } from "node:path"
 
-import { hasPermission, nextAuth } from "@/auth/auth"
+import { getCurrentUser } from "@/auth/auth"
 import { db } from "@/database/connection"
 import { getWatchRules } from "@/database/importRules"
 import { ASSETS_DIR, DATA_DIR } from "@/directories"
@@ -16,8 +16,8 @@ type SuggestedImportPathResult = {
 const escapeLike = (s: string) => s.replace(/[%_]/g, "\\$&")
 
 export async function getSuggestedImportPathAction(): Promise<SuggestedImportPathResult> {
-  const session = await nextAuth.auth()
-  if (!hasPermission("bookCreate", session?.user)) {
+  const user = await getCurrentUser()
+  if (!user?.permissions.bookCreate) {
     throw new Error("Forbidden")
   }
 

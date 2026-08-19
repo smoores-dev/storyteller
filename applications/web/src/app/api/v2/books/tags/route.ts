@@ -1,14 +1,21 @@
 import { withHasPermission } from "@/auth/auth"
-import { addTagsToBooks, removeTagsFromBooks } from "@/database/tags"
+import {
+  type AddTagInput,
+  addTagsToBooks,
+  removeTagsFromBooks,
+} from "@/database/tags"
 import { type UUID } from "@/uuid"
 
 export const POST = withHasPermission("bookUpdate")(async (request) => {
   const body = (await request.json()) as {
-    tags: string[]
+    tags: (string | AddTagInput)[]
     books: UUID[]
   }
   const { tags, books } = body
-  await addTagsToBooks(books, tags)
+  const normalized: AddTagInput[] = tags.map((t) =>
+    typeof t === "string" ? { name: t } : t,
+  )
+  await addTagsToBooks(books, normalized)
 
   return new Response(null, { status: 204 })
 })

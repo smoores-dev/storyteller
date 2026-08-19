@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Icon Registry Editor</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #f5f5f7;
+        color: #1d1d1f;
+        padding: 1.5rem 2rem;
+        font-size: 14px;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      header h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .toolbar {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      input[type="text"],
+      input[type="search"] {
+        padding: 0.4rem 0.65rem;
+        border: 1px solid #d2d2d7;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      input:focus {
+        border-color: #0071e3;
+      }
+
+      button {
+        padding: 0.4rem 0.85rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+
+      button:hover {
+        opacity: 0.8;
+      }
+
+      .btn-primary {
+        background: #0071e3;
+        color: white;
+      }
+      .btn-secondary {
+        background: #e8e8ed;
+        color: #1d1d1f;
+      }
+      .btn-danger {
+        background: #ff3b30;
+        color: white;
+      }
+      .btn-small {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .search-input {
+        width: 220px;
+      }
+
+      .count {
+        font-size: 0.8rem;
+        color: #86868b;
+      }
+
+      /* table */
+      .table-wrap {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+      }
+
+      th {
+        text-align: left;
+        padding: 0.65rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #86868b;
+        border-bottom: 1px solid #e8e8ed;
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 1;
+      }
+
+      td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #f0f0f2;
+        vertical-align: middle;
+      }
+
+      tr:hover td {
+        background: #fafafa;
+      }
+
+      .cell-id {
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .cell-icon {
+        cursor: pointer;
+        border-radius: 6px;
+        padding: 0.35rem 0.5rem;
+        transition: background 0.1s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 160px;
+      }
+
+      .cell-icon:hover {
+        background: #f0f0f5;
+      }
+
+      .cell-icon .preview {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .cell-icon .preview i {
+        font-size: 1.4rem;
+      }
+      .cell-icon .preview svg {
+        width: 22px;
+        height: 22px;
+      }
+      .cell-icon .preview img {
+        width: 22px;
+        height: 22px;
+      }
+
+      .cell-icon .name {
+        font-size: 0.8rem;
+        color: #444;
+        word-break: break-all;
+      }
+
+      .cell-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+      }
+
+      .tag {
+        background: #f0f0f5;
+        color: #555;
+        font-size: 0.7rem;
+        padding: 0.12rem 0.35rem;
+        border-radius: 3px;
+      }
+
+      .cell-actions {
+        white-space: nowrap;
+      }
+
+      /* modal */
+      .modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-backdrop.open {
+        display: flex;
+      }
+
+      .modal {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+        width: 560px;
+        max-width: 95vw;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .modal-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e8e8ed;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .modal-header h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        flex: 1;
+      }
+
+      .modal-header input {
+        flex: 1;
+        padding: 0.45rem 0.7rem;
+        font-size: 0.9rem;
+      }
+
+      .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.5rem;
+      }
+
+      .icon-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 0.35rem;
+      }
+
+      .icon-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem 0.25rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.1s;
+        text-align: center;
+      }
+
+      .icon-option:hover {
+        background: #f0f0f5;
+      }
+      .icon-option.selected {
+        background: #e3f2fd;
+        outline: 2px solid #0071e3;
+      }
+
+      .icon-option .opt-preview {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .icon-option .opt-preview i {
+        font-size: 1.3rem;
+      }
+      .icon-option .opt-preview svg {
+        width: 22px;
+        height: 22px;
+      }
+      .icon-option .opt-preview img {
+        width: 22px;
+        height: 22px;
+      }
+
+      .icon-option .opt-name {
+        font-size: 0.6rem;
+        color: #666;
+        word-break: break-all;
+        line-height: 1.2;
+        max-height: 2.4em;
+        overflow: hidden;
+      }
+
+      .modal-footer {
+        padding: 0.75rem 1.25rem;
+        border-top: 1px solid #e8e8ed;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+      }
+
+      /* edit row form */
+      .edit-form {
+        display: none;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+
+      .edit-form.open {
+        display: block;
+      }
+
+      .edit-form h3 {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .edit-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+      }
+
+      .edit-fields label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        font-size: 0.75rem;
+        color: #666;
+      }
+
+      .edit-fields .full {
+        grid-column: 1 / -1;
+      }
+
+      .icon-pick-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.65rem;
+        border: 1px solid #d2d2d7;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-size: 0.85rem;
+        width: 100%;
+        text-align: left;
+      }
+
+      .icon-pick-btn:hover {
+        border-color: #0071e3;
+      }
+      .icon-pick-btn .pick-preview {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .icon-pick-btn .pick-preview i {
+        font-size: 1.1rem;
+      }
+      .icon-pick-btn .pick-preview svg {
+        width: 18px;
+        height: 18px;
+      }
+      .icon-pick-btn .pick-preview img {
+        width: 18px;
+        height: 18px;
+      }
+
+      .edit-actions {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .status-bar {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        background: #1d1d1f;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        z-index: 200;
+      }
+
+      .status-bar.visible {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Icon Registry Editor</h1>
+      <div class="toolbar">
+        <input
+          type="search"
+          class="search-input"
+          id="globalSearch"
+          placeholder="Filter icons..."
+        />
+        <span class="count" id="count"></span>
+        <button class="btn-primary" onclick="openEditForm(null)">
+          + Add Row
+        </button>
+        <button class="btn-secondary" onclick="exportJSON()">
+          Export JSON
+        </button>
+        <button class="btn-secondary" onclick="exportTS()">
+          Export TypeScript
+        </button>
+        <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+        <button class="btn-secondary" onclick="importJSON()">
+          Import JSON
+        </button>
+      </div>
+    </header>
+
+    <div class="edit-form" id="editForm">
+      <h3 id="editFormTitle">Add New Icon</h3>
+      <div class="edit-fields">
+        <label>
+          ID (kebab-case)
+          <input type="text" id="ef-id" placeholder="e.g. rocket" />
+        </label>
+        <label>
+          Tags (comma-separated)
+          <input
+            type="text"
+            id="ef-tags"
+            placeholder="e.g. rocket, space, launch"
+          />
+        </label>
+        <label>
+          Tabler Icon
+          <button
+            type="button"
+            class="icon-pick-btn"
+            onclick="openPicker('tabler')"
+          >
+            <span class="pick-preview" id="pick-tabler-preview"></span>
+            <span id="pick-tabler-name">Click to select...</span>
+          </button>
+        </label>
+        <label>
+          SF Symbol
+          <button
+            type="button"
+            class="icon-pick-btn"
+            onclick="openPicker('sf')"
+          >
+            <span class="pick-preview" id="pick-sf-preview"></span>
+            <span id="pick-sf-name">Click to select...</span>
+          </button>
+        </label>
+        <label>
+          Lucide Icon
+          <button
+            type="button"
+            class="icon-pick-btn"
+            onclick="openPicker('lucide')"
+          >
+            <span class="pick-preview" id="pick-lucide-preview"></span>
+            <span id="pick-lucide-name">Click to select...</span>
+          </button>
+        </label>
+      </div>
+      <div class="edit-actions">
+        <button class="btn-primary" id="editFormSave" onclick="saveEntry()">
+          Add
+        </button>
+        <button class="btn-secondary" onclick="closeEditForm()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tabler</th>
+            <th>SF Symbol</th>
+            <th>Lucide</th>
+            <th>Tags</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 1rem">
+      <button class="btn-primary" onclick="openEditForm(null)">
+        + Add Row
+      </button>
+    </div>
+
+    <div class="modal-backdrop" id="pickerModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="pickerTitle">Select Icon</h3>
+          <input
+            type="search"
+            id="pickerSearch"
+            placeholder="Search icons..."
+          />
+        </div>
+        <div class="modal-body">
+          <div class="icon-grid" id="pickerGrid"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closePicker()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar" id="statusBar"></div>
+
+    <input
+      type="file"
+      id="fileInput"
+      accept=".json"
+      style="display: none"
+      onchange="handleFileImport(event)"
+    />
+
+    <script>
+      let DATA = []
+      let sfSymbolNames = []
+      let tablerNames = []
+      let lucideNames = []
+
+      let editingId = null
+      let pickerTarget = null
+      let pickerSelection = { tabler: "", sf: "", lucide: "" }
+
+      // -- init --
+
+      async function init() {
+        const [dataRes, sfRes, tablerCssRes] = await Promise.all([
+          fetch("./data.json"),
+          fetch("./sf-icon-list.txt"),
+          fetch(
+            "https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css",
+          ),
+        ])
+
+        DATA = await dataRes.json()
+
+        const sfText = await sfRes.text()
+        sfSymbolNames = sfText
+          .trim()
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean)
+
+        // lucide names from the loaded library
+        if (window.lucide && window.lucide.icons) {
+          lucideNames = Object.keys(window.lucide.icons).sort()
+        }
+
+        // extract tabler icon names from their CSS
+        try {
+          const css = await tablerCssRes.text()
+          const regex = /\.ti-([a-z0-9][a-z0-9-]*):before/g
+          const names = new Set()
+          let m
+
+          while ((m = regex.exec(css)) !== null) {
+            names.add(m[1])
+          }
+
+          tablerNames = [...names].sort()
+        } catch (e) {
+          showStatus("Warning: could not parse tabler icon list")
+        }
+
+        render()
+        showStatus(
+          `Loaded ${DATA.length} entries, ${tablerNames.length} tabler, ${lucideNames.length} lucide, ${sfSymbolNames.length} SF symbols`,
+        )
+      }
+
+      // -- rendering --
+
+      function render(filter = "") {
+        const q = filter.toLowerCase().trim()
+        const filtered = q
+          ? DATA.filter(
+              (e) =>
+                e.id.includes(q) ||
+                e.tabler.toLowerCase().includes(q) ||
+                e.sfSymbol.toLowerCase().includes(q) ||
+                e.lucide.includes(q) ||
+                e.tags.some((t) => t.includes(q)),
+            )
+          : DATA
+
+        document.getElementById("count").textContent =
+          `${filtered.length} / ${DATA.length}`
+
+        const tbody = document.getElementById("tbody")
+        tbody.innerHTML = filtered
+          .map(
+            (entry) => `
+    <tr>
+      <td class="cell-id">${entry.id}</td>
+      <td>
+        <div class="cell-icon" onclick="openEditForm('${entry.id}')">
+          <span class="preview"><i class="ti ti-${tablerKebab(entry.tabler)}"></i></span>
+          <span class="name">${entry.tabler}</span>
+        </div>
+      </td>
+      <td>
+        <div class="cell-icon" onclick="openEditForm('${entry.id}')">
+          <span class="preview"><img src="./sf/${entry.sfSymbol}.svg" onerror="this.style.display='none'" alt=""></span>
+          <span class="name">${entry.sfSymbol}</span>
+        </div>
+      </td>
+      <td>
+        <div class="cell-icon" onclick="openEditForm('${entry.id}')">
+          <span class="preview"><i data-lucide="${entry.lucide}"></i></span>
+          <span class="name">${entry.lucide}</span>
+        </div>
+      </td>
+      <td>
+        <div class="cell-tags">${entry.tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>
+      </td>
+      <td class="cell-actions">
+        <button class="btn-secondary btn-small" onclick="openEditForm('${entry.id}')">Edit</button>
+        <button class="btn-danger btn-small" onclick="deleteEntry('${entry.id}')">Del</button>
+      </td>
+    </tr>
+  `,
+          )
+          .join("")
+
+        lucide.createIcons()
+      }
+
+      function tablerKebab(name) {
+        return name
+          .replace(/^Icon/, "")
+          .replace(/([a-z])(\d)/g, "$1-$2")
+          .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+          .toLowerCase()
+      }
+
+      function tablerPascal(kebab) {
+        return (
+          "Icon" +
+          kebab
+            .split("-")
+            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+            .join("")
+        )
+      }
+
+      // -- edit form --
+
+      function openEditForm(id) {
+        editingId = id
+        const form = document.getElementById("editForm")
+        form.classList.add("open")
+
+        if (id) {
+          const entry = DATA.find((e) => e.id === id)
+          document.getElementById("editFormTitle").textContent = `Edit: ${id}`
+          document.getElementById("editFormSave").textContent = "Save"
+          document.getElementById("ef-id").value = entry.id
+          document.getElementById("ef-tags").value = entry.tags.join(", ")
+          pickerSelection.tabler = entry.tabler
+          pickerSelection.sf = entry.sfSymbol
+          pickerSelection.lucide = entry.lucide
+        } else {
+          document.getElementById("editFormTitle").textContent = "Add New Icon"
+          document.getElementById("editFormSave").textContent = "Add"
+          document.getElementById("ef-id").value = ""
+          document.getElementById("ef-tags").value = ""
+          pickerSelection.tabler = ""
+          pickerSelection.sf = ""
+          pickerSelection.lucide = ""
+        }
+
+        updatePickBtns()
+        form.scrollIntoView({ behavior: "smooth", block: "start" })
+      }
+
+      function closeEditForm() {
+        document.getElementById("editForm").classList.remove("open")
+        editingId = null
+      }
+
+      function updatePickBtns() {
+        const tp = document.getElementById("pick-tabler-preview")
+        const tn = document.getElementById("pick-tabler-name")
+
+        if (pickerSelection.tabler) {
+          tp.innerHTML = `<i class="ti ti-${tablerKebab(pickerSelection.tabler)}"></i>`
+          tn.textContent = pickerSelection.tabler
+        } else {
+          tp.innerHTML = ""
+          tn.textContent = "Click to select..."
+        }
+
+        const sp = document.getElementById("pick-sf-preview")
+        const sn = document.getElementById("pick-sf-name")
+
+        if (pickerSelection.sf) {
+          sp.innerHTML = `<img src="./sf/${pickerSelection.sf}.svg" onerror="this.style.display='none'" alt="">`
+          sn.textContent = pickerSelection.sf
+        } else {
+          sp.innerHTML = ""
+          sn.textContent = "Click to select..."
+        }
+
+        const lp = document.getElementById("pick-lucide-preview")
+        const ln = document.getElementById("pick-lucide-name")
+
+        if (pickerSelection.lucide) {
+          lp.innerHTML = `<i data-lucide="${pickerSelection.lucide}"></i>`
+          ln.textContent = pickerSelection.lucide
+          lucide.createIcons({ nodes: [lp] })
+        } else {
+          lp.innerHTML = ""
+          ln.textContent = "Click to select..."
+        }
+      }
+
+      function saveEntry() {
+        const id = document.getElementById("ef-id").value.trim()
+        const tags = document
+          .getElementById("ef-tags")
+          .value.split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+
+        if (!id) {
+          alert("ID is required.")
+          return
+        }
+        if (!pickerSelection.tabler) {
+          alert("Please select a Tabler icon.")
+          return
+        }
+        if (!pickerSelection.sf) {
+          alert("Please select an SF Symbol.")
+          return
+        }
+        if (!pickerSelection.lucide) {
+          alert("Please select a Lucide icon.")
+          return
+        }
+
+        if (editingId) {
+          const idx = DATA.findIndex((e) => e.id === editingId)
+          if (idx === -1) return
+
+          DATA[idx] = {
+            id,
+            tabler: pickerSelection.tabler,
+            sfSymbol: pickerSelection.sf,
+            lucide: pickerSelection.lucide,
+            tags,
+          }
+        } else {
+          if (DATA.some((e) => e.id === id)) {
+            alert(`"${id}" already exists.`)
+            return
+          }
+
+          DATA.push({
+            id,
+            tabler: pickerSelection.tabler,
+            sfSymbol: pickerSelection.sf,
+            lucide: pickerSelection.lucide,
+            tags,
+          })
+        }
+
+        closeEditForm()
+        render(document.getElementById("globalSearch").value)
+        showStatus(editingId ? `Updated "${id}"` : `Added "${id}"`)
+      }
+
+      function deleteEntry(id) {
+        if (!confirm(`Delete "${id}"?`)) return
+        DATA = DATA.filter((e) => e.id !== id)
+        render(document.getElementById("globalSearch").value)
+        showStatus(`Deleted "${id}"`)
+      }
+
+      // -- icon picker modal --
+
+      let pickerRenderTimeout = null
+
+      function openPicker(target) {
+        pickerTarget = target
+        const modal = document.getElementById("pickerModal")
+        const title = document.getElementById("pickerTitle")
+        const searchInput = document.getElementById("pickerSearch")
+
+        const labels = {
+          tabler: "Tabler Icons",
+          sf: "SF Symbols",
+          lucide: "Lucide Icons",
+        }
+        title.textContent = `Select: ${labels[target]}`
+        searchInput.value = ""
+
+        modal.classList.add("open")
+        searchInput.focus()
+        renderPickerGrid("")
+      }
+
+      function closePicker() {
+        document.getElementById("pickerModal").classList.remove("open")
+        pickerTarget = null
+      }
+
+      function renderPickerGrid(query) {
+        const grid = document.getElementById("pickerGrid")
+        const q = query.toLowerCase().trim()
+        let items = []
+
+        if (pickerTarget === "tabler") {
+          const filtered = q
+            ? tablerNames.filter((n) => n.includes(q))
+            : tablerNames
+          items = filtered.map((name) => ({
+            value: tablerPascal(name),
+            display: name,
+            html: `<i class="ti ti-${name}"></i>`,
+          }))
+        } else if (pickerTarget === "lucide") {
+          const filtered = q
+            ? lucideNames.filter((n) => n.includes(q))
+            : lucideNames
+          items = filtered.map((name) => ({
+            value: name,
+            display: name,
+            html: `<i data-lucide="${name}"></i>`,
+          }))
+        } else if (pickerTarget === "sf") {
+          const filtered = q
+            ? sfSymbolNames.filter((n) => n.includes(q))
+            : sfSymbolNames
+          items = filtered.map((name) => ({
+            value: name,
+            display: name,
+            html: `<img src="./sf/${name}.svg" loading="lazy" onerror="this.parentElement.textContent='?'" alt="" style="width:22px;height:22px;">`,
+          }))
+        }
+
+        const currentVal =
+          pickerSelection[pickerTarget === "sf" ? "sf" : pickerTarget]
+
+        grid.innerHTML = items
+          .map(
+            (item) => `
+    <div class="icon-option ${item.value === currentVal ? "selected" : ""}" onclick="selectPickerIcon('${escAttr(item.value)}')">
+      <span class="opt-preview">${item.html}</span>
+      <span class="opt-name">${item.display}</span>
+    </div>
+  `,
+          )
+          .join("")
+
+        if (pickerTarget === "lucide") {
+          lucide.createIcons({ nodes: [grid] })
+        }
+
+        if (items.length === 0) {
+          grid.innerHTML = `<div style="grid-column:1/-1;padding:2rem;text-align:center;color:#888;">No icons match "${query}"</div>`
+        }
+      }
+
+      function selectPickerIcon(value) {
+        if (pickerTarget === "tabler") pickerSelection.tabler = value
+        else if (pickerTarget === "sf") pickerSelection.sf = value
+        else if (pickerTarget === "lucide") pickerSelection.lucide = value
+
+        updatePickBtns()
+        closePicker()
+      }
+
+      function escAttr(s) {
+        return s.replace(/'/g, "\\'").replace(/"/g, "&quot;")
+      }
+
+      // -- export / import --
+
+      function exportJSON() {
+        download("data.json", JSON.stringify(DATA, null, 2), "application/json")
+        showStatus("Exported data.json")
+      }
+
+      function exportTS() {
+        const lines = DATA.map((e) => {
+          const tags = e.tags.map((t) => `"${t}"`).join(", ")
+          return `  { id: "${e.id}", tabler: "${e.tabler}", sfSymbol: "${e.sfSymbol}", lucide: "${e.lucide}", tags: [${tags}] },`
+        })
+
+        const content = `export type IconEntry = {\n  id: string\n  tabler: string\n  sfSymbol: string\n  lucide: string\n  tags: string[]\n}\n\nexport const ICON_REGISTRY: IconEntry[] = [\n${lines.join("\n")}\n]\n\nexport const ICON_MAP = Object.fromEntries(\n  ICON_REGISTRY.map((entry) => [entry.id, entry]),\n) as Record<string, IconEntry>\n`
+
+        download("icon-registry.ts", content, "text/typescript")
+        showStatus("Exported icon-registry.ts")
+      }
+
+      function exportCSV() {
+        const header = "id,tabler,sfSymbol,lucide,tags"
+        const rows = DATA.map(
+          (e) =>
+            `${e.id},${e.tabler},${e.sfSymbol},${e.lucide},"${e.tags.join(", ")}"`,
+        )
+
+        download("icon-registry.csv", [header, ...rows].join("\n"), "text/csv")
+        showStatus("Exported icon-registry.csv")
+      }
+
+      function importJSON() {
+        document.getElementById("fileInput").click()
+      }
+
+      function handleFileImport(event) {
+        const file = event.target.files[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          try {
+            const imported = JSON.parse(e.target.result)
+
+            if (!Array.isArray(imported)) {
+              alert("Invalid format: expected a JSON array.")
+              return
+            }
+
+            DATA = imported
+            render(document.getElementById("globalSearch").value)
+            showStatus(`Imported ${DATA.length} entries from ${file.name}`)
+          } catch (err) {
+            alert("Failed to parse JSON: " + err.message)
+          }
+        }
+
+        reader.readAsText(file)
+        event.target.value = ""
+      }
+
+      function download(filename, content, mime) {
+        const blob = new Blob([content], { type: mime })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+
+      // -- status toast --
+
+      let statusTimeout = null
+
+      function showStatus(msg) {
+        const bar = document.getElementById("statusBar")
+        bar.textContent = msg
+        bar.classList.add("visible")
+        clearTimeout(statusTimeout)
+        statusTimeout = setTimeout(() => bar.classList.remove("visible"), 3000)
+      }
+
+      // -- events --
+
+      document.getElementById("globalSearch").addEventListener("input", (e) => {
+        render(e.target.value)
+      })
+
+      document.getElementById("pickerSearch").addEventListener("input", (e) => {
+        clearTimeout(pickerRenderTimeout)
+        pickerRenderTimeout = setTimeout(
+          () => renderPickerGrid(e.target.value),
+          120,
+        )
+      })
+
+      document.getElementById("pickerModal").addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) closePicker()
+      })
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          if (
+            document.getElementById("pickerModal").classList.contains("open")
+          ) {
+            closePicker()
+          } else if (
+            document.getElementById("editForm").classList.contains("open")
+          ) {
+            closeEditForm()
+          }
+        }
+      })
+
+      init()
+    </script>
+  </body>
+</html>

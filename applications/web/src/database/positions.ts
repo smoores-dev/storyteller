@@ -4,6 +4,7 @@ import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
 import { db } from "./connection"
+import { STATUS_READ, STATUS_READING, STATUS_TO_READ } from "./statusKinds"
 
 export type ReadiumLocation = {
   fragments?: string[]
@@ -141,10 +142,11 @@ export async function upsertPosition(
     }
 
     const statuses = await tr.selectFrom("status").selectAll().execute()
+
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
-    const toRead = statuses.find((status) => status.name === "To read")!
-    const reading = statuses.find((status) => status.name === "Reading")!
-    const read = statuses.find((status) => status.name === "Read")!
+    const toRead = statuses.find((status) => status.name === STATUS_TO_READ)!
+    const reading = statuses.find((status) => status.name === STATUS_READING)!
+    const read = statuses.find((status) => status.name === STATUS_READ)!
     /* eslint-enable @typescript-eslint/no-non-null-assertion */
 
     if (

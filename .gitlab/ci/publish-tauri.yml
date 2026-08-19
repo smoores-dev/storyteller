@@ -1,0 +1,197 @@
+# Builds, signs, notarizes and publishes the tauri app, then advances the
+# per-channel updater feeds (.../storyteller-tauri/<feed>/latest.json where
+# <feed> is latest, latest-beta or latest-edge
+# applications/tauri/scripts/advance-update-feed.mjs for the channel rules).
+# Required CI/CD variables : TAURI_SIGNING_PRIVATE_KEY(_PASSWORD) for updater signatures,
+# APPLE_CERTIFICATE_P12 / APPLE_CERTIFICATE_PASSWORD / APPLE_CA /
+# APPLE_SIGNING_IDENTITY for codesigning, and APPLE_ID / APPLE_APP_PASSWORD /
+# APPLE_TEAM_ID for notarization.
+
+.publish-tauri:
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^tauri-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  variables:
+    CARGO_HOME: $CI_PROJECT_DIR/.cargo
+  cache:
+    key:
+      files:
+        - applications/tauri/src-tauri/Cargo.lock
+      prefix: $CI_JOB_NAME
+    paths:
+      - .cargo/registry
+      - applications/tauri/src-tauri/target
+  after_script:
+    - rm -rf applications/tauri/src-tauri/target/release/bundle
+
+publish-tauri-macos:
+  extends: .publish-tauri
+  # need big boi bc the small one runs oom
+  tags: [saas-macos-large-m2pro]
+  # TODO: restore macos-26c
+  # not macos-26: has a codesign/p12 regression (signing fails with
+  # "unable to build chain to self-signed root" / errSecInternalComponent,
+  # see github.com/actions/runner-images/issues/13884 for the same breakage)
+  image: macos-15-xcode-16
+  variables:
+    KEYCHAIN_NAME: "build-$CI_JOB_ID.keychain"
+    KEYCHAIN_PASSWORD: "temp-keychain-password"
+  before_script:
+    - security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+    - security list-keychains -d user -s "$KEYCHAIN_NAME" $(security
+      list-keychains -d user | tr -d '"')
+    - security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
+    - security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+    - security default-keychain -d user -s "$KEYCHAIN_NAME"
+    - echo "$APPLE_CERTIFICATE_P12" | base64 --decode > certificate.p12
+    - security import certificate.p12 -k "$KEYCHAIN_NAME" -P
+      "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+    - echo "$APPLE_CA" | base64 --decode > developer_id_cert_authority.cer
+    - security import developer_id_cert_authority.cer -k "$KEYCHAIN_NAME" -T
+      /usr/bin/codesign
+    - 'security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k
+      "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"'
+    - security find-identity -v -p codesigning "$KEYCHAIN_NAME"
+    # best-effort chain diagnostics: verify-cert reproduces codesign's chain
+    # building and names the missing cert if it fails
+    - |
+      openssl x509 -inform der -in developer_id_cert_authority.cer -noout -subject -issuer -enddate || true
+      openssl pkcs12 -in certificate.p12 -clcerts -nokeys -passin pass:"$APPLE_CERTIFICATE_PASSWORD" -out leaf.pem 2>/dev/null || true
+      openssl x509 -in leaf.pem -noout -subject -issuer -enddate || true
+      security verify-cert -c leaf.pem -p codeSign || true
+  # overrides the base after_script, so repeat the bundle cleanup
+  after_script:
+    - security delete-keychain "$KEYCHAIN_NAME" || true
+    - rm -f certificate.p12 leaf.pem
+    - rm -rf applications/tauri/src-tauri/target/release/bundle
+  script:
+    - export VERSION="${CI_COMMIT_TAG#tauri-}"
+    - export VERSION="${VERSION#v}"
+    # fail before the 5-minute build if the key never reached the job
+    # (protected variables are only injected on protected tags)
+    - |
+      if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+        echo "TAURI_SIGNING_PRIVATE_KEY is empty or unset — check that the CI/CD variable exists and that this tag is protected if the variable is"
+        exit 1
+      fi
+      echo "TAURI_SIGNING_PRIVATE_KEY length: ${#TAURI_SIGNING_PRIVATE_KEY}"
+    # is important for auto-update
+    - PKG_VERSION=$(node -p
+      "require('./applications/tauri/package.json').version")
+    - |
+      if [ "$VERSION" != "$PKG_VERSION" ]; then
+        echo "tag says $VERSION but applications/tauri/package.json says $PKG_VERSION"
+        exit 1
+      fi
+    - curl -fsSL
+      "https://nodejs.org/dist/v24.18.0/node-v24.18.0-darwin-arm64.tar.gz" | tar
+      -xz -C "$HOME"
+    - export PATH="$HOME/node-v24.18.0-darwin-arm64/bin:$PATH"
+    - node --version
+    - command -v cargo || (curl --proto '=https' --tlsv1.2 -sSf
+      https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain
+      stable)
+    - export PATH="$CARGO_HOME/bin:$HOME/.cargo/bin:$PATH"
+    - cargo --version
+    - corepack enable
+    - yarn install --immutable
+    - cd applications/tauri
+    - yarn fetch-binaries
+    - yarn assemble-runtime
+    # set-but-empty password means "no password", unset would make tauri
+    # prompt interactively and hang the job
+    - export
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD-}"
+    # tauri's notarization wants APPLE_PASSWORD, the gitlab variable is named
+    # APPLE_APP_PASSWORD (it is an app-specific password for APPLE_ID)
+    - export APPLE_PASSWORD="${APPLE_APP_PASSWORD}"
+    - yarn tauri build --config '{"bundle":{"createUpdaterArtifacts":true}}'
+    - cd "$CI_PROJECT_DIR"
+    # collect + rename to url-safe names
+    - BUNDLE=applications/tauri/src-tauri/target/release/bundle
+    - cp "$BUNDLE/dmg/Storyteller Server_${VERSION}_aarch64.dmg"
+      "Storyteller-Server-${VERSION}-aarch64.dmg"
+    - cp "$BUNDLE/macos/Storyteller Server.app.tar.gz"
+      "Storyteller-Server-${VERSION}-aarch64.app.tar.gz"
+    - cp "$BUNDLE/macos/Storyteller Server.app.tar.gz.sig"
+      "Storyteller-Server-${VERSION}-aarch64.app.tar.gz.sig"
+    # publish to the generic package registry (no release object)
+    - export
+      PKG_URL="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/storyteller-tauri"
+    - 'curl --fail -H "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file
+      "Storyteller-Server-${VERSION}-aarch64.dmg"
+      "$PKG_URL/$VERSION/Storyteller-Server-${VERSION}-aarch64.dmg"'
+    - 'curl --fail -H "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file
+      "Storyteller-Server-${VERSION}-aarch64.app.tar.gz"
+      "$PKG_URL/$VERSION/Storyteller-Server-${VERSION}-aarch64.app.tar.gz"'
+    - 'curl --fail -H "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file
+      "Storyteller-Server-${VERSION}-aarch64.app.tar.gz.sig"
+      "$PKG_URL/$VERSION/Storyteller-Server-${VERSION}-aarch64.app.tar.gz.sig"'
+    # advance the per-channel updater feeds; stable versions move all three,
+    # beta/rc move latest-beta + latest-edge, other prereleases only
+    # latest-edge, and a feed never moves backwards
+    - export PLATFORM="darwin-aarch64"
+    - export SIG_FILE="Storyteller-Server-${VERSION}-aarch64.app.tar.gz.sig"
+    - export
+      ARTIFACT_URL="$PKG_URL/$VERSION/Storyteller-Server-${VERSION}-aarch64.app.tar.gz"
+    - node applications/tauri/scripts/advance-update-feed.mjs
+
+publish-tauri-linux:
+  extends: .publish-tauri
+  tags: [saas-linux-medium-amd64]
+  image: node:24
+  timeout: 2h
+  variables:
+    # appimage tooling (linuxdeploy/appimagetool) cannot mount fuse inside
+    # docker, run it extracted instead
+    APPIMAGE_EXTRACT_AND_RUN: "1"
+    NO_STRIP: "true"
+  script:
+    - export VERSION="${CI_COMMIT_TAG#tauri-}"
+    - export VERSION="${VERSION#v}"
+    - PKG_VERSION=$(node -p
+      "require('./applications/tauri/package.json').version")
+    - |
+      if [ "$VERSION" != "$PKG_VERSION" ]; then
+        echo "tag says $VERSION but applications/tauri/package.json says $PKG_VERSION"
+        exit 1
+      fi
+    - apt-get update
+    - apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev
+      libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev
+      libxdo-dev patchelf file desktop-file-utils xdg-utils build-essential
+      cmake python3 wget curl unzip xz-utils git-lfs
+    - git lfs install --local && git lfs pull
+    # rustup honors CARGO_HOME, so cargo lands in $CARGO_HOME/bin
+    - command -v cargo || (curl --proto '=https' --tlsv1.2 -sSf
+      https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain
+      stable)
+    - export PATH="$CARGO_HOME/bin:$HOME/.cargo/bin:$PATH"
+    - cargo --version
+    - corepack enable
+    - yarn install --immutable
+    - cd applications/tauri
+    - yarn fetch-binaries
+    - yarn assemble-runtime
+    # - yarn tauri build --bundles deb,rpm,appimage
+    - yarn tauri build --bundles appimage
+    - cd "$CI_PROJECT_DIR"
+    # bundle filenames vary by tauri version, glob them into url-safe names
+    - BUNDLE=applications/tauri/src-tauri/target/release/bundle
+    # - cp "$BUNDLE"/deb/*.deb "Storyteller-Server-${VERSION}-amd64.deb"
+    # - cp "$BUNDLE"/rpm/*.rpm "Storyteller-Server-${VERSION}-x86_64.rpm"
+    - cp "$BUNDLE"/appimage/*.AppImage
+      "Storyteller-Server-${VERSION}-amd64.AppImage"
+    - export
+      PKG_URL="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/storyteller-tauri"
+    # - 'curl --fail -H "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file
+    #   "Storyteller-Server-${VERSION}-amd64.deb"
+    # "$PKG_URL/$VERSION/Storyteller-Server-${VERSION}-amd64.deb"'
+    # - 'curl --fail -H "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file
+    #   "Storyteller-Server-${VERSION}-x86_64.rpm"
+    #   "$PKG_URL/$VERSION/Storyteller-Server-${VERSION}-x86_64.rpm"'
+    - 'curl --fail -H "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file
+      "Storyteller-Server-${VERSION}-amd64.AppImage"
+      "$PKG_URL/$VERSION/Storyteller-Server-${VERSION}-amd64.AppImage"'

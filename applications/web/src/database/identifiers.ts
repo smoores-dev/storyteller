@@ -140,6 +140,7 @@ export type IdentifierFormat = "ebook" | "audiobook" | "readaloud"
 export type ExtractedIdentifiers = {
   format: IdentifierFormat
   entries: { scheme: string; value: string }[]
+  replace?: boolean
 }
 
 /**
@@ -148,7 +149,7 @@ export type ExtractedIdentifiers = {
 export async function linkExtractedIdentifiers(
   tr: Kysely<DB>,
   bookUuid: UUID,
-  { format, entries }: ExtractedIdentifiers,
+  { format, entries, replace }: ExtractedIdentifiers,
 ) {
   if (!entries.length) return
 
@@ -164,6 +165,14 @@ export async function linkExtractedIdentifiers(
 
   const formatUuid = formatRow.uuid
   const formatColumn = `${format}Uuid` as const
+
+  if (replace) {
+    await tr
+      .deleteFrom("identifier")
+      .where("bookUuid", "=", bookUuid)
+      .where((eb) => eb(formatColumn, "=", formatUuid))
+      .execute()
+  }
 
   for (const { scheme, value } of entries) {
     const type = await resolveIdentifierType(tr, scheme)
@@ -190,14 +199,73 @@ export async function linkExtractedIdentifiers(
   }
 }
 
-export async function deleteIdentifier(uuid: UUID) {
-  await db.deleteFrom("identifier").where("uuid", "=", uuid).execute()
-}
+export async function mergeIdentifierTypes(
+  targetUuid: UUID,
+  sourceUuids: UUID[],
+) {
+  if (!sourceUuids.length) return
 
-export async function updateIdentifier(uuid: UUID, update: IdentifierUpdate) {
-  await db
-    .updateTable("identifier")
-    .set(update)
-    .where("uuid", "=", uuid)
-    .execute()
+  await db.transaction().execute(async (tr) => {
+    const rowKey = (row: {
+      bookUuid: UUID
+      value: string
+      ebookUuid: UUID | null
+      audiobookUuid: UUID | null
+      readaloudUuid: UUID | null
+    }) =>
+      [
+        row.bookUuid,
+        row.value,
+        row.ebookUuid ?? "",
+        row.audiobookUuid ?? "",
+        row.readaloudUuid ?? "",
+      ].join("|")
+
+    const targetRows = await tr
+      .selectFrom("identifier")
+      .select([
+        "bookUuid",
+        "value",
+        "ebookUuid",
+        "audiobookUuid",
+        "readaloudUuid",
+      ])
+      .where("identifierTypeUuid", "=", targetUuid)
+      .execute()
+    const existing = new Set(targetRows.map(rowKey))
+
+    const sourceRows = await tr
+      .selectFrom("identifier")
+      .select([
+        "uuid",
+        "bookUuid",
+        "value",
+        "ebookUuid",
+        "audiobookUuid",
+        "readaloudUuid",
+      ])
+      .where("identifierTypeUuid", "in", sourceUuids)
+      .execute()
+
+    const toMove: UUID[] = []
+    for (const row of sourceRows) {
+      const key = rowKey(row)
+      if (existing.has(key)) continue
+      existing.add(key)
+      toMove.push(row.uuid)
+    }
+
+    if (toMove.length) {
+      await tr
+        .updateTable("identifier")
+        .set({ identifierTypeUuid: targetUuid })
+        .where("uuid", "in", toMove)
+        .execute()
+    }
+
+    await tr
+      .deleteFrom("identifierType")
+      .where("uuid", "in", sourceUuids)
+      .execute()
+  })
 }

@@ -102,7 +102,7 @@ async function emitBookUpdated(
 
 /**
  * replace (or add) a format on an existing book from a server-local path.
- * thin wrapper around the scanner: build a Candidate with existingBook set
+ * idea: build a Candidate with existingBook set
  * and let ingest+pipeline do the rest.
  */
 export async function replaceBookAsset(
@@ -112,14 +112,9 @@ export async function replaceBookAsset(
     opts
   const importMode = opts.importMode ?? (await getSetting("importMode"))
 
-  // guard before clearing: if the user picked a source inside the asset
-  // folder, clearing would delete it and the scan would find nothing.
   assertSourceOutsideAssetDir(book, filepath)
 
-  // when replacing an existing format, wipe what's on disk first. for
-  // audiobook this prevents old + new tracks coexisting; for reference-mode
-  // replace it stops the internal asset from orphaning. no-op if the format
-  // isn't currently stored.
+  // when replacing an existing format, wipe what's on disk first
   if (book[format]) {
     const assetDir = getInternalBookDirectory(book)
     suppressPrefix(assetDir)
@@ -197,41 +192,6 @@ export async function replaceBookAssetFromUpload(
   const { book, uploadPath, format, metadataFieldOverrides, signal } = opts
 
   await clearInternalAssetForFormat(book, format)
-
-  // if (format === "audiobook") {
-  //   const internalAudioDir = getInternalAudioDirectory(book)
-
-  //   // read all the files in the upload path dir
-  //   const uploadPathDir = dirname(uploadPath)
-  //   const files = await readdir(uploadPathDir)
-  //   if (files.length === 0) {
-  //     throw new Error("No files found in the upload path directory")
-  //   }
-
-  //   // suppress the prefix for the internal audio directory, otherwise too many triggers
-  //   await mkdir(getInternalAudioDirectory(book), { recursive: true })
-  //   for (const file of files) {
-  //     if (!isAudioFile(file)) {
-  //       continue
-  //     }
-  //     const src = join(uploadPathDir, file)
-  //     const dest = join(internalAudioDir, file)
-  //     await move(src, dest)
-  //   }
-
-  //   if (!book.audiobook) {
-  //     await updateBook(book.uuid, null, {
-  //       audiobook: {
-  //         filepath: internalAudioDir,
-  //         missing: false,
-  //       },
-  //     })
-  //   }
-
-  //   unsuppressPrefix(assetDir)
-
-  //   return scanReplacedAudiobook({ book, metadataFieldOverrides, signal })
-  // }
 
   // ebook/readaloud: relocateIfNeeded overwrites the dest file, so the
   // single-file case is fine without an explicit clear.

@@ -1,4 +1,4 @@
-import { type EpubPreferences, TextAlignment } from "@readium/navigator"
+import { type EpubPreferences, type TextAlignment } from "@readium/navigator"
 import {
   type PayloadAction,
   createAction,
@@ -30,8 +30,6 @@ export type ReadingTheme =
   | "paper"
   | "dark"
   | "cattpuccin"
-
-export type ColumnMode = "auto" | "1col" | "2cols"
 
 export type EdgePosition = {
   horizontalEdge: "left" | "right"
@@ -114,7 +112,7 @@ export const defaultPreferences: ReadingPreferences = {
   fontSize: 100,
   fontFamily: "publisher",
   theme: "auto",
-  align: TextAlignment.justify,
+  align: "justify" as TextAlignment,
   spacing: "default",
   layout: "paginated",
   columns: 0, // 0 means auto

@@ -23,12 +23,12 @@ module.exports = {
             position: "after",
           },
           {
-            pattern: "@/**",
+            pattern: "@v3/**",
             group: "parent",
             position: "before",
           },
           {
-            pattern: "@v3/**",
+            pattern: "@/**",
             group: "parent",
             position: "before",
           },

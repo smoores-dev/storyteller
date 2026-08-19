@@ -49,9 +49,9 @@ export async function scanAudiobook(
   const metadata = await extractAudiobookMetadataStep(opened, ctx)
 
   // cover extraction runs before the metadata commit, see scanEbook.ts.
-  await extractAudiobookCoverStep(metadata, ctx)
+  const cover = await extractAudiobookCoverStep(metadata, ctx)
 
-  const manifest = await extractAudiobookManifestStep(metadata, ctx)
+  const manifest = await extractAudiobookManifestStep(cover, ctx)
 
   const reconciled = await reconcileMetadataStep(manifest, ctx)
 

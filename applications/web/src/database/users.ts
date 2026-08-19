@@ -1,9 +1,4 @@
-import {
-  type Insertable,
-  type Selectable,
-  type Transaction,
-  type Updateable,
-} from "kysely"
+import { type Selectable, type Transaction, type Updateable } from "kysely"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
 import { type UUID } from "@/uuid"
@@ -13,7 +8,6 @@ import { type DB } from "./schema"
 import { getDefaultStatus } from "./statuses"
 
 export type UserPermission = Selectable<DB["userPermission"]>
-export type NewUserPermission = Insertable<DB["userPermission"]>
 export type UserPermissionUpdate = Updateable<DB["userPermission"]>
 
 export type UserPermissionSet = Omit<
@@ -24,7 +18,6 @@ export type UserPermissionSet = Omit<
 export type Permission = keyof UserPermissionSet
 
 export type User = Selectable<DB["user"]>
-export type NewUser = Insertable<DB["user"]>
 export type UserUpdate = Updateable<DB["user"]>
 
 export type UserWithPermissions = NonNullable<
@@ -144,21 +137,14 @@ export async function getUser(id: UUID, tr?: Transaction<DB>) {
             "settingsUpdate",
           ])
           .whereRef("user.userPermissionUuid", "=", "userPermission.uuid"),
-      ).as("permissions"),
+      )
+        .$notNull()
+        .as("permissions"),
     ])
     .where("id", "=", id)
     .executeTakeFirst()
 
   return row ?? null
-}
-
-export async function getUserCount() {
-  const { count } = await db
-    .selectFrom("user")
-    .select([(eb) => eb.fn.count("id").as("count")])
-    .executeTakeFirstOrThrow()
-
-  return count as number
 }
 
 export async function getUsers() {
@@ -327,19 +313,21 @@ export async function createUser(
 
     const defaultStatus = await getDefaultStatus(tr)
 
-    await tr
-      .insertInto("bookToStatus")
-      .columns(["bookUuid", "userId", "statusUuid"])
-      .expression((eb) =>
-        eb
-          .selectFrom("book")
-          .select((eb) => [
-            "book.uuid",
-            eb.val(userId).as("userId"),
-            eb.val(defaultStatus.uuid).as("statusUuid"),
-          ]),
-      )
-      .execute()
+    if (defaultStatus) {
+      await tr
+        .insertInto("bookToStatus")
+        .columns(["bookUuid", "userId", "statusUuid"])
+        .expression((eb) =>
+          eb
+            .selectFrom("book")
+            .select((eb) => [
+              "book.uuid",
+              eb.val(userId).as("userId"),
+              eb.val(defaultStatus.uuid).as("statusUuid"),
+            ]),
+        )
+        .execute()
+    }
   })
 }
 
@@ -500,24 +488,6 @@ export async function deleteInvite(key: string) {
   await db.deleteFrom("account").where("userId", "=", user.id).execute()
   await db.deleteFrom("session").where("userId", "=", user.id).execute()
   await db.deleteFrom("user").where("inviteKey", "=", key).execute()
-}
-
-export async function userHasPermission(
-  username: string,
-  permission: Permission,
-) {
-  const result = await db
-    .selectFrom("userPermission")
-    .select([permission])
-    .innerJoin("user", "user.userPermissionUuid", "userPermission.uuid")
-    .where("user.username", "=", username)
-    .executeTakeFirst()
-
-  if (!result) return false
-
-  const { [permission]: hasPermission } = result
-
-  return hasPermission
 }
 
 export async function updateUserPermissions(

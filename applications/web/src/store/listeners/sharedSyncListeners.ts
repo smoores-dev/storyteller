@@ -63,7 +63,9 @@ startAppListening({
   effect: async (action, listenerApi) => {
     const mode = selectReadingMode(listenerApi.getState())
     const currentTocItem = selectCurrentToCLocator(listenerApi.getState())
-    const { direction, context } = action["payload"] as SkipPartButtonPayload
+    const { direction, context } = (
+      action as unknown as { payload: SkipPartButtonPayload }
+    ).payload
 
     const isPressed = action.type === skipPartButtonPressed.type
     const isHeld = action.type === skipPartButtonHeld.type

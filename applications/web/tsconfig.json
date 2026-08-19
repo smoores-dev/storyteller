@@ -19,7 +19,7 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noUnusedParameters": true,
     "allowArbitraryExtensions": true,
     "incremental": true,
@@ -47,6 +47,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "scripts/**/*.ts",
+    "next.config.ts",
     ".next/types/**/*.ts",
     "postcss.config.js"
   ],

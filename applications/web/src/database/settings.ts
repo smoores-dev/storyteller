@@ -1,19 +1,66 @@
 import { readFileSync } from "node:fs"
+import { readFile } from "node:fs/promises"
 
 import { ZodError, z } from "zod"
 
 import { getScheduler } from "@/assets/library/scanner/triggers/scheduler"
 import { env } from "@/env"
 import { logger } from "@/logging"
+import { decryptSecret, encryptSecret } from "@/secrets"
 
 import { db } from "./connection"
 import {
+  type AuthProvider,
   ConfigFileSchema,
   type Epub2ImportStrategy,
   type ImportMode,
   ImportRuleSchema,
   type Settings,
+  isEncryptedSettingKey,
 } from "./settingsTypes"
+import {
+  type PreferenceDefaults,
+  PreferenceDefaultsSchema,
+  type PreferenceDefaultsUpdate,
+} from "./userPreferencesTypes"
+
+async function decryptSettingValue(name: string, value: unknown) {
+  if (isEncryptedSettingKey(name) && typeof value === "string" && value) {
+    return (await decryptSecret(value)) ?? ""
+  }
+
+  if (name === "authProviders" && Array.isArray(value)) {
+    return await Promise.all(
+      (value as AuthProvider[]).map(async (provider) => ({
+        ...provider,
+        clientSecret: provider.clientSecret
+          ? (await decryptSecret(provider.clientSecret)) ?? ""
+          : provider.clientSecret,
+      })),
+    )
+  }
+
+  return value
+}
+
+async function encryptSettingValue(name: string, value: unknown) {
+  if (isEncryptedSettingKey(name) && typeof value === "string" && value) {
+    return await encryptSecret(value)
+  }
+
+  if (name === "authProviders" && Array.isArray(value)) {
+    return await Promise.all(
+      (value as AuthProvider[]).map(async (provider) => ({
+        ...provider,
+        clientSecret: provider.clientSecret
+          ? await encryptSecret(provider.clientSecret)
+          : provider.clientSecret,
+      })),
+    )
+  }
+
+  return value
+}
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
   let details = settings.transcriptionEngine ?? "whisper.cpp"
@@ -76,7 +123,7 @@ function resolveFileReferences(obj: unknown): unknown {
   return result
 }
 
-function loadConfigFile(): ConfigFileCache {
+async function loadConfigFile(): Promise<ConfigFileCache> {
   if (globalThis.configFileCache) return globalThis.configFileCache
 
   const configPath = env.STORYTELLER_CONFIG
@@ -92,7 +139,7 @@ function loadConfigFile(): ConfigFileCache {
 
   let rawConfig: unknown
   try {
-    rawConfig = JSON.parse(readFileSync(configPath, "utf-8")) as unknown
+    rawConfig = JSON.parse(await readFile(configPath, "utf-8")) as unknown
   } catch (err) {
     throw new Error(
       `Failed to read config file "${configPath}": ${err instanceof Error ? err.message : String(err)}`,
@@ -169,12 +216,13 @@ function loadConfigFile(): ConfigFileCache {
 }
 
 /** Returns the set of setting keys that are locked by the config file */
-export function getConfigLockedKeys(): Set<keyof Settings> {
-  return loadConfigFile().keys
+export async function getConfigLockedKeys(): Promise<Set<keyof Settings>> {
+  const configFileCache = await loadConfigFile()
+  return configFileCache.keys
 }
 
 export async function getSetting<Name extends keyof Settings>(name: Name) {
-  const { settings: configSettings, keys } = loadConfigFile()
+  const { settings: configSettings, keys } = await loadConfigFile()
 
   if (keys.has(name)) {
     return configSettings[name] as Settings[Name]
@@ -190,7 +238,7 @@ export async function getSetting<Name extends keyof Settings>(name: Name) {
   const parsed: unknown =
     typeof valueJson === "string" ? JSON.parse(valueJson) : valueJson
 
-  return parsed as Settings[Name]
+  return (await decryptSettingValue(name, parsed)) as Settings[Name]
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -199,35 +247,38 @@ export async function getSettings(): Promise<Settings> {
     .select(["name", "value"])
     .execute()
 
-  const dbDesttings = rows.reduce((acc, row) => {
-    const name = row.name
-    const parsed =
-      typeof row.value === "string"
-        ? (JSON.parse(row.value) as Settings[keyof Settings])
-        : row.value
-    return {
-      ...acc,
-      [name]: parsed,
-    }
-  }, {}) as Settings
+  const decrypted = await Promise.all(
+    rows.map(async (row) => {
+      const parsed =
+        typeof row.value === "string"
+          ? (JSON.parse(row.value) as Settings[keyof Settings])
+          : row.value
+      return [row.name, await decryptSettingValue(row.name, parsed)] as const
+    }),
+  )
 
-  const { settings: configSettings } = loadConfigFile()
+  const dbDesttings = Object.fromEntries(decrypted) as Settings
+
+  const { settings: configSettings } = await loadConfigFile()
 
   const result = {
     ...dbDesttings,
     smtpSsl: dbDesttings.smtpSsl ?? true,
     smtpRejectUnauthorized: dbDesttings.smtpRejectUnauthorized ?? true,
+    backupCronExpression: dbDesttings.backupCronExpression ?? null,
+    backupRetentionCount: dbDesttings.backupRetentionCount ?? null,
   }
 
   return { ...result, ...configSettings }
 }
 
 export async function updateSettings(settings: Settings) {
-  const lockedKeys = getConfigLockedKeys()
+  const lockedKeys = await getConfigLockedKeys()
   const existingSettings = await getSettings()
 
   for (const [settingName, value] of Object.entries(settings)) {
     if (lockedKeys.has(settingName as keyof Settings)) continue
+    if (settingName === "dataDirAnchor") continue
 
     const unchanged =
       JSON.stringify(existingSettings[settingName as keyof Settings]) ===
@@ -235,24 +286,75 @@ export async function updateSettings(settings: Settings) {
 
     if (unchanged) continue
 
+    const stored = JSON.stringify(
+      await encryptSettingValue(settingName, value as unknown),
+    )
+
     await db
       .insertInto("settings")
       .values({
         name: settingName as keyof Settings,
-        value: JSON.stringify(value),
+        value: stored,
       })
-      .onConflict((oc) =>
-        oc.column("name").doUpdateSet({ value: JSON.stringify(value) }),
-      )
+      .onConflict((oc) => oc.column("name").doUpdateSet({ value: stored }))
       .execute()
   }
 
   await getScheduler().refresh()
+  const { getBackupScheduler } = await import("@/backupScheduler")
+  await getBackupScheduler().refresh()
+}
+
+export async function getPreferenceDefaults(): Promise<PreferenceDefaults> {
+  const { settings: configSettings, keys } = await loadConfigFile()
+
+  if (keys.has("preferenceDefaults")) {
+    return configSettings["preferenceDefaults"] ?? {}
+  }
+
+  const row = await db
+    .selectFrom("settings")
+    .select(["value"])
+    .where("name", "=", "preferenceDefaults")
+    .orderBy("createdAt", "desc")
+    .executeTakeFirst()
+
+  if (!row) return {}
+
+  const parsed: unknown =
+    typeof row.value === "string" ? JSON.parse(row.value) : row.value
+
+  const result = PreferenceDefaultsSchema.safeParse(parsed)
+  return result.success ? result.data : {}
+}
+
+export async function isPreferenceDefaultsLocked(): Promise<boolean> {
+  const lockedKeys = await getConfigLockedKeys()
+  return lockedKeys.has("preferenceDefaults")
+}
+
+export async function setPreferenceDefaults(update: PreferenceDefaultsUpdate) {
+  const current = await getPreferenceDefaults()
+  const merged = Object.fromEntries(
+    Object.entries({ ...current, ...update }).filter(
+      ([, entry]) => entry != null,
+    ),
+  ) as PreferenceDefaults
+  const value = JSON.stringify(merged)
+
+  await db
+    .insertInto("settings")
+    .values({ name: "preferenceDefaults", value })
+    .onConflict((oc) => oc.column("name").doUpdateSet({ value }))
+    .execute()
+
+  return merged
 }
 
 // validate and cache config file on startup (never re-read after this)
-loadConfigFile()
+void loadConfigFile()
 
-export function getConfigImportRules(): ConfigImportRuleEntry[] {
-  return loadConfigFile().importRules
+export async function getConfigImportRules(): Promise<ConfigImportRuleEntry[]> {
+  const configFileCache = await loadConfigFile()
+  return configFileCache.importRules
 }

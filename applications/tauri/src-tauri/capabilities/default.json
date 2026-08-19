@@ -1,0 +1,34 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "splash listens for boot events; the app served from the local server gets ipc for titlebar sync and window controls",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["http://localhost:*", "http://127.0.0.1:*"]
+  },
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-fullscreen",
+    "os:allow-os-type",
+    "os:allow-platform",
+    "dialog:default",
+    "os:allow-locale",
+    "os:default",
+    "opener:default",
+    "window-state:default",
+    "fs:default",
+    "allow-set-titlebar-color",
+    "allow-report-user-agent",
+    "allow-read-server-log",
+    "allow-show-server-log",
+    "allow-choose-database",
+    "allow-choose-assets-dir",
+    "allow-get-tauri-config",
+    "allow-set-update-channel",
+    "allow-check-for-updates-now"
+  ]
+}

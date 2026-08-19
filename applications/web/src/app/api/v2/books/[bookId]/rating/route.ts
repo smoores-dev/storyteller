@@ -2,6 +2,10 @@ import { NextResponse } from "next/server"
 
 import { withUser } from "@/auth/auth"
 import {
+  type RatingDimensionScores,
+  isValidDimensionScores,
+} from "@/database/ratingDimensions"
+import {
   deleteUserBookRating,
   getUserBookRating,
   setUserBookRating,
@@ -28,11 +32,12 @@ export const PUT = withUser<Params>(async (request, context) => {
   const body = (await request.json()) as {
     rating?: number | null
     review?: string | null
+    dimensions?: RatingDimensionScores | null
   }
 
-  if (body.rating == null && body.review == null) {
+  if (body.rating == null && body.review == null && body.dimensions == null) {
     return NextResponse.json(
-      { message: "Either rating or review, or both must be provided" },
+      { message: "Either rating, review, or dimensions must be provided" },
       { status: 405 },
     )
   }
@@ -44,8 +49,17 @@ export const PUT = withUser<Params>(async (request, context) => {
     )
   }
 
+  if (body.dimensions != null && !isValidDimensionScores(body.dimensions)) {
+    return NextResponse.json(
+      { message: "Dimension scores must be numbers between 0 and 5" },
+      { status: 405 },
+    )
+  }
+
   const updated = await setUserBookRating(request.auth.user.id, bookId, body)
-  return NextResponse.json(updated)
+  return updated
+    ? NextResponse.json(updated)
+    : new Response(null, { status: 204 })
 })
 
 /**

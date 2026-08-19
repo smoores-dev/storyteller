@@ -28,24 +28,6 @@ export async function getUserSettings(
   }, {})
 }
 
-export async function getUserSetting(
-  userId: UUID,
-  name: string,
-): Promise<{ found: boolean; value: UserSettingValue }> {
-  const row = await db
-    .selectFrom("userSettings")
-    .select(["value"])
-    .where("userId", "=", userId)
-    .where("name", "=", name)
-    .executeTakeFirst()
-
-  if (!row) {
-    return { found: false, value: null }
-  }
-
-  return { found: true, value: parse(row.value) }
-}
-
 export async function setUserSetting(
   userId: UUID,
   name: string,
@@ -76,12 +58,4 @@ export async function updateUserSettings(
 
     await setUserSetting(userId, name, value)
   }
-}
-
-export async function deleteUserSetting(userId: UUID, name: string) {
-  await db
-    .deleteFrom("userSettings")
-    .where("userId", "=", userId)
-    .where("name", "=", name)
-    .execute()
 }

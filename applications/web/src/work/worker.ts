@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { mkdir } from "node:fs/promises"
+import { mkdir, readFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import type { MessagePort } from "node:worker_threads"
@@ -25,6 +25,7 @@ import {
   getReadaloudFilepath,
   getTranscriptionsFilepath,
 } from "@/assets/paths"
+import { type Report, createAlignmentReport } from "@/database/alignmentReports"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -42,6 +43,8 @@ import type { UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
 
 import type { RestartMode } from "./distributor"
+import { type JobStats, buildJobStats } from "./jobStats"
+import type { RunConfig } from "./runConfig"
 
 const STAGES = ["SPLIT_TRACKS", "TRANSCRIBE_CHAPTERS", "SYNC_CHAPTERS"] as const
 
@@ -52,14 +55,18 @@ if (process.env["DEBUG_WORKER"] === "true") {
 }
 
 export default async function processBook({
+  jobUuid,
   bookUuid,
   restart,
+  config,
   port,
 }: {
+  jobUuid: UUID
   bookUuid: UUID
   restart: RestartMode
+  config: RunConfig | null
   port: MessagePort
-}) {
+}): Promise<JobStats | undefined> {
   const processTiming = createTiming()
   processTiming.setMetadata("bookUuid", bookUuid)
   processTiming.setMetadata("restartMode", restart || "continue")
@@ -82,6 +89,11 @@ export default async function processBook({
     port.postMessage({ requestId, update, relations })
 
     return await promise
+  }
+
+  async function getEffectiveSettings() {
+    const settings = await getSettings()
+    return config ? { ...settings, ...config } : settings
   }
 
   let book = await getBookOrThrow(bookUuid)
@@ -149,7 +161,7 @@ export default async function processBook({
         // shame not to reuse stuff, but too easy to produce bugs if we do
         await deleteProcessed(book)
 
-        const settings = await getSettings()
+        const settings = await getEffectiveSettings()
         logger.info("Pre-processing...")
         await processTiming.timeAsync("split_tracks", () =>
           processAudiobook(
@@ -176,11 +188,12 @@ export default async function processBook({
         using epub = await Epub.from(book.ebook!.filepath)
         book = await getBookOrThrow(bookUuid)
 
-        const locale = book.language
-          ? new Intl.Locale(book.language)
+        const runLanguage = config?.language ?? book.language
+        const locale = runLanguage
+          ? new Intl.Locale(runLanguage)
           : (await epub.getLanguage()) ?? new Intl.Locale("en-US")
 
-        const settings = await getSettings()
+        const settings = await getEffectiveSettings()
         await processTiming.timeAsync("transcribe_chapters", () =>
           transcribe(
             getProcessedAudioFilepath(book),
@@ -217,83 +230,107 @@ export default async function processBook({
       }
 
       if (stage === "SYNC_CHAPTERS") {
-        const markupFilepath = join(
-          tmpdir(),
-          `storyteller-${randomUUID()}`,
-          `${book.uuid}.epub`,
-        )
+        await processTiming.timeAsync("sync", async () => {
+          const markupFilepath = join(
+            tmpdir(),
+            `storyteller-${randomUUID()}`,
+            `${book.uuid}.epub`,
+          )
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        await markup(book.ebook!.filepath, markupFilepath, {
-          onProgress,
-          logger,
-        })
-
-        const settings = await getSettings()
-        const readaloudFilepath = getReadaloudFilepath(book, settings)
-        const readaloudDirectory = dirname(readaloudFilepath)
-        await mkdir(readaloudDirectory, { recursive: true })
-
-        await align(
-          markupFilepath,
-          readaloudFilepath,
-          getTranscriptionsFilepath(book),
-          getProcessedAudioFilepath(book),
-          {
-            granularity: "sentence",
-            reportsPath: getAlignmentReportFilepath(book),
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          await markup(book.ebook!.filepath, markupFilepath, {
+            onProgress: (p) => {
+              onProgress(p * 0.15)
+            },
             logger,
-            onProgress,
-          },
-        )
+          })
 
-        book = await updateBook(null, {
-          readaloud: {
-            filepath: readaloudFilepath,
-            status: "ALIGNED",
-            currentStage: stage,
-            stageProgress: 1,
-            queuePosition: 0,
-            restartPending: null,
-          },
+          const settings = await getEffectiveSettings()
+          const readaloudFilepath = getReadaloudFilepath(book, settings)
+          const readaloudDirectory = dirname(readaloudFilepath)
+          await mkdir(readaloudDirectory, { recursive: true })
+
+          const reportFilepath = getAlignmentReportFilepath(book)
+          await align(
+            markupFilepath,
+            readaloudFilepath,
+            getTranscriptionsFilepath(book),
+            getProcessedAudioFilepath(book),
+            {
+              granularity: "sentence",
+              reportsPath: reportFilepath,
+              logger,
+              onProgress: (p) => {
+                onProgress(0.15 + p * 0.85)
+              },
+            },
+          )
+
+          try {
+            const reportJson = await readFile(reportFilepath, {
+              encoding: "utf-8",
+            })
+            await createAlignmentReport({
+              jobUuid,
+              bookUuid,
+              report: JSON.parse(reportJson) as Report,
+            })
+          } catch (err) {
+            logger.warn({
+              msg: "Failed to persist alignment report",
+              bookUuid,
+              err,
+            })
+          }
+
+          book = await updateBook(null, {
+            readaloud: {
+              filepath: readaloudFilepath,
+              status: "ALIGNED",
+              currentStage: stage,
+              stageProgress: 1,
+              queuePosition: 0,
+              restartPending: null,
+            },
+          })
+
+          book = await updateBook({
+            alignedByStorytellerVersion: getCurrentVersion(),
+            alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
+            alignedWith: formatTranscriptionEngineDetails(settings),
+          })
+
+          const extractedCover = await getExtractedCover(book, "audiobook")
+          const audioCover = extractedCover
+            ? new File(
+                [new Uint8Array(extractedCover.data)],
+                extractedCover.filename,
+              )
+            : null
+
+          logger.info(
+            `Writing metadata to aligned readaloud file (title: ${book.title})`,
+          )
+
+          using epub = await Epub.from(readaloudFilepath)
+          await writeMetadataToEpub(book, epub, {
+            includeAlignmentMetadata: true,
+            ...(audioCover && { audioCover }),
+            format: "readaloud",
+          })
+          logger.info(
+            `Successfully wrote metadata to file (title: ${await epub.getTitle(true)})`,
+          )
+
+          await epub.saveAndClose()
+
+          const shouldCleanCache = await getSetting("cleanCacheAfterReadaloud")
+
+          if (shouldCleanCache) {
+            logger.info("Cleaning up cache files after successful alignment")
+            await deleteProcessed(book)
+          }
         })
-
-        book = await updateBook({
-          alignedByStorytellerVersion: getCurrentVersion(),
-          alignedAt: new Date().toISOString().replace(/\.\d+/, ""),
-          alignedWith: formatTranscriptionEngineDetails(settings),
-        })
-
-        const extractedCover = await getExtractedCover(book, "audiobook")
-        const audioCover = extractedCover
-          ? new File(
-              [new Uint8Array(extractedCover.data)],
-              extractedCover.filename,
-            )
-          : null
-
-        logger.info(
-          `Writing metadata to aligned readaloud file (title: ${book.title})`,
-        )
-
-        using epub = await Epub.from(readaloudFilepath)
-        await writeMetadataToEpub(book, epub, {
-          includeAlignmentMetadata: true,
-          ...(audioCover && { audioCover }),
-          format: "readaloud",
-        })
-        logger.info(
-          `Successfully wrote metadata to file (title: ${await epub.getTitle(true)})`,
-        )
-
-        await epub.saveAndClose()
-
-        const shouldCleanCache = await getSetting("cleanCacheAfterReadaloud")
-
-        if (shouldCleanCache) {
-          logger.info("Cleaning up cache files after successful alignment")
-          await deleteProcessed(book)
-        }
       }
     } catch (e) {
       logger.error({
@@ -314,15 +351,17 @@ export default async function processBook({
     }
   }
 
+  const summary = processTiming.summary()
+
   const enableTiming = env.STORYTELLER_LOG_LEVEL === "debug"
   if (enableTiming) {
-    logger.info(
-      formatSingleReport(
-        processTiming.summary(),
-        `Process Book: ${book.title}`,
-      ),
-    )
+    logger.info(formatSingleReport(summary, `Process Book: ${book.title}`))
   }
 
   logger.info(`Completed synchronizing book ${bookRefForLog}`)
+
+  return buildJobStats(summary, {
+    audioDurationSeconds: book.audiobook?.duration ?? null,
+    pageCount: book.ebook?.pageCount ?? null,
+  })
 }

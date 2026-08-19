@@ -1,0 +1,12 @@
+# .vscode/i18n-ally-custom-framework.yml
+
+languageIds:
+  - typescriptreact
+
+usageMatchRegex:
+  - "[^\\w\\d]t(?:\\.raw)?\\(['\"`]({key})['\"`]"
+  - "[^\\w\\d]tLabels(?:\\.raw)?\\(['\"`]({key})['\"`]"
+
+scopeRangeRegex: "(?:use|get)Translations?\\(\\s*\\[?\\s*['\"`](.*?)['\"`]"
+
+monopoly: true

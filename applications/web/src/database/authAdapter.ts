@@ -96,19 +96,22 @@ export function KyselyAdapter(
           .returning(["id"])
           .executeTakeFirstOrThrow()
         const defaultStatus = await getDefaultStatus(tr)
-        await tr
-          .insertInto("bookToStatus")
-          .columns(["bookUuid", "userId", "statusUuid"])
-          .expression((eb) =>
-            eb
-              .selectFrom("book")
-              .select((eb) => [
-                "book.uuid",
-                eb.val(id).as("userId"),
-                eb.val(defaultStatus.uuid).as("statusUuid"),
-              ]),
-          )
-          .execute()
+
+        if (defaultStatus) {
+          await tr
+            .insertInto("bookToStatus")
+            .columns(["bookUuid", "userId", "statusUuid"])
+            .expression((eb) =>
+              eb
+                .selectFrom("book")
+                .select((eb) => [
+                  "book.uuid",
+                  eb.val(id).as("userId"),
+                  eb.val(defaultStatus.uuid).as("statusUuid"),
+                ]),
+            )
+            .execute()
+        }
         return id
       })
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

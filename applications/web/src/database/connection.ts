@@ -58,3 +58,7 @@ function createDatabase() {
 export function replaceDatabase(newDb: Kysely<DB>) {
   db = newDb
 }
+
+export async function backupDatabase(destPath: string): Promise<void> {
+  await sqlite.backup(destPath)
+}

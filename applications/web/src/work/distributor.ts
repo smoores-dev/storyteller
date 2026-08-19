@@ -18,18 +18,32 @@ import {
   type BookWithRelations,
   type Readaloud,
   getBookOrThrow,
-  getNextQueuePosition,
   updateBook,
 } from "@/database/books"
+import {
+  type Job,
+  createJob,
+  getActiveJobForBook,
+  getJob,
+  getJobs,
+  getNextJobPosition,
+  nowTimestamp,
+  reorderQueuedJobs,
+  updateJob,
+} from "@/database/jobs"
 import { getSettings } from "@/database/settings"
 import { env } from "@/env"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 
+import type { JobStats } from "./jobStats"
+import { type RunConfig, buildRunConfig } from "./runConfig"
 import { STAGE_ORDER } from "./stages"
 import type processBook from "./worker"
 
 export type RestartMode = false | "full" | "transcription" | "sync"
+
+const MAX_CONCURRENT = 1
 
 /**
  * Next.js app directory seems to have a bug where, in production,
@@ -43,17 +57,26 @@ export type RestartMode = false | "full" | "transcription" | "sync"
 declare global {
   // variables declared with const/let cannot be added to the global scope
   /* eslint-disable no-var */
-  var controllers: Map<UUID, AbortController> | undefined
+  var jobControllers: Map<UUID, AbortController> | undefined
+  var jobAbortIntents: Map<UUID, "cancel" | "pause"> | undefined
   var alignmentPiscina: Piscina | undefined
   /* eslint-enable no-var */
 }
 
 let controllers: Map<UUID, AbortController>
-if (globalThis.controllers) {
-  controllers = globalThis.controllers
+if (globalThis.jobControllers) {
+  controllers = globalThis.jobControllers
 } else {
   controllers = new Map()
-  globalThis.controllers = controllers
+  globalThis.jobControllers = controllers
+}
+
+let abortIntents: Map<UUID, "cancel" | "pause">
+if (globalThis.jobAbortIntents) {
+  abortIntents = globalThis.jobAbortIntents
+} else {
+  abortIntents = new Map()
+  globalThis.jobAbortIntents = abortIntents
 }
 
 const filename = join(cwd(), "work-dist", env.STORYTELLER_WORKER)
@@ -81,55 +104,93 @@ if (globalThis.alignmentPiscina) {
   globalThis.alignmentPiscina = alignmentPiscina
 }
 
-export function cancelProcessing(bookUuid: UUID) {
-  const abortController = controllers.get(bookUuid)
-  if (!abortController) {
-    return
+const pumpMutex = new AsyncMutex()
+
+export async function enqueueBookAlign(
+  bookUuid: UUID,
+  restart: RestartMode,
+  overrides?: Partial<RunConfig>,
+): Promise<Job> {
+  const existing = await getActiveJobForBook(bookUuid)
+  if (existing) {
+    return existing
   }
 
-  abortController.abort()
-  if (controllers.has(bookUuid)) controllers.delete(bookUuid)
+  const book = await getBookOrThrow(bookUuid)
+  const settings = await getSettings()
+  const config = buildRunConfig(settings, book.language ?? null, overrides)
+
+  const effectiveRestart = clampRestart(restart, book)
+  const startStage = getStartStage(effectiveRestart, book)
+  const position = await getNextJobPosition()
+
+  const job = await createJob({
+    type: "book_align",
+    bookUuid,
+    restart: effectiveRestart,
+    config,
+    position,
+  })
+
+  await updateJob(job.uuid, { stage: startStage })
+
+  await updateBook(bookUuid, null, {
+    readaloud: {
+      status: "QUEUED",
+      currentStage: startStage,
+      queuePosition: position,
+      restartPending: effectiveRestart || null,
+    },
+  })
+
+  void pump()
+  return job
 }
 
-const mutex = new AsyncMutex()
-
-export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
-  if (controllers.has(bookUuid)) return
-
-  await mutex.lock()
-  let book: BookWithRelations
-  let abortController: AbortController
-  let effectiveRestart: RestartMode = false
+async function claimNextJob(): Promise<Job | undefined> {
+  await pumpMutex.lock()
   try {
-    const position = await getNextQueuePosition()
-    book = await getBookOrThrow(bookUuid)
+    if (controllers.size >= MAX_CONCURRENT) return undefined
 
-    effectiveRestart = clampRestart(restart, book)
-    const startStage = getStartStage(effectiveRestart, book)
+    const [next] = await getJobs({ statuses: ["QUEUED", "RUNNING"] })
+    if (!next) return undefined
 
-    await updateBook(bookUuid, null, {
-      readaloud: {
-        status: "QUEUED",
-        currentStage: startStage,
-        queuePosition: position,
-        restartPending: effectiveRestart || null,
-      },
+    const abortController = new AbortController()
+    controllers.set(next.uuid, abortController)
+    return await updateJob(next.uuid, {
+      status: "RUNNING",
+      startedAt: nowTimestamp(),
+      error: null,
     })
-
-    abortController = new AbortController()
   } finally {
-    mutex.unlock()
+    pumpMutex.unlock()
   }
+}
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!book || !abortController) {
-    logger.error("Failed to enqueue book for processing")
+export async function pump(): Promise<void> {
+  const job = await claimNextJob()
+  if (!job) return
+
+  void runJob(job).finally(() => {
+    controllers.delete(job.uuid)
+    abortIntents.delete(job.uuid)
+    void pump()
+  })
+}
+
+async function runJob(job: Job): Promise<void> {
+  if (!job.bookUuid) {
+    logger.error(`Job ${job.uuid} is not a runnable book_align job`)
+    await updateJob(job.uuid, { status: "ERROR", error: "invalid job" })
     return
   }
 
-  controllers.set(bookUuid, abortController)
+  const bookUuid = job.bookUuid
+  const abortController = controllers.get(job.uuid)
+  if (!abortController) return
 
-  // same logic as in deleteBook, should probably be a helper function
+  const book = await getBookOrThrow(bookUuid)
+
   const filePaths = [
     book.ebook?.filepath,
     book.audiobook?.filepath,
@@ -138,22 +199,16 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
     .filter((filepath) => filepath != undefined)
     .map((filepath) => resolve(filepath))
 
-  // if one of the paths is a directory and contains the others, ignore the others, no point in adding them all
   const dirs = filePaths.filter((dir) => !extname(dir))
-
-  const realFilePaths = filePaths.filter((path) => {
-    // basically no subpaths
-    return !dirs.some((dir) => pathBelongsTo(dir, path))
-  })
-
+  const realFilePaths = filePaths.filter(
+    (path) => !dirs.some((dir) => pathBelongsTo(dir, path)),
+  )
   const toSupress = [...dirs, ...realFilePaths]
 
-  // predict the readaloud output path and suppress it before the worker spawns,
   if (book.ebook?.filepath) {
     try {
       const settings = await getSettings()
-      const predictedReadaloudPath = getReadaloudFilepath(book, settings)
-      toSupress.push(predictedReadaloudPath)
+      toSupress.push(getReadaloudFilepath(book, settings))
     } catch (err) {
       logger.warn({
         msg: "Failed to predict readaloud filepath for suppression",
@@ -176,13 +231,10 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
       update: BookUpdate | null
       relations: BookRelationsUpdate
     }) => {
-      // keep refreshing suppression to ensure the watcher ignores the create event
       refreshSuppression()
 
-      // readaloud filepath may change during processing, keep suppressed
       if (message.relations.readaloud?.filepath) {
-        const fp = message.relations.readaloud.filepath
-        toSupress.push(fp)
+        toSupress.push(message.relations.readaloud.filepath)
       }
 
       const updated = await updateBook(
@@ -190,6 +242,15 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
         message.update,
         message.relations,
       )
+
+      const readaloud = message.relations.readaloud
+      if (readaloud) {
+        await updateJob(job.uuid, {
+          stage: readaloud.currentStage,
+          progress: readaloud.stageProgress,
+        })
+      }
+
       port2.postMessage({ requestId: message.requestId, book: updated })
     },
   )
@@ -197,26 +258,34 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
   refreshSuppression()
 
   try {
-    await alignmentPiscina.run(
-      { bookUuid, restart: effectiveRestart, port: port1 } satisfies Parameters<
-        typeof processBook
-      >[0],
+    const stats = (await alignmentPiscina.run(
+      {
+        jobUuid: job.uuid,
+        bookUuid,
+        restart: job.restart ?? false,
+        config: job.config,
+        port: port1,
+      } satisfies Parameters<typeof processBook>[0],
       { transferList: [port1], signal: abortController.signal },
-    )
+    )) as JobStats | undefined
 
-    const book = await getBookOrThrow(bookUuid)
+    const finished = await getBookOrThrow(bookUuid)
 
-    if (book.readaloud?.status === "ERROR") {
-      const failedStage = book.readaloud.currentStage
+    if (finished.readaloud?.status === "ERROR") {
       logger.error(
-        `Processing for "${book.title}" (${bookUuid}) failed during ${failedStage}. See the error log above for details.`,
+        `Processing for "${finished.title}" (${bookUuid}) failed during ${finished.readaloud.currentStage}. See the error log above for details.`,
       )
+      await updateJob(job.uuid, {
+        status: "ERROR",
+        finishedAt: nowTimestamp(),
+        error: `failed during ${finished.readaloud.currentStage}`,
+      })
       return
     }
 
-    if (!book.readaloud?.filepath) {
+    if (!finished.readaloud?.filepath) {
       throw new Error(
-        `Processing completed for "${book.title}" (${bookUuid}) but no aligned file was produced. This is likely a bug.`,
+        `Processing completed for "${finished.title}" (${bookUuid}) but no aligned file was produced. This is likely a bug.`,
       )
     }
 
@@ -226,53 +295,150 @@ export async function startProcessing(bookUuid: UUID, restart: RestartMode) {
         kind: "candidates",
         candidates: [
           {
-            filepath: book.readaloud.filepath,
+            filepath: finished.readaloud.filepath,
             format: "readaloud",
-            existingBook: book,
-            folder: filepathFolder(book.readaloud.filepath),
+            existingBook: finished,
+            folder: filepathFolder(finished.readaloud.filepath),
           },
         ],
       },
       options: { concurrency: 1 },
       signal: AbortSignal.timeout(10000),
     })
+
+    await updateJob(job.uuid, {
+      status: "DONE",
+      progress: 1,
+      finishedAt: nowTimestamp(),
+      stats: stats ?? undefined,
+    })
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      logger.info(`Processing for book ${bookUuid} aborted by user`)
+      const intent = abortIntents.get(job.uuid) ?? "cancel"
+      const current = await getBookOrThrow(bookUuid)
+      const stage = current.readaloud?.currentStage ?? "SPLIT_TRACKS"
 
-      const book = await getBookOrThrow(bookUuid)
+      logger.info(`Processing for job ${job.uuid} ${intent}d by user`)
+
       await updateBook(bookUuid, null, {
         readaloud: {
           status: "STOPPED",
-          currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+          currentStage: stage,
           queuePosition: null,
           restartPending: null,
         },
       })
+
+      await updateJob(job.uuid, {
+        status: intent === "pause" ? "PAUSED" : "CANCELED",
+        stage,
+        finishedAt: intent === "pause" ? null : nowTimestamp(),
+      })
       return
     }
 
-    const book = await getBookOrThrow(bookUuid)
+    const current = await getBookOrThrow(bookUuid)
     await updateBook(bookUuid, null, {
       readaloud: {
         status: "ERROR",
-        currentStage: book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+        currentStage: current.readaloud?.currentStage ?? "SPLIT_TRACKS",
         queuePosition: null,
         restartPending: null,
       },
     })
 
-    logger.error(`Processing for book ${bookUuid} failed unexpectedly`)
+    await updateJob(job.uuid, {
+      status: "ERROR",
+      finishedAt: nowTimestamp(),
+      error: err instanceof Error ? err.message : String(err),
+    })
+
+    logger.error(`Processing for job ${job.uuid} failed unexpectedly`)
     logger.error(err)
   } finally {
     for (const fp of toSupress) unsuppressPrefix(fp)
-
-    if (controllers.has(bookUuid)) controllers.delete(bookUuid)
   }
 }
 
-// clamp the requested restart to the book's actual progress so we never
-// skip ahead past stages that haven't completed yet
+export async function cancelJob(jobUuid: UUID): Promise<void> {
+  const job = await getJob(jobUuid)
+  if (!job) return
+
+  const controller = controllers.get(jobUuid)
+  if (controller) {
+    abortIntents.set(jobUuid, "cancel")
+    controller.abort()
+    return
+  }
+
+  await updateJob(jobUuid, { status: "CANCELED", finishedAt: nowTimestamp() })
+  if (job.bookUuid) {
+    await updateBook(job.bookUuid, null, {
+      readaloud: {
+        status: "STOPPED",
+        currentStage: job.stage ?? "SPLIT_TRACKS",
+        queuePosition: null,
+        restartPending: null,
+      },
+    })
+  }
+  void pump()
+}
+
+export async function pauseJob(jobUuid: UUID): Promise<void> {
+  const job = await getJob(jobUuid)
+  if (!job) return
+
+  const controller = controllers.get(jobUuid)
+  if (controller) {
+    abortIntents.set(jobUuid, "pause")
+    controller.abort()
+    return
+  }
+
+  if (job.status === "QUEUED") {
+    await updateJob(jobUuid, { status: "PAUSED" })
+  }
+}
+
+export async function resumeJob(jobUuid: UUID): Promise<void> {
+  const job = await getJob(jobUuid)
+  if (!job || job.status !== "PAUSED") return
+
+  const position = await getNextJobPosition()
+  await updateJob(jobUuid, {
+    status: "QUEUED",
+    position,
+    finishedAt: null,
+  })
+  if (job.bookUuid) {
+    await updateBook(job.bookUuid, null, {
+      readaloud: {
+        status: "QUEUED",
+        currentStage: job.stage ?? "SPLIT_TRACKS",
+        queuePosition: position,
+      },
+    })
+  }
+  void pump()
+}
+
+export async function reorderJobs(orderedUuids: UUID[]): Promise<void> {
+  await reorderQueuedJobs(orderedUuids)
+}
+
+export async function cancelProcessing(bookUuid: UUID): Promise<void> {
+  const job = await getActiveJobForBook(bookUuid)
+  if (job) await cancelJob(job.uuid)
+}
+
+export async function startProcessing(
+  bookUuid: UUID,
+  restart: RestartMode,
+): Promise<void> {
+  await enqueueBookAlign(bookUuid, restart)
+}
+
 function clampRestart(
   restart: RestartMode,
   book: BookWithRelations,

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react"
-import { Drawer } from "vaul"
+import { Drawer } from "vaul-base"
 
 import { type BookWithRelations } from "@/database/books"
 import { useAppSelector } from "@/store/appState"

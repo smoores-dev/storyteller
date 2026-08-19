@@ -38,7 +38,8 @@ export function SettingsSection({
   return (
     <div
       className={cn(
-        query && matches && "ring-primary/50 rounded-lg ring-1 ring-offset-0",
+        "max-w-2xl rounded-2xl",
+        query && matches && "ring-primary/50 ring-1 ring-offset-0",
       )}
     >
       {children}

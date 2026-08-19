@@ -3,7 +3,7 @@
 import { readdir, stat } from "fs/promises"
 import { join } from "node:path"
 
-import { hasPermission, nextAuth } from "@/auth/auth"
+import { getCurrentUser } from "@/auth/auth"
 import { DATA_DIR } from "@/directories"
 
 export type DirectoryFileEntry = {
@@ -22,8 +22,8 @@ export async function listDirectoryAction(
   /** null means data dir for server import */
   directory: string | null,
 ): Promise<{ directory: string; entries: DirectoryEntry[] }> {
-  const session = await nextAuth.auth()
-  if (!hasPermission("bookCreate", session?.user)) {
+  const user = await getCurrentUser()
+  if (!user?.permissions.bookCreate) {
     throw new Error("Forbidden")
   }
 

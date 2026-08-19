@@ -18,9 +18,6 @@ export type ValidationInput = {
   forbiddenRoots?: string[]
 }
 
-// normalize without touching the filesystem so the same function can run on
-// server and client. resolves `.` and `..`, drops empty and trailing
-// segments, keeps the leading slash if present.
 export function normalizeRulePath(p: string): string {
   const flipped = p.replaceAll("\\", "/")
   const isAbsolute = flipped.startsWith("/")

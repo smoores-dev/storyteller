@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-choose-database"
+description = "Enables the choose_database command without any pre-configured scope."
+commands.allow = ["choose_database"]
+
+[[permission]]
+identifier = "deny-choose-database"
+description = "Denies the choose_database command without any pre-configured scope."
+commands.deny = ["choose_database"]

@@ -7,6 +7,7 @@ import { listenerMiddleware } from "./listeners/listenerMiddleware"
 import { audioPlayerReducer } from "./slices/audioPlayerSlice"
 import { preferencesReducer } from "./slices/preferencesSlice"
 import { readingSessionReducer } from "./slices/readingSessionSlice"
+import { uiSettingsReducer } from "./slices/uiSettingsSlice"
 
 export function makeStore() {
   const store = configureStore({
@@ -17,6 +18,7 @@ export function makeStore() {
       audioPlayer: audioPlayerReducer,
       readingSession: readingSessionReducer,
       preferences: preferencesReducer,
+      uiSettings: uiSettingsReducer,
     },
 
     middleware: (getDefaultMiddleware) =>

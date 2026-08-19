@@ -7,27 +7,37 @@ import {
   loadGlobalPreferencesFromStorage,
   preferencesSlice,
 } from "@/store/slices/preferencesSlice"
+import {
+  type UISettings,
+  uiSettingsSlice,
+} from "@/store/slices/uiSettingsSlice"
 import { type AppStore, makeStore } from "@/store/store"
 
 export default function StoreProvider({
   children,
+  initialUISettings,
 }: {
   children: React.ReactNode
+  initialUISettings?: Partial<UISettings>
 }) {
   const storeRef = useRef<AppStore>(undefined)
   if (!storeRef.current) {
-    // Create the store instance the first time this renders
     storeRef.current = makeStore()
 
     initializeAudioPlayerBridge(storeRef.current)
 
-    // hydrate preferences from localStorage
     const storedPreferences = loadGlobalPreferencesFromStorage() ?? {}
     storeRef.current.dispatch(
       preferencesSlice.actions.initGlobalPreferences({
         preferences: storedPreferences,
       }),
     )
+
+    if (initialUISettings) {
+      storeRef.current.dispatch(
+        uiSettingsSlice.actions.initUISettings(initialUISettings),
+      )
+    }
   }
 
   return <Provider store={storeRef.current}>{children}</Provider>

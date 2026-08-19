@@ -29,15 +29,15 @@ declare global {
   var _configImportRuleObjects: ImportRuleWithCollections[] | undefined
 }
 
-function getConfigRuleObjects(): ImportRuleWithCollections[] {
+async function getConfigRuleObjects(): Promise<ImportRuleWithCollections[]> {
   if (globalThis._configImportRuleObjects) {
     return globalThis._configImportRuleObjects
   }
 
-  const entries = getConfigImportRules()
+  const entries = await getConfigImportRules()
   const now = new Date().toISOString()
 
-  globalThis._configImportRuleObjects = entries.map((entry) => ({
+  const rules: ImportRuleWithCollections[] = entries.map((entry) => ({
     uuid: randomUUID(),
     kind: entry.kind,
     path: entry.path,
@@ -51,23 +51,15 @@ function getConfigRuleObjects(): ImportRuleWithCollections[] {
     bookTitle: null,
   })) as ImportRuleWithCollections[]
 
-  return globalThis._configImportRuleObjects
-}
+  globalThis._configImportRuleObjects = rules
 
-/**
- * Check if a rule is a config rule.
- */
-export function isConfigImportRule(
-  kind: ImportRuleKind,
-  path: string,
-): boolean {
-  return getConfigRuleObjects().some((r) => r.kind === kind && r.path === path)
+  return rules
 }
 
 export async function getImportRules(
   kind?: ImportRuleKind,
 ): Promise<ImportRuleWithCollections[]> {
-  const configRules = getConfigRuleObjects()
+  const configRules = await getConfigRuleObjects()
   const filteredConfigRules = kind
     ? configRules.filter((r) => r.kind === kind)
     : configRules
@@ -143,7 +135,8 @@ export async function getWatchRules(): Promise<ImportRuleWithCollections[]> {
 }
 
 export async function getIgnorePaths(): Promise<string[]> {
-  const configPaths = getConfigRuleObjects()
+  const configRules = await getConfigRuleObjects()
+  const configPaths = configRules
     .filter((r) => r.kind === "ignore")
     .map((r) => r.path)
 
@@ -329,43 +322,4 @@ export async function addIgnoreRule(
     })
     .onConflict((oc) => oc.column("path").doNothing())
     .execute()
-}
-
-export async function removeIgnoreRules(paths: string[]) {
-  if (!paths.length) return
-
-  await db
-    .deleteFrom("importRule")
-    .where("kind", "=", "ignore")
-    .where("path", "in", paths)
-    .execute()
-}
-
-export async function getImportRulesForCollection(
-  collectionUuid: UUID,
-): Promise<ImportRuleWithCollections[]> {
-  const rules = await db
-    .selectFrom("importRule")
-    .innerJoin(
-      "importRuleToCollection",
-      "importRuleToCollection.importRuleUuid",
-      "importRule.uuid",
-    )
-    .leftJoin("book", "book.uuid", "importRule.bookUuid")
-    .selectAll("importRule")
-    .select("book.title as bookTitle")
-    .select((eb) => [
-      jsonArrayFrom(
-        eb
-          .selectFrom("importRuleToCollection as irtc2")
-          .innerJoin("collection", "irtc2.collectionUuid", "collection.uuid")
-          .select(["collection.uuid", "collection.name"])
-          .whereRef("irtc2.importRuleUuid", "=", "importRule.uuid"),
-      ).as("collections"),
-    ])
-    .where("importRuleToCollection.collectionUuid", "=", collectionUuid)
-    .orderBy("importRule.createdAt", "asc")
-    .execute()
-
-  return rules
 }

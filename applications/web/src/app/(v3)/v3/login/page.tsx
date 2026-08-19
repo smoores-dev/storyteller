@@ -6,9 +6,11 @@ import { getTranslations } from "next-intl/server"
 
 import { apiHost } from "@/app/apiHost"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import { createConfig, nextAuth } from "@/auth/auth"
+import { createConfig, getCurrentUser, nextAuth } from "@/auth/auth"
 import { type PublicProvider } from "@/auth/providers"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
+import { getPreferenceDefaults, getSettings } from "@/database/settings"
+import { getUsers } from "@/database/users"
 
 import { LoginForm, type LoginFormData } from "./LoginForm"
 
@@ -32,6 +34,19 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LoginPage() {
+  const [users, settings] = await Promise.all([getUsers(), getSettings()])
+
+  if (users.length === 0) {
+    redirect("/v3/init")
+  }
+
+  const currentUser = await getCurrentUser()
+  if (currentUser) {
+    const basePath =
+      (await headers()).get("x-v3-rewritten") === "1" ? "" : "/v3"
+    redirect(basePath || "/")
+  }
+
   async function credentialsLogin(data: LoginFormData, callbackUrl?: string) {
     "use server"
 
@@ -82,8 +97,11 @@ export default async function LoginPage() {
       return "failed"
     }
 
+    const reqHeaders = await headers()
+    const basePath = reqHeaders.get("x-v3-rewritten") === "1" ? "" : "/v3"
+
     if (!callbackUrl) {
-      redirect("/v3")
+      redirect(basePath || "/")
     }
 
     const cookieOrigin = (await headers()).get("Origin")
@@ -102,16 +120,17 @@ export default async function LoginPage() {
       redirect(callbackUrl)
     }
 
-    redirect("/v3")
+    redirect(basePath || "/")
   }
 
   async function oauthLogin(providerId: string, callbackUrl?: string) {
     "use server"
+    const basePath =
+      (await headers()).get("x-v3-rewritten") === "1" ? "" : "/v3"
     try {
-      await nextAuth.signIn(
-        providerId,
-        callbackUrl === undefined ? callbackUrl : { redirectTo: callbackUrl },
-      )
+      await nextAuth.signIn(providerId, {
+        redirectTo: callbackUrl ?? (basePath || "/"),
+      })
     } catch (error) {
       if (error instanceof AuthError) {
         console.error(error)
@@ -121,16 +140,27 @@ export default async function LoginPage() {
     }
   }
 
+  const pref = await getPreferenceDefaults()
+  const accentColor = pref.accentColor
+
   const { credentials: _, ...providers } =
     await fetchApiRoute<Record<string, PublicProvider>>("/auth/providers")
 
   return (
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
+    <div
+      className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10"
+      style={
+        accentColor
+          ? ({ "--primary": accentColor } as React.CSSProperties)
+          : undefined
+      }
+    >
       <div className="w-full max-w-sm md:max-w-4xl">
         <LoginForm
           oauthLoginAction={oauthLogin}
           providers={Object.values(providers)}
           credentialsLoginAction={credentialsLogin}
+          disablePasswordLogin={settings.disablePasswordLogin}
         />
       </div>
     </div>

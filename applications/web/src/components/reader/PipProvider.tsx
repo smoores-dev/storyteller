@@ -49,11 +49,7 @@ export function PiPProvider({ children }: PiPProviderProps) {
 
   // Open new pipWindow
   const requestPipWindow = useCallback(
-    async (
-      width: number,
-      height: number,
-      disallowReturnToOpener: boolean = false,
-    ) => {
+    async (width: number, height: number, disallowReturnToOpener?: boolean) => {
       // We don't want to allow multiple requests.
       if (pipWindow != null || !isSupported || !isDesired) {
         return

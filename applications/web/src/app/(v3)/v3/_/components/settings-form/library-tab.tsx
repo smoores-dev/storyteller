@@ -1,50 +1,7 @@
 "use client"
 
-import {
-  IconInfoCircle,
-  IconPlus,
-  IconSearch,
-  IconTrash,
-} from "@tabler/icons-react"
-import { useTranslations } from "next-intl"
-import { useMemo, useState } from "react"
-import { useFieldArray, useWatch } from "react-hook-form"
-
-import {
-  Combobox,
-  ComboboxChip,
-  ComboboxChips,
-  ComboboxChipsInput,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxItem,
-  ComboboxList,
-  ComboboxValue,
-} from "@/app/(v3)/v3/_/components/ui/combobox"
-import {
-  cronExpressionToMinutes,
-  minutesToCronExpression,
-} from "@/assets/library/scanner/triggers/cron"
-import {
-  validateWatchRulePath,
-  watchRuleValidationMessage,
-} from "@/database/importRules.validation"
-import {
-  type ImportRuleInput,
-  METADATA_FIELDS,
-  type MetadataField,
-  type MetadataFieldMode,
-  type MetadataFieldOverrides,
-  defaultMetadataFieldOverrides,
-} from "@/database/settingsTypes"
-import { usePermissions } from "@/hooks/usePermissions"
-import {
-  useCancelScanMutation,
-  useGetScanStateQuery,
-  useListCollectionsQuery,
-  useTriggerScanMutation,
-} from "@/store/api"
-import { type UUID } from "@/uuid"
+import { useMemo, useRef, useState } from "react"
+import { useWatch } from "react-hook-form"
 
 import { Badge } from "@v3/_/components/ui/badge"
 import { Button } from "@v3/_/components/ui/button"
@@ -65,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v3/_/components/ui/dialog"
+import { Field, FieldDescription, FieldLabel } from "@v3/_/components/ui/field"
 import { Input } from "@v3/_/components/ui/input"
 import { Label } from "@v3/_/components/ui/label"
 import {
@@ -81,27 +39,84 @@ import {
   TabsList,
   TabsTrigger,
 } from "@v3/_/components/ui/tabs"
+
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@v3/_/components/ui/tooltip"
+  ServerFileBrowser,
+  ServerFileBrowserWeb,
+  openTauriFileDialog,
+} from "@/app/(v3)/v3/_/components/files/ServerFileBrowser"
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+} from "@/app/(v3)/v3/_/components/ui/combobox"
+import { useIsTauri } from "@/app/(v3)/v3/_/hooks/use-is-tauri"
+import {
+  useCommon,
+  useTranslation,
+} from "@/app/(v3)/v3/_/hooks/use-translation"
+import {
+  cronExpressionToMinutes,
+  minutesToCronExpression,
+} from "@/assets/library/scanner/triggers/cron"
+import {
+  type ImportRuleSource,
+  type ImportRuleWithCollections,
+} from "@/database/importRules"
+import {
+  validateWatchRulePath,
+  watchRuleValidationMessage,
+} from "@/database/importRules.validation"
+import {
+  METADATA_FIELDS,
+  type MetadataField,
+  type MetadataFieldMode,
+  type MetadataFieldOverrides,
+  MetadataFieldOverridesSchema,
+  defaultMetadataFieldOverrides,
+} from "@/database/settingsTypes"
+import { statusDisplayLabel } from "@/database/statusKinds"
+import { usePermissions } from "@/hooks/usePermissions"
+import * as icon from "@/icons"
+import {
+  getImageUrl,
+  useCancelScanMutation,
+  useCreateImportRuleMutation,
+  useDeleteImportRulesMutation,
+  useGetImportRulesQuery,
+  useGetScanStateQuery,
+  useListCollectionsQuery,
+  useListStatusesQuery,
+  useSetLibraryDefaultStatusMutation,
+  useTriggerScanMutation,
+  useUpdateImportRuleMutation,
+  useUploadImageMutation,
+} from "@/store/api"
+import { type UUID } from "@/uuid"
 
 import { SettingsFormField, useSettingsForm } from "./SettingsFormProvider"
 import { SettingsSection } from "./shared"
 
 export function LibraryTab() {
   return (
-    <TabsContent value="library" className="space-y-6">
+    <div className="space-y-6">
       <LibrarySection />
+      <DefaultStatusSection />
       <ImportRulesSection />
       <ScanControlsSection />
-    </TabsContent>
+    </div>
   )
 }
 
 function LibrarySection() {
-  const t = useTranslations("SettingsPage.tabs.library.sections.library")
+  const t = useTranslation("SettingsPage.tabs.library.sections.library")
+  const isTauri = useIsTauri()
 
   return (
     <SettingsSection tab="library" section="library">
@@ -118,343 +133,430 @@ function LibrarySection() {
               <Input
                 id="libraryName"
                 disabled={isLocked}
+                placeholder="The Library of Babel"
                 {...field}
                 aria-invalid={fieldState.invalid}
               />
             )}
           />
-          <SettingsFormField
-            name="webUrl"
-            label={t("webUrl")}
-            render={(field, fieldState, isLocked) => (
-              <Input
-                id="webUrl"
-                disabled={isLocked}
-                {...field}
-                aria-invalid={fieldState.invalid}
-              />
-            )}
-          />
+
+          {!isTauri && (
+            <SettingsFormField
+              name="webUrl"
+              label={t("webUrl")}
+              render={(field, fieldState, isLocked) => (
+                <Input
+                  id="webUrl"
+                  disabled={isLocked}
+                  placeholder="https://<your-domain>.com"
+                  {...field}
+                  aria-invalid={fieldState.invalid}
+                />
+              )}
+            />
+          )}
+
+          <ServerIconField />
         </CardContent>
       </Card>
     </SettingsSection>
   )
 }
 
-const USE_DEFAULT_VALUE = "__default__"
-
-// TODO: internationalize
-const IMPORT_MODE_OPTIONS = [
-  { value: USE_DEFAULT_VALUE, label: "Use default" },
-  { value: "reference", label: "Reference in place" },
-  { value: "copy", label: "Copy to library" },
-  { value: "move", label: "Move to library" },
-  { value: "hardlink", label: "Hard link to library" },
-]
-
-const EPUB2_STRATEGY_OPTIONS = [
-  { value: USE_DEFAULT_VALUE, label: "Use default" },
-  { value: "backup-and-convert", label: "Backup & convert" },
-  { value: "replace", label: "Replace in place" },
-  { value: "skip", label: "Skip" },
-]
-
-const AUTO_SOURCE_LABELS: Record<string, string> = {
-  config: "Config",
-  "import-relocate": "Relocated",
-  "import-backup": "Backup copy",
-  "prevent-reimport": "Re-import prevention",
-}
-
-function Epub2BackupSuffixField() {
-  const { form } = useSettingsForm()
-  const strategy = useWatch({
-    control: form.control,
-    name: "epub2ImportStrategy",
-  }) as string
-
-  if (strategy !== "backup-and-convert") return null
+function ServerIconField() {
+  const t = useTranslation("SettingsPage.tabs.library.sections.library")
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploadImage, { isLoading, isError, reset }] = useUploadImageMutation()
 
   return (
     <SettingsFormField
-      name="epub2BackupSuffix"
-      label="EPUB 2 backup suffix"
-      description="Appended to the original filename when creating a backup before converting."
-      render={(field, fieldState, fieldLocked) => (
-        <Input
-          disabled={fieldLocked}
-          {...field}
-          aria-invalid={fieldState.invalid}
-          className="max-w-xs"
-        />
-      )}
+      name="serverIconSha256"
+      label={t("serverIcon")}
+      render={(field, _, isLocked) => {
+        const sha256 = field.value ?? null
+
+        return (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="bg-muted flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border">
+                {sha256 ? (
+                  <img
+                    src={getImageUrl(sha256, 128)}
+                    alt=""
+                    className="size-full object-cover"
+                    width={56}
+                    height={56}
+                  />
+                ) : (
+                  <icon.Image className="text-muted-foreground size-5" />
+                )}
+              </div>
+
+              <input
+                ref={inputRef}
+                id="serverIconSha256"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/avif,image/gif"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  event.target.value = ""
+                  if (!file) return
+
+                  reset()
+                  void uploadImage(file)
+                    .unwrap()
+                    .then((image) => {
+                      field.onChange(image.sha256)
+                    })
+                    .catch(() => {})
+                }}
+              />
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isLocked || isLoading}
+                onClick={() => inputRef.current?.click()}
+              >
+                {sha256 ? t("serverIconReplace") : t("serverIconUpload")}
+              </Button>
+
+              {sha256 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isLocked || isLoading}
+                  onClick={() => {
+                    field.onChange(null)
+                  }}
+                >
+                  {t("serverIconRemove")}
+                </Button>
+              )}
+            </div>
+
+            <FieldDescription>
+              {isError ? t("serverIconError") : t("serverIconDescription")}
+            </FieldDescription>
+          </>
+        )
+      }}
     />
   )
 }
 
-function LabelWithTooltip({
-  label,
-  tooltip,
-}: {
-  label: string
-  tooltip: string
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      <span className="text-muted-foreground text-xs">{label}</span>
+const NONE_STATUS = "__none__"
 
-      <Tooltip>
-        <TooltipTrigger>
-          <IconInfoCircle className="text-muted-foreground size-3" />
-        </TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
-      </Tooltip>
-    </div>
+function DefaultStatusSection() {
+  const t = useTranslation("SettingsPage.tabs.library.sections.defaultStatus")
+  const { data: statuses = [] } = useListStatusesQuery()
+  const [setDefault] = useSetLibraryDefaultStatusMutation()
+
+  const currentDefault = statuses.find((s) => s.isDefault)
+
+  const statusItems = statuses.map((s) => ({
+    value: s.uuid,
+    label: statusDisplayLabel(s),
+  }))
+
+  return (
+    <SettingsSection tab="library" section="defaultStatus">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("title")}</CardTitle>
+          <CardDescription>{t("description")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Field>
+            <FieldLabel>{t("label")}</FieldLabel>
+            <FieldDescription>{t("hint")}</FieldDescription>
+
+            <Select
+              value={currentDefault?.uuid ?? NONE_STATUS}
+              items={statusItems}
+              onValueChange={(v) => {
+                if (v === NONE_STATUS) {
+                  if (currentDefault) {
+                    void setDefault({
+                      uuid: currentDefault.uuid,
+                      isDefault: false,
+                    })
+                  }
+                } else {
+                  void setDefault({ uuid: v as UUID, isDefault: true })
+                }
+              }}
+            >
+              <SelectTrigger className="w-60">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_STATUS}>{t("none")}</SelectItem>
+                {statusItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </CardContent>
+      </Card>
+    </SettingsSection>
   )
 }
 
+async function openTauriFolderDialog(
+  startPath: string | undefined,
+  onSave: (path: string) => void,
+) {
+  const result = await openTauriFileDialog({
+    directory: true,
+    defaultPath: startPath,
+  })
+
+  const selected = Array.isArray(result) ? result[0] : result
+  if (selected) onSave(selected)
+}
+
+function ServerFileBrowserModal({
+  open,
+  onOpenChange,
+  startPath,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  startPath?: string
+  onSave: (path: string) => void
+}) {
+  const c = useCommon()
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[70svh] max-h-[70vh] translate-y-0 flex-col sm:top-10 sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>{c("actions.selectFolder")}</DialogTitle>
+        </DialogHeader>
+
+        <ServerFileBrowserWeb
+          directoriesOnly
+          autoFocus
+          startPath={startPath}
+          selectLabel={c("actions.selectFolder")}
+          onSelect={(path) => {
+            onSave(path)
+            onOpenChange(false)
+          }}
+          className="min-h-0 flex-1"
+        />
+
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onOpenChange(false)
+            }}
+          >
+            {c("actions.cancel")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const USE_DEFAULT_VALUE = "__default__"
+
+// TODO: internationalize
+
 function WatchRuleCard({
   rule,
-  index,
-  allRules,
+  rules,
   collections,
   selected,
   onToggle,
   onDelete,
-  onUpdate,
+  importModeOptions,
+  epub2StrategyOptions,
 }: {
-  rule: ImportRuleInput
-  index: number
-  allRules: ImportRuleInput[]
+  rule: ImportRuleWithCollections
+  rules: ImportRuleWithCollections[]
   collections: { uuid: UUID; name: string }[]
   selected: boolean
   onToggle: () => void
   onDelete: () => void
-  onUpdate: (index: number, data: Partial<ImportRuleInput>) => void
+  importModeOptions: { value: string; label: string }[]
+  epub2StrategyOptions: { value: string; label: string }[]
 }) {
-  const [editingPath, setEditingPath] = useState(false)
-  const [editPath, setEditPath] = useState(rule.path)
-  const [editError, setEditError] = useState<string | null>(null)
+  const [updateRule] = useUpdateImportRuleMutation()
+  const [browseOpen, setBrowseOpen] = useState(false)
+  const isTauri = useIsTauri()
 
-  function trySave() {
-    const existingForValidation = allRules
-      .filter((_, i) => i !== index)
-      .map((r) => ({
-        uuid: (r.uuid ?? "") as UUID,
-        kind: r.kind,
-        path: r.path,
-        importMode: r.importMode ?? null,
-        epub2ImportStrategy: r.epub2ImportStrategy ?? null,
-        source: "user" as const,
-        bookUuid: null,
-        createdAt: "",
-        updatedAt: "",
-        collections: [],
-        bookTitle: null,
-      }))
+  const isConfig = rule.source === "config"
+  const t = useTranslation("SettingsPage.tabs.library.sections.autoImport")
 
+  function handlePathSave(newPath: string) {
     const result = validateWatchRulePath({
-      path: editPath,
-      existingRules: existingForValidation,
-      excludeUuid: rule.uuid as UUID | undefined,
+      path: newPath,
+      existingRules: rules,
+      excludeUuid: rule.uuid,
     })
 
-    if (!result.ok) {
-      const conflictingPath = result.conflictWith
-        ? allRules.find((r) => r.uuid === result.conflictWith)?.path
-        : undefined
-      setEditError(watchRuleValidationMessage(result, { conflictingPath }))
+    if (!result.ok) return
+
+    void updateRule({ uuid: rule.uuid, path: newPath })
+  }
+
+  function handlePathClick() {
+    if (isTauri) {
+      void openTauriFolderDialog(rule.path, handlePathSave)
       return
     }
 
-    setEditError(null)
-    onUpdate(index, { path: editPath })
-    setEditingPath(false)
+    setBrowseOpen(true)
   }
 
   return (
     <div className="flex gap-3 rounded-md border p-3">
-      <Checkbox
-        className="mt-1"
-        checked={selected}
-        onCheckedChange={onToggle}
-      />
+      {!isConfig && (
+        <Checkbox
+          className="mt-1"
+          checked={selected}
+          onCheckedChange={onToggle}
+        />
+      )}
 
       <div className="min-w-0 flex-1 space-y-2">
-        {editingPath ? (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Input
-                value={editPath}
-                onChange={(e) => {
-                  setEditPath(e.target.value)
-                  if (editError) setEditError(null)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    trySave()
-                  }
+        <div className="flex items-center gap-2">
+          {isConfig ? (
+            <span
+              className="text-foreground block max-w-full truncate text-xs"
+              title={rule.path}
+            >
+              {rule.path}
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="text-foreground hover:text-foreground block max-w-full truncate text-left text-xs underline-offset-2 hover:underline"
+              title={rule.path}
+              onClick={handlePathClick}
+            >
+              {rule.path}
+            </button>
+          )}
 
-                  if (e.key === "Escape") {
-                    setEditPath(rule.path)
-                    setEditError(null)
-                    setEditingPath(false)
-                  }
-                }}
-                className="min-w-0 flex-1"
-                aria-invalid={!!editError}
-              />
+          {isConfig && <Badge variant="outline">Config</Badge>}
+        </div>
 
-              <Button variant="outline" size="sm" onClick={trySave}>
-                Save
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setEditPath(rule.path)
-                  setEditError(null)
-                  setEditingPath(false)
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-            {editError && (
-              <p className="text-destructive text-xs">{editError}</p>
-            )}
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="text-foreground hover:text-foreground block max-w-full truncate text-left text-xs underline-offset-2 hover:underline"
-            title={rule.path}
-            onClick={() => {
-              setEditingPath(true)
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            disabled={isConfig}
+            value={rule.importMode ?? USE_DEFAULT_VALUE}
+            onValueChange={(v) => {
+              const mode = v === USE_DEFAULT_VALUE ? null : v
+              void updateRule({ uuid: rule.uuid, importMode: mode })
             }}
+            items={importModeOptions}
           >
-            {rule.path}
-          </button>
-        )}
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {importModeOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="space-y-1">
-            <LabelWithTooltip
-              label="Import mode"
-              tooltip="How files from this folder are added to the library."
-            />
-            <Select
-              value={rule.importMode ?? USE_DEFAULT_VALUE}
-              onValueChange={(v) => {
-                const mode =
-                  v === USE_DEFAULT_VALUE
-                    ? null
-                    : (v as ImportRuleInput["importMode"])
-                onUpdate(index, { importMode: mode })
-              }}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue>
-                  {IMPORT_MODE_OPTIONS.find(
-                    (o) => o.value === (rule.importMode ?? USE_DEFAULT_VALUE),
-                  )?.label ?? "Use default"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {IMPORT_MODE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            disabled={isConfig || rule.importMode === "copy"}
+            value={
+              rule.importMode === "copy"
+                ? "replace"
+                : rule.epub2ImportStrategy ?? USE_DEFAULT_VALUE
+            }
+            onValueChange={(v) => {
+              const strategy = v === USE_DEFAULT_VALUE ? null : v
+              void updateRule({
+                uuid: rule.uuid,
+                epub2ImportStrategy: strategy,
+              })
+            }}
+            items={epub2StrategyOptions}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {epub2StrategyOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <div className="space-y-1">
-            <LabelWithTooltip
-              label="EPUB 2 strategy"
-              tooltip="What to do when an EPUB 2 file is found. Copy mode always upgrades automatically."
-            />
-            <Select
-              disabled={rule.importMode === "copy"}
-              value={
-                rule.importMode === "copy"
-                  ? "replace"
-                  : rule.epub2ImportStrategy ?? USE_DEFAULT_VALUE
-              }
-              onValueChange={(v) => {
-                const strategy =
-                  v === USE_DEFAULT_VALUE
-                    ? null
-                    : (v as ImportRuleInput["epub2ImportStrategy"])
-                onUpdate(index, { epub2ImportStrategy: strategy })
-              }}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue>
-                  {rule.importMode === "copy"
-                    ? "Replace (auto)"
-                    : EPUB2_STRATEGY_OPTIONS.find(
-                        (o) =>
-                          o.value ===
-                          (rule.epub2ImportStrategy ?? USE_DEFAULT_VALUE),
-                      )?.label ?? "Use default"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {EPUB2_STRATEGY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <LabelWithTooltip
-              label="Collections"
-              tooltip="New books from this folder will be added to these collections."
-            />
+          {!isConfig && (
             <Combobox
               items={collections.map((c) => ({
                 value: c.uuid,
                 label: c.name,
               }))}
               multiple
-              value={rule.collectionUuids ?? []}
+              value={rule.collections.map((c) => c.uuid)}
               onValueChange={(uuids) => {
-                onUpdate(index, { collectionUuids: uuids })
+                void updateRule({
+                  uuid: rule.uuid,
+                  collectionUuids: uuids,
+                })
               }}
             >
               <ComboboxChips className="min-w-[200px] flex-1">
                 <ComboboxValue>
-                  {(rule.collectionUuids ?? [])
+                  {rule.collections
                     .map(
-                      (uuid) =>
-                        collections.find((c) => c.uuid === uuid)?.name ?? uuid,
+                      (c) =>
+                        collections.find((cc) => cc.uuid === c.uuid)?.name ??
+                        c.uuid,
                     )
                     .map((name) => (
                       <ComboboxChip key={name}>{name}</ComboboxChip>
                     ))}
                 </ComboboxValue>
-                <ComboboxChipsInput placeholder="Add collection" />
+                <ComboboxChipsInput placeholder={t("importCollectionsAdd")} />
               </ComboboxChips>
             </Combobox>
-          </div>
+          )}
         </div>
       </div>
 
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Delete rule"
-        onClick={onDelete}
-      >
-        <IconTrash size={14} className="text-destructive" />
-      </Button>
+      {!isConfig && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Delete rule"
+          onClick={onDelete}
+        >
+          <icon.Trash className="text-destructive size-4" />
+        </Button>
+      )}
+
+      {browseOpen && !isTauri && (
+        <ServerFileBrowserModal
+          open={browseOpen}
+          onOpenChange={setBrowseOpen}
+          startPath={rule.path}
+          onSave={handlePathSave}
+        />
+      )}
     </div>
   )
 }
@@ -465,14 +567,16 @@ function IgnoreRuleRow({
   onToggle,
   onDelete,
 }: {
-  rule: ImportRuleInput
+  rule: ImportRuleWithCollections
   selected: boolean
   onToggle: () => void
   onDelete: () => void
 }) {
+  const isConfig = rule.source === "config"
+
   return (
     <div className="flex items-center gap-3 rounded-md border px-3 py-2">
-      <Checkbox checked={selected} onCheckedChange={onToggle} />
+      {!isConfig && <Checkbox checked={selected} onCheckedChange={onToggle} />}
 
       <span
         className="text-foreground min-w-0 flex-1 truncate text-xs"
@@ -481,38 +585,41 @@ function IgnoreRuleRow({
         {rule.path}
       </span>
 
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Delete rule"
-        onClick={onDelete}
-      >
-        <IconTrash size={14} className="text-destructive" />
-      </Button>
+      {isConfig ? (
+        <Badge variant="outline">Config</Badge>
+      ) : (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Delete rule"
+          onClick={onDelete}
+        >
+          <icon.Trash className="text-destructive size-4" />
+        </Button>
+      )}
     </div>
   )
-}
-
-type AutoIgnoreRule = {
-  uuid: string
-  path: string
-  source: string
-  bookTitle?: string | null
 }
 
 function AutoIgnoreRuleRow({
   rule,
   selected,
   onToggle,
+  sourceLabels,
 }: {
-  rule: AutoIgnoreRule
+  rule: ImportRuleWithCollections
   selected: boolean
   onToggle: () => void
+  sourceLabels: Record<Exclude<ImportRuleSource, "user">, string>
 }) {
-  const sourceLabel = AUTO_SOURCE_LABELS[rule.source] ?? "Auto"
+  const sourceLabel =
+    rule.source !== "user" ? sourceLabels[rule.source] : "Auto"
 
   return (
-    <div className="flex items-start gap-3 rounded-md border px-3 py-2">
+    <div
+      className="flex items-start gap-3 rounded-md border px-3 py-2"
+      title={`uuid: ${rule.uuid}${rule.bookUuid ? `\nbook: ${rule.bookUuid}` : ""}`}
+    >
       <Checkbox
         className="mt-0.5"
         checked={selected}
@@ -544,33 +651,36 @@ function AddRuleDialog({
   open,
   onOpenChange,
   kind,
-  existingRules,
+  rules,
   collections,
-  onAdd,
+  importModeOptions,
+  epub2StrategyOptions,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   kind: "watch" | "ignore"
-  existingRules: ImportRuleInput[]
+  rules: ImportRuleWithCollections[]
   collections: { uuid: UUID; name: string }[]
-  onAdd: (rule: ImportRuleInput) => void
+  importModeOptions: { value: string; label: string }[]
+  epub2StrategyOptions: { value: string; label: string }[]
 }) {
+  const [createRule, { isLoading }] = useCreateImportRuleMutation()
   const [path, setPath] = useState("")
   const [importMode, setImportMode] = useState<string>(USE_DEFAULT_VALUE)
-  const [epub2Strategy, setEpub2Strategy] =
-    useState<string>("backup-and-convert")
+  const [epub2Strategy, setEpub2Strategy] = useState<string>(USE_DEFAULT_VALUE)
   const [collectionUuids, setCollectionUuids] = useState<UUID[]>([])
   const [error, setError] = useState<string | null>(null)
 
+  const t = useTranslation("SettingsPage.tabs.library.sections.autoImport")
   function reset() {
     setPath("")
     setImportMode(USE_DEFAULT_VALUE)
-    setEpub2Strategy("backup-and-convert")
+    setEpub2Strategy(USE_DEFAULT_VALUE)
     setCollectionUuids([])
     setError(null)
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const trimmed = path.trim()
     if (!trimmed) {
       setError("Pick a folder first.")
@@ -578,56 +688,41 @@ function AddRuleDialog({
     }
 
     if (kind === "watch") {
-      const existingForValidation = existingRules.map((r) => ({
-        uuid: (r.uuid ?? "") as UUID,
-        kind: r.kind,
-        path: r.path,
-        importMode: r.importMode ?? null,
-        epub2ImportStrategy: r.epub2ImportStrategy ?? null,
-        source: "user" as const,
-        bookUuid: null,
-        createdAt: "",
-        updatedAt: "",
-        collections: [],
-        bookTitle: null,
-      }))
-
       const result = validateWatchRulePath({
         path: trimmed,
-        existingRules: existingForValidation,
+        existingRules: rules,
       })
-
       if (!result.ok) {
         const conflictingPath = result.conflictWith
-          ? existingRules.find((r) => r.uuid === result.conflictWith)?.path
+          ? rules.find((r) => r.uuid === result.conflictWith)?.path
           : undefined
         setError(watchRuleValidationMessage(result, { conflictingPath }))
         return
       }
     }
 
-    const effectiveStrategy = importMode === "copy" ? "replace" : epub2Strategy
-
-    onAdd({
-      kind,
-      path: trimmed,
-      importMode:
-        kind === "watch" && importMode !== USE_DEFAULT_VALUE
-          ? (importMode as ImportRuleInput["importMode"])
-          : null,
-      epub2ImportStrategy:
-        kind === "watch" && effectiveStrategy !== USE_DEFAULT_VALUE
-          ? (effectiveStrategy as ImportRuleInput["epub2ImportStrategy"])
-          : null,
-      collectionUuids:
-        kind === "watch" && collectionUuids.length > 0
-          ? collectionUuids
-          : undefined,
-    })
-
-    reset()
-    onOpenChange(false)
+    try {
+      await createRule({
+        kind,
+        path: trimmed,
+        ...(kind === "watch" &&
+          importMode !== USE_DEFAULT_VALUE && { importMode }),
+        ...(kind === "watch" &&
+          importMode !== "copy" &&
+          epub2Strategy !== USE_DEFAULT_VALUE && {
+            epub2ImportStrategy: epub2Strategy,
+          }),
+        ...(kind === "watch" &&
+          collectionUuids.length > 0 && { collectionUuids }),
+      }).unwrap()
+      reset()
+      onOpenChange(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create rule.")
+    }
   }
+
+  const tl = useTranslation("Labels")
 
   return (
     <Dialog
@@ -637,54 +732,53 @@ function AddRuleDialog({
         onOpenChange(next)
       }}
     >
-      <DialogContent className="max-w-xl">
+      <DialogContent className="flex h-[80svh] max-h-[80vh] translate-y-0 flex-col sm:top-10 sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
-            {kind === "watch" ? "Add watch rule" : "Add ignore rule"}
+            {kind === "watch" ? t("addWatchRule") : t("addIgnoreRule")}
           </DialogTitle>
           <DialogDescription>
             {kind === "watch"
-              ? "Storyteller will scan this folder for new books."
-              : "Storyteller will skip this path during scans."}
+              ? t("addWatchRuleDescription")
+              : t("addIgnoreRuleDescription")}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 pb-2">
-          <div className="space-y-1.5">
-            <Label>Folder</Label>
-            <Input
-              defaultValue={path || "/"}
-              onChange={(e) => {
-                const folder = e.target.value
-                setPath(folder)
-                if (error) setError(null)
-              }}
-            />
-            {path && (
-              <p className="text-muted-foreground text-xs">
-                Selected: <span className="text-foreground">{path}</span>
-              </p>
-            )}
-          </div>
+        <div className="flex min-h-0 flex-1 flex-col gap-4 px-6 pb-2">
+          <ServerFileBrowser
+            directoriesOnly
+            autoFocus
+            startPath={path || "/"}
+            selectLabel={tl("folder")}
+            onSelect={(folder) => {
+              setPath(folder)
+              if (error) setError(null)
+            }}
+            className="min-h-0 flex-1"
+          />
+
+          {path && (
+            <p className="text-muted-foreground text-xs">
+              {tl("selected.withInput", { input: path })}
+            </p>
+          )}
 
           {kind === "watch" && (
             <>
               <div className="space-y-1.5">
-                <Label>Import mode</Label>
+                <Label>{t("importMode")}</Label>
                 <Select
                   value={importMode}
                   onValueChange={(v) => {
                     setImportMode(v ?? USE_DEFAULT_VALUE)
                   }}
+                  items={importModeOptions}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {IMPORT_MODE_OPTIONS.find((o) => o.value === importMode)
-                        ?.label ?? "Use default"}
-                    </SelectValue>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {IMPORT_MODE_OPTIONS.map((opt) => (
+                    {importModeOptions.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
                       </SelectItem>
@@ -694,27 +788,20 @@ function AddRuleDialog({
               </div>
 
               <div className="space-y-1.5">
-                <Label>EPUB 2 strategy</Label>
+                <Label>{t("epub2Strategy")}</Label>
                 <Select
                   disabled={importMode === "copy"}
                   value={importMode === "copy" ? "replace" : epub2Strategy}
                   onValueChange={(v) => {
-                    setEpub2Strategy(v ?? "backup-and-convert")
+                    setEpub2Strategy(v ?? USE_DEFAULT_VALUE)
                   }}
+                  items={epub2StrategyOptions}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {importMode === "copy"
-                        ? "Replace (auto)"
-                        : EPUB2_STRATEGY_OPTIONS.find(
-                            (o) => o.value === epub2Strategy,
-                          )?.label ?? "Backup & convert"}
-                    </SelectValue>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {EPUB2_STRATEGY_OPTIONS.filter(
-                      (o) => o.value !== USE_DEFAULT_VALUE,
-                    ).map((opt) => (
+                    {epub2StrategyOptions.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
                       </SelectItem>
@@ -725,7 +812,7 @@ function AddRuleDialog({
 
               {collections.length > 0 && (
                 <div className="space-y-1.5">
-                  <Label>Add new books to collections</Label>
+                  <Label>{t("importCollectionsDescription")}</Label>
                   <Combobox
                     items={collections.map((c) => ({
                       value: c.uuid,
@@ -780,7 +867,7 @@ function AddRuleDialog({
             variant="default"
             size="sm"
             onClick={handleSubmit}
-            disabled={!path.trim()}
+            disabled={isLoading || !path.trim()}
           >
             Add rule
           </Button>
@@ -790,21 +877,42 @@ function AddRuleDialog({
   )
 }
 
-function ImportRulesSection() {
-  const t = useTranslations("SettingsPage.tabs.library.sections.autoImport")
+function Epub2BackupSuffixField() {
+  const t = useTranslation("SettingsPage.tabs.library.sections.autoImport")
   const { form } = useSettingsForm()
-
-  const { fields, append, remove, update } = useFieldArray({
+  const strategy = useWatch({
     control: form.control,
-    name: "importRules",
-  })
+    name: "epub2ImportStrategy",
+  }) as string
 
-  const autoIgnoreRules = (form.getValues("autoIgnoreRules") ??
-    []) as AutoIgnoreRule[]
+  if (strategy !== "backup-and-convert") return null
 
-  const deleteRuleUuids = form.getValues("deleteRuleUuids") ?? []
+  return (
+    <SettingsFormField
+      name="epub2BackupSuffix"
+      label={t("epub2BackupSuffix")}
+      description={t("epub2BackupSuffixDescription")}
+      render={(field, fieldState, fieldLocked) => (
+        <Input
+          disabled={fieldLocked}
+          {...field}
+          aria-invalid={fieldState.invalid}
+          className="max-w-xs"
+        />
+      )}
+    />
+  )
+}
 
+function ImportRulesSection() {
+  const t = useTranslation("SettingsPage.tabs.library.sections.autoImport")
+  const tl = useTranslation("Labels.importMode")
+  const te = useTranslation("Labels.epub2Strategy")
+
+  const { data: rules = [] } = useGetImportRulesQuery()
   const { data: collections = [] } = useListCollectionsQuery()
+  const [deleteRules, { isLoading: isDeleting }] =
+    useDeleteImportRulesMutation()
 
   const [activeTab, setActiveTab] = useState<"watch" | "ignore" | "auto">(
     "watch",
@@ -815,35 +923,61 @@ function ImportRulesSection() {
     auto: string
   }>({ watch: "", ignore: "", auto: "" })
   const [autoPage, setAutoPage] = useState(1)
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
-  const [selectedAutoUuids, setSelectedAutoUuids] = useState<Set<string>>(
-    new Set(),
-  )
+  const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
   const [addDialogKind, setAddDialogKind] = useState<"watch" | "ignore" | null>(
     null,
   )
 
-  const { watchRules, ignoreRules } = useMemo(() => {
-    const watch: (ImportRuleInput & { _index: number })[] = []
-    const ignore: (ImportRuleInput & { _index: number })[] = []
+  const IMPORT_MODE_OPTIONS = [
+    { value: USE_DEFAULT_VALUE, label: tl("modeDefault") },
+    { value: "reference", label: tl("modeReference") },
+    { value: "copy", label: tl("modeCopy") },
+    { value: "move", label: tl("modeMove") },
+    { value: "hardlink", label: tl("modeHardlink") },
+  ]
 
-    for (let i = 0; i < fields.length; i++) {
-      const r = fields[i]
-      if (!r) continue
-      if (r.kind === "watch") watch.push({ ...r, _index: i })
-      else ignore.push({ ...r, _index: i })
+  const EPUB2_STRATEGY_OPTIONS = [
+    { value: USE_DEFAULT_VALUE, label: te("strategyDefault") },
+    { value: "backup-and-convert", label: te("strategyBackupAndConvert") },
+    { value: "replace", label: te("strategyReplace") },
+    { value: "skip", label: te("strategySkip") },
+  ]
+
+  const AUTO_SOURCE_LABELS: Record<
+    Exclude<ImportRuleSource, "user">,
+    string
+  > = {
+    config: t("ignoreSources.config"),
+    "import-relocate": t("ignoreSources.importRelocated"),
+    "import-backup": t("ignoreSources.importBackup"),
+    "prevent-reimport": t("ignoreSources.importPreventReimport"),
+  }
+
+  const { watchRules, userIgnoreRules, autoIgnoreRules } = useMemo(() => {
+    const watch: ImportRuleWithCollections[] = []
+    const userIgnore: ImportRuleWithCollections[] = []
+    const autoIgnore: ImportRuleWithCollections[] = []
+
+    for (const r of rules) {
+      if (r.kind === "watch") watch.push(r)
+      else if (r.source === "user" || r.source === "config") userIgnore.push(r)
+      else autoIgnore.push(r)
     }
 
-    return { watchRules: watch, ignoreRules: ignore }
-  }, [fields])
+    return {
+      watchRules: watch,
+      userIgnoreRules: userIgnore,
+      autoIgnoreRules: autoIgnore,
+    }
+  }, [rules])
 
-  function filterByPath<T extends { path: string }>(list: T[], q: string) {
+  function filterByPath(list: ImportRuleWithCollections[], q: string) {
     const needle = q.trim().toLowerCase()
     if (!needle) return list
     return list.filter((r) => r.path.toLowerCase().includes(needle))
   }
 
-  function filterAuto(list: AutoIgnoreRule[], q: string) {
+  function filterAuto(list: ImportRuleWithCollections[], q: string) {
     const needle = q.trim().toLowerCase()
     if (!needle) return list
     return list.filter(
@@ -854,68 +988,54 @@ function ImportRulesSection() {
   }
 
   const filteredWatch = filterByPath(watchRules, searchByTab.watch)
-  const filteredIgnore = filterByPath(ignoreRules, searchByTab.ignore)
+  const filteredIgnore = filterByPath(userIgnoreRules, searchByTab.ignore)
+  const filteredAuto = filterAuto(autoIgnoreRules, searchByTab.auto)
 
-  const liveAutoRules = autoIgnoreRules.filter(
-    (r) => !deleteRuleUuids.includes(r.uuid),
-  )
-  const filteredAuto = filterAuto(liveAutoRules, searchByTab.auto)
+  const watchSelectable = filteredWatch
+    .filter((r) => r.source !== "config")
+    .map((r) => r.uuid)
 
-  const watchSelectableIndices = filteredWatch.map((r) => r._index)
-  const ignoreSelectableIndices = filteredIgnore.map((r) => r._index)
-  const autoSelectableUuids = filteredAuto.map((r) => r.uuid)
+  const ignoreSelectable = filteredIgnore
+    .filter((r) => r.source !== "config")
+    .map((r) => r.uuid)
 
-  function toggleSelectedIndex(idx: number) {
-    setSelectedIndices((prev) => {
+  const autoSelectable = filteredAuto.map((r) => r.uuid)
+
+  function toggleSelected(uuid: UUID) {
+    setSelectedUuids((prev) => {
       const next = new Set(prev)
-      if (next.has(idx)) next.delete(idx)
-      else next.add(idx)
+      if (next.has(uuid)) {
+        next.delete(uuid)
+      } else {
+        next.add(uuid)
+      }
       return next
     })
   }
 
-  function toggleSelectedAutoUuid(uuid: string) {
-    setSelectedAutoUuids((prev) => {
+  function deleteOne(uuid: UUID) {
+    void deleteRules({ uuids: [uuid] })
+    setSelectedUuids((prev) => {
+      if (!prev.has(uuid)) return prev
       const next = new Set(prev)
-      if (next.has(uuid)) next.delete(uuid)
-      else next.add(uuid)
+      next.delete(uuid)
       return next
     })
-  }
-
-  function deleteByIndices(indices: number[]) {
-    const sorted = [...indices].sort((a, b) => b - a)
-    for (const idx of sorted) {
-      remove(idx)
-    }
-    setSelectedIndices(new Set())
-  }
-
-  function markAutoForDeletion(uuids: string[]) {
-    const current = form.getValues("deleteRuleUuids") ?? []
-    const merged = [...new Set([...current, ...uuids])]
-    form.setValue("deleteRuleUuids", merged, { shouldDirty: true })
-    setSelectedAutoUuids(new Set())
   }
 
   function handleDeleteSelected() {
-    if (activeTab === "auto") {
-      if (selectedAutoUuids.size === 0) return
-      markAutoForDeletion([...selectedAutoUuids])
-    } else {
-      if (selectedIndices.size === 0) return
-      deleteByIndices([...selectedIndices])
-    }
+    if (selectedUuids.size === 0) return
+    void deleteRules({ uuids: [...selectedUuids] })
+    setSelectedUuids(new Set())
   }
 
-  function handleUpdateRule(index: number, data: Partial<ImportRuleInput>) {
-    const current = fields[index]
-    if (!current) return
-    update(index, { ...current, ...data })
+  function selectAllUuids(uuids: UUID[]) {
+    setSelectedUuids(new Set(uuids))
   }
 
-  function handleAddRule(rule: ImportRuleInput) {
-    append(rule)
+  function allUuidsSelected(uuids: UUID[]) {
+    if (uuids.length === 0) return false
+    return uuids.every((u) => selectedUuids.has(u))
   }
 
   function setTabSearch(tab: "watch" | "ignore" | "auto", value: string) {
@@ -938,10 +1058,7 @@ function ImportRulesSection() {
       <Card>
         <CardHeader>
           <CardTitle>{t("title")}</CardTitle>
-          <CardDescription>
-            Configure which folders Storyteller watches for new books, and which
-            paths to skip during scans.
-          </CardDescription>
+          <CardDescription>{t("description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <SettingsFormField
@@ -953,12 +1070,10 @@ function ImportRulesSection() {
                 disabled={fieldLocked}
                 value={field.value}
                 onValueChange={field.onChange}
+                items={IMPORT_MODE_OPTIONS}
               >
                 <SelectTrigger className="max-w-fit">
-                  <SelectValue>
-                    {IMPORT_MODE_OPTIONS.find((o) => o.value === field.value)
-                      ?.label ?? t("defaultImportMode")}
-                  </SelectValue>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {IMPORT_MODE_OPTIONS.filter(
@@ -975,19 +1090,17 @@ function ImportRulesSection() {
 
           <SettingsFormField
             name="epub2ImportStrategy"
-            label="Default EPUB 2 strategy"
-            description="What to do when an EPUB 2 file is found during auto-import. Individual watch rules can override this."
+            label={t("defaultEpub2Strategy")}
+            description={t("defaultEpub2StrategyDescription")}
             render={(field, _, fieldLocked) => (
               <Select
                 disabled={fieldLocked}
                 value={field.value}
                 onValueChange={field.onChange}
+                items={EPUB2_STRATEGY_OPTIONS}
               >
                 <SelectTrigger className="max-w-fit">
-                  <SelectValue>
-                    {EPUB2_STRATEGY_OPTIONS.find((o) => o.value === field.value)
-                      ?.label ?? field.value}
-                  </SelectValue>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {EPUB2_STRATEGY_OPTIONS.filter(
@@ -1008,49 +1121,45 @@ function ImportRulesSection() {
             value={activeTab}
             onValueChange={(v) => {
               setActiveTab(v as "watch" | "ignore" | "auto")
-              setSelectedIndices(new Set())
-              setSelectedAutoUuids(new Set())
+              setSelectedUuids(new Set())
             }}
           >
             <TabsList>
               <TabsTrigger value="watch">
-                Watch
+                {t("watch")}
                 <Badge variant="secondary">{watchRules.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="ignore">
-                Ignore
-                <Badge variant="secondary">{ignoreRules.length}</Badge>
+                {t("ignore")}
+                <Badge variant="secondary">{userIgnoreRules.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="auto">
-                Auto-ignore
-                <Badge variant="secondary">{liveAutoRules.length}</Badge>
+                {t("autoIgnore")}
+                <Badge variant="secondary">{autoIgnoreRules.length}</Badge>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="watch" className="space-y-3">
               <TabHeader
-                addLabel="Add watch rule"
+                addLabel={t("addWatchRule")}
                 onAdd={() => {
                   setAddDialogKind("watch")
                 }}
-                searchPlaceholder="Search watch rules..."
+                searchPlaceholder={t("searchWatchRules")}
                 searchValue={searchByTab.watch}
                 onSearchChange={(v) => {
                   setTabSearch("watch", v)
                 }}
-                selectedCount={selectedIndices.size}
-                selectableCount={watchSelectableIndices.length}
-                allSelected={
-                  watchSelectableIndices.length > 0 &&
-                  watchSelectableIndices.every((i) => selectedIndices.has(i))
-                }
-                isDeleting={false}
+                selectedCount={selectedUuids.size}
+                selectableCount={watchSelectable.length}
+                allSelected={allUuidsSelected(watchSelectable)}
+                isDeleting={isDeleting}
                 onSelectAll={() => {
-                  setSelectedIndices(new Set(watchSelectableIndices))
+                  selectAllUuids(watchSelectable)
                 }}
                 onDeleteSelected={handleDeleteSelected}
                 onClearSelection={() => {
-                  setSelectedIndices(new Set())
+                  setSelectedUuids(new Set())
                 }}
               />
 
@@ -1058,27 +1167,27 @@ function ImportRulesSection() {
                 <EmptyState
                   message={
                     watchRules.length === 0
-                      ? "No watch rules yet. Add a folder to scan."
-                      : "No watch rules match your search."
+                      ? t("noWatchRules")
+                      : t("noWatchRulesMatchSearch")
                   }
                 />
               ) : (
                 <div className="space-y-2">
                   {filteredWatch.map((rule) => (
                     <WatchRuleCard
-                      key={rule.uuid ?? rule._index}
+                      key={rule.uuid}
                       rule={rule}
-                      index={rule._index}
-                      allRules={fields}
+                      rules={rules}
+                      importModeOptions={IMPORT_MODE_OPTIONS}
+                      epub2StrategyOptions={EPUB2_STRATEGY_OPTIONS}
                       collections={collections}
-                      selected={selectedIndices.has(rule._index)}
+                      selected={selectedUuids.has(rule.uuid)}
                       onToggle={() => {
-                        toggleSelectedIndex(rule._index)
+                        toggleSelected(rule.uuid)
                       }}
                       onDelete={() => {
-                        deleteByIndices([rule._index])
+                        deleteOne(rule.uuid)
                       }}
-                      onUpdate={handleUpdateRule}
                     />
                   ))}
                 </div>
@@ -1087,51 +1196,48 @@ function ImportRulesSection() {
 
             <TabsContent value="ignore" className="space-y-3">
               <TabHeader
-                addLabel="Add ignore rule"
+                addLabel={t("addIgnoreRule")}
                 onAdd={() => {
                   setAddDialogKind("ignore")
                 }}
-                searchPlaceholder="Search ignore rules..."
+                searchPlaceholder={t("searchIgnoreRules")}
                 searchValue={searchByTab.ignore}
                 onSearchChange={(v) => {
                   setTabSearch("ignore", v)
                 }}
-                selectedCount={selectedIndices.size}
-                selectableCount={ignoreSelectableIndices.length}
-                allSelected={
-                  ignoreSelectableIndices.length > 0 &&
-                  ignoreSelectableIndices.every((i) => selectedIndices.has(i))
-                }
-                isDeleting={false}
+                selectedCount={selectedUuids.size}
+                selectableCount={ignoreSelectable.length}
+                allSelected={allUuidsSelected(ignoreSelectable)}
+                isDeleting={isDeleting}
                 onSelectAll={() => {
-                  setSelectedIndices(new Set(ignoreSelectableIndices))
+                  selectAllUuids(ignoreSelectable)
                 }}
                 onDeleteSelected={handleDeleteSelected}
                 onClearSelection={() => {
-                  setSelectedIndices(new Set())
+                  setSelectedUuids(new Set())
                 }}
               />
 
               {filteredIgnore.length === 0 ? (
                 <EmptyState
                   message={
-                    ignoreRules.length === 0
-                      ? "No ignore rules. Add a path to skip during scans."
-                      : "No ignore rules match your search."
+                    userIgnoreRules.length === 0
+                      ? t("noIgnoreRules")
+                      : t("noIgnoreRulesMatchSearch")
                   }
                 />
               ) : (
                 <div className="space-y-1.5">
                   {filteredIgnore.map((rule) => (
                     <IgnoreRuleRow
-                      key={rule.uuid ?? rule._index}
+                      key={rule.uuid}
                       rule={rule}
-                      selected={selectedIndices.has(rule._index)}
+                      selected={selectedUuids.has(rule.uuid)}
                       onToggle={() => {
-                        toggleSelectedIndex(rule._index)
+                        toggleSelected(rule.uuid)
                       }}
                       onDelete={() => {
-                        deleteByIndices([rule._index])
+                        deleteOne(rule.uuid)
                       }}
                     />
                   ))}
@@ -1141,57 +1247,60 @@ function ImportRulesSection() {
 
             <TabsContent value="auto" className="space-y-3">
               <p className="text-muted-foreground text-xs">
-                Auto-ignore rules are added by Storyteller when books are
-                relocated, backed up, or removed with re-import prevention. If a
-                book isn&apos;t importing, search here for its path or title.
+                {t("autoIgnoreRulesDescription")}
               </p>
 
               <TabHeader
-                searchPlaceholder="Search by path or book title..."
+                searchPlaceholder={t("searchAutoIgnoreRules")}
                 searchValue={searchByTab.auto}
                 onSearchChange={(v) => {
                   setTabSearch("auto", v)
                 }}
-                selectedCount={selectedAutoUuids.size}
-                selectableCount={autoSelectableUuids.length}
-                allSelected={
-                  autoSelectableUuids.length > 0 &&
-                  autoSelectableUuids.every((u) => selectedAutoUuids.has(u))
-                }
-                isDeleting={false}
+                selectedCount={selectedUuids.size}
+                selectableCount={autoSelectable.length}
+                allSelected={allUuidsSelected(autoSelectable)}
+                isDeleting={isDeleting}
                 onSelectAll={() => {
-                  setSelectedAutoUuids(new Set(autoSelectableUuids))
+                  selectAllUuids(autoSelectable)
                 }}
                 onDeleteSelected={handleDeleteSelected}
                 onClearSelection={() => {
-                  setSelectedAutoUuids(new Set())
+                  setSelectedUuids(new Set())
                 }}
               />
 
               {filteredAuto.length === 0 ? (
                 <EmptyState
                   message={
-                    liveAutoRules.length === 0
-                      ? "No auto-ignore rules."
-                      : "No auto-ignore rules match your search."
+                    autoIgnoreRules.length === 0
+                      ? t("noAutoIgnoreRules")
+                      : t("noAutoIgnoreRulesMatchSearch")
                   }
                 />
               ) : (
                 <>
                   <p className="text-muted-foreground text-xs">
                     {showAutoPagination
-                      ? `Showing ${autoStart + 1}-${autoStart + visibleAuto.length} of ${filteredAuto.length}.`
-                      : `Showing ${filteredAuto.length} of ${liveAutoRules.length}.`}
+                      ? t("showingRules", {
+                          start: autoStart + 1,
+                          end: autoStart + visibleAuto.length,
+                          total: filteredAuto.length,
+                        })
+                      : t("showingRulesTotal", {
+                          total: filteredAuto.length,
+                          totalAuto: autoIgnoreRules.length,
+                        })}
                   </p>
                   <div className="space-y-1.5">
                     {visibleAuto.map((rule) => (
                       <AutoIgnoreRuleRow
                         key={rule.uuid}
                         rule={rule}
-                        selected={selectedAutoUuids.has(rule.uuid)}
+                        selected={selectedUuids.has(rule.uuid)}
                         onToggle={() => {
-                          toggleSelectedAutoUuid(rule.uuid)
+                          toggleSelected(rule.uuid)
                         }}
+                        sourceLabels={AUTO_SOURCE_LABELS}
                       />
                     ))}
                   </div>
@@ -1236,9 +1345,10 @@ function ImportRulesSection() {
             if (!open) setAddDialogKind(null)
           }}
           kind={addDialogKind}
-          existingRules={fields}
+          rules={rules}
           collections={collections}
-          onAdd={handleAddRule}
+          importModeOptions={IMPORT_MODE_OPTIONS}
+          epub2StrategyOptions={EPUB2_STRATEGY_OPTIONS}
         />
       )}
     </SettingsSection>
@@ -1275,10 +1385,7 @@ function TabHeader({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="relative min-w-[200px] flex-1">
-        <IconSearch
-          size={14}
-          className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 -translate-y-1/2"
-        />
+        <icon.Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 -translate-y-1/2" />
         <Input
           value={searchValue}
           onChange={(e) => {
@@ -1291,7 +1398,7 @@ function TabHeader({
 
       {addLabel && onAdd && (
         <Button variant="outline" size="sm" onClick={onAdd}>
-          <IconPlus size={14} className="mr-1" />
+          <icon.Add className="size-4" />
           {addLabel}
         </Button>
       )}
@@ -1321,7 +1428,7 @@ function TabHeader({
           disabled={isDeleting}
           onClick={onDeleteSelected}
         >
-          <IconTrash size={14} className="mr-1" />
+          <icon.Trash className="mr-1 size-4" />
           Delete {selectedCount}
         </Button>
       )}
@@ -1349,6 +1456,7 @@ const FIELD_LABEL_KEYS = {
   creators: "fieldCreators",
   series: "fieldSeries",
   tags: "fieldTags",
+  identifiers: "fieldIdentifiers",
 } as const satisfies Record<MetadataField, string>
 
 const MODE_OPTIONS = [
@@ -1369,12 +1477,16 @@ function getUniformMode(
 function PerFieldOverridesEditor({
   value,
   onChange,
-  t,
 }: {
   value: MetadataFieldOverrides
   onChange: (overrides: MetadataFieldOverrides) => void
-  t: ReturnType<typeof useTranslations>
 }) {
+  const t = useTranslation("Labels.metadata")
+  const items = MODE_OPTIONS.map(({ value, labelKey }) => ({
+    value,
+    label: t(labelKey),
+  }))
+
   return (
     <div className="divide-border divide-y rounded-md border">
       {METADATA_FIELDS.map((field) => (
@@ -1391,19 +1503,15 @@ function PerFieldOverridesEditor({
             onValueChange={(mode) => {
               onChange({ ...value, [field]: mode })
             }}
+            items={items}
           >
             <SelectTrigger className="w-[140px]">
-              <SelectValue>
-                {t(
-                  MODE_OPTIONS.find((opt) => opt.value === value[field])
-                    ?.labelKey ?? "modeMerge",
-                )}
-              </SelectValue>
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {MODE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {t(opt.labelKey)}
+              {items.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1415,16 +1523,20 @@ function PerFieldOverridesEditor({
 }
 
 export function MetadataFieldOverridesEditor({
-  value,
+  value: storedValue,
   onChange,
-  t,
 }: {
   value: MetadataFieldOverrides
   onChange: (overrides: MetadataFieldOverrides) => void
-  t: ReturnType<typeof useTranslations>
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const value = MetadataFieldOverridesSchema.parse(storedValue)
   const uniformMode = getUniformMode(value)
+  const t = useTranslation("Labels.metadata")
+  const items = MODE_OPTIONS.map(({ value, labelKey }) => ({
+    value,
+    label: t(labelKey),
+  }))
 
   return (
     <div className="space-y-2">
@@ -1434,6 +1546,7 @@ export function MetadataFieldOverridesEditor({
           if (mode === "custom") return
           onChange(defaultMetadataFieldOverrides(mode as MetadataFieldMode))
         }}
+        items={items}
       >
         <SelectTrigger className="w-full">
           <SelectValue>
@@ -1456,7 +1569,7 @@ export function MetadataFieldOverridesEditor({
 
       {showAdvanced ? (
         <>
-          <PerFieldOverridesEditor value={value} onChange={onChange} t={t} />
+          <PerFieldOverridesEditor value={value} onChange={onChange} />
 
           <button
             type="button"
@@ -1492,7 +1605,7 @@ function ScanTriggerButton({
   isTriggeringScan: boolean
   triggerScan: (args: { force?: boolean }) => void
 }) {
-  const t = useTranslations("SettingsPage.tabs.library.sections.scanControls")
+  const t = useTranslation("SettingsPage.tabs.library.sections.scanControls")
   const [cancelScan, { isLoading: isCancelling }] = useCancelScanMutation()
   const isDisabled = scanState?.running || isTriggeringScan
 
@@ -1539,7 +1652,8 @@ function ScanTriggerButton({
 
 function ScanControlsSection() {
   const { form } = useSettingsForm()
-  const t = useTranslations("SettingsPage.tabs.library.sections.scanControls")
+  const t = useTranslation("SettingsPage.tabs.library.sections.scanControls")
+  const tl = useTranslation("Labels.metadata")
   const permissions = usePermissions()
   const [showCronInput, setShowCronInput] = useState(false)
 
@@ -1597,9 +1711,12 @@ function ScanControlsSection() {
                   form.setValue(
                     "scanCronExpression",
                     minutesToCronExpression(1440),
+                    { shouldDirty: true },
                   )
                 } else {
-                  form.setValue("scanCronExpression", null)
+                  form.setValue("scanCronExpression", null, {
+                    shouldDirty: true,
+                  })
                 }
               }}
             />
@@ -1630,6 +1747,7 @@ function ScanControlsSection() {
                           form.setValue(
                             "scanCronExpression",
                             minutesToCronExpression(minutes),
+                            { shouldDirty: true },
                           )
                         }
                       }}
@@ -1693,17 +1811,18 @@ function ScanControlsSection() {
           )}
 
           <div className="space-y-2">
-            <Label>{t("metadataFieldOverrides")}</Label>
+            <Label>{tl("metadataFieldOverrides")}</Label>
             <p className="text-muted-foreground text-xs">
-              {t("metadataFieldOverridesDescription")}
+              {tl("metadataFieldOverridesDescription")}
             </p>
 
             <MetadataFieldOverridesEditor
               value={currentOverrides}
               onChange={(updated) => {
-                form.setValue("metadataFieldOverrides", updated)
+                form.setValue("metadataFieldOverrides", updated, {
+                  shouldDirty: true,
+                })
               }}
-              t={t}
             />
           </div>
         </CardContent>

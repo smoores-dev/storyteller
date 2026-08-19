@@ -1,55 +1,73 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import {
-  IconAlertCircle,
-  IconDownload,
-  IconHistory,
-  IconMail,
-  IconMicrophone,
-  IconRss,
-  IconSearch,
-  IconSettings2,
-  IconShield,
-  IconUpload,
-  IconX,
-} from "@tabler/icons-react"
 import Link from "next/link"
-import { useTranslations } from "next-intl"
+import { useSearchParams } from "next/navigation"
 import { type SingleParser, parseAsString, useQueryState } from "nuqs"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import { type FieldErrors, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
 
-import { type Settings } from "@/apiModels"
+import { SiteHeader } from "@v3/_/components/site-header"
+import { Button } from "@v3/_/components/ui/button"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/app/(v3)/v3/_/components/ui/tooltip"
+  NavSidebar,
+  NavSidebarBody,
+  NavSidebarFooterLink,
+  NavSidebarGroup,
+  NavSidebarList,
+  NavSidebarSearch,
+  type NavSidebarTab,
+} from "@v3/_/components/ui/nav-sidebar"
+import {
+  PageContent,
+  PageHeader,
+  PageLayout,
+  PageMain,
+  PageSidebar,
+} from "@v3/_/components/ui/page-layout"
+import { Spinner } from "@v3/_/components/ui/spinner"
+import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { useIsMobile } from "@v3/_/hooks/use-mobile"
+import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
+
+import { type Invite, type Settings, type User } from "@/apiModels"
+import { useIsTauri } from "@/app/(v3)/v3/_/hooks/use-is-tauri"
 import { SettingsSchema } from "@/database/settingsTypes"
+import * as icon from "@/icons"
 import {
   useGetMaxUploadChunkSizeQuery,
   useUpdateSettingsMutation,
 } from "@/store/api"
 
-import { SiteHeader } from "@v3/_/components/site-header"
-import { Button } from "@v3/_/components/ui/button"
-import { Input } from "@v3/_/components/ui/input"
-import { Spinner } from "@v3/_/components/ui/spinner"
-import { Tabs, TabsList, TabsTrigger } from "@v3/_/components/ui/tabs"
-
-import { SettingsFormProvider } from "./SettingsFormProvider"
+import {
+  type SettingsFormForm,
+  SettingsFormProvider,
+} from "./SettingsFormProvider"
+import { AppTab } from "./app-tab"
 import { AuthTab } from "./auth-tab"
+import { BackupsTab } from "./backups-tab"
 import { ChangelogTab } from "./changelog-tab"
 import { EmailTab } from "./email-tab"
 import { LibraryTab } from "./library-tab"
+import { LogsTab } from "./logs-tab"
 import { OpdsTab } from "./opds-tab"
 import { ProcessingTab } from "./processing-tab"
+import { QueueTab } from "./queue-tab"
 import { type IsMatch, SearchContext } from "./shared"
-import { type SectionKeywords, type Tab } from "./tabs"
+import {
+  type AdminTab,
+  type DesktopTab,
+  type SectionKeywords,
+  type SettingsFormTab,
+  type Tab,
+  adminTabs,
+  desktopTabs,
+  settingsFormTabs,
+} from "./tabs"
 import { UploadTab } from "./upload-tab"
+import { UsersTab } from "./users-tab"
 
 type ErrorPathSegment = string | number
 
@@ -65,7 +83,7 @@ type ResolvedFieldError = FlattenedFieldError & {
   label: string
 }
 
-type SettingsTranslations = ReturnType<typeof useTranslations<"SettingsPage">>
+type SettingsTranslations = ReturnType<typeof useTranslation<"SettingsPage">>
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -169,19 +187,30 @@ function resolveFieldErrors(
   })
 }
 
+const SETTINGS_SIDEBAR_WIDTH = 220
+
+type SidebarTabDef = NavSidebarTab<Tab>
+
 export function SettingsForm({
   settings,
   sectionKeywords,
   configLockedKeys,
   currentVersion,
+  initialUsers,
+  initialInvites,
 }: {
   settings: Settings
   sectionKeywords: SectionKeywords
   configLockedKeys: (keyof Settings)[]
   currentVersion: string
+  initialUsers?: User[]
+  initialInvites?: Invite[]
 }) {
-  const t = useTranslations("SettingsPage")
+  const t = useTranslation("SettingsPage")
+  const c = useCommon()
   const title = t("title")
+  const isMobile = useIsMobile()
+  const isTauri = useIsTauri()
   const { data: maxUploadChunkSize } = useGetMaxUploadChunkSizeQuery()
   const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation()
   const [searchQuery, setSearchQuery] = useState("")
@@ -191,6 +220,7 @@ export function SettingsForm({
     resolver: zodResolver(SettingsSchema),
     defaultValues: {
       ...settings,
+      serverIconSha256: settings.serverIconSha256 ?? null,
       transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
       whisperModel: settings.whisperModel ?? "tiny",
       whisperCpuFallback: settings.whisperCpuFallback ?? null,
@@ -218,19 +248,28 @@ export function SettingsForm({
   })
   const { handleSubmit, formState } = form
   const errorCount = Object.keys(formState.errors).length
+  const { dirtyFields } = formState
 
   const onSubmit = async (data: z.output<typeof SettingsSchema>) => {
+    const changed = Object.keys(dirtyFields) as (keyof Settings)[]
+    const payload = Object.fromEntries(
+      changed.map((key) => [key, data[key]]),
+    ) as Settings
+
     try {
-      await updateSettings(data).unwrap()
+      if (changed.length > 0) {
+        await updateSettings(payload).unwrap()
+      }
+      form.reset(data)
       toast.success(t("settingsSavedSuccessfully"))
     } catch {
       toast.error(t("failedToSaveSettings"))
     }
   }
 
-  const onInvalidSubmit = (
-    errors: FieldErrors<z.output<typeof SettingsSchema>>,
-  ) => {
+  const onInvalidSubmit = (rawErrors: FieldErrors) => {
+    const errors = rawErrors as FieldErrors<z.output<typeof SettingsSchema>>
+
     const flattenedErrors = flattenNestedErrors(errors)
     const resolvedErrors = resolveFieldErrors(flattenedErrors, t)
     const fieldErrorCount = resolvedErrors.length
@@ -258,7 +297,6 @@ export function SettingsForm({
     toast.error(
       t("formHasErrors", {
         count: fieldErrorCount,
-        plural: fieldErrorCount === 1 ? "one" : "other",
       }),
       {
         description,
@@ -266,42 +304,75 @@ export function SettingsForm({
     )
   }
 
-  const tabs = useMemo(
+  const hasUsers = Boolean(initialUsers)
+
+  const allTabs = useMemo<SidebarTabDef[]>(
     () =>
       [
-        {
-          value: "library",
-          label: t("tabs.library.title"),
-          icon: IconSettings2,
-        },
+        { value: "library", label: t("tabs.library.title"), icon: icon.Book },
         {
           value: "processing",
           label: t("tabs.processing.title"),
-          icon: IconMicrophone,
+          icon: icon.Microphone,
         },
-        { value: "auth", label: t("tabs.auth.title"), icon: IconShield },
-        { value: "upload", label: t("tabs.upload.title"), icon: IconUpload },
-        { value: "email", label: t("tabs.email.title"), icon: IconMail },
-        { value: "opds", label: t("tabs.opds.title"), icon: IconRss },
-        { value: "changelog", label: "Changelog", icon: IconHistory },
-      ] as const,
-    [t],
+        { value: "auth", label: t("tabs.auth.title"), icon: icon.Shield },
+        !isTauri && {
+          value: "upload" as Tab,
+          label: t("tabs.upload.title"),
+          icon: icon.Upload,
+        },
+        { value: "email", label: t("tabs.email.title"), icon: icon.Mail },
+        { value: "opds", label: t("tabs.opds.title"), icon: icon.Rss },
+        isTauri && {
+          value: "app" as Tab,
+          label: t("tabs.app.title"),
+          icon: icon.System,
+        },
+        hasUsers && {
+          value: "users" as Tab,
+          label: t("tabs.users.title"),
+          icon: icon.Users,
+        },
+        {
+          value: "changelog",
+          label: t("tabs.changelog.title"),
+          icon: icon.History,
+        },
+        { value: "logs", label: t("tabs.logs.title"), icon: icon.FileText },
+        { value: "queue", label: "Queue", icon: icon.ListNumbers },
+        {
+          value: "backups",
+          label: t("tabs.backups.title"),
+          icon: icon.Database,
+        },
+      ].filter(Boolean) as SidebarTabDef[],
+    [t, hasUsers, isTauri],
   )
 
-  const [activeTab, setActiveTab] = useQueryState(
+  const searchParams = useSearchParams()
+
+  const [activeTabRaw, setActiveTab] = useQueryState(
     "tab",
-    parseAsString.withDefault("library") as SingleParser<Tab>,
+    parseAsString.withOptions({ history: "push" }) as SingleParser<Tab>,
   )
+  const setActiveTabEvent = useEffectEvent((tab: Tab) => {
+    void setActiveTab(tab)
+  })
 
-  const setActiveTabEvent = useCallback(
-    (tab: Tab) => {
-      void setActiveTab(tab)
-    },
-    [setActiveTab],
-  )
+  useEffect(() => {
+    const searchTab = searchParams.get("tab")
+    if (searchTab !== activeTabRaw) {
+      setActiveTabEvent(searchTab as Tab)
+    }
+  }, [searchParams])
+
+  const activeTab: Tab | null = isMobile
+    ? activeTabRaw
+    : activeTabRaw ?? "library"
+  const showMobileSidebar = isMobile && !activeTab
 
   const matchingSections = useMemo(() => {
-    if (!searchQuery) return new Set(tabs.map((t) => t.value))
+    if (!searchQuery) return new Set(allTabs.map((t) => t.value))
 
     const query = searchQuery.toLowerCase()
     const matching = new Set<string>()
@@ -311,13 +382,15 @@ export function SettingsForm({
         const matchesKeywords = keywords.some((kw) =>
           kw.toLowerCase().includes(query),
         )
+
         if (matchesKeywords) {
           matching.add(`${tab}.${section}`)
         }
       }
     }
+
     return matching
-  }, [searchQuery, tabs, sectionKeywords])
+  }, [searchQuery, allTabs, sectionKeywords])
 
   const matchingTabs = useMemo(() => {
     return new Set<Tab>(
@@ -333,6 +406,7 @@ export function SettingsForm({
 
   const prefActiveTab = useRef<Tab | null>(null)
   prefActiveTab.current = activeTab
+
   useEffect(() => {
     if (!searchQuery) return
 
@@ -347,137 +421,268 @@ export function SettingsForm({
   }, [matchingTabs, searchQuery, setActiveTabEvent])
 
   const filteredTabs = searchQuery
-    ? tabs.filter(
-        (tab) => matchingTabs.has(tab.value) || tab.value === "changelog",
+    ? allTabs.filter(
+        (tab) =>
+          matchingTabs.has(tab.value) ||
+          adminTabs.includes(tab.value as AdminTab),
       )
-    : tabs
+    : allTabs
 
-  return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <SiteHeader
-        breadcrumbs={[{ label: title }]}
-        actions={
-          <div className="flex items-center gap-3">
-            <Button
-              size="sm"
-              variant="outline"
-              render={
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <Link
-                        href="/api/v2/settings?exportConfig=true"
-                        aria-label="Export settings as JSON"
-                        download="storyteller-config.json"
-                      >
-                        <IconDownload size={16} />{" "}
-                      </Link>
-                    }
-                  />
-                  <TooltipContent>{t("exportSettings")}</TooltipContent>
-                </Tooltip>
-              }
-            />
-            {errorCount > 0 && (
-              <div className="text-destructive flex items-center gap-1.5 text-sm">
-                <IconAlertCircle className="h-4 w-4" />
-                <span>
-                  {t("formHasErrors", {
-                    count: errorCount,
-                    plural: errorCount === 1 ? "one" : "other",
-                  })}
-                </span>
-              </div>
-            )}
-            <Button
-              type="submit"
-              form="settings-form"
-              disabled={isSaving}
-              size="sm"
-            >
-              {isSaving && <Spinner />}
-              {isSaving ? t("saving") : t("saveSettings")}
-            </Button>
-          </div>
-        }
-      />
-      <form
-        id="settings-form"
-        onSubmit={handleSubmit(onSubmit, onInvalidSubmit)}
-        className="flex min-h-0 flex-1 flex-col overflow-hidden"
-      >
-        <div className="shrink-0 p-4 pb-0">
-          <div className="relative mb-4">
-            <IconSearch className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-            <Input
-              type="text"
-              placeholder={t("searchSettings")}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-              }}
-              className="pr-9 pl-9"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery("")
-                }}
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
-              >
-                <IconX className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-        <SettingsFormProvider form={form} lockedSettings={lockedKeys}>
-          <SearchContext.Provider
-            value={{
-              query: searchQuery,
-              isMatch,
-            }}
+  const isFormTab = settingsFormTabs.includes(activeTab as SettingsFormTab)
+  const activeTabDef = allTabs.find((t) => t.value === activeTab)
+
+  const tabContent = (
+    <>
+      {activeTab === "library" && <LibraryTab />}
+      {activeTab === "processing" && <ProcessingTab />}
+      {activeTab === "auth" && <AuthTab />}
+      {activeTab === "upload" && (
+        <UploadTab maxUploadChunkSize={maxUploadChunkSize} />
+      )}
+      {activeTab === "users" && initialUsers && initialInvites && (
+        <UsersTab
+          initialUsers={initialUsers}
+          initialInvites={initialInvites}
+          disablePasswordLogin={settings.disablePasswordLogin}
+        />
+      )}
+      {activeTab === "email" && <EmailTab />}
+      {activeTab === "opds" && <OpdsTab />}
+      {activeTab === "app" && <AppTab />}
+      {activeTab === "changelog" && (
+        <ChangelogTab currentVersion={currentVersion} />
+      )}
+      {activeTab === "logs" && <LogsTab />}
+      {activeTab === "queue" && <QueueTab />}
+      {activeTab === "backups" && <BackupsTab />}
+    </>
+  )
+
+  const headerActions = (
+    <div className="flex items-center gap-3">
+      {isFormTab && (
+        <>
+          <TooltipButton
+            size="sm"
+            variant="outline"
+            tooltip={t("exportSettings")}
+            nativeButton={false}
+            aria-label={t("exportSettings")}
+            render={
+              <Link href="/api/v2/settings" download="storyteller-config.json">
+                <icon.Download />
+              </Link>
+            }
+          />
+
+          {errorCount > 0 && (
+            <div className="text-destructive flex items-center gap-1.5 text-sm">
+              <icon.AlertCircle className="h-4 w-4" />
+              <span>
+                {t("formHasErrors", {
+                  count: errorCount,
+                })}
+              </span>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            form="settings-form"
+            disabled={isSaving}
+            size="sm"
           >
-            <Tabs
-              value={activeTab}
-              onValueChange={(value) => {
-                void setActiveTab(value as Tab)
-              }}
-              className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4"
-            >
-              <TabsList className="scrollbar-hidden max-w-full shrink-0 overflow-x-auto">
-                {filteredTabs.map((tab) => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                    className="gap-1.5"
-                  >
-                    <tab.icon className="h-4 w-4" />
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {/*the p-px is really important, otherwise the ring of the cards gets cut off*/}
-              <div className="min-h-0 flex-1 overflow-y-auto p-px pb-4">
-                <LibraryTab />
-                <ProcessingTab />
-                <AuthTab />
-                <UploadTab maxUploadChunkSize={maxUploadChunkSize} />
-                <EmailTab />
-                <OpdsTab />
-                <ChangelogTab currentVersion={currentVersion} />
-              </div>
-            </Tabs>
-          </SearchContext.Provider>
-        </SettingsFormProvider>
-      </form>
-      {lockedKeys.size > 0 && (
-        <div className="absolute right-0 bottom-0 left-0 flex items-center gap-2 bg-amber-600/10 p-3 text-xs dark:bg-amber-600/20">
-          <IconAlertCircle className="h-4 w-4 text-amber-500" />
-          <span className="text-amber-500">{t("lockedSettings")}</span>
-        </div>
+            {isSaving && <Spinner />}
+            {isSaving ? c("states.saving") : t("saveSettings")}
+          </Button>
+        </>
       )}
     </div>
+  )
+
+  const sidebarContent = (
+    <SettingsSidebar
+      tabs={filteredTabs}
+      activeTab={activeTab}
+      onTabChange={setActiveTabEvent}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+    />
+  )
+
+  const contentArea = (
+    <SettingsFormProvider
+      form={form as SettingsFormForm}
+      lockedSettings={lockedKeys}
+    >
+      <SearchContext.Provider value={{ query: searchQuery, isMatch }}>
+        {isFormTab ? (
+          <form
+            id="settings-form"
+            onSubmit={handleSubmit(onSubmit, onInvalidSubmit)}
+            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
+            <PageContent className="p-4">{tabContent}</PageContent>
+          </form>
+        ) : (
+          <PageContent className="p-4">{tabContent}</PageContent>
+        )}
+      </SearchContext.Provider>
+    </SettingsFormProvider>
+  )
+
+  if (isMobile) {
+    if (showMobileSidebar) {
+      return (
+        <div className="flex h-screen flex-col">
+          <PageHeader>
+            <SiteHeader breadcrumbs={[{ label: title }]} />
+          </PageHeader>
+
+          {sidebarContent}
+        </div>
+      )
+    }
+    return (
+      <div className="flex h-screen flex-col overflow-hidden">
+        <PageHeader>
+          <SiteHeader
+            breadcrumbs={[
+              { label: title },
+              ...(activeTabDef ? [{ label: activeTabDef.label }] : []),
+            ]}
+            actions={
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void setActiveTab(null)}
+                >
+                  <icon.ArrowLeft className="mr-1 h-4 w-4" />
+                  {c("actions.back")}
+                </Button>
+
+                {isFormTab && (
+                  <Button
+                    type="submit"
+                    form="settings-form"
+                    disabled={isSaving}
+                    size="sm"
+                  >
+                    {isSaving && <Spinner />}
+                    {isSaving ? c("states.saving") : t("saveSettings")}
+                  </Button>
+                )}
+              </div>
+            }
+          />
+        </PageHeader>
+
+        {contentArea}
+
+        {lockedKeys.size > 0 && <LockedSettingsBanner t={t} />}
+      </div>
+    )
+  }
+
+  return (
+    <PageLayout>
+      <PageSidebar width={SETTINGS_SIDEBAR_WIDTH}>{sidebarContent}</PageSidebar>
+
+      <PageMain>
+        <PageHeader>
+          <SiteHeader
+            breadcrumbs={[
+              {
+                render: (
+                  <h1 className="font-heading text-foreground truncate text-lg font-medium">
+                    {activeTabDef?.label ?? title}
+                  </h1>
+                ),
+              },
+            ]}
+            actions={headerActions}
+          />
+        </PageHeader>
+
+        {contentArea}
+
+        {lockedKeys.size > 0 && <LockedSettingsBanner t={t} />}
+      </PageMain>
+    </PageLayout>
+  )
+}
+
+function LockedSettingsBanner({
+  t,
+}: {
+  t: ReturnType<typeof useTranslation<"SettingsPage">>
+}) {
+  return (
+    <div className="flex items-center gap-2 bg-amber-600/10 p-3 text-xs dark:bg-amber-600/20">
+      <icon.AlertCircle className="h-4 w-4 text-amber-500" />
+      <span className="text-amber-500">{t("lockedSettings")}</span>
+    </div>
+  )
+}
+
+function SettingsSidebar({
+  tabs,
+  activeTab,
+  onTabChange,
+  searchQuery,
+  onSearchChange,
+}: {
+  tabs: SidebarTabDef[]
+  activeTab: Tab | null
+  onTabChange: (tab: Tab) => void
+  searchQuery: string
+  onSearchChange: (query: string) => void
+}) {
+  const t = useTranslation("SettingsPage")
+
+  const settingsTabs = tabs.filter(
+    (tab) =>
+      settingsFormTabs.includes(tab.value as SettingsFormTab) ||
+      desktopTabs.includes(tab.value as DesktopTab),
+  )
+  const administrationTabs = tabs.filter((tab) =>
+    adminTabs.includes(tab.value as AdminTab),
+  )
+
+  return (
+    <NavSidebar>
+      <NavSidebarBody>
+        <NavSidebarGroup label={t("sidebar.settings")}>
+          <NavSidebarSearch
+            placeholder={t("searchSettings")}
+            value={searchQuery}
+            onChange={onSearchChange}
+          />
+
+          <NavSidebarList
+            tabs={settingsTabs}
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+          />
+        </NavSidebarGroup>
+
+        {administrationTabs.length > 0 && (
+          <NavSidebarGroup label={t("sidebar.administration")}>
+            <NavSidebarList
+              tabs={administrationTabs}
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+            />
+          </NavSidebarGroup>
+        )}
+      </NavSidebarBody>
+
+      <NavSidebarFooterLink
+        href="/preferences?tab=general"
+        icon={icon.Settings2}
+        label={t("preferences")}
+      />
+    </NavSidebar>
   )
 }

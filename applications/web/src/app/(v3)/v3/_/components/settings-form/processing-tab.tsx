@@ -1,13 +1,8 @@
 "use client"
 
-import { useTranslations } from "next-intl"
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 import { Controller, useWatch } from "react-hook-form"
 import { toast } from "sonner"
-
-import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
-import { usePermissions } from "@/hooks/usePermissions"
-import { useClearBooksCacheMutation } from "@/store/api"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -18,30 +13,47 @@ import {
   CardTitle,
 } from "@v3/_/components/ui/card"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@v3/_/components/ui/dialog"
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@v3/_/components/ui/collapsible"
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldLabel,
+  FieldTitle,
 } from "@v3/_/components/ui/field"
 import { Input } from "@v3/_/components/ui/input"
+import { RadioGroup, RadioGroupItem } from "@v3/_/components/ui/radio-group"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@v3/_/components/ui/select"
 import { Switch } from "@v3/_/components/ui/switch"
-import { TabsContent } from "@v3/_/components/ui/tabs"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@v3/_/components/ui/tabs"
+import { useTranslation } from "@v3/_/hooks/use-translation"
+
+import {
+  ConfirmDialog,
+  useConfirmAction,
+} from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
+import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
+import { cn } from "@/cn"
+import { usePermissions } from "@/hooks/usePermissions"
+import * as icon from "@/icons"
+import { useClearBooksCacheMutation } from "@/store/api"
 
 import {
   LockTooltip,
@@ -51,15 +63,89 @@ import {
 import { SettingsSection } from "./shared"
 
 export function ProcessingTab() {
+  return (
+    <div className="space-y-6">
+      <ReadaloudSection />
+      <ProcessingSettingsFields />
+    </div>
+  )
+}
+
+function SettingsCard({
+  collapsible = false,
+  defaultOpen = true,
+  title,
+  description,
+  children,
+}: {
+  collapsible?: boolean
+  defaultOpen?: boolean
+  title: string
+  description: string
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  if (!collapsible) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">{children}</CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger className="w-full cursor-pointer text-left">
+          <CardHeader className="flex-row items-start justify-between gap-2">
+            <div className="grid gap-1.5">
+              <CardTitle>{title}</CardTitle>
+              <CardDescription>{description}</CardDescription>
+            </div>
+            <icon.ChevronDown
+              className={cn(
+                "text-muted-foreground mt-0.5 size-4 shrink-0 stroke-[1.5] transition-transform",
+                open && "rotate-180",
+              )}
+            />
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="space-y-4 pt-4">{children}</CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  )
+}
+
+const engineSettingsComponents = {
+  "whisper.cpp": WhisperSettings,
+  "whisper-server": WhisperServerSettings,
+  "google-cloud": GoogleCloudSettings,
+  "microsoft-azure": AzureSettings,
+  "amazon-transcribe": AmazonSettings,
+  "openai-cloud": OpenAiSettings,
+  deepgram: DeepgramSettings,
+}
+
+export function ProcessingSettingsFields({
+  collapsible = false,
+}: {
+  collapsible?: boolean
+} = {}) {
   const { form } = useSettingsForm()
-  const tt = useTranslations(
+  const tt = useTranslation(
     "SettingsPage.tabs.processing.sections.transcription",
   )
-  const tp = useTranslations(
+  const tp = useTranslation(
     "SettingsPage.tabs.processing.sections.parallelization",
   )
-  const ta = useTranslations("SettingsPage.tabs.processing.sections.audio")
-  const tr = useTranslations("SettingsPage.tabs.processing.sections.readaloud")
+  const ta = useTranslation("SettingsPage.tabs.processing.sections.audio")
 
   const transcriptionEngine = useWatch({
     control: form.control,
@@ -67,15 +153,70 @@ export function ProcessingTab() {
   })
   const codec = useWatch({ control: form.control, name: "codec" })
 
-  const transcriptionEngineOptions = [
-    { value: "whisper.cpp", label: tt("whisperCpp") },
-    { value: "whisper-server", label: tt("whisperServer") },
-    { value: "google-cloud", label: tt("googleCloud") },
-    { value: "microsoft-azure", label: tt("microsoftAzure") },
-    { value: "amazon-transcribe", label: tt("amazonTranscribe") },
-    { value: "openai-cloud", label: tt("openaiCloud") },
-    { value: "deepgram", label: tt("deepgram") },
+  const engineCategories = [
+    {
+      key: "local",
+      label: tt("tabLocal"),
+      engines: [
+        {
+          value: "whisper.cpp" as const,
+          label: tt("whisperCpp"),
+          description: tt("whisperCppDescription"),
+        },
+      ],
+    },
+    {
+      key: "remote",
+      label: tt("tabRemote"),
+      engines: [
+        {
+          value: "whisper-server" as const,
+          label: tt("whisperServer"),
+          description: tt("whisperServerDescription"),
+        },
+      ],
+    },
+    {
+      key: "thirdParty",
+      label: tt("tabThirdParty"),
+      engines: [
+        {
+          value: "openai-cloud" as const,
+          label: tt("openaiCloud"),
+          description: tt("openaiCloudDescription"),
+        },
+        {
+          value: "deepgram" as const,
+          label: tt("deepgram"),
+          description: tt("deepgramDescription"),
+        },
+        {
+          value: "google-cloud" as const,
+          label: tt("googleCloud"),
+          description: tt("googleCloudDescription"),
+        },
+        {
+          value: "microsoft-azure" as const,
+          label: tt("microsoftAzure"),
+          description: tt("microsoftAzureDescription"),
+        },
+        {
+          value: "amazon-transcribe" as const,
+          label: tt("amazonTranscribe"),
+          description: tt("amazonTranscribeDescription"),
+        },
+      ],
+    },
   ]
+
+  const engineCategoryOf = (engine: string | null | undefined) =>
+    engineCategories.find((category) =>
+      category.engines.some((e) => e.value === engine),
+    )?.key ?? "local"
+
+  const [engineTab, setEngineTab] = useState(() =>
+    engineCategoryOf(transcriptionEngine),
+  )
 
   const trackLengths = [
     { value: 0.75, label: ta("maxTrackLength45") },
@@ -110,32 +251,184 @@ export function ProcessingTab() {
   ]
 
   return (
-    <TabsContent value="processing" className="space-y-6">
-      <ReadaloudSection tr={tr} />
-
+    <div className="space-y-6">
       <SettingsSection tab="processing" section="transcription">
-        <Card>
-          <CardHeader>
-            <CardTitle>{tt("title")}</CardTitle>
-            <CardDescription>{tt("description")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <SettingsCard
+          collapsible={collapsible}
+          defaultOpen
+          title={tt("title")}
+          description={tt("description")}
+        >
+          <SettingsFormField
+            name="transcriptionEngine"
+            label={tt("engine")}
+            render={(field, _fieldState, isLocked) => (
+              <Tabs
+                value={engineTab}
+                onValueChange={(value) => {
+                  if (typeof value === "string") setEngineTab(value)
+                }}
+              >
+                <TabsList className="w-full">
+                  {engineCategories.map((category) => (
+                    <TabsTrigger key={category.key} value={category.key}>
+                      {category.label}
+                      {engineCategoryOf(field.value) === category.key && (
+                        <span className="bg-primary size-1.5 shrink-0 rounded-full" />
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {engineCategories.map((category) => (
+                  <TabsContent key={category.key} value={category.key}>
+                    <RadioGroup
+                      value={field.value}
+                      onValueChange={(value) => {
+                        if (typeof value === "string") field.onChange(value)
+                      }}
+                      disabled={isLocked}
+                    >
+                      {category.engines.map((engine) => {
+                        const selected = field.value === engine.value
+                        const EngineSettings =
+                          engineSettingsComponents[engine.value]
+                        return (
+                          <div
+                            key={engine.value}
+                            className={cn(
+                              "overflow-hidden rounded-md border",
+                              selected && "border-primary",
+                            )}
+                          >
+                            <FieldLabel
+                              htmlFor={`engine-${engine.value}`}
+                              className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
+                            >
+                              <Field orientation="horizontal">
+                                <FieldContent>
+                                  <FieldTitle>{engine.label}</FieldTitle>
+                                  <FieldDescription>
+                                    {engine.description}
+                                  </FieldDescription>
+                                </FieldContent>
+                                <RadioGroupItem
+                                  value={engine.value}
+                                  id={`engine-${engine.value}`}
+                                />
+                              </Field>
+                            </FieldLabel>
+                            {selected && (
+                              <div className="space-y-4 border-t p-3">
+                                <EngineSettings />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </RadioGroup>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
+          />
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection tab="processing" section="audio">
+        <SettingsCard
+          collapsible={collapsible}
+          defaultOpen={!collapsible}
+          title={ta("title")}
+          description={ta("description")}
+        >
+          <SettingsFormField
+            name="maxTrackLength"
+            label={ta("maxTrackLength")}
+            description={ta("maxTrackLengthDescription")}
+            render={(field, fieldState, isLocked) => (
+              <Select
+                disabled={isLocked}
+                aria-invalid={fieldState.invalid}
+                data-disabled={isLocked}
+                items={trackLengths.map(({ value, label }) => ({
+                  value: String(value),
+                  label,
+                }))}
+                value={String(field.value)}
+                onValueChange={(value) => {
+                  if (value) {
+                    field.onChange(parseFloat(value))
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {trackLengths.find(({ value }) => value === field.value)
+                      ?.label ?? ta("maxTrackLength2")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {trackLengths.map(({ value, label }) => (
+                    <SelectItem key={value} value={String(value)}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+
+          <SettingsFormField
+            name="codec"
+            label={ta("codec")}
+            render={(field, fieldState, isLocked) => (
+              <Select
+                disabled={isLocked}
+                aria-invalid={fieldState.invalid}
+                data-disabled={isLocked}
+                value={field.value ?? "default"}
+                items={codecOptions.map(({ value, label }) => ({
+                  value,
+                  label,
+                }))}
+                onValueChange={(value) => {
+                  field.onChange(value === "default" ? null : value)
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {codecOptions.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+
+          {codec === "libopus" && (
             <SettingsFormField
-              name="transcriptionEngine"
-              label={tt("engine")}
+              name="bitrate"
+              label={ta("bitrate")}
               render={(field, fieldState, isLocked) => (
                 <Select
+                  items={opusBitrateOptions}
                   disabled={isLocked}
                   aria-invalid={fieldState.invalid}
-                  items={transcriptionEngineOptions}
-                  value={field.value}
-                  onValueChange={field.onChange}
+                  data-disabled={isLocked}
+                  value={field.value ?? ""}
+                  onValueChange={(value) => {
+                    field.onChange(value || null)
+                  }}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {transcriptionEngineOptions.map(({ value, label }) => (
+                    {opusBitrateOptions.map(({ value, label }) => (
                       <SelectItem key={value} value={value}>
                         {label}
                       </SelectItem>
@@ -144,97 +437,28 @@ export function ProcessingTab() {
                 </Select>
               )}
             />
+          )}
 
-            {transcriptionEngine === "whisper.cpp" && (
-              <WhisperSettings t={tt} />
-            )}
-
-            {transcriptionEngine === "whisper-server" && (
-              <WhisperServerSettings t={tt} />
-            )}
-
-            {transcriptionEngine === "google-cloud" && (
-              <GoogleCloudSettings t={tt} />
-            )}
-
-            {transcriptionEngine === "microsoft-azure" && (
-              <AzureSettings t={tt} />
-            )}
-
-            {transcriptionEngine === "amazon-transcribe" && (
-              <AmazonSettings t={tt} />
-            )}
-
-            {transcriptionEngine === "openai-cloud" && (
-              <OpenAiSettings t={tt} />
-            )}
-
-            {transcriptionEngine === "deepgram" && <DeepgramSettings t={tt} />}
-          </CardContent>
-        </Card>
-      </SettingsSection>
-
-      <SettingsSection tab="processing" section="audio">
-        <Card>
-          <CardHeader>
-            <CardTitle>{ta("title")}</CardTitle>
-            <CardDescription>{ta("description")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          {codec === "libmp3lame" && (
             <SettingsFormField
-              name="maxTrackLength"
-              label={ta("maxTrackLength")}
-              description={ta("maxTrackLengthDescription")}
+              name="bitrate"
+              label={ta("bitrate")}
               render={(field, fieldState, isLocked) => (
                 <Select
                   disabled={isLocked}
                   aria-invalid={fieldState.invalid}
                   data-disabled={isLocked}
-                  value={String(field.value)}
+                  value={field.value ?? ""}
                   onValueChange={(value) => {
-                    if (value) {
-                      field.onChange(parseFloat(value))
-                    }
+                    field.onChange(value || null)
                   }}
+                  items={mp3BitrateOptions}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {trackLengths.find(({ value }) => value === field.value)
-                        ?.label ?? ta("maxTrackLength2")}
-                    </SelectValue>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {trackLengths.map(({ value, label }) => (
-                      <SelectItem key={value} value={String(value)}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-
-            <SettingsFormField
-              name="codec"
-              label={ta("codec")}
-              render={(field, fieldState, isLocked) => (
-                <Select
-                  disabled={isLocked}
-                  aria-invalid={fieldState.invalid}
-                  data-disabled={isLocked}
-                  value={field.value ?? "default"}
-                  onValueChange={(value) => {
-                    field.onChange(value === "default" ? null : value)
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {codecOptions.find(({ value }) => value === field.value)
-                        ?.label ?? ta("codecDefault")}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {codecOptions.map(({ value, label }) => (
+                    {mp3BitrateOptions.map(({ value, label }) => (
                       <SelectItem key={value} value={value}>
                         {label}
                       </SelectItem>
@@ -243,152 +467,97 @@ export function ProcessingTab() {
                 </Select>
               )}
             />
-
-            {codec === "libopus" && (
-              <SettingsFormField
-                name="bitrate"
-                label={ta("bitrate")}
-                render={(field, fieldState, isLocked) => (
-                  <Select
-                    disabled={isLocked}
-                    aria-invalid={fieldState.invalid}
-                    data-disabled={isLocked}
-                    value={field.value ?? ""}
-                    onValueChange={(value) => {
-                      field.onChange(value || null)
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue>
-                        {opusBitrateOptions.find(
-                          ({ value }) => value === field.value,
-                        )?.label ?? ta("bitrateDefault")}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {opusBitrateOptions.map(({ value, label }) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            )}
-
-            {codec === "libmp3lame" && (
-              <SettingsFormField
-                name="bitrate"
-                label={ta("bitrate")}
-                render={(field, fieldState, isLocked) => (
-                  <Select
-                    disabled={isLocked}
-                    aria-invalid={fieldState.invalid}
-                    data-disabled={isLocked}
-                    value={field.value ?? ""}
-                    onValueChange={(value) => {
-                      field.onChange(value || null)
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue>
-                        {mp3BitrateOptions.find(
-                          ({ value }) => value === field.value,
-                        )?.label ?? ta("mp3BitrateDefault")}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mp3BitrateOptions.map(({ value, label }) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </SettingsCard>
       </SettingsSection>
 
       <SettingsSection tab="processing" section="parallelization">
-        <Card>
-          <CardHeader>
-            <CardTitle>{tp("title")}</CardTitle>
-            <CardDescription>{tp("description")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <SettingsFormField
-              name="parallelTranscodes"
-              label={tp("parallelTranscodes")}
-              description={tp("parallelTranscodesDescription")}
-              render={(field, fieldState, isLocked) => (
-                <Input
-                  id="parallelTranscodes"
-                  type="number"
-                  min={1}
-                  disabled={isLocked}
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(parseInt(e.target.value) || 1)
-                  }}
-                  aria-invalid={fieldState.invalid}
-                />
-              )}
-            />
+        <SettingsCard
+          collapsible={collapsible}
+          defaultOpen={!collapsible}
+          title={tp("title")}
+          description={tp("description")}
+        >
+          <SettingsFormField
+            name="parallelTranscodes"
+            label={tp("parallelTranscodes")}
+            description={tp("parallelTranscodesDescription")}
+            render={(field, fieldState, isLocked) => (
+              <Input
+                id="parallelTranscodes"
+                type="number"
+                min={1}
+                disabled={isLocked}
+                {...field}
+                onChange={(e) => {
+                  field.onChange(parseInt(e.target.value) || 1)
+                }}
+                aria-invalid={fieldState.invalid}
+              />
+            )}
+          />
 
-            <SettingsFormField
-              name="parallelTranscribes"
-              label={tp("parallelTranscribes")}
-              description={tp("parallelTranscribesDescription")}
-              render={(field, fieldState, isLocked) => (
-                <Input
-                  id="parallelTranscribes"
-                  type="number"
-                  min={1}
-                  disabled={isLocked}
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(parseInt(e.target.value) || 1)
-                  }}
-                  aria-invalid={fieldState.invalid}
-                />
-              )}
-            />
-          </CardContent>
-        </Card>
+          <SettingsFormField
+            name="parallelTranscribes"
+            label={tp("parallelTranscribes")}
+            description={tp("parallelTranscribesDescription")}
+            render={(field, fieldState, isLocked) => (
+              <Input
+                id="parallelTranscribes"
+                type="number"
+                min={1}
+                disabled={isLocked}
+                {...field}
+                onChange={(e) => {
+                  field.onChange(parseInt(e.target.value) || 1)
+                }}
+                aria-invalid={fieldState.invalid}
+              />
+            )}
+          />
+        </SettingsCard>
       </SettingsSection>
-    </TabsContent>
+    </div>
   )
 }
 
-type TranslationFn = ReturnType<
-  typeof useTranslations<"SettingsPage.tabs.processing.sections.transcription">
->
+function WhisperSettings() {
+  const t = useTranslation(
+    "SettingsPage.tabs.processing.sections.transcription",
+  )
 
-function WhisperSettings({ t }: { t: TranslationFn }) {
   const whisperModelOptions = [
-    { value: "tiny", label: "tiny" },
-    { value: "tiny.en", label: "tiny.en" },
-    { value: "tiny-q5_1", label: "tiny-q5_1" },
-    { value: "base", label: "base" },
-    { value: "base.en", label: "base.en" },
-    { value: "base-q5_1", label: "base-q5_1" },
-    { value: "small", label: "small" },
-    { value: "small.en", label: "small.en" },
-    { value: "small-q5_1", label: "small-q5_1" },
-    { value: "medium", label: "medium" },
-    { value: "medium.en", label: "medium.en" },
-    { value: "medium-q5_0", label: "medium-q5_0" },
-    { value: "large-v1", label: "large-v1" },
-    { value: "large-v2", label: "large-v2" },
-    { value: "large-v2-q5_0", label: "large-v2-q5_0" },
-    { value: "large-v3", label: "large-v3" },
-    { value: "large-v3-q5_0", label: "large-v3-q5_0" },
-    { value: "large-v3-turbo", label: "large-v3-turbo" },
-    { value: "large-v3-turbo-q5_0", label: "large-v3-turbo-q5_0" },
+    {
+      group: "Recommended for non-English",
+      options: [{ value: "large-v3-turbo", label: "large-v3-turbo" }],
+    },
+    {
+      group: "Recommended for English",
+      options: [{ value: "tiny.en", label: "tiny.en" }],
+    },
+
+    {
+      group: "Others",
+      options: [
+        { value: "tiny", label: "tiny" },
+        { value: "tiny-q5_1", label: "tiny-q5_1" },
+        { value: "base", label: "base" },
+        { value: "base.en", label: "base.en" },
+        { value: "base-q5_1", label: "base-q5_1" },
+        { value: "small", label: "small" },
+        { value: "small.en", label: "small.en" },
+        { value: "small-q5_1", label: "small-q5_1" },
+        { value: "medium", label: "medium" },
+        { value: "medium.en", label: "medium.en" },
+        { value: "medium-q5_0", label: "medium-q5_0" },
+        { value: "large-v1", label: "large-v1" },
+        { value: "large-v2", label: "large-v2" },
+        { value: "large-v2-q5_0", label: "large-v2-q5_0" },
+        { value: "large-v3", label: "large-v3" },
+        { value: "large-v3-q5_0", label: "large-v3-q5_0" },
+        { value: "large-v3-turbo-q5_0", label: "large-v3-turbo-q5_0" },
+      ],
+    },
   ]
 
   const whisperCpuFallbackOptions = [
@@ -405,7 +574,9 @@ function WhisperSettings({ t }: { t: TranslationFn }) {
         description={t("whisperModelDescription")}
         render={(field, fieldState, isLocked) => (
           <Select
-            items={whisperModelOptions}
+            items={whisperModelOptions.flatMap((option) =>
+              option.options.map(({ value, label }) => ({ value, label })),
+            )}
             value={field.value}
             onValueChange={field.onChange}
             disabled={isLocked}
@@ -415,10 +586,15 @@ function WhisperSettings({ t }: { t: TranslationFn }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {whisperModelOptions.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
+              {whisperModelOptions.map(({ group, options }) => (
+                <SelectGroup key={group}>
+                  <SelectLabel>{group}</SelectLabel>
+                  {options.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               ))}
             </SelectContent>
           </Select>
@@ -484,12 +660,13 @@ function WhisperSettings({ t }: { t: TranslationFn }) {
   )
 }
 
-function WhisperServerSettings({ t }: { t: TranslationFn }) {
+function WhisperServerSettings() {
+  const t = useTranslation(
+    "SettingsPage.tabs.processing.sections.transcription",
+  )
+
   return (
     <>
-      <p className="text-muted-foreground text-sm">
-        {t("whisperServerDescription")}
-      </p>
       <SettingsFormField
         name="whisperServerUrl"
         label={t("whisperServerUrl")}
@@ -523,7 +700,10 @@ function WhisperServerSettings({ t }: { t: TranslationFn }) {
   )
 }
 
-function GoogleCloudSettings({ t }: { t: TranslationFn }) {
+function GoogleCloudSettings() {
+  const t = useTranslation(
+    "SettingsPage.tabs.processing.sections.transcription",
+  )
   return (
     <SettingsFormField
       name="googleCloudApiKey"
@@ -542,7 +722,10 @@ function GoogleCloudSettings({ t }: { t: TranslationFn }) {
   )
 }
 
-function AzureSettings({ t }: { t: TranslationFn }) {
+function AzureSettings() {
+  const t = useTranslation(
+    "SettingsPage.tabs.processing.sections.transcription",
+  )
   return (
     <>
       <SettingsFormField
@@ -576,7 +759,10 @@ function AzureSettings({ t }: { t: TranslationFn }) {
   )
 }
 
-function AmazonSettings({ t }: { t: TranslationFn }) {
+function AmazonSettings() {
+  const t = useTranslation(
+    "SettingsPage.tabs.processing.sections.transcription",
+  )
   return (
     <>
       <SettingsFormField
@@ -637,7 +823,10 @@ function AmazonSettings({ t }: { t: TranslationFn }) {
   )
 }
 
-function OpenAiSettings({ t }: { t: TranslationFn }) {
+function OpenAiSettings() {
+  const t = useTranslation(
+    "SettingsPage.tabs.processing.sections.transcription",
+  )
   return (
     <>
       <SettingsFormField
@@ -699,7 +888,10 @@ function OpenAiSettings({ t }: { t: TranslationFn }) {
   )
 }
 
-function DeepgramSettings({ t }: { t: TranslationFn }) {
+function DeepgramSettings() {
+  const t = useTranslation(
+    "SettingsPage.tabs.processing.sections.transcription",
+  )
   return (
     <>
       <SettingsFormField
@@ -734,17 +926,32 @@ function DeepgramSettings({ t }: { t: TranslationFn }) {
   )
 }
 
-type ReadaloudTranslationFn = ReturnType<
-  typeof useTranslations<"SettingsPage.tabs.processing.sections.readaloud">
->
-
-function ReadaloudSection({ tr }: { tr: ReadaloudTranslationFn }) {
+function ReadaloudSection() {
+  const tr = useTranslation("SettingsPage.tabs.processing.sections.readaloud")
   const { form, lockedSettings } = useSettingsForm()
 
   const permissions = usePermissions()
-  const [clearBooksCache, { isLoading: isClearingCache }] =
-    useClearBooksCacheMutation()
-  const [clearCacheConfirmOpen, setClearCacheConfirmOpen] = useState(false)
+  const [clearBooksCache] = useClearBooksCacheMutation()
+  const {
+    isLoading,
+    confirm: clearCacheConfirm,
+    dialogProps: clearCacheDialogProps,
+  } = useConfirmAction({
+    title: tr("clearCacheConfirmTitle"),
+    description: tr("clearCacheConfirmDescription"),
+    confirmLabel: tr("clearCacheConfirm"),
+    variant: "destructive",
+    onConfirm: () => {
+      void clearBooksCache({})
+        .unwrap()
+        .then(() => {
+          toast.success(tr("clearCacheSuccess"))
+        })
+        .catch(() => {
+          toast.error(tr("clearCacheError"))
+        })
+    },
+  })
 
   const locationType = useWatch({
     control: form.control,
@@ -780,16 +987,24 @@ function ReadaloudSection({ tr }: { tr: ReadaloudTranslationFn }) {
                   field.onChange(value)
                   switch (value) {
                     case "SUFFIX":
-                      form.setValue("readaloudLocation", " (readaloud)")
+                      form.setValue("readaloudLocation", " (readaloud)", {
+                        shouldDirty: true,
+                      })
                       break
                     case "SIBLING_FOLDER":
-                      form.setValue("readaloudLocation", "readaloud")
+                      form.setValue("readaloudLocation", "readaloud", {
+                        shouldDirty: true,
+                      })
                       break
                     case "CUSTOM_FOLDER":
-                      form.setValue("readaloudLocation", "/readalouds")
+                      form.setValue("readaloudLocation", "/readalouds", {
+                        shouldDirty: true,
+                      })
                       break
                     case "INTERNAL":
-                      form.setValue("readaloudLocation", "")
+                      form.setValue("readaloudLocation", "", {
+                        shouldDirty: true,
+                      })
                       break
                   }
                 }}
@@ -868,12 +1083,10 @@ function ReadaloudSection({ tr }: { tr: ReadaloudTranslationFn }) {
                 type="button"
                 variant="destructive"
                 size="sm"
-                disabled={isClearingCache}
-                onClick={() => {
-                  setClearCacheConfirmOpen(true)
-                }}
+                disabled={isLoading}
+                onClick={clearCacheConfirm}
               >
-                {tr("clearCacheNow")}
+                {isLoading ? "..." : tr("clearCacheNow")}
               </Button>
               <FieldDescription>
                 {tr("clearCacheNowDescription")}
@@ -881,48 +1094,7 @@ function ReadaloudSection({ tr }: { tr: ReadaloudTranslationFn }) {
             </div>
           )}
 
-          <Dialog
-            open={clearCacheConfirmOpen}
-            onOpenChange={setClearCacheConfirmOpen}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{tr("clearCacheConfirmTitle")}</DialogTitle>
-                <DialogDescription>
-                  {tr("clearCacheConfirmDescription")}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <DialogClose
-                  render={
-                    <Button variant="ghost" size="sm">
-                      {tr("clearCacheCancel")}
-                    </Button>
-                  }
-                />
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  disabled={isClearingCache}
-                  onClick={() => {
-                    void clearBooksCache({})
-                      .unwrap()
-                      .then(() => {
-                        toast.success(tr("clearCacheSuccess"))
-                      })
-                      .catch(() => {
-                        toast.error(tr("clearCacheError"))
-                      })
-                      .finally(() => {
-                        setClearCacheConfirmOpen(false)
-                      })
-                  }}
-                >
-                  {tr("clearCacheConfirm")}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <ConfirmDialog {...clearCacheDialogProps} />
         </CardContent>
       </Card>
     </SettingsSection>

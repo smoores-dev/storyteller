@@ -1,6 +1,5 @@
 "use client"
 
-import { useTranslations } from "next-intl"
 import { Controller } from "react-hook-form"
 
 import {
@@ -19,7 +18,7 @@ import {
   FieldLabel,
 } from "@v3/_/components/ui/field"
 import { Input } from "@v3/_/components/ui/input"
-import { TabsContent } from "@v3/_/components/ui/tabs"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import {
   LockTooltip,
@@ -30,10 +29,10 @@ import { SettingsSection } from "./shared"
 
 export function EmailTab() {
   const { form, lockedSettings } = useSettingsForm()
-  const t = useTranslations("SettingsPage.tabs.email.sections.email")
+  const t = useTranslation("SettingsPage.tabs.email.sections.email")
 
   return (
-    <TabsContent value="email" className="space-y-6">
+    <div className="space-y-6">
       <SettingsSection tab="email" section="email">
         <Card>
           <CardHeader>
@@ -176,6 +175,6 @@ export function EmailTab() {
           </CardContent>
         </Card>
       </SettingsSection>
-    </TabsContent>
+    </div>
   )
 }

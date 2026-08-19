@@ -39,6 +39,12 @@ local.envrc
 
 /.idea/*
 /.helix/
+<<<<<<< HEAD
+
+logs/
+||||||| e27eba0bd
+=======
 
 /.build/
 /.swiftpm/
+>>>>>>> main

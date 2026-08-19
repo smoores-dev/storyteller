@@ -18,6 +18,8 @@ import {
 import { isEpubVersionError } from "@/epub"
 import { type UUID } from "@/uuid"
 
+import { parseGetBooksOptions } from "./parseBookQuery"
+
 export const dynamic = "force-dynamic"
 
 /**
@@ -26,7 +28,12 @@ export const dynamic = "force-dynamic"
  *       have been aligned by Storyteller successfully.
  */
 export const GET = withHasPermission("bookList")(async (request) => {
+  const parsed = parseGetBooksOptions(request.nextUrl.searchParams)
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
   const books = await getBooks(null, request.auth.user.id, {
+    ...parsed.opts,
     includeManifest: false,
   })
 
@@ -78,7 +85,7 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
   const {
     paths,
     collection,
-    importMode = "reference",
+    importMode,
     epub2Strategy = "auto",
   } = (await request.json()) as {
     paths: string[]

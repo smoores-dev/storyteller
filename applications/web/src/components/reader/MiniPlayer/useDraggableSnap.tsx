@@ -101,7 +101,7 @@ export const useDraggableSnap = ({
     )
 
     onDragEnd(edgePos)
-  }, [isDragging, elementRef, snapToEdge, onDragEnd])
+  }, [isDragging, elementRef, onDragEnd])
 
   useEffect(() => {
     const abortController = new AbortController()

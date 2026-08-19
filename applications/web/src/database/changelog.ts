@@ -87,6 +87,7 @@ export async function syncChangelog(): Promise<void> {
   while (true) {
     let releases: GitLabRelease[]
 
+    logger.info("Fetching GitLab releases page %d", page)
     try {
       releases = await fetchReleasesPage(page, perPage)
     } catch (err) {
@@ -171,18 +172,18 @@ export async function getChangelog(
     .execute()
 }
 
-export async function getLatestVersion(
+export async function getLatestChangelog(
   component: string,
   options?: { beta?: boolean },
-): Promise<string | null> {
+) {
   const row = await db
     .selectFrom("changelog")
-    .select("version")
+    .select(["version", "changelog.description", "releasedAt"])
     .where("component", "=", component)
     .$if(!options?.beta, (qb) => qb.where("version", "not like", "%-%"))
     .orderBy("releasedAt", "desc")
     .limit(1)
     .executeTakeFirst()
 
-  return row?.version ?? null
+  return row ?? null
 }

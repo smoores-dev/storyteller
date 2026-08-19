@@ -3,6 +3,7 @@ import { describe, it } from "node:test"
 
 import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
 import { getBook, updateBook } from "@/database/books"
+import { mergeIdentifierTypes } from "@/database/identifiers"
 import { type UUID } from "@/uuid"
 
 void describe("extracted identifiers", () => {
@@ -88,5 +89,72 @@ void describe("extracted identifiers", () => {
       book.audiobook.identifiers.map((i) => i.value),
       ["B007FGF3P4"],
     )
+  })
+
+  void it("replace drops the format's stale identifiers but never wipes on an empty extraction", async () => {
+    using ctx = setupTestDb()
+    const [bookUuid] = seedBooks(ctx, [
+      { title: "Book", ebook: "/tmp/book.epub" },
+    ]) as UUID[]
+
+    const link = (
+      entries: { scheme: string; value: string }[],
+      replace: boolean,
+    ) =>
+      updateBook(bookUuid!, null, {
+        extractedIdentifiers: { format: "ebook", entries, replace },
+      })
+
+    await link([{ scheme: "goodreads", value: "111" }], false)
+    await link([{ scheme: "amazon", value: "B0DTN2CKDR" }], true)
+
+    let book = await getBook(bookUuid!)
+    assert.deepStrictEqual(
+      book?.ebook?.identifiers.map((i) => i.value),
+      ["B0DTN2CKDR"],
+    )
+
+    await link([], true)
+
+    book = await getBook(bookUuid!)
+    assert.deepStrictEqual(
+      book?.ebook?.identifiers.map((i) => i.value),
+      ["B0DTN2CKDR"],
+    )
+  })
+})
+
+void describe("mergeIdentifierTypes", () => {
+  void it("reassigns identifiers to the target type and dedupes collisions", async () => {
+    using ctx = setupTestDb()
+    const [bookUuid] = seedBooks(ctx, [
+      { title: "Book", ebook: "/tmp/book.epub" },
+    ]) as UUID[]
+
+    await updateBook(bookUuid!, null, {
+      extractedIdentifiers: {
+        format: "ebook",
+        entries: [
+          { scheme: "goodreads", value: "111" },
+          { scheme: "grrating", value: "111" },
+          { scheme: "grrating", value: "222" },
+        ],
+      },
+    })
+
+    let book = await getBook(bookUuid!)
+    const ids = book?.ebook?.identifiers ?? []
+    const target = ids.find((i) => i.name === "Goodreads")
+    const source = ids.find((i) => i.name === "Grrating")
+    assert.ok(target && source)
+
+    await mergeIdentifierTypes(target.uuid, [source.uuid])
+
+    book = await getBook(bookUuid!)
+    const merged = book?.ebook?.identifiers ?? []
+    assert.deepStrictEqual(merged.map((i) => `${i.name}:${i.value}`).sort(), [
+      "Goodreads:111",
+      "Goodreads:222",
+    ])
   })
 })

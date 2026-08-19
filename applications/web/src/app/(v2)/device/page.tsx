@@ -51,6 +51,9 @@ function getCallbackUrl(searchParams: {
 export default async function DevicePage({ searchParams }: Props) {
   const params = await searchParams
   const callbackUrl = getCallbackUrl(params)
+  // known caveat: nextAuth.auth() can clear st_token when run from a server
+  // component, logging the user out (see getCurrentUser in auth.ts). left as-is
+  // for this v2 page for now, migrate to getCurrentUser() if it logs users out.
   const session = await nextAuth.auth()
 
   if (!session) {

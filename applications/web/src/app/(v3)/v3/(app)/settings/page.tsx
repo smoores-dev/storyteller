@@ -1,17 +1,17 @@
 import { type Metadata } from "next"
-import { notFound, redirect } from "next/navigation"
 import { getMessages, getTranslations } from "next-intl/server"
-
-import { nextAuth } from "@/auth/auth"
-import { getImportRules } from "@/database/importRules"
-import { getConfigLockedKeys, getSettings } from "@/database/settings"
-import { getCurrentVersion } from "@/versions"
 
 import { SettingsForm } from "@v3/_/components/settings-form/settings-form"
 import {
   type SectionKeywords,
   settingsFormTabs,
 } from "@v3/_/components/settings-form/tabs"
+import { withPageAuth } from "@v3/_/server/page-auth-wrapper"
+
+import { type Invite, type User } from "@/apiModels"
+import { fetchApiRoute } from "@/app/fetchApiRoute"
+import { getConfigLockedKeys, getSettings } from "@/database/settings"
+import { getCurrentVersion } from "@/versions"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("SettingsPage")
@@ -33,7 +33,7 @@ function extractKeywords(obj: Record<string, unknown>): string[] {
 }
 
 function generateSectionKeywords(
-  tabsMessages: Record<string, { sections: Record<string, unknown> }>,
+  tabsMessages: Record<string, { sections?: Record<string, unknown> }>,
 ): SectionKeywords {
   const result: SectionKeywords = {} as SectionKeywords
 
@@ -41,7 +41,7 @@ function generateSectionKeywords(
     result[tab] = {}
 
     const tabData = tabsMessages[tab]
-    if (!tabData) {
+    if (!tabData?.sections) {
       continue
     }
 
@@ -55,63 +55,40 @@ function generateSectionKeywords(
   return result
 }
 
-// in a follow up PR i will do this in a more consolidated way
-export default async function SettingsPage() {
-  const auth = await nextAuth.auth()
-  if (!auth) {
-    redirect("/login")
-  }
+export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([
+  "settingsUpdate",
+])(async (_props, user) => {
+  const canManageUsers =
+    user.permissions.userList || user.permissions.inviteList
 
-  if (!auth.user.permissions?.settingsUpdate) {
-    notFound()
-  }
-
-  const [settings, messages, configLockedKeys, allRules] = await Promise.all([
-    getSettings(),
-    getMessages(),
-    getConfigLockedKeys(),
-    getImportRules(),
-  ])
+  const [settings, messages, configLockedKeys, users, invites] =
+    await Promise.all([
+      getSettings(),
+      getMessages(),
+      getConfigLockedKeys(),
+      canManageUsers
+        ? fetchApiRoute<User[]>("/users")
+        : Promise.resolve(undefined),
+      canManageUsers
+        ? fetchApiRoute<Invite[]>("/invites")
+        : Promise.resolve(undefined),
+    ])
 
   const settingsMessages = messages.SettingsPage as {
-    tabs: Record<string, { sections: Record<string, unknown> }>
+    tabs: Record<string, { sections?: Record<string, unknown> }>
   }
   const sectionKeywords = generateSectionKeywords(settingsMessages.tabs)
 
   const currentVersion = getCurrentVersion()
 
-  const editableRules = allRules.filter(
-    (r) => r.source === "user" || r.source === "config",
-  )
-  const autoIgnoreRules = allRules.filter(
-    (r) => r.source !== "user" && r.source !== "config" && r.kind === "ignore",
-  )
-
-  const settingsWithRules = {
-    ...settings,
-    importRules: editableRules.map((r) => ({
-      uuid: r.uuid,
-      kind: r.kind,
-      path: r.path,
-      importMode: r.importMode,
-      epub2ImportStrategy: r.epub2ImportStrategy,
-      collectionUuids: r.collections.map((c) => c.uuid),
-      source: r.source,
-    })),
-    autoIgnoreRules: autoIgnoreRules.map((r) => ({
-      uuid: r.uuid,
-      path: r.path,
-      source: r.source,
-      bookTitle: r.bookTitle,
-    })),
-  }
-
   return (
     <SettingsForm
-      settings={settingsWithRules}
+      settings={settings}
       sectionKeywords={sectionKeywords}
       configLockedKeys={Array.from(configLockedKeys)}
       currentVersion={currentVersion}
+      initialUsers={users}
+      initialInvites={invites}
     />
   )
-}
+})

@@ -77,13 +77,13 @@ type AlignedChapter = {
   endOffset: number
 }
 
-interface AudioFileContext {
+export interface AudioFileContext {
   start: number
   end: number
   filepath: string
 }
 
-interface ChapterReport {
+export interface ChapterReport {
   href: string
 
   transcriptionOffset: number
@@ -117,15 +117,19 @@ interface ChapterReport {
   audioFiles: AudioFileContext[]
 }
 
-type UnalignedChapterReason = "too-short" | "not-found" | "is-nav" | "no-text"
+export type UnalignedChapterReason =
+  | "too-short"
+  | "not-found"
+  | "is-nav"
+  | "no-text"
 
-interface UnalignedChapterReport {
+export interface UnalignedChapterReport {
   href: string
 
   reason: Exclude<UnalignedChapterReason, "not-found">
 }
 
-interface UnalignedNotFoundChapterReport {
+export interface UnalignedNotFoundChapterReport {
   href: string
 
   reason: "not-found"
@@ -134,7 +138,7 @@ interface UnalignedNotFoundChapterReport {
   end: string
 }
 
-interface AudioFileReport {
+export interface AudioFileReport {
   filepath: string
 
   matchedRanges: {
@@ -146,11 +150,17 @@ interface AudioFileReport {
   alignedDuration: number
 }
 
-interface UnalignedAudioFileReport {
+export interface UnalignedAudioFileReport {
   filepath: string
+
+  duration?: number | null
+
+  transcription?: {
+    text: string
+  }
 }
 
-interface Report {
+export interface Report {
   chapters: ChapterReport[]
   unalignedChapters: (UnalignedChapterReport | UnalignedNotFoundChapterReport)[]
   audioFiles: AudioFileReport[]
@@ -344,6 +354,8 @@ export class Aligner {
 
   private audioFileDurations: Record<string, number> = {}
 
+  private audiofileTranscripts: Record<string, string> = {}
+
   public report: Report = {
     chapters: [],
     unalignedChapters: [],
@@ -361,6 +373,11 @@ export class Aligner {
     private logger?: Logger | null,
   ) {
     this.transcription = concatTranscriptions(transcriptions, audiofiles)
+
+    audiofiles.forEach((audiofile, index) => {
+      this.audiofileTranscripts[audiofile] =
+        transcriptions[index]?.transcript ?? ""
+    })
 
     this.getChapterSentences = memoize(this.getChapterSentences.bind(this))
 
@@ -973,7 +990,14 @@ export class Aligner {
       if (
         !this.report.audioFiles.some(({ filepath }) => filepath === audiofile)
       ) {
-        this.report.unalignedAudioFiles.push({ filepath: audiofile })
+        const transcript = this.audiofileTranscripts[audiofile]?.trim()
+        this.report.unalignedAudioFiles.push({
+          filepath: audiofile,
+          duration: this.audioFileDurations[audiofile] ?? null,
+          ...(transcript
+            ? { transcription: { text: transcript.slice(0, 2000) } }
+            : {}),
+        })
       }
     }
 

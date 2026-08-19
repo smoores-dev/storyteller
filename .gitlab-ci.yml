@@ -12,6 +12,7 @@ include:
   - local: ".gitlab/ci/base-images.yml"
   - local: ".gitlab/ci/bump-versions.yml"
   - local: ".gitlab/ci/publish-web.yml"
+  - local: ".gitlab/ci/publish-tauri.yml"
   - local: ".gitlab/ci/publish-packages.yml"
   - local: ".gitlab/ci/publish-mobile.yml"
   - local: ".gitlab/ci/whisper-build.yml"

@@ -1,7 +1,9 @@
 import { type Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 
-import { SiteHeader } from "@v3/_/components/site-header"
+import { withPageAuth } from "@v3/_/server/page-auth-wrapper"
+
+import BookPage from "./bookPage"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("BooksPage")
@@ -10,12 +12,6 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Books() {
-  const t = await getTranslations("BooksPage")
-  return (
-    <>
-      <SiteHeader breadcrumbs={[{ label: t("title") }]} />
-      <div className="flex flex-1 flex-col"></div>
-    </>
-  )
-}
+export default withPageAuth(["bookList"])((_, user) => {
+  return <BookPage permissions={user.permissions} />
+})

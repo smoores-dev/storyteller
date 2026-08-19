@@ -27,7 +27,9 @@ COPY libraries/nodekit/package.json ./libraries/nodekit/package.json
 COPY config/tsup/package.json ./config/tsup/package.json
 COPY config/eslint/package.json ./config/eslint/package.json
 
-RUN yarn install
+# --inline-builds streams native build-script output so a hang during the
+# link step names the offending package instead of freezing silently
+RUN yarn install --inline-builds
 
 COPY docker-scripts/ ./scripts/
 

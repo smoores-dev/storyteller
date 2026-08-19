@@ -1,6 +1,7 @@
 import {
   type ExpressionBuilder,
   type Insertable,
+  type SelectQueryBuilder,
   type Selectable,
   type Transaction,
   type Updateable,
@@ -8,12 +9,12 @@ import {
 } from "kysely"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 
-import { type Audiobook as AudiobookAsset } from "@storyteller-platform/audiobook"
-import { type EpubReader } from "@storyteller-platform/epub"
+import type { Audiobook as AudiobookAsset } from "@storyteller-platform/audiobook"
+import type { EpubReader } from "@storyteller-platform/epub"
 
-import {
-  type ProcessingTaskStatus,
-  type ProcessingTaskType,
+import type {
+  ProcessingTaskStatus,
+  ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
 import { pathBelongsTo } from "@/assets/library/scanner/folder"
 import {
@@ -21,9 +22,13 @@ import {
   getMetadataFromEpub,
 } from "@/assets/metadata"
 import { getDefaultSuffix, getSafeFilepathSegment } from "@/assets/paths"
+import { toIsoDateString } from "@/dates"
 import { ASSETS_DIR } from "@/directories"
 import { BookEvents, type BookUpdatePayload } from "@/events"
-import { type UUID } from "@/uuid"
+import { type DistinctFacetField } from "@/fields"
+import { type ShelfFilter } from "@/shelves"
+import { type BookSort, type SortField } from "@/sort"
+import type { UUID } from "@/uuid"
 
 import { db } from "./connection"
 import { type NewCreator } from "./creators"
@@ -32,8 +37,14 @@ import {
   type NewIdentifier,
   linkExtractedIdentifiers,
 } from "./identifiers"
-import { type DB } from "./schema"
-import { type NewSeries } from "./series"
+import type { DB } from "./schema"
+import type { NewSeries } from "./series"
+import {
+  bookVisibleTo,
+  buildBookSearchExpression,
+  buildFilterExpression,
+  buildSortExpression,
+} from "./shelfFilter"
 import { getDefaultStatus } from "./statuses"
 import { type NewUserBookRating } from "./userRatings"
 
@@ -63,7 +74,6 @@ export async function getBookUuid(bookIdOrUuid: string): Promise<UUID> {
 
 export type BookToCreator = Selectable<DB["bookToCreator"]>
 export type NewBookToCreator = Insertable<DB["bookToCreator"]>
-export type BookToCreatorUpdate = Updateable<DB["bookToCreator"]>
 
 export type ProcessingStatus = {
   currentTask: ProcessingTaskType
@@ -73,28 +83,23 @@ export type ProcessingStatus = {
 
 export type BookToCollection = Selectable<DB["bookToCollection"]>
 export type NewBookToCollection = Insertable<DB["bookToCollection"]>
-export type BookToCollectionUpdate = Updateable<DB["bookToCollection"]>
 
 export type NewTag = Insertable<DB["tag"]>
 export type TagUpdate = Updateable<DB["tag"]>
 
 export type BookToTag = Selectable<DB["bookToTag"]>
 export type NewBookToTag = Insertable<DB["bookToTag"]>
-export type BookToTagUpdate = Updateable<DB["bookToTag"]>
 
 export type BookToSeries = Selectable<DB["bookToSeries"]>
 export type NewBookToSeries = Insertable<DB["bookToSeries"]>
-export type BookToSeriesUpdate = Updateable<DB["bookToSeries"]>
 
 export type BookToStatus = Selectable<DB["bookToStatus"]>
 export type NewBookToStatus = Insertable<DB["bookToStatus"]>
-export type BookToStatusUpdate = Updateable<DB["bookToStatus"]>
 
 export type CreatorRelation = NewCreator &
   Omit<NewBookToCreator, "creatorUuid" | "bookUuid">
 export type SeriesRelation = NewSeries &
   Omit<NewBookToSeries, "bookUuid" | "seriesUuid">
-export type TagRelation = NewTag & NewBookToTag
 export type StatusRelation = Omit<NewBookToStatus, "bookUuid">
 export type UserBookRatingRelation = Omit<NewUserBookRating, "bookUuid">
 export type IdentifierRelation = Omit<NewIdentifier, "bookUuid">
@@ -109,7 +114,6 @@ export type AudiobookUpdate = Updateable<DB["audiobook"]>
 
 export type NewAlignedBook = Insertable<DB["readaloud"]>
 export type Readaloud = Selectable<DB["readaloud"]>
-export type ReadaloudUpdated = Updateable<DB["readaloud"]>
 
 export type EbookRelation = Omit<NewEbook, "bookUuid">
 export type AudiobookRelation = Omit<NewAudiobook, "bookUuid">
@@ -306,6 +310,9 @@ export async function createBook(
             position: series.position,
             featured: series.featured,
           })
+          .onConflict((oc) =>
+            oc.columns(["bookUuid", "seriesUuid"]).doNothing(),
+          )
           .execute()
       }
     }
@@ -436,21 +443,55 @@ export async function createBook(
       }
     }
 
-    const defaultStatus = await getDefaultStatus(tr)
+    const libraryDefault = await getDefaultStatus(tr)
 
-    await tr
-      .insertInto("bookToStatus")
-      .columns(["bookUuid", "statusUuid", "userId"])
-      .expression((eb) =>
-        eb
-          .selectFrom("user")
-          .select([
-            sql.lit(uuid).as("bookUuid"),
-            sql.lit(defaultStatus.uuid).as("statusUuid"),
-            "user.id",
-          ]),
+    const userRows = await tr
+      .selectFrom("user")
+      .leftJoin("userSettings", (join) =>
+        join
+          .onRef("userSettings.userId", "=", "user.id")
+          .on("userSettings.name", "=", "defaultStatusUuid"),
       )
+      .select(["user.id as userId", "userSettings.value as defaultOverride"])
       .execute()
+
+    const allStatusUuids = new Set(
+      (await tr.selectFrom("status").select("uuid").execute()).map(
+        (s) => s.uuid,
+      ),
+    )
+
+    const statusRows: {
+      bookUuid: UUID
+      statusUuid: UUID
+      userId: UUID
+    }[] = []
+
+    const libraryDefaultUuid = libraryDefault?.uuid ?? null
+
+    for (const { userId, defaultOverride } of userRows) {
+      let statusUuid: UUID | null = libraryDefaultUuid
+
+      if (defaultOverride) {
+        try {
+          const parsed = JSON.parse(defaultOverride) as unknown
+          if (
+            typeof parsed === "string" &&
+            allStatusUuids.has(parsed as UUID)
+          ) {
+            statusUuid = parsed as UUID
+          }
+        } catch {}
+      }
+
+      if (statusUuid) {
+        statusRows.push({ bookUuid: uuid, statusUuid, userId })
+      }
+    }
+
+    if (statusRows.length > 0) {
+      await tr.insertInto("bookToStatus").values(statusRows).execute()
+    }
   })
 
   const book = await getBook(uuid)
@@ -462,7 +503,7 @@ export async function createBook(
   BookEvents.emit("message", {
     type: "bookCreated",
     bookUuid: book.uuid,
-    payload: { ...book, status: await getDefaultStatus() },
+    payload: { ...book, status: (await getDefaultStatus()) ?? null },
   })
 
   return book
@@ -609,7 +650,14 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
         eb
           .selectFrom("bookToTag")
           .innerJoin("tag", "tag.uuid", "bookToTag.tagUuid")
-          .select(["tag.uuid", "tag.name", "tag.createdAt", "tag.updatedAt"])
+          .select([
+            "tag.uuid",
+            "tag.name",
+            "tag.icon",
+            "tag.color",
+            "tag.createdAt",
+            "tag.updatedAt",
+          ])
           .whereRef("bookToTag.bookUuid", "=", "book.uuid"),
       ).as("tags"),
       jsonArrayFrom(
@@ -625,6 +673,8 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "collection.name",
             "collection.description",
             "collection.public",
+            "collection.icon",
+            "collection.color",
             "collection.createdAt",
             "collection.updatedAt",
           ])
@@ -641,6 +691,7 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
                 .select([
                   "status.uuid",
                   "status.name",
+                  "status.label",
                   "status.createdAt",
                   "status.updatedAt",
                 ])
@@ -660,8 +711,36 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
                 .whereRef("position.bookUuid", "=", "book.uuid")
                 .where("position.userId", "=", userId),
             ).as("position"),
+            jsonObjectFrom(
+              eb
+                .selectFrom("userBookRating")
+                .select([
+                  "userBookRating.rating",
+                  "userBookRating.review",
+                  "userBookRating.dimensions",
+                ])
+                .whereRef("userBookRating.bookUuid", "=", "book.uuid")
+                .where("userBookRating.userId", "=", userId),
+            ).as("userBookRating"),
           ]
         : []),
+
+      jsonObjectFrom(
+        eb
+          .selectFrom("alignmentReport")
+          .select([
+            "alignmentReport.grade",
+            "alignmentReport.score",
+            "alignmentReport.missingSentences",
+            "alignmentReport.mutedChapters",
+            "alignmentReport.failedChapters",
+            "alignmentReport.unalignedAudio",
+          ])
+          .whereRef("alignmentReport.bookUuid", "=", "book.uuid")
+          .orderBy("alignmentReport.createdAt", "desc")
+          .limit(1),
+      ).as("alignmentSummary"),
+
       jsonObjectFrom(
         eb
           .selectFrom("ebook")
@@ -669,6 +748,23 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "ebook.uuid",
             "ebook.filepath",
             "ebook.missing",
+            "ebook.coverImageUuid",
+            "ebook.coverOrigin",
+            "ebook.coverExtractedFrom",
+            jsonObjectFrom(
+              eb
+                .selectFrom("image")
+                .select([
+                  "image.uuid",
+                  "image.sha256",
+                  "image.mimeType",
+                  "image.width",
+                  "image.height",
+                  "image.blurhash",
+                  "image.colors",
+                ])
+                .whereRef("image.uuid", "=", "ebook.coverImageUuid"),
+            ).as("coverImage"),
             "ebook.isEpub2",
             "ebook.createdAt",
             "ebook.updatedAt",
@@ -687,6 +783,23 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "audiobook.uuid",
             "audiobook.filepath",
             "audiobook.missing",
+            "audiobook.coverImageUuid",
+            "audiobook.coverOrigin",
+            "audiobook.coverExtractedFrom",
+            jsonObjectFrom(
+              eb
+                .selectFrom("image")
+                .select([
+                  "image.uuid",
+                  "image.sha256",
+                  "image.mimeType",
+                  "image.width",
+                  "image.height",
+                  "image.blurhash",
+                  "image.colors",
+                ])
+                .whereRef("image.uuid", "=", "audiobook.coverImageUuid"),
+            ).as("coverImage"),
             "audiobook.createdAt",
             "audiobook.updatedAt",
             "audiobook.fingerprint",
@@ -704,6 +817,23 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "readaloud.uuid",
             "readaloud.filepath",
             "readaloud.missing",
+            "readaloud.coverImageUuid",
+            "readaloud.coverOrigin",
+            "readaloud.coverExtractedFrom",
+            jsonObjectFrom(
+              eb
+                .selectFrom("image")
+                .select([
+                  "image.uuid",
+                  "image.sha256",
+                  "image.mimeType",
+                  "image.width",
+                  "image.height",
+                  "image.blurhash",
+                  "image.colors",
+                ])
+                .whereRef("image.uuid", "=", "readaloud.coverImageUuid"),
+            ).as("coverImage"),
             "readaloud.isEpub2",
             "readaloud.status",
             "readaloud.currentStage",
@@ -721,30 +851,32 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
           .$if(includeManifest, (eb) => eb.select(["readaloud.manifest"]))
           .whereRef("readaloud.bookUuid", "=", "book.uuid"),
       ).as("readaloud"),
+      jsonObjectFrom(
+        eb
+          .selectFrom("job")
+          .select([
+            "job.uuid",
+            "job.bookUuid",
+            "job.type",
+            "job.status",
+            "job.stage",
+            "job.progress",
+            "job.position",
+            "job.error",
+            "job.createdAt",
+            "job.updatedAt",
+            "job.startedAt",
+            "job.finishedAt",
+          ])
+          .whereRef("job.bookUuid", "=", "book.uuid")
+          .where("job.status", "in", ["QUEUED", "RUNNING", "PAUSED"])
+          .orderBy("job.createdAt", "desc")
+          .limit(1),
+      ).as("processingJob"),
     ])
     .$if(!!userId, (qb) =>
-      qb
-        .leftJoin("bookToCollection", "book.uuid", "bookToCollection.bookUuid")
-        .leftJoin(
-          "collection",
-          "collection.uuid",
-          "bookToCollection.collectionUuid",
-        )
-        .leftJoin(
-          "collectionToUser",
-          "collectionToUser.collectionUuid",
-          "bookToCollection.collectionUuid",
-        )
-        .where((eb) =>
-          eb.or([
-            // The $if condition ensures that this only runs when userId
-            // is not null
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            eb("collectionToUser.userId", "=", userId!),
-            eb("collection.public", "=", true),
-            eb("collection.public", "is", null),
-          ]),
-        ),
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      qb.where((eb) => bookVisibleTo(eb, userId!)),
     )
     .groupBy("book.uuid")
 }
@@ -754,9 +886,6 @@ export async function getAlignedReadaloudBooks(userId?: UUID) {
     .innerJoin("readaloud", "readaloud.bookUuid", "book.uuid")
     .where("readaloud.filepath", "is not", null)
     .orderBy("readaloud.createdAt", "desc")
-    // Fallback to auto-incrementing rowid
-    // to break ties in createdAt (which can happen
-    // for migrated books)
     .orderBy(sql`book.rowid`, "desc")
     .execute()
 }
@@ -774,36 +903,193 @@ export async function getQueuedBooks() {
     .execute()
 }
 
-export async function getNextQueuePosition() {
-  const book = await booksQuery()
-    .innerJoin("readaloud", "readaloud.bookUuid", "book.uuid")
-    .where((qb) =>
-      qb.or([
-        qb("readaloud.status", "=", "QUEUED"),
-        qb("readaloud.status", "=", "PROCESSING"),
-      ]),
-    )
-    .orderBy("readaloud.queuePosition", "desc")
-    .limit(1)
+export type GetBooksOptions = {
+  limit?: number
+  offset?: number
+  orderBy?: SortField
+  orderDirection?: "asc" | "desc"
+  sort?: BookSort
+  filter?: ShelfFilter
+  search?: string
+  collection?: UUID
+  series?: UUID
+  mediaFilter?: "ebook" | "audiobook" | "synced"
+  status?: UUID
+  includeManifest?: boolean
+}
+
+function applyBookFilters<O>(
+  query: SelectQueryBuilder<DB, "book", O>,
+  bookUuids: UUID[] | null,
+  userId: UUID | undefined,
+  opts: GetBooksOptions | undefined,
+): SelectQueryBuilder<DB, "book", O> {
+  return (
+    query
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      .$if(!!bookUuids, (qb) => qb.where("book.uuid", "in", bookUuids!))
+      .$if(!!opts?.search, (qb) =>
+        qb.where((eb) =>
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          buildBookSearchExpression(eb, opts!.search!),
+        ),
+      )
+      .$if(!!opts?.collection, (qb) =>
+        qb.where((eb) =>
+          eb.exists(
+            eb
+              .selectFrom("bookToCollection")
+              .select(sql.lit(1).as("one"))
+              .whereRef("bookToCollection.bookUuid", "=", "book.uuid")
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              .where("bookToCollection.collectionUuid", "=", opts!.collection!),
+          ),
+        ),
+      )
+      .$if(!!opts?.series, (qb) =>
+        qb.where((eb) =>
+          eb.exists(
+            eb
+              .selectFrom("bookToSeries")
+              .select(sql.lit(1).as("one"))
+              .whereRef("bookToSeries.bookUuid", "=", "book.uuid")
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              .where("bookToSeries.seriesUuid", "=", opts!.series!),
+          ),
+        ),
+      )
+      .$if(opts?.mediaFilter === "ebook", (qb) =>
+        qb
+          .where((eb) =>
+            eb.exists(
+              eb
+                .selectFrom("ebook")
+                .select(sql.lit(1).as("one"))
+                .whereRef("ebook.bookUuid", "=", "book.uuid"),
+            ),
+          )
+          .where((eb) =>
+            eb.not(
+              eb.exists(
+                eb
+                  .selectFrom("audiobook")
+                  .select(sql.lit(1).as("one"))
+                  .whereRef("audiobook.bookUuid", "=", "book.uuid"),
+              ),
+            ),
+          ),
+      )
+      .$if(opts?.mediaFilter === "audiobook", (qb) =>
+        qb
+          .where((eb) =>
+            eb.exists(
+              eb
+                .selectFrom("audiobook")
+                .select(sql.lit(1).as("one"))
+                .whereRef("audiobook.bookUuid", "=", "book.uuid"),
+            ),
+          )
+          .where((eb) =>
+            eb.not(
+              eb.exists(
+                eb
+                  .selectFrom("ebook")
+                  .select(sql.lit(1).as("one"))
+                  .whereRef("ebook.bookUuid", "=", "book.uuid"),
+              ),
+            ),
+          ),
+      )
+      .$if(opts?.mediaFilter === "synced", (qb) =>
+        qb.where((eb) =>
+          eb.exists(
+            eb
+              .selectFrom("readaloud")
+              .select(sql.lit(1).as("one"))
+              .whereRef("readaloud.bookUuid", "=", "book.uuid")
+              .where("readaloud.status", "=", "ALIGNED"),
+          ),
+        ),
+      )
+      .$if(!!opts?.status && !!userId, (qb) =>
+        qb.where((eb) =>
+          eb.exists(
+            eb
+              .selectFrom("bookToStatus")
+              .select(sql.lit(1).as("one"))
+              .whereRef("bookToStatus.bookUuid", "=", "book.uuid")
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              .where("bookToStatus.statusUuid", "=", opts!.status!)
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              .where("bookToStatus.userId", "=", userId!),
+          ),
+        ),
+      )
+      .$if(!!opts?.filter, (qb) =>
+        qb.where((eb) =>
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          buildFilterExpression(eb, opts!.filter!, userId),
+        ),
+      )
+  )
+}
+
+export async function countBooks(
+  userId?: UUID,
+  opts?: GetBooksOptions,
+  bookUuids: UUID[] | null = null,
+): Promise<number> {
+  const row = await applyBookFilters(
+    db.selectFrom("book"),
+    bookUuids,
+    userId,
+    opts,
+  )
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    .$if(!!userId, (qb) => qb.where((eb) => bookVisibleTo(eb, userId!)))
+    .select((eb) => eb.fn.count<number>("book.uuid").distinct().as("count"))
     .executeTakeFirst()
 
-  if (!book) return 0
-
-  const latestPosition = book.readaloud?.queuePosition ?? 0
-  return latestPosition + 1
+  return row?.count ?? 0
 }
 
 export async function getBooks(
   bookUuids: UUID[] | null = null,
   userId?: UUID,
-  options?: BooksQueryOptions,
+  opts?: GetBooksOptions,
 ) {
-  const books = await booksQuery(userId, options)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    .$if(!!bookUuids, (qb) => qb.where("book.uuid", "in", bookUuids!))
-    .execute()
+  let query = applyBookFilters(
+    booksQuery(userId, opts),
+    bookUuids,
+    userId,
+    opts,
+  )
+    .$if(!!opts?.limit, (qb) => qb.limit(opts?.limit ?? 10))
+    .$if(!!opts?.offset, (qb) => qb.offset(opts?.offset ?? 0))
 
-  return books
+  const sort: BookSort =
+    opts?.sort ??
+    (opts?.orderBy
+      ? [{ field: opts.orderBy, direction: opts.orderDirection ?? "desc" }]
+      : [])
+
+  for (const { field, direction } of sort) {
+    query = query.orderBy(
+      buildSortExpression(field, { userId, seriesContext: opts?.series }),
+      direction,
+    )
+  }
+
+  if (sort.length > 0 && sort[sort.length - 1]?.field !== "createdAt") {
+    query = query.orderBy(sql`book.created_at`, "desc")
+  }
+
+  const rows = await query.execute()
+
+  return rows.map((row) => ({
+    ...row,
+    publicationDate: toIsoDateString(row.publicationDate),
+  }))
 }
 
 export type BookWithRelations = NonNullable<Awaited<ReturnType<typeof getBook>>>
@@ -1004,7 +1290,7 @@ export type BookRelationsUpdate = {
   readaloud?: ReadaloudRelation
   books?: UUID[]
   status?: StatusRelation
-  rating?: UserBookRatingRelation
+  userBookRating?: UserBookRatingRelation
   identifiers?: IdentifierRelation[]
   extractedIdentifiers?: ExtractedIdentifiers
 }
@@ -1125,6 +1411,9 @@ export async function updateBook(
             position: series.position,
             featured: series.featured,
           })
+          .onConflict((oc) =>
+            oc.columns(["bookUuid", "seriesUuid"]).doNothing(),
+          )
           .execute()
       }
 
@@ -1267,22 +1556,25 @@ export async function updateBook(
         .execute()
     }
 
-    if (relations.rating !== undefined) {
-      if (relations.rating.rating == null && relations.rating.review == null) {
+    if (relations.userBookRating !== undefined) {
+      if (
+        relations.userBookRating.rating == null &&
+        relations.userBookRating.review == null
+      ) {
         // delete the rating
         await tr
           .deleteFrom("userBookRating")
           .where("bookUuid", "=", uuid)
-          .where("userId", "=", relations.rating.userId)
+          .where("userId", "=", relations.userBookRating.userId)
           .execute()
       } else {
         await tr
           .insertInto("userBookRating")
-          .values({ ...relations.rating, bookUuid: uuid })
+          .values({ ...relations.userBookRating, bookUuid: uuid })
           .onConflict((oc) =>
             oc.columns(["userId", "bookUuid"]).doUpdateSet({
-              rating: relations.rating?.rating,
-              review: relations.rating?.review,
+              rating: relations.userBookRating?.rating,
+              review: relations.userBookRating?.review,
             }),
           )
           .execute()
@@ -1466,6 +1758,15 @@ export async function updateBook(
     bookUuid: uuid,
     payload: book,
   })
+  if (relations.books) {
+    for (const bookUuid of relations.books) {
+      BookEvents.emit("message", {
+        type: "bookDeleted",
+        bookUuid: bookUuid,
+        payload: undefined,
+      })
+    }
+  }
 
   return book
 }
@@ -1532,4 +1833,21 @@ export async function markFormatMissing(
       payload: book,
     })
   }
+}
+
+export async function getDistinctBookFieldValues(
+  field: DistinctFacetField,
+): Promise<string[]> {
+  const rows = await db
+    .selectFrom("book")
+    .select(field)
+    .distinct()
+    .where(field, "is not", null)
+    .where(field, "!=", "")
+    .orderBy(field)
+    .execute()
+
+  return rows
+    .map((row) => row[field])
+    .filter((value): value is string => !!value)
 }

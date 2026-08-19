@@ -6,6 +6,7 @@ import {
 import { getNumericValue } from "@/assets/library/scanner/manifestValue"
 import { defineStep } from "@/assets/library/scanner/step"
 import { createAudiobookManifest } from "@/utils/audioManifest"
+import { type UUID } from "@/uuid"
 
 import {
   type ExtractedAudiobookMetadata,
@@ -77,6 +78,8 @@ export type ExtractedEbookManifest = ExtractedEpubMetadata & {
   manifest: ReadiumWebPublicationManifest
   pageCount: number | null
   duration: null
+  coverImageUuid?: UUID
+  coverExtractedFrom?: string | null
 }
 
 export const extractReadaloudManifestStep = defineStep(
@@ -105,6 +108,8 @@ export type ExtractedReadaloudManifest = ExtractedEpubMetadata & {
   manifest: ReadiumWebPublicationManifest
   pageCount: number | null
   duration: number | null
+  coverImageUuid?: UUID
+  coverExtractedFrom?: string | null
 }
 
 export const extractAudiobookManifestStep = defineStep(
@@ -140,4 +145,6 @@ export type ExtractedAudiobookManifest = ExtractedAudiobookMetadata & {
   manifest: ReadiumWebPublicationManifest
   pageCount: null
   duration: number | null
+  coverImageUuid?: UUID
+  coverExtractedFrom?: string | null
 }

@@ -7,18 +7,19 @@ export async function register() {
   // we don't import it "normally" as this may cause issues in the edge runtime if end up
   // adding extra imports to env.ts
   await import("@/env")
-  const { getWatcher } = await import(
+  const { getWatcher: getWatcher } = await import(
     "./assets/library/scanner/triggers/watcher"
   )
-  const { getScheduler } = await import(
+  const { getScheduler: getScheduler } = await import(
     "./assets/library/scanner/triggers/scheduler"
   )
   const { logger } = await import("./logging")
   const { migrate } = await import("./database/migrate")
   const { syncChangelog } = await import("./database/changelog")
   const { getQueuedBooks } = await import("./database/books")
-  const { startProcessing } = await import("./work/distributor")
+  const { startProcessing, pump } = await import("./work/distributor")
   const { getReadiumService } = await import("./services/readiumService")
+  const { env } = await import("./env")
 
   logger.debug("Debug logging enabled")
 
@@ -49,7 +50,19 @@ export async function register() {
   }
 
   try {
-    await syncChangelog()
+    const { ensureDataDirAnchor } = await import("./database/pathRewrite")
+    await ensureDataDirAnchor()
+    const { getBackupScheduler } = await import("./backupScheduler")
+    await getBackupScheduler().refresh()
+  } catch (err) {
+    logger.error("Failed to initiate backup scheduler")
+    logger.error(err)
+  }
+
+  try {
+    if (env.STORYTELLER_SYNC_CHANGELOG) {
+      await syncChangelog()
+    }
   } catch (err) {
     logger.error("Failed to sync changelog from GitLab")
     logger.error(err)
@@ -71,8 +84,13 @@ export async function register() {
       logger.info(`Adding ${book.title} to the queue`)
       void startProcessing(book.uuid, book.readaloud?.restartPending || false)
     }
+    if (queue.length) {
+      void pump()
+    }
   } catch (err) {
     logger.error("Failed to restart processing queue")
     logger.error(err)
   }
+
+  logger.info("Starting app")
 }

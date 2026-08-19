@@ -1,18 +1,11 @@
 "use client"
 
-import { IconPlus, IconTrash } from "@tabler/icons-react"
-import { useTranslations } from "next-intl"
 import {
   Controller,
   type FieldError as FormFieldError,
   useFieldArray,
   useWatch,
 } from "react-hook-form"
-
-import { Providers } from "@/auth/providers"
-import { cn } from "@/cn"
-import { FallbackIcon, ProviderIcons } from "@/components/icons/ProviderIcons"
-import type { UserPermissionSet } from "@/database/users"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -40,7 +33,13 @@ import {
   SelectValue,
 } from "@v3/_/components/ui/select"
 import { Switch } from "@v3/_/components/ui/switch"
-import { TabsContent } from "@v3/_/components/ui/tabs"
+import { useTranslation } from "@v3/_/hooks/use-translation"
+
+import { Providers } from "@/auth/providers"
+import { cn } from "@/cn"
+import { FallbackIcon, ProviderIcons } from "@/components/icons/ProviderIcons"
+import type { UserPermissionSet } from "@/database/users"
+import * as icon from "@/icons"
 
 import { LockTooltip, useSettingsForm } from "./SettingsFormProvider"
 import { type SettingsFormForm, SettingsSection, safeUrl } from "./shared"
@@ -95,7 +94,7 @@ export function AuthTab() {
     control: form.control,
     name: "authProviders",
   })
-  const t = useTranslations("SettingsPage.tabs.auth.sections.sso")
+  const t = useTranslation("SettingsPage.tabs.auth.sections.sso")
 
   const {
     fields: authProviders,
@@ -127,7 +126,7 @@ export function AuthTab() {
   const isAuthProvidersLocked = lockedSettings.has(`authProviders`)
 
   return (
-    <TabsContent value="auth" className="space-y-6">
+    <div className="space-y-6">
       <SettingsSection tab="auth" section="sso">
         <Card>
           <CardHeader>
@@ -154,7 +153,7 @@ export function AuthTab() {
                     removeProvider(index)
                   }}
                 >
-                  <IconTrash className="h-4 w-4" />
+                  <icon.Trash className="h-4 w-4" />
                 </Button>
                 <CardContent className="space-y-4">
                   <Controller
@@ -325,7 +324,7 @@ export function AuthTab() {
                 })
               }}
             >
-              <IconPlus className="mr-2 h-4 w-4" />
+              <icon.Add className="size-4" />
               {t("addProvider")}
             </Button>
 
@@ -373,12 +372,12 @@ export function AuthTab() {
           </CardContent>
         </Card>
       </SettingsSection>
-    </TabsContent>
+    </div>
   )
 }
 
 type TranslationFn = ReturnType<
-  typeof useTranslations<"SettingsPage.tabs.auth.sections.sso">
+  typeof useTranslation<"SettingsPage.tabs.auth.sections.sso">
 >
 
 type GroupPermissionsValue = Record<string, Permission[]>
@@ -468,7 +467,12 @@ function BuiltInProviderFields({
           >
             <FieldLabel>{t("provider")}</FieldLabel>
             <Select
-              items={providerOptions}
+              items={
+                providerOptions as unknown as {
+                  value: string
+                  label: string
+                }[]
+              }
               value={field.value as string}
               onValueChange={field.onChange}
               disabled={isAuthProvidersLocked}
@@ -727,7 +731,7 @@ function GroupPermissionsField({
                 removeGroup(groupName)
               }}
             >
-              <IconTrash className="h-3.5 w-3.5" />
+              <icon.Trash className="h-3.5 w-3.5" />
             </Button>
 
             <Field>
@@ -801,7 +805,7 @@ function GroupPermissionsField({
           className="self-start"
           onClick={addGroup}
         >
-          <IconPlus className="mr-1.5 h-3.5 w-3.5" />
+          <icon.Add className="size-4" />
           {t("addGroup")}
         </Button>
 

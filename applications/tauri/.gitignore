@@ -1,0 +1,7 @@
+.cache/
+.staging/
+src-tauri/target/
+src-tauri/binaries/
+src-tauri/resources/runtime.tar.gz
+src-tauri/resources/runtime-id
+src-tauri/gen/

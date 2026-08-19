@@ -7,8 +7,9 @@ import { env } from "@/env"
 import {
   type RestartMode,
   cancelProcessing,
-  startProcessing,
+  enqueueBookAlign,
 } from "@/work/distributor"
+import { type RunConfig } from "@/work/runConfig"
 
 export const dynamic = "force-dynamic"
 
@@ -125,7 +126,11 @@ export const POST = withHasPermission<Params>("bookProcess")(async (
     restart = "sync"
   }
 
-  void startProcessing(bookUuid, restart)
+  const body = (await request.json().catch(() => ({}))) as {
+    config?: Partial<RunConfig>
+  }
+
+  void enqueueBookAlign(bookUuid, restart, body.config)
 
   return new Response(null, { status: 204 })
 })
@@ -141,7 +146,7 @@ export const DELETE = withHasPermission<Params>("bookProcess")(async (
   const { bookId } = await context.params
   const bookUuid = await getBookUuid(bookId)
 
-  cancelProcessing(bookUuid)
+  await cancelProcessing(bookUuid)
 
   return new Response(null, { status: 204 })
 })

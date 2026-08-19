@@ -229,18 +229,6 @@ export async function createTestLibrary(prefix: string): Promise<TestLibrary> {
 }
 
 /**
- * Create a minimal epub file (valid zip with mimetype entry).
- * This is enough to pass file-existence checks without needing real epub content.
- */
-export function createMinimalEpub(): Buffer {
-  // a valid epub is just a zip file with a "mimetype" entry as the first file.
-  // we create a minimal zip structure here. the scanner's discovery phase only
-  // checks extensions, not content, so an empty file suffices for discovery tests.
-  // for tests that open the epub, use real fixtures instead.
-  return Buffer.from("")
-}
-
-/**
  * Helper to wait for filesystem watcher events to propagate.
  * Parcel watcher typically delivers events within ~50-100ms on macOS.
  */

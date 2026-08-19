@@ -23,6 +23,7 @@ import {
   IconMoon,
   IconPlus,
   IconSettings,
+  IconSparkles,
   IconSun,
   IconUser,
   IconUsers,
@@ -57,6 +58,7 @@ interface Props {
   children: ReactNode
   currentUser: User | undefined
   collections: CollectionWithRelations[]
+  v3Available?: boolean
 }
 
 export function StorytellerAppShell({
@@ -65,6 +67,7 @@ export function StorytellerAppShell({
   version,
   currentUser: initialCurrentUser,
   collections: initialCollections,
+  v3Available,
 }: Props) {
   const dispatch = useAppDispatch()
 
@@ -269,6 +272,19 @@ export function StorytellerAppShell({
               leftSection={<ColorSchemeIcon />}
               label={colorSchemeLabel}
             />
+            {v3Available && (
+              <NavLink
+                component="button"
+                onClick={() => {
+                  document.cookie =
+                    "frontend-version=v3; path=/; max-age=31536000"
+                  window.location.href = "/"
+                }}
+                leftSection={<IconSparkles />}
+                label="Try new interface"
+              />
+            )}
+
             <NavLink
               onClick={close}
               component="a"

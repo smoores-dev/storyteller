@@ -5,12 +5,12 @@ import { type UUID } from "@/uuid"
 export const PUT = withHasPermission("bookDownload")(async (request) => {
   const body = (await request.json()) as {
     books: UUID[]
-    status: UUID
+    status: UUID | null
   }
 
   const { books, status } = body
 
-  await updateStatusForBooks(status, books, request.auth.user.id)
+  await updateStatusForBooks(status ?? null, books, request.auth.user.id)
 
   return new Response(null, { status: 204 })
 })

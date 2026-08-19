@@ -33,6 +33,11 @@ function buildFormatRelation(
     fingerprint: input.fingerprint,
     missing: false,
     fileSize: input.fileSize,
+    ...(input.coverImageUuid && {
+      coverImageUuid: input.coverImageUuid,
+      coverOrigin: "extracted" as const,
+      coverExtractedFrom: input.coverExtractedFrom ?? null,
+    }),
   }
 
   if (input.format === "ebook") {
@@ -111,13 +116,18 @@ export const reconcileMetadataStep = defineStep(
 
     const formatRelation = buildFormatRelation(input, current)
 
+    const identifiersMode = overrides.identifiers
+
     await updateBook(input.bookUuid, metadataUpdate, {
       ...relationUpdate,
       ...formatRelation,
-      extractedIdentifiers: {
-        format: input.format,
-        entries: input.extractedIdentifiers,
-      },
+      ...(identifiersMode !== "skip" && {
+        extractedIdentifiers: {
+          format: input.format,
+          entries: input.extractedIdentifiers,
+          replace: identifiersMode === "always",
+        },
+      }),
     } as BookRelationsUpdate)
 
     const updated = await getBook(input.bookUuid)

@@ -1,6 +1,5 @@
 "use client"
 
-import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { Controller, useWatch } from "react-hook-form"
 
@@ -26,7 +25,7 @@ import {
   SelectValue,
 } from "@v3/_/components/ui/select"
 import { Switch } from "@v3/_/components/ui/switch"
-import { TabsContent } from "@v3/_/components/ui/tabs"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import {
   LockTooltip,
@@ -37,7 +36,7 @@ import { SettingsSection, safeUrl } from "./shared"
 
 export function OpdsTab() {
   const { form, lockedSettings } = useSettingsForm()
-  const t = useTranslations("SettingsPage.tabs.opds.sections.opds")
+  const t = useTranslation("SettingsPage.tabs.opds.sections.opds")
   const opdsEnabled = useWatch({ control: form.control, name: "opdsEnabled" })
   const webUrl = useWatch({ control: form.control, name: "webUrl" })
 
@@ -60,7 +59,7 @@ export function OpdsTab() {
   ]
 
   return (
-    <TabsContent value="opds" className="space-y-6">
+    <div className="space-y-6">
       <SettingsSection tab="opds" section="opds">
         <Card>
           <CardHeader>
@@ -165,6 +164,6 @@ export function OpdsTab() {
           </CardContent>
         </Card>
       </SettingsSection>
-    </TabsContent>
+    </div>
   )
 }

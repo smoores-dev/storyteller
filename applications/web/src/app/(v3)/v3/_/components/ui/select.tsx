@@ -1,17 +1,19 @@
 "use client"
 
 import { Select as SelectPrimitive } from "@base-ui/react/select"
-import {
-  IconCheck,
-  IconChevronDown,
-  IconChevronUp,
-  IconSelector,
-} from "@tabler/icons-react"
 import * as React from "react"
 
 import { cn } from "@v3/_/lib/utils"
 
-const Select = SelectPrimitive.Root
+import * as icon from "@/icons"
+
+function Select<Value, Mulitple extends boolean | undefined = false>(
+  props: SelectPrimitive.Root.Props<Value, Mulitple> & {
+    items: { value: string; label: string }[]
+  },
+) {
+  return <SelectPrimitive.Root {...props} />
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -54,7 +56,7 @@ function SelectTrigger({
       {children}
       <SelectPrimitive.Icon
         render={
-          <IconSelector className="text-muted-foreground pointer-events-none size-3.5" />
+          <icon.Selector className="text-muted-foreground pointer-events-none size-3.5" />
         }
       />
     </SelectPrimitive.Trigger>
@@ -137,7 +139,7 @@ function SelectItem({
           <span className="pointer-events-none absolute right-2 flex items-center justify-center" />
         }
       >
-        <IconCheck className="pointer-events-none" />
+        <icon.Check className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   )
@@ -172,7 +174,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <IconChevronUp />
+      <icon.ChevronUp />
     </SelectPrimitive.ScrollUpArrow>
   )
 }
@@ -190,7 +192,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <IconChevronDown />
+      <icon.ChevronDown />
     </SelectPrimitive.ScrollDownArrow>
   )
 }

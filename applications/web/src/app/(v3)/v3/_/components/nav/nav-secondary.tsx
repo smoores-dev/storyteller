@@ -1,6 +1,5 @@
 "use client"
 
-import { type TablerIcon } from "@tabler/icons-react"
 import { usePathname } from "next/navigation"
 import * as React from "react"
 
@@ -13,11 +12,14 @@ import {
   SidebarMenuItem,
 } from "@v3/_/components/ui/sidebar"
 import { V3Link } from "@v3/_/components/v3-link"
+import { useVersionBasePath } from "@v3/_/components/version-context"
+
+import { type StyledIcon } from "@/icons"
 
 export type NavSecondaryItem =
   | ({
       title: string
-      icon: TablerIcon
+      icon: StyledIcon
       badge?: React.ReactNode
     } & (
       | {
@@ -38,7 +40,11 @@ export function NavSecondary({
   items: NavSecondaryItem[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const currentPath = usePathname()
-  const curretPathWithoutV3 = currentPath.replace("/v3", "")
+  const basePath = useVersionBasePath()
+  const normalizedPath = basePath
+    ? currentPath.replace(basePath, "")
+    : currentPath
+
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
@@ -50,10 +56,10 @@ export function NavSecondary({
               )
             }
             const isItemActive =
-              currentPath === item.url ||
+              normalizedPath === item.url ||
               (!!item.url &&
                 item.url !== "/" &&
-                curretPathWithoutV3.startsWith(item.url))
+                normalizedPath.startsWith(item.url))
 
             return (
               <SidebarMenuItem key={item.title}>
@@ -67,7 +73,7 @@ export function NavSecondary({
                     size="sm"
                     isActive={isItemActive}
                     render={
-                      <V3Link href={item.url}>
+                      <V3Link prefetch={true} href={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
                       </V3Link>

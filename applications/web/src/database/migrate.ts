@@ -1,15 +1,18 @@
 import { createHash } from "node:crypto"
-import { readFile, readdir } from "node:fs/promises"
+import { existsSync, mkdirSync } from "node:fs"
+import { readFile, readdir, writeFile } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
 import { cwd } from "node:process"
 
 import { splitQuery, sqliteSplitterOptions } from "dbgate-query-splitter"
 import { sql } from "kysely"
 
+import { BACKUP_DIR, DB_DIR } from "@/directories"
 import { env } from "@/env"
 import { logger } from "@/logging"
+import { getCurrentVersion } from "@/versions"
 
-import { db } from "./connection"
+import { backupDatabase, db } from "./connection"
 
 const jsMigrations: Record<string, () => Promise<void>> = {
   "33_add_more_book_metadata.sql": (
@@ -20,9 +23,6 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   ).default,
   "39_reorganize_library.sql": (
     await import("./migrations/39_reorganize_library.sql")
-  ).default,
-  "45_generate_image_thumbnails.sql": (
-    await import("./migrations/45_generate_image_thumbnails.sql")
   ).default,
   "47_restructure_creators.sql": (
     await import("./migrations/47_restructure_creators.sql")
@@ -51,6 +51,46 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "78_asset_dir.sql": (await import("./migrations/78_asset_dir.sql")).default,
   "80_import_rule_epub2_strategy.sql": (
     await import("./migrations/80_import_rule_epub2_strategy.sql")
+  ).default,
+  "73_add_cover_colors_blurhash.sql": (
+    await import("./migrations/73_add_cover_colors_blurhash.sql")
+  ).default,
+  "85_shelves.sql": (await import("./migrations/85_shelves.sql")).default,
+  "89_sidebar_groups_icons.sql": (
+    await import("./migrations/89_sidebar_groups_icons.sql")
+  ).default,
+  "91_dedupe_book_collections.sql": (
+    await import("./migrations/91_dedupe_book_collections.sql")
+  ).default,
+  "93_add_formats_sidebar.sql": (
+    await import("./migrations/93_add_formats_sidebar.sql")
+  ).default,
+  "95_alignment_reports.sql": (
+    await import("./migrations/95_alignment_reports.sql")
+  ).default,
+  "96_alignment_summary_on_report.sql": (
+    await import("./migrations/96_alignment_summary_on_report.sql")
+  ).default,
+  "101_dedupe_book_series.sql": (
+    await import("./migrations/101_dedupe_book_series.sql")
+  ).default,
+  "102_book_cover_colors_override.sql": (
+    await import("./migrations/102_book_cover_colors_override.sql")
+  ).default,
+  "104_sidebar_group_kind.sql": (
+    await import("./migrations/104_sidebar_group_kind.sql")
+  ).default,
+  "105_v2_reconcile.sql": (await import("./migrations/105_v2_reconcile.sql"))
+    .default,
+  "107_unify_format_filter.sql": (
+    await import("./migrations/107_unify_format_filter.sql")
+  ).default,
+  "110_images.sql": (await import("./migrations/110_images.sql")).default,
+  "111_server_identity.sql": (
+    await import("./migrations/111_server_identity.sql")
+  ).default,
+  "112_encrypt_secrets.sql": (
+    await import("./migrations/112_encrypt_secrets.sql")
   ).default,
 }
 
@@ -118,7 +158,7 @@ async function migrateFile(path: string) {
   const hash = createHash("sha256").update(contents).digest("hex")
 
   const existingMigration = await getMigration(hash)
-  if (existingMigration) return false
+  if (existingMigration) return null
   logger.info(hash)
   logger.info(`Running migration: "${basename(path, ".sql")}"\n`)
   logger.info(contents)
@@ -146,8 +186,39 @@ ${statement}`)
     await sql`PRAGMA foreign_keys = 1`.execute(db)
   }
 
-  await createMigration(hash, basename(path))
-  return true
+  return hash
+}
+
+const BACKUP_MARKER = join(DB_DIR, ".startup-backup-done")
+
+async function backupOnce(foundFirstStartup: boolean) {
+  if (foundFirstStartup) return
+  if (existsSync(BACKUP_MARKER)) return
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-")
+  const destPath = join(
+    BACKUP_DIR,
+    `storyteller-pre-v3-${getCurrentVersion()}-${stamp}.db`,
+  )
+
+  try {
+    mkdirSync(BACKUP_DIR, { recursive: true })
+    await backupDatabase(destPath)
+    await writeFile(BACKUP_MARKER, `${destPath}\n`, { encoding: "utf-8" })
+    logger.info(`Created one-time safety backup of the database at ${destPath}`)
+  } catch (err) {
+    if (env.STORYTELLER_SKIP_STARTUP_BACKUP) {
+      logger.warn({
+        err,
+        msg: "Could not create the startup safety backup, continuing anyway because STORYTELLER_SKIP_STARTUP_BACKUP is set",
+      })
+      return
+    }
+    logger.error(
+      "Could not create the startup safety backup of the database. Refusing to start so your data is not migrated without a backup. Set STORYTELLER_SKIP_STARTUP_BACKUP=true to bypass this.",
+    )
+    throw err
+  }
 }
 
 export async function migrate() {
@@ -155,17 +226,22 @@ export async function migrate() {
   const foundFirstStartup = await isFirstStartup()
   if (foundFirstStartup) logger.info("First startup - initializing database")
 
+  await backupOnce(foundFirstStartup)
+
   const migrationsDir = join(cwd(), "migrations")
   const migrationFiles = await readdir(migrationsDir)
-  migrationFiles.sort()
+  migrationFiles.sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true }),
+  )
 
   for (const migrationFile of migrationFiles.filter(
     (f) => extname(f) === ".sql",
   )) {
-    const migrated = await migrateFile(join(migrationsDir, migrationFile))
+    const hash = await migrateFile(join(migrationsDir, migrationFile))
 
-    if (migrated) {
+    if (hash) {
       await jsMigrations[migrationFile]?.()
+      await createMigration(hash, migrationFile)
     }
   }
 

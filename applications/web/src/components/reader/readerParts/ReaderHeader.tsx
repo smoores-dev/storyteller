@@ -1,6 +1,5 @@
-import { Text, Title } from "@mantine/core"
 import { IconChevronLeft } from "@tabler/icons-react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { cn } from "@/cn"
 import { ResponsiveSettingsControls } from "@/components/reader/ResponsiveSettingsControls"
@@ -19,6 +18,7 @@ export const ReaderHeader = ({
   isFullscreen,
   onToggleFullscreen,
 }: Props) => {
+  const router = useRouter()
   return (
     <header
       className={cn(
@@ -26,13 +26,15 @@ export const ReaderHeader = ({
         isVisible ? "translate-y-0" : "-translate-y-full",
       )}
     >
-      <Link
-        href={`/books/${book.uuid}`}
+      <button
+        onClick={() => {
+          router.back()
+        }}
         className="text-reader-accent hover:bg-reader-surface-hover flex h-full flex-col items-center justify-center px-4"
       >
         {<span className="sr-only">Back to book</span>}
         <IconChevronLeft />
-      </Link>
+      </button>
 
       <div className="mr-4 flex items-center gap-1">
         <ResponsiveSettingsControls
@@ -43,27 +45,5 @@ export const ReaderHeader = ({
         />
       </div>
     </header>
-  )
-}
-
-export const BookTitle = ({ book }: { book: BookWithRelations }) => {
-  return (
-    <div className="flex flex-1 flex-col flex-nowrap items-start gap-0.5 truncate md:flex-row md:items-center md:gap-4">
-      <Title
-        size="sm"
-        className="text-reader-text font-heading max-w-48 truncate font-normal"
-      >
-        <Link href={`/books/${book.uuid}`}>{book.title}</Link>
-      </Title>
-      {book.subtitle ? (
-        <Text size="xs" className="text-reader-text-muted truncate">
-          {book.subtitle}
-        </Text>
-      ) : (
-        <Text size="xs" className="text-reader-text-muted truncate">
-          by {book.authors.map((author) => author.name).join(", ")}
-        </Text>
-      )}
-    </div>
   )
 }

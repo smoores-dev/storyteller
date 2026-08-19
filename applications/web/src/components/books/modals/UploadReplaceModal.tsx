@@ -23,6 +23,7 @@ import {
   defaultMetadataFieldOverrides,
 } from "@/database/settingsTypes"
 import { useGetMaxUploadChunkSizeQuery } from "@/store/api"
+import { audioFileTypes, epubFileTypes } from "@/uploadFileTypes"
 
 type Format = "ebook" | "audiobook" | "readaloud"
 
@@ -31,23 +32,6 @@ const FORMAT_LABELS: Record<Format, string> = {
   audiobook: "audiobook",
   readaloud: "readaloud",
 }
-
-const nav = typeof navigator != "undefined" ? navigator : null
-const agent = (nav && nav.userAgent) || ""
-
-const ie_edge = /Edge\/(\d+)/.exec(agent)
-const ie_upto10 = /MSIE \d/.exec(agent)
-const ie_11up = /Trident\/(?:[7-9]|\d{2,})\..*rv:(\d+)/.exec(agent)
-const ie = !!(ie_upto10 || ie_11up || ie_edge)
-
-// eslint-disable-next-line @typescript-eslint/no-deprecated
-const safari = !ie && !!nav && /Apple Computer/.test(nav.vendor)
-const ios = safari && (/Mobile\/\w+/.test(agent) || nav.maxTouchPoints > 2)
-
-const epubFileTypes = ["application/epub+zip", ...(ios ? [] : [".epub"])]
-const audioFileTypes = ios
-  ? null
-  : ["video/mp4", "audio/*", "application/zip", ".m4b", ".m4a", ".zip"]
 
 function tusEndpointForBook(bookUuid: string) {
   const path = `/api/v2/books/${bookUuid}/replace-asset/upload`

@@ -1,10 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useLocale, useTranslations } from "next-intl"
-
-import { cn } from "@/cn"
-import { locales } from "@/i18n/locales"
+import { useLocale } from "next-intl"
 
 import { changeLocaleAction } from "@v3/_/actions/changeLocaleAction"
 import {
@@ -17,8 +14,12 @@ import {
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
 
+import { useTranslation } from "@/app/(v3)/v3/_/hooks/use-translation"
+import { cn } from "@/cn"
+import { locales } from "@/i18n/locales"
+
 export const LocaleChanger = ({ nested = false }: { nested?: boolean }) => {
-  const t = useTranslations("AppSidebar")
+  const t = useTranslation("AppSidebar")
   const currentLocale = useLocale()
 
   const Menu = nested ? DropdownMenuSub : DropdownMenu

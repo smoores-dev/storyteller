@@ -57,12 +57,12 @@ export async function scanEbook(
   // update happens so the next scan retries the whole pipeline. running it
   // after reconcile would leave the DB updated but the cover missing, and
   // the next fingerprint check would skip the retry.
-  await extractTextCoverStep(metadata, ctx)
+  const cover = await extractTextCoverStep(metadata, ctx)
 
   const manifest =
-    metadata.format === "readaloud"
-      ? await extractReadaloudManifestStep(metadata, ctx)
-      : await extractEbookManifestStep(metadata, ctx)
+    cover.format === "readaloud"
+      ? await extractReadaloudManifestStep(cover, ctx)
+      : await extractEbookManifestStep(cover, ctx)
 
   const reconciled = await reconcileMetadataStep(manifest, ctx)
   if (!reconciled) return book

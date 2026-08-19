@@ -4,6 +4,7 @@ import {
   getCollection,
   updateCollection,
 } from "@/database/collections"
+import { isUniqueConstraintError } from "@/database/errors"
 import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
@@ -40,13 +41,25 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
     description?: string
     public?: boolean
     users?: UUID[]
+    icon?: string | null
+    color?: string | null
   }
 
-  const updated = await updateCollection(uuid, values, {
-    users: [...(users ?? []), user.id],
-  })
+  try {
+    const updated = await updateCollection(uuid, values, {
+      users: [...(users ?? []), user.id],
+    })
 
-  return Response.json(updated)
+    return Response.json(updated)
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return Response.json(
+        { message: `A collection named "${values.name}" already exists` },
+        { status: 409 },
+      )
+    }
+    throw error
+  }
 })
 
 export const DELETE = withHasPermission<Params>("bookUpdate")(async (

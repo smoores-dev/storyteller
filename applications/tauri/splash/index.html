@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Storyteller Server</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #14100d;
+        color: #ede4d8;
+      }
+      main {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.25rem;
+        padding: 2rem;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 1.6rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        margin: 0;
+      }
+      .spinner {
+        width: 28px;
+        height: 28px;
+        border: 3px solid rgba(237, 228, 216, 0.2);
+        border-top-color: #ede4d8;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      #status {
+        font-size: 0.95rem;
+        opacity: 0.75;
+      }
+      #progress {
+        width: min(20rem, 80%);
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(237, 228, 216, 0.15);
+        overflow: hidden;
+        display: none;
+      }
+      #progress.visible {
+        display: block;
+      }
+      #progress > div {
+        height: 100%;
+        width: 0%;
+        background: #ede4d8;
+        border-radius: 2px;
+        transition: width 0.2s ease;
+      }
+      #detail {
+        max-width: min(42rem, 90%);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.7rem;
+        opacity: 0.5;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 1em;
+      }
+      #choice {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      #choice.visible {
+        display: flex;
+      }
+      #choice p {
+        margin: 0;
+        font-size: 0.9rem;
+        opacity: 0.75;
+        max-width: 28rem;
+        text-align: center;
+      }
+      .assets-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        opacity: 0.8;
+        max-width: 30rem;
+      }
+      #assets-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .buttons {
+        display: flex;
+        gap: 0.75rem;
+      }
+      button {
+        font: inherit;
+        font-size: 0.9rem;
+        padding: 0.5rem 1.1rem;
+        border-radius: 8px;
+        border: 1px solid rgba(237, 228, 216, 0.3);
+        background: transparent;
+        color: #ede4d8;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #ede4d8;
+        color: #14100d;
+        border-color: transparent;
+      }
+      button:hover {
+        border-color: rgba(237, 228, 216, 0.6);
+      }
+      button.primary:hover {
+        background: #fff8ec;
+      }
+      .linkish {
+        border: none;
+        background: none;
+        padding: 0;
+        font-size: 0.75rem;
+        opacity: 0.6;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .linkish:hover {
+        opacity: 1;
+        border: none;
+      }
+      #log-view {
+        display: none;
+        width: min(46rem, 92%);
+      }
+      #log-view.visible {
+        display: block;
+      }
+      pre {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(237, 228, 216, 0.15);
+        border-radius: 8px;
+        padding: 1rem;
+        font-size: 0.7rem;
+        line-height: 1.5;
+        max-height: 32vh;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0;
+      }
+      #error {
+        display: none;
+        max-width: 42rem;
+        width: 100%;
+      }
+      #error.visible {
+        display: block;
+      }
+      #error h2 {
+        font-size: 1.05rem;
+        color: #e8a1a1;
+        margin: 0 0 0.5rem;
+      }
+      body.errored .spinner,
+      body.choosing .spinner {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Storyteller Server</h1>
+      <div class="spinner"></div>
+      <div id="status">Starting…</div>
+      <div id="progress"><div></div></div>
+      <div id="detail"></div>
+      <div id="choice">
+        <p>
+          This looks like a fresh library. Start with an empty one, or bring an
+          existing Storyteller database (downloaded from Settings → Data &amp;
+          backups on another server).
+        </p>
+        <div class="buttons">
+          <button class="primary" id="choose-fresh">Start fresh</button>
+          <button id="choose-restore">Use an existing database…</button>
+        </div>
+        <div class="assets-row">
+          <span id="assets-label">Media files: inside the app data folder</span>
+          <button class="linkish" id="choose-assets">Change…</button>
+          <button class="linkish" id="reset-assets" hidden>Use default</button>
+        </div>
+      </div>
+      <div id="error">
+        <h2>Storyteller Server could not start</h2>
+        <pre id="error-details"></pre>
+      </div>
+      <button class="linkish" id="toggle-logs">Show logs</button>
+      <div id="log-view"><pre id="log-lines">(no log output yet)</pre></div>
+    </main>
+    <script>
+      const tauri = window.__TAURI__
+      const invoke = (cmd, args) => tauri?.core?.invoke(cmd, args)
+
+      const status = document.getElementById("status")
+      const progress = document.getElementById("progress")
+      const progressBar = progress.querySelector("div")
+      const detail = document.getElementById("detail")
+      const choice = document.getElementById("choice")
+      const error = document.getElementById("error")
+      const errorDetails = document.getElementById("error-details")
+      const toggleLogs = document.getElementById("toggle-logs")
+      const logView = document.getElementById("log-view")
+      const logLines = document.getElementById("log-lines")
+
+      // identify the tauri shell to the web app without losing the
+      // browser part of the user agent
+      void invoke?.("report_user_agent", { userAgent: navigator.userAgent })
+
+      document.getElementById("choose-fresh").addEventListener("click", () => {
+        void invoke?.("choose_database", { mode: "fresh" })
+      })
+      document
+        .getElementById("choose-restore")
+        .addEventListener("click", () => {
+          void invoke?.("choose_database", { mode: "pick" })
+        })
+
+      const assetsLabel = document.getElementById("assets-label")
+      const resetAssets = document.getElementById("reset-assets")
+      function showAssetsDir(dir) {
+        assetsLabel.textContent = dir
+          ? `Media files: ${dir}`
+          : "Media files: inside the app data folder"
+        assetsLabel.title = dir ?? ""
+        resetAssets.hidden = !dir
+      }
+      document
+        .getElementById("choose-assets")
+        .addEventListener("click", async () => {
+          try {
+            showAssetsDir(await invoke?.("choose_assets_dir", { reset: false }))
+          } catch (err) {
+            status.textContent = String(err)
+          }
+        })
+      resetAssets.addEventListener("click", async () => {
+        try {
+          showAssetsDir(await invoke?.("choose_assets_dir", { reset: true }))
+        } catch (err) {
+          status.textContent = String(err)
+        }
+      })
+
+      let logTimer = null
+      async function refreshLogs() {
+        try {
+          const text = await invoke?.("read_server_log", { lines: 200 })
+          if (typeof text === "string" && text.trim()) {
+            const follow =
+              logLines.scrollHeight - logLines.scrollTop <=
+              logLines.clientHeight + 8
+            logLines.textContent = text
+            if (follow) logLines.scrollTop = logLines.scrollHeight
+          }
+        } catch {
+          // command not ready yet
+        }
+      }
+      toggleLogs.addEventListener("click", () => {
+        const visible = logView.classList.toggle("visible")
+        toggleLogs.textContent = visible ? "Hide logs" : "Show logs"
+        if (visible) {
+          void refreshLogs()
+          logTimer = setInterval(() => void refreshLogs(), 1000)
+        } else if (logTimer) {
+          clearInterval(logTimer)
+          logTimer = null
+        }
+      })
+
+      let assetsDirLoaded = false
+      tauri?.event.listen("boot-status", ({ payload }) => {
+        document.body.classList.toggle("choosing", payload.state === "choice")
+        choice.classList.toggle("visible", payload.state === "choice")
+        if (payload.state === "choice" && !assetsDirLoaded) {
+          assetsDirLoaded = true
+          void invoke?.("get_tauri_config").then((config) =>
+            showAssetsDir(config?.assetsDir ?? null),
+          )
+        }
+
+        if (payload.state === "error") {
+          document.body.classList.add("errored")
+          status.textContent = "Something went wrong."
+          errorDetails.textContent = payload.message
+          error.classList.add("visible")
+          progress.classList.remove("visible")
+          detail.textContent = ""
+          return
+        }
+
+        document.body.classList.remove("errored")
+        error.classList.remove("visible")
+        status.textContent = payload.message
+
+        if (typeof payload.progress === "number") {
+          progress.classList.add("visible")
+          progressBar.style.width = `${Math.round(payload.progress * 100)}%`
+          status.textContent = `${payload.message} ${Math.round(payload.progress * 100)}%`
+        } else {
+          progress.classList.remove("visible")
+        }
+
+        detail.textContent = payload.detail ?? ""
+      })
+    </script>
+  </body>
+</html>

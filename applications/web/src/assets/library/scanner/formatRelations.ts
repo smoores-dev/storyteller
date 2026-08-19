@@ -10,13 +10,23 @@ type EbookRelationPatch = Partial<
     | "pageCount"
     | "fileSize"
     | "fingerprint"
+    | "coverImageUuid"
+    | "coverOrigin"
+    | "coverExtractedFrom"
   >
 >
 
 type AudiobookRelationPatch = Partial<
   Pick<
     NonNullable<BookRelationsUpdate["audiobook"]>,
-    "missing" | "manifest" | "duration" | "fileSize" | "fingerprint"
+    | "missing"
+    | "manifest"
+    | "duration"
+    | "fileSize"
+    | "fingerprint"
+    | "coverImageUuid"
+    | "coverOrigin"
+    | "coverExtractedFrom"
   >
 >
 
@@ -32,6 +42,9 @@ type ReadaloudRelationPatch = Partial<
     | "fingerprint"
     | "status"
     | "currentStage"
+    | "coverImageUuid"
+    | "coverOrigin"
+    | "coverExtractedFrom"
   >
 >
 

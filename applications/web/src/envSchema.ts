@@ -13,11 +13,11 @@ export const documentedServerEnvVars = {
     .describe(
       "[Required for OAuth](https://storyteller-platform.gitlab.io/storyteller/docs/settings#setting-the-auth_url-environment-variable)",
     ),
-  ENABLE_WEB_READER: z.coerce
-    .boolean()
-    .optional()
+  ENABLE_WEB_READER: z
+    .stringbool()
+    .default(true)
     .describe(
-      "[Enable the experimental web reader by setting to `true`.](https://storyteller-platform.gitlab.io/storyteller/docs/reading/web-reader) | `false`",
+      "[Enable the experimental web reader by setting to `true`.](https://storyteller-platform.gitlab.io/storyteller/docs/reading/web-reader) | `true`",
     ),
   READIUM_PORT: z.coerce
     .number()
@@ -40,6 +40,12 @@ export const documentedServerEnvVars = {
     .optional()
     .describe(
       "Directory where the watcher stores its parcel-watcher snapshots. | `STORYTELLER_DATA_DIR/.autoimport/watcher-snapshots`",
+    ),
+  STORYTELLER_ASSETS_DIR: z
+    .string()
+    .optional()
+    .describe(
+      "Directory where Storyteller stores its library-managed files (synced books, audio, covers). | `STORYTELLER_DATA_DIR/assets`",
     ),
   STORYTELLER_DB_FILENAME: z
     .string()
@@ -147,6 +153,10 @@ export const internalServerEnvVars = {
     .boolean()
     .optional()
     .describe("Whether the container is running in a development environment."),
+  STORYTELLER_TAURI: z
+    .stringbool()
+    .default(false)
+    .describe("Set by the tauri shell when it spawns the bundled server."),
   STORYTELLER_ROOT_PATH: z
     .string()
     .default(() => process.cwd())
@@ -159,6 +169,16 @@ export const internalServerEnvVars = {
     .string()
     .default("fileWriteWorker.mjs")
     .describe("The file write worker to use for the Storyteller instance."),
+  STORYTELLER_SYNC_CHANGELOG: z
+    .stringbool()
+    .default(true)
+    .describe("Whether to sync the changelog from GitLab."),
+  STORYTELLER_SKIP_STARTUP_BACKUP: z
+    .stringbool()
+    .default(false)
+    .describe(
+      "Skip the one-time safety backup of the database taken on the first boot of an existing library. By default startup aborts if the backup cannot be made.",
+    ),
   SQLITE_NATIVE_BINDING: z
     .string()
     .optional()
@@ -167,12 +187,14 @@ export const internalServerEnvVars = {
     .string()
     .optional()
     .describe("The Git commit tag of the Storyteller instance."),
-  ENABLE_REACT_SCAN: z.coerce
-    .boolean()
+  ENABLE_REACT_SCAN: z
+    .stringbool()
     .optional()
     .describe("Whether to enable React Scan for development."),
-  ENABLE_V3_FRONTEND: z.coerce
-    .boolean()
-    .optional()
-    .describe("Whether to enable the v3 frontend."),
+  ENABLE_V3_FRONTEND: z
+    .stringbool()
+    .default(true)
+    .describe(
+      "When true, the v3 frontend becomes the default interface. Users can switch back to v2 via the UI toggle.",
+    ),
 } as const

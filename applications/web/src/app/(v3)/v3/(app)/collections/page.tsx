@@ -1,7 +1,9 @@
 import { type Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 
-import { SiteHeader } from "@v3/_/components/site-header"
+import { withPageAuth } from "@v3/_/server/page-auth-wrapper"
+
+import { CollectionsPageClient } from "./collectionsPageClient"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("CollectionsPage")
@@ -10,12 +12,6 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Collections() {
-  const t = await getTranslations("CollectionsPage")
-  return (
-    <>
-      <SiteHeader breadcrumbs={[{ label: t("title") }]} />
-      <div className="flex flex-1 flex-col"></div>
-    </>
-  )
-}
+export default withPageAuth(["bookList"])(() => {
+  return <CollectionsPageClient />
+})

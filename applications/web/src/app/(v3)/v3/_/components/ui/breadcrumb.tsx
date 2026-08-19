@@ -1,9 +1,10 @@
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
-import { IconChevronRight, IconDots } from "@tabler/icons-react"
 import * as React from "react"
 
 import { cn } from "@v3/_/lib/utils"
+
+import * as icon from "@/icons"
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   return (
@@ -85,7 +86,7 @@ function BreadcrumbSeparator({
       className={cn("[&>svg]:size-3.5", className)}
       {...props}
     >
-      {children ?? <IconChevronRight />}
+      {children ?? " / "}
     </li>
   )
 }
@@ -105,7 +106,7 @@ function BreadcrumbEllipsis({
       )}
       {...props}
     >
-      <IconDots />
+      <icon.Dots />
       <span className="sr-only">More</span>
     </span>
   )

@@ -56,8 +56,8 @@ export function compareVersions(version1: string, version2: string) {
     if (!beta1Version && beta2Version) return -1
     if (beta1Version && !beta2Version) return 1
 
-    if (BETA_TAGS.indexOf(beta1Tag) > BETA_TAGS.indexOf(beta2Tag)) return 1
-    if (BETA_TAGS.indexOf(beta1Tag) < BETA_TAGS.indexOf(beta2Tag)) return -1
+    if (BETA_TAGS.indexOf(beta1Tag) < BETA_TAGS.indexOf(beta2Tag)) return 1
+    if (BETA_TAGS.indexOf(beta1Tag) > BETA_TAGS.indexOf(beta2Tag)) return -1
 
     if (beta1Tag === beta2Tag) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

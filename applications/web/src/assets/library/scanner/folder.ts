@@ -222,16 +222,14 @@ export async function listBookCandidates(
   if (violatesConstraint) {
     if (knownBooks.length === 0) {
       logger.warn({
-        msg: "Folder has multiple epubs of the same kind; skipping until cleaned up",
-        folder,
+        msg: `Folder ${folder} has multiple epubs of the same kind; skipping until cleaned up`,
         regularEpubs,
         readaloudEpubs,
       })
       return []
     }
     logger.warn({
-      msg: "Folder has multiple epubs of the same kind; ignoring duplicates, keeping existing books intact",
-      folder,
+      msg: `Folder ${folder} has multiple epubs of the same kind; ignoring duplicates, keeping existing books intact`,
       regularEpubs,
       readaloudEpubs,
     })
@@ -243,8 +241,7 @@ export async function listBookCandidates(
     if (resolve(folder) === resolve(root)) {
       if (regularEpubs.length || readaloudEpubs.length || audiobookDir) {
         logger.warn({
-          msg: "Files found directly at the watch root; please place books in subfolders. Skipping.",
-          folder,
+          msg: `Files found directly at the watch root ${root}; please place books in subfolders. Skipping.`,
         })
       }
       return existingCandidates

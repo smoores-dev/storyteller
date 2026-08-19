@@ -3,26 +3,23 @@ import { z } from "zod"
 import {
   LANGUAGES,
   RECOGNITION_ENGINES,
-  type RecognitionEngine,
   WHISPER_MODELS,
 } from "@storyteller-platform/ghost-story/constants"
 
 import { Providers } from "@/auth/providers"
+import { PreferenceDefaultsSchema } from "@/database/userPreferencesTypes"
 
 export const TranscriptionEngineSchema = z.enum(RECOGNITION_ENGINES)
-export type TranscriptionEngine = RecognitionEngine
 
 export const WhisperModelSchema = z.enum(WHISPER_MODELS)
 export type WhisperModel = z.infer<typeof WhisperModelSchema>
 
 export const WhisperCpuFallbackSchema = z.enum(["blas", "cpu"]).nullable()
-export type WhisperCpuFallback = z.infer<typeof WhisperCpuFallbackSchema>
 
 export const WhisperModelOverridesSchema = z.record(
   z.enum(LANGUAGES),
   WhisperModelSchema,
 )
-export type WhisperModelOverrides = z.infer<typeof WhisperModelOverridesSchema>
 
 export const METADATA_FIELDS = [
   "cover",
@@ -36,6 +33,7 @@ export const METADATA_FIELDS = [
   "creators",
   "series",
   "tags",
+  "identifiers",
 ] as const
 
 export type MetadataField = (typeof METADATA_FIELDS)[number]
@@ -45,8 +43,11 @@ export type MetadataFieldMode = z.infer<typeof MetadataFieldModeSchema>
 
 export const MetadataFieldOverridesSchema = z.object(
   Object.fromEntries(
-    METADATA_FIELDS.map((field) => [field, MetadataFieldModeSchema]),
-  ) as { [K in MetadataField]: typeof MetadataFieldModeSchema },
+    METADATA_FIELDS.map((field) => [
+      field,
+      MetadataFieldModeSchema.default("merge"),
+    ]),
+  ) as { [K in MetadataField]: z.ZodDefault<typeof MetadataFieldModeSchema> },
 )
 export type MetadataFieldOverrides = z.infer<
   typeof MetadataFieldOverridesSchema
@@ -66,7 +67,6 @@ export const ReadaloudLocationTypeSchema = z.enum([
   "INTERNAL",
   "CUSTOM_FOLDER",
 ])
-export type ReadaloudLocationType = z.infer<typeof ReadaloudLocationTypeSchema>
 
 export const Epub2ImportStrategySchema = z.enum([
   "backup-and-convert",
@@ -113,7 +113,6 @@ export const BuiltInAuthProviderSchema = z.object({
   clientSecret: z.string(),
   issuer: optionalUrlSchema,
 })
-export type BuiltInAuthProvider = z.infer<typeof BuiltInAuthProviderSchema>
 
 export const CustomAuthProviderSchema = z.object({
   kind: z.literal("custom"),
@@ -154,6 +153,25 @@ export const ImportRuleInputSchema = z.object({
 
 export type ImportRuleInput = z.infer<typeof ImportRuleInputSchema>
 
+export const ENCRYPTED_SETTING_KEYS = [
+  "smtpPassword",
+  "whisperServerApiKey",
+  "googleCloudApiKey",
+  "azureSubscriptionKey",
+  "amazonTranscribeAccessKeyId",
+  "amazonTranscribeSecretAccessKey",
+  "openAiApiKey",
+  "deepgramApiKey",
+] as const
+
+export type EncryptedSettingKey = (typeof ENCRYPTED_SETTING_KEYS)[number]
+
+export function isEncryptedSettingKey(
+  name: string,
+): name is EncryptedSettingKey {
+  return (ENCRYPTED_SETTING_KEYS as readonly string[]).includes(name)
+}
+
 // Main settings schema
 export const SettingsSchema = z.object({
   // SMTP settings
@@ -167,11 +185,12 @@ export const SettingsSchema = z.object({
   // Library settings
   libraryName: z.string(),
   webUrl: z.string(),
+  serverIconSha256: z.string().nullable().optional(),
   importMode: ImportModeSchema,
   // Audio settings
   codec: z.string().nullable(),
   bitrate: z.string().nullable(),
-  maxTrackLength: z.number().nullable(),
+  maxTrackLength: z.coerce.number().nullable(),
   // Transcription settings
   transcriptionEngine: TranscriptionEngineSchema.nullable(),
   whisperModel: WhisperModelSchema.nullable(),
@@ -211,6 +230,9 @@ export const SettingsSchema = z.object({
   opdsFormat: OpdsFormatSchema.nullable(),
   // Scanning settings
   scanCronExpression: z.string().nullable(),
+  backupCronExpression: z.string().nullable().optional(),
+  backupRetentionCount: z.number().nullable().optional(),
+  dataDirAnchor: z.string().nullable().optional(),
   metadataFieldOverrides: MetadataFieldOverridesSchema,
   // EPUB 2 import settings
   epub2ImportStrategy: Epub2ImportStrategySchema,
@@ -232,10 +254,10 @@ export const SettingsSchema = z.object({
   deleteRuleUuids: z.array(z.string()).optional(),
   // Cache cleanup
   cleanCacheAfterReadaloud: z.boolean(),
+  preferenceDefaults: PreferenceDefaultsSchema.optional(),
 })
 export type Settings = z.infer<typeof SettingsSchema>
 
 // settings-only schema for config file validation;
 // importRules / importPath are extracted before this runs
 export const ConfigFileSchema = SettingsSchema.partial()
-export type ConfigFile = z.infer<typeof ConfigFileSchema>
