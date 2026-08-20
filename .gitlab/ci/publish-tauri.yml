@@ -50,10 +50,27 @@ publish-tauri-macos:
       "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
     - echo "$APPLE_CA" | base64 --decode > developer_id_cert_authority.cer
     - security import developer_id_cert_authority.cer -k "$KEYCHAIN_NAME" -T
-      /usr/bin/codesign
+      /usr/bin/codesign || true
+    # codesign builds leaf -> Developer ID CA -> Apple Root CA out of the
+    # keychain search list, and a fresh keychain has none of it. the two
+    # Developer ID intermediates share a CN and differ only by OU=G2, so an
+    # APPLE_CA holding the wrong generation looks right and still breaks the
+    # chain. import both plus the root and stop depending on the variable.
+    - |
+      for url in \
+        https://www.apple.com/certificateauthority/DeveloperIDCA.cer \
+        https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer \
+        https://www.apple.com/appleca/AppleIncRootCertificate.cer
+      do
+        curl -fsSL -o apple-chain.cer "$url"
+        security import apple-chain.cer -k "$KEYCHAIN_NAME" -T /usr/bin/codesign || true
+      done
+      rm -f apple-chain.cer
     - 'security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k
       "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"'
     - security find-identity -v -p codesigning "$KEYCHAIN_NAME"
+    # the image the job actually landed on, not the one requested above
+    - sw_vers
     # best-effort chain diagnostics: verify-cert reproduces codesign's chain
     # building and names the missing cert if it fails
     - |
@@ -61,10 +78,17 @@ publish-tauri-macos:
       openssl pkcs12 -in certificate.p12 -clcerts -nokeys -passin pass:"$APPLE_CERTIFICATE_PASSWORD" -out leaf.pem 2>/dev/null || true
       openssl x509 -in leaf.pem -noout -subject -issuer -enddate || true
       security verify-cert -c leaf.pem -p codeSign || true
+    # signing only starts ~40 minutes in, at assemble-runtime. prove the
+    # identity works now instead of burning the build first.
+    - |
+      cp /bin/echo codesign-smoketest
+      codesign --force --sign "$APPLE_SIGNING_IDENTITY" --options runtime --timestamp codesign-smoketest
+      codesign --verify --strict --verbose=2 codesign-smoketest
+      rm -f codesign-smoketest
   # overrides the base after_script, so repeat the bundle cleanup
   after_script:
     - security delete-keychain "$KEYCHAIN_NAME" || true
-    - rm -f certificate.p12 leaf.pem
+    - rm -f certificate.p12 leaf.pem codesign-smoketest
     - rm -rf applications/tauri/src-tauri/target/release/bundle
   script:
     - export VERSION="${CI_COMMIT_TAG#tauri-}"
