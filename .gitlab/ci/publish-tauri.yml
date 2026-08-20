@@ -55,6 +55,9 @@ publish-tauri-macos:
     # under a misleading "unable to build chain to self-signed root" warning,
     # even though the chain verifies. publish-align-sea omits it and works.
     - echo "$APPLE_CERTIFICATE_P12" | base64 --decode > certificate.p12
+    # compare against the same line in publish-align-sea-darwin-arm64: proves
+    # both jobs receive identical variable values (hash of ciphertext, safe)
+    - shasum -a 256 certificate.p12
     - security import certificate.p12 -k "$KEYCHAIN_NAME" -P
       "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
     - echo "$APPLE_CA" | base64 --decode > developer_id_cert_authority.cer
@@ -77,9 +80,24 @@ publish-tauri-macos:
       security cms -S -N "$APPLE_SIGNING_IDENTITY" -i cms-probe.txt -o cms-probe.sig || true
       if [ -s cms-probe.sig ]; then echo "CMS OK"; else echo "CMS FAILED: private key unusable in this session"; fi
       rm -f cms-probe.txt cms-probe.sig
+    # retry with settle time: every observed failure signed within ~1s of
+    # set-key-partition-list, while the working align job first signs ~2min
+    # after keychain setup. transient errSecInternalComponent right after
+    # keychain mutation is a known securityd flake; if a later attempt
+    # succeeds the race is proven and the sleep is the fix.
     - |
       cp /bin/echo codesign-smoketest
-      codesign --force --sign "$APPLE_SIGNING_IDENTITY" --options runtime --timestamp codesign-smoketest
+      signed=""
+      for i in 1 2 3 4 5 6; do
+        if codesign --force --sign "$APPLE_SIGNING_IDENTITY" --options runtime --timestamp codesign-smoketest; then
+          echo "smoke test signed on attempt $i"
+          signed=1
+          break
+        fi
+        echo "attempt $i failed, sleeping 20s"
+        sleep 20
+      done
+      if [ -z "$signed" ]; then echo "smoke test failed after 6 attempts over ~2min"; exit 1; fi
       codesign --verify --strict --verbose=2 codesign-smoketest
       rm -f codesign-smoketest
   # overrides the base after_script, so repeat the bundle cleanup
