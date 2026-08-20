@@ -31,11 +31,11 @@ publish-tauri-macos:
   # need big boi bc the small one runs oom
   tags: [saas-macos-large-m2pro]
   # macos-26 was blamed for the "unable to build chain to self-signed root" /
-  # errSecInternalComponent failures, but publish-align-sea signs this same
-  # identity fine on macos-26 and pinning to macos-15 changed nothing. the real
-  # cause was default-keychain, see below. pin kept only so the rust toolchain
-  # stays put, drop it whenever you want macos-26 back.
-  image: macos-15-xcode-16
+  # errSecInternalComponent failures (via a github runner-images issue, which
+  # doesn't cover gitlab's images), but macos-15-xcode-16 fails identically on
+  # every run, so the pin never fixed anything. macos-26-xcode-26 is the one
+  # image proven to sign this exact identity (publish-align-sea, same p12).
+  image: macos-26-xcode-26
   variables:
     KEYCHAIN_NAME: "build-$CI_JOB_ID.keychain"
     KEYCHAIN_PASSWORD: "temp-keychain-password"
@@ -60,7 +60,13 @@ publish-tauri-macos:
     - security find-identity -v -p codesigning "$KEYCHAIN_NAME"
     - sw_vers
     # signing only starts ~40 minutes in, at assemble-runtime. prove the
-    # identity works now instead of burning the build first.
+    # identity works now instead of burning the build first. the cms probe
+    # tests the private key without codesign: if it fails too, the key itself
+    # is unusable in this environment and codesign was never the problem.
+    - |
+      echo probe > cms-probe.txt
+      security cms -S -N "$APPLE_SIGNING_IDENTITY" -i cms-probe.txt -o cms-probe.sig && echo "CMS OK" || echo "CMS FAILED"
+      rm -f cms-probe.txt cms-probe.sig
     - |
       cp /bin/echo codesign-smoketest
       codesign --force --sign "$APPLE_SIGNING_IDENTITY" --options runtime --timestamp codesign-smoketest
