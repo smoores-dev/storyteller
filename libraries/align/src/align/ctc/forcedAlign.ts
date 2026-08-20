@@ -1,3 +1,5 @@
+import { enumerate, range } from "itertools"
+
 import { argmax } from "./greedyDecode.ts"
 import { type Match } from "./search.ts"
 
@@ -139,6 +141,93 @@ export function ctcViterbiAlign(
   return alignments
 }
 
+export function detectDroppedLabels(
+  alignments: TokenAlignment[],
+  startOffset: number,
+  endOffset: number,
+  minLength = 8,
+) {
+  const endFrame = alignments[endOffset]?.endFrame
+  if (endFrame === undefined) {
+    console.error(endOffset, alignments.length)
+    throw new Error(`endOffset ${endOffset} out of bounds`)
+  }
+  const startFrame = alignments[startOffset]?.startFrame
+  if (startFrame === undefined) {
+    throw new Error(`startOffset ${startOffset} out of bounds`)
+  }
+
+  if (endOffset < startOffset || endOffset - startOffset <= minLength) {
+    return false
+  }
+
+  const framesPerChar = (endFrame - startFrame) / (endOffset - startOffset)
+
+  return framesPerChar < 2
+}
+
+function removeCharRanges(
+  input: string,
+  /* inclusive */ removals: [number, number][],
+) {
+  const inputIndices: number[] = []
+  let nextRemovalIndex = 0
+  let result = ""
+  let i = 0
+  while (i < input.length) {
+    const c = input[i]!
+    const nextRemoval = removals[nextRemovalIndex]
+
+    if (!nextRemoval) {
+      inputIndices.push(i)
+      result += c
+      i++
+      continue
+    }
+
+    if (i >= nextRemoval[0] && i <= nextRemoval[1]) {
+      i++
+      continue
+    }
+
+    if (i > nextRemoval[1]) {
+      nextRemovalIndex++
+      continue
+    }
+
+    inputIndices.push(i)
+    result += c
+    i++
+  }
+
+  return { result, inputIndices }
+}
+
+function adjustAnchorsForRemovals(
+  anchors: Match[],
+  removals: [number, number][],
+) {
+  const result: Match[] = []
+  for (const a of anchors) {
+    let drop = false
+    let shift = 0
+    for (const [s, e] of removals) {
+      if (a.offset < s) break
+      if (a.offset > e) shift += e - s + 1
+      else {
+        drop = true
+        break
+      }
+    }
+    if (drop) continue
+    result.push({
+      offset: a.offset - shift,
+      position: a.position,
+    })
+  }
+  return result
+}
+
 type Segment = {
   labels: number[]
   emissions: number[][]
@@ -153,15 +242,24 @@ export function ctcForcedAlign(
   anchors: Match[],
   vocab: Map<string, number>,
   blankId: number,
+  /* inclusive */
+  droppedLabelRanges: [number, number][] = [],
 ) {
+  const { result: adjustedBaseline, inputIndices } = removeCharRanges(
+    baseline,
+    droppedLabelRanges,
+  )
+
+  const adjustedAnchors = adjustAnchorsForRemovals(anchors, droppedLabelRanges)
+
   const star = vocab.size
 
   const segments: Segment[] = []
-  for (let i = 0; i < anchors.length + 1; i++) {
-    const prevAnchor = anchors[i - 1]
-    const nextAnchor = anchors[i]
+  for (let i = 0; i < adjustedAnchors.length + 1; i++) {
+    const prevAnchor = adjustedAnchors[i - 1]
+    const nextAnchor = adjustedAnchors[i]
     segments.push({
-      labels: baseline
+      labels: adjustedBaseline
         .slice(prevAnchor?.offset, nextAnchor?.offset)
         .split("")
         .map((c) => vocab.get(c) ?? star),
@@ -173,7 +271,7 @@ export function ctcForcedAlign(
   segments[0]?.labels.unshift(star)
   segments.at(-1)?.labels.push(star)
 
-  const alignments: TokenAlignment[] = []
+  const alignmentsWithRemovals: TokenAlignment[] = []
 
   for (const segment of segments) {
     const unmapped = ctcViterbiAlign(
@@ -184,7 +282,7 @@ export function ctcForcedAlign(
       STAR_SCORE,
     )
 
-    alignments.push(
+    alignmentsWithRemovals.push(
       ...unmapped.map((a) => ({
         ...a,
         startFrame: a.startFrame + segment.emissionsStart,
@@ -193,7 +291,32 @@ export function ctcForcedAlign(
     )
   }
 
+  const alignments: TokenAlignment[] = []
+
   // Slice off the first and last labels, which
   // are the stars we inserted above
-  return alignments.slice(1, -1)
+  for (const [k, a] of enumerate(alignmentsWithRemovals.slice(1, -1))) {
+    const i = inputIndices[k]!
+
+    const lastUndroppedIndex = alignments.length - 1
+    const lastUndropped = alignments[lastUndroppedIndex] ?? {
+      startFrame: 0,
+      endFrame: 0,
+      score: -Infinity,
+      label: star,
+    }
+
+    for (const j of range(lastUndroppedIndex, i - 1)) {
+      alignments.push({
+        startFrame: lastUndropped.endFrame,
+        endFrame: lastUndropped.endFrame,
+        score: -Infinity,
+        label: vocab.get(baseline[j]!)!,
+      })
+    }
+
+    alignments[i] = a
+  }
+
+  return alignments
 }

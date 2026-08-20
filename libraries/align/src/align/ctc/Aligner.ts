@@ -39,7 +39,11 @@ import {
 import { slugify } from "../slugify.ts"
 
 import { type EmissionTimings, framesToSeconds } from "./emissions.ts"
-import { ctcForcedAlign } from "./forcedAlign.ts"
+import {
+  type TokenAlignment,
+  ctcForcedAlign,
+  detectDroppedLabels,
+} from "./forcedAlign.ts"
 import { buildFragmentMaps, createMediaOverlay } from "./mediaOverlay.ts"
 import {
   type AlignedChapter,
@@ -325,7 +329,7 @@ export class Aligner {
     const SENTENCE_PAD = 25
     const WORD_PAD = 8
 
-    const alignments = ctcForcedAlign(
+    let alignments = ctcForcedAlign(
       slugifiedChapter,
       this.emissions.slice(emissionsStart, emissionsEnd),
       anchors
@@ -339,6 +343,25 @@ export class Aligner {
       alignments.reduce((acc, { score }) => acc + score, 0) / alignments.length
 
     const score = Math.max((unscaledScore + 10) * 10, 0)
+
+    const droppedLabelRanges = sentenceStarts.filter(([s, e]) =>
+      detectDroppedLabels(alignments, s, e),
+    )
+
+    if (droppedLabelRanges.length) {
+      alignments = ctcForcedAlign(
+        slugifiedChapter,
+        this.emissions.slice(emissionsStart, emissionsEnd),
+        anchors
+          .filter(
+            (a) => a.position > emissionsStart && a.position < emissionsEnd,
+          )
+          .map((a) => ({ ...a, position: a.position - emissionsStart })),
+        this.vocab,
+        this.blankId,
+        droppedLabelRanges,
+      )
+    }
 
     const {
       sentenceRanges,
@@ -393,7 +416,7 @@ export class Aligner {
   }
 
   private buildSentenceRanges(
-    alignments: ReturnType<typeof ctcForcedAlign>,
+    alignments: TokenAlignment[],
     sentenceStarts: [number, number][],
     emissionsStart: number,
     padFrames: number,
@@ -429,7 +452,7 @@ export class Aligner {
           alignments[startOffset]!.startFrame) /
         sentenceLength
 
-      if (sentenceLength > 8 && (framesPerChar < 1 || framesPerChar > 15)) {
+      if (sentenceLength > 8 && (framesPerChar < 2 || framesPerChar > 15)) {
         skippedSentences.add(i)
         continue
       }
@@ -474,7 +497,7 @@ export class Aligner {
   }
 
   private buildWordRanges(
-    alignments: ReturnType<typeof ctcForcedAlign>,
+    alignments: TokenAlignment[],
     wordStarts: [number, number][][],
     emissionsStart: number,
     padFrames: number,
