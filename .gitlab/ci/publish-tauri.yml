@@ -28,17 +28,22 @@
 
 publish-tauri-macos:
   extends: .publish-tauri
-  # need big boi bc the small one runs oom
-  tags: [saas-macos-large-m2pro]
-  # macos-26 was blamed for the "unable to build chain to self-signed root" /
-  # errSecInternalComponent failures (via a github runner-images issue, which
-  # doesn't cover gitlab's images), but macos-15-xcode-16 fails identically on
-  # every run, so the pin never fixed anything. macos-26-xcode-26 is the one
-  # image proven to sign this exact identity (publish-align-sea, same p12).
+  # not saas-macos-large-m2pro: private-key signing fails on that fleet with
+  # "unable to build chain to self-signed root" + errSecInternalComponent, in
+  # codesign AND in a bare `security cms` probe, on macos-15-xcode-16 and
+  # macos-26-xcode-26 alike, with -T and -A key ACLs alike. the identical
+  # keychain setup and p12 sign fine on the m1 fleet (publish-align-sea), so
+  # it's the fleet's job session, not this yaml. the m2pro's extra RAM was
+  # only needed because the web build OOMed here once, see NODE_OPTIONS.
+  tags: [saas-macos-medium-m1]
   image: macos-26-xcode-26
+  timeout: 3h
   variables:
     KEYCHAIN_NAME: "build-$CI_JOB_ID.keychain"
     KEYCHAIN_PASSWORD: "temp-keychain-password"
+    # the medium m1 has half the m2pro's RAM and assemble-runtime builds
+    # workspaces in parallel; cap each node heap so the next build fits
+    NODE_OPTIONS: "--max-old-space-size=4096"
   before_script:
     - security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
     - security list-keychains -d user -s "$KEYCHAIN_NAME" $(security
@@ -59,13 +64,18 @@ publish-tauri-macos:
       "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"'
     - security find-identity -v -p codesigning "$KEYCHAIN_NAME"
     - sw_vers
+    # Aqua means the job has a GUI security session, Background/System means
+    # keychain key ACLs cannot be satisfied and signing will fail no matter
+    # what this yaml does (the m2pro symptom)
+    - launchctl managername || true
     # signing only starts ~40 minutes in, at assemble-runtime. prove the
     # identity works now instead of burning the build first. the cms probe
-    # tests the private key without codesign: if it fails too, the key itself
-    # is unusable in this environment and codesign was never the problem.
+    # tests the private key without codesign; `security cms` exits 0 even when
+    # encoding fails, so check the output file, not the exit code.
     - |
       echo probe > cms-probe.txt
-      security cms -S -N "$APPLE_SIGNING_IDENTITY" -i cms-probe.txt -o cms-probe.sig && echo "CMS OK" || echo "CMS FAILED"
+      security cms -S -N "$APPLE_SIGNING_IDENTITY" -i cms-probe.txt -o cms-probe.sig || true
+      if [ -s cms-probe.sig ]; then echo "CMS OK"; else echo "CMS FAILED: private key unusable in this session"; fi
       rm -f cms-probe.txt cms-probe.sig
     - |
       cp /bin/echo codesign-smoketest
