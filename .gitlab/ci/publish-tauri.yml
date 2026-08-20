@@ -30,10 +30,11 @@ publish-tauri-macos:
   extends: .publish-tauri
   # need big boi bc the small one runs oom
   tags: [saas-macos-large-m2pro]
-  # TODO: restore macos-26c
-  # not macos-26: has a codesign/p12 regression (signing fails with
-  # "unable to build chain to self-signed root" / errSecInternalComponent,
-  # see github.com/actions/runner-images/issues/13884 for the same breakage)
+  # macos-26 was blamed for the "unable to build chain to self-signed root" /
+  # errSecInternalComponent failures, but publish-align-sea signs this same
+  # identity fine on macos-26 and pinning to macos-15 changed nothing. the real
+  # cause was default-keychain, see below. pin kept only so the rust toolchain
+  # stays put, drop it whenever you want macos-26 back.
   image: macos-15-xcode-16
   variables:
     KEYCHAIN_NAME: "build-$CI_JOB_ID.keychain"
@@ -44,70 +45,31 @@ publish-tauri-macos:
       list-keychains -d user | tr -d '"')
     - security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
     - security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-    - security default-keychain -d user -s "$KEYCHAIN_NAME"
+    # do not add "security default-keychain -d user -s": with the build keychain
+    # as default, codesign fails every signature with errSecInternalComponent
+    # under a misleading "unable to build chain to self-signed root" warning,
+    # even though the chain verifies. publish-align-sea omits it and works.
     - echo "$APPLE_CERTIFICATE_P12" | base64 --decode > certificate.p12
     - security import certificate.p12 -k "$KEYCHAIN_NAME" -P
       "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
     - echo "$APPLE_CA" | base64 --decode > developer_id_cert_authority.cer
     - security import developer_id_cert_authority.cer -k "$KEYCHAIN_NAME" -T
-      /usr/bin/codesign || true
-    # codesign builds leaf -> Developer ID CA -> Apple Root CA out of the
-    # keychain search list, and a fresh keychain has none of it. the two
-    # Developer ID intermediates share a CN and differ only by OU=G2, so an
-    # APPLE_CA holding the wrong generation looks right and still breaks the
-    # chain. import both plus the root and stop depending on the variable.
-    - |
-      for url in \
-        https://www.apple.com/certificateauthority/DeveloperIDCA.cer \
-        https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer \
-        https://www.apple.com/appleca/AppleIncRootCertificate.cer
-      do
-        curl -fsSL -o apple-chain.cer "$url"
-        security import apple-chain.cer -k "$KEYCHAIN_NAME" -T /usr/bin/codesign || true
-      done
-      rm -f apple-chain.cer
+      /usr/bin/codesign
     - 'security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k
       "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"'
     - security find-identity -v -p codesigning "$KEYCHAIN_NAME"
-    # the image the job actually landed on, not the one requested above
     - sw_vers
-    - security list-keychains
-    # pull the leaf out of the keychain, not the p12: openssl 3 cannot read a
-    # keychain-exported p12 without -legacy and fails silently here
-    - |
-      security find-certificate -c "Developer ID Application" -p "$KEYCHAIN_NAME" > leaf.pem
-      echo "=== leaf ==="
-      openssl x509 -in leaf.pem -noout -subject -issuer -dates -serial || true
-      openssl x509 -in leaf.pem -noout -text | grep -A1 "Authority Key Identifier" || true
-      echo "=== certs in keychain ==="
-      security find-certificate -a -p "$KEYCHAIN_NAME" > keychain-certs.pem
-      awk '/BEGIN CERT/{n++} {print > ("kc-" n ".pem")}' keychain-certs.pem
-      for f in kc-*.pem; do
-        openssl x509 -in "$f" -noout -subject || true
-        openssl x509 -in "$f" -noout -text | grep -A1 "Subject Key Identifier" || true
-      done
-      echo "=== verify-cert (local only) ==="
-      security verify-cert -c leaf.pem -p codeSign -L || true
-      echo "=== verify-cert (network allowed) ==="
-      security verify-cert -c leaf.pem -p codeSign || true
     # signing only starts ~40 minutes in, at assemble-runtime. prove the
-    # identity works now instead of burning the build first, and bisect which
-    # part of the signing actually fails.
+    # identity works now instead of burning the build first.
     - |
       cp /bin/echo codesign-smoketest
-      echo "=== ad-hoc ==="
-      codesign --force --sign - codesign-smoketest && echo "AD-HOC OK" || echo "AD-HOC FAILED"
-      echo "=== identity only ==="
-      codesign --force --sign "$APPLE_SIGNING_IDENTITY" codesign-smoketest && echo "PLAIN OK" || echo "PLAIN FAILED"
-      echo "=== identity + hardened runtime ==="
-      codesign --force --sign "$APPLE_SIGNING_IDENTITY" --options runtime codesign-smoketest && echo "RUNTIME OK" || echo "RUNTIME FAILED"
-      echo "=== identity + hardened runtime + timestamp ==="
-      codesign --force --sign "$APPLE_SIGNING_IDENTITY" --options runtime --timestamp codesign-smoketest && echo "FULL OK" || echo "FULL FAILED"
-      codesign --verify --strict --verbose=2 codesign-smoketest || true
+      codesign --force --sign "$APPLE_SIGNING_IDENTITY" --options runtime --timestamp codesign-smoketest
+      codesign --verify --strict --verbose=2 codesign-smoketest
+      rm -f codesign-smoketest
   # overrides the base after_script, so repeat the bundle cleanup
   after_script:
     - security delete-keychain "$KEYCHAIN_NAME" || true
-    - rm -f certificate.p12 leaf.pem keychain-certs.pem kc-*.pem codesign-smoketest
+    - rm -f certificate.p12 codesign-smoketest
     - rm -rf applications/tauri/src-tauri/target/release/bundle
   script:
     - export VERSION="${CI_COMMIT_TAG#tauri-}"
