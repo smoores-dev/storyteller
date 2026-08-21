@@ -438,7 +438,7 @@ export class Aligner {
 
       const goodChars = alignments
         .slice(startOffset, endOffset + 1)
-        .reduce((acc, a) => acc + (a.score > -4 ? 1 : 0), 0)
+        .reduce((acc, a) => acc + (a.score > -10 ? 1 : 0), 0)
 
       if (goodChars / (endOffset + 1 - startOffset) < 0.5) {
         skippedSentences.add(i)
@@ -452,7 +452,7 @@ export class Aligner {
           alignments[startOffset]!.startFrame) /
         sentenceLength
 
-      if (sentenceLength > 8 && (framesPerChar < 2 || framesPerChar > 15)) {
+      if (sentenceLength > 8 && (framesPerChar < 1 || framesPerChar > 15)) {
         skippedSentences.add(i)
         continue
       }
@@ -518,7 +518,7 @@ export class Aligner {
 
         const goodChars = alignments
           .slice(startOffset, endOffset + 1)
-          .reduce((acc, a) => acc + (a.score > -4 ? 1 : 0), 0)
+          .reduce((acc, a) => acc + (a.score > -10 ? 1 : 0), 0)
 
         if (goodChars / (endOffset + 1 - startOffset) < 0.5) {
           continue
@@ -793,14 +793,16 @@ export class Aligner {
     const slugifiedWordStarts = chapterSentences.map((sent, i) => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const cursor = chapterMappings[i]!.cursor()
-      return sent.words.entries.map<[number, number]>((word) => [
-        cursor.map(word.startOffset - sent.charRange.start) +
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          slugifiedChapterRanges[i]![0],
-        cursor.map(word.endOffset - 1 - sent.charRange.start) +
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          slugifiedChapterRanges[i]![0],
-      ])
+      return sent.words.entries
+        .filter((word) => !word.isPunctuation)
+        .map<[number, number]>((word) => [
+          cursor.map(word.startOffset - sent.charRange.start) +
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            slugifiedChapterRanges[i]![0],
+          cursor.map(word.endOffset - 1 - sent.charRange.start) +
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            slugifiedChapterRanges[i]![0],
+        ])
     })
 
     if (chapterSentences.length === 0) {

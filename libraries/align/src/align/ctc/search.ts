@@ -329,7 +329,7 @@ export function findCtcBoundaries(
   }
 
   const result = findBoundariesInDocument(query, document, {
-    minSlope: 2,
+    minSlope: 1,
     maxSlope: 15,
     inlierTolerance: 2500,
   })
