@@ -12,6 +12,8 @@ export const SNAPSHOT_DIR =
 
 export const ASSETS_DIR = env.STORYTELLER_ASSETS_DIR || join(DATA_DIR, "assets")
 
+export const SCRATCH_DIR = env.STORYTELLER_SCRATCH_DIR || join(DATA_DIR, "tmp")
+
 export const UPLOADS_DIR = join(DATA_DIR, "uploads")
 
 export const AUDIO_DIR = join(ASSETS_DIR, "audio")

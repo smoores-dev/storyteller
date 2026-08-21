@@ -7,6 +7,18 @@ export async function register() {
   // we don't import it "normally" as this may cause issues in the edge runtime if end up
   // adding extra imports to env.ts
   await import("@/env")
+
+  try {
+    const { initScratchDir } = await import("./scratch")
+    await initScratchDir()
+  } catch (err) {
+    const { logger } = await import("./logging")
+    logger.error({
+      msg: "Failed to initialize the scratch directory, temporary files will use the system temp directory",
+      err,
+    })
+  }
+
   const { getWatcher: getWatcher } = await import(
     "./assets/library/scanner/triggers/watcher"
   )

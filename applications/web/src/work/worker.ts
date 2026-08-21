@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { mkdir, readFile } from "node:fs/promises"
+import { mkdir, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import type { MessagePort } from "node:worker_threads"
@@ -237,34 +237,38 @@ export default async function processBook({
             `${book.uuid}.epub`,
           )
 
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          await markup(book.ebook!.filepath, markupFilepath, {
-            onProgress: (p) => {
-              onProgress(p * 0.15)
-            },
-            logger,
-          })
-
           const settings = await getEffectiveSettings()
           const readaloudFilepath = getReadaloudFilepath(book, settings)
           const readaloudDirectory = dirname(readaloudFilepath)
           await mkdir(readaloudDirectory, { recursive: true })
 
           const reportFilepath = getAlignmentReportFilepath(book)
-          await align(
-            markupFilepath,
-            readaloudFilepath,
-            getTranscriptionsFilepath(book),
-            getProcessedAudioFilepath(book),
-            {
-              granularity: "sentence",
-              reportsPath: reportFilepath,
-              logger,
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            await markup(book.ebook!.filepath, markupFilepath, {
               onProgress: (p) => {
-                onProgress(0.15 + p * 0.85)
+                onProgress(p * 0.15)
               },
-            },
-          )
+              logger,
+            })
+
+            await align(
+              markupFilepath,
+              readaloudFilepath,
+              getTranscriptionsFilepath(book),
+              getProcessedAudioFilepath(book),
+              {
+                granularity: "sentence",
+                reportsPath: reportFilepath,
+                logger,
+                onProgress: (p) => {
+                  onProgress(0.15 + p * 0.85)
+                },
+              },
+            )
+          } finally {
+            await rm(dirname(markupFilepath), { recursive: true, force: true })
+          }
 
           try {
             const reportJson = await readFile(reportFilepath, {
