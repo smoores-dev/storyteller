@@ -81,113 +81,109 @@ export async function recognize(
   const doPrepare = () =>
     prepareWavForService(source, { sampleRate: 16000, channels: 1 })
 
-  const prepared = await timing.timeAsync("conversion", doPrepare)
+  await using prepared = await timing.timeAsync("conversion", doPrepare)
 
-  try {
-    const filePath = toFilePath(prepared.source)
-    if (!filePath) {
-      throw new Error(
-        "Whisper server requires a file path. The audio could not be prepared as a file.",
+  const filePath = toFilePath(prepared.source)
+  if (!filePath) {
+    throw new Error(
+      "Whisper server requires a file path. The audio could not be prepared as a file.",
+    )
+  }
+
+  const filename = basename(filePath)
+  const blob = await openAsBlob(filePath)
+
+  const form = new FormData()
+  form.append("file", blob, filename)
+  form.append("temperature", String(opts.temperature))
+  form.append("response_format", "verbose_json")
+
+  if (languageCode) {
+    form.append("language", languageCode)
+  }
+
+  const baseUrl = opts.baseURL.replace(/\/+$/g, "")
+  const url = `${baseUrl}${opts.inferencePath}`
+  const headers: Record<string, string> = {}
+  if (opts.apiKey) {
+    headers["Authorization"] = `Bearer ${opts.apiKey}`
+  }
+
+  // check for config
+  const configResponse = await fetch(`${baseUrl}/config`, {
+    headers,
+    dispatcher: createTimeoutAgent(opts.timeout),
+  } as RequestInit)
+  let whisperConfig: WhisperServerRunConfig | null = null
+  if (configResponse.ok) {
+    try {
+      const [config, audioLength] = await Promise.all([
+        configResponse.json(),
+        getAudioDuration(filePath),
+      ])
+
+      whisperConfig = {
+        ...(config as WhisperServerRunConfig),
+        audioDuration: audioLength,
+      }
+
+      // if we get a config, we are using ghost-story server, so we have control over the number of processors used
+      // check if we need to lower number of proessors
+      const effectiveProcessors = calculateEffectiveProcessors(
+        audioLength,
+        whisperConfig.maxProcessors,
       )
+      if (effectiveProcessors !== whisperConfig.processors) {
+        const configForm = new FormData()
+        configForm.append("processors", String(effectiveProcessors))
+        configForm.append("threads", String(whisperConfig.threads))
+
+        await fetch(`${baseUrl}/config`, {
+          method: "POST",
+          headers,
+          body: configForm,
+        } as RequestInit)
+
+        whisperConfig.processors = effectiveProcessors
+      }
+    } catch (e) {
+      console.warn(
+        `Failed to get config from Whisper server, continuing with default config. If you aren't using ghost-story server, this is expected`,
+        e,
+      )
+      // ignore
     }
+  }
 
-    const filename = basename(filePath)
-    const blob = await openAsBlob(filePath)
-
-    const form = new FormData()
-    form.append("file", blob, filename)
-    form.append("temperature", String(opts.temperature))
-    form.append("response_format", "verbose_json")
-
-    if (languageCode) {
-      form.append("language", languageCode)
-    }
-
-    const baseUrl = opts.baseURL.replace(/\/+$/g, "")
-    const url = `${baseUrl}${opts.inferencePath}`
-    const headers: Record<string, string> = {}
-    if (opts.apiKey) {
-      headers["Authorization"] = `Bearer ${opts.apiKey}`
-    }
-
-    // check for config
-    const configResponse = await fetch(`${baseUrl}/config`, {
+  const response = await timing.timeAsync("upload", async () =>
+    fetch(url, {
+      method: "POST",
+      body: form,
       headers,
       dispatcher: createTimeoutAgent(opts.timeout),
-    } as RequestInit)
-    let whisperConfig: WhisperServerRunConfig | null = null
-    if (configResponse.ok) {
-      try {
-        const [config, audioLength] = await Promise.all([
-          configResponse.json(),
-          getAudioDuration(filePath),
-        ])
+      // this is necessary because  `tsc` from `/web` will cry and shit its pants
+    } as RequestInit),
+  )
 
-        whisperConfig = {
-          ...(config as WhisperServerRunConfig),
-          audioDuration: audioLength,
-        }
-
-        // if we get a config, we are using ghost-story server, so we have control over the number of processors used
-        // check if we need to lower number of proessors
-        const effectiveProcessors = calculateEffectiveProcessors(
-          audioLength,
-          whisperConfig.maxProcessors,
-        )
-        if (effectiveProcessors !== whisperConfig.processors) {
-          const configForm = new FormData()
-          configForm.append("processors", String(effectiveProcessors))
-          configForm.append("threads", String(whisperConfig.threads))
-
-          await fetch(`${baseUrl}/config`, {
-            method: "POST",
-            headers,
-            body: configForm,
-          } as RequestInit)
-
-          whisperConfig.processors = effectiveProcessors
-        }
-      } catch (e) {
-        console.warn(
-          `Failed to get config from Whisper server, continuing with default config. If you aren't using ghost-story server, this is expected`,
-          e,
-        )
-        // ignore
-      }
-    }
-
-    const response = await timing.timeAsync("upload", async () =>
-      fetch(url, {
-        method: "POST",
-        body: form,
-        headers,
-        dispatcher: createTimeoutAgent(opts.timeout),
-        // this is necessary because  `tsc` from `/web` will cry and shit its pants
-      } as RequestInit),
-    )
-
-    if (!response.ok) {
-      const text = await response.text()
-      throw new Error(`Whisper server error: ${response.status} ${text}`)
-    }
-
-    const data = (await response.json()) as WhisperServerResponse
-
-    const { timeline, transcript } = await extractTimelineAndTranscript(
-      data,
-      filePath,
-      whisperConfig,
-    )
-    if (!timeline) {
-      throw new Error(
-        `Failed to extract timeline from Whisper server response. This was the transcript: '${transcript}'`,
-      )
-    }
-
-    return { transcript, timeline }
-  } finally {
-    await prepared.cleanup()
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Whisper server error: ${response.status} ${text}`)
   }
+
+  const data = (await response.json()) as WhisperServerResponse
+
+  const { timeline, transcript } = await extractTimelineAndTranscript(
+    data,
+    filePath,
+    whisperConfig,
+  )
+  if (!timeline) {
+    throw new Error(
+      `Failed to extract timeline from Whisper server response. This was the transcript: '${transcript}'`,
+    )
+  }
+
+  return { transcript, timeline }
 }
 
 interface ExtractedResult {

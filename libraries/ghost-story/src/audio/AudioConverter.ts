@@ -44,7 +44,7 @@ export interface ConversionOptions {
 
 export interface PreparedAudio {
   source: AudioSource
-  cleanup: () => Promise<void>
+  [Symbol.asyncDispose]: () => Promise<void>
 }
 
 function getFFmpegFormatOptions(
@@ -130,7 +130,7 @@ export async function convertToFile(
 
   return {
     source: audioSourceFromFile(tempPath, options.targetFormat),
-    cleanup: async () => {
+    [Symbol.asyncDispose]: async () => {
       await rm(tempPath, { force: true }).catch(() => {})
     },
   }
@@ -174,7 +174,7 @@ export async function convertToBuffer(
 
   return {
     source: audioSourceFromBuffer(buffer, options.targetFormat),
-    cleanup: async () => {},
+    [Symbol.asyncDispose]: async () => {},
   }
 }
 
@@ -230,7 +230,7 @@ export async function prepareForService(
     if (caps.requiresFile && source.type !== "file") {
       return writeToTempFile(source)
     }
-    return { source, cleanup: async () => {} }
+    return { source, [Symbol.asyncDispose]: async () => {} }
   }
 
   const conversionOptions: ConversionOptions = {
@@ -261,7 +261,7 @@ async function writeToTempFile(source: AudioSource): Promise<PreparedAudio> {
 
   return {
     source: audioSourceFromFile(tempPath, source.format),
-    cleanup: async () => {
+    [Symbol.asyncDispose]: async () => {
       await rm(tempPath, { force: true }).catch(() => {})
     },
   }
@@ -275,7 +275,7 @@ export async function prepareWavForService(
   } = {},
 ): Promise<PreparedAudio> {
   if (source.format === "wav" && source.type === "file") {
-    return { source, cleanup: async () => {} }
+    return { source, [Symbol.asyncDispose]: async () => {} }
   }
 
   return convertToFile(source, {
@@ -304,7 +304,7 @@ export interface StreamForUploadOptions {
 export interface StreamForUploadResult {
   stream: Readable
   format: AudioFormat
-  cleanup: () => Promise<void>
+  [Symbol.asyncDispose]: () => Promise<void>
   start?: () => Promise<void>
   mode: ConversionMode
 }
@@ -320,7 +320,7 @@ export async function createStreamForUpload(
     return {
       stream,
       format: options.source.format,
-      cleanup: async () => {},
+      [Symbol.asyncDispose]: async () => {},
       mode,
     }
   }
@@ -357,7 +357,7 @@ export async function createStreamForUpload(
     return {
       stream,
       format: options.targetFormat,
-      cleanup: async () => {
+      [Symbol.asyncDispose]: async () => {
         await rm(tempPath, { force: true }).catch(() => {})
       },
       mode,
@@ -386,7 +386,7 @@ export async function createStreamForUpload(
   return {
     stream: outputStream,
     format: options.targetFormat,
-    cleanup: async () => {},
+    [Symbol.asyncDispose]: async () => {},
     start: () => converter.run(),
     mode,
   }
