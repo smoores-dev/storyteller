@@ -4,11 +4,11 @@ import { tmpdir } from "node:os"
 import {
   type Entry as YauzlEntry,
   type ZipFile as YauzlZipFile,
-  fromBuffer,
-  open,
 } from "yauzl-promise"
 
 import { join, sep } from "@storyteller-platform/path"
+
+import { openZip } from "../zip.ts"
 
 import type { EpubStorageAdapter, EpubStorageKind } from "./interface.ts"
 
@@ -40,10 +40,7 @@ export class MemoryAdapter implements EpubStorageAdapter {
     const { cache = true, signal } = opts
     signal?.throwIfAborted()
 
-    const zip =
-      typeof source === "string"
-        ? await open(source)
-        : await fromBuffer(Buffer.from(source))
+    const zip = await openZip(source)
 
     const entries = new Map<string, YauzlEntry>()
     try {

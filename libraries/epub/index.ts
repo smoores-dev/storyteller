@@ -237,6 +237,66 @@ export type InMemoryEpubReader = EpubReader & { readonly storage: "in-memory" }
 export class EpubVersionError extends Error {}
 export class EpubReadOnlyError extends Error {}
 
+const OPF_NAMESPACE = "http://www.idpf.org/2007/opf"
+
+function renameOpfAttributes(
+  attrs: Record<string, string>,
+  prefix: string,
+): Record<string, string> {
+  const attrPrefix = `@_${prefix}:`
+  const renamed: Record<string, string> = {}
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === `@_xmlns:${prefix}`) continue
+    if (key.startsWith(attrPrefix)) {
+      renamed[`@_opf:${key.slice(attrPrefix.length)}`] = value
+    } else {
+      renamed[key] = value
+    }
+  }
+  return renamed
+}
+
+function stripOpfPrefix(node: XmlNode, prefix: string): XmlNode {
+  if (Epub.isXmlTextNode(node)) return node
+
+  const name = Epub.getXmlElementName(node)
+  const bareName = name.startsWith(`${prefix}:`)
+    ? name.slice(prefix.length + 1)
+    : name
+
+  const element = {
+    [bareName]: Epub.getXmlChildren(node).map((child) =>
+      stripOpfPrefix(child, prefix),
+    ),
+  } as XmlElement
+  if (node[":@"]) {
+    element[":@"] = renameOpfAttributes(node[":@"], prefix)
+  }
+  return element
+}
+
+function normalizeOpfNamespacePrefixes(doc: ParsedXml): ParsedXml {
+  const root = doc.find(
+    (node): node is XmlElement =>
+      !Epub.isXmlTextNode(node) &&
+      Epub.getXmlElementName(node).endsWith(":package"),
+  )
+  if (!root) return doc
+
+  const prefix = Epub.getXmlElementName(root).slice(0, -":package".length)
+  if (root[":@"]?.[`@_xmlns:${prefix}`] !== OPF_NAMESPACE) return doc
+
+  const stripped = stripOpfPrefix(root, prefix) as XmlElement
+  stripped[":@"] = {
+    ...stripped[":@"],
+    "@_xmlns": OPF_NAMESPACE,
+    "@_xmlns:opf": OPF_NAMESPACE,
+  }
+
+  doc[doc.indexOf(root)] = stripped
+  return doc
+}
+
 /**
  * A single EPUB instance.
  *
@@ -740,7 +800,7 @@ export class Epub {
       packageDocumentString,
     ) as ParsedXml
 
-    return packageDocument
+    return normalizeOpfNamespacePrefixes(packageDocument)
   }
 
   async getPackageElement() {
