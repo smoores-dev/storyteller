@@ -163,7 +163,7 @@ export function detectDroppedLabels(
 
   const framesPerChar = (endFrame - startFrame) / (endOffset - startOffset)
 
-  return framesPerChar < 2
+  return framesPerChar < 1
 }
 
 function removeCharRanges(
