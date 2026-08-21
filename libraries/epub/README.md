@@ -2857,7 +2857,7 @@ Defined in:
 > `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\>\>
 
 Defined in:
-[libraries/epub/index.ts:3540](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3540)
+[libraries/epub/index.ts:3545](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3545)
 
 Construct a new EPUB on this factory's adapter, optionally seeded with the
 provided metadata. Requires a writable adapter that implements `initEmpty`
@@ -2964,7 +2964,7 @@ when the archive is not a valid EPUB 3
 > `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\>\>
 
 Defined in:
-[libraries/epub/index.ts:3653](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3653)
+[libraries/epub/index.ts:3658](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3658)
 
 Upgrade an EPUB 2 publication to EPUB 3 in place using this factory's adapter,
 returning a new, valid Epub 3 instance.
@@ -3626,7 +3626,7 @@ Defined in:
 ## TmpFsAdapter
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:59](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L59)
+[libraries/epub/adapters/tmpfs.ts:62](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L62)
 
 Extracts an EPUB archive to a temp directory and serves all I/O off the real
 filesystem. `Epub.using(TmpFsAdapter).from(...)` returns a writable
@@ -3643,7 +3643,7 @@ filesystem. `Epub.using(TmpFsAdapter).from(...)` returns a writable
 > `readonly` **rootPath**: `string`
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:102](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L102)
+[libraries/epub/adapters/tmpfs.ts:105](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L105)
 
 Opaque path prefix used by `resolveInternalHref` to anchor absolute paths within
 the archive. For TmpFsAdapter this is the tmp dir; for MemoryAdapter it's a
@@ -3658,7 +3658,7 @@ virtual prefix that's never written to disk
 > `readonly` `static` **capabilities**: `object`
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:61](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L61)
+[libraries/epub/adapters/tmpfs.ts:64](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L64)
 
 ##### writable
 
@@ -3669,7 +3669,7 @@ Defined in:
 > `readonly` `static` **kind**: `"extracted-dir"`
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:60](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L60)
+[libraries/epub/adapters/tmpfs.ts:63](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L63)
 
 ### Methods
 
@@ -3678,7 +3678,7 @@ Defined in:
 > **archiveLength**(`path`): `Promise`\<`number`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:125](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L125)
+[libraries/epub/adapters/tmpfs.ts:128](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L128)
 
 Length of an entry in bytes, for the readium page-count heuristic which expects
 compressed size when available
@@ -3702,7 +3702,7 @@ compressed size when available
 > **dispose**(): `void`
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:198](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L198)
+[libraries/epub/adapters/tmpfs.ts:203](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L203)
 
 Always called on close or error
 
@@ -3719,7 +3719,7 @@ Always called on close or error
 > **duplicate**(): `Promise`\<[`TmpFsAdapter`](#tmpfsadapter)\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:149](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L149)
+[libraries/epub/adapters/tmpfs.ts:152](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L152)
 
 Required for Epub.copy
 
@@ -3736,7 +3736,7 @@ Required for Epub.copy
 > **list**(): `AsyncIterable`\<[`EpubListEntry`](#epublistentry)\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:134](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L134)
+[libraries/epub/adapters/tmpfs.ts:137](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L137)
 
 Required for Epub.saveAndClose to walk the contents
 
@@ -3755,7 +3755,7 @@ Required for Epub.saveAndClose to walk the contents
 > **read**(`path`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:104](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L104)
+[libraries/epub/adapters/tmpfs.ts:107](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L107)
 
 ###### Parameters
 
@@ -3776,7 +3776,7 @@ Defined in:
 > **read**(`path`, `encoding`): `Promise`\<`string`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:105](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L105)
+[libraries/epub/adapters/tmpfs.ts:108](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L108)
 
 ###### Parameters
 
@@ -3798,7 +3798,7 @@ Defined in:
 > **remove**(`path`): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:121](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L121)
+[libraries/epub/adapters/tmpfs.ts:124](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L124)
 
 Required for removeManifestItem / setCoverImage replacement
 
@@ -3821,7 +3821,7 @@ Required for removeManifestItem / setCoverImage replacement
 > **serialize**(`targetPath`): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:160](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L160)
+[libraries/epub/adapters/tmpfs.ts:163](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L163)
 
 Required for Epub.saveAndClose
 
@@ -3846,7 +3846,7 @@ Required for Epub.saveAndClose
 > **write**(`path`, `data`): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:110](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L110)
+[libraries/epub/adapters/tmpfs.ts:113](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L113)
 
 Required for any mutation method on Epub
 
@@ -3870,7 +3870,7 @@ Required for any mutation method on Epub
 > **write**(`path`, `data`, `encoding`): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:111](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L111)
+[libraries/epub/adapters/tmpfs.ts:114](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L114)
 
 ###### Parameters
 
@@ -3893,7 +3893,7 @@ Defined in:
 > `static` **init**(`source`): `Promise`\<[`TmpFsAdapter`](#tmpfsadapter)\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:63](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L63)
+[libraries/epub/adapters/tmpfs.ts:66](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L66)
 
 ##### Parameters
 
@@ -3910,7 +3910,7 @@ Defined in:
 > `static` **initEmpty**(): `Promise`\<[`TmpFsAdapter`](#tmpfsadapter)\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:96](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L96)
+[libraries/epub/adapters/tmpfs.ts:99](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L99)
 
 ##### Returns
 

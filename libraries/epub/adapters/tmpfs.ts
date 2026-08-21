@@ -167,12 +167,14 @@ export class TmpFsAdapter implements EpubStorageAdapter {
     )
 
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-    const { promise, resolve } = Promise.withResolvers<void>()
+    const { promise, resolve, reject } = Promise.withResolvers<void>()
     const zipfile = new ZipFile()
     const writeStream = createWriteStream(tmpArchivePath)
     writeStream.on("close", () => {
       resolve()
     })
+    writeStream.on("error", reject)
+    zipfile.outputStream.on("error", reject)
     await using stack = new AsyncDisposableStack()
     stack.defer(async () => {
       writeStream.close()

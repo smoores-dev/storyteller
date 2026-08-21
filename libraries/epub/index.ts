@@ -3526,7 +3526,12 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       )
     }
 
-    await Epub.assertEpub3(epub)
+    try {
+      await Epub.assertEpub3(epub)
+    } catch (error) {
+      epub.discardAndClose()
+      throw error
+    }
     return epub
   }
 
@@ -3682,67 +3687,72 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       )
     }
 
-    const version = await epub.getVersion()
-    if (version.startsWith("3.")) {
-      return epub as EpubInstanceFor<A>
-    }
-
-    const tocEntries = await epub.getNcxTableOfContents()
-
-    let landmarks: Upgrade.Landmark[] = []
-
-    await epub.withPackage((pkg) => {
-      landmarks = Upgrade.extractGuideLandmarks(pkg)
-
-      Upgrade.upgradePackageMetadata(pkg)
-      Upgrade.fixFontMimeTypes(pkg)
-      Upgrade.removeGuide(pkg)
-
-      if (removeNcx) {
-        Upgrade.removeSpineTocRef(pkg)
+    try {
+      const version = await epub.getVersion()
+      if (version.startsWith("3.")) {
+        return epub as EpubInstanceFor<A>
       }
 
-      Upgrade.setPackageVersion(pkg, "3.0")
-    })
+      const tocEntries = await epub.getNcxTableOfContents()
 
-    // scan xhtml items for svg/script/mathml/switch properties
-    await Upgrade.collectManifestProperties(epub)
+      let landmarks: Upgrade.Landmark[] = []
 
-    // maybe remove ncx
-    if (removeNcx) {
-      await Upgrade.removeNcx(epub)
+      await epub.withPackage((pkg) => {
+        landmarks = Upgrade.extractGuideLandmarks(pkg)
+
+        Upgrade.upgradePackageMetadata(pkg)
+        Upgrade.fixFontMimeTypes(pkg)
+        Upgrade.removeGuide(pkg)
+
+        if (removeNcx) {
+          Upgrade.removeSpineTocRef(pkg)
+        }
+
+        Upgrade.setPackageVersion(pkg, "3.0")
+      })
+
+      // scan xhtml items for svg/script/mathml/switch properties
+      await Upgrade.collectManifestProperties(epub)
+
+      // maybe remove ncx
+      if (removeNcx) {
+        await Upgrade.removeNcx(epub)
+      }
+
+      const navHref = await Upgrade.chooseNavHref(epub)
+      const navContent = await Upgrade.buildNavDocument(
+        epub,
+        tocEntries,
+        landmarks,
+      )
+
+      await epub.addManifestItem(
+        {
+          id: "nav",
+          href: navHref,
+          mediaType: "application/xhtml+xml",
+          properties: ["nav"],
+        },
+        navContent,
+        "utf-8",
+      )
+
+      // go over each xhtml item and replace the outdated
+      // <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.1//EN' 'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'>
+      // with <!DOCTYPE html>
+      const manifest = await epub.getManifest()
+      for (const item of Object.values(manifest)) {
+        if (item.mediaType?.toLowerCase() !== "application/xhtml+xml") continue
+
+        const contents = await epub.readXhtmlItemContents(item.id)
+        await epub.writeXhtmlItemContents(item.id, contents)
+      }
+
+      return epub as EpubInstanceFor<A>
+    } catch (error) {
+      epub.discardAndClose()
+      throw error
     }
-
-    const navHref = await Upgrade.chooseNavHref(epub)
-    const navContent = await Upgrade.buildNavDocument(
-      epub,
-      tocEntries,
-      landmarks,
-    )
-
-    await epub.addManifestItem(
-      {
-        id: "nav",
-        href: navHref,
-        mediaType: "application/xhtml+xml",
-        properties: ["nav"],
-      },
-      navContent,
-      "utf-8",
-    )
-
-    // go over each xhtml item and replace the outdated
-    // <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.1//EN' 'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'>
-    // with <!DOCTYPE html>
-    const manifest = await epub.getManifest()
-    for (const item of Object.values(manifest)) {
-      if (item.mediaType?.toLowerCase() !== "application/xhtml+xml") continue
-
-      const contents = await epub.readXhtmlItemContents(item.id)
-      await epub.writeXhtmlItemContents(item.id, contents)
-    }
-
-    return epub as EpubInstanceFor<A>
   }
 }
 
