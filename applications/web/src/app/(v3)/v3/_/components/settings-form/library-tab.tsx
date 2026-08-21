@@ -39,6 +39,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@v3/_/components/ui/tabs"
+import { cn } from "@v3/_/lib/utils"
 
 import {
   ServerFileBrowser,
@@ -72,6 +73,9 @@ import {
   watchRuleValidationMessage,
 } from "@/database/importRules.validation"
 import {
+  DEFAULT_EPUB_SUFFIX_TEMPLATE,
+  EPUB_VERSION_PLACEHOLDER,
+  type Epub2ImportStrategy,
   type ImportRuleInput,
   METADATA_FIELDS,
   type MetadataField,
@@ -80,6 +84,7 @@ import {
   MetadataFieldOverridesSchema,
   type Settings,
   defaultMetadataFieldOverrides,
+  renderEpubSuffix,
 } from "@/database/settingsTypes"
 import { statusDisplayLabel } from "@/database/statusKinds"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -911,24 +916,180 @@ function AddRuleDialog({
   )
 }
 
+const EPUB2_STRATEGIES = [
+  "backup-and-convert",
+  "convert-alongside",
+  "replace",
+  "skip",
+] as const satisfies readonly Epub2ImportStrategy[]
+
+const EPUB2_STRATEGY_KEYS = {
+  "backup-and-convert": [
+    "strategyBackupAndConvert",
+    "strategyBackupAndConvertDescription",
+  ],
+  "convert-alongside": [
+    "strategyConvertAlongside",
+    "strategyConvertAlongsideDescription",
+  ],
+  replace: ["strategyReplace", "strategyReplaceDescription"],
+  skip: ["strategySkip", "strategySkipDescription"],
+} as const satisfies Record<Epub2ImportStrategy, readonly [string, string]>
+
+const PREVIEW_BASENAME = "book"
+
+type PreviewEntry = {
+  name: string
+  note: string
+  highlight?: boolean
+  faded?: boolean
+}
+
+function PreviewColumn({
+  title,
+  entries,
+}: {
+  title: string
+  entries: PreviewEntry[]
+}) {
+  return (
+    <div className="min-w-0 space-y-1.5">
+      <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+        {title}
+      </p>
+      {entries.map((entry) => (
+        <div
+          key={entry.name}
+          className={cn(
+            "flex min-w-0 items-center gap-2",
+            entry.faded && "opacity-60",
+          )}
+        >
+          <icon.File
+            className={cn(
+              "size-4 shrink-0",
+              entry.highlight ? "text-primary" : "text-muted-foreground",
+            )}
+          />
+          <span className="truncate font-mono text-xs">{entry.name}</span>
+          <span className="text-muted-foreground truncate text-[11px]">
+            {entry.note}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Epub2StrategyPreview({
+  strategy,
+  suffixTemplate,
+}: {
+  strategy: Epub2ImportStrategy
+  suffixTemplate: string
+}) {
+  const te = useTranslation("Labels.epub2Strategy")
+
+  const original = `${PREVIEW_BASENAME}.epub`
+  const backup = `${PREVIEW_BASENAME}${renderEpubSuffix(suffixTemplate, 2)}.epub`
+  const converted = `${PREVIEW_BASENAME}${renderEpubSuffix(suffixTemplate, 3)}.epub`
+
+  const after: PreviewEntry[] =
+    strategy === "backup-and-convert"
+      ? [
+          { name: original, note: te("previewConverted"), highlight: true },
+          { name: backup, note: te("previewBackupKept") },
+        ]
+      : strategy === "convert-alongside"
+        ? [
+            { name: original, note: te("previewOriginalKept") },
+            { name: converted, note: te("previewConverted"), highlight: true },
+          ]
+        : strategy === "replace"
+          ? [{ name: original, note: te("previewConverted"), highlight: true }]
+          : [{ name: original, note: te("previewNotImported"), faded: true }]
+
+  return (
+    <div className="grid gap-3 rounded-md border border-dashed p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-start">
+      <PreviewColumn
+        title={te("previewBefore")}
+        entries={[{ name: original, note: te("previewEpub2") }]}
+      />
+      <icon.ArrowRight className="text-muted-foreground hidden size-4 sm:block" />
+      <PreviewColumn title={te("previewAfter")} entries={after} />
+    </div>
+  )
+}
+
+function Epub2StrategyField() {
+  const t = useTranslation("SettingsPage.tabs.library.sections.autoImport")
+  const te = useTranslation("Labels.epub2Strategy")
+  const { form } = useSettingsForm()
+  const suffixTemplate =
+    useWatch({ control: form.control, name: "epub2BackupSuffix" }) ||
+    DEFAULT_EPUB_SUFFIX_TEMPLATE
+
+  return (
+    <SettingsFormField
+      name="epub2ImportStrategy"
+      label={t("defaultEpub2Strategy")}
+      description={t("defaultEpub2StrategyDescription")}
+      render={(field, _, fieldLocked) => (
+        <Tabs
+          className="max-w-2xl"
+          value={field.value}
+          onValueChange={(value) => {
+            if (typeof value === "string") field.onChange(value)
+          }}
+        >
+          <TabsList className="w-full">
+            {EPUB2_STRATEGIES.map((strategy) => (
+              <TabsTrigger
+                key={strategy}
+                value={strategy}
+                disabled={fieldLocked}
+              >
+                {te(EPUB2_STRATEGY_KEYS[strategy][0])}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {EPUB2_STRATEGIES.map((strategy) => (
+            <TabsContent key={strategy} value={strategy} className="space-y-3">
+              <p className="text-muted-foreground">
+                {te(EPUB2_STRATEGY_KEYS[strategy][1])}
+              </p>
+
+              <Epub2StrategyPreview
+                strategy={strategy}
+                suffixTemplate={suffixTemplate}
+              />
+
+              {(strategy === "backup-and-convert" ||
+                strategy === "convert-alongside") && <Epub2BackupSuffixField />}
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
+    />
+  )
+}
+
 function Epub2BackupSuffixField() {
   const t = useTranslation("SettingsPage.tabs.library.sections.autoImport")
-  const { form } = useSettingsForm()
-  const strategy = useWatch({
-    control: form.control,
-    name: "epub2ImportStrategy",
-  }) as string
-
-  if (strategy !== "backup-and-convert") return null
 
   return (
     <SettingsFormField
       name="epub2BackupSuffix"
       label={t("epub2BackupSuffix")}
-      description={t("epub2BackupSuffixDescription")}
+      description={t("epub2BackupSuffixDescription", {
+        placeholder: EPUB_VERSION_PLACEHOLDER,
+        example: DEFAULT_EPUB_SUFFIX_TEMPLATE,
+      })}
       render={(field, fieldState, fieldLocked) => (
         <Input
           disabled={fieldLocked}
+          placeholder={DEFAULT_EPUB_SUFFIX_TEMPLATE}
           {...field}
           aria-invalid={fieldState.invalid}
           className="max-w-xs"
@@ -1155,34 +1316,7 @@ function ImportRulesSection() {
             )}
           />
 
-          <SettingsFormField
-            name="epub2ImportStrategy"
-            label={t("defaultEpub2Strategy")}
-            description={t("defaultEpub2StrategyDescription")}
-            render={(field, _, fieldLocked) => (
-              <Select
-                disabled={fieldLocked}
-                value={field.value}
-                onValueChange={field.onChange}
-                items={EPUB2_STRATEGY_OPTIONS}
-              >
-                <SelectTrigger className="max-w-fit">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EPUB2_STRATEGY_OPTIONS.filter(
-                    (o) => o.value !== USE_DEFAULT_VALUE,
-                  ).map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-
-          <Epub2BackupSuffixField />
+          <Epub2StrategyField />
 
           <Tabs
             value={activeTab}

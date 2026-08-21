@@ -6,6 +6,10 @@ import { Epub } from "@storyteller-platform/epub"
 
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
+import {
+  DEFAULT_EPUB_SUFFIX_TEMPLATE,
+  renderEpubSuffix,
+} from "@/database/settingsTypes"
 import { isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
 
@@ -61,7 +65,10 @@ export const POST = withHasPermission<Params>("bookUpdate")(async (
   }
 
   const createBackup = body.createBackup ?? true
-  const backupSuffix = body.backupSuffix ?? "_epub2"
+  const backupSuffix = renderEpubSuffix(
+    body.backupSuffix ?? DEFAULT_EPUB_SUFFIX_TEMPLATE,
+    2,
+  )
 
   const results: Record<string, UpgradeResult> = {}
 

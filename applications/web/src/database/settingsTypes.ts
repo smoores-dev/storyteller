@@ -82,6 +82,20 @@ export const Epub2ImportStrategySchema = z.enum([
 ])
 export type Epub2ImportStrategy = z.infer<typeof Epub2ImportStrategySchema>
 
+export const EPUB_VERSION_PLACEHOLDER = "{version}"
+
+export const DEFAULT_EPUB_SUFFIX_TEMPLATE = `_epub${EPUB_VERSION_PLACEHOLDER}`
+
+/** suffix used before the template existed, for values that don't have one */
+const LEGACY_EPUB3_SUFFIX = "_epub3"
+
+export function renderEpubSuffix(template: string, version: 2 | 3): string {
+  if (template.includes(EPUB_VERSION_PLACEHOLDER)) {
+    return template.replaceAll(EPUB_VERSION_PLACEHOLDER, String(version))
+  }
+  return version === 2 ? template : LEGACY_EPUB3_SUFFIX
+}
+
 // which epub edition a book exposes in the OPDS feed. read-aloud epubs carry
 // media overlays and are large, so low-powered clients (kindle, kobo) often
 // want the plain ebook instead. an audiobook is always served when available.

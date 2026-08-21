@@ -159,8 +159,13 @@ async function ingestNewEbook(
 
   const epubFormat = (await isReadaloudEpub(openedEpub)) ? "readaloud" : "ebook"
 
+  const bookCandidate =
+    !opts.upgradeTo && effectivePath !== candidate.filepath
+      ? { ...candidate, filepath: effectivePath }
+      : candidate
+
   const created = await createBookFromOpenedEpub(
-    candidate,
+    bookCandidate,
     openedEpub,
     epubFormat,
     ctx,

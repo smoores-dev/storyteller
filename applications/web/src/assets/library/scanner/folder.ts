@@ -13,6 +13,7 @@ import { getSetting } from "@/database/settings"
 import {
   type Epub2ImportStrategy,
   type ImportMode,
+  renderEpubSuffix,
 } from "@/database/settingsTypes"
 import { isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
@@ -53,6 +54,8 @@ async function classifyFolder(
 
   const epubPaths: string[] = []
   let hasAudio = false
+  const epub2BackupSuffix = renderEpubSuffix(opts.epub2BackupSuffix, 2)
+  const epub3BackupSuffix = renderEpubSuffix(opts.epub2BackupSuffix, 3)
 
   for (const entry of entries) {
     if (!entry.isFile() && !entry.isSymbolicLink()) continue
@@ -67,8 +70,20 @@ async function classifyFolder(
     if (isInIgnorePath) continue
 
     const ext = extname(name)
+
     if (ext === ".epub") {
-      if (name.endsWith(`${opts.epub2BackupSuffix}.epub`)) continue
+      if (name.endsWith(`${epub2BackupSuffix}.epub`)) continue
+
+      // if there is a file in this folder with the same name but with the epub3 backup suffix, add it to the epubPaths
+      // ignore this one
+      const backedUp = entries.find(
+        (entry) =>
+          entry.name === `${name.replace(ext, "")}${epub3BackupSuffix}.epub`,
+      )
+      if (backedUp) {
+        continue
+      }
+
       epubPaths.push(fullPath)
     } else if (isAudioFile(ext)) {
       hasAudio = true

@@ -79,7 +79,8 @@ async function probeEpub2(filepath: string): Promise<boolean> {
  *       the caller should re-submit with an explicit `epub2Strategy` value.
  *
  *       When `epub2Strategy` is an explicit value ("replace", "skip",
- *       "backup-and-convert"), the import proceeds using that strategy.
+ *       "backup-and-convert", "convert-alongside"), the import proceeds
+ *       using that strategy.
  */
 export const POST = withHasPermission("bookCreate")(async (request) => {
   const {

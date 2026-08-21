@@ -10,6 +10,7 @@ import { type InMemoryEpubReader } from "@storyteller-platform/epub"
 import { openOrUpgradeEpub } from "@/assets/library/scanner/create-book"
 import { defineStep } from "@/assets/library/scanner/step"
 import { isAudioFile, isHiddenFile } from "@/audio"
+import { updateBook } from "@/database/books"
 
 import { type FingerPrinted } from "./check-fingerprint"
 
@@ -21,9 +22,36 @@ export const openEpubStep = defineStep(
     // upgrade EPUB 2 in place using the user's strategy. existing books that
     // never went through openAndClassifyEpub (rescans) get the same treatment
     // as fresh ingests, so downstream steps always see an EPUB 3 reader.
-    const { reader } = await openOrUpgradeEpub(input.filepath)
+    const { reader, effectivePath } = await openOrUpgradeEpub(input.filepath)
     const epub = ctx.scope.use(reader)
-    return { ...input, isEpub2: false as const, epub }
+
+    if (effectivePath === input.filepath) {
+      return { ...input, isEpub2: false as const, epub }
+    }
+
+    const book = await updateBook(
+      input.book.uuid,
+      null,
+      input.format === "readaloud"
+        ? {
+            readaloud: {
+              filepath: effectivePath,
+              missing: false,
+              status: input.book.readaloud?.status ?? "ALIGNED",
+              currentStage:
+                input.book.readaloud?.currentStage ?? "SPLIT_TRACKS",
+            },
+          }
+        : { ebook: { filepath: effectivePath, missing: false } },
+    )
+
+    return {
+      ...input,
+      book,
+      filepath: effectivePath,
+      isEpub2: false as const,
+      epub,
+    }
   },
 )
 
