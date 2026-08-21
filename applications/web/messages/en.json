@@ -1760,6 +1760,7 @@
     "epub2Strategy": {
       "strategyDefault": "Use default",
       "strategyBackupAndConvert": "Backup & convert",
+      "strategyConvertAlongside": "Convert alongside original",
       "strategyReplace": "Replace in place",
       "strategySkip": "Skip"
     },

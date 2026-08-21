@@ -1501,6 +1501,7 @@
     "epub2Strategy": {
       "strategyDefault": "Gebruik standaard",
       "strategyBackupAndConvert": "Back-up & converteren",
+      "strategyConvertAlongside": "Converteren naast origineel",
       "strategyReplace": "Ter plekke vervangen",
       "strategySkip": "Overslaan"
     },

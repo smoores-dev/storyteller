@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
-import { useWatch } from "react-hook-form"
+import { useRef, useState } from "react"
+import { useFormState, useWatch } from "react-hook-form"
 
 import { Badge } from "@v3/_/components/ui/badge"
 import { Button } from "@v3/_/components/ui/button"
@@ -65,20 +65,20 @@ import {
   cronExpressionToMinutes,
   minutesToCronExpression,
 } from "@/assets/library/scanner/triggers/cron"
+import { type ImportRuleSource } from "@/database/importRules"
 import {
-  type ImportRuleSource,
-  type ImportRuleWithCollections,
-} from "@/database/importRules"
-import {
+  normalizeRulePath,
   validateWatchRulePath,
   watchRuleValidationMessage,
 } from "@/database/importRules.validation"
 import {
+  type ImportRuleInput,
   METADATA_FIELDS,
   type MetadataField,
   type MetadataFieldMode,
   type MetadataFieldOverrides,
   MetadataFieldOverridesSchema,
+  type Settings,
   defaultMetadataFieldOverrides,
 } from "@/database/settingsTypes"
 import { statusDisplayLabel } from "@/database/statusKinds"
@@ -87,15 +87,11 @@ import * as icon from "@/icons"
 import {
   getImageUrl,
   useCancelScanMutation,
-  useCreateImportRuleMutation,
-  useDeleteImportRulesMutation,
-  useGetImportRulesQuery,
   useGetScanStateQuery,
   useListCollectionsQuery,
   useListStatusesQuery,
   useSetLibraryDefaultStatusMutation,
   useTriggerScanMutation,
-  useUpdateImportRuleMutation,
   useUploadImageMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
@@ -249,7 +245,6 @@ function ServerIconField() {
 }
 
 const NONE_STATUS = "__none__"
-
 function DefaultStatusSection() {
   const t = useTranslation("SettingsPage.tabs.library.sections.defaultStatus")
   const { data: statuses = [] } = useListStatusesQuery()
@@ -257,10 +252,13 @@ function DefaultStatusSection() {
 
   const currentDefault = statuses.find((s) => s.isDefault)
 
-  const statusItems = statuses.map((s) => ({
-    value: s.uuid,
-    label: statusDisplayLabel(s),
-  }))
+  const statusItems = [
+    ...statuses.map((s) => ({
+      value: s.uuid,
+      label: statusDisplayLabel(s),
+    })),
+    { value: NONE_STATUS, label: t("none") },
+  ]
 
   return (
     <SettingsSection tab="library" section="defaultStatus">
@@ -294,7 +292,6 @@ function DefaultStatusSection() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NONE_STATUS}>{t("none")}</SelectItem>
                 {statusItems.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
@@ -374,42 +371,49 @@ const USE_DEFAULT_VALUE = "__default__"
 
 // TODO: internationalize
 
+type AutoIgnoreRule = NonNullable<Settings["autoIgnoreRules"]>[number]
+
+let localRuleCount = 0
+
+function newLocalRuleUuid() {
+  localRuleCount += 1
+  return `local-${localRuleCount}`
+}
+
+function ruleKey(rule: ImportRuleInput, index: number) {
+  return rule.uuid ?? `index-${index}`
+}
+
 function WatchRuleCard({
   rule,
-  rules,
   collections,
   selected,
+  error,
   onToggle,
   onDelete,
+  onChange,
   importModeOptions,
   epub2StrategyOptions,
 }: {
-  rule: ImportRuleWithCollections
-  rules: ImportRuleWithCollections[]
+  rule: ImportRuleInput
   collections: { uuid: UUID; name: string }[]
   selected: boolean
+  error?: string
   onToggle: () => void
   onDelete: () => void
+  onChange: (patch: Partial<ImportRuleInput>) => void
   importModeOptions: { value: string; label: string }[]
   epub2StrategyOptions: { value: string; label: string }[]
 }) {
-  const [updateRule] = useUpdateImportRuleMutation()
   const [browseOpen, setBrowseOpen] = useState(false)
   const isTauri = useIsTauri()
-
-  const isConfig = rule.source === "config"
   const t = useTranslation("SettingsPage.tabs.library.sections.autoImport")
 
+  const isConfig = rule.source === "config"
+  const collectionUuids = rule.collectionUuids ?? []
+
   function handlePathSave(newPath: string) {
-    const result = validateWatchRulePath({
-      path: newPath,
-      existingRules: rules,
-      excludeUuid: rule.uuid,
-    })
-
-    if (!result.ok) return
-
-    void updateRule({ uuid: rule.uuid, path: newPath })
+    onChange({ path: newPath })
   }
 
   function handlePathClick() {
@@ -454,13 +458,19 @@ function WatchRuleCard({
           {isConfig && <Badge variant="outline">Config</Badge>}
         </div>
 
+        {error && <p className="text-destructive text-xs">{error}</p>}
+
         <div className="flex flex-wrap items-center gap-2">
           <Select
             disabled={isConfig}
             value={rule.importMode ?? USE_DEFAULT_VALUE}
             onValueChange={(v) => {
-              const mode = v === USE_DEFAULT_VALUE ? null : v
-              void updateRule({ uuid: rule.uuid, importMode: mode })
+              onChange({
+                importMode:
+                  v === USE_DEFAULT_VALUE
+                    ? null
+                    : (v as ImportRuleInput["importMode"]),
+              })
             }}
             items={importModeOptions}
           >
@@ -484,10 +494,11 @@ function WatchRuleCard({
                 : rule.epub2ImportStrategy ?? USE_DEFAULT_VALUE
             }
             onValueChange={(v) => {
-              const strategy = v === USE_DEFAULT_VALUE ? null : v
-              void updateRule({
-                uuid: rule.uuid,
-                epub2ImportStrategy: strategy,
+              onChange({
+                epub2ImportStrategy:
+                  v === USE_DEFAULT_VALUE
+                    ? null
+                    : (v as ImportRuleInput["epub2ImportStrategy"]),
               })
             }}
             items={epub2StrategyOptions}
@@ -505,41 +516,21 @@ function WatchRuleCard({
           </Select>
 
           {!isConfig && (
-            <Combobox
-              items={collections.map((c) => ({
-                value: c.uuid,
-                label: c.name,
-              }))}
-              multiple
-              value={rule.collections.map((c) => c.uuid)}
-              onValueChange={(uuids) => {
-                void updateRule({
-                  uuid: rule.uuid,
-                  collectionUuids: uuids,
-                })
+            <CollectionsCombobox
+              collections={collections}
+              value={collectionUuids}
+              placeholder={t("importCollectionsAdd")}
+              onChange={(uuids) => {
+                onChange({ collectionUuids: uuids })
               }}
-            >
-              <ComboboxChips className="min-w-[200px] flex-1">
-                <ComboboxValue>
-                  {rule.collections
-                    .map(
-                      (c) =>
-                        collections.find((cc) => cc.uuid === c.uuid)?.name ??
-                        c.uuid,
-                    )
-                    .map((name) => (
-                      <ComboboxChip key={name}>{name}</ComboboxChip>
-                    ))}
-                </ComboboxValue>
-                <ComboboxChipsInput placeholder={t("importCollectionsAdd")} />
-              </ComboboxChips>
-            </Combobox>
+            />
           )}
         </div>
       </div>
 
       {!isConfig && (
         <Button
+          type="button"
           variant="ghost"
           size="icon-sm"
           aria-label="Delete rule"
@@ -561,42 +552,95 @@ function WatchRuleCard({
   )
 }
 
+function CollectionsCombobox({
+  collections,
+  value,
+  placeholder,
+  onChange,
+}: {
+  collections: { uuid: UUID; name: string }[]
+  value: string[]
+  placeholder: string
+  onChange: (uuids: string[]) => void
+}) {
+  return (
+    <Combobox
+      items={collections.map((c) => ({ value: c.uuid, label: c.name }))}
+      multiple
+      value={value}
+      onValueChange={(uuids: string[]) => {
+        onChange(uuids)
+      }}
+    >
+      <ComboboxChips className="min-w-[200px] flex-1">
+        <ComboboxValue>
+          {collections
+            .filter((c) => value.includes(c.uuid))
+            .map((c) => (
+              <ComboboxChip key={c.uuid}>{c.name}</ComboboxChip>
+            ))}
+        </ComboboxValue>
+        <ComboboxChipsInput placeholder={placeholder} />
+      </ComboboxChips>
+      <ComboboxContent>
+        <ComboboxEmpty>No collections found.</ComboboxEmpty>
+        <ComboboxList>
+          {collections.map((c) => (
+            <ComboboxItem key={c.uuid} value={c.uuid}>
+              {c.name}
+            </ComboboxItem>
+          ))}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
+
 function IgnoreRuleRow({
   rule,
   selected,
+  error,
   onToggle,
   onDelete,
 }: {
-  rule: ImportRuleWithCollections
+  rule: ImportRuleInput
   selected: boolean
+  error?: string
   onToggle: () => void
   onDelete: () => void
 }) {
   const isConfig = rule.source === "config"
 
   return (
-    <div className="flex items-center gap-3 rounded-md border px-3 py-2">
-      {!isConfig && <Checkbox checked={selected} onCheckedChange={onToggle} />}
+    <div className="space-y-1">
+      <div className="flex items-center gap-3 rounded-md border px-3 py-2">
+        {!isConfig && (
+          <Checkbox checked={selected} onCheckedChange={onToggle} />
+        )}
 
-      <span
-        className="text-foreground min-w-0 flex-1 truncate text-xs"
-        title={rule.path}
-      >
-        {rule.path}
-      </span>
-
-      {isConfig ? (
-        <Badge variant="outline">Config</Badge>
-      ) : (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Delete rule"
-          onClick={onDelete}
+        <span
+          className="text-foreground min-w-0 flex-1 truncate text-xs"
+          title={rule.path}
         >
-          <icon.Trash className="text-destructive size-4" />
-        </Button>
-      )}
+          {rule.path}
+        </span>
+
+        {isConfig ? (
+          <Badge variant="outline">Config</Badge>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Delete rule"
+            onClick={onDelete}
+          >
+            <icon.Trash className="text-destructive size-4" />
+          </Button>
+        )}
+      </div>
+
+      {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   )
 }
@@ -607,18 +651,17 @@ function AutoIgnoreRuleRow({
   onToggle,
   sourceLabels,
 }: {
-  rule: ImportRuleWithCollections
+  rule: AutoIgnoreRule
   selected: boolean
   onToggle: () => void
-  sourceLabels: Record<Exclude<ImportRuleSource, "user">, string>
+  sourceLabels: Record<string, string | undefined>
 }) {
-  const sourceLabel =
-    rule.source !== "user" ? sourceLabels[rule.source] : "Auto"
+  const sourceLabel = sourceLabels[rule.source] ?? "Auto"
 
   return (
     <div
       className="flex items-start gap-3 rounded-md border px-3 py-2"
-      title={`uuid: ${rule.uuid}${rule.bookUuid ? `\nbook: ${rule.bookUuid}` : ""}`}
+      title={`uuid: ${rule.uuid}`}
     >
       <Checkbox
         className="mt-0.5"
@@ -655,20 +698,21 @@ function AddRuleDialog({
   collections,
   importModeOptions,
   epub2StrategyOptions,
+  onAdd,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   kind: "watch" | "ignore"
-  rules: ImportRuleWithCollections[]
+  rules: ImportRuleInput[]
   collections: { uuid: UUID; name: string }[]
   importModeOptions: { value: string; label: string }[]
   epub2StrategyOptions: { value: string; label: string }[]
+  onAdd: (rule: ImportRuleInput) => void
 }) {
-  const [createRule, { isLoading }] = useCreateImportRuleMutation()
   const [path, setPath] = useState("")
   const [importMode, setImportMode] = useState<string>(USE_DEFAULT_VALUE)
   const [epub2Strategy, setEpub2Strategy] = useState<string>(USE_DEFAULT_VALUE)
-  const [collectionUuids, setCollectionUuids] = useState<UUID[]>([])
+  const [collectionUuids, setCollectionUuids] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const t = useTranslation("SettingsPage.tabs.library.sections.autoImport")
@@ -680,7 +724,7 @@ function AddRuleDialog({
     setError(null)
   }
 
-  async function handleSubmit() {
+  function handleSubmit() {
     const trimmed = path.trim()
     if (!trimmed) {
       setError("Pick a folder first.")
@@ -690,36 +734,53 @@ function AddRuleDialog({
     if (kind === "watch") {
       const result = validateWatchRulePath({
         path: trimmed,
-        existingRules: rules,
+        existingRules: rules.map((r, index) => ({
+          uuid: ruleKey(r, index) as UUID,
+          kind: r.kind,
+          path: r.path,
+        })),
       })
       if (!result.ok) {
-        const conflictingPath = result.conflictWith
-          ? rules.find((r) => r.uuid === result.conflictWith)?.path
-          : undefined
-        setError(watchRuleValidationMessage(result, { conflictingPath }))
+        const conflictingPath = rules.find(
+          (r, index) => ruleKey(r, index) === result.conflictWith,
+        )?.path
+        setError(
+          watchRuleValidationMessage(
+            result,
+            conflictingPath ? { conflictingPath } : undefined,
+          ),
+        )
         return
       }
+    } else if (
+      rules.some(
+        (r) => normalizeRulePath(r.path) === normalizeRulePath(trimmed),
+      )
+    ) {
+      setError("A rule already exists for this path.")
+      return
     }
 
-    try {
-      await createRule({
-        kind,
-        path: trimmed,
-        ...(kind === "watch" &&
-          importMode !== USE_DEFAULT_VALUE && { importMode }),
-        ...(kind === "watch" &&
-          importMode !== "copy" &&
-          epub2Strategy !== USE_DEFAULT_VALUE && {
-            epub2ImportStrategy: epub2Strategy,
-          }),
-        ...(kind === "watch" &&
-          collectionUuids.length > 0 && { collectionUuids }),
-      }).unwrap()
-      reset()
-      onOpenChange(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create rule.")
-    }
+    onAdd({
+      uuid: newLocalRuleUuid(),
+      kind,
+      path: trimmed,
+      importMode:
+        kind === "watch" && importMode !== USE_DEFAULT_VALUE
+          ? (importMode as ImportRuleInput["importMode"])
+          : null,
+      epub2ImportStrategy:
+        kind === "watch" &&
+        importMode !== "copy" &&
+        epub2Strategy !== USE_DEFAULT_VALUE
+          ? (epub2Strategy as ImportRuleInput["epub2ImportStrategy"])
+          : null,
+      collectionUuids: kind === "watch" ? collectionUuids : [],
+      source: "user",
+    })
+
+    reset()
+    onOpenChange(false)
   }
 
   const tl = useTranslation("Labels")
@@ -813,40 +874,12 @@ function AddRuleDialog({
               {collections.length > 0 && (
                 <div className="space-y-1.5">
                   <Label>{t("importCollectionsDescription")}</Label>
-                  <Combobox
-                    items={collections.map((c) => ({
-                      value: c.uuid,
-                      label: c.name,
-                    }))}
-                    multiple
+                  <CollectionsCombobox
+                    collections={collections}
                     value={collectionUuids}
-                    onValueChange={(uuids) => {
-                      setCollectionUuids(uuids)
-                    }}
-                  >
-                    <ComboboxChips>
-                      <ComboboxValue>
-                        {collections
-                          .filter((c) => collectionUuids.includes(c.uuid))
-                          .map((item) => (
-                            <ComboboxChip key={item.uuid}>
-                              {item.name}
-                            </ComboboxChip>
-                          ))}
-                      </ComboboxValue>
-                      <ComboboxChipsInput placeholder="Add collection" />
-                    </ComboboxChips>
-                    <ComboboxContent>
-                      <ComboboxEmpty>No items found.</ComboboxEmpty>
-                      <ComboboxList>
-                        {collections.map((c) => (
-                          <ComboboxItem key={c.uuid} value={c.uuid}>
-                            {c.name}
-                          </ComboboxItem>
-                        ))}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
+                    placeholder={t("importCollectionsAdd")}
+                    onChange={setCollectionUuids}
+                  />
                 </div>
               )}
             </>
@@ -858,16 +891,17 @@ function AddRuleDialog({
         <DialogFooter>
           <DialogClose
             render={
-              <Button variant="ghost" size="sm">
+              <Button type="button" variant="ghost" size="sm">
                 Cancel
               </Button>
             }
           />
           <Button
+            type="button"
             variant="default"
             size="sm"
             onClick={handleSubmit}
-            disabled={isLoading || !path.trim()}
+            disabled={!path.trim()}
           >
             Add rule
           </Button>
@@ -909,10 +943,15 @@ function ImportRulesSection() {
   const tl = useTranslation("Labels.importMode")
   const te = useTranslation("Labels.epub2Strategy")
 
-  const { data: rules = [] } = useGetImportRulesQuery()
+  const { form } = useSettingsForm()
+  const { errors, isSubmitted } = useFormState({ control: form.control })
   const { data: collections = [] } = useListCollectionsQuery()
-  const [deleteRules, { isLoading: isDeleting }] =
-    useDeleteImportRulesMutation()
+
+  const rules = useWatch({ control: form.control, name: "importRules" }) ?? []
+  const autoRules =
+    useWatch({ control: form.control, name: "autoIgnoreRules" }) ?? []
+  const deletedUuids =
+    useWatch({ control: form.control, name: "deleteRuleUuids" }) ?? []
 
   const [activeTab, setActiveTab] = useState<"watch" | "ignore" | "auto">(
     "watch",
@@ -923,10 +962,43 @@ function ImportRulesSection() {
     auto: string
   }>({ watch: "", ignore: "", auto: "" })
   const [autoPage, setAutoPage] = useState(1)
-  const [selectedUuids, setSelectedUuids] = useState<Set<UUID>>(new Set())
+  const [selectedUuids, setSelectedUuids] = useState<Set<string>>(new Set())
   const [addDialogKind, setAddDialogKind] = useState<"watch" | "ignore" | null>(
     null,
   )
+
+  const ruleErrors = errors.importRules as
+    | ({ path?: { message?: string } } | undefined)[]
+    | undefined
+
+  function setRules(next: ImportRuleInput[]) {
+    form.setValue("importRules", next, {
+      shouldDirty: true,
+      shouldValidate: isSubmitted,
+    })
+  }
+
+  function updateRule(index: number, patch: Partial<ImportRuleInput>) {
+    setRules(
+      rules.map((rule, i) => (i === index ? { ...rule, ...patch } : rule)),
+    )
+  }
+
+  function deleteRules(keys: Set<string>) {
+    setRules(rules.filter((rule, index) => !keys.has(ruleKey(rule, index))))
+    setSelectedUuids(new Set())
+  }
+
+  function deleteAutoRules(uuids: string[]) {
+    form.setValue(
+      "deleteRuleUuids",
+      [...new Set([...deletedUuids, ...uuids])],
+      {
+        shouldDirty: true,
+      },
+    )
+    setSelectedUuids(new Set())
+  }
 
   const IMPORT_MODE_OPTIONS = [
     { value: USE_DEFAULT_VALUE, label: tl("modeDefault") },
@@ -939,6 +1011,7 @@ function ImportRulesSection() {
   const EPUB2_STRATEGY_OPTIONS = [
     { value: USE_DEFAULT_VALUE, label: te("strategyDefault") },
     { value: "backup-and-convert", label: te("strategyBackupAndConvert") },
+    { value: "convert-alongside", label: te("strategyConvertAlongside") },
     { value: "replace", label: te("strategyReplace") },
     { value: "skip", label: te("strategySkip") },
   ]
@@ -953,31 +1026,30 @@ function ImportRulesSection() {
     "prevent-reimport": t("ignoreSources.importPreventReimport"),
   }
 
-  const { watchRules, userIgnoreRules, autoIgnoreRules } = useMemo(() => {
-    const watch: ImportRuleWithCollections[] = []
-    const userIgnore: ImportRuleWithCollections[] = []
-    const autoIgnore: ImportRuleWithCollections[] = []
+  const indexedRules = rules.map((rule, index) => ({
+    rule,
+    index,
+    key: ruleKey(rule, index),
+    error: ruleErrors?.[index]?.path?.message,
+  }))
 
-    for (const r of rules) {
-      if (r.kind === "watch") watch.push(r)
-      else if (r.source === "user" || r.source === "config") userIgnore.push(r)
-      else autoIgnore.push(r)
-    }
+  const watchRules = indexedRules.filter(({ rule }) => rule.kind === "watch")
+  const userIgnoreRules = indexedRules.filter(
+    ({ rule }) => rule.kind === "ignore",
+  )
+  const autoIgnoreRules = autoRules.filter(
+    (rule) => !deletedUuids.includes(rule.uuid),
+  )
 
-    return {
-      watchRules: watch,
-      userIgnoreRules: userIgnore,
-      autoIgnoreRules: autoIgnore,
-    }
-  }, [rules])
+  type IndexedRule = (typeof indexedRules)[number]
 
-  function filterByPath(list: ImportRuleWithCollections[], q: string) {
+  function filterByPath(list: IndexedRule[], q: string) {
     const needle = q.trim().toLowerCase()
     if (!needle) return list
-    return list.filter((r) => r.path.toLowerCase().includes(needle))
+    return list.filter(({ rule }) => rule.path.toLowerCase().includes(needle))
   }
 
-  function filterAuto(list: ImportRuleWithCollections[], q: string) {
+  function filterAuto(list: AutoIgnoreRule[], q: string) {
     const needle = q.trim().toLowerCase()
     if (!needle) return list
     return list.filter(
@@ -992,16 +1064,16 @@ function ImportRulesSection() {
   const filteredAuto = filterAuto(autoIgnoreRules, searchByTab.auto)
 
   const watchSelectable = filteredWatch
-    .filter((r) => r.source !== "config")
-    .map((r) => r.uuid)
+    .filter(({ rule }) => rule.source !== "config")
+    .map(({ key }) => key)
 
   const ignoreSelectable = filteredIgnore
-    .filter((r) => r.source !== "config")
-    .map((r) => r.uuid)
+    .filter(({ rule }) => rule.source !== "config")
+    .map(({ key }) => key)
 
   const autoSelectable = filteredAuto.map((r) => r.uuid)
 
-  function toggleSelected(uuid: UUID) {
+  function toggleSelected(uuid: string) {
     setSelectedUuids((prev) => {
       const next = new Set(prev)
       if (next.has(uuid)) {
@@ -1013,27 +1085,22 @@ function ImportRulesSection() {
     })
   }
 
-  function deleteOne(uuid: UUID) {
-    void deleteRules({ uuids: [uuid] })
-    setSelectedUuids((prev) => {
-      if (!prev.has(uuid)) return prev
-      const next = new Set(prev)
-      next.delete(uuid)
-      return next
-    })
-  }
-
   function handleDeleteSelected() {
     if (selectedUuids.size === 0) return
-    void deleteRules({ uuids: [...selectedUuids] })
-    setSelectedUuids(new Set())
+
+    if (activeTab === "auto") {
+      deleteAutoRules([...selectedUuids])
+      return
+    }
+
+    deleteRules(selectedUuids)
   }
 
-  function selectAllUuids(uuids: UUID[]) {
+  function selectAllUuids(uuids: string[]) {
     setSelectedUuids(new Set(uuids))
   }
 
-  function allUuidsSelected(uuids: UUID[]) {
+  function allUuidsSelected(uuids: string[]) {
     if (uuids.length === 0) return false
     return uuids.every((u) => selectedUuids.has(u))
   }
@@ -1153,7 +1220,6 @@ function ImportRulesSection() {
                 selectedCount={selectedUuids.size}
                 selectableCount={watchSelectable.length}
                 allSelected={allUuidsSelected(watchSelectable)}
-                isDeleting={isDeleting}
                 onSelectAll={() => {
                   selectAllUuids(watchSelectable)
                 }}
@@ -1173,20 +1239,23 @@ function ImportRulesSection() {
                 />
               ) : (
                 <div className="space-y-2">
-                  {filteredWatch.map((rule) => (
+                  {filteredWatch.map(({ rule, index, key, error }) => (
                     <WatchRuleCard
-                      key={rule.uuid}
+                      key={key}
                       rule={rule}
-                      rules={rules}
                       importModeOptions={IMPORT_MODE_OPTIONS}
                       epub2StrategyOptions={EPUB2_STRATEGY_OPTIONS}
                       collections={collections}
-                      selected={selectedUuids.has(rule.uuid)}
+                      selected={selectedUuids.has(key)}
+                      {...(error && { error })}
                       onToggle={() => {
-                        toggleSelected(rule.uuid)
+                        toggleSelected(key)
                       }}
                       onDelete={() => {
-                        deleteOne(rule.uuid)
+                        deleteRules(new Set([key]))
+                      }}
+                      onChange={(patch) => {
+                        updateRule(index, patch)
                       }}
                     />
                   ))}
@@ -1208,7 +1277,6 @@ function ImportRulesSection() {
                 selectedCount={selectedUuids.size}
                 selectableCount={ignoreSelectable.length}
                 allSelected={allUuidsSelected(ignoreSelectable)}
-                isDeleting={isDeleting}
                 onSelectAll={() => {
                   selectAllUuids(ignoreSelectable)
                 }}
@@ -1228,16 +1296,17 @@ function ImportRulesSection() {
                 />
               ) : (
                 <div className="space-y-1.5">
-                  {filteredIgnore.map((rule) => (
+                  {filteredIgnore.map(({ rule, key, error }) => (
                     <IgnoreRuleRow
-                      key={rule.uuid}
+                      key={key}
                       rule={rule}
-                      selected={selectedUuids.has(rule.uuid)}
+                      selected={selectedUuids.has(key)}
+                      {...(error && { error })}
                       onToggle={() => {
-                        toggleSelected(rule.uuid)
+                        toggleSelected(key)
                       }}
                       onDelete={() => {
-                        deleteOne(rule.uuid)
+                        deleteRules(new Set([key]))
                       }}
                     />
                   ))}
@@ -1259,7 +1328,6 @@ function ImportRulesSection() {
                 selectedCount={selectedUuids.size}
                 selectableCount={autoSelectable.length}
                 allSelected={allUuidsSelected(autoSelectable)}
-                isDeleting={isDeleting}
                 onSelectAll={() => {
                   selectAllUuids(autoSelectable)
                 }}
@@ -1307,6 +1375,7 @@ function ImportRulesSection() {
                   {showAutoPagination && (
                     <div className="flex items-center justify-between gap-2 pt-1">
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         disabled={clampedAutoPage <= 1}
@@ -1320,6 +1389,7 @@ function ImportRulesSection() {
                         Page {clampedAutoPage} of {autoPageCount}
                       </span>
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         disabled={clampedAutoPage >= autoPageCount}
@@ -1349,6 +1419,9 @@ function ImportRulesSection() {
           collections={collections}
           importModeOptions={IMPORT_MODE_OPTIONS}
           epub2StrategyOptions={EPUB2_STRATEGY_OPTIONS}
+          onAdd={(rule) => {
+            setRules([...rules, rule])
+          }}
         />
       )}
     </SettingsSection>
@@ -1364,7 +1437,6 @@ function TabHeader({
   selectedCount,
   selectableCount,
   allSelected,
-  isDeleting,
   onSelectAll,
   onDeleteSelected,
   onClearSelection,
@@ -1377,7 +1449,6 @@ function TabHeader({
   selectedCount: number
   selectableCount: number
   allSelected: boolean
-  isDeleting: boolean
   onSelectAll: () => void
   onDeleteSelected: () => void
   onClearSelection: () => void
@@ -1397,13 +1468,14 @@ function TabHeader({
       </div>
 
       {addLabel && onAdd && (
-        <Button variant="outline" size="sm" onClick={onAdd}>
+        <Button type="button" variant="outline" size="sm" onClick={onAdd}>
           <icon.Add className="size-4" />
           {addLabel}
         </Button>
       )}
 
       <Button
+        type="button"
         variant="ghost"
         size="sm"
         disabled={selectableCount === 0 || allSelected}
@@ -1413,6 +1485,7 @@ function TabHeader({
       </Button>
 
       <Button
+        type="button"
         variant="ghost"
         size="sm"
         disabled={selectedCount === 0}
@@ -1423,9 +1496,9 @@ function TabHeader({
 
       {selectedCount > 0 && (
         <Button
+          type="button"
           variant="destructive"
           size="sm"
-          disabled={isDeleting}
           onClick={onDeleteSelected}
         >
           <icon.Trash className="mr-1 size-4" />

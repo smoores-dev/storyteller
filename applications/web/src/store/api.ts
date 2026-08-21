@@ -245,13 +245,13 @@ export const api = createApi({
       query: () => "/settings",
       providesTags: ["Settings"],
     }),
-    updateSettings: build.mutation({
-      query: (settings: Settings) => ({
+    updateSettings: build.mutation<Settings, Partial<Settings>>({
+      query: (settings) => ({
         url: "/settings",
         method: "PUT",
         body: settings,
       }),
-      invalidatesTags: ["MaxUploadChunkSize", "Settings"],
+      invalidatesTags: ["MaxUploadChunkSize", "Settings", "ImportRules"],
     }),
     updatePreferenceDefaults: build.mutation<
       PreferenceDefaults,
@@ -1766,7 +1766,10 @@ export const api = createApi({
       query: () => "/user/settings",
       providesTags: () => ["UserSettings"],
     }),
-    updateUserSettings: build.mutation<void, Partial<UserPreferencesForm>>({
+    updateUserSettings: build.mutation<
+      Record<string, unknown>,
+      Partial<UserPreferencesForm>
+    >({
       query: (body) => ({
         url: "/user/settings",
         method: "PUT",
@@ -1774,7 +1777,10 @@ export const api = createApi({
       }),
       invalidatesTags: ["UserSettings"],
     }),
-    setUserSetting: build.mutation<void, SingleUserSettingUpdate>({
+    setUserSetting: build.mutation<
+      Record<string, unknown>,
+      SingleUserSettingUpdate
+    >({
       query: ({ name, value }) => ({
         url: `/user/settings`,
         method: "PUT",

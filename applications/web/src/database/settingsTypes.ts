@@ -7,7 +7,13 @@ import {
 } from "@storyteller-platform/ghost-story/constants"
 
 import { Providers } from "@/auth/providers"
+import {
+  normalizeRulePath,
+  validateWatchRulePath,
+  watchRuleValidationMessage,
+} from "@/database/importRules.validation"
 import { PreferenceDefaultsSchema } from "@/database/userPreferencesTypes"
+import { type UUID } from "@/uuid"
 
 export const TranscriptionEngineSchema = z.enum(RECOGNITION_ENGINES)
 
@@ -70,6 +76,7 @@ export const ReadaloudLocationTypeSchema = z.enum([
 
 export const Epub2ImportStrategySchema = z.enum([
   "backup-and-convert",
+  "convert-alongside",
   "replace",
   "skip",
 ])
@@ -145,13 +152,87 @@ export type ImportRule = z.infer<typeof ImportRuleSchema>
 export const ImportRuleInputSchema = z.object({
   uuid: z.string().optional(),
   kind: z.enum(["watch", "ignore"]),
-  path: z.string(),
+  path: z.string().min(1, "Pick a folder"),
   importMode: ImportModeSchema.nullish(),
   epub2ImportStrategy: Epub2ImportStrategySchema.nullish(),
   collectionUuids: z.array(z.string()).optional(),
+  source: z.string().optional(),
 })
 
 export type ImportRuleInput = z.infer<typeof ImportRuleInputSchema>
+
+export type ImportRuleIssue = { index: number; message: string }
+
+export function importRuleIssues(
+  rules: Pick<ImportRuleInput, "uuid" | "kind" | "path" | "source">[],
+  forbiddenRoots: string[] = [],
+): ImportRuleIssue[] {
+  const keyed = rules.map((rule, index) => ({
+    uuid: (rule.uuid ?? `at-${index}`) as UUID,
+    kind: rule.kind,
+    path: rule.path,
+  }))
+
+  const issues: ImportRuleIssue[] = []
+  const seen = new Map<string, number>()
+
+  keyed.forEach((rule, index) => {
+    if (!rule.path) return
+
+    const normalized = normalizeRulePath(rule.path)
+    const firstIndex = seen.get(normalized)
+
+    if (firstIndex === undefined) {
+      seen.set(normalized, index)
+    }
+
+    if (rules[index]?.source === "config") return
+
+    if (firstIndex !== undefined) {
+      issues.push({
+        index,
+        message: `A rule already exists for ${keyed[firstIndex]?.path ?? normalized}.`,
+      })
+      return
+    }
+
+    if (rule.kind !== "watch") return
+
+    const result = validateWatchRulePath({
+      path: rule.path,
+      existingRules: keyed.filter((_, other) => other !== index),
+      forbiddenRoots,
+    })
+
+    if (result.ok) return
+
+    const conflictingPath = keyed.find(
+      (other) => other.uuid === result.conflictWith,
+    )?.path
+
+    issues.push({
+      index,
+      message: watchRuleValidationMessage(
+        result,
+        conflictingPath ? { conflictingPath } : undefined,
+      ),
+    })
+  })
+
+  return issues
+}
+
+export const ImportRulesSchema = z
+  .array(ImportRuleInputSchema)
+  .superRefine((rules, ctx) => {
+    for (const issue of importRuleIssues(rules)) {
+      ctx.addIssue({
+        code: "custom",
+        path: [issue.index, "path"],
+        message: issue.message,
+      })
+    }
+  })
 
 export const ENCRYPTED_SETTING_KEYS = [
   "smtpPassword",
@@ -238,7 +319,7 @@ export const SettingsSchema = z.object({
   epub2ImportStrategy: Epub2ImportStrategySchema,
   epub2BackupSuffix: z.string(),
   // Import rules (user-managed, editable)
-  importRules: z.array(ImportRuleInputSchema).optional(),
+  importRules: ImportRulesSchema.optional(),
   // Auto-ignore rules (system-generated, read-only display)
   autoIgnoreRules: z
     .array(

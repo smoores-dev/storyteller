@@ -323,3 +323,51 @@ export async function addIgnoreRule(
     .onConflict((oc) => oc.column("path").doNothing())
     .execute()
 }
+
+export async function removeImportBackupIgnoreRule(path: string) {
+  await db
+    .deleteFrom("importRule")
+    .where("kind", "=", "ignore")
+    .where("path", "=", path)
+    .where("source", "=", "import-backup")
+    .execute()
+}
+
+export type SettingsImportRule = ImportRuleWithCollections & {
+  collectionUuids: UUID[]
+}
+
+export type SettingsAutoIgnoreRule = {
+  uuid: UUID
+  path: string
+  source: ImportRuleSource
+  bookTitle: string | null
+}
+
+export function splitSettingsImportRules(rules: ImportRuleWithCollections[]): {
+  importRules: SettingsImportRule[]
+  autoIgnoreRules: SettingsAutoIgnoreRule[]
+} {
+  const importRules = rules
+    .filter((rule) => rule.source === "user" || rule.source === "config")
+    .map((rule) => ({
+      ...rule,
+      collectionUuids: rule.collections.map((collection) => collection.uuid),
+    }))
+
+  const autoIgnoreRules = rules
+    .filter(
+      (rule) =>
+        rule.source !== "user" &&
+        rule.source !== "config" &&
+        rule.kind === "ignore",
+    )
+    .map((rule) => ({
+      uuid: rule.uuid,
+      path: rule.path,
+      source: rule.source,
+      bookTitle: rule.bookTitle,
+    }))
+
+  return { importRules, autoIgnoreRules }
+}
