@@ -368,7 +368,6 @@ export class Aligner {
       skippedSentences,
       firstFoundSentence,
       lastFoundSentence,
-      lastFoundSentenceEnd,
     } = this.buildSentenceRanges(
       alignments,
       sentenceStarts,
@@ -383,7 +382,6 @@ export class Aligner {
       emissionsStart,
       WORD_PAD,
       skippedSentences,
-      lastFoundSentenceEnd,
       chapterId,
     )
 
@@ -438,7 +436,7 @@ export class Aligner {
 
       const goodChars = alignments
         .slice(startOffset, endOffset + 1)
-        .reduce((acc, a) => acc + (a.score > -10 ? 1 : 0), 0)
+        .reduce((acc, a) => acc + (a.score > -4 ? 1 : 0), 0)
 
       if (goodChars / (endOffset + 1 - startOffset) < 0.5) {
         skippedSentences.add(i)
@@ -452,7 +450,7 @@ export class Aligner {
           alignments[startOffset]!.startFrame) /
         sentenceLength
 
-      if (sentenceLength > 8 && (framesPerChar < 1 || framesPerChar > 15)) {
+      if (sentenceLength > 8 && (framesPerChar < 2 || framesPerChar > 15)) {
         skippedSentences.add(i)
         continue
       }
@@ -502,12 +500,11 @@ export class Aligner {
     emissionsStart: number,
     padFrames: number,
     skippedSentences: Set<number>,
-    prevEndFrame: number,
     chapterId: string,
   ) {
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
     const wordRanges: WordRange[][] = []
-    let lastFoundWordEnd = prevEndFrame
+    let lastFoundWordEnd = 0
 
     for (const [i, ws] of enumerate(wordStarts)) {
       if (skippedSentences.has(i)) continue
@@ -518,7 +515,7 @@ export class Aligner {
 
         const goodChars = alignments
           .slice(startOffset, endOffset + 1)
-          .reduce((acc, a) => acc + (a.score > -10 ? 1 : 0), 0)
+          .reduce((acc, a) => acc + (a.score > -4 ? 1 : 0), 0)
 
         if (goodChars / (endOffset + 1 - startOffset) < 0.5) {
           continue

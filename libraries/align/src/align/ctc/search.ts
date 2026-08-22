@@ -175,7 +175,6 @@ function selectAnchors(
   documentNgramIndex: Map<string, number[]>,
   slope: number,
   intercept: number,
-  inlierTolerance: number,
 ) {
   const anchors: Match[] = []
   for (let i = 0; i < query.length; i += ANCHOR_SPACING) {
@@ -189,27 +188,11 @@ function selectAnchors(
     for (const c of candidates) {
       const gram = query.slice(c.offset, c.offset + NGRAM_SIZE)
 
-      // The candidate must be the only document occurrence of its gram
-      // that the line deems plausible for this query offset...
-      const predicted = intercept + slope * c.offset
-      const plausiblePositions = (documentNgramIndex.get(gram) ?? []).filter(
-        (position) => Math.abs(position - predicted) <= inlierTolerance,
-      )
-      if (
-        plausiblePositions.length !== 1 ||
-        plausiblePositions[0] !== c.position
-      ) {
+      if (documentNgramIndex.get(gram)?.length !== 1) {
         continue
       }
 
-      // ...and the only query occurrence of its gram that could plausibly
-      // explain this document position
-      const plausibleOffsets = (queryNgramOffsets.get(gram) ?? []).filter(
-        (offset) =>
-          Math.abs(c.position - (intercept + slope * offset)) <=
-          inlierTolerance,
-      )
-      if (plausibleOffsets.length !== 1 || plausibleOffsets[0] !== c.offset) {
+      if (queryNgramOffsets.get(gram)?.length !== 1) {
         continue
       }
 
@@ -223,7 +206,7 @@ function selectAnchors(
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, no-constant-condition
     while (true) {
       const b = monotonicAnchors.at(-1)
-      if (!b || a.position > b.position) {
+      if (!b || a.position - b.position >= a.offset - b.offset) {
         monotonicAnchors.push(a)
         break
       }
@@ -304,7 +287,6 @@ export function findBoundariesInDocument(
     getNgramIndex(document),
     slope,
     intercept,
-    options.inlierTolerance,
   )
 
   return {
@@ -329,7 +311,7 @@ export function findCtcBoundaries(
   }
 
   const result = findBoundariesInDocument(query, document, {
-    minSlope: 1,
+    minSlope: 2,
     maxSlope: 15,
     inlierTolerance: 2500,
   })
