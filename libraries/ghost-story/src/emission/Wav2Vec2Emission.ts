@@ -101,8 +101,8 @@ export async function emit(
     } = await timing.timeAsync("transcription", async () => {
       const model = await Wav2Vec2ForCTC.from_pretrained(opts.model, {
         cache_dir: modelDir,
-        // device: "webgpu",
-        // dtype: "fp16",
+        device: "webgpu",
+        dtype: "fp16",
       })
 
       if (signal?.aborted) {
