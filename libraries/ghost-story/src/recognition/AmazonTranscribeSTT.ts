@@ -43,8 +43,10 @@ export async function recognize(
 
   const resolvedLanguageCode = resolveLanguageCode(languageCode)
 
-  const s3Sdk = await import("@aws-sdk/client-s3")
-  const transcribeSdk = await import("@aws-sdk/client-transcribe")
+  const s3Sdk = interopNamespace(await import("@aws-sdk/client-s3"))
+  const transcribeSdk = interopNamespace(
+    await import("@aws-sdk/client-transcribe"),
+  )
 
   const s3Client = new s3Sdk.S3Client({
     region: options.region,
@@ -164,6 +166,19 @@ export async function recognize(
   }
 
   return { transcript, timeline }
+}
+
+/**
+ * The AWS SDK packages are CommonJS. When a bundler emits ESM (esbuild/tsup
+ * does for the worker bundle) a dynamically imported CommonJS module becomes a
+ * namespace whose only export is `default`, so `namespace.S3Client` is
+ * `undefined` at runtime even though it type checks. Native ESM and other
+ * bundlers expose the named exports on the namespace directly, and the ESM
+ * builds have no `default` at all, so unwrap it whenever it's present.
+ */
+function interopNamespace<T extends object>(namespace: T): T {
+  const wrapped = (namespace as { default?: T }).default
+  return wrapped ?? namespace
 }
 
 async function convertSourceToStreamableBody(
