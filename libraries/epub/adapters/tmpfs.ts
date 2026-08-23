@@ -12,10 +12,11 @@ import {
 import { tmpdir } from "node:os"
 import { pipeline } from "node:stream/promises"
 
-import { fromBuffer, open } from "yauzl-promise"
 import { ZipFile } from "yazl"
 
 import { dirname, join, sep } from "@storyteller-platform/path"
+
+import { openZip } from "../zip.ts"
 
 import type { EpubListEntry, EpubStorageAdapter } from "./interface.ts"
 
@@ -66,10 +67,7 @@ export class TmpFsAdapter implements EpubStorageAdapter {
   static async init(source: string | Uint8Array): Promise<TmpFsAdapter> {
     const rootPath = mintRootPath()
     try {
-      const zipfile =
-        typeof source === "string"
-          ? await open(source)
-          : await fromBuffer(Buffer.from(source))
+      const zipfile = await openZip(source)
 
       await using stack = new AsyncDisposableStack()
       stack.defer(async () => {
@@ -167,12 +165,14 @@ export class TmpFsAdapter implements EpubStorageAdapter {
     )
 
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-    const { promise, resolve } = Promise.withResolvers<void>()
+    const { promise, resolve, reject } = Promise.withResolvers<void>()
     const zipfile = new ZipFile()
     const writeStream = createWriteStream(tmpArchivePath)
     writeStream.on("close", () => {
       resolve()
     })
+    writeStream.on("error", reject)
+    zipfile.outputStream.on("error", reject)
     await using stack = new AsyncDisposableStack()
     stack.defer(async () => {
       writeStream.close()

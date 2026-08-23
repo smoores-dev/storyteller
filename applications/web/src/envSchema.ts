@@ -47,6 +47,12 @@ export const documentedServerEnvVars = {
     .describe(
       "Directory where Storyteller stores its library-managed files (synced books, audio, covers). | `STORYTELLER_DATA_DIR/assets`",
     ),
+  STORYTELLER_SCRATCH_DIR: z
+    .string()
+    .optional()
+    .describe(
+      "Directory where Storyteller stores temporary working files (epub extraction, audio conversion, alignment scratch). Cleared on every startup. | `STORYTELLER_DATA_DIR/tmp`",
+    ),
   STORYTELLER_DB_FILENAME: z
     .string()
     .default("storyteller.db")

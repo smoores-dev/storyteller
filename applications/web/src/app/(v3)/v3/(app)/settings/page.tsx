@@ -10,6 +10,10 @@ import { withPageAuth } from "@v3/_/server/page-auth-wrapper"
 
 import { type Invite, type User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
+import {
+  getImportRules,
+  splitSettingsImportRules,
+} from "@/database/importRules"
 import { getConfigLockedKeys, getSettings } from "@/database/settings"
 import { getCurrentVersion } from "@/versions"
 
@@ -61,9 +65,10 @@ export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([
   const canManageUsers =
     user.permissions.userList || user.permissions.inviteList
 
-  const [settings, messages, configLockedKeys, users, invites] =
+  const [settings, rules, messages, configLockedKeys, users, invites] =
     await Promise.all([
       getSettings(),
+      getImportRules(),
       getMessages(),
       getConfigLockedKeys(),
       canManageUsers
@@ -80,10 +85,11 @@ export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([
   const sectionKeywords = generateSectionKeywords(settingsMessages.tabs)
 
   const currentVersion = getCurrentVersion()
+  const { importRules, autoIgnoreRules } = splitSettingsImportRules(rules)
 
   return (
     <SettingsForm
-      settings={settings}
+      settings={{ ...settings, importRules, autoIgnoreRules }}
       sectionKeywords={sectionKeywords}
       configLockedKeys={Array.from(configLockedKeys)}
       currentVersion={currentVersion}

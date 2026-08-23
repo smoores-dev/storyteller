@@ -8,6 +8,7 @@ import { ensureDir } from "fs-extra"
 import {
   type AudioFormat,
   type AudioSource,
+  type PreparedAudio,
   type RawAudioInput,
   getAudioDuration,
   isAudioSource,
@@ -109,75 +110,72 @@ export async function recognize(
   timing.setMetadata("conversionRequired", conversionNeeded)
   timing.setMetadata("targetFormat", conversionNeeded ? "wav" : source.format)
 
-  const doPrepare = async () => {
-    if (!conversionNeeded) return { source, cleanup: async () => {} }
+  const doPrepare = async (): Promise<PreparedAudio> => {
+    if (!conversionNeeded)
+      return { source, [Symbol.asyncDispose]: async () => {} }
     return prepareWavForService(source, { sampleRate: 16000, channels: 1 })
   }
 
-  const prepared = await timing.timeAsync("conversion", doPrepare)
+  await using prepared = await timing.timeAsync("conversion", doPrepare)
 
-  try {
-    const inputPath = toFilePath(prepared.source)
-    if (!inputPath) {
-      throw new Error(
-        "whisper.cpp requires a file path. The audio could not be prepared as a file.",
-      )
-    }
-
-    if (!existsSync(inputPath)) {
-      throw new Error(`Input file does not exist: ${inputPath}`)
-    }
-
-    // get audio duration to calculate effective processor count and split boundaries
-    const audioDuration = await getAudioDuration(inputPath)
-    const effectiveProcessors = calculateEffectiveProcessors(
-      audioDuration,
-      opts.processors,
+  const inputPath = toFilePath(prepared.source)
+  if (!inputPath) {
+    throw new Error(
+      "whisper.cpp requires a file path. The audio could not be prepared as a file.",
     )
+  }
 
-    opts.onStart?.()
-    const transcription = await timing.timeAsync("transcription", () =>
-      transcribe({
-        inputPath,
-        model: opts.model,
-        installDir,
-        modelFolder: modelDir,
-        language: opts.language ?? null,
-        tokenLevelTimestamps: opts.tokenLevelTimestamps,
-        printOutput: opts.printOutput,
-        flashAttention: opts.flashAttention,
-        suppressNonSpeechTokens: opts.suppressNonSpeechTokens,
-        processors: effectiveProcessors,
-        threads: opts.threads,
-        onProgress: opts.onProgress ?? null,
-        signal: signal ?? null,
-      }),
-    )
+  if (!existsSync(inputPath)) {
+    throw new Error(`Input file does not exist: ${inputPath}`)
+  }
 
-    const rawSegments = parseWhisperCppOutput(transcription.transcription)
+  // get audio duration to calculate effective processor count and split boundaries
+  const audioDuration = await getAudioDuration(inputPath)
+  const effectiveProcessors = calculateEffectiveProcessors(
+    audioDuration,
+    opts.processors,
+  )
 
-    // calculate split boundaries in order to correct weird timestamps
-    // in multi-processor transcription
-    const splitBoundaries =
-      effectiveProcessors > 1
-        ? calculateWhisperSplits(audioDuration, effectiveProcessors)
-        : []
+  opts.onStart?.()
+  const transcription = await timing.timeAsync("transcription", () =>
+    transcribe({
+      inputPath,
+      model: opts.model,
+      installDir,
+      modelFolder: modelDir,
+      language: opts.language ?? null,
+      tokenLevelTimestamps: opts.tokenLevelTimestamps,
+      printOutput: opts.printOutput,
+      flashAttention: opts.flashAttention,
+      suppressNonSpeechTokens: opts.suppressNonSpeechTokens,
+      processors: effectiveProcessors,
+      threads: opts.threads,
+      onProgress: opts.onProgress ?? null,
+      signal: signal ?? null,
+    }),
+  )
 
-    const timeline = extractCorrectedTimeline(rawSegments, {
-      splitBoundaries: splitBoundaries.length > 0 ? splitBoundaries : undefined,
-    })
-    const transcript = transcription.transcription
-      .map((s) => s.text)
-      .join("")
-      .trim()
+  const rawSegments = parseWhisperCppOutput(transcription.transcription)
 
-    return {
-      transcript,
-      timeline,
-      language: transcription.result.language,
-    }
-  } finally {
-    await prepared.cleanup()
+  // calculate split boundaries in order to correct weird timestamps
+  // in multi-processor transcription
+  const splitBoundaries =
+    effectiveProcessors > 1
+      ? calculateWhisperSplits(audioDuration, effectiveProcessors)
+      : []
+
+  const timeline = extractCorrectedTimeline(rawSegments, {
+    splitBoundaries: splitBoundaries.length > 0 ? splitBoundaries : undefined,
+  })
+  const transcript = transcription.transcription
+    .map((s) => s.text)
+    .join("")
+    .trim()
+
+  return {
+    transcript,
+    timeline,
+    language: transcription.result.language,
   }
 }
 

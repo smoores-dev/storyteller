@@ -237,6 +237,66 @@ export type InMemoryEpubReader = EpubReader & { readonly storage: "in-memory" }
 export class EpubVersionError extends Error {}
 export class EpubReadOnlyError extends Error {}
 
+const OPF_NAMESPACE = "http://www.idpf.org/2007/opf"
+
+function renameOpfAttributes(
+  attrs: Record<string, string>,
+  prefix: string,
+): Record<string, string> {
+  const attrPrefix = `@_${prefix}:`
+  const renamed: Record<string, string> = {}
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === `@_xmlns:${prefix}`) continue
+    if (key.startsWith(attrPrefix)) {
+      renamed[`@_opf:${key.slice(attrPrefix.length)}`] = value
+    } else {
+      renamed[key] = value
+    }
+  }
+  return renamed
+}
+
+function stripOpfPrefix(node: XmlNode, prefix: string): XmlNode {
+  if (Epub.isXmlTextNode(node)) return node
+
+  const name = Epub.getXmlElementName(node)
+  const bareName = name.startsWith(`${prefix}:`)
+    ? name.slice(prefix.length + 1)
+    : name
+
+  const element = {
+    [bareName]: Epub.getXmlChildren(node).map((child) =>
+      stripOpfPrefix(child, prefix),
+    ),
+  } as XmlElement
+  if (node[":@"]) {
+    element[":@"] = renameOpfAttributes(node[":@"], prefix)
+  }
+  return element
+}
+
+function normalizeOpfNamespacePrefixes(doc: ParsedXml): ParsedXml {
+  const root = doc.find(
+    (node): node is XmlElement =>
+      !Epub.isXmlTextNode(node) &&
+      Epub.getXmlElementName(node).endsWith(":package"),
+  )
+  if (!root) return doc
+
+  const prefix = Epub.getXmlElementName(root).slice(0, -":package".length)
+  if (root[":@"]?.[`@_xmlns:${prefix}`] !== OPF_NAMESPACE) return doc
+
+  const stripped = stripOpfPrefix(root, prefix) as XmlElement
+  stripped[":@"] = {
+    ...stripped[":@"],
+    "@_xmlns": OPF_NAMESPACE,
+    "@_xmlns:opf": OPF_NAMESPACE,
+  }
+
+  doc[doc.indexOf(root)] = stripped
+  return doc
+}
+
 /**
  * A single EPUB instance.
  *
@@ -740,7 +800,7 @@ export class Epub {
       packageDocumentString,
     ) as ParsedXml
 
-    return packageDocument
+    return normalizeOpfNamespacePrefixes(packageDocument)
   }
 
   async getPackageElement() {
@@ -3526,7 +3586,12 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       )
     }
 
-    await Epub.assertEpub3(epub)
+    try {
+      await Epub.assertEpub3(epub)
+    } catch (error) {
+      epub.discardAndClose()
+      throw error
+    }
     return epub
   }
 
@@ -3682,67 +3747,72 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       )
     }
 
-    const version = await epub.getVersion()
-    if (version.startsWith("3.")) {
-      return epub as EpubInstanceFor<A>
-    }
-
-    const tocEntries = await epub.getNcxTableOfContents()
-
-    let landmarks: Upgrade.Landmark[] = []
-
-    await epub.withPackage((pkg) => {
-      landmarks = Upgrade.extractGuideLandmarks(pkg)
-
-      Upgrade.upgradePackageMetadata(pkg)
-      Upgrade.fixFontMimeTypes(pkg)
-      Upgrade.removeGuide(pkg)
-
-      if (removeNcx) {
-        Upgrade.removeSpineTocRef(pkg)
+    try {
+      const version = await epub.getVersion()
+      if (version.startsWith("3.")) {
+        return epub as EpubInstanceFor<A>
       }
 
-      Upgrade.setPackageVersion(pkg, "3.0")
-    })
+      const tocEntries = await epub.getNcxTableOfContents()
 
-    // scan xhtml items for svg/script/mathml/switch properties
-    await Upgrade.collectManifestProperties(epub)
+      let landmarks: Upgrade.Landmark[] = []
 
-    // maybe remove ncx
-    if (removeNcx) {
-      await Upgrade.removeNcx(epub)
+      await epub.withPackage((pkg) => {
+        landmarks = Upgrade.extractGuideLandmarks(pkg)
+
+        Upgrade.upgradePackageMetadata(pkg)
+        Upgrade.fixFontMimeTypes(pkg)
+        Upgrade.removeGuide(pkg)
+
+        if (removeNcx) {
+          Upgrade.removeSpineTocRef(pkg)
+        }
+
+        Upgrade.setPackageVersion(pkg, "3.0")
+      })
+
+      // scan xhtml items for svg/script/mathml/switch properties
+      await Upgrade.collectManifestProperties(epub)
+
+      // maybe remove ncx
+      if (removeNcx) {
+        await Upgrade.removeNcx(epub)
+      }
+
+      const navHref = await Upgrade.chooseNavHref(epub)
+      const navContent = await Upgrade.buildNavDocument(
+        epub,
+        tocEntries,
+        landmarks,
+      )
+
+      await epub.addManifestItem(
+        {
+          id: "nav",
+          href: navHref,
+          mediaType: "application/xhtml+xml",
+          properties: ["nav"],
+        },
+        navContent,
+        "utf-8",
+      )
+
+      // go over each xhtml item and replace the outdated
+      // <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.1//EN' 'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'>
+      // with <!DOCTYPE html>
+      const manifest = await epub.getManifest()
+      for (const item of Object.values(manifest)) {
+        if (item.mediaType?.toLowerCase() !== "application/xhtml+xml") continue
+
+        const contents = await epub.readXhtmlItemContents(item.id)
+        await epub.writeXhtmlItemContents(item.id, contents)
+      }
+
+      return epub as EpubInstanceFor<A>
+    } catch (error) {
+      epub.discardAndClose()
+      throw error
     }
-
-    const navHref = await Upgrade.chooseNavHref(epub)
-    const navContent = await Upgrade.buildNavDocument(
-      epub,
-      tocEntries,
-      landmarks,
-    )
-
-    await epub.addManifestItem(
-      {
-        id: "nav",
-        href: navHref,
-        mediaType: "application/xhtml+xml",
-        properties: ["nav"],
-      },
-      navContent,
-      "utf-8",
-    )
-
-    // go over each xhtml item and replace the outdated
-    // <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.1//EN' 'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'>
-    // with <!DOCTYPE html>
-    const manifest = await epub.getManifest()
-    for (const item of Object.values(manifest)) {
-      if (item.mediaType?.toLowerCase() !== "application/xhtml+xml") continue
-
-      const contents = await epub.readXhtmlItemContents(item.id)
-      await epub.writeXhtmlItemContents(item.id, contents)
-    }
-
-    return epub as EpubInstanceFor<A>
   }
 }
 

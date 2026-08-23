@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-condition */
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { type FileHandle, open, stat } from "node:fs/promises"
+import { type FileHandle, open, rm, stat } from "node:fs/promises"
 
 import { fileToWav } from "../convert.ts"
 import { decodeAscii } from "../encodings/Ascii.ts"
@@ -168,9 +168,13 @@ async function decodeToChannels(
   input: string,
 ): Promise<{ rawAudio: RawAudio }> {
   const outputPath = await fileToWav(input)
-  const waveAudio = await readFileAsBinary(outputPath)
+  try {
+    const waveAudio = await readFileAsBinary(outputPath)
 
-  return decodeWaveToRawAudio(waveAudio)
+    return decodeWaveToRawAudio(waveAudio)
+  } finally {
+    await rm(outputPath, { force: true })
+  }
 }
 
 function decodeWaveToRawAudio(

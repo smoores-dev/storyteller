@@ -10,7 +10,10 @@ import { getSafeFilepathSegment } from "@/assets/paths"
 import { replaceDatabase } from "@/database/connection"
 import { createKyselyDb } from "@/database/factory"
 import type { DB } from "@/database/schema"
-import type { Settings } from "@/database/settingsTypes"
+import {
+  DEFAULT_EPUB_SUFFIX_TEMPLATE,
+  type Settings,
+} from "@/database/settingsTypes"
 
 const SCHEMA_PATH = join(cwd(), "schema.sql")
 
@@ -62,7 +65,7 @@ const DEFAULT_SETTINGS: Settings = {
   backupRetentionCount: null,
   importMode: "reference",
   epub2ImportStrategy: "backup-and-convert",
-  epub2BackupSuffix: "_epub2",
+  epub2BackupSuffix: DEFAULT_EPUB_SUFFIX_TEMPLATE,
   cleanCacheAfterReadaloud: true,
   metadataFieldOverrides: {
     cover: "merge",

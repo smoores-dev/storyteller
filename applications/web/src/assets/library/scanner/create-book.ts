@@ -1,4 +1,4 @@
-import { readdir } from "node:fs/promises"
+import { readdir, rm } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
 
 import {
@@ -22,9 +22,15 @@ import {
   createBookFromEpub,
 } from "@/database/books"
 import { addBooksToCollections } from "@/database/collections"
-import { addIgnoreRule } from "@/database/importRules"
+import {
+  addIgnoreRule,
+  removeImportBackupIgnoreRule,
+} from "@/database/importRules"
 import { getSetting } from "@/database/settings"
-import { type Epub2ImportStrategy } from "@/database/settingsTypes"
+import {
+  type Epub2ImportStrategy,
+  renderEpubSuffix,
+} from "@/database/settingsTypes"
 import { isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
@@ -36,18 +42,18 @@ export async function isReadaloudEpub(epub: EpubReader): Promise<boolean> {
 
 async function resolveEpub2Strategy(
   override: Epub2ImportStrategy | undefined,
-): Promise<{ strategy: Epub2ImportStrategy; backupSuffix: string }> {
+): Promise<{ strategy: Epub2ImportStrategy; suffixTemplate: string }> {
   if (override) {
-    // backupSuffix is irrelevant unless strategy is backup-and-convert, but
+    // the suffix is irrelevant unless the strategy writes a second file, but
     // keep the read so callers don't need to special-case it.
-    const backupSuffix = await getSetting("epub2BackupSuffix")
-    return { strategy: override, backupSuffix }
+    const suffixTemplate = await getSetting("epub2BackupSuffix")
+    return { strategy: override, suffixTemplate }
   }
-  const [strategy, backupSuffix] = await Promise.all([
+  const [strategy, suffixTemplate] = await Promise.all([
     getSetting("epub2ImportStrategy"),
     getSetting("epub2BackupSuffix"),
   ])
-  return { strategy, backupSuffix }
+  return { strategy, suffixTemplate }
 }
 
 export type OpenOrUpgradeResult = {
@@ -55,6 +61,22 @@ export type OpenOrUpgradeResult = {
   /** path where the usable epub3 file lives on disk (may differ from input
    *  when the upgrade wrote to a separate writable location) */
   effectivePath: string
+}
+
+function suffixedEpubPath(filepath: string, suffix: string): string {
+  return /\.epub$/i.test(filepath)
+    ? filepath.replace(/\.epub$/i, `${suffix}.epub`)
+    : `${filepath}${suffix}`
+}
+
+async function upgradeToPath(
+  sourcePath: string,
+  outputPath: string,
+): Promise<void> {
+  using upgraded = await Epub.upgrade(sourcePath, {
+    ...(outputPath !== sourcePath && { outputPath }),
+  })
+  await upgraded.saveAndClose()
 }
 
 /**
@@ -76,7 +98,7 @@ export async function openOrUpgradeEpub(
   } catch (error) {
     if (!isEpubVersionError(error)) throw error
 
-    const { strategy, backupSuffix } =
+    const { strategy, suffixTemplate } =
       await resolveEpub2Strategy(epub2ImportStrategy)
 
     if (strategy === "skip") throw error
@@ -84,23 +106,57 @@ export async function openOrUpgradeEpub(
     // backup-and-convert: move the source to a backup path, then upgrade from
     // backup to the original location. only valid for non-copy modes
     if (strategy === "backup-and-convert" && !upgradeTo) {
-      const backupPath = filepath.replace(/\.epub$/i, `${backupSuffix}.epub`)
+      const backupPath = suffixedEpubPath(
+        filepath,
+        renderEpubSuffix(suffixTemplate, 2),
+      )
       await addIgnoreRule(backupPath, { source: "import-backup" })
       await move(filepath, backupPath)
-      using upgraded = await Epub.upgrade(backupPath, { outputPath: filepath })
-      await upgraded.saveAndClose()
+      try {
+        await upgradeToPath(backupPath, filepath)
+      } catch (upgradeError) {
+        await rm(filepath, { force: true })
+        await move(backupPath, filepath)
+        await removeImportBackupIgnoreRule(backupPath)
+        throw upgradeError
+      }
 
       const reader = await Epub.using(MemoryAdapter).from(filepath)
       return { reader, effectivePath: filepath }
     }
 
+    if (strategy === "convert-alongside" && !upgradeTo) {
+      const convertedPath = suffixedEpubPath(
+        filepath,
+        renderEpubSuffix(suffixTemplate, 3),
+      )
+      // ignore the original file as a backup
+      await addIgnoreRule(filepath, { source: "import-backup" })
+      // once bitten twice shy
+      // this should be handled by the upgradeToPath function, but...
+      try {
+        await upgradeToPath(filepath, convertedPath)
+      } catch (upgradeError) {
+        await rm(convertedPath, { force: true })
+        await removeImportBackupIgnoreRule(filepath)
+        throw upgradeError
+      }
+
+      const reader = await Epub.using(MemoryAdapter).from(convertedPath)
+      return { reader, effectivePath: convertedPath }
+    }
+
     // "replace": upgrade in place, or write to upgradeTo when the source must
     // remain untouched (copy mode).
     const outputPath = upgradeTo ?? filepath
-    using upgraded = await Epub.upgrade(filepath, {
-      ...(upgradeTo && { outputPath: upgradeTo }),
-    })
-    await upgraded.saveAndClose()
+    try {
+      await upgradeToPath(filepath, outputPath)
+    } catch (upgradeError) {
+      if (upgradeTo) {
+        await rm(upgradeTo, { force: true })
+      }
+      throw upgradeError
+    }
 
     const reader = await Epub.using(MemoryAdapter).from(outputPath)
     return { reader, effectivePath: outputPath }

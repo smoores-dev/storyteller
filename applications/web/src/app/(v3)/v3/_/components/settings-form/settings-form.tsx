@@ -31,6 +31,7 @@ import { Spinner } from "@v3/_/components/ui/spinner"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useIsMobile } from "@v3/_/hooks/use-mobile"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
+import { applyServerErrors } from "@v3/_/lib/form-errors"
 
 import { type Invite, type Settings, type User } from "@/apiModels"
 import { useIsTauri } from "@/app/(v3)/v3/_/hooks/use-is-tauri"
@@ -187,6 +188,39 @@ function resolveFieldErrors(
   })
 }
 
+function settingsFormValues(settings: Settings) {
+  return {
+    ...settings,
+    serverIconSha256: settings.serverIconSha256 ?? null,
+    transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
+    whisperModel: settings.whisperModel ?? "tiny",
+    whisperCpuFallback: settings.whisperCpuFallback ?? null,
+    whisperServerUrl: settings.whisperServerUrl ?? "",
+    whisperServerApiKey: settings.whisperServerApiKey ?? "",
+    maxTrackLength: settings.maxTrackLength ?? 2,
+    codec: settings.codec ?? "",
+    bitrate: settings.bitrate ?? "",
+    googleCloudApiKey: settings.googleCloudApiKey ?? "",
+    azureSubscriptionKey: settings.azureSubscriptionKey ?? "",
+    azureServiceRegion: settings.azureServiceRegion ?? "",
+    amazonTranscribeRegion: settings.amazonTranscribeRegion ?? "",
+    amazonTranscribeAccessKeyId: settings.amazonTranscribeAccessKeyId ?? "",
+    amazonTranscribeSecretAccessKey:
+      settings.amazonTranscribeSecretAccessKey ?? "",
+    amazonTranscribeBucketName: settings.amazonTranscribeBucketName ?? "",
+    openAiApiKey: settings.openAiApiKey ?? "",
+    openAiOrganization: settings.openAiOrganization ?? "",
+    openAiBaseUrl: settings.openAiBaseUrl ?? "",
+    openAiModelName: settings.openAiModelName ?? "",
+    deepgramApiKey: settings.deepgramApiKey ?? "",
+    deepgramModel: settings.deepgramModel ?? "nova-3",
+    disablePasswordLogin: settings.disablePasswordLogin,
+    importRules: settings.importRules ?? [],
+    autoIgnoreRules: settings.autoIgnoreRules ?? [],
+    deleteRuleUuids: [],
+  }
+}
+
 const SETTINGS_SIDEBAR_WIDTH = 220
 
 type SidebarTabDef = NavSidebarTab<Tab>
@@ -218,33 +252,7 @@ export function SettingsForm({
 
   const form = useForm({
     resolver: zodResolver(SettingsSchema),
-    defaultValues: {
-      ...settings,
-      serverIconSha256: settings.serverIconSha256 ?? null,
-      transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
-      whisperModel: settings.whisperModel ?? "tiny",
-      whisperCpuFallback: settings.whisperCpuFallback ?? null,
-      whisperServerUrl: settings.whisperServerUrl ?? "",
-      whisperServerApiKey: settings.whisperServerApiKey ?? "",
-      maxTrackLength: settings.maxTrackLength ?? 2,
-      codec: settings.codec ?? "",
-      bitrate: settings.bitrate ?? "",
-      googleCloudApiKey: settings.googleCloudApiKey ?? "",
-      azureSubscriptionKey: settings.azureSubscriptionKey ?? "",
-      azureServiceRegion: settings.azureServiceRegion ?? "",
-      amazonTranscribeRegion: settings.amazonTranscribeRegion ?? "",
-      amazonTranscribeAccessKeyId: settings.amazonTranscribeAccessKeyId ?? "",
-      amazonTranscribeSecretAccessKey:
-        settings.amazonTranscribeSecretAccessKey ?? "",
-      amazonTranscribeBucketName: settings.amazonTranscribeBucketName ?? "",
-      openAiApiKey: settings.openAiApiKey ?? "",
-      openAiOrganization: settings.openAiOrganization ?? "",
-      openAiBaseUrl: settings.openAiBaseUrl ?? "",
-      openAiModelName: settings.openAiModelName ?? "",
-      deepgramApiKey: settings.deepgramApiKey ?? "",
-      deepgramModel: settings.deepgramModel ?? "nova-3",
-      disablePasswordLogin: settings.disablePasswordLogin,
-    },
+    defaultValues: settingsFormValues(settings),
   })
   const { handleSubmit, formState } = form
   const errorCount = Object.keys(formState.errors).length
@@ -252,18 +260,22 @@ export function SettingsForm({
 
   const onSubmit = async (data: z.output<typeof SettingsSchema>) => {
     const changed = Object.keys(dirtyFields) as (keyof Settings)[]
+
+    if (changed.length === 0) {
+      toast.success(t("settingsSavedSuccessfully"))
+      return
+    }
+
     const payload = Object.fromEntries(
       changed.map((key) => [key, data[key]]),
-    ) as Settings
+    ) as Partial<Settings>
 
     try {
-      if (changed.length > 0) {
-        await updateSettings(payload).unwrap()
-      }
-      form.reset(data)
+      const saved = await updateSettings(payload).unwrap()
+      form.reset(settingsFormValues(saved))
       toast.success(t("settingsSavedSuccessfully"))
-    } catch {
-      toast.error(t("failedToSaveSettings"))
+    } catch (error) {
+      toast.error(applyServerErrors(form, error, t("failedToSaveSettings")))
     }
   }
 

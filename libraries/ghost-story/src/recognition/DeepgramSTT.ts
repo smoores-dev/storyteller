@@ -60,7 +60,7 @@ export async function recognize(
   timing.setMetadata("conversionMode", mode)
   timing.setMetadata("conversionRequired", requiresConversion)
 
-  const uploadResult = await timing.timeAsync("conversion", () =>
+  await using uploadResult = await timing.timeAsync("conversion", () =>
     createStreamForUpload({
       source,
       targetFormat,
@@ -144,8 +144,6 @@ export async function recognize(
     )
     console.error(error)
     throw error
-  } finally {
-    await uploadResult.cleanup()
   }
 }
 

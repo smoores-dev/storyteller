@@ -95,7 +95,10 @@ function generateTable(envVars: EnvVar[]): string {
 async function main() {
   const isCheck = process.argv.includes("--check")
 
-  const docsPath = join(process.cwd(), "docs/docs/installation/self-hosting.md")
+  const docsPath = join(
+    process.cwd(),
+    "applications/docs/docs/installation/self-hosting.md",
+  )
 
   const currentContent = await readFile(docsPath, "utf-8")
 

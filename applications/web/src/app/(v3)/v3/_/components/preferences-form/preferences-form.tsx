@@ -29,6 +29,7 @@ import {
 } from "@v3/_/components/ui/page-layout"
 import { Spinner } from "@v3/_/components/ui/spinner"
 import { useIsMobile } from "@v3/_/hooks/use-mobile"
+import { applyServerErrors } from "@v3/_/lib/form-errors"
 
 import { type User } from "@/apiModels"
 import {
@@ -39,6 +40,7 @@ import {
   type PreferenceDefaults,
   type UserPreferencesForm,
   UserPreferencesFormSchema,
+  formUserPreferences,
 } from "@/database/userPreferencesTypes"
 import { usePermission } from "@/hooks/usePermission"
 import * as icon from "@/icons"
@@ -91,31 +93,31 @@ export function PreferencesForm({
   const [updateSettings, { isLoading: isSaving }] =
     useUpdateUserSettingsMutation()
 
-  const savedValues = useRef(preferences)
-
   const onSubmit = async (data: z.output<typeof UserPreferencesFormSchema>) => {
-    const changed = (Object.keys(data) as (keyof UserPreferencesForm)[]).filter(
-      (key) =>
-        JSON.stringify(data[key] ?? null) !==
-        JSON.stringify(savedValues.current[key] ?? null),
-    )
+    const changed = Object.keys(
+      form.formState.dirtyFields,
+    ) as (keyof UserPreferencesForm)[]
+
+    if (changed.length === 0) {
+      toast.success(t("savedSuccessfully"))
+      return
+    }
+
     const payload = Object.fromEntries(
       changed.map((key) => [key, data[key]]),
     ) as Partial<UserPreferencesForm>
 
     try {
-      if (changed.length > 0) {
-        await updateSettings(payload).unwrap()
-      }
+      const saved = await updateSettings(payload).unwrap()
 
       if (changed.includes("locale") && data.locale) {
         await changeLocaleAction(data.locale as Locale)
       }
 
-      savedValues.current = data
+      form.reset(formUserPreferences(saved))
       toast.success(t("savedSuccessfully"))
-    } catch {
-      toast.error(t("failedToSave"))
+    } catch (error) {
+      toast.error(applyServerErrors(form, error, t("failedToSave")))
     }
   }
 

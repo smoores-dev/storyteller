@@ -37,38 +37,34 @@ export async function recognize(
   const doPrepare = () =>
     prepareWavForService(source, { sampleRate: 16000, channels: 1 })
 
-  const prepared = await timing.timeAsync("conversion", doPrepare)
+  await using prepared = await timing.timeAsync("conversion", doPrepare)
 
-  try {
-    const doRecognition = () =>
-      runRecognition(
-        prepared.source,
-        options.subscriptionKey,
-        options.serviceRegion,
-        languageCode,
-        options.profanity ?? SpeechSDK.ProfanityOption.Raw,
-      )
+  const doRecognition = () =>
+    runRecognition(
+      prepared.source,
+      options.subscriptionKey,
+      options.serviceRegion,
+      languageCode,
+      options.profanity ?? SpeechSDK.ProfanityOption.Raw,
+    )
 
-    const result = await timing.timeAsync("upload", doRecognition)
+  const result = await timing.timeAsync("upload", doRecognition)
 
-    const transcript = result.text
-    const resultObject = JSON.parse(result.json) as {
-      NBest: { Words: { Word: string; Offset: number; Duration: number }[] }[]
-    }
-    const bestResult = resultObject.NBest[0]
-
-    const timeline: Timeline = []
-    for (const wordEntry of bestResult?.Words ?? []) {
-      const text = wordEntry.Word
-      const startTime = wordEntry.Offset / 10000000
-      const endTime = (wordEntry.Offset + wordEntry.Duration) / 10000000
-      timeline.push({ type: "word", text, startTime, endTime })
-    }
-
-    return { transcript, timeline }
-  } finally {
-    await prepared.cleanup()
+  const transcript = result.text
+  const resultObject = JSON.parse(result.json) as {
+    NBest: { Words: { Word: string; Offset: number; Duration: number }[] }[]
   }
+  const bestResult = resultObject.NBest[0]
+
+  const timeline: Timeline = []
+  for (const wordEntry of bestResult?.Words ?? []) {
+    const text = wordEntry.Word
+    const startTime = wordEntry.Offset / 10000000
+    const endTime = (wordEntry.Offset + wordEntry.Duration) / 10000000
+    timeline.push({ type: "word", text, startTime, endTime })
+  }
+
+  return { transcript, timeline }
 }
 
 async function runRecognition(

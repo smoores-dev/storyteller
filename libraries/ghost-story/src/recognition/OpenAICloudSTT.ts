@@ -77,7 +77,7 @@ export async function recognize(
     ? input
     : normalizeToAudioSource(input, opts.inputFormat)
 
-  const prepared = await timing.timeAsync("conversion", () =>
+  await using prepared = await timing.timeAsync("conversion", () =>
     prepareForService(source, { service: SERVICE_ID, preferFile: true }),
   )
 
@@ -85,46 +85,42 @@ export async function recognize(
   timing.setMetadata("conversionRequired", conversionOccurred)
   timing.setMetadata("targetFormat", prepared.source.format)
 
-  try {
-    const { default: OpenAI } = await import("openai")
-    const openai = new OpenAI(opts)
+  const { default: OpenAI } = await import("openai")
+  const openai = new OpenAI(opts)
 
-    const filePath = toFilePath(prepared.source)
-    if (!filePath) {
-      throw new Error(
-        "OpenAI Cloud STT requires a file path. The audio could not be prepared as a file.",
-      )
-    }
-
-    const file = createReadStream(filePath)
-    const timestamp_granularities: ("word" | "segment")[] | undefined =
-      opts.requestWordTimestamps ? ["word", "segment"] : undefined
-
-    const response = await timing.timeAsync("upload", () =>
-      openai.audio.transcriptions.create({
-        file,
-        model: opts.model,
-        language: languageCode,
-        prompt: opts.prompt,
-        response_format: "verbose_json",
-        temperature: opts.temperature,
-        timestamp_granularities,
-      } as TranscriptionCreateParamsNonStreaming),
+  const filePath = toFilePath(prepared.source)
+  if (!filePath) {
+    throw new Error(
+      "OpenAI Cloud STT requires a file path. The audio could not be prepared as a file.",
     )
-
-    const verboseResponse = response as unknown as VerboseResponse
-
-    const transcript = verboseResponse.text.trim()
-    const timeline = extractTimeline(verboseResponse)
-
-    if (!timeline) {
-      throw new Error("Failed to extract timeline from OpenAI Cloud response")
-    }
-
-    return { transcript, timeline }
-  } finally {
-    await prepared.cleanup()
   }
+
+  const file = createReadStream(filePath)
+  const timestamp_granularities: ("word" | "segment")[] | undefined =
+    opts.requestWordTimestamps ? ["word", "segment"] : undefined
+
+  const response = await timing.timeAsync("upload", () =>
+    openai.audio.transcriptions.create({
+      file,
+      model: opts.model,
+      language: languageCode,
+      prompt: opts.prompt,
+      response_format: "verbose_json",
+      temperature: opts.temperature,
+      timestamp_granularities,
+    } as TranscriptionCreateParamsNonStreaming),
+  )
+
+  const verboseResponse = response as unknown as VerboseResponse
+
+  const transcript = verboseResponse.text.trim()
+  const timeline = extractTimeline(verboseResponse)
+
+  if (!timeline) {
+    throw new Error("Failed to extract timeline from OpenAI Cloud response")
+  }
+
+  return { transcript, timeline }
 }
 
 function extractTimeline(response: VerboseResponse): Timeline | undefined {
