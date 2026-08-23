@@ -22,13 +22,38 @@ public struct RelocatedMessage: Codable {
 /// Sent from JS when book structure is ready after opening a book
 public struct BookStructureReadyMessage: Codable {
     public let sections: [SectionInfo]
+    public let isRTL: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case sections
+        case isRTL = "isRtl"
+    }
 }
 
 /// Sent when foliate detects a user gesture that flips a page
 public struct PageFlippedMessage: Codable {
     public let direction: String
     public let fromPage: Int?
+    public let toPage: Int?
     public let delta: Int?
+}
+
+/// Sent after JS accepts or rejects a Swift-owned page-turn command.
+/// A completed command has already emitted its final Relocated message.
+public struct PageTurnSettledMessage: Codable {
+    public enum Status: String, Codable {
+        case completed
+        case interrupted
+        case rejected
+    }
+
+    public let commandID: String
+    public let status: Status
+
+    enum CodingKeys: String, CodingKey {
+        case commandID = "commandId"
+        case status
+    }
 }
 
 /// Sent when user taps to toggle overlay visibility (iOS only)

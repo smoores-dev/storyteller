@@ -406,6 +406,7 @@ private func makeWebViewConfiguration2(
     contentController.add(coordinator, name: "BookStructureReady")
     contentController.add(coordinator, name: "Relocated")
     contentController.add(coordinator, name: "PageFlipped")
+    contentController.add(coordinator, name: "PageTurnSettled")
     contentController.add(coordinator, name: "OverlayToggled")
     contentController.add(coordinator, name: "MarginClickNav")
     contentController.add(coordinator, name: "SentenceSkip")
@@ -570,6 +571,8 @@ private struct WebViewRepresentable2: PlatformViewRepresentable {
 
         #if os(macOS)
         let wkWebView = HighlightableWebView(frame: .zero, configuration: config)
+        wkWebView.allowsMagnification = false
+        wkWebView.magnification = 1
         wkWebView.wantsLayer = true
         wkWebView.layer?.backgroundColor = .clear
         #else
@@ -583,6 +586,7 @@ private struct WebViewRepresentable2: PlatformViewRepresentable {
         // repaginates, and the intentional full-bleed bottom (no overlay items)
         // would lose the home-indicator strip.
         wkWebView.scrollView.contentInsetAdjustmentBehavior = .never
+        wkWebView.scrollView.pinchGestureRecognizer?.isEnabled = false
         #endif
 
         wkWebView.navigationDelegate = context.coordinator

@@ -72,6 +72,7 @@ public final class ReaderStyleManager {
             _ = settingsVM.customCSS
             _ = settingsVM.singleColumnMode
             _ = settingsVM.scrollingMode
+            _ = settingsVM.disableReaderAnimations
             _ = settingsVM.enableMarginClickNavigation
             _ = settingsVM.userHighlightMode
             _ = settingsVM.readaloudHighlightMode
@@ -148,6 +149,7 @@ public final class ReaderStyleManager {
             customCSS: effectiveCustomCSS.isEmpty ? nil : effectiveCustomCSS,
             singleColumnMode: settingsVM.singleColumnMode,
             scrollingMode: settingsVM.scrollingMode,
+            disableReaderAnimations: settingsVM.disableReaderAnimations,
             hasAudioNarration: hasAudioNarration,
             enableMarginClickNavigation: settingsVM.enableMarginClickNavigation,
             userHighlightMode: settingsVM.userHighlightMode,

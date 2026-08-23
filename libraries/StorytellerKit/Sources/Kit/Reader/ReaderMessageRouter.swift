@@ -62,6 +62,11 @@ public final class ReaderMessageRouter {
                     let msg = try decoder.decode(PageFlippedMessage.self, from: data)
                     bridge.sendSwiftPageFlipped(msg)
 
+                case "PageTurnSettled":
+                    let data = try JSONSerialization.data(withJSONObject: body)
+                    let msg = try decoder.decode(PageTurnSettledMessage.self, from: data)
+                    bridge.sendSwiftPageTurnSettled(msg)
+
                 case "OverlayToggled":
                     let data = try JSONSerialization.data(withJSONObject: body)
                     let msg = try decoder.decode(OverlayToggledMessage.self, from: data)

@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct EbookPlayerSettings: View {
     @Bindable var settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     @State private var fontSizeInput: String = "20"
     @State private var customFamilies: [CustomFontFamily] = []
@@ -221,6 +222,16 @@ struct EbookPlayerSettings: View {
                     settingsVM.save()
                 }
 
+            Toggle(
+                settingsVM.scrollingMode
+                    ? "Disable scroll animation" : "Disable page turn animation",
+                isOn: disableReaderAnimationsBinding,
+            )
+                .disabled(systemReduceMotion)
+                .onChange(of: settingsVM.disableReaderAnimations) { _, _ in
+                    settingsVM.save()
+                }
+
             Toggle("Single Column", isOn: singleColumnBinding)
                 .onChange(of: settingsVM.singleColumnMode) { _, _ in
                     settingsVM.save()
@@ -236,7 +247,8 @@ struct EbookPlayerSettings: View {
         } footer: {
             Text(
                 "Scrolling Mode reads the book as one continuous scroll instead of "
-                    + "pages, always in a single column. Single Column keeps one column "
+                    + "pages, always in a single column. The animation option controls "
+                    + "page turns or scrolling within the reader. Single Column keeps one column "
                     + "of text on screens wide enough for two. Margin Tap turns the page "
                     + "when you tap near the left or right edge of the screen."
             )
@@ -293,9 +305,17 @@ struct EbookPlayerSettings: View {
         settingsVM.textAlignment = kDefaultTextAlignment
         settingsVM.enableMarginClickNavigation = kDefaultEnableMarginClickNavigation
         settingsVM.scrollingMode = kDefaultScrollingMode
+        settingsVM.disableReaderAnimations = kDefaultDisableReaderAnimations
         settingsVM.singleColumnMode = kDefaultSingleColumnMode
         fontSizeInput = String(Int(kDefaultFontSize))
         settingsVM.save()
+    }
+
+    private var disableReaderAnimationsBinding: Binding<Bool> {
+        Binding(
+            get: { systemReduceMotion || settingsVM.disableReaderAnimations },
+            set: { settingsVM.disableReaderAnimations = $0 },
+        )
     }
 
     private func isCustomFont(_ fontFamily: String) -> Bool {

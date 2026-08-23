@@ -1,5 +1,6 @@
 package dev.smoores.storyteller.ui
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -121,6 +122,7 @@ internal fun ReaderScreen(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
     val eink = LocalEink.current
+    val systemReduceMotion = !ValueAnimator.areAnimatorsEnabled()
 
     val webView = remember(book.id, mode) {
         createReaderWebView(UiScale.unscaledContext(context), readerMessageFromJS)
@@ -449,8 +451,16 @@ internal fun ReaderScreen(
 
         AnimatedVisibility(
             visible = chromeVisible,
-            enter = if (eink.reduceAnimations) EnterTransition.None else fadeIn(),
-            exit = if (eink.reduceAnimations) ExitTransition.None else fadeOut(),
+            enter = if (systemReduceMotion) {
+                EnterTransition.None
+            } else {
+                fadeIn()
+            },
+            exit = if (systemReduceMotion) {
+                ExitTransition.None
+            } else {
+                fadeOut()
+            },
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
             ReaderMenuBar(
@@ -1086,6 +1096,9 @@ private fun createReaderWebView(
         settings.javaScriptEnabled = true
         settings.allowFileAccess = false
         settings.allowContentAccess = false
+        settings.setSupportZoom(false)
+        settings.builtInZoomControls = false
+        settings.displayZoomControls = false
         setBackgroundColor(Color.TRANSPARENT)
         webViewClient = ReaderWebViewClient(assetLoader)
         addJavascriptInterface(

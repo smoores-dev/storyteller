@@ -745,6 +745,7 @@ class StorytellerBridgeClient(context: Context) {
             textAlignment = obj.optString("textAlignment", defaults.textAlignment),
             singleColumnMode = obj.optBoolean("singleColumnMode", defaults.singleColumnMode),
             scrollingMode = obj.optBoolean("scrollingMode", defaults.scrollingMode),
+            disableReaderAnimations = obj.optBoolean("disableReaderAnimations", defaults.disableReaderAnimations),
             enableMarginClickNavigation = obj.optBoolean(
                 "enableMarginClickNavigation",
                 defaults.enableMarginClickNavigation,

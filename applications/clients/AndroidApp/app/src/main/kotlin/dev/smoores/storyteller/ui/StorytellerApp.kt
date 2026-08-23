@@ -121,7 +121,6 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
     val einkUiState = remember(einkOptions) {
         EinkUiState(
             optimizeRefresh = EinkDisplay.supportsRefreshControl && einkOptions.optimizeRefresh,
-            reduceAnimations = EinkDisplay.isBoox && einkOptions.reduceAnimations,
         )
     }
     val displayStore = remember { DisplayOptionsStore(appContext) }

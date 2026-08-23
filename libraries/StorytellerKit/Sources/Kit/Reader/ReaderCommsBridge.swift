@@ -21,6 +21,9 @@ public final class ReaderCommsBridge {
     /// Notifies when user swipe gesture flips a page (iOS touch swipe detected by JS)
     public var onPageFlipped: ((PageFlippedMessage) -> Void)?
 
+    /// Notifies when a correlated Swift-owned page turn settles or is rejected
+    public var onPageTurnSettled: ((PageTurnSettledMessage) -> Void)?
+
     /// Notifies when user taps to toggle overlay (iOS only)
     public var onOverlayToggled: (() -> Void)?
 
@@ -104,6 +107,14 @@ public final class ReaderCommsBridge {
         onPageFlipped?(message)
     }
 
+    /// JS settled a page-turn command previously issued by Swift
+    public func sendSwiftPageTurnSettled(_ message: PageTurnSettledMessage) {
+        debugLog(
+            "[ReaderCommsBridge] sendSwiftPageTurnSettled - command: \(message.commandID), status: \(message.status.rawValue)"
+        )
+        onPageTurnSettled?(message)
+    }
+
     /// JS detected a user tap to toggle overlay visibility
     public func sendSwiftOverlayToggled(_: OverlayToggledMessage) {
         debugLog("[ReaderCommsBridge] sendSwiftOverlayToggled")
@@ -146,22 +157,57 @@ public final class ReaderCommsBridge {
     }
 
     public func sendJsGoLeftCommand() async throws {
+        try await sendJsGoLeftCommand(commandID: nil)
+    }
+
+    func sendJsGoLeftCommand(commandID: String?) async throws {
         guard let js else {
             throw ReaderCommsBridgeError.jsNotAvailable
         }
 
-        debugLog("[ReaderCommsBridge] sendJsGoLeftCommand()")
-        _ = try await js.evaluate("window.foliateManager.goLeft()")
+        debugLog(
+            "[ReaderCommsBridge] sendJsGoLeftCommand(commandID: \(commandID ?? "none"))"
+        )
+        let command = if let commandID {
+            "window.foliateManager.goLeft(true, \(try Self.jsStringLiteral(commandID)))"
+        } else {
+            "window.foliateManager.goLeft()"
+        }
+        _ = try await js.evaluate(command)
     }
 
     /// Swift commands JS to navigate right (next page)
     public func sendJsGoRightCommand() async throws {
+        try await sendJsGoRightCommand(animated: true)
+    }
+
+    func sendJsGoRightCommand(animated: Bool, commandID: String? = nil) async throws {
         guard let js else {
             throw ReaderCommsBridgeError.jsNotAvailable
         }
 
-        debugLog("[ReaderCommsBridge] sendJsGoRightCommand()")
-        _ = try await js.evaluate("window.foliateManager.goRight()")
+        debugLog(
+            "[ReaderCommsBridge] sendJsGoRightCommand(animated: \(animated), commandID: \(commandID ?? "none"))"
+        )
+        let command: String
+        if let commandID {
+            command =
+                "window.foliateManager.goRight(\(animated), \(try Self.jsStringLiteral(commandID)))"
+        } else {
+            command =
+                animated
+                ? "window.foliateManager.goRight()"
+                : "window.foliateManager.goRight(false)"
+        }
+        _ = try await js.evaluate(command)
+    }
+
+    private static func jsStringLiteral(_ value: String) throws -> String {
+        let data = try JSONEncoder().encode(value)
+        guard let literal = String(data: data, encoding: .utf8) else {
+            throw ReaderCommsBridgeError.jsNotAvailable
+        }
+        return literal
     }
 
     /// Swift commands JS to navigate to a specific href (with optional fragment)
@@ -369,6 +415,7 @@ public final class ReaderCommsBridge {
         customCSS: String?,
         singleColumnMode: Bool,
         scrollingMode: Bool,
+        disableReaderAnimations: Bool,
         hasAudioNarration: Bool,
         enableMarginClickNavigation: Bool,
         userHighlightMode: String,
@@ -401,6 +448,7 @@ public final class ReaderCommsBridge {
             "highlightThickness": highlightThickness,
             "singleColumnMode": singleColumnMode,
             "scrollingMode": scrollingMode,
+            "disableReaderAnimations": disableReaderAnimations,
             "hasAudioNarration": hasAudioNarration,
             "enableMarginClickNavigation": enableMarginClickNavigation,
             "userHighlightMode": userHighlightMode,

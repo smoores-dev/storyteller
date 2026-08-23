@@ -29,6 +29,7 @@ public final class SettingsViewModel {
     public var enableMarginClickNavigation: Bool = kDefaultEnableMarginClickNavigation
     public var singleColumnMode: Bool = kDefaultSingleColumnMode
     public var scrollingMode: Bool = kDefaultScrollingMode
+    public var disableReaderAnimations: Bool = kDefaultDisableReaderAnimations
 
     public var defaultPlaybackSpeed: Double = kDefaultPlaybackSpeed
     public var defaultVolume: Double = kDefaultVolume
@@ -230,6 +231,7 @@ public final class SettingsViewModel {
         enableMarginClickNavigation = config.reading.enableMarginClickNavigation
         singleColumnMode = config.reading.singleColumnMode
         scrollingMode = config.reading.scrollingMode
+        disableReaderAnimations = config.reading.disableReaderAnimations
 
         defaultPlaybackSpeed = config.playback.defaultPlaybackSpeed
         defaultVolume = config.playback.defaultVolume
@@ -546,6 +548,7 @@ public final class SettingsViewModel {
             enableMarginClickNavigation: enableMarginClickNavigation,
             singleColumnMode: singleColumnMode,
             scrollingMode: scrollingMode,
+            disableReaderAnimations: disableReaderAnimations,
             defaultPlaybackSpeed: defaultPlaybackSpeed,
             defaultVolume: defaultVolume,
             statsExpanded: statsExpanded,

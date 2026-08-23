@@ -465,6 +465,7 @@ data class ReaderDisplaySettings(
     val textAlignment: String = "justify",
     val singleColumnMode: Boolean = true,
     val scrollingMode: Boolean = false,
+    val disableReaderAnimations: Boolean = false,
     val enableMarginClickNavigation: Boolean = true,
     val lockViewToAudio: Boolean = true,
     val readaloudDimOthers: Boolean = false,
@@ -485,6 +486,7 @@ data class ReaderDisplaySettings(
         put("textAlignment", textAlignment)
         put("singleColumnMode", singleColumnMode)
         put("scrollingMode", scrollingMode)
+        put("disableReaderAnimations", disableReaderAnimations)
         put("enableMarginClickNavigation", enableMarginClickNavigation)
         put("lockViewToAudio", lockViewToAudio)
         put("readaloudDimOthers", readaloudDimOthers)

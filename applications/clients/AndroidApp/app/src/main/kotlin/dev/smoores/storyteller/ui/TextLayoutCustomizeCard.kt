@@ -1,5 +1,6 @@
 package dev.smoores.storyteller.ui
 
+import android.animation.ValueAnimator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -91,6 +92,8 @@ internal fun TextLayoutCustomizeCard(
     activeThemeBackground: Color,
     activeThemeForeground: Color,
 ) {
+    val systemReduceMotion = !ValueAnimator.areAnimatorsEnabled()
+
     CustomizeCardContainer(title = "Text & Layout", onDone = onDone, onReset = onReset) {
         Column {
             CustomizePreviewLabel()
@@ -230,6 +233,16 @@ internal fun TextLayoutCustomizeCard(
                     onToggle = { onCommit(settings.copy(scrollingMode = it)) },
                 )
                 SettingSwitch(
+                    label = if (settings.scrollingMode) {
+                        "Disable scroll animation"
+                    } else {
+                        "Disable page turn animation"
+                    },
+                    checked = systemReduceMotion || settings.disableReaderAnimations,
+                    enabled = !systemReduceMotion,
+                    onToggle = { onCommit(settings.copy(disableReaderAnimations = it)) },
+                )
+                SettingSwitch(
                     label = "Single Column",
                     checked = settings.singleColumnMode || settings.scrollingMode,
                     enabled = !settings.scrollingMode,
@@ -242,7 +255,8 @@ internal fun TextLayoutCustomizeCard(
                 )
                 SectionFooterText(
                     "Scrolling Mode reads the book as one continuous scroll instead of " +
-                        "pages, always in a single column. Single Column keeps one column " +
+                        "pages, always in a single column. The animation option controls " +
+                        "page turns or scrolling within the reader. Single Column keeps one column " +
                         "of text on screens wide enough for two. Margin Tap turns the page " +
                         "when you tap near the left or right edge of the screen.",
                 )

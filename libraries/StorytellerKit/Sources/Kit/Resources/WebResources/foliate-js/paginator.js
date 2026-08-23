@@ -1,5 +1,252 @@
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+class PageTurnSelectionGuard {
+  static #attribute = "data-foliate-suppress-selection"
+  static #styles = `
+:root[data-foliate-suppress-selection],
+:root[data-foliate-suppress-selection] * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}`
+
+  #active = false
+  #document = null
+  #pointerDocument = null
+  #touchActive = false
+  #isSettled
+
+  constructor(isSettled) {
+    this.#isSettled = isSettled
+  }
+  attach(document) {
+    this.#document = document
+    // Pointer selection belongs to the replaced document. Touch state belongs
+    // to the paginator and may remain active across a chapter replacement.
+    this.#pointerDocument = null
+
+    const style = document.createElement("style")
+    style.textContent = PageTurnSelectionGuard.#styles
+    document.head?.append(style)
+    this.#syncDocument()
+
+    document.addEventListener(
+      "selectstart",
+      (event) => {
+        if (this.#active && document === this.#document) event.preventDefault()
+      },
+      true,
+    )
+    document.addEventListener(
+      "selectionchange",
+      () => {
+        if (this.#active && document === this.#document) this.#clearSelection()
+      },
+      true,
+    )
+    document.addEventListener(
+      "pointerdown",
+      () => {
+        if (document === this.#document) this.#pointerDocument = document
+      },
+      true,
+    )
+    const endPointer = () => {
+      if (this.#pointerDocument !== document) return
+      this.#pointerDocument = null
+      this.releaseIfSettled()
+    }
+    document.addEventListener("pointerup", endPointer, true)
+    document.addEventListener("pointercancel", endPointer, true)
+  }
+  hasActivePointer(document) {
+    return this.#pointerDocument === document
+  }
+  get touchActive() {
+    return this.#touchActive
+  }
+  startTouch() {
+    this.#touchActive = true
+  }
+  endTouch(event) {
+    this.#touchActive = Boolean(event.touches?.length)
+    this.releaseIfSettled()
+  }
+  suppress() {
+    this.#active = true
+    this.#syncDocument()
+    this.#clearSelection()
+  }
+  releaseIfSettled() {
+    if (
+      !this.#active ||
+      !this.#isSettled() ||
+      this.#pointerDocument ||
+      this.#touchActive
+    )
+      return
+    this.#active = false
+    this.#syncDocument()
+  }
+  #syncDocument() {
+    this.#document?.documentElement.toggleAttribute(
+      PageTurnSelectionGuard.#attribute,
+      this.#active,
+    )
+  }
+  #clearSelection() {
+    const selection = this.#document?.getSelection()
+    if (selection?.rangeCount) selection.removeAllRanges()
+  }
+}
+
+class CommittedPageTurnInputGuard {
+  static #attribute = "data-committed-page-turn"
+
+  #host
+  #onBlockedInteraction
+  #requested = false
+  #pointers = new Set()
+  #touches = 0
+  #wheel = false
+  #releaseWheelAfterIdle
+
+  constructor({ host, blocker, onBlockedInteraction }) {
+    this.#host = host
+    this.#onBlockedInteraction = onBlockedInteraction
+    this.#releaseWheelAfterIdle = debounce(() => {
+      this.#wheel = false
+      this.#notifyBlockedInteraction()
+      this.#sync()
+    }, 150)
+
+    blocker.addEventListener("pointerdown", (event) => {
+      this.#pointers.add(event.pointerId)
+      try {
+        blocker.setPointerCapture?.(event.pointerId)
+      } catch {}
+      this.#consume(event)
+      this.#notifyBlockedInteraction()
+    })
+    const endPointer = (event) => {
+      this.#pointers.delete(event.pointerId)
+      this.#consume(event)
+      this.#notifyBlockedInteraction()
+      this.#sync()
+    }
+    blocker.addEventListener("pointerup", endPointer)
+    blocker.addEventListener("pointercancel", endPointer)
+    blocker.addEventListener("lostpointercapture", (event) => {
+      this.#pointers.delete(event.pointerId)
+      this.#notifyBlockedInteraction()
+      this.#sync()
+    })
+    blocker.addEventListener("pointermove", (event) => {
+      this.#consume(event)
+      this.#notifyBlockedInteraction()
+    })
+    for (const type of [
+      "click",
+      "dblclick",
+      "contextmenu",
+      "dragstart",
+      "selectstart",
+    ])
+      blocker.addEventListener(type, (event) => this.#consume(event))
+    for (const type of ["touchstart", "touchmove"])
+      blocker.addEventListener(
+        type,
+        (event) => {
+          this.#touches = event.touches.length
+          this.#consume(event)
+          this.#notifyBlockedInteraction()
+        },
+        { passive: false },
+      )
+    for (const type of ["touchend", "touchcancel"])
+      blocker.addEventListener(
+        type,
+        (event) => {
+          this.#touches = event.touches.length
+          this.#consume(event)
+          this.#notifyBlockedInteraction()
+          this.#sync()
+        },
+        { passive: false },
+      )
+    blocker.addEventListener(
+      "wheel",
+      (event) => {
+        this.#wheel = true
+        this.#releaseWheelAfterIdle()
+        this.#consume(event)
+        this.#notifyBlockedInteraction()
+      },
+      { passive: false },
+    )
+  }
+  get active() {
+    return this.#host.hasAttribute(CommittedPageTurnInputGuard.#attribute)
+  }
+  get requested() {
+    return this.#requested
+  }
+  setRequested(requested) {
+    this.#requested = requested
+    this.#sync()
+  }
+  #shouldBlock() {
+    return (
+      this.#requested ||
+      this.#pointers.size > 0 ||
+      this.#touches > 0 ||
+      this.#wheel
+    )
+  }
+  #consume(event) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+  }
+  #notifyBlockedInteraction() {
+    this.#onBlockedInteraction()
+  }
+  #sync() {
+    this.#host.toggleAttribute(
+      CommittedPageTurnInputGuard.#attribute,
+      this.#shouldBlock(),
+    )
+  }
+}
+
+class CssSnapTrack {
+  #element
+  #signature = null
+
+  constructor(element) {
+    this.#element = element
+  }
+  invalidate() {
+    this.#signature = null
+  }
+  update({ vertical, pages, pageSize, canPrev, canNext }) {
+    const signature = `${vertical}:${pages}:${pageSize}:${canPrev}:${canNext}`
+    if (signature === this.#signature) return
+
+    this.#signature = signature
+    const extent = pages * pageSize
+    this.#element.style.setProperty("--snap-page-size", `${pageSize}px`)
+    this.#element.style.width = vertical ? "100%" : `${extent}px`
+    this.#element.style.height = vertical ? `${extent}px` : "100%"
+
+    const markers = Array.from({ length: pages }, (_, page) => {
+      const marker = document.createElement("div")
+      if ((page === 0 && !canPrev) || (page === pages - 1 && !canNext))
+        marker.className = "disabled"
+      return marker
+    })
+    this.#element.replaceChildren(...markers)
+  }
+}
+
 const debounce = (f, wait, immediate) => {
   let timeout
   return (...args) => {
@@ -13,29 +260,6 @@ const debounce = (f, wait, immediate) => {
     if (callNow) f(...args)
   }
 }
-
-const lerp = (min, max, x) => x * (max - min) + min
-const easeOutQuad = (x) => 1 - (1 - x) * (1 - x)
-const animate = (a, b, duration, ease, render) =>
-  new Promise((resolve) => {
-    let start
-    const step = (now) => {
-      if (document.hidden) {
-        render(lerp(a, b, 1))
-        return resolve()
-      }
-      start ??= now
-      const fraction = Math.min(1, (now - start) / duration)
-      render(lerp(a, b, ease(fraction)))
-      if (fraction < 1) requestAnimationFrame(step)
-      else resolve()
-    }
-    if (document.hidden) {
-      render(lerp(a, b, 1))
-      return resolve()
-    }
-    requestAnimationFrame(step)
-  })
 
 // collapsed range doesn't return client rects sometimes (or always?)
 // try make get a non-collapsed range or element
@@ -493,6 +717,8 @@ export class Paginator extends HTMLElement {
   #top
   #background
   #container
+  #committedPageTurnInput
+  #cssSnapTrack
   #header
   #footer
   #view
@@ -508,12 +734,16 @@ export class Paginator extends HTMLElement {
   #styleMap = new WeakMap()
   #mediaQuery = matchMedia("(prefers-color-scheme: dark)")
   #mediaQueryListener
-  #scrollBounds
-  #touchState
+  #touchPinched = false
   #touchScrolled
+  #viewport = new Paginator.#ViewportOperations(this)
+  #userChapterTransition = null
   #lastVisibleRange
-  #gestureInProgress = false
-  #lastPage = null
+  #scrolledFlowRestoreFrame = null
+  #pageTurnSelection = new PageTurnSelectionGuard(
+    () =>
+      !this.#locked && !this.#viewport.active && !this.#userChapterTransition,
+  )
   constructor() {
     super()
     this.#root.innerHTML = `<style>
@@ -572,12 +802,61 @@ export class Paginator extends HTMLElement {
         #container {
             grid-column: 2 / 5;
             grid-row: 2;
+            position: relative;
             overflow: hidden;
         }
         :host([flow="scrolled"]) #container {
             grid-column: 1 / -1;
             grid-row: 1 / -1;
             overflow: auto;
+        }
+        :host(:not([flow="scrolled"])) #container.css-snap {
+            overflow: auto;
+            overscroll-behavior: none;
+            scrollbar-width: none;
+        }
+        #page-turn-blocker {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 2147483647;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        :host([data-committed-page-turn]) #page-turn-blocker {
+            display: block;
+        }
+        :host(:not([flow="scrolled"])) #container.css-snap::-webkit-scrollbar {
+            display: none;
+        }
+        #snap-track {
+            display: none;
+            position: absolute;
+            inset-block-start: 0;
+            inset-inline-start: 0;
+            pointer-events: none;
+            opacity: 0;
+        }
+        #container.css-snap {
+            scroll-snap-type: x mandatory;
+        }
+        #container.css-snap.vertical {
+            scroll-snap-type: y mandatory;
+        }
+        #container.css-snap #snap-track {
+            display: flex;
+        }
+        #container.css-snap.vertical #snap-track {
+            flex-direction: column;
+        }
+        #snap-track > div {
+            flex: 0 0 var(--snap-page-size);
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+        #snap-track > div.disabled {
+            scroll-snap-align: none;
         }
         #header {
             grid-column: 3 / 4;
@@ -615,39 +894,62 @@ export class Paginator extends HTMLElement {
         <div id="top">
             <div id="background" part="filter"></div>
             <div id="header"></div>
-            <div id="container"></div>
+            <div id="container">
+                <div id="snap-track" aria-hidden="true"></div>
+            </div>
             <div id="footer"></div>
+            <div id="page-turn-blocker" aria-hidden="true"></div>
         </div>
         `
 
     this.#top = this.#root.getElementById("top")
     this.#background = this.#root.getElementById("background")
     this.#container = this.#root.getElementById("container")
+    this.#cssSnapTrack = new CssSnapTrack(
+      this.#root.getElementById("snap-track"),
+    )
     this.#header = this.#root.getElementById("header")
     this.#footer = this.#root.getElementById("footer")
 
+    this.#committedPageTurnInput = new CommittedPageTurnInputGuard({
+      host: this,
+      blocker: this.#root.getElementById("page-turn-blocker"),
+      onBlockedInteraction: () => this.#viewport.finishCommittedPageTurn(),
+    })
+
     this.#observer.observe(this.#container)
-    this.#container.addEventListener("scroll", () =>
-      this.dispatchEvent(new Event("scroll")),
+    this.#container.addEventListener("scroll", () => {
+      this.dispatchEvent(new Event("scroll"))
+      this.#viewport.handleScroll()
+    })
+    this.#container.addEventListener("scrollend", () =>
+      this.#viewport.handleScrollEnd(),
     )
     this.#container.addEventListener(
       "scroll",
       debounce(() => {
         if (this.scrolled) {
-          if (this.#justAnchored) this.#justAnchored = false
-          else this.#afterScroll("scroll")
+          this.#viewport.settleContinuousScroll()
         }
       }, 250),
     )
 
-    const opts = { passive: false }
+    const opts = { passive: true }
     this.addEventListener("touchstart", this.#onTouchStart.bind(this), opts)
     this.addEventListener("touchmove", this.#onTouchMove.bind(this), opts)
     this.addEventListener("touchend", this.#onTouchEnd.bind(this))
+    this.addEventListener("touchcancel", this.#onTouchEnd.bind(this))
+    this.addEventListener("wheel", this.#onWheel.bind(this), {
+      passive: true,
+    })
     this.addEventListener("load", ({ detail: { doc } }) => {
       doc.addEventListener("touchstart", this.#onTouchStart.bind(this), opts)
       doc.addEventListener("touchmove", this.#onTouchMove.bind(this), opts)
       doc.addEventListener("touchend", this.#onTouchEnd.bind(this))
+      doc.addEventListener("touchcancel", this.#onTouchEnd.bind(this))
+      doc.addEventListener("wheel", this.#onWheel.bind(this), {
+        passive: true,
+      })
     })
 
     this.addEventListener("relocate", ({ detail }) => {
@@ -667,17 +969,26 @@ export class Paginator extends HTMLElement {
         backward &&
         selRange.compareBoundaryPoints(Range.START_TO_START, range) < 0
       )
-        this.prev()
+        this.prev(undefined, false)
       else if (
         !backward &&
         selRange.compareBoundaryPoints(Range.END_TO_END, range) > 0
       )
-        this.next()
+        this.next(undefined, false)
     }, 700)
     this.addEventListener("load", ({ detail: { doc } }) => {
-      let isPointerSelecting = false
-      doc.addEventListener("pointerdown", () => (isPointerSelecting = true))
-      doc.addEventListener("pointerup", () => (isPointerSelecting = false))
+      this.#pageTurnSelection.attach(doc)
+      doc.addEventListener(
+        "pointerdown",
+        (e) => {
+          // Mouse and pen input do not emit the touchstart that normally tells
+          // the paginator a native smooth page turn was interrupted.
+          // WebKit can still stop that animation on pointerdown, so enter the
+          // same correction path used by touch before it settles between pages.
+          if (e.pointerType !== "touch") this.#viewport.interruptCssSnap(false)
+        },
+        true,
+      )
       let isKeyboardSelecting = false
       doc.addEventListener("keydown", () => (isKeyboardSelecting = true))
       doc.addEventListener("keyup", () => (isKeyboardSelecting = false))
@@ -687,7 +998,10 @@ export class Paginator extends HTMLElement {
         if (!range) return
         const sel = doc.getSelection()
         if (!sel.rangeCount) return
-        if (isPointerSelecting && sel.type === "Range")
+        if (
+          this.#pageTurnSelection.hasActivePointer(doc) &&
+          sel.type === "Range"
+        )
           checkPointerSelection(range, sel)
         else if (isKeyboardSelecting) {
           const selRange = sel.getRangeAt(0).cloneRange()
@@ -710,10 +1024,12 @@ export class Paginator extends HTMLElement {
     }
     this.#mediaQuery.addEventListener("change", this.#mediaQueryListener)
   }
-  attributeChangedCallback(name, _, value) {
+  attributeChangedCallback(name, oldValue, value) {
     switch (name) {
       case "flow":
         this.render()
+        if (oldValue !== "scrolled" && value === "scrolled")
+          this.#scheduleScrolledFlowRestore()
         break
       case "gap":
       case "margin":
@@ -762,13 +1078,14 @@ export class Paginator extends HTMLElement {
     })
   }
   #createView() {
+    this.#viewport.reset()
     if (this.#view) {
       this.#view.destroy()
       this.#container.removeChild(this.#view.element)
     }
     this.#view = new View({
       container: this,
-      onExpand: () => this.#scrollToAnchor(this.#anchor),
+      onExpand: () => this.#onViewExpand(),
     })
     this.#container.append(this.#view.element)
     return this.#view
@@ -862,16 +1179,726 @@ export class Paginator extends HTMLElement {
   }
   render() {
     if (!this.#view) return
+    if (this.cssSnapEnabled) this.#viewport.beginReflow()
+    else this.#viewport.abortReflow()
     this.#view.render(
       this.#beforeRender({
         vertical: this.#vertical,
         rtl: this.#rtl,
       }),
     )
-    this.#scrollToAnchor(this.#anchor)
+  }
+  #onViewExpand() {
+    // View.render() expands synchronously, but font loading and content changes
+    // can also expand the view independently. Once a viewport has settled,
+    // both paths must use the same resize owner and frozen logical location.
+    if (this.cssSnapEnabled) this.#viewport.beginReflow()
+
+    this.#updateCssSnapLayout()
+    if (this.scrolled) this.#resetCrossScrollOffset()
+    if (!this.#viewport.layoutChanged()) this.#scrollToAnchor(this.#anchor)
+  }
+  #resetCrossScrollOffset() {
+    // Paginated and continuous layouts use perpendicular scroll axes.
+    const crossScrollProp =
+      this.scrollProp === "scrollLeft" ? "scrollTop" : "scrollLeft"
+    this.#container[crossScrollProp] = 0
+  }
+  #scheduleScrolledFlowRestore() {
+    if (this.#scrolledFlowRestoreFrame !== null)
+      cancelAnimationFrame(this.#scrolledFlowRestoreFrame)
+
+    const anchor = this.#anchor?.cloneRange?.() ?? this.#anchor
+    this.#scrolledFlowRestoreFrame = requestAnimationFrame(async () => {
+      this.#scrolledFlowRestoreFrame = null
+      if (!this.scrolled || !this.#view) return
+
+      // Apply the preserved page anchor after WebKit commits the new overflow
+      // axis, then force a real one-pixel scroll. Merely scrolling to the anchor
+      // can be a no-op when it resolves to the current offset, which does not
+      // wake WebKit's blank continuous viewport.
+      this.#resetCrossScrollOffset()
+      await this.#scrollToAnchor(anchor)
+      if (!this.scrolled || !this.#view) return
+
+      const { scrollProp } = this
+      const offset = this.#container[scrollProp]
+      const scrollSizeProp =
+        scrollProp === "scrollLeft" ? "scrollWidth" : "scrollHeight"
+      const maxOffset = Math.max(0, this.#container[scrollSizeProp] - this.size)
+      const nudgedOffset =
+        scrollProp === "scrollLeft" && this.#vertical
+          ? offset < 0
+            ? offset + 1
+            : -1
+          : offset < maxOffset
+            ? offset + 1
+            : Math.max(0, offset - 1)
+      if (nudgedOffset === offset) return
+
+      this.#container[scrollProp] = nudgedOffset
+      this.#scrolledFlowRestoreFrame = requestAnimationFrame(() => {
+        this.#scrolledFlowRestoreFrame = null
+        if (!this.scrolled || !this.#view) return
+        this.#container[scrollProp] = offset
+      })
+    })
+  }
+  #setCssSnapClass(enabled) {
+    this.#container.classList.toggle("css-snap", enabled)
+    this.#container.classList.toggle("vertical", enabled && this.#vertical)
+  }
+  #updateCssSnapLayout() {
+    const enabled = !this.scrolled && this.#view
+    const snapActive = enabled && this.#viewport.snapRestored
+    this.#setCssSnapClass(Boolean(snapActive))
+
+    if (!enabled) {
+      this.#viewport.disableCssSnap()
+      this.#cssSnapTrack.invalidate()
+      return
+    }
+
+    const { width, height } = this.#container.getBoundingClientRect()
+    this.#viewport.recordLayoutViewport(width, height)
+    const { pages, size } = this
+    this.#cssSnapTrack.update({
+      vertical: this.#vertical,
+      pages,
+      pageSize: size,
+      canPrev: this.#adjacentIndex(-1) != null,
+      canNext: this.#adjacentIndex(1) != null,
+    })
+  }
+
+  /**
+   * Owns asynchronous viewport movement and ensures each scroll event settles
+   * against the operation that caused it. CSS-snap movement, continuous-scroll
+   * navigation, and reflow are mutually exclusive operation types; starting a
+   * replacement explicitly resolves or preserves the operation it supersedes.
+   *
+   * A reflow operation freezes the last committed visible range, disables snap,
+   * and follows this state machine:
+   *
+   * Normal path:
+   *
+   *   resize/restart (from any state)
+   *                 |
+   *                 v
+   *          +------------+   align range; restore snap   +------------+
+   *          |   layout   | ----------------------------> |   verify   |
+   *          +------------+                               +------------+
+   *                                                              |
+   *                                                   aligned or limit reached
+   *                                                              |
+   *                                                              v
+   *                                                       +------------+
+   *                                                       |   drain    |
+   *                                                       +------------+
+   *                                                              |
+   *                                                       quiet for 200 ms
+   *                                                              |
+   *                                                              v
+   *                                                          complete
+   *
+   * Correction loop, available from both `verify` and `drain`:
+   *
+   *          +---------------------+
+   *          | `verify` or `drain` |
+   *          +---------------------+
+   *                    |
+   *          viewport moved and
+   *          correction remains
+   *                    |
+   *                    v
+   *             disable snap
+   *                    |
+   *                    v
+   *          realign frozen range
+   *                    |
+   *                    v
+   *             restore snap
+   *                    |
+   *                    v
+   *               `verify`
+   *
+   * Layout or scroll activity increments the revision and reschedules the
+   * current phase, invalidating stale frames and timers. An active touch holds
+   * the current phase until touchend or touchcancel reschedules it.
+   */
+  static #ViewportOperations = class {
+    #paginator
+    #reflow = null
+    #cssSnap = null
+    #continuous = null
+    #resumeCommittedPageTurnFrame = null
+    #gestureInProgress = false
+    #lastPage = null
+    #committedAnchor = null
+    #layoutViewport = null
+    #settleCssSnapAfterIdle = debounce((operation) => {
+      if (this.#cssSnap === operation) this.#settleCssSnap(operation, true)
+    }, 200)
+
+    constructor(paginator) {
+      this.#paginator = paginator
+    }
+    /** Whether an asynchronous viewport operation owns movement or settlement. */
+    get active() {
+      return Boolean(this.#reflow || this.#cssSnap || this.#continuous)
+    }
+    /** Whether resize/reflow currently owns viewport movement. */
+    get reflowActive() {
+      return Boolean(this.#reflow)
+    }
+    /** Whether the current CSS-snap operation is a user page gesture. */
+    get userPageTurn() {
+      return (
+        this.#cssSnap?.reason === "snap" &&
+        this.#cssSnap.userInitiated !== false
+      )
+    }
+    /** Whether CSS snap is available to the paginator in the current phase. */
+    get snapRestored() {
+      return !this.#reflow || this.#reflow.snapRestored
+    }
+    /** Records the settled logical viewport position to preserve on reflow. */
+    commitViewport(anchor) {
+      this.#committedAnchor = this.#cloneAnchor(anchor)
+    }
+    /** Records the viewport dimensions used to detect scroll-before-resize. */
+    recordLayoutViewport(width, height) {
+      this.#layoutViewport = { width, height }
+    }
+    /** Cancels active work and forgets the recorded viewport and anchor. */
+    reset() {
+      this.cancel()
+      this.#committedAnchor = null
+      this.#layoutViewport = null
+    }
+    /**
+     * Starts a transaction or restarts its layout phase for another resize.
+     * @returns {boolean} Whether a valid committed anchor could be preserved.
+     */
+    beginReflow() {
+      let transaction = this.#reflow
+      if (transaction) {
+        transaction.phase = "layout"
+        transaction.realignments = 0
+        if (transaction.snapRestored) this.#disableSnap(transaction)
+        this.#scheduleReflowAdvance(transaction)
+        return true
+      }
+
+      const anchor = this.#cloneAnchor(this.#committedAnchor)
+      if (!this.#anchorBelongsToView(anchor)) return false
+
+      const container = this.#paginator.#container
+      let resolveDone
+      transaction = {
+        anchor,
+        revision: 0,
+        frame: null,
+        timer: null,
+        phase: "layout",
+        realignments: 0,
+        anchorOffset: null,
+        snapRestored: false,
+        scrollBehavior: container.style.getPropertyValue("scroll-behavior"),
+        scrollBehaviorPriority:
+          container.style.getPropertyPriority("scroll-behavior"),
+        done: new Promise((resolve) => (resolveDone = resolve)),
+        resolveDone,
+        resumeNavigation: null,
+      }
+      this.#reflow = transaction
+      this.#continuous = null
+
+      const pending = this.#cssSnap
+      this.#cssSnap = null
+      if (pending?.reason === "navigation" || pending?.reason === "selection") {
+        transaction.resumeNavigation = {
+          anchor: this.#cloneAnchor(this.#paginator.#anchor),
+          reason: pending.reason,
+          resolve: pending.resolve,
+        }
+      } else pending?.resolve?.(false)
+
+      this.#gestureInProgress = false
+      if (this.#resumeCommittedPageTurnFrame !== null) {
+        cancelAnimationFrame(this.#resumeCommittedPageTurnFrame)
+        this.#resumeCommittedPageTurnFrame = null
+      }
+      this.#disableSnap(transaction)
+      this.#scheduleReflowAdvance(transaction)
+      return true
+    }
+    /**
+     * Aligns the frozen anchor after repagination and restarts settlement.
+     * @returns {boolean} Whether an active transaction handled the change.
+     */
+    layoutChanged() {
+      const transaction = this.#reflow
+      if (!transaction) return false
+      this.#align(transaction)
+      this.#scheduleReflowAdvance(transaction)
+      return true
+    }
+    /**
+     * Routes paginated scroll activity to reflow or the current CSS-snap owner.
+     * A viewport size mismatch starts reflow before ResizeObserver can report it.
+     * @returns {boolean} Whether the event belongs to paginated viewport motion.
+     */
+    handleScroll() {
+      if (this.#paginator.scrolled) return false
+      if (this.#handleReflowActivity()) return true
+
+      const viewport = this.#paginator.#container.getBoundingClientRect()
+      const layout = this.#layoutViewport
+      if (
+        this.#committedAnchor &&
+        layout &&
+        (Math.abs(viewport.width - layout.width) > 0.5 ||
+          Math.abs(viewport.height - layout.height) > 0.5)
+      ) {
+        // A native snap adjustment can dispatch scroll before ResizeObserver.
+        // Claim it immediately; the observer renders into this transaction.
+        this.beginReflow()
+        return true
+      }
+      if (!this.#cssSnap) {
+        this.#cssSnap = { reason: "snap" }
+        this.#gestureInProgress = true
+      }
+      const operation = this.#cssSnap
+      operation.scrollStarted = true
+      // Native scrollend is the only sound way to delimit wheel/trackpad input;
+      // an idle pause can occur before that gesture has actually settled. Keep
+      // the fallback for programmatic moves, engines without scrollend, and a
+      // touch fallback that was explicitly armed on touchend/cancel.
+      if (
+        operation.reason !== "snap" ||
+        !("onscrollend" in this.#paginator.#container) ||
+        operation.idleFallback
+      )
+        this.armCssSnapIdleFallback(operation)
+      return true
+    }
+    /** Resolves after the active transaction and any immediate restart finish. */
+    async wait() {
+      while (this.#reflow) await this.#reflow.done
+    }
+    /** Settles a native scrollend against its current viewport operation. */
+    handleScrollEnd() {
+      if (!this.#handleReflowActivity())
+        this.#settleCssSnap(this.#cssSnap, false)
+    }
+    /** Starts a programmatic CSS-snap operation, superseding its predecessor. */
+    beginCssSnap(
+      reason,
+      resolve,
+      needsSnapCorrection = false,
+      userInitiated = true,
+    ) {
+      this.#cancelCssSnap()
+      this.#continuous = null
+      const operation = {
+        reason,
+        resolve,
+        needsSnapCorrection,
+        userInitiated,
+        scrollStarted: false,
+        targetCorrectionAttempted: false,
+      }
+      this.#cssSnap = operation
+      return operation
+    }
+    /** Arms the identity-checked idle fallback for a CSS-snap operation. */
+    armCssSnapIdleFallback(operation) {
+      if (this.#cssSnap !== operation) return
+      operation.idleFallback = true
+      this.#settleCssSnapAfterIdle(operation)
+    }
+    /**
+     * Replaces an interrupted programmatic snap with a possible user gesture.
+     */
+    interruptCssSnap(userInitiated = false) {
+      if (this.#paginator.#committedPageTurnInput.active) return
+      const pending = this.#cssSnap
+      if (!pending || pending.reason === "snap") return
+      // A touchstart can be either a drag that interrupts the smooth scroll or
+      // a tap handled by the native margin zones. Do not report a user page turn
+      // until touchmove confirms a drag; otherwise the native tap navigation is
+      // rejected while this interrupted scroll is waiting to settle.
+      const replacement = {
+        reason: "snap",
+        needsSnapCorrection: true,
+        userInitiated,
+        // This owner adopts motion that already started under `pending`. A
+        // pointerdown can stop it without producing another scroll event.
+        scrollStarted: true,
+        targetCorrectionAttempted: false,
+      }
+      this.#cssSnap = replacement
+      this.#gestureInProgress = true
+      pending.resolve?.(false)
+      this.armCssSnapIdleFallback(replacement)
+    }
+    /** Records the beginning of touch input that may become a page gesture. */
+    beginGesture(page) {
+      this.#continuous = null
+      this.#gestureInProgress = true
+      this.#lastPage = page
+    }
+    /** Marks an adopted CSS-snap operation as confirmed user dragging. */
+    confirmGesture() {
+      if (this.#cssSnap?.reason === "snap") this.#cssSnap.userInitiated = true
+    }
+    /** Rearms settlement after every touch has ended or been cancelled. */
+    endTouch() {
+      if (!this.#handleReflowActivity() && this.#cssSnap?.reason === "snap")
+        this.armCssSnapIdleFallback(this.#cssSnap)
+    }
+    /** Cancels gesture-owned operations in response to wheel or pointer input. */
+    interruptFromInput(userInitiated) {
+      this.#continuous = null
+      this.interruptCssSnap(userInitiated)
+    }
+    /** Records an animated navigation in continuous-scroll mode. */
+    beginContinuousScroll(reason) {
+      this.#cancelCssSnap()
+      this.#continuous = { reason }
+    }
+    /** Commits continuous-scroll movement after its debounce interval. */
+    settleContinuousScroll() {
+      const operation = this.#continuous
+      this.#continuous = null
+      if (operation) {
+        this.#paginator.#afterScroll(operation.reason)
+        this.#paginator.#justAnchored = false
+      } else if (this.#paginator.#justAnchored)
+        this.#paginator.#justAnchored = false
+      else this.#paginator.#afterScroll("scroll")
+      this.#paginator.#pageTurnSelection.releaseIfSettled()
+    }
+    /** Emits page-flip semantics only for movement owned by a user gesture. */
+    reportPageFlip(reason) {
+      const page = this.#paginator.page
+      if (
+        reason === "snap" &&
+        this.#gestureInProgress &&
+        page !== this.#lastPage
+      ) {
+        this.#paginator.dispatchEvent(
+          new CustomEvent("page-flip", {
+            detail: { fromPage: this.#lastPage, toPage: page },
+            bubbles: true,
+            composed: true,
+          }),
+        )
+        this.#gestureInProgress = false
+      }
+      this.#lastPage = page
+    }
+    /** Finishes a Swift-committed page turn after consuming blocked input. */
+    finishCommittedPageTurn() {
+      const operation = this.#cssSnap
+      if (
+        this.#resumeCommittedPageTurnFrame !== null ||
+        !this.#paginator.#committedPageTurnInput.requested ||
+        !Number.isFinite(operation?.targetOffset)
+      )
+        return
+
+      // Physical input can stop native smooth scrolling even when the blocker
+      // consumes its DOM event. Ignore that animation's stale scrollend, then
+      // force its committed target after WebKit has processed the input.
+      operation.scrollStarted = false
+      this.armCssSnapIdleFallback(operation)
+      this.#resumeCommittedPageTurnFrame = requestAnimationFrame(() => {
+        this.#resumeCommittedPageTurnFrame = null
+        if (
+          this.#cssSnap !== operation ||
+          !this.#paginator.#committedPageTurnInput.requested
+        )
+          return
+
+        const { scrollProp } = this.#paginator
+        const offset = this.#paginator.#container[scrollProp]
+        if (Math.abs(offset - operation.targetOffset) <= 1) return
+
+        const axis = scrollProp === "scrollLeft" ? "left" : "top"
+        this.#paginator.#container.scrollTo({
+          [axis]: operation.targetOffset,
+          behavior: "auto",
+        })
+        this.armCssSnapIdleFallback(operation)
+      })
+    }
+    /** Cancels paginated movement without disturbing continuous navigation. */
+    disableCssSnap() {
+      this.#cancelCssSnap()
+      this.#gestureInProgress = false
+      if (this.#resumeCommittedPageTurnFrame !== null) {
+        cancelAnimationFrame(this.#resumeCommittedPageTurnFrame)
+        this.#resumeCommittedPageTurnFrame = null
+      }
+      this.#paginator.#pageTurnSelection.releaseIfSettled()
+    }
+    /** Cancels all viewport ownership and resolves interrupted promises. */
+    cancel() {
+      this.abortReflow()
+      this.disableCssSnap()
+      this.#continuous = null
+      this.#paginator.#pageTurnSelection.releaseIfSettled()
+    }
+    /** Cancels the active transaction and resolves its pending work as aborted. */
+    abortReflow() {
+      const transaction = this.#reflow
+      if (!transaction) return
+      if (transaction.frame !== null) cancelAnimationFrame(transaction.frame)
+      if (transaction.timer !== null) clearTimeout(transaction.timer)
+      this.#restoreScrollBehavior(transaction)
+      this.#reflow = null
+      transaction.resumeNavigation?.resolve?.(false)
+      transaction.resolveDone()
+      this.#paginator.#pageTurnSelection.releaseIfSettled()
+    }
+    #cancelCssSnap() {
+      const operation = this.#cssSnap
+      this.#cssSnap = null
+      operation?.resolve?.(false)
+    }
+    #settleCssSnap(operation, fromIdleFallback) {
+      const paginator = this.#paginator
+      if (paginator.scrolled) return
+      if (this.#handleReflowActivity()) return
+      if (
+        !operation ||
+        this.#cssSnap !== operation ||
+        paginator.#pageTurnSelection.touchActive
+      )
+        return
+
+      // A native scrollend from a superseded operation can arrive after its
+      // replacement is installed. It cannot settle the replacement before that
+      // operation has produced scroll activity of its own.
+      if (!fromIdleFallback && !operation.scrollStarted) return
+
+      const { reason, resolve, needsSnapCorrection, userInitiated } = operation
+      const { scrollProp } = paginator
+      const offset = paginator.#container[scrollProp]
+      if (
+        Number.isFinite(operation.targetOffset) &&
+        Math.abs(offset - operation.targetOffset) > 1
+      ) {
+        if (!fromIdleFallback) {
+          this.armCssSnapIdleFallback(operation)
+          return
+        }
+        // Correct a blocked Swift page turn once. Other targets may legitimately
+        // be clamped or adjusted by CSS snap and must not loop indefinitely.
+        if (
+          paginator.#committedPageTurnInput.requested &&
+          !operation.targetCorrectionAttempted
+        ) {
+          operation.targetCorrectionAttempted = true
+          operation.scrollStarted = false
+          paginator.#container[scrollProp] = operation.targetOffset
+          this.armCssSnapIdleFallback(operation)
+          return
+        }
+      }
+      this.#cssSnap = null
+
+      if (!paginator.#touchScrolled && globalThis.visualViewport.scale === 1) {
+        const { size, page } = paginator
+        const pageOffset = size * (paginator.#rtl ? -page : page)
+        // WebKit can stop an interrupted smooth scroll between snap positions.
+        // Correct only the adopted programmatic move, never a normal fling.
+        if (needsSnapCorrection && Math.abs(offset - pageOffset) > 1) {
+          const correction = this.beginCssSnap(
+            reason,
+            resolve,
+            false,
+            userInitiated,
+          )
+          correction.targetOffset = pageOffset
+          paginator.#container[scrollProp] = pageOffset
+          this.armCssSnapIdleFallback(correction)
+          return
+        }
+        paginator.#finishCssSnap(reason)
+      }
+      this.#gestureInProgress = false
+      resolve?.(true)
+      paginator.#pageTurnSelection.releaseIfSettled()
+    }
+    #handleReflowActivity() {
+      const transaction = this.#reflow
+      if (!transaction) return false
+      this.#scheduleReflowAdvance(transaction)
+      return true
+    }
+    #cloneAnchor(anchor) {
+      return anchor?.cloneRange?.() ?? anchor
+    }
+    #anchorBelongsToView(anchor) {
+      if (typeof anchor === "number") return true
+      const node = anchor?.startContainer ?? anchor
+      return node?.ownerDocument === this.#paginator.#view?.document
+    }
+    #disableSnap(transaction) {
+      if (this.#reflow !== transaction) return
+      transaction.snapRestored = false
+      this.#paginator.#setCssSnapClass(false)
+      const container = this.#paginator.#container
+      container.style.setProperty("scroll-behavior", "auto", "important")
+
+      // Removing the snap points prevents a new snap, while an auto scroll to
+      // the current position terminates an in-flight native smooth scroll.
+      const { scrollLeft, scrollTop } = container
+      container.scrollTo({
+        left: scrollLeft,
+        top: scrollTop,
+        behavior: "auto",
+      })
+    }
+    #align(transaction) {
+      if (
+        this.#reflow !== transaction ||
+        !this.#anchorBelongsToView(transaction.anchor)
+      )
+        return
+      this.#paginator
+        .#scrollToAnchor(transaction.anchor, "anchor", false, false)
+        .catch((error) =>
+          console.warn(
+            "Failed to preserve the viewport during repagination",
+            error,
+          ),
+        )
+    }
+    #scheduleReflowAdvance(transaction) {
+      if (this.#reflow !== transaction) return
+      transaction.revision++
+      if (transaction.frame !== null) cancelAnimationFrame(transaction.frame)
+      if (transaction.timer !== null) {
+        clearTimeout(transaction.timer)
+        transaction.timer = null
+      }
+      const { revision } = transaction
+
+      // Wait through one rendered frame before advancing in the next. This gives
+      // ResizeObserver, native snap adjustment, and generated scroll events time
+      // to schedule another revision and invalidate this one.
+      transaction.frame = requestAnimationFrame(() => {
+        if (!this.#isCurrentReflowRevision(transaction, revision)) return
+        transaction.frame = requestAnimationFrame(() => {
+          transaction.frame = null
+          this.#advanceReflow(transaction, revision)
+        })
+      })
+    }
+    #isCurrentReflowRevision(transaction, revision) {
+      return this.#reflow === transaction && transaction.revision === revision
+    }
+    #advanceReflow(transaction, revision) {
+      if (
+        !this.#isCurrentReflowRevision(transaction, revision) ||
+        this.#paginator.#pageTurnSelection.touchActive
+      )
+        return
+
+      if (transaction.phase === "layout") {
+        this.#alignAndRestoreSnap(transaction)
+        return
+      }
+
+      const offset = this.#paginator.#container[this.#paginator.scrollProp]
+      const moved =
+        Number.isFinite(transaction.anchorOffset) &&
+        Math.abs(offset - transaction.anchorOffset) > 1
+      if (moved && transaction.realignments < 2) {
+        transaction.realignments++
+        this.#disableSnap(transaction)
+        this.#alignAndRestoreSnap(transaction)
+      } else if (transaction.phase === "verify") {
+        // Keep resize ownership for a separate quiet phase so scroll and
+        // scrollend generated by restoring snap cannot become user motion.
+        transaction.phase = "drain"
+        this.#scheduleReflowAdvance(transaction)
+      } else this.#scheduleReflowCompletion(transaction)
+    }
+    #alignAndRestoreSnap(transaction) {
+      this.#align(transaction)
+      transaction.anchorOffset =
+        this.#paginator.#container[this.#paginator.scrollProp]
+      transaction.snapRestored = true
+      transaction.phase = "verify"
+      this.#paginator.#updateCssSnapLayout()
+      this.#scheduleReflowAdvance(transaction)
+    }
+    #scheduleReflowCompletion(transaction) {
+      const { revision } = transaction
+      transaction.timer = setTimeout(() => {
+        transaction.timer = null
+        if (this.#isCurrentReflowRevision(transaction, revision))
+          this.#complete(transaction)
+      }, 200)
+    }
+    #restoreScrollBehavior(transaction) {
+      const style = this.#paginator.#container.style
+      if (transaction.scrollBehavior)
+        style.setProperty(
+          "scroll-behavior",
+          transaction.scrollBehavior,
+          transaction.scrollBehaviorPriority,
+        )
+      else style.removeProperty("scroll-behavior")
+    }
+    #complete(transaction) {
+      if (this.#reflow !== transaction) return
+
+      // Publish page metrics without committing resize motion as navigation.
+      this.#paginator.#afterScroll("anchor", false)
+      this.#restoreScrollBehavior(transaction)
+      this.#reflow = null
+
+      const resume = transaction.resumeNavigation
+      const finish = () => {
+        transaction.resolveDone()
+        this.#paginator.#pageTurnSelection.releaseIfSettled()
+      }
+      if (resume && this.#anchorBelongsToView(resume.anchor)) {
+        this.#paginator.#scrollToAnchor(resume.anchor, resume.reason).then(
+          (completed) => {
+            resume.resolve?.(completed !== false)
+            finish()
+          },
+          () => {
+            resume.resolve?.(false)
+            finish()
+          },
+        )
+      } else {
+        resume?.resolve?.(false)
+        finish()
+      }
+    }
   }
   get scrolled() {
     return this.getAttribute("flow") === "scrolled"
+  }
+  get cssSnapEnabled() {
+    return !this.scrolled
+  }
+  get pageTurnBlocksNavigation() {
+    const committedPageTurn = this.#committedPageTurnInput.requested
+    const gesturePageTurn =
+      Boolean(this.#userChapterTransition) || this.#viewport.userPageTurn
+
+    return committedPageTurn || gesturePageTurn
   }
   get scrollProp() {
     const { scrolled } = this
@@ -911,87 +1938,69 @@ export class Paginator extends HTMLElement {
   get pages() {
     return Math.round(this.viewSize / this.size)
   }
-  scrollBy(dx, dy) {
-    const delta = this.#vertical ? dy : dx
-    const element = this.#container
-    const { scrollProp } = this
-    const [offset, a, b] = this.#scrollBounds
-    const rtl = this.#rtl
-    const min = rtl ? offset - b : offset - a
-    const max = rtl ? offset + a : offset + b
-    element[scrollProp] = Math.max(
-      min,
-      Math.min(max, element[scrollProp] + delta),
-    )
+  #finishCssSnap(reason) {
+    const page = this.page
+    const { pages } = this
+    const dir =
+      page <= 0 //
+        ? -1
+        : page >= pages - 1
+          ? 1
+          : null
+    if (reason === "snap" && dir) return this.#finishBoundaryCssSnap(dir)
+    this.#afterScroll(reason)
   }
-  snap(vx, vy) {
-    const velocity = this.#vertical ? vy : vx
-    const [offset, a, b] = this.#scrollBounds
-    const { start, end, pages, size } = this
-    const min = Math.abs(offset) - a
-    const max = Math.abs(offset) + b
-    const d = velocity * (this.#rtl ? -size : size)
-    const page = Math.floor(
-      Math.max(min, Math.min(max, (start + end) / 2 + (isNaN(d) ? 0 : d))) /
-        size,
-    )
-
-    this.#scrollToPage(page, "snap").then(() => {
-      const dir = page <= 0 ? -1 : page >= pages - 1 ? 1 : null
-      if (dir)
-        return this.#goTo({
-          index: this.#adjacentIndex(dir),
-          anchor: dir < 0 ? () => 1 : () => 0,
-        })
-    })
-  }
-  #onTouchStart(e) {
-    const touch = e.changedTouches[0]
-    this.#touchState = {
-      x: touch?.screenX,
-      y: touch?.screenY,
-      t: e.timeStamp,
-      vx: 0,
-      xy: 0,
-    }
-    this.#gestureInProgress = true
-    this.#lastPage = this.page
-  }
-  #onTouchMove(e) {
-    const state = this.#touchState
-    if (state.pinched) return
-    state.pinched = globalThis.visualViewport.scale > 1
-    if (this.scrolled || state.pinched) return
-    if (e.touches.length > 1) {
-      if (this.#touchScrolled) e.preventDefault()
+  #finishBoundaryCssSnap(dir) {
+    const index = this.#adjacentIndex(dir)
+    if (index == null) {
+      this.#afterScroll("snap")
       return
     }
-    e.preventDefault()
-    const touch = e.changedTouches[0]
-    const x = touch.screenX,
-      y = touch.screenY
-    const dx = state.x - x,
-      dy = state.y - y
-    const dt = e.timeStamp - state.t
-    state.x = x
-    state.y = y
-    state.t = e.timeStamp
-    state.vx = dx / dt
-    state.vy = dy / dt
-    this.#touchScrolled = true
-    this.scrollBy(dx, dy)
-  }
-  #onTouchEnd() {
-    this.#touchScrolled = false
-    if (this.scrolled) return
 
-    // XXX: Firefox seems to report scale as 1... sometimes...?
-    // at this point I'm basically throwing `requestAnimationFrame` at
-    // anything that doesn't work
-    requestAnimationFrame(() => {
-      if (globalThis.visualViewport.scale === 1)
-        this.snap(this.#touchState.vx, this.#touchState.vy)
-    })
+    // Publish the boundary relocation while the turn is still active, then
+    // keep it active until the adjacent section emits its final relocation.
+    const transition = {
+      index,
+      anchor: dir < 0 ? () => 1 : () => 0,
+    }
+    this.#userChapterTransition = transition
+    this.#afterScroll("snap")
+
+    const navigation = this.#goTo(transition)
+    const settle = () => {
+      this.#finishUserChapterTransition(transition)
+    }
+    navigation.then(settle, settle)
+    return navigation
+  }
+  #finishUserChapterTransition(transition) {
+    if (this.#userChapterTransition !== transition) return
+    this.#userChapterTransition = null
+    this.#pageTurnSelection.releaseIfSettled()
+  }
+  #onWheel() {
+    if (this.#committedPageTurnInput.active) return
+    this.#viewport.interruptFromInput(true)
+  }
+  #onTouchStart() {
+    this.#pageTurnSelection.startTouch()
+    this.#viewport.interruptFromInput(false)
+    this.#touchPinched = false
+    this.#viewport.beginGesture(this.page)
+  }
+  #onTouchMove(e) {
+    if (this.#touchPinched) return
+    this.#touchPinched = globalThis.visualViewport.scale > 1
+    if (this.scrolled || this.#touchPinched) return
+    if (e.touches.length > 1) return
+    this.#touchScrolled = true
+    this.#viewport.confirmGesture()
+  }
+  #onTouchEnd(e) {
+    this.#touchScrolled = false
+    this.#pageTurnSelection.endTouch(e)
+    if (this.scrolled) return
+    this.#viewport.endTouch()
   }
   // allows one to process rects as if they were LTR and horizontal
   #getRectMapper() {
@@ -1012,67 +2021,105 @@ export class Paginator extends HTMLElement {
         ? ({ top, bottom }) => ({ left: top, right: bottom })
         : (f) => f
   }
-  async #scrollToRect(rect, reason) {
+  async #scrollToRect(rect, reason, smooth) {
     if (this.scrolled) {
       const mapped = this.#getRectMapper()(rect)
       const rectCenter = (mapped.left + mapped.right) / 2
       const offset = rectCenter - this.size / 2
-      return this.#scrollTo(offset, reason)
+      return this.#scrollTo(offset, reason, smooth)
     }
     const offset = this.#getRectMapper()(rect).left
     return this.#scrollToPage(
       Math.floor(offset / this.size) + (this.#rtl ? -1 : 1),
       reason,
+      smooth,
     )
   }
   async #scrollTo(offset, reason, smooth) {
     const element = this.#container
-    const { scrollProp, size } = this
-    if (element[scrollProp] === offset) {
-      this.#scrollBounds = [
-        offset,
-        this.atStart ? 0 : size,
-        this.atEnd ? 0 : size,
-      ]
-      this.#afterScroll(reason)
+    const { scrollProp } = this
+    const shouldAnimate = smooth && this.#shouldAnimateScrolling()
+    if (this.#viewport.reflowActive) {
+      element[scrollProp] = offset
       return
     }
     // FIXME: vertical-rl only, not -lr
     if (this.scrolled && this.#vertical) offset = -offset
-    if ((reason === "snap" || smooth) && this.hasAttribute("animated"))
-      return animate(
-        element[scrollProp],
-        offset,
-        300,
-        easeOutQuad,
-        (x) => (element[scrollProp] = x),
-      ).then(() => {
-        this.#scrollBounds = [
-          offset,
-          this.atStart ? 0 : size,
-          this.atEnd ? 0 : size,
-        ]
-        this.#afterScroll(reason)
+    if (this.scrolled) {
+      // Centering an anchor near either end of a section can produce a target
+      // outside the scrollable range. WebKit clamps that target without
+      // necessarily emitting `scroll`, so navigation clients waiting for the
+      // resulting relocation (including read-aloud highlighting) never get a
+      // chance to finish. Normalize it before detecting a no-op so even an
+      // edge-clamped navigation is committed.
+      const scrollSizeProp =
+        scrollProp === "scrollLeft" ? "scrollWidth" : "scrollHeight"
+      const maxOffset = Math.max(0, element[scrollSizeProp] - this.size)
+      offset = this.#vertical
+        ? Math.max(-maxOffset, Math.min(0, offset))
+        : Math.max(0, Math.min(maxOffset, offset))
+    }
+    if (element[scrollProp] === offset) {
+      this.#afterScroll(reason)
+      return
+    }
+    if (shouldAnimate && this.scrolled) {
+      const axis = scrollProp === "scrollLeft" ? "left" : "top"
+      this.#viewport.beginContinuousScroll(reason)
+      element.scrollTo({ [axis]: offset, behavior: "smooth" })
+      return
+    }
+    if (shouldAnimate) return this.#cssSnapPageScrollTo(offset, reason)
+    if (!this.scrolled) {
+      return new Promise((resolve) => {
+        const pending = this.#viewport.beginCssSnap(reason, resolve)
+        pending.targetOffset = offset
+        element[scrollProp] = offset
+        this.#viewport.armCssSnapIdleFallback(pending)
       })
-    else {
+    } else {
       element[scrollProp] = offset
-      this.#scrollBounds = [
-        offset,
-        this.atStart ? 0 : size,
-        this.atEnd ? 0 : size,
-      ]
       this.#afterScroll(reason)
     }
+  }
+  #shouldAnimateScrolling() {
+    return (
+      this.hasAttribute("animated") &&
+      !matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+  }
+  #cssSnapPageScrollTo(offset, reason) {
+    const element = this.#container
+    const axis = this.scrollProp === "scrollLeft" ? "left" : "top"
+
+    return new Promise((resolve) => {
+      const pending = this.#viewport.beginCssSnap(reason, resolve)
+      pending.targetOffset = offset
+      element.scrollTo({ [axis]: offset, behavior: "smooth" })
+      this.#viewport.armCssSnapIdleFallback(pending)
+    })
   }
   async #scrollToPage(page, reason, smooth) {
     const offset = this.size * (this.#rtl ? -page : page)
     return this.#scrollTo(offset, reason, smooth)
   }
-  async scrollToAnchor(anchor, select) {
-    return this.#scrollToAnchor(anchor, select ? "selection" : "navigation")
+  async scrollToAnchor(anchor, select, smooth = false) {
+    return this.#scrollToAnchor(
+      anchor,
+      select ? "selection" : "navigation",
+      smooth,
+    )
   }
-  async #scrollToAnchor(anchor, reason = "anchor") {
-    this.#anchor = anchor
+  async #scrollToAnchor(
+    anchor,
+    reason = "anchor",
+    smooth = false,
+    updateAnchor = true,
+  ) {
+    if (updateAnchor) {
+      if (this.#viewport.reflowActive) await this.#viewport.wait()
+      this.#anchor = anchor
+    }
     const rects = uncollapse(anchor)?.getClientRects?.()
     // if anchor is an element or a range
     if (rects) {
@@ -1083,26 +2130,26 @@ export class Paginator extends HTMLElement {
         const mappedRects = rectList.map((r) => this.#getRectMapper()(r))
         const start = Math.min(...mappedRects.map((r) => r.left))
         const end = Math.max(...mappedRects.map((r) => r.right))
-        await this.#scrollTo((start + end) / 2 - this.size / 2, reason)
+        await this.#scrollTo((start + end) / 2 - this.size / 2, reason, smooth)
         return
       }
       // when the start of the range is immediately after a hyphen in the
       // previous column, there is an extra zero width rect in that column
       const rect = rectList[0] || rects[0]
       if (!rect) return
-      await this.#scrollToRect(rect, reason)
+      await this.#scrollToRect(rect, reason, smooth)
       return
     }
     // if anchor is a fraction
     if (this.scrolled) {
-      await this.#scrollTo(anchor * this.viewSize, reason)
+      await this.#scrollTo(anchor * this.viewSize, reason, smooth)
       return
     }
     const { pages } = this
     if (!pages) return
     const textPages = pages - 2
     const newPage = Math.round(anchor * (textPages - 1))
-    await this.#scrollToPage(newPage + 1, reason)
+    await this.#scrollToPage(newPage + 1, reason, smooth)
   }
   #getVisibleRange() {
     if (this.scrolled)
@@ -1120,9 +2167,28 @@ export class Paginator extends HTMLElement {
       this.#getRectMapper(),
     )
   }
-  #afterScroll(reason) {
+  /**
+   * Records why the viewport moved. The reason identifies who owns the
+   * relocation and controls selection, history, and page-flip reporting.
+   *
+   * @param {"snap"|"page"|"scroll"|"navigation"|"selection"|"anchor"|null} reason
+   *   The source of the relocation:
+   *   - "snap": user pagination gesture
+   *   - "page": programmatic previous/next page command
+   *   - "scroll": user movement in continuous-scroll mode
+   *   - "navigation": explicit jump to a location, including read-aloud
+   *     follow-along
+   *   - "selection": jump to and select a location
+   *   - "anchor": internal repositioning that preserves the current location
+   *   - null: incremental programmatic movement in continuous-scroll mode
+   * @param {boolean} commitViewport Whether to replace the settled logical
+   *   viewport position preserved by future reflows. Reflow completion passes
+   *   `false` because its generated movement must not become a new position.
+   */
+  #afterScroll(reason, commitViewport = true) {
     const range = this.#getVisibleRange()
     this.#lastVisibleRange = range
+    if (commitViewport) this.#viewport.commitViewport(range)
     // don't set new anchor if relocation was to scroll to anchor
     if (
       reason !== "selection" &&
@@ -1132,21 +2198,7 @@ export class Paginator extends HTMLElement {
       this.#anchor = range
     else this.#justAnchored = true
 
-    if (
-      reason === "snap" &&
-      this.#gestureInProgress &&
-      this.page !== this.#lastPage
-    ) {
-      this.dispatchEvent(
-        new CustomEvent("page-flip", {
-          detail: { fromPage: this.#lastPage, toPage: this.page },
-          bubbles: true,
-          composed: true,
-        }),
-      )
-      this.#gestureInProgress = false
-    }
-    this.#lastPage = this.page
+    this.#viewport.reportPageFlip(reason)
 
     const index = this.#index
     const detail = { reason, range, index }
@@ -1160,7 +2212,7 @@ export class Paginator extends HTMLElement {
     this.dispatchEvent(new CustomEvent("relocate", { detail }))
   }
   async #display(promise) {
-    const { index, src, anchor, onLoad, select } = await promise
+    const { index, src, anchor, onLoad, select, smooth } = await promise
     this.#index = index
     const hasFocus = this.#view?.document?.hasFocus()
     if (src) {
@@ -1192,14 +2244,16 @@ export class Paginator extends HTMLElement {
       (typeof anchor === "function" ? anchor(this.#view.document) : anchor) ??
         0,
       select,
+      smooth,
     )
     if (hasFocus) this.focusView()
   }
   #canGoToIndex(index) {
     return index >= 0 && index <= this.sections.length - 1
   }
-  async #goTo({ index, anchor, select }) {
-    if (index === this.#index) await this.#display({ index, anchor, select })
+  async #goTo({ index, anchor, select, smooth }) {
+    if (index === this.#index)
+      await this.#display({ index, anchor, select, smooth })
     else {
       const oldIndex = this.#index
       const onLoad = (detail) => {
@@ -1209,7 +2263,7 @@ export class Paginator extends HTMLElement {
       }
       await this.#display(
         Promise.resolve(this.sections[index].load())
-          .then((src) => ({ index, src, anchor, onLoad, select }))
+          .then((src) => ({ index, src, anchor, onLoad, select, smooth }))
           .catch((e) => {
             console.warn(e)
             console.warn(new Error(`Failed to load section ${index}`))
@@ -1221,38 +2275,57 @@ export class Paginator extends HTMLElement {
   async goTo(target) {
     if (this.#locked) return
     const resolved = await target
+    await this.#viewport.wait()
     if (this.#canGoToIndex(resolved.index)) return this.#goTo(resolved)
   }
-  #scrollPrev(distance) {
-    if (!this.#view) return true
+  async #scrollPrev(distance, animated) {
+    if (!this.#view) return { status: "rejected", shouldGo: false }
     if (this.scrolled) {
-      if (this.start > 0)
-        return this.#scrollTo(
+      if (this.start > 0) {
+        const completed = await this.#scrollTo(
           Math.max(0, this.start - (distance ?? this.size)),
           null,
-          true,
+          animated,
         )
-      return true
+        return {
+          status: completed === false ? "interrupted" : "completed",
+          shouldGo: false,
+        }
+      }
+      return { status: "completed", shouldGo: true }
     }
-    if (this.atStart) return
+    if (this.atStart) return { status: "rejected", shouldGo: false }
     const page = this.page - 1
-    return this.#scrollToPage(page, "page", true).then(() => page <= 0)
+    const completed = await this.#scrollToPage(page, "page", animated)
+    return {
+      status: completed === false ? "interrupted" : "completed",
+      shouldGo: completed !== false && page <= 0,
+    }
   }
-  #scrollNext(distance) {
-    if (!this.#view) return true
+  async #scrollNext(distance, animated) {
+    if (!this.#view) return { status: "completed", shouldGo: true }
     if (this.scrolled) {
-      if (this.viewSize - this.end > 2)
-        return this.#scrollTo(
+      if (this.viewSize - this.end > 2) {
+        const completed = await this.#scrollTo(
           Math.min(this.viewSize, distance ? this.start + distance : this.end),
           null,
-          true,
+          animated,
         )
-      return true
+        return {
+          status: completed === false ? "interrupted" : "completed",
+          shouldGo: false,
+        }
+      }
+      return { status: "completed", shouldGo: true }
     }
-    if (this.atEnd) return
+    if (this.atEnd) return { status: "rejected", shouldGo: false }
     const page = this.page + 1
     const pages = this.pages
-    return this.#scrollToPage(page, "page", true).then(() => page >= pages - 1)
+    const completed = await this.#scrollToPage(page, "page", animated)
+    return {
+      status: completed === false ? "interrupted" : "completed",
+      shouldGo: completed !== false && page >= pages - 1,
+    }
   }
   get atStart() {
     return this.#adjacentIndex(-1) == null && this.page <= 1
@@ -1264,26 +2337,49 @@ export class Paginator extends HTMLElement {
     for (let index = this.#index + dir; this.#canGoToIndex(index); index += dir)
       if (this.sections[index]?.linear !== "no") return index
   }
-  async #turnPage(dir, distance) {
-    if (this.#locked) return
+  async #turnPage(dir, distance, animated, blockUserInput = false) {
+    // A page turn received after resize has claimed the viewport must not wait
+    // for reflow and execute against the newly paginated layout. Rejecting it
+    // also lets the native reader discard its pre-resize expected-page state.
+    if (this.#locked || this.#viewport.reflowActive) return "rejected"
+    // An overlay cannot take ownership of a touch sequence that already
+    // started in the book document. Reject the Swift command and let that
+    // gesture's PageFlipped event be the sole source of navigation instead.
+    if (blockUserInput && this.#pageTurnSelection.touchActive) return "rejected"
     this.#locked = true
-    const prev = dir === -1
-    const shouldGo = await (prev
-      ? this.#scrollPrev(distance)
-      : this.#scrollNext(distance))
-    if (shouldGo)
-      await this.#goTo({
-        index: this.#adjacentIndex(dir),
-        anchor: prev ? () => 1 : () => 0,
-      })
-    if (shouldGo || !this.hasAttribute("animated")) await wait(100)
-    this.#locked = false
+    if (blockUserInput) this.#committedPageTurnInput.setRequested(true)
+    try {
+      await this.#viewport.wait()
+      const selection = this.#view?.document?.getSelection()
+      const hasSelection = Boolean(
+        selection?.rangeCount && !selection.isCollapsed,
+      )
+      const turnAnimated = animated && !hasSelection
+      if (turnAnimated) this.#pageTurnSelection.suppress()
+
+      const prev = dir === -1
+      const { status, shouldGo } = await (prev
+        ? this.#scrollPrev(distance, turnAnimated)
+        : this.#scrollNext(distance, turnAnimated))
+      if (status !== "completed") return status
+      if (shouldGo)
+        await this.#goTo({
+          index: this.#adjacentIndex(dir),
+          anchor: prev ? () => 1 : () => 0,
+        })
+      if (shouldGo || !this.#shouldAnimateScrolling()) await wait(100)
+      return "completed"
+    } finally {
+      if (blockUserInput) this.#committedPageTurnInput.setRequested(false)
+      this.#locked = false
+      this.#pageTurnSelection.releaseIfSettled()
+    }
   }
-  prev(distance) {
-    return this.#turnPage(-1, distance)
+  prev(distance, animated = true, blockUserInput = false) {
+    return this.#turnPage(-1, distance, animated, blockUserInput)
   }
-  next(distance) {
-    return this.#turnPage(1, distance)
+  next(distance, animated = true, blockUserInput = false) {
+    return this.#turnPage(1, distance, animated, blockUserInput)
   }
   prevSection() {
     return this.goTo({ index: this.#adjacentIndex(-1) })
@@ -1338,6 +2434,9 @@ export class Paginator extends HTMLElement {
     this.#view.document.defaultView.focus()
   }
   destroy() {
+    if (this.#scrolledFlowRestoreFrame !== null)
+      cancelAnimationFrame(this.#scrolledFlowRestoreFrame)
+    this.#viewport.reset()
     this.#observer.unobserve(this)
     this.#view.destroy()
     this.#view = null

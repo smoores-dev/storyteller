@@ -48,6 +48,7 @@ public final class EphemeralProgressManager {
     }
 
     public var bookStructure: [SectionInfo] = []
+    var isRTLPageProgression = false
 
     public weak var commsBridge: ReaderCommsBridge?
     public weak var mediaOverlayManager: MediaOverlayManager?
@@ -80,10 +81,20 @@ public final class EphemeralProgressManager {
         var sectionIndex: Int
     }
 
+    private struct PendingPageTurnCommand {
+        let id: String
+    }
+
+    private enum PageNavQueueResult {
+        case queued
+        case untracked
+        case blocked
+    }
+
     private var pendingPageNav: PendingPageNav? = nil
     private var pendingSeekNav: PendingSeekNav? = nil
     private var pendingChapterTransition: Int? = nil
-    private var pendingSwiftCommandFlipEchoes = 0
+    private var pendingPageTurnCommand: PendingPageTurnCommand? = nil
     private var userNavFallbackTask: Task<Void, Never>? = nil
 
     /// Timestamp of last user activity (navigation or audio playback)
@@ -131,6 +142,12 @@ public final class EphemeralProgressManager {
 
     /// Webview recovery: the fresh bridge needs the relocate handler reinstalled.
     public func rebindBridge(_ bridge: ReaderCommsBridge?) {
+        pendingPageTurnCommand = nil
+        pendingPageNav = nil
+        pendingSeekNav = nil
+        pendingChapterTransition = nil
+        pendingUserNavSyncReason = nil
+        cancelUserNavFallback()
         commsBridge = bridge
         installRelocateHandler(on: bridge)
     }
@@ -474,8 +491,9 @@ public final class EphemeralProgressManager {
        expected page for the current section and wait for the matching relocate before syncing
        readaloud (MOM).
      - Button/margin nav is Swift-triggered (sendJsGoLeft/Right). We queue the expected page
-       immediately because JS doesn't reliably emit PageFlipped in all environments. If a
-       PageFlipped echo does arrive, we suppress it to avoid double-queueing.
+       under a command ID and settle it from the matching relocate. JS reports that command's
+       completion, interruption, or rejection under the same ID. PageFlipped is reserved for
+       JS-owned swipe gestures.
      - If multiple swipes arrive before relocates settle, we advance the expected page each time.
      - If the expected page crosses the chapter boundary (page < 1 or > totalPages), we set up
        a pendingChapterTransition and let the original goLeft/goRight command execute. Foliate
@@ -511,7 +529,6 @@ public final class EphemeralProgressManager {
             pendingChapterTransition = nil
             pendingPageNav = nil
             pendingSeekNav = nil
-            pendingSwiftCommandFlipEchoes = 0
             cancelUserNavFallback()
             chapterTransitionResolved = true
         }
@@ -526,7 +543,6 @@ public final class EphemeralProgressManager {
                 "[EPM] Pending page nav invalidated by section change (expected \(pending.sectionIndex), got \(section))"
             )
             pendingPageNav = nil
-            pendingSwiftCommandFlipEchoes = 0
             cancelUserNavFallback()
         }
 
@@ -552,7 +568,6 @@ public final class EphemeralProgressManager {
         {
             debugLog("[EPM] Matched pending page nav: section \(section), page \(page)")
             pendingPageNav = nil
-            pendingSwiftCommandFlipEchoes = 0
             cancelUserNavFallback()
             shouldNotifyUserNav = true
         } else if let pending = pendingSeekNav,
@@ -610,10 +625,10 @@ public final class EphemeralProgressManager {
     }
 
     private func handleScrollingRelocated(_ message: RelocatedMessage) {
+        pendingPageTurnCommand = nil
         pendingPageNav = nil
         pendingSeekNav = nil
         pendingChapterTransition = nil
-        pendingSwiftCommandFlipEchoes = 0
         cancelUserNavFallback()
 
         selectedChapterId = message.sectionIndex
@@ -645,21 +660,23 @@ public final class EphemeralProgressManager {
         direction: UserNavDirection,
         delta: Int = 1,
         fromPage: Int? = nil,
+        toPage: Int? = nil,
         totalPages: Int? = nil,
         source: String,
-    ) -> Bool {
+    ) -> PageNavQueueResult {
         guard pendingChapterTransition == nil else {
             debugLog("[EPM] Ignoring page nav (\(direction.rawValue)) - chapter transition pending")
-            return false
+            return .blocked
         }
 
         guard let sectionIndex = selectedChapterId else {
             debugLog("[EPM] Cannot queue page nav - no current section")
-            return false
+            return .untracked
         }
 
         let stepMagnitude = max(1, abs(delta))
-        let step = direction == .right ? stepMagnitude : -stepMagnitude
+        let forwardDirection: UserNavDirection = isRTLPageProgression ? .left : .right
+        let step = direction == forwardDirection ? stepMagnitude : -stepMagnitude
 
         let resolvedTotalPages = totalPages ?? pendingPageNav?.totalPages ?? chapterTotalPages
         let basePage: Int?
@@ -674,22 +691,26 @@ public final class EphemeralProgressManager {
 
         guard let basePage else {
             debugLog("[EPM] Cannot queue page nav - no current page")
-            return false
+            return .untracked
         }
 
-        let expectedPage = basePage + step
+        // A PageFlipped event describes where the gesture actually settled.
+        // Prefer that over a destination predicted for an interrupted command.
+        let expectedPage = toPage ?? basePage + step
 
         if let total = resolvedTotalPages, expectedPage < 1 || expectedPage > total {
-            let targetSection =
-                direction == .right
-                ? sectionIndex + 1
-                : sectionIndex - 1
+            // Paginator page numbers follow spine order even when RTL presentation
+            // reverses direction.
+            let sectionStep = expectedPage > total ? 1 : -1
 
-            guard targetSection >= 0 && targetSection < bookStructure.count else {
+            guard let targetSection = adjacentLinearSectionIndex(
+                from: sectionIndex,
+                step: sectionStep,
+            ) else {
                 debugLog(
                     "[EPM] Page nav crossed boundary but no adjacent chapter (section \(sectionIndex), page \(basePage)/\(total))"
                 )
-                return false
+                return .untracked
             }
 
             debugLog(
@@ -705,7 +726,7 @@ public final class EphemeralProgressManager {
                 pendingUserNavSyncReason = .userFlippedPage
             }
 
-            return false
+            return .queued
         }
 
         pendingSeekNav = nil
@@ -726,7 +747,18 @@ public final class EphemeralProgressManager {
         )
 
         resolvePendingPageNavIfAlreadyAtExpected()
-        return true
+        return .queued
+    }
+
+    private func adjacentLinearSectionIndex(from sectionIndex: Int, step: Int) -> Int? {
+        var candidate = sectionIndex + step
+        while candidate >= 0 && candidate < bookStructure.count {
+            if bookStructure[candidate].linear != "no" {
+                return candidate
+            }
+            candidate += step
+        }
+        return nil
     }
 
     private func resolvePendingPageNavIfAlreadyAtExpected() {
@@ -761,7 +793,8 @@ public final class EphemeralProgressManager {
             }
 
             guard !Task.isCancelled else { return }
-            guard pendingChapterTransition == nil,
+            guard pendingPageTurnCommand == nil,
+                pendingChapterTransition == nil,
                 pendingPageNav != nil || pendingSeekNav != nil
             else { return }
             guard let section = selectedChapterId,
@@ -776,7 +809,6 @@ public final class EphemeralProgressManager {
             )
             pendingPageNav = nil
             pendingSeekNav = nil
-            pendingSwiftCommandFlipEchoes = 0
 
             let reason = pendingUserNavSyncReason
             pendingUserNavSyncReason = nil
@@ -810,6 +842,7 @@ public final class EphemeralProgressManager {
         }
 
         cancelUserNavFallback()
+        pendingPageTurnCommand = nil
         pendingPageNav = nil
         pendingSeekNav = PendingSeekNav(sectionIndex: sectionIndex)
 
@@ -841,6 +874,7 @@ public final class EphemeralProgressManager {
 
         pendingPageNav = nil
         pendingSeekNav = nil
+        pendingPageTurnCommand = nil
         cancelUserNavFallback()
         pendingChapterTransition = newId
 
@@ -888,20 +922,7 @@ public final class EphemeralProgressManager {
             return
         }
 
-        // Swift-triggered nav queues immediately; a PageFlipped echo may follow.
-        if queuePageNav(direction: .left, source: "left-nav") {
-            pendingSwiftCommandFlipEchoes += 1
-        }
-        Task { @StorytellerUIActor in
-            do {
-                try await commsBridge?.sendJsGoLeftCommand()
-            } catch {
-                debugLog("[EPM] Failed to send left nav: \(error)")
-                pendingPageNav = nil
-                pendingSwiftCommandFlipEchoes = 0
-                cancelUserNavFallback()
-            }
-        }
+        requestPageTurn(direction: .left)
     }
 
     /// User pressed right arrow or swiped left (next page)
@@ -919,36 +940,114 @@ public final class EphemeralProgressManager {
             return
         }
 
-        // Swift-triggered nav queues immediately; a PageFlipped echo may follow.
-        if queuePageNav(direction: .right, source: "right-nav") {
-            pendingSwiftCommandFlipEchoes += 1
+        requestPageTurn(direction: .right)
+    }
+
+    private func requestPageTurn(direction: UserNavDirection) {
+        guard pendingPageTurnCommand == nil else {
+            debugLog(
+                "[EPM] Ignoring \(direction.rawValue) nav - page-turn command already pending"
+            )
+            return
         }
+
+        guard let bridge = commsBridge else {
+            debugLog("[EPM] Cannot request \(direction.rawValue) nav - bridge unavailable")
+            return
+        }
+
+        let queueResult = queuePageNav(
+            direction: direction,
+            source: "\(direction.rawValue)-nav"
+        )
+        guard queueResult != .blocked else {
+            return
+        }
+
+        mediaOverlayManager?.handleUserPageTurnStarted()
+
+        let commandID = UUID().uuidString
+        pendingPageTurnCommand = PendingPageTurnCommand(id: commandID)
+
         Task { @StorytellerUIActor in
             do {
-                try await commsBridge?.sendJsGoRightCommand()
+                switch direction {
+                    case .left:
+                        try await bridge.sendJsGoLeftCommand(commandID: commandID)
+                    case .right:
+                        try await bridge.sendJsGoRightCommand(
+                            animated: true,
+                            commandID: commandID,
+                        )
+                }
             } catch {
-                debugLog("[EPM] Failed to send right nav: \(error)")
-                pendingPageNav = nil
-                pendingSwiftCommandFlipEchoes = 0
-                cancelUserNavFallback()
+                debugLog("[EPM] Failed to send \(direction.rawValue) nav: \(error)")
+                rejectPendingPageTurn(commandID: commandID, reason: "bridge error")
             }
         }
+    }
+
+    /// JS reports the outcome of the exact Swift-owned page turn identified by commandID.
+    public func handlePageTurnSettled(_ message: PageTurnSettledMessage) {
+        guard pendingPageTurnCommand?.id == message.commandID else {
+            debugLog(
+                "[EPM] Ignoring stale page-turn settlement for \(message.commandID)"
+            )
+            return
+        }
+
+        pendingPageTurnCommand = nil
+
+        switch message.status {
+            case .completed:
+                debugLog("[EPM] Page-turn command \(message.commandID) completed")
+                if pendingPageNav != nil || pendingSeekNav != nil {
+                    scheduleUserNavFallback(source: "page-turn-settled")
+                }
+
+            case .interrupted, .rejected:
+                rejectPendingPageTurn(
+                    commandID: message.commandID,
+                    reason: message.status.rawValue,
+                    commandAlreadyCleared: true,
+                )
+        }
+    }
+
+    private func rejectPendingPageTurn(
+        commandID: String,
+        reason: String,
+        commandAlreadyCleared: Bool = false,
+    ) {
+        if !commandAlreadyCleared {
+            guard pendingPageTurnCommand?.id == commandID else { return }
+            pendingPageTurnCommand = nil
+        }
+
+        debugLog("[EPM] Rolling back page-turn command \(commandID) (\(reason))")
+        pendingPageNav = nil
+        pendingSeekNav = nil
+        pendingChapterTransition = nil
+        pendingUserNavSyncReason = nil
+        cancelUserNavFallback()
     }
 
     /// User performed touch swipe on webview (JS already handled navigation)
     public func handleUserNavSwipeDetected(_ message: PageFlippedMessage) {
         // PageFlipped is the single source of truth for swipe gestures.
-        // Swift-triggered goLeft/goRight can emit a PageFlipped echo; suppress those.
-        if pendingSwiftCommandFlipEchoes > 0 {
-            pendingSwiftCommandFlipEchoes -= 1
-            debugLog("[EPM] Ignoring PageFlipped echo from Swift-triggered nav")
-            return
-        }
-
         guard let direction = UserNavDirection(rawValue: message.direction) else {
             debugLog("[EPM] Unrecognized page flip direction: \(message.direction)")
             return
         }
+
+        if let pendingCommand = pendingPageTurnCommand {
+            rejectPendingPageTurn(
+                commandID: pendingCommand.id,
+                reason: "superseded by swipe",
+            )
+        }
+
+        mediaOverlayManager?.handleUserPageTurnStarted()
 
         let delta = message.delta ?? 1
 
@@ -956,6 +1055,7 @@ public final class EphemeralProgressManager {
             direction: direction,
             delta: delta,
             fromPage: message.fromPage,
+            toPage: message.toPage,
             totalPages: chapterTotalPages,
             source: "page-flip",
         )
@@ -981,6 +1081,7 @@ public final class EphemeralProgressManager {
 
         pendingPageNav = nil
         pendingSeekNav = nil
+        pendingPageTurnCommand = nil
         cancelUserNavFallback()
 
         if !isSameSection {

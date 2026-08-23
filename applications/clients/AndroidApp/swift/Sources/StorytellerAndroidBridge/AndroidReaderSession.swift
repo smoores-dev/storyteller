@@ -95,6 +95,7 @@ final class AndroidReaderSettings: ReaderSettingsReading {
     var customCSS: String? = nil
     var singleColumnMode: Bool = kDefaultSingleColumnMode
     var scrollingMode: Bool = kDefaultScrollingMode
+    var disableReaderAnimations: Bool = kDefaultDisableReaderAnimations
     var enableMarginClickNavigation: Bool = kDefaultEnableMarginClickNavigation
     var userHighlightMode: String = kDefaultUserHighlightMode
     var readaloudHighlightMode: String = kDefaultReadaloudHighlightMode
@@ -134,6 +135,7 @@ final class AndroidReaderSettings: ReaderSettingsReading {
         var customCSS: String?
         var singleColumnMode: Bool?
         var scrollingMode: Bool?
+        var disableReaderAnimations: Bool?
         var enableMarginClickNavigation: Bool?
         var userHighlightMode: String?
         var readaloudHighlightMode: String?
@@ -166,6 +168,7 @@ final class AndroidReaderSettings: ReaderSettingsReading {
         if let value = update.customCSS { customCSS = value.isEmpty ? nil : value }
         if let value = update.singleColumnMode { singleColumnMode = value }
         if let value = update.scrollingMode { scrollingMode = value }
+        if let value = update.disableReaderAnimations { disableReaderAnimations = value }
         if let value = update.enableMarginClickNavigation { enableMarginClickNavigation = value }
         if let value = update.userHighlightMode { userHighlightMode = value }
         if let value = update.readaloudHighlightMode { readaloudHighlightMode = value }
@@ -325,6 +328,7 @@ final class AndroidReaderSession {
         settings.textAlignment = config.reading.textAlignment
         settings.singleColumnMode = config.reading.singleColumnMode
         settings.scrollingMode = config.reading.scrollingMode
+        settings.disableReaderAnimations = config.reading.disableReaderAnimations
         settings.enableMarginClickNavigation = config.reading.enableMarginClickNavigation
         settings.readaloudDimOthers = config.reading.readaloudDimOthers
         settings.readaloudDimAmount = config.reading.readaloudDimAmount
@@ -749,7 +753,7 @@ final class AndroidReaderSession {
                 timelineForwardDescription = ""
                 publishState(session)
             case "sceneActive":
-                await session.handleSceneBecameActive()
+                _ = await session.reconcilePositionAfterSceneActivation()
             case "sceneBackground":
                 await session.handleSceneEnteredBackground()
             default:
@@ -1195,6 +1199,7 @@ final class AndroidReaderSession {
         settings.textAlignment = kDefaultTextAlignment
         settings.singleColumnMode = kDefaultSingleColumnMode
         settings.scrollingMode = kDefaultScrollingMode
+        settings.disableReaderAnimations = kDefaultDisableReaderAnimations
         settings.enableMarginClickNavigation = kDefaultEnableMarginClickNavigation
     }
 
@@ -1388,6 +1393,7 @@ final class AndroidReaderSession {
             enableMarginClickNavigation: settings.enableMarginClickNavigation,
             singleColumnMode: settings.singleColumnMode,
             scrollingMode: settings.scrollingMode,
+            disableReaderAnimations: settings.disableReaderAnimations,
             freeBrowseMode: settings.freeBrowseMode,
             readaloudDimOthers: settings.readaloudDimOthers,
             readaloudDimAmount: settings.readaloudDimAmount,
@@ -1621,6 +1627,7 @@ final class AndroidReaderSession {
             let textAlignment: String
             let singleColumnMode: Bool
             let scrollingMode: Bool
+            let disableReaderAnimations: Bool
             let enableMarginClickNavigation: Bool
             let lockViewToAudio: Bool
             let readaloudDimOthers: Bool
@@ -1814,6 +1821,7 @@ final class AndroidReaderSession {
                 textAlignment: settings.textAlignment,
                 singleColumnMode: settings.singleColumnMode,
                 scrollingMode: settings.scrollingMode,
+                disableReaderAnimations: settings.disableReaderAnimations,
                 enableMarginClickNavigation: settings.enableMarginClickNavigation,
                 lockViewToAudio: settings.lockViewToAudio,
                 readaloudDimOthers: settings.readaloudDimOthers,

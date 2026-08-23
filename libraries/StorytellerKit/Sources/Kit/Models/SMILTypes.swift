@@ -6,6 +6,7 @@ public struct SectionInfo: Codable, Identifiable, Sendable {
     public let id: String
     public let label: String?
     public let level: Int?
+    public let linear: String?
     public let mediaOverlay: [SMILEntry]
 
     public init(
@@ -13,12 +14,14 @@ public struct SectionInfo: Codable, Identifiable, Sendable {
         id: String,
         label: String?,
         level: Int?,
+        linear: String? = nil,
         mediaOverlay: [SMILEntry],
     ) {
         self.index = index
         self.id = id
         self.label = label
         self.level = level
+        self.linear = linear
         self.mediaOverlay = mediaOverlay
     }
 }

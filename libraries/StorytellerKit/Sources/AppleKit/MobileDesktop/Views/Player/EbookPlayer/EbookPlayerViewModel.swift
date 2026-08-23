@@ -19,6 +19,7 @@ class EbookPlayerViewModel {
     private var comicBookStructure: [SectionInfo] = []
     private var comicProgressManager: EphemeralProgressManager? = nil
     private var bridgeInitialColorScheme: ColorScheme = .light
+    @ObservationIgnored private var scenePhaseTask: Task<Void, Never>?
     var styleManager: ReaderStyleManager? = nil
     var searchManager: EbookSearchManager? = nil
     var comicPageURLs: [URL] = []
@@ -463,8 +464,10 @@ class EbookPlayerViewModel {
         session.isViewRecovering = { [weak self] in
             self?.recoveryManager?.isInRecovery == true
         }
-        session.onRecoveryStructureReady = { [weak self] in
-            _ = self?.recoveryManager?.handleBookStructureReadyIfRecovering()
+        session.onRecoveryStructureReady = { [weak self] restoreSavedViewPosition in
+            _ = self?.recoveryManager?.handleBookStructureReadyIfRecovering(
+                restoreSavedViewPosition: restoreSavedViewPosition
+            )
         }
         #endif
         session.configureMediaOverlayManager = { [weak self] manager in
@@ -704,14 +707,25 @@ class EbookPlayerViewModel {
     func handleScenePhaseChange(_ phase: ScenePhase) {
         switch phase {
             case .active:
-                Task { @MainActor in
-                    await progressManager?.handleResume()
-                    await session?.handleSceneBecameActive()
+                let precedingTask = scenePhaseTask
+                scenePhaseTask = Task { @MainActor [weak self] in
+                    await precedingTask?.value
+                    guard let self else { return }
+                    let positionOwner = await self.session?
+                        .reconcilePositionAfterSceneActivation() ?? .persistedProgress
+                    switch positionOwner {
+                        case .persistedProgress:
+                            await self.progressManager?.handleResume()
+                        case .nativeAudio:
+                            break
+                    }
                 }
             case .background:
                 debugLog("[EbookPlayerViewModel] Entering background - audio continues natively")
-                Task { @MainActor in
-                    await session?.handleSceneEnteredBackground()
+                let precedingTask = scenePhaseTask
+                scenePhaseTask = Task { @MainActor [weak self] in
+                    await precedingTask?.value
+                    await self?.session?.handleSceneEnteredBackground()
                 }
             case .inactive:
                 break

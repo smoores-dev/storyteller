@@ -334,7 +334,7 @@ public final class MediaOverlayManager {
         )
 
         // A backgrounded webview cannot be trusted to run JS; skip the send
-        // and let the scene-active re-anchor issue one navigation instead.
+        // and let the scene-active re-anchor restore navigation and highlight.
         if isInBackground {
             viewPositionDirty = true
         } else if !playheadDiverged {
@@ -530,6 +530,15 @@ public final class MediaOverlayManager {
         return overlappingIds.contains(activeTextId)
     }
 
+
+    /// Give an interactive page turn priority over read-aloud follow-along.
+    /// The pending task may otherwise fire after the swipe and turn another page.
+    func handleUserPageTurnStarted() {
+        pageFlipTask?.cancel()
+        pageFlipTask = nil
+        suppressActorHighlightsUntil = Date().addingTimeInterval(0.5)
+    }
+
     /// Called when navigation occurs naturally (media overlay auto-progression, resize events)
     /// Excludes user-initiated actions which are handled by handleUserNavEvent
     /// This also handles media overlay progress events (anchor changes during playback)
@@ -674,6 +683,31 @@ public final class MediaOverlayManager {
         } else {
             try? await commsBridge?.sendJsClearHighlight()
             try? await commsBridge?.sendJsGoToHrefCommand(href: "\(entry.textHref)#\(entry.textId)")
+        }
+        playheadDiverged = false
+    }
+
+    /// Restore a recreated or backgrounded view to the native audio position.
+    /// A highlight command with `seekToLocation` performs both the navigation
+    /// and the visual restoration, so it replaces a separate `goTo` whenever
+    /// the current visibility policy allows the highlight to be shown.
+    func reanchorViewToPlayhead(
+        sectionIndex: Int,
+        textId: String,
+        href: String,
+        isPlaying: Bool,
+        bridge: ReaderCommsBridge,
+    ) async throws {
+        try await bridge.sendJsSetPlaybackActive(isPlaying)
+        if isPlaying || highlightVisibility != .playing {
+            try await bridge.sendJsHighlightFragment(
+                sectionIndex: sectionIndex,
+                textId: textId,
+                seekToLocation: true,
+            )
+        } else {
+            try await bridge.sendJsClearHighlight()
+            try await bridge.sendJsGoToHrefCommand(href: href)
         }
         playheadDiverged = false
     }
@@ -1223,6 +1257,6 @@ public final class MediaOverlayManager {
 
         lastFlipTime = Date()
         debugLog("[MOM] Page flip")
-        try? await commsBridge?.sendJsGoRightCommand()
+        try? await commsBridge?.sendJsGoRightCommand(animated: false)
     }
 }

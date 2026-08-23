@@ -244,12 +244,6 @@ internal fun SettingsScreen(
                 onCheckedChange = { updateEinkOptions(einkOptions.copy(optimizeRefresh = it)) },
             )
             SettingToggleRow(
-                title = "Reduce animations",
-                subtitle = "Skip UI animations that smear on e-ink displays.",
-                checked = einkOptions.reduceAnimations,
-                onCheckedChange = { updateEinkOptions(einkOptions.copy(reduceAnimations = it)) },
-            )
-            SettingToggleRow(
                 title = "Book cover sleep screen",
                 subtitle = "Set the device sleep screensaver to the cover of the book " +
                     "being read. Replaces any screensaver image configured in the " +

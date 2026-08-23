@@ -333,21 +333,19 @@ export class FixedLayout extends HTMLElement {
   }
   async next() {
     const s = this.rtl ? this.#goLeft() : this.#goRight()
-    if (!s)
-      return this.goToSpread(
-        this.#index + 1,
-        this.rtl ? "right" : "left",
-        "page",
-      )
+    if (s) return "completed"
+    const index = this.#index + 1
+    if (index > this.#spreads.length - 1) return "rejected"
+    await this.goToSpread(index, this.rtl ? "right" : "left", "page")
+    return "completed"
   }
   async prev() {
     const s = this.rtl ? this.#goRight() : this.#goLeft()
-    if (!s)
-      return this.goToSpread(
-        this.#index - 1,
-        this.rtl ? "left" : "right",
-        "page",
-      )
+    if (s) return "completed"
+    const index = this.#index - 1
+    if (index < 0) return "rejected"
+    await this.goToSpread(index, this.rtl ? "left" : "right", "page")
+    return "completed"
   }
   getContents() {
     return Array.from(this.#root.querySelectorAll("iframe"), (frame) => ({

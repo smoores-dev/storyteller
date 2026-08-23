@@ -8,7 +8,6 @@ import org.json.JSONObject
 // config so one device's eink settings never travel to another.
 internal data class EinkOptions(
     val optimizeRefresh: Boolean = true,
-    val reduceAnimations: Boolean = true,
     val coverScreensaver: Boolean = false,
 )
 
@@ -22,7 +21,6 @@ internal class EinkOptionsStore(context: Context) {
             val obj = JSONObject(json)
             EinkOptions(
                 optimizeRefresh = obj.optBoolean("optimizeRefresh", true),
-                reduceAnimations = obj.optBoolean("reduceAnimations", true),
                 coverScreensaver = obj.optBoolean("coverScreensaver", false),
             )
         }.getOrDefault(EinkOptions())
@@ -31,7 +29,6 @@ internal class EinkOptionsStore(context: Context) {
     fun save(options: EinkOptions) {
         val json = JSONObject().apply {
             put("optimizeRefresh", options.optimizeRefresh)
-            put("reduceAnimations", options.reduceAnimations)
             put("coverScreensaver", options.coverScreensaver)
         }.toString()
         preferences.edit().putString(KEY, json).apply()

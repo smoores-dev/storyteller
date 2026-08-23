@@ -235,6 +235,7 @@ class FoliateManager {
   #lastSpanHighlightedColor = null
   #singleColumnMode = false
   #scrollingMode = false
+  #disableReaderAnimations = false
   #hasAudioNarration = false
   #enableMarginClickNavigation = true
   #lastRelocateRange = null
@@ -381,7 +382,8 @@ class FoliateManager {
       event.defaultPrevented ||
       event.metaKey ||
       event.ctrlKey ||
-      event.altKey
+      event.altKey ||
+      event.shiftKey
     )
       return
 
@@ -396,16 +398,15 @@ class FoliateManager {
       return
     }
 
-    // iPad hardware keyboard: route left/right arrows through the same EPM path as
-    // macOS arrow keys (Swift handleUserNavLeft/Right). WKWebView swallows hardware
-    // keys on iOS so SwiftUI's onKeyPress (used on macOS) never fires over the
-    // webview; this keydown listener is the only reliable capture point, and
-    // MarginClickNav is the existing bridge into the EPM. Gated to touch devices
-    // (maxTouchPoints is 0 on the AppKit macOS build) so macOS keeps using its
-    // native onKeyPress and we never double-navigate. Raw direction is sent so it
-    // matches macOS arrow keys exactly, bypassing the RTL flip that tap zones use.
+    // Route hardware left/right arrows through the existing EPM bridge when
+    // WKWebView owns the key event. This is required on touch devices, where
+    // SwiftUI never receives the event, and for paginated CSS snap, where the
+    // browser would otherwise scroll the snap container itself. Raw direction
+    // matches the SwiftUI arrow-key handlers and bypasses the RTL flip used by
+    // margin tap zones.
     if (
-      navigator.maxTouchPoints > 0 &&
+      (navigator.maxTouchPoints > 0 ||
+        this.#view?.renderer?.cssSnapEnabled === true) &&
       (event.key === "ArrowLeft" || event.key === "ArrowRight")
     ) {
       event.preventDefault()
@@ -559,6 +560,7 @@ class FoliateManager {
         id: section.id,
         label: null,
         level: null,
+        linear: section.linear ?? null,
         mediaOverlay: [],
       }
     })
@@ -570,7 +572,10 @@ class FoliateManager {
       "sections",
     )
 
-    const payload = { sections }
+    const payload = {
+      sections,
+      isRtl: this.#view?.book?.dir === "rtl",
+    }
     window.webkit?.messageHandlers?.BookStructureReady?.postMessage(payload)
   }
 
@@ -661,22 +666,57 @@ class FoliateManager {
     })
   }
 
-  goLeft() {
-    debugLog("FoliateManager", "goLeft()")
-    if (!this.#view) {
-      console.warn("[FM2] goLeft() called but view not initialized")
-      return
-    }
-    this.#view.goLeft()
+  #reportPageTurnSettled(commandId, status) {
+    if (!commandId) return
+    window.webkit?.messageHandlers?.PageTurnSettled?.postMessage({
+      commandId,
+      status,
+    })
   }
 
-  goRight() {
-    debugLog("FoliateManager", "goRight()")
+  #runPageTurn(direction, animated, commandId) {
+    debugLog("FoliateManager", `${direction}(${animated}, ${commandId})`)
     if (!this.#view) {
-      console.warn("[FM2] goRight() called but view not initialized")
-      return
+      console.warn(`[FM2] ${direction}() called but view not initialized`)
+      this.#reportPageTurnSettled(commandId, "rejected")
+      return false
     }
-    this.#view.goRight()
+    if (this.#view.renderer?.pageTurnBlocksNavigation) {
+      debugLog(
+        "FoliateManager",
+        `Ignoring ${direction}() while another page turn owns navigation`,
+      )
+      this.#reportPageTurnSettled(commandId, "rejected")
+      return false
+    }
+
+    let turn
+    try {
+      turn =
+        direction === "goLeft"
+          ? this.#view.goLeft(animated, true)
+          : this.#view.goRight(animated, true)
+    } catch (error) {
+      console.error(`[FM2] ${direction}() failed`, error)
+      this.#reportPageTurnSettled(commandId, "rejected")
+      return false
+    }
+    Promise.resolve(turn).then(
+      (status) => this.#reportPageTurnSettled(commandId, status ?? "rejected"),
+      (error) => {
+        console.error(`[FM2] ${direction}() failed`, error)
+        this.#reportPageTurnSettled(commandId, "rejected")
+      },
+    )
+    return true
+  }
+
+  goLeft(animated = true, commandId = null) {
+    return this.#runPageTurn("goLeft", animated, commandId)
+  }
+
+  goRight(animated = true, commandId = null) {
+    return this.#runPageTurn("goRight", animated, commandId)
   }
 
   goTo(href) {
@@ -919,6 +959,12 @@ class FoliateManager {
       this.#scrollingMode = styles.scrollingMode
     }
     if (
+      styles.disableReaderAnimations !== undefined &&
+      styles.disableReaderAnimations !== null
+    ) {
+      this.#disableReaderAnimations = styles.disableReaderAnimations
+    }
+    if (
       styles.hasAudioNarration !== undefined &&
       styles.hasAudioNarration !== null
     ) {
@@ -984,6 +1030,10 @@ class FoliateManager {
 
     const flow = this.#scrollingMode ? "scrolled" : "paginated"
     this.#view.renderer.setAttribute("flow", flow)
+    this.#view.renderer.toggleAttribute(
+      "animated",
+      !this.#disableReaderAnimations,
+    )
     debugLog("FoliateManager", `Set flow to ${flow}`)
 
     const columnCount =
@@ -1454,6 +1504,18 @@ class FoliateManager {
       return
     }
 
+    // A read-aloud anchor navigation would cancel an in-flight native page
+    // snap and pull the reader back to the sentence playback just left. Let
+    // the page turn settle; its PageFlipped/Relocated events will then
+    // reconcile playback and issue the highlight for the destination page.
+    if (seekToLocation && renderer.pageTurnBlocksNavigation) {
+      debugLog(
+        "FoliateManager",
+        "Ignoring follow-along navigation while a page turn owns navigation",
+      )
+      return
+    }
+
     const contents = renderer.getContents?.()
     const sectionHref = this.#view.book?.sections?.[sectionIndex]?.id
 
@@ -1501,7 +1563,9 @@ class FoliateManager {
           `seekToLocation enabled, navigating to ${sectionHref}#${textId}`,
         )
         this.#pendingHighlight = { sectionIndex, textId }
-        this.#view.goTo(`${sectionHref}#${textId}`)
+        this.#view.goTo(`${sectionHref}#${textId}`, {
+          smooth: renderer.scrolled,
+        })
         return
       }
       debugLog(

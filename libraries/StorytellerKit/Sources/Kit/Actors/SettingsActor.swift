@@ -75,6 +75,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var enableMarginClickNavigation: Bool
         public var singleColumnMode: Bool
         public var scrollingMode: Bool
+        public var disableReaderAnimations: Bool
         public var userHighlightColor1: String
         public var userHighlightColor2: String
         public var userHighlightColor3: String
@@ -118,6 +119,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             enableMarginClickNavigation: Bool = kDefaultEnableMarginClickNavigation,
             singleColumnMode: Bool? = nil,
             scrollingMode: Bool = kDefaultScrollingMode,
+            disableReaderAnimations: Bool = kDefaultDisableReaderAnimations,
             userHighlightColor1: String = kDefaultUserHighlightColor1,
             userHighlightColor2: String = kDefaultUserHighlightColor2,
             userHighlightColor3: String = kDefaultUserHighlightColor3,
@@ -164,6 +166,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             self.customCSS = customCSS
             self.enableMarginClickNavigation = enableMarginClickNavigation
             self.scrollingMode = scrollingMode
+            self.disableReaderAnimations = disableReaderAnimations
             self.userHighlightColor1 = userHighlightColor1
             self.userHighlightColor2 = userHighlightColor2
             self.userHighlightColor3 = userHighlightColor3
@@ -256,6 +259,9 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
                 (try? container?.decode(Bool.self, forKey: .scrollingMode))
                 ?? (try? legacyContainer?.decode(Bool.self, forKey: .readaloudScrollingMode))
                 ?? kDefaultScrollingMode
+            disableReaderAnimations =
+                (try? container?.decode(Bool.self, forKey: .disableReaderAnimations))
+                ?? kDefaultDisableReaderAnimations
             userHighlightColor1 =
                 (try? container?.decode(String.self, forKey: .userHighlightColor1))
                 ?? kDefaultUserHighlightColor1
@@ -346,7 +352,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             case textAlignment, highlightColor, highlightThickness
             case backgroundColor, foregroundColor
             case customCSS, enableMarginClickNavigation, singleColumnMode
-            case scrollingMode
+            case scrollingMode, disableReaderAnimations
             case userHighlightColor1, userHighlightColor2, userHighlightColor3
             case userHighlightColor4, userHighlightColor5, userHighlightColor6
             case userHighlightLabel1, userHighlightLabel2, userHighlightLabel3
@@ -1161,6 +1167,7 @@ public actor SettingsActor {
         enableMarginClickNavigation: Bool? = nil,
         singleColumnMode: Bool? = nil,
         scrollingMode: Bool? = nil,
+        disableReaderAnimations: Bool? = nil,
         defaultPlaybackSpeed: Double? = nil,
         defaultVolume: Double? = nil,
         statsExpanded: Bool? = nil,
@@ -1275,6 +1282,9 @@ public actor SettingsActor {
         if let singleColumnMode { updated.reading.singleColumnMode = singleColumnMode }
         if let scrollingMode {
             updated.reading.scrollingMode = scrollingMode
+        }
+        if let disableReaderAnimations {
+            updated.reading.disableReaderAnimations = disableReaderAnimations
         }
         if let defaultPlaybackSpeed { updated.playback.defaultPlaybackSpeed = defaultPlaybackSpeed }
         if let defaultVolume { updated.playback.defaultVolume = defaultVolume }

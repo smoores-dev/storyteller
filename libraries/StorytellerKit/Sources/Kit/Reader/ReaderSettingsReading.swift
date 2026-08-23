@@ -23,6 +23,7 @@ public protocol ReaderSettingsReading: AnyObject {
     var customCSS: String? { get }
     var singleColumnMode: Bool { get }
     var scrollingMode: Bool { get }
+    var disableReaderAnimations: Bool { get }
     var enableMarginClickNavigation: Bool { get }
     var userHighlightMode: String { get }
     var readaloudHighlightMode: String { get }

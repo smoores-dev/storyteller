@@ -72,6 +72,7 @@ public enum SMILParser {
                     id: sectionId,
                     label: nil,
                     level: nil,
+                    linear: spineItem.linear,
                     mediaOverlay: mediaOverlay,
                 )
             )
@@ -93,6 +94,7 @@ public enum SMILParser {
                     id: section.id,
                     label: label,
                     level: level,
+                    linear: section.linear,
                     mediaOverlay: section.mediaOverlay,
                 )
             }
@@ -170,6 +172,7 @@ public enum SMILParser {
     struct SpineItem {
         let idref: String
         let mediaOverlay: String?
+        let linear: String?
     }
 
     static func parseOPF(_ data: Data) throws -> (
@@ -368,6 +371,7 @@ private class OPFXMLDelegate: NSObject, XMLParserDelegate {
                 SMILParser.SpineItem(
                     idref: idref,
                     mediaOverlay: attributes["media-overlay"],
+                    linear: attributes["linear"],
                 )
             )
         }

@@ -786,10 +786,10 @@ export class View extends HTMLElement {
       console.error(`Could not resolve target ${target}`)
     }
   }
-  async goTo(target) {
+  async goTo(target, { smooth = false } = {}) {
     const resolved = this.resolveNavigation(target)
     try {
-      await this.renderer.goTo(resolved)
+      await this.renderer.goTo({ ...resolved, smooth })
       this.history.pushState(target)
       return resolved
     } catch (e) {
@@ -844,17 +844,21 @@ export class View extends HTMLElement {
       console.error(`Could not get ${target}`)
     }
   }
-  async prev(distance) {
-    await this.renderer.prev(distance)
+  async prev(distance, animated = true, blockUserInput = false) {
+    return this.renderer.prev(distance, animated, blockUserInput)
   }
-  async next(distance) {
-    await this.renderer.next(distance)
+  async next(distance, animated = true, blockUserInput = false) {
+    return this.renderer.next(distance, animated, blockUserInput)
   }
-  goLeft() {
-    return this.book.dir === "rtl" ? this.next() : this.prev()
+  goLeft(animated = true, blockUserInput = false) {
+    return this.book.dir === "rtl"
+      ? this.next(undefined, animated, blockUserInput)
+      : this.prev(undefined, animated, blockUserInput)
   }
-  goRight() {
-    return this.book.dir === "rtl" ? this.prev() : this.next()
+  goRight(animated = true, blockUserInput = false) {
+    return this.book.dir === "rtl"
+      ? this.prev(undefined, animated, blockUserInput)
+      : this.next(undefined, animated, blockUserInput)
   }
   async *#searchSection(matcher, query, index) {
     const doc = await this.book.sections[index].createDocument()
