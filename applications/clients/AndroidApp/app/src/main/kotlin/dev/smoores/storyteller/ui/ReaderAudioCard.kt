@@ -1,5 +1,6 @@
 package dev.smoores.storyteller.ui
 
+import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +33,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -75,10 +78,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.smoores.storyteller.model.Book
+import dev.smoores.storyteller.model.FullPlayerCustomization
 import dev.smoores.storyteller.model.MiniPlayerCustomization
 import dev.smoores.storyteller.model.MiniPlayerSize
 import dev.smoores.storyteller.model.PlayerComplication
@@ -263,6 +268,8 @@ internal fun ReaderAudioCard(
                                 readerState = readerState,
                                 chapterLabel = chapterLabel,
                                 palette = palette,
+                                display = display,
+                                actions = actions,
                                 readerControl = readerControl,
                                 onCollapse = { scope.launch { settle(false) } },
                                 onShowChapters = onShowChapters,
@@ -306,7 +313,11 @@ internal fun ReaderAudioCard(
                                             actions = actions,
                                             contentColor = contentColor,
                                             isOrientationLocked = isOrientationLocked,
-                                            modifier = Modifier.align(Alignment.BottomCenter),
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .padding(
+                                                    bottom = MiniPlayerMetrics.statBandInset(navInset),
+                                                ),
                                         )
                                     }
                                 }
@@ -328,6 +339,46 @@ internal fun ReaderAudioCard(
 }
 
 @Composable
+internal fun SwappablePlayerCover(
+    book: Book,
+    coverRevision: Int,
+    cover: suspend (Book, Boolean, Int, Int) -> Bitmap?,
+    cachedCover: (Book, Boolean) -> Bitmap?,
+    modifier: Modifier = Modifier,
+) {
+    val coverPrefs = LocalContext.current
+        .getSharedPreferences("player_options", Context.MODE_PRIVATE)
+    var showEbookCover by remember {
+        mutableStateOf(coverPrefs.getBoolean("showEbookCoverInAudioView", false))
+    }
+    val canToggleCover = book.hasAudio && (book.hasEbook || book.hasReadaloud)
+    BookCover(
+        book = book,
+        width = 640,
+        height = 640,
+        revision = coverRevision,
+        load = cover,
+        cached = cachedCover,
+        modifier = modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            enabled = canToggleCover,
+        ) {
+            showEbookCover = !showEbookCover
+            coverPrefs.edit()
+                .putBoolean("showEbookCoverInAudioView", showEbookCover)
+                .apply()
+        },
+        artworkScale = 1f,
+        showsPanel = false,
+        layersMedia = false,
+        showsReadaloudBadge = false,
+        preferredArtwork = if (showEbookCover) CoverStyle.Ebook else CoverStyle.Audio,
+        cornerRadius = 12.dp,
+    )
+}
+
+@Composable
 private fun DragHandle(modifier: Modifier = Modifier) {
     Box(
         modifier
@@ -342,6 +393,8 @@ private fun ExpandedPlayer(
     readerState: ReaderState?,
     chapterLabel: String?,
     palette: CoverBackgroundPalette,
+    display: PlayerDisplayModel,
+    actions: PlayerActions,
     readerControl: (String, Double, String) -> Unit,
     onCollapse: () -> Unit,
     onShowChapters: () -> Unit,
@@ -395,18 +448,15 @@ private fun ExpandedPlayer(
                     verticalArrangement = Arrangement.SpaceEvenly,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    BookCover(
+                    SwappablePlayerCover(
                         book = book,
-                        width = 640,
-                        height = 640,
-                        revision = coverRevision,
-                        load = cover,
-                        cached = cachedCover,
-                        modifier = Modifier.size(220.dp),
-                        artworkScale = 1f,
-                        showsPanel = false,
-                        layersMedia = false,
-                        showsReadaloudBadge = false,
+                        coverRevision = coverRevision,
+                        cover = cover,
+                        cachedCover = cachedCover,
+                        modifier = Modifier
+                            .widthIn(max = 400.dp)
+                            .fillMaxWidth()
+                            .aspectRatio(1f),
                     )
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -527,56 +577,40 @@ private fun ExpandedPlayer(
                         )
                     }
 
-                    ExpandedStats(readerState, subtleInk)
+                    FullPlayerStatSlots(
+                        slots = (readerState?.fullPlayer ?: FullPlayerCustomization()).statSlots,
+                        display = display.copy(volume = volume),
+                        tint = subtleInk,
+                    )
                 }
             }
         }
 
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.Top,
-        ) {
-            SecondaryControl(
-                icon = Icons.Filled.Speed,
-                label = formatPlaybackRate(rate),
-                contentDescription = "Playback speed",
-                onClick = { showSpeed = true },
-                palette = palette,
-                modifier = Modifier.weight(1f),
-            )
-            SecondaryControl(
-                icon = Icons.AutoMirrored.Filled.List,
-                label = "Chapters",
-                contentDescription = "Chapters",
-                onClick = onShowChapters,
-                palette = palette,
-                modifier = Modifier.weight(1f),
-            )
-            SecondaryControl(
-                icon = volumeIcon(volume),
-                label = "${(volume * 100).roundToInt()}%",
-                contentDescription = "Volume",
-                onClick = { showVolume = true },
-                palette = palette,
-                modifier = Modifier.weight(1f),
-            )
-            SecondaryControl(
-                icon = Icons.Filled.Bedtime,
-                label = sleepTimerLabel(readerState),
-                contentDescription = "Sleep timer",
-                onClick = {
+        FullPlayerControlRow(
+            slots = (readerState?.fullPlayer ?: FullPlayerCustomization()).controlSlots,
+            display = display.copy(volume = volume),
+            palette = palette,
+            sleepLabel = sleepTimerLabel(readerState),
+            sleepActive = readerState?.sleepTimerActive == true,
+            callbacks = FullPlayerControlCallbacks(
+                onSpeed = { showSpeed = true },
+                onChapters = onShowChapters,
+                onVolume = { showVolume = true },
+                onSleepTimer = {
                     if (readerState?.sleepTimerActive == true) {
                         readerControl("cancelSleepTimer", 0.0, "")
                     } else {
                         showSleepTimer = true
                     }
                 },
-                palette = palette,
-                active = readerState?.sleepTimerActive == true,
-                modifier = Modifier.weight(1f),
-            )
-        }
+                onBookmarks = actions.onOpenBookmarks,
+                onReadingTimeline = actions.onOpenReadingTimeline,
+                onImageGallery = actions.onOpenImageGallery,
+                onSearch = actions.onOpenSearch,
+                onTextSettings = actions.onOpenTextSettings,
+            ),
+            modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 12.dp),
+        )
     }
 
     if (showSpeed) {
@@ -611,75 +645,6 @@ private fun ExpandedPlayer(
                 readerControl("startSleepTimer", 0.0, "endOfChapter")
             },
         )
-    }
-}
-
-@Composable
-private fun ExpandedStats(readerState: ReaderState?, color: Color) {
-    val bookFraction = readerState?.bookFraction
-    val currentPage = readerState?.chapterCurrentPage
-    val totalPages = readerState?.chapterTotalPages
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (bookFraction != null) {
-                ExpandedStat(
-                    text = "${(bookFraction.coerceIn(0.0, 1.0) * 100).roundToInt()}%",
-                    icon = Icons.AutoMirrored.Filled.MenuBook,
-                    iconLeading = true,
-                    color = color,
-                )
-            }
-            if (currentPage != null && totalPages != null && totalPages > 0) {
-                ExpandedStat(
-                    text = "Page $currentPage of $totalPages",
-                    icon = Icons.Filled.Bookmark,
-                    iconLeading = true,
-                    color = color,
-                )
-            }
-        }
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            ExpandedStat(
-                text = formatTimeHoursMinutes(readerState?.bookTimeRemaining),
-                icon = Icons.AutoMirrored.Filled.MenuBook,
-                iconLeading = false,
-                color = color,
-            )
-            ExpandedStat(
-                text = formatTimeMinutesSeconds(readerState?.chapterTimeRemaining),
-                icon = Icons.Filled.Bookmark,
-                iconLeading = false,
-                color = color,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ExpandedStat(
-    text: String,
-    icon: ImageVector,
-    iconLeading: Boolean,
-    color: Color,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (iconLeading) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-        }
-        Text(text, style = MaterialTheme.typography.bodyMedium, color = color)
-        if (!iconLeading) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-        }
     }
 }
 

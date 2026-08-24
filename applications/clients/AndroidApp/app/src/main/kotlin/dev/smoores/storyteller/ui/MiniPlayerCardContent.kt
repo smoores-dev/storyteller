@@ -84,14 +84,17 @@ internal object MiniPlayerMetrics {
     // button without growing its frame, so something has to hold that space.
     val rateLabelOverhang = 14.dp
 
-    // The strip below the card content: the stat row when there is one, and
-    // otherwise the navigation bar inset. The inset is 0 in the reader, which
-    // hides the system bars, so the rate label needs its own floor there.
+    // The strip below the card content. Unlike the iOS home indicator, the
+    // Android gesture bar is opaque enough to cover text, so the stat row and
+    // rate label stack above the inset rather than sharing it. The band's own
+    // 8dp bottom padding already clears the bar, so eat that much of the inset.
+    fun statBandInset(navInset: Dp): Dp = (navInset - 8.dp).coerceAtLeast(0.dp)
+
     fun bottomBandHeight(showStats: Boolean, navInset: Dp, showsRateLabel: Boolean = false): Dp =
         if (showStats) {
-            maxOf(navInset, statBandHeight)
+            statBandInset(navInset) + statBandHeight
         } else {
-            maxOf(navInset, if (showsRateLabel) rateLabelOverhang else 0.dp)
+            statBandInset(navInset) + if (showsRateLabel) rateLabelOverhang else 0.dp
         }
 }
 

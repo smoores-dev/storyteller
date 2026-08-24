@@ -8,6 +8,16 @@ struct ComplicationPickerSheet: View {
     let onSelect: (PlayerComplication) -> Void
     var onConfigureTitleBlock: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,6 +39,7 @@ struct ComplicationPickerSheet: View {
                     } footer: {
                         Text("Pick the cover and the two lines this block shows.")
                     }
+                    .listRowBackground(paletteRowBackground)
                 }
 
                 section(nil, [.none])
@@ -36,6 +47,8 @@ struct ComplicationPickerSheet: View {
                 section("Reader Controls", SlotLayout.readerControls(for: slot.region))
                 section("Stats", SlotLayout.statComplications(for: slot.region))
             }
+            .readerPaletteModalSurface(readerPalette)
+            .readerPaletteNavigationBar(readerPalette, colorScheme: colorScheme)
             .navigationTitle("Complication")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -79,6 +92,7 @@ struct ComplicationPickerSheet: View {
                     Text(title)
                 }
             }
+            .listRowBackground(paletteRowBackground)
         }
     }
 
@@ -113,8 +127,18 @@ struct LeadingStylePickerSheet: View {
     @Bindable var settingsVM: SettingsViewModel
     let display: MiniPlayerDisplayModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var editingSecondCycle = false
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         NavigationStack {
@@ -133,9 +157,13 @@ struct LeadingStylePickerSheet: View {
                 } header: {
                     Text("Title Block")
                 }
+                .listRowBackground(paletteRowBackground)
 
                 cycleEditorSections
+                    .listRowBackground(paletteRowBackground)
             }
+            .readerPaletteModalSurface(readerPalette)
+            .readerPaletteNavigationBar(readerPalette, colorScheme: colorScheme)
             .navigationTitle("Title Block")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

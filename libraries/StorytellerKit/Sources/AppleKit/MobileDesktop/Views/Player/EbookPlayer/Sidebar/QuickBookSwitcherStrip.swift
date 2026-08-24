@@ -7,17 +7,23 @@ struct QuickBookSwitcherStrip: View {
     let onSelect: (PlayerBookData) -> Void
 
     @Environment(MediaViewModel.self) private var mediaViewModel: MediaViewModel?
+    @AppStorage("QuickBookSwitcherCollapsed") private var isCollapsed = false
 
     private static let maxBooks = 5
 
     private var recents: [BookMetadata] {
         guard let mediaViewModel else { return [] }
-        return mediaViewModel.library.bookMetaData
+        let ordered = HomeSectionDeriver.sections(
+            kinds: [.currentlyReading],
+            books: mediaViewModel.library.bookMetaData,
+            progress: mediaViewModel.bookProgressCache,
+            limit: .max,
+        ).first?.books ?? []
+        return ordered.lazy
             .filter { book in
                 mediaViewModel.isCategoryDownloaded(.synced, for: book)
                     || mediaViewModel.isCategoryDownloaded(.ebook, for: book)
             }
-            .sorted { $0.sortableLastRead > $1.sortableLastRead }
             .prefix(Self.maxBooks)
             .map { $0 }
     }
@@ -33,14 +39,24 @@ struct QuickBookSwitcherStrip: View {
                             .kerning(0.8)
                             .foregroundStyle(theme.tertiary)
                         Spacer()
-                        Text("\(recents.count)")
-                            .font(.caption2)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.weight(.semibold))
                             .foregroundStyle(theme.tertiary)
+                            .rotationEffect(.degrees(isCollapsed ? -90 : 0))
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            isCollapsed.toggle()
+                        }
+                    }
+                    .help(isCollapsed ? "Show quick book switcher" : "Hide quick book switcher")
 
-                    HStack(alignment: .top, spacing: 8) {
-                        ForEach(recents) { book in
-                            bookCell(book, mediaViewModel: mediaViewModel)
+                    if !isCollapsed {
+                        HStack(alignment: .top, spacing: 8) {
+                            ForEach(recents) { book in
+                                bookCell(book, mediaViewModel: mediaViewModel)
+                            }
                         }
                     }
                 }

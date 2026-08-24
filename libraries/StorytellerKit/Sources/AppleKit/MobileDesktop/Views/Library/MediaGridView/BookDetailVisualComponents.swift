@@ -191,8 +191,6 @@ struct BookDetailCreatorSummary: View {
 struct BookDetailHeroBackground: View {
     let item: BookMetadata
     @Binding var palette: CoverDerivedPalette
-    let surfaceColor: Color
-    let contentBackground: Color
     @Environment(MediaViewModel.self) private var mediaViewModel
 
     private var coverCGImage: CGImage? {
@@ -210,22 +208,14 @@ struct BookDetailHeroBackground: View {
     }
 
     var body: some View {
-        surfaceColor
-            .overlay {
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0.68),
-                        .init(color: contentBackground.opacity(0.32), location: 0.84),
-                        .init(color: contentBackground, location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom,
-                )
-            }
+        Color.clear
             .onChange(of: coverIdentity, initial: true) { _, _ in
                 updatePalette()
             }
             .onChange(of: colorfulnessKey) { _, _ in
+                updatePalette()
+            }
+            .onChange(of: CoverColorBackfill.shared.version) { _, _ in
                 updatePalette()
             }
     }
@@ -622,6 +612,8 @@ private struct RelatedBookThumbnail: View {
 
 struct BookDetailMediaInfoRows: View {
     let item: BookMetadata
+    @Environment(MediaViewModel.self) private var mediaViewModel
+    @State private var coverLines: [String] = []
 
     private struct Row: Identifiable {
         let title: String
@@ -653,6 +645,34 @@ struct BookDetailMediaInfoRows: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.vertical, 8)
+            }
+
+            Divider().padding(.leading, 30)
+            HStack(spacing: 10) {
+                Image(systemName: "photo")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Cover").font(.callout.weight(.medium))
+                    if coverLines.isEmpty {
+                        Text("Checking").font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        ForEach(coverLines, id: \.self) { line in
+                            Text(line).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 8)
+            .task(id: item.id) {
+                for _ in 0..<60 {
+                    let lines = await mediaViewModel.coverStatusLines(for: item)
+                    coverLines = lines
+                    if !lines.isEmpty, lines.allSatisfy({ $0.contains("full size") }) { return }
+                    try? await Task.sleep(for: .milliseconds(500))
+                    guard !Task.isCancelled else { return }
+                }
             }
         }
     }

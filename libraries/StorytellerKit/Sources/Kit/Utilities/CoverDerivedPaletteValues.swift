@@ -27,6 +27,57 @@ public struct CoverPaletteColor: Equatable, Sendable {
     }
 }
 
+public enum CoverPlayerChrome {
+    public static func gradientTop(surfaceHSB: CoverHSB, dark: Bool) -> CoverPaletteColor {
+        guard dark else {
+            return CoverPaletteColor(
+                hue: surfaceHSB.hue,
+                saturation: min(surfaceHSB.saturation * 0.32, 0.20),
+                brightness: 0.90,
+            )
+        }
+        return CoverPaletteColor(
+            hue: surfaceHSB.hue,
+            saturation: min(surfaceHSB.saturation * 0.85, 0.60),
+            brightness: clampedBase(surfaceHSB) * 1.3,
+        )
+    }
+
+    public static func gradientBottom(surfaceHSB: CoverHSB, dark: Bool) -> CoverPaletteColor {
+        guard dark else {
+            return CoverPaletteColor(
+                hue: surfaceHSB.hue,
+                saturation: min(surfaceHSB.saturation * 0.14, 0.10),
+                brightness: 0.99,
+            )
+        }
+        return CoverPaletteColor(
+            hue: surfaceHSB.hue,
+            saturation: min(surfaceHSB.saturation * 0.60, 0.50),
+            brightness: clampedBase(surfaceHSB) * 0.55,
+        )
+    }
+
+    public static func controlTint(surfaceHSB: CoverHSB, dark: Bool) -> CoverPaletteColor {
+        guard dark else {
+            return CoverPaletteColor(
+                hue: surfaceHSB.hue,
+                saturation: min(surfaceHSB.saturation * 0.35, 0.16),
+                brightness: 0.15,
+            )
+        }
+        return CoverPaletteColor(
+            hue: surfaceHSB.hue,
+            saturation: min(surfaceHSB.saturation * 0.12, 0.06),
+            brightness: 1,
+        )
+    }
+
+    private static func clampedBase(_ hsb: CoverHSB) -> Double {
+        min(max(hsb.brightness, 0.14), 0.34)
+    }
+}
+
 /// Platform-neutral values for the semantic cover palette used by Apple and Android UIs.
 public struct CoverDerivedPaletteValues: Equatable, Sendable {
     public let surface: CoverPaletteColor
@@ -176,5 +227,112 @@ public struct CoverDerivedPaletteValues: Equatable, Sendable {
             brightness: shaded.brightness,
             opacity: color.opacity,
         )
+    }
+}
+
+public enum CoverReaderChrome {
+    public static let token = "cover"
+
+    public static func isToken(_ value: String?) -> Bool {
+        value?.lowercased() == token
+    }
+
+    private static func strengthScale(_ strength: Double) -> Double {
+        let clamped = min(max(strength, 0), 1)
+        return clamped * 3
+    }
+
+    public static func background(
+        surfaceHSB: CoverHSB,
+        dark: Bool,
+        strength: Double = kDefaultCoverTintStrength,
+    ) -> CoverPaletteColor {
+        let scale = strengthScale(strength)
+        let clamped = min(max(strength, 0), 1)
+        guard dark else {
+            return CoverPaletteColor(
+                hue: surfaceHSB.hue,
+                saturation: min(surfaceHSB.saturation * 0.20 * scale, 0.40),
+                brightness: 1 - 0.14 * clamped,
+            )
+        }
+        return CoverPaletteColor(
+            hue: surfaceHSB.hue,
+            saturation: min(surfaceHSB.saturation * 0.85 * scale, 0.90),
+            brightness: 0.05 + 0.20 * clamped,
+        )
+    }
+
+    public static func foreground(
+        surfaceHSB: CoverHSB,
+        dark: Bool,
+        strength: Double = kDefaultCoverTintStrength,
+    ) -> CoverPaletteColor {
+        let scale = strengthScale(strength)
+        let clamped = min(max(strength, 0), 1)
+        guard dark else {
+            return CoverPaletteColor(
+                hue: surfaceHSB.hue,
+                saturation: min(surfaceHSB.saturation * 0.45 * scale, 0.70),
+                brightness: 0.05 + 0.22 * clamped,
+            )
+        }
+        return CoverPaletteColor(
+            hue: surfaceHSB.hue,
+            saturation: min(surfaceHSB.saturation * 0.35 * scale, 0.55),
+            brightness: 1 - 0.20 * clamped,
+        )
+    }
+
+    public static func highlight(
+        surfaceHSB: CoverHSB,
+        dark: Bool,
+        strength: Double = kDefaultCoverTintStrength,
+    ) -> CoverPaletteColor {
+        let scale = strengthScale(strength)
+        let clamped = min(max(strength, 0), 1)
+        guard dark else {
+            return CoverPaletteColor(
+                hue: surfaceHSB.hue,
+                saturation: min(surfaceHSB.saturation * scale, 1),
+                brightness: 0.78 - 0.30 * clamped,
+            )
+        }
+        return CoverPaletteColor(
+            hue: surfaceHSB.hue,
+            saturation: min(surfaceHSB.saturation * 1.2 * scale, 1),
+            brightness: 1,
+        )
+    }
+
+    public enum Role: Sendable {
+        case background
+        case foreground
+        case highlight
+    }
+
+    public static func resolvedHex(
+        _ raw: String?,
+        role: Role,
+        tone: CoverHSB?,
+        dark: Bool,
+        strength: Double = kDefaultCoverTintStrength,
+    ) -> String? {
+        guard isToken(raw) else { return raw }
+        guard let tone else { return nil }
+        let color =
+            switch role {
+                case .background: background(surfaceHSB: tone, dark: dark, strength: strength)
+                case .foreground: foreground(surfaceHSB: tone, dark: dark, strength: strength)
+                case .highlight: highlight(surfaceHSB: tone, dark: dark, strength: strength)
+            }
+        return color.hexString
+    }
+}
+
+extension CoverPaletteColor {
+    public var hexString: String {
+        let rgb = rgb8
+        return String(format: "#%02X%02X%02X", Int(rgb.red), Int(rgb.green), Int(rgb.blue))
     }
 }

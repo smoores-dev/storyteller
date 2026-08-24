@@ -170,6 +170,8 @@ public struct AudiobookPlayerView: View {
             chapterProgress: $chapterProgress,
             chapters: chapters,
             progressData: progressData,
+            statSlots: settingsVM.fullPlayerStatSlots,
+            controlSlots: settingsVM.fullPlayerControlSlots,
             onChapterSelected: { chapter in
                 control(.selectChapter(chapter.id))
             },
@@ -216,8 +218,13 @@ public struct AudiobookPlayerView: View {
         "\(settingsVM.colorMode)-\(settingsVM.colorIntensity)"
     }
 
-    private var playerBackground: Color {
-        coverPalette?.resolved(for: colorScheme).contentBackground ?? .clear
+    @ViewBuilder
+    private var playerBackground: some View {
+        if let coverPalette {
+            coverPalette.playerGradient(for: colorScheme)
+        } else {
+            Color.clear
+        }
     }
 
     @MainActor

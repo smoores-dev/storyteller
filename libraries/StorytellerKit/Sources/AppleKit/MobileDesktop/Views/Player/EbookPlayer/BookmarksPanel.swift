@@ -9,7 +9,9 @@ struct BookmarksPanel: View {
     let onDelete: (Highlight) -> Void
     let onAddBookmark: () -> Void
     let highlightColorResolver: (HighlightColor?) -> Color
+    var palette: CoverDerivedPalette? = nil
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTab: Tab = .bookmarks
     @State private var selectedHighlight: Highlight?
 
@@ -21,6 +23,7 @@ struct BookmarksPanel: View {
         onDelete: @escaping (Highlight) -> Void,
         onAddBookmark: @escaping () -> Void,
         highlightColorResolver: @escaping (HighlightColor?) -> Color,
+        palette: CoverDerivedPalette? = nil,
         initialTab: Tab = .bookmarks,
     ) {
         self.bookmarks = bookmarks
@@ -29,6 +32,7 @@ struct BookmarksPanel: View {
         self.onDelete = onDelete
         self.onAddBookmark = onAddBookmark
         self.highlightColorResolver = highlightColorResolver
+        self.palette = palette
         self._selectedTab = State(initialValue: initialTab)
     }
 
@@ -70,6 +74,8 @@ struct BookmarksPanel: View {
                 content
             }
         }
+        .readerPaletteModalSurface(palette)
+        .readerPaletteNavigationBar(palette, colorScheme: colorScheme)
         #if os(macOS)
         .frame(width: 340, height: 450)
         #endif
@@ -97,8 +103,8 @@ struct BookmarksPanel: View {
                                         Capsule()
                                             .fill(
                                                 selectedTab == tab
-                                                    ? Color.accentColor
-                                                    : Color.secondary.opacity(0.3)
+                                                    ? AnyShapeStyle(.tint)
+                                                    : AnyShapeStyle(Color.secondary.opacity(0.3))
                                             )
                                     )
                                     .foregroundStyle(selectedTab == tab ? .white : .secondary)
@@ -107,7 +113,11 @@ struct BookmarksPanel: View {
                         .foregroundStyle(selectedTab == tab ? .primary : .secondary)
 
                         Rectangle()
-                            .fill(selectedTab == tab ? Color.accentColor : Color.clear)
+                            .fill(
+                                selectedTab == tab
+                                    ? AnyShapeStyle(.tint)
+                                    : AnyShapeStyle(Color.clear)
+                            )
                             .frame(height: 2)
                     }
                 }
@@ -154,8 +164,11 @@ struct BookmarksPanel: View {
                         onAddBookmark()
                     } label: {
                         Label("Bookmark Current Page", systemImage: "plus")
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(.tint)
                     }
+                    .listRowBackground(
+                        palette.map { $0.resolved(for: colorScheme).cardBackground }
+                    )
                 }
 
                 Section {
@@ -173,6 +186,9 @@ struct BookmarksPanel: View {
                                 Label("Delete", systemImage: "trash")
                             }
                         }
+                        .listRowBackground(
+                            palette.map { $0.resolved(for: colorScheme).cardBackground }
+                        )
                     }
                 }
             }
@@ -212,6 +228,9 @@ struct BookmarksPanel: View {
                             Label("Delete", systemImage: "trash")
                         }
                     }
+                    .listRowBackground(
+                        palette.map { $0.resolved(for: colorScheme).cardBackground }
+                    )
                 }
             }
             #if os(iOS)
@@ -273,7 +292,7 @@ private struct BookmarkRow: View {
             Button(action: onNavigate) {
                 Image(systemName: "arrow.right.circle")
                     .font(.title3)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.tint)
             }
             .buttonStyle(.plain)
             .help("Go to bookmark")
@@ -343,7 +362,7 @@ private struct HighlightRow: View {
             Button(action: onNavigate) {
                 Image(systemName: "arrow.right.circle")
                     .font(.title3)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.tint)
             }
             .buttonStyle(.plain)
             .help("Go to highlight")

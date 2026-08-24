@@ -8,6 +8,7 @@ struct MiniPlayerDisplayModel {
     var cover: Image?
     var isPlaying: Bool
     var playbackRate: Double
+    var volume: Double = 1.0
     var chapterProgress: Double
     var chapterElapsedSeconds: TimeInterval?
     var chapterTotalSeconds: TimeInterval?
@@ -76,6 +77,7 @@ struct MiniPlayerActions {
     var onOpenSearch: () -> Void = {}
     var onOpenTextSettings: () -> Void = {}
     var onOpenSleepTimer: () -> Void = {}
+    var onOpenVolume: () -> Void = {}
     var onToggleMirror: () -> Void = {}
     var onToggleScrollingMode: () -> Void = {}
     var onToggleFreeBrowse: () -> Void = {}
@@ -93,6 +95,8 @@ enum SlotRegion: Hashable {
     case dockTrailing
     case dockCenter
     case menuBar
+    case fullPlayerStats
+    case fullPlayerControls
 }
 
 struct SlotRef: Hashable {
@@ -109,8 +113,10 @@ private struct SlotEditableModifier: ViewModifier {
             let isSelected = editing.wrappedValue == ref
             content
                 .allowsHitTesting(false)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(minWidth: 26, minHeight: 22)
-                .padding(3)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 7)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
@@ -178,6 +184,7 @@ enum PlayerComplicationStyle {
     case dock(transparency: Double)
     case pickerThumb
     case menuBar(tint: Color)
+    case fullPlayer(tint: Color)
     // Native macOS toolbar items: no explicit frames, fonts, or button styles,
     // so AppKit gives them the same treatment as system toolbar buttons.
     case macToolbar
@@ -199,9 +206,9 @@ struct PlayerComplicationView: View {
             case .playPause:
                 playPauseButton
             case .skipBackward:
-                skipButton(systemName: "arrow.counterclockwise", action: actions.onSkipBackward)
+                skipButton(systemName: "gobackward", action: actions.onSkipBackward)
             case .skipForward:
-                skipButton(systemName: "arrow.clockwise", action: actions.onSkipForward)
+                skipButton(systemName: "goforward", action: actions.onSkipForward)
             case .playbackSpeed:
                 speedControl
             case .scrubBar:
@@ -284,6 +291,8 @@ struct PlayerComplicationView: View {
                 controlButton(systemName: "textformat.size", action: actions.onOpenTextSettings)
             case .sleepTimer:
                 sleepTimerControl
+            case .volume:
+                controlButton(systemName: volumeIconName, action: actions.onOpenVolume)
             case .mirror:
                 #if os(iOS)
                 controlButton(
@@ -432,6 +441,13 @@ struct PlayerComplicationView: View {
         )
     }
 
+    private var volumeIconName: String {
+        if display.volume == 0 { return "speaker.slash" }
+        if display.volume < 0.33 { return "speaker.wave.1" }
+        if display.volume < 0.66 { return "speaker.wave.2" }
+        return "speaker.wave.3"
+    }
+
     private var isNativeToolbar: Bool {
         if case .macToolbar = style { return true }
         return false
@@ -466,7 +482,7 @@ struct PlayerComplicationView: View {
         switch style {
             case .miniRow: return 34
             case .dock: return 36
-            case .menuBar: return 44
+            case .menuBar, .fullPlayer: return 44
             default: return 30
         }
     }
@@ -474,7 +490,7 @@ struct PlayerComplicationView: View {
     private var controlGlyphSize: CGFloat {
         switch style {
             case .dock: return 16
-            case .menuBar: return 20
+            case .menuBar, .fullPlayer: return 20
             default: return 17
         }
     }
@@ -482,6 +498,7 @@ struct PlayerComplicationView: View {
     private var controlColor: Color {
         if case .dock = style { return .gray }
         if case .menuBar(let tint) = style { return tint }
+        if case .fullPlayer(let tint) = style { return tint }
         return .primary
     }
 
@@ -495,6 +512,9 @@ struct PlayerComplicationView: View {
             return AnyShapeStyle(.gray.opacity(transparency))
         }
         if case .menuBar(let tint) = style {
+            return AnyShapeStyle(tint)
+        }
+        if case .fullPlayer(let tint) = style {
             return AnyShapeStyle(tint)
         }
         return AnyShapeStyle(.primary)
@@ -626,7 +646,7 @@ struct PlayerComplicationView: View {
                     .foregroundStyle(.gray.opacity(transparency))
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
-            case .menuBar(let tint):
+            case .menuBar(let tint), .fullPlayer(let tint):
                 Image(systemName: display.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 20))
                     .foregroundStyle(tint)
@@ -664,7 +684,7 @@ struct PlayerComplicationView: View {
                     .foregroundStyle(.gray.opacity(transparency))
                     .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
-            case .menuBar(let tint):
+            case .menuBar(let tint), .fullPlayer(let tint):
                 Image(systemName: systemName)
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(tint)
@@ -723,7 +743,7 @@ struct PlayerComplicationView: View {
                     compactLabel: true,
                     iconFont: .body,
                 )
-            case .menuBar(let tint):
+            case .menuBar(let tint), .fullPlayer(let tint):
                 PlaybackRateButton(
                     currentRate: display.playbackRate,
                     onRateChange: actions.onRateChange,
@@ -765,6 +785,7 @@ struct PlayerComplicationView: View {
         switch style {
             case .miniRow: return .caption
             case .macToolbar: return .callout
+            case .fullPlayer: return .footnote
             default: return .caption2
         }
     }
@@ -775,6 +796,8 @@ struct PlayerComplicationView: View {
                 return AnyShapeStyle(.gray.opacity(transparency))
             case .menuBar(let tint):
                 return AnyShapeStyle(tint.opacity(0.75))
+            case .fullPlayer(let tint):
+                return AnyShapeStyle(tint)
             default:
                 return AnyShapeStyle(.secondary)
         }

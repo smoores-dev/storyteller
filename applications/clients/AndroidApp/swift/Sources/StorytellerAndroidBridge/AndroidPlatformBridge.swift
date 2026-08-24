@@ -15,6 +15,9 @@ extension JavaClass<JavaAndroidSecureStore> {
     func load(_ key: String) -> String
 
     @JavaStaticMethod
+    func contains(_ key: String) -> Bool
+
+    @JavaStaticMethod
     func remove(_ key: String) -> Bool
 }
 
@@ -95,6 +98,9 @@ extension JavaClass<JavaAndroidBridgeCallbacks> {
     func sourceStatusDidChange(_ payload: String)
 
     @JavaStaticMethod
+    func coverColorsNeeded(_ bookID: String, _ sourceID: String, _ audio: Bool)
+
+    @JavaStaticMethod
     func coverRequestDidComplete(
         _ requestID: String,
         _ data: [UInt8],
@@ -170,7 +176,9 @@ final class AndroidKeychainStore: KeychainStoring, @unchecked Sendable {
     func item(account: String) throws -> Data? {
         let storage = try JavaClass<JavaAndroidSecureStore>()
         let encoded = storage.load(account)
-        guard !encoded.isEmpty else { return nil }
+        if encoded.isEmpty {
+            return storage.contains(account) ? Data() : nil
+        }
         guard let data = Data(base64Encoded: encoded) else {
             throw KeychainError.invalidData
         }
@@ -187,6 +195,10 @@ final class AndroidKeychainStore: KeychainStoring, @unchecked Sendable {
 
 func notifyAndroidLibrarySnapshotDidChange() {
     try? JavaClass<JavaAndroidBridgeCallbacks>().librarySnapshotDidChange()
+}
+
+func notifyAndroidCoverColorsNeeded(bookID: String, sourceID: String, audio: Bool) {
+    try? JavaClass<JavaAndroidBridgeCallbacks>().coverColorsNeeded(bookID, sourceID, audio)
 }
 
 func notifyAndroidAudiobookStateDidChange(_ payload: String) {

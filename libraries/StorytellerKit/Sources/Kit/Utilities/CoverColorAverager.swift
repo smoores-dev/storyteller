@@ -38,10 +38,14 @@ public enum CoverColorAverager {
 
     public static func surfaceHSB(rgbaPixels: [UInt8]) -> CoverHSB? {
         guard let average = averageColor(rgbaPixels: rgbaPixels) else { return nil }
+        return surfaceHSB(primary: average)
+    }
+
+    public static func surfaceHSB(primary: CoverRGB8) -> CoverHSB {
         let source = hsb(
-            red: Double(average.red) / 255,
-            green: Double(average.green) / 255,
-            blue: Double(average.blue) / 255,
+            red: Double(primary.red) / 255,
+            green: Double(primary.green) / 255,
+            blue: Double(primary.blue) / 255,
         )
         return CoverHSB(
             hue: source.hue,

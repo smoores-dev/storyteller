@@ -1,6 +1,13 @@
 #if os(iOS) || os(macOS)
 import SwiftUI
 
+struct PreviewChromeBandHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat? = nil
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        value = nextValue() ?? value
+    }
+}
+
 /// Bottom half of a fake phone: a page of placeholder text with the supplied
 /// chrome pinned to the bottom, clipped to a curved bezel.
 struct MiniPlayerPreviewFrame<Chrome: View>: View {
@@ -8,6 +15,11 @@ struct MiniPlayerPreviewFrame<Chrome: View>: View {
     let foregroundColor: Color
     var chromeOnCard: Bool = true
     @ViewBuilder let chrome: () -> Chrome
+
+    @State private var chromeHeight: CGFloat = 0
+    @State private var bandHeight: CGFloat?
+
+    private var pageMaskInset: CGFloat { bandHeight ?? chromeHeight }
 
     private let bezelShape = UnevenRoundedRectangle(
         topLeadingRadius: 8,
@@ -23,12 +35,32 @@ struct MiniPlayerPreviewFrame<Chrome: View>: View {
 
             fakePage
                 .frame(maxHeight: .infinity, alignment: .top)
+                .mask {
+                    VStack(spacing: 0) {
+                        Rectangle()
+                        LinearGradient(
+                            colors: [.black, .clear],
+                            startPoint: .top,
+                            endPoint: .bottom,
+                        )
+                        .frame(height: 12)
+                    }
+                    .padding(.bottom, pageMaskInset)
+                }
 
-            if chromeOnCard {
-                chrome()
-                    .modifier(GlassEffectModifier())
-            } else {
-                chrome()
+            Group {
+                if chromeOnCard {
+                    chrome()
+                        .modifier(GlassEffectModifier())
+                } else {
+                    chrome()
+                }
+            }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                chromeHeight = $0
+            }
+            .onPreferenceChange(PreviewChromeBandHeightKey.self) {
+                bandHeight = $0
             }
         }
         .clipShape(bezelShape)
@@ -65,6 +97,9 @@ struct MiniPlayerPreviewFrame<Chrome: View>: View {
 }
 
 struct CustomizePreviewLabel: View {
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         HStack {
             Text("Preview:")
@@ -80,9 +115,12 @@ struct CustomizePreviewLabel: View {
 
     private var groupedBackground: Color {
         #if os(iOS)
-        Color(uiColor: .systemGroupedBackground)
+        if let readerPalette {
+            return readerPalette.resolved(for: colorScheme).surface
+        }
+        return Color(uiColor: .systemGroupedBackground)
         #else
-        Color(nsColor: .windowBackgroundColor)
+        return Color(nsColor: .windowBackgroundColor)
         #endif
     }
 }

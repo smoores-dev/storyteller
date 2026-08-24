@@ -8,6 +8,9 @@ struct ThemePreviewCard: View {
     let theme: ReaderTheme
     let previewUserColor: String
 
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.readerPalette) private var readerPalette
+
     private static let lead = "A soft rain traced the window as "
     private static let readaloud = "the narrator read this sentence aloud"
     private static let mid = ". You can also "
@@ -21,12 +24,31 @@ struct ThemePreviewCard: View {
             .padding(14)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(hex: theme.backgroundColor) ?? .white)
+                    .fill(resolved(theme.backgroundColor, role: .background) ?? .white)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .strokeBorder(Color.secondary.opacity(0.4), lineWidth: 1)
             )
+    }
+
+    private func resolved(_ raw: String, role: CoverReaderChrome.Role) -> Color? {
+        let strength =
+            switch role {
+                case .background: theme.coverStrengthBackground
+                case .foreground: theme.coverStrengthForeground
+                case .highlight: theme.coverStrengthHighlight
+            }
+        guard
+            let hex = CoverReaderChrome.resolvedHex(
+                raw,
+                role: role,
+                tone: readerPalette?.chromeHSB ?? CoverPaletteAdjustment.fallbackSurfaceHSB,
+                dark: colorScheme == .dark,
+                strength: strength,
+            )
+        else { return nil }
+        return Color(hex: hex)
     }
 
     private var needsDecoration: Bool {
@@ -40,7 +62,7 @@ struct ThemePreviewCard: View {
             combinedText.textRenderer(
                 UnderlineDecorationRenderer(
                     style: theme.readaloudUnderlineStyle,
-                    color: Color(hex: theme.highlightColor) ?? .yellow,
+                    color: resolved(theme.highlightColor, role: .highlight) ?? .yellow,
                 )
             )
         } else {
@@ -49,7 +71,7 @@ struct ThemePreviewCard: View {
     }
 
     private var combinedText: Text {
-        let foreground = Color(hex: theme.foregroundColor) ?? .black
+        let foreground = resolved(theme.foregroundColor, role: .foreground) ?? .black
 
         var lead = AttributedString(Self.lead)
         lead.foregroundColor = foreground
@@ -58,7 +80,7 @@ struct ThemePreviewCard: View {
         readaloudSpan.foregroundColor = foreground
         applyHighlight(
             mode: theme.readaloudHighlightMode,
-            color: Color(hex: theme.highlightColor),
+            color: resolved(theme.highlightColor, role: .highlight),
             fade: theme.readaloudHighlightFade,
             underlineAttribute: !needsDecoration,
             to: &readaloudSpan,

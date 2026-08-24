@@ -3,7 +3,7 @@
 
 DEVELOPMENT_TEAM = 9CJ7KG7UKQ
 
-APP_BUNDLE_ID = com.kyonifer.Storyteller
+APP_BUNDLE_ID = com.kyonifer.SilveranReader
 WATCH_APP_BUNDLE_ID = $(APP_BUNDLE_ID).watchkitapp
-KEYCHAIN_GROUP_SUFFIX = com.kyonifer.storyteller.shared
-KEYCHAIN_SERVICE = com.kyonifer.storyteller.storyteller
+KEYCHAIN_GROUP_SUFFIX = com.kyonifer.silveran.shared
+KEYCHAIN_SERVICE = com.kyonifer.silveran.storyteller

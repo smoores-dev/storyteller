@@ -17,6 +17,9 @@ public struct ReaderTheme: Codable, Equatable, Sendable, Identifiable {
     public var highlightThickness: Double
     public var readaloudHighlightMode: String
     public var readaloudHighlightFade: Double
+    public var coverStrengthBackground: Double
+    public var coverStrengthForeground: Double
+    public var coverStrengthHighlight: Double
     public var readaloudTextItalic: Bool
     public var readaloudTextBold: Bool
     public var readaloudUnderlineStyle: String
@@ -46,6 +49,9 @@ public struct ReaderTheme: Codable, Equatable, Sendable, Identifiable {
         highlightThickness: Double = kDefaultHighlightThickness,
         readaloudHighlightMode: String = kDefaultReadaloudHighlightMode,
         readaloudHighlightFade: Double = kDefaultReadaloudHighlightFade,
+        coverStrengthBackground: Double = kDefaultCoverTintStrength,
+        coverStrengthForeground: Double = kDefaultCoverTintStrength,
+        coverStrengthHighlight: Double = kDefaultCoverTintStrength,
         readaloudTextItalic: Bool = kDefaultReadaloudTextItalic,
         readaloudTextBold: Bool = kDefaultReadaloudTextBold,
         readaloudUnderlineStyle: String = kDefaultReadaloudUnderlineStyle,
@@ -74,6 +80,9 @@ public struct ReaderTheme: Codable, Equatable, Sendable, Identifiable {
         self.highlightThickness = highlightThickness
         self.readaloudHighlightMode = readaloudHighlightMode
         self.readaloudHighlightFade = readaloudHighlightFade
+        self.coverStrengthBackground = coverStrengthBackground
+        self.coverStrengthForeground = coverStrengthForeground
+        self.coverStrengthHighlight = coverStrengthHighlight
         self.readaloudTextItalic = readaloudTextItalic
         self.readaloudTextBold = readaloudTextBold
         self.readaloudUnderlineStyle = readaloudUnderlineStyle
@@ -107,6 +116,15 @@ public struct ReaderTheme: Codable, Equatable, Sendable, Identifiable {
         readaloudHighlightFade =
             (try? container.decode(Double.self, forKey: .readaloudHighlightFade))
             ?? kDefaultReadaloudHighlightFade
+        coverStrengthBackground =
+            (try? container.decode(Double.self, forKey: .coverStrengthBackground))
+            ?? kDefaultCoverTintStrength
+        coverStrengthForeground =
+            (try? container.decode(Double.self, forKey: .coverStrengthForeground))
+            ?? kDefaultCoverTintStrength
+        coverStrengthHighlight =
+            (try? container.decode(Double.self, forKey: .coverStrengthHighlight))
+            ?? kDefaultCoverTintStrength
         readaloudTextItalic =
             (try? container.decode(Bool.self, forKey: .readaloudTextItalic))
             ?? kDefaultReadaloudTextItalic
@@ -161,8 +179,11 @@ extension ReaderTheme {
         appearance: .light,
         backgroundColor: kDefaultBackgroundColorLight,
         foregroundColor: kDefaultForegroundColorLight,
-        highlightColor: "#254DF4",
+        highlightColor: CoverReaderChrome.token,
         readaloudHighlightMode: "text",
+        coverStrengthBackground: kDefaultCoverTintStrengthLight,
+        coverStrengthForeground: kDefaultCoverTintStrengthLight,
+        coverStrengthHighlight: kDefaultCoverTintStrengthLight,
     )
 
     public static let builtInDark = ReaderTheme(
@@ -172,7 +193,7 @@ extension ReaderTheme {
         appearance: .dark,
         backgroundColor: kDefaultBackgroundColorDark,
         foregroundColor: kDefaultForegroundColorDark,
-        highlightColor: "#65A8EE",
+        highlightColor: CoverReaderChrome.token,
         readaloudHighlightMode: "text",
         userHighlightColor1: kDefaultUserHighlightColorsDark[0],
         userHighlightColor2: kDefaultUserHighlightColorsDark[1],

@@ -514,6 +514,7 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                             }
                             ?.let { "$it/books/${book.id.uuid}" },
                         loadRatingContext = viewModel::ratingContext,
+                        prioritizeCovers = viewModel::prioritizeCovers,
                         saveRating = viewModel::saveRating,
                         removeRating = viewModel::removeRating,
                         openCategory = { kind, group ->
@@ -552,6 +553,11 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                             cancelSleepTimer = viewModel::cancelAudiobookSleepTimer,
                             acceptServerPosition = viewModel::acceptAudiobookServerPosition,
                             declineServerPosition = viewModel::declineAudiobookServerPosition,
+                            coverRevision = state.coverRevision,
+                            cover = viewModel::cover,
+                            cachedCover = viewModel::cachedCover,
+                            loadFullPlayerCustomization =
+                                viewModel::fullPlayerCustomization,
                         )
                     } else {
                         ReaderScreen(

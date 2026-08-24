@@ -318,20 +318,11 @@ private fun ImageGalleryViewer(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Box(
-                            Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.45f))
-                                .clickable(onClick = onDismiss),
-                            contentAlignment = Alignment.Center,
+                        Button(
+                            onClick = onGoTo,
+                            colors = ButtonDefaults.buttonColors(),
                         ) {
-                            Icon(
-                                Icons.Filled.Close,
-                                "Close",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp),
-                            )
+                            Text("Go to", fontSize = 13.sp)
                         }
                         Column(Modifier.weight(1f)) {
                             Text(
@@ -347,11 +338,20 @@ private fun ImageGalleryViewer(
                                 maxLines = 1,
                             )
                         }
-                        Button(
-                            onClick = onGoTo,
-                            colors = ButtonDefaults.buttonColors(),
+                        Box(
+                            Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.45f))
+                                .clickable(onClick = onDismiss),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text("Go to", fontSize = 13.sp)
+                            Icon(
+                                Icons.Filled.Close,
+                                "Close",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp),
+                            )
                         }
                     }
 

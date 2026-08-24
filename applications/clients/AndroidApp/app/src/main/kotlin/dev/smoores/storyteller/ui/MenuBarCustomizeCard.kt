@@ -61,9 +61,10 @@ internal fun MenuBarCustomizeCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(40.dp)
+                        .height(52.dp)
                         .background(backgroundColor)
-                        .padding(horizontal = 8.dp),
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 10.dp),
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,

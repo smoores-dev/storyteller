@@ -16,7 +16,6 @@ struct MediaGridInfoSidebar: View {
     let onDelete: () -> Void
     let onSeriesSelected: ((String) -> Void)?
     let showsInspectorToolbar: Bool
-    let roundsTopTrailingCorner: Bool
     let onRelatedItemChange: ((BookMetadata?) -> Void)?
 
     @Environment(MediaViewModel.self) private var mediaViewModel: MediaViewModel
@@ -50,7 +49,6 @@ struct MediaGridInfoSidebar: View {
         onDelete: @escaping () -> Void,
         onSeriesSelected: ((String) -> Void)? = nil,
         showsInspectorToolbar: Bool = true,
-        roundsTopTrailingCorner: Bool = false,
         onRelatedItemChange: ((BookMetadata?) -> Void)? = nil,
         inlineEditModel: InlineMetadataEditModel? = nil,
     ) {
@@ -62,7 +60,6 @@ struct MediaGridInfoSidebar: View {
         self.onDelete = onDelete
         self.onSeriesSelected = onSeriesSelected
         self.showsInspectorToolbar = showsInspectorToolbar
-        self.roundsTopTrailingCorner = roundsTopTrailingCorner
         self.onRelatedItemChange = onRelatedItemChange
         self.sharedInlineEdit = inlineEditModel
     }
@@ -100,9 +97,9 @@ struct MediaGridInfoSidebar: View {
                 .background(MacBookDetailScrollViewConfiguration())
             }
             .id(currentItem.id)
-            .background {
-                resolvedPalette.contentBackground
-            }
+            .playerCardChrome(coverPalette)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 10)
             #else
             ScrollView {
                 VStack(spacing: 0) {
@@ -111,7 +108,7 @@ struct MediaGridInfoSidebar: View {
                 }
             }
             .id(currentItem.id)
-            .background(resolvedPalette.contentBackground)
+            .background(coverPalette.playerGradient(for: colorScheme))
             .ignoresSafeArea(edges: showsInspectorToolbar ? [] : .top)
             #endif
         }
@@ -231,12 +228,7 @@ struct MediaGridInfoSidebar: View {
     #if os(macOS)
     private var macHeroSection: some View {
         ZStack {
-            MacBookDetailHeroBackground(
-                item: currentItem,
-                palette: $coverPalette,
-                surfaceColor: resolvedPalette.surface,
-                contentBackground: resolvedPalette.contentBackground,
-            )
+            MacBookDetailHeroBackground(item: currentItem, palette: $coverPalette)
 
             VStack(spacing: 13) {
                 macInspectorToolbar
@@ -333,14 +325,6 @@ struct MediaGridInfoSidebar: View {
             .padding(.bottom, 18)
         }
         .frame(maxWidth: .infinity)
-        .clipShape(
-            UnevenRoundedRectangle(
-                topLeadingRadius: 16,
-                topTrailingRadius: roundsTopTrailingCorner ? 16 : 0,
-                style: .continuous,
-            )
-        )
-        .background(Color(nsColor: .windowBackgroundColor))
         .environment(\.bookDetailHeroColors, heroColors)
     }
 
@@ -683,12 +667,7 @@ struct MediaGridInfoSidebar: View {
     #if os(iOS)
     private var iosHeroSection: some View {
         ZStack {
-            BookDetailHeroBackground(
-                item: currentItem,
-                palette: $coverPalette,
-                surfaceColor: resolvedPalette.surface,
-                contentBackground: resolvedPalette.contentBackground,
-            )
+            BookDetailHeroBackground(item: currentItem, palette: $coverPalette)
 
             VStack(spacing: 13) {
                 if showsInspectorToolbar || relatedItemOverride != nil {

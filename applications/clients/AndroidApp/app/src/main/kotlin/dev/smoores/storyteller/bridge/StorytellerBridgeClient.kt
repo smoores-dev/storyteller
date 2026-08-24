@@ -3,6 +3,7 @@ package dev.smoores.storyteller.bridge
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Base64
 import android.util.Log
 import android.util.LruCache
 import dev.smoores.storyteller.model.AlignmentOverrideState
@@ -45,6 +46,7 @@ import dev.smoores.storyteller.model.UserRating
 import dev.smoores.storyteller.model.SessionKind
 import dev.smoores.storyteller.model.SessionState
 import dev.smoores.storyteller.model.DockCustomization
+import dev.smoores.storyteller.model.FullPlayerCustomization
 import dev.smoores.storyteller.model.MiniPlayerCustomization
 import dev.smoores.storyteller.model.PlaybackModes
 import dev.smoores.storyteller.model.ReaderDisplaySettings
@@ -81,6 +83,15 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import org.json.JSONArray
 import org.json.JSONObject
+
+private const val MAX_NATIVE_DECODE_PIXELS = 4_000_000L
+
+data class CoverResolutionStatus(
+    val fullEbook: Boolean,
+    val fullAudio: Boolean,
+    val ebookDimensions: Pair<Int, Int>? = null,
+    val audioDimensions: Pair<Int, Int>? = null,
+)
 
 class StorytellerBridgeClient(context: Context) {
     private val applicationContext = context.applicationContext
@@ -169,6 +180,15 @@ class StorytellerBridgeClient(context: Context) {
             StorytellerAndroidBridge.storytellerSettingsJSON(requestID)
         }
         return withContext(Dispatchers.Default) { parseSettings(json) }
+    }
+
+    suspend fun fullPlayerCustomization(): FullPlayerCustomization {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.fullPlayerCustomizationJSON(requestID)
+        }
+        return withContext(Dispatchers.Default) {
+            FullPlayerCustomization.parse(JSONObject(json))
+        }
     }
 
     suspend fun appSettings(): AppSettings {
@@ -343,12 +363,13 @@ class StorytellerBridgeClient(context: Context) {
         miniPlayer: MiniPlayerCustomization? = null,
         dock: DockCustomization? = null,
         menuBar: MenuBarCustomization? = null,
+        fullPlayer: FullPlayerCustomization? = null,
         playbackModes: PlaybackModes? = null,
     ) {
         readerControl(
             "updateCustomization",
             0.0,
-            customizationUpdateJson(miniPlayer, dock, menuBar, playbackModes),
+            customizationUpdateJson(miniPlayer, dock, menuBar, fullPlayer, playbackModes),
         )
     }
 
@@ -551,6 +572,8 @@ class StorytellerBridgeClient(context: Context) {
                 ?: DockCustomization(),
             menuBar = obj.optJSONObject("menuBar")?.let(MenuBarCustomization::parse)
                 ?: MenuBarCustomization(),
+            fullPlayer = obj.optJSONObject("fullPlayer")?.let(FullPlayerCustomization::parse)
+                ?: FullPlayerCustomization(),
             playbackModes = obj.optJSONObject("playbackModes")?.let(PlaybackModes::parse)
                 ?: PlaybackModes(),
             experimentalSettings = obj.optBoolean("experimentalSettings", false),
@@ -709,6 +732,12 @@ class StorytellerBridgeClient(context: Context) {
                         userHighlightLabels = parseStringList(theme.optJSONArray("userHighlightLabels")),
                         customCSS = theme.optionalString("customCSS"),
                         readaloudHighlightFade = theme.optDouble("readaloudHighlightFade", 0.0),
+                        coverStrengthBackground =
+                            theme.optDouble("coverStrengthBackground", 0.2),
+                        coverStrengthForeground =
+                            theme.optDouble("coverStrengthForeground", 0.2),
+                        coverStrengthHighlight =
+                            theme.optDouble("coverStrengthHighlight", 0.2),
                         readaloudTextItalic = theme.optBoolean("readaloudTextItalic", false),
                         readaloudTextBold = theme.optBoolean("readaloudTextBold", false),
                         readaloudUnderlineStyle = theme.optString(
@@ -780,6 +809,113 @@ class StorytellerBridgeClient(context: Context) {
 
     fun cachedCover(book: Book, audio: Boolean): Bitmap? =
         coverBitmaps.get(CoverCacheKey(book.id, book.coverVersion, audio))
+
+    suspend fun deriveCoverColors(
+        bookID: String,
+        sourceID: String,
+        coverVersion: String,
+        audio: Boolean,
+    ) {
+        val payload = AndroidBridgeCallbacks.requestCover { requestID ->
+            StorytellerAndroidBridge.coverFullResponseBytes(
+                requestID,
+                bookID,
+                sourceID,
+                coverVersion,
+                audio,
+            )
+        }
+        if (payload.data.isEmpty()) return
+        withContext(Dispatchers.Default) {
+            val bitmap = decodeBoundedNative(payload.data) ?: return@withContext
+            val (rgba, width, height) = try {
+                bitmapRgba(bitmap)
+            } finally {
+                bitmap.recycle()
+            }
+            StorytellerAndroidBridge.deriveCoverColors(
+                bookID,
+                sourceID,
+                audio,
+                Base64.encodeToString(rgba, Base64.NO_WRAP),
+                width,
+                height,
+            ).awaitResult()
+        }
+    }
+
+    suspend fun prioritizeBookCovers(book: Book): CoverResolutionStatus {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.prioritizeBookCoversJSON(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+                book.coverVersion,
+                book.hasEbook,
+                book.hasAudio,
+            )
+        }
+        val obj = JSONObject(json)
+        val fullEbook = obj.optBoolean("fullEbook")
+        val fullAudio = obj.optBoolean("fullAudio")
+        return CoverResolutionStatus(
+            fullEbook = fullEbook,
+            fullAudio = fullAudio,
+            ebookDimensions = if (fullEbook) fullCoverBounds(book, audio = false) else null,
+            audioDimensions = if (fullAudio) fullCoverBounds(book, audio = true) else null,
+        )
+    }
+
+    private suspend fun fullCoverBounds(book: Book, audio: Boolean): Pair<Int, Int>? {
+        val payload = AndroidBridgeCallbacks.requestCover { requestID ->
+            StorytellerAndroidBridge.coverFullResponseBytes(
+                requestID,
+                book.id.uuid,
+                book.id.sourceID,
+                book.coverVersion,
+                audio,
+            )
+        }
+        if (payload.data.isEmpty()) return null
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(payload.data, 0, payload.data.size, bounds)
+        return if (bounds.outWidth > 0 && bounds.outHeight > 0) {
+            bounds.outWidth to bounds.outHeight
+        } else {
+            null
+        }
+    }
+
+    private fun bitmapRgba(bitmap: Bitmap): Triple<ByteArray, Int, Int> {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        val rgba = ByteArray(pixels.size * 4)
+        for ((index, pixel) in pixels.withIndex()) {
+            val offset = index * 4
+            rgba[offset] = android.graphics.Color.red(pixel).toByte()
+            rgba[offset + 1] = android.graphics.Color.green(pixel).toByte()
+            rgba[offset + 2] = android.graphics.Color.blue(pixel).toByte()
+            rgba[offset + 3] = android.graphics.Color.alpha(pixel).toByte()
+        }
+        return Triple(rgba, width, height)
+    }
+
+    private fun decodeBoundedNative(bytes: ByteArray): Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        var sampleSize = 1
+        while (
+            bounds.outWidth.toLong() * bounds.outHeight /
+            (sampleSize.toLong() * sampleSize) > MAX_NATIVE_DECODE_PIXELS
+        ) {
+            sampleSize *= 2
+        }
+        val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    }
 
     private suspend fun loadCover(
         book: Book,

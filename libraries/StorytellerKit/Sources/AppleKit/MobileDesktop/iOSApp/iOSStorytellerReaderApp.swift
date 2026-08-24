@@ -88,6 +88,17 @@ class StorytellerAppDelegate: NSObject, UIApplicationDelegate {
                     handler()
                 }
             }
+        } else if identifier == "com.kyonifer.silveran.downloads"
+            || identifier == "com.kyonifer.silveran.progressupload"
+        {
+            // Pre-rename Silveran sessions have no manager to reattach; starting the
+            // runtime runs the handoff migration that cancels them so the system
+            // stops relaunching the app for their events.
+            nonisolated(unsafe) let handler = completionHandler
+            Task {
+                _ = await StorytellerRuntime.start()
+                handler()
+            }
         } else {
             completionHandler()
         }

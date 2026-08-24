@@ -3,12 +3,24 @@ package dev.smoores.storyteller.ui
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import android.util.Base64
+import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import dev.smoores.storyteller.bridge.StorytellerAndroidBridge
 import dev.smoores.storyteller.model.AppSettings
+import dev.smoores.storyteller.model.Book
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-private const val SAMPLE_SIZE = 8
+private const val SAMPLE_SIZE = 128
 
 // Process-wide colorfulness config, mirrored from the shared settings so palette
 // derivation sites do not have to thread it through every composable.
@@ -42,9 +54,58 @@ internal data class CoverBackgroundPalette(
     val cardBackground: Color,
     val cardBorder: Color,
     val ratingAccent: Color,
+    val gradientTop: Color,
+    val gradientBottom: Color,
+    val controlTint: Color,
+    val readerHighlight: Color,
+    val isFinal: Boolean = true,
 ) {
     val accentTrack: Color get() = ratingAccent.copy(alpha = 0.3f)
+
+    val playerGradient: Brush
+        get() = Brush.verticalGradient(listOf(gradientTop, gradientBottom))
 }
+
+@Composable
+internal fun rememberCoverBackgroundPalette(
+    bitmap: Bitmap?,
+    darkTheme: Boolean,
+    book: Book? = null,
+    audio: Boolean = false,
+): CoverBackgroundPalette {
+    val settingsKey = CoverColorSettings.key
+    var palette by remember(bitmap, darkTheme, settingsKey, book?.id) {
+        mutableStateOf(coverBackgroundPalette(bitmap, darkTheme, book, audio))
+    }
+    LaunchedEffect(bitmap, darkTheme, settingsKey, book?.id) {
+        if (bitmap == null || book == null || palette.isFinal) return@LaunchedEffect
+        repeat(100) {
+            delay(3_000)
+            val refreshed = try {
+                withContext(Dispatchers.Default) {
+                    coverBackgroundPalette(bitmap, darkTheme, book, audio)
+                }
+            } catch (error: Exception) {
+                Log.w("CoverColors", "cover palette refresh failed", error)
+                return@LaunchedEffect
+            }
+            if (refreshed.isFinal) {
+                palette = refreshed
+                return@LaunchedEffect
+            }
+        }
+    }
+    return palette
+}
+
+@Composable
+internal fun rememberCoverBackgroundColor(
+    bitmap: Bitmap?,
+    darkTheme: Boolean,
+    book: Book? = null,
+    audio: Boolean = false,
+): Color =
+    rememberCoverBackgroundPalette(bitmap, darkTheme, book, audio).surface
 
 internal fun coverBackgroundColor(bitmap: Bitmap?, darkTheme: Boolean): Color {
     return Color(
@@ -57,13 +118,21 @@ internal fun coverBackgroundColor(bitmap: Bitmap?, darkTheme: Boolean): Color {
     )
 }
 
-internal fun coverBackgroundPalette(bitmap: Bitmap?, darkTheme: Boolean): CoverBackgroundPalette {
+internal fun coverBackgroundPalette(
+    bitmap: Bitmap?,
+    darkTheme: Boolean,
+    book: Book? = null,
+    audio: Boolean = false,
+): CoverBackgroundPalette {
     val palette = JSONObject(
         StorytellerAndroidBridge.coverPaletteJSON(
             sampledRgbaBase64(bitmap),
             darkTheme,
             CoverColorSettings.colorMode,
             CoverColorSettings.colorIntensity,
+            book?.id?.uuid ?: "",
+            book?.id?.sourceID ?: "",
+            audio,
         ),
     )
     return CoverBackgroundPalette(
@@ -77,6 +146,11 @@ internal fun coverBackgroundPalette(bitmap: Bitmap?, darkTheme: Boolean): CoverB
         cardBackground = palette.color("cardBackground"),
         cardBorder = palette.color("cardBorder"),
         ratingAccent = palette.color("ratingAccent"),
+        gradientTop = palette.color("gradientTop"),
+        gradientBottom = palette.color("gradientBottom"),
+        controlTint = palette.color("controlTint"),
+        readerHighlight = palette.color("readerHighlight"),
+        isFinal = palette.getBoolean("isFinal"),
     )
 }
 

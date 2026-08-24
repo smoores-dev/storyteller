@@ -32,6 +32,7 @@ enum class PlayerComplication(val rawValue: String) {
     SEARCH("search"),
     TEXT_SETTINGS("textSettings"),
     SLEEP_TIMER("sleepTimer"),
+    VOLUME("volume"),
     TITLE_BLOCK("titleBlock"),
     MIRROR("mirror"),
     SCROLL_MODE("scrollMode"),
@@ -43,7 +44,7 @@ enum class PlayerComplication(val rawValue: String) {
             PLAY_PAUSE, SKIP_BACKWARD, SKIP_FORWARD, PLAYBACK_SPEED, SCRUB_BAR,
             STAT_TIME_IN_BOOK, STAT_TIME_IN_CHAPTER, STAT_CHAPTER_ELAPSED,
             STAT_CHAPTER_LENGTH, STAT_SLEEP_TIMER, STAT_FINISH_TIME,
-            SLEEP_TIMER, FREE_BROWSE_LOCK -> true
+            SLEEP_TIMER, VOLUME, FREE_BROWSE_LOCK -> true
             else -> false
         }
 
@@ -81,6 +82,7 @@ enum class PlayerComplication(val rawValue: String) {
             SEARCH -> "Search"
             TEXT_SETTINGS -> "Text Settings"
             SLEEP_TIMER -> "Sleep Timer Button"
+            VOLUME -> "Volume"
             TITLE_BLOCK -> "Title Block"
             MIRROR -> "Swap Hands"
             SCROLL_MODE -> "Page/Scroll"
@@ -203,6 +205,8 @@ enum class SlotRegion {
     DOCK_TRAILING,
     DOCK_CENTER,
     MENU_BAR,
+    FULL_PLAYER_STATS,
+    FULL_PLAYER_CONTROLS,
 }
 
 data class SlotRef(
@@ -223,6 +227,8 @@ object SlotLayout {
         SlotRegion.DOCK_TRAILING -> 2
         SlotRegion.DOCK_CENTER -> 3
         SlotRegion.MENU_BAR -> 6
+        SlotRegion.FULL_PLAYER_STATS -> 6
+        SlotRegion.FULL_PLAYER_CONTROLS -> 6
     }
 
     fun isMiniRow(region: SlotRegion): Boolean = when (region) {
@@ -255,10 +261,22 @@ object SlotLayout {
 
     // The stat band sits in the home-indicator strip, too close to the edge of
     // the screen to aim at, so it carries readouts only.
-    fun isTextOnly(region: SlotRegion): Boolean = region == SlotRegion.MINI_STAT_BAND
+    fun isTextOnly(region: SlotRegion): Boolean =
+        region == SlotRegion.MINI_STAT_BAND || region == SlotRegion.FULL_PLAYER_STATS
 
     fun readerControls(region: SlotRegion): List<PlayerComplication> {
         if (isTextOnly(region)) return emptyList()
+        if (region == SlotRegion.FULL_PLAYER_CONTROLS) {
+            return listOf(
+                PlayerComplication.CHAPTERS,
+                PlayerComplication.BOOKMARKS,
+                PlayerComplication.READING_TIMELINE,
+                PlayerComplication.IMAGE_GALLERY,
+                PlayerComplication.SEARCH,
+                PlayerComplication.TEXT_SETTINGS,
+                PlayerComplication.SLEEP_TIMER,
+            )
+        }
         return listOf(
             PlayerComplication.CHAPTERS,
             PlayerComplication.BOOKMARKS,
@@ -292,6 +310,10 @@ object SlotLayout {
                 PlayerComplication.SKIP_BACKWARD,
                 PlayerComplication.SKIP_FORWARD,
                 PlayerComplication.PLAYBACK_SPEED,
+            )
+            SlotRegion.FULL_PLAYER_CONTROLS -> listOf(
+                PlayerComplication.PLAYBACK_SPEED,
+                PlayerComplication.VOLUME,
             )
             else -> emptyList()
         }
@@ -541,6 +563,55 @@ data class DockCustomization(
     }
 }
 
+// Defaults mirror StorytellerGlobalConfig.FullPlayer.
+data class FullPlayerCustomization(
+    val statSlots: List<PlayerComplication> = listOf(
+        PlayerComplication.STAT_PERCENT,
+        PlayerComplication.NONE,
+        PlayerComplication.STAT_TIME_IN_BOOK,
+        PlayerComplication.STAT_PAGE,
+        PlayerComplication.NONE,
+        PlayerComplication.STAT_TIME_IN_CHAPTER,
+    ),
+    val controlSlots: List<PlayerComplication> = listOf(
+        PlayerComplication.PLAYBACK_SPEED,
+        PlayerComplication.CHAPTERS,
+        PlayerComplication.VOLUME,
+        PlayerComplication.SLEEP_TIMER,
+    ),
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put(
+            "statSlots",
+            complicationArray(SlotLayout.sanitized(statSlots, SlotRegion.FULL_PLAYER_STATS)),
+        )
+        put(
+            "controlSlots",
+            complicationArray(
+                SlotLayout.sanitized(controlSlots, SlotRegion.FULL_PLAYER_CONTROLS),
+            ),
+        )
+    }
+
+    fun toUpdateJson(): String = toJson().toString()
+
+    companion object {
+        fun parse(obj: JSONObject): FullPlayerCustomization {
+            val defaults = FullPlayerCustomization()
+            return FullPlayerCustomization(
+                statSlots = SlotLayout.sanitized(
+                    complicationList(obj.optJSONArray("statSlots")) ?: defaults.statSlots,
+                    SlotRegion.FULL_PLAYER_STATS,
+                ),
+                controlSlots = SlotLayout.sanitized(
+                    complicationList(obj.optJSONArray("controlSlots")) ?: defaults.controlSlots,
+                    SlotRegion.FULL_PLAYER_CONTROLS,
+                ),
+            )
+        }
+    }
+}
+
 data class MenuBarCustomization(
     val slots: List<PlayerComplication> = listOf(
         PlayerComplication.SLEEP_TIMER,
@@ -636,10 +707,12 @@ fun customizationUpdateJson(
     miniPlayer: MiniPlayerCustomization? = null,
     dock: DockCustomization? = null,
     menuBar: MenuBarCustomization? = null,
+    fullPlayer: FullPlayerCustomization? = null,
     playbackModes: PlaybackModes? = null,
 ): String = JSONObject().apply {
     miniPlayer?.let { put("miniPlayer", it.toJson()) }
     dock?.let { put("dock", it.toJson()) }
     menuBar?.let { put("menuBar", it.toJson()) }
+    fullPlayer?.let { put("fullPlayer", it.toJson()) }
     playbackModes?.let { put("playbackModes", it.toJson()) }
 }.toString()

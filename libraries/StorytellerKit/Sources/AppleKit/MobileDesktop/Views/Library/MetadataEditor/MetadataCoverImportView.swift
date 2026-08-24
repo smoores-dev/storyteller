@@ -55,6 +55,7 @@ struct MetadataCoverImportView: View {
     @State private var filterPopoverScope: MetadataCoverScope?
     @State private var compactSelectedScope: MetadataCoverScope = .audiobook
     @State private var compactSelectedSource: CoverProvider = .hardcover
+    @State private var fullServerCovers: [MetadataCoverScope: Image] = [:]
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var isCompactIOS: Bool {
@@ -113,6 +114,7 @@ struct MetadataCoverImportView: View {
         .frame(width: sheetWidth, height: sheetHeight)
         .frame(maxWidth: isCompactIOS ? .infinity : nil, maxHeight: isCompactIOS ? .infinity : nil)
         .task {
+            await loadFullServerCovers()
             await loadInitialCandidates()
         }
         .sheet(item: $previewingCover) { cover in
@@ -1138,8 +1140,21 @@ struct MetadataCoverImportView: View {
         }
     }
 
+    private func loadFullServerCovers() async {
+        guard let metadata = book?.originalMetadata else { return }
+        for scope in MetadataCoverScope.allCases {
+            if let image = await mediaViewModel.fullCoverImage(
+                for: metadata.id,
+                audio: scope.variant.requestParameters.audio,
+            ) {
+                fullServerCovers[scope] = image
+            }
+        }
+    }
+
     private func currentServerCover(scope: MetadataCoverScope) -> Image? {
         guard let metadata = book?.originalMetadata else { return nil }
+        if let full = fullServerCovers[scope] { return full }
         let state = mediaViewModel.coverState(for: metadata, variant: scope.variant)
         #if canImport(AppKit)
         let nsImageSize =

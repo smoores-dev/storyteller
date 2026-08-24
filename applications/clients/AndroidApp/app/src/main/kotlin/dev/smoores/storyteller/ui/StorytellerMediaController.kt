@@ -1,6 +1,7 @@
 package dev.smoores.storyteller.ui
 
 import android.content.ComponentName
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import dev.smoores.storyteller.model.AudiobookPlayerState
 import dev.smoores.storyteller.model.Book
+import dev.smoores.storyteller.model.FullPlayerCustomization
 import dev.smoores.storyteller.platform.StorytellerMediaLibraryService
 
 @Composable
@@ -45,6 +47,12 @@ internal fun MediaSessionAudiobookPlayerScreen(
     cancelSleepTimer: () -> Unit,
     acceptServerPosition: () -> Unit,
     declineServerPosition: () -> Unit,
+    coverRevision: Int,
+    cover: suspend (Book, Boolean, Int, Int) -> Bitmap?,
+    cachedCover: (Book, Boolean) -> Bitmap?,
+    loadFullPlayerCustomization: suspend () -> FullPlayerCustomization = {
+        FullPlayerCustomization()
+    },
 ) {
     val connection = rememberStorytellerMediaController()
     val controller = connection.controller
@@ -69,6 +77,10 @@ internal fun MediaSessionAudiobookPlayerScreen(
             cancelSleepTimer = cancelSleepTimer,
             acceptServerPosition = acceptServerPosition,
             declineServerPosition = declineServerPosition,
+            coverRevision = coverRevision,
+            cover = cover,
+            cachedCover = cachedCover,
+            loadFullPlayerCustomization = loadFullPlayerCustomization,
         )
         return
     }

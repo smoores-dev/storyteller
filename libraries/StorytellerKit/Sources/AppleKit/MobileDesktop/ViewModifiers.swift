@@ -69,6 +69,96 @@ private final class WindowExpansionState {
     }
 }
 
+struct SidebarResizeHandle: NSViewRepresentable {
+    let measuresFromLeadingEdge: Bool
+    let onBegin: (CGFloat) -> Void
+    let onChange: (CGFloat) -> Void
+    let onEnd: () -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = HandleView()
+        apply(to: view)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let view = nsView as? HandleView else { return }
+        apply(to: view)
+    }
+
+    private func apply(to view: HandleView) {
+        view.measuresFromLeadingEdge = measuresFromLeadingEdge
+        view.onBegin = onBegin
+        view.onChange = onChange
+        view.onEnd = onEnd
+    }
+
+    final class HandleView: NSView {
+        var measuresFromLeadingEdge = true
+        var onBegin: ((CGFloat) -> Void)?
+        var onChange: ((CGFloat) -> Void)?
+        var onEnd: (() -> Void)?
+
+        private var trackingArea: NSTrackingArea?
+
+        override var mouseDownCanMoveWindow: Bool { false }
+
+        override func updateTrackingAreas() {
+            super.updateTrackingAreas()
+            if let trackingArea {
+                removeTrackingArea(trackingArea)
+            }
+            let area = NSTrackingArea(
+                rect: .zero,
+                options: [
+                    .mouseEnteredAndExited, .mouseMoved, .cursorUpdate, .activeInActiveApp,
+                    .inVisibleRect,
+                ],
+                owner: self,
+            )
+            addTrackingArea(area)
+            trackingArea = area
+        }
+
+        override func cursorUpdate(with event: NSEvent) {
+            NSCursor.resizeLeftRight.set()
+        }
+
+        override func mouseEntered(with event: NSEvent) {
+            NSCursor.resizeLeftRight.set()
+        }
+
+        override func mouseMoved(with event: NSEvent) {
+            NSCursor.resizeLeftRight.set()
+        }
+
+        override func mouseExited(with event: NSEvent) {
+            NSCursor.arrow.set()
+        }
+
+        override func mouseDown(with event: NSEvent) {
+            guard let distance = distanceFromWindowEdge() else { return }
+            onBegin?(distance)
+        }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard let distance = distanceFromWindowEdge() else { return }
+            onChange?(distance)
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            onEnd?()
+        }
+
+        private func distanceFromWindowEdge() -> CGFloat? {
+            guard let window else { return nil }
+            let pointerX = NSEvent.mouseLocation.x
+            let frame = window.frame
+            return measuresFromLeadingEdge ? pointerX - frame.minX : frame.maxX - pointerX
+        }
+    }
+}
+
 /// Expands a window outward when sidebars open, contracts when they close,
 /// and persists the base (no-sidebar) width to UserDefaults.
 ///
@@ -81,6 +171,7 @@ struct WindowFrameAdjuster: NSViewRepresentable {
     let rightAmount: CGFloat
     let leftAmount: CGFloat
     let savedWidthKey: String?
+    var isFullscreen: Binding<Bool>? = nil
 
     init(expandRight: Bool, rightAmount: CGFloat, savedWidthKey: String? = nil) {
         self.expandRight = expandRight
@@ -96,12 +187,14 @@ struct WindowFrameAdjuster: NSViewRepresentable {
         rightAmount: CGFloat,
         leftAmount: CGFloat,
         savedWidthKey: String? = nil,
+        isFullscreen: Binding<Bool>? = nil,
     ) {
         self.expandRight = expandRight
         self.expandLeft = expandLeft
         self.rightAmount = rightAmount
         self.leftAmount = leftAmount
         self.savedWidthKey = savedWidthKey
+        self.isFullscreen = isFullscreen
     }
 
     func makeNSView(context: Context) -> NSView { NSView() }
@@ -116,6 +209,7 @@ struct WindowFrameAdjuster: NSViewRepresentable {
             c.rightAmount = rightAmount
             c.leftAmount = leftAmount
             c.savedWidthKey = savedWidthKey
+            isFullscreen?.wrappedValue = Self.isWindowFullscreen(window)
 
             if !c.initialized {
                 initialize(window: window, coordinator: c)
@@ -123,6 +217,10 @@ struct WindowFrameAdjuster: NSViewRepresentable {
                 handleSidebarChange(window: window, coordinator: c)
             }
         }
+    }
+
+    private static func isWindowFullscreen(_ window: NSWindow) -> Bool {
+        window.styleMask.contains(.fullScreen)
     }
 
     private func initialize(window: NSWindow, coordinator c: Coordinator) {
@@ -149,7 +247,9 @@ struct WindowFrameAdjuster: NSViewRepresentable {
         let targetWidth = baseWidth + targetRight + targetLeft
 
         // 3. Set frame if it differs.
-        if abs(window.frame.width - targetWidth) > 1 {
+        if !Self.isWindowFullscreen(window),
+            abs(window.frame.width - targetWidth) > 1
+        {
             var frame = window.frame
             frame.size.width = targetWidth
             window.setFrame(frame, display: true, animate: false)
@@ -165,6 +265,11 @@ struct WindowFrameAdjuster: NSViewRepresentable {
     }
 
     private func handleSidebarChange(window: NSWindow, coordinator c: Coordinator) {
+        if Self.isWindowFullscreen(window) {
+            c.lastExpandRight = expandRight
+            c.lastExpandLeft = expandLeft
+            return
+        }
         let state = WindowExpansionState.shared
         let exp = state.get(for: window)
         var frame = window.frame
@@ -178,7 +283,7 @@ struct WindowFrameAdjuster: NSViewRepresentable {
                 newRight = rightAmount
                 changed = true
             } else if !expandRight && exp.right > 0 {
-                frame.size.width -= rightAmount
+                frame.size.width -= exp.right
                 newRight = 0
                 changed = true
             }
@@ -192,8 +297,8 @@ struct WindowFrameAdjuster: NSViewRepresentable {
                 newLeft = leftAmount
                 changed = true
             } else if !expandLeft && exp.left > 0 {
-                frame.size.width -= leftAmount
-                frame.origin.x += leftAmount
+                frame.size.width -= exp.left
+                frame.origin.x += exp.left
                 newLeft = 0
                 changed = true
             }
@@ -246,11 +351,10 @@ struct WindowFrameAdjuster: NSViewRepresentable {
             let w = window
             let wasRight = lastExpandRight
             let wasLeft = lastExpandLeft
-            let rAmt = rightAmount
-            let lAmt = leftAmount
             let key = savedWidthKey
 
             DispatchQueue.main.async {
+                guard !w.styleMask.contains(.fullScreen) else { return }
                 let state = WindowExpansionState.shared
                 let exp = state.get(for: w)
                 var frame = w.frame
@@ -259,13 +363,13 @@ struct WindowFrameAdjuster: NSViewRepresentable {
                 var changed = false
 
                 if wasRight && exp.right > 0 {
-                    frame.size.width -= rAmt
+                    frame.size.width -= exp.right
                     newRight = 0
                     changed = true
                 }
                 if wasLeft && exp.left > 0 {
-                    frame.size.width -= lAmt
-                    frame.origin.x += lAmt
+                    frame.size.width -= exp.left
+                    frame.origin.x += exp.left
                     newLeft = 0
                     changed = true
                 }

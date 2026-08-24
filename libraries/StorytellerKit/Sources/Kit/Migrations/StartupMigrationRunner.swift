@@ -39,6 +39,11 @@ public enum StorytellerRuntime {
         let filesystem = FilesystemActor.shared
         do {
             do {
+                try await filesystem.runSilveranHandoffMigrationIfNeeded()
+            } catch {
+                debugLog("[StorytellerMigrations] Silveran handoff migration deferred: \(error)")
+            }
+            do {
                 try await filesystem.runFlatColorThemeMigrationIfNeeded()
             } catch {
                 debugLog("[StorytellerMigrations] Flat color theme migration deferred: \(error)")

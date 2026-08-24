@@ -5,8 +5,6 @@ import SwiftUI
 struct MacBookDetailHeroBackground: View {
     let item: BookMetadata
     @Binding var palette: CoverDerivedPalette
-    let surfaceColor: Color
-    let contentBackground: Color
     @Environment(MediaViewModel.self) private var mediaViewModel
 
     private var coverImage: NSImage? {
@@ -24,22 +22,14 @@ struct MacBookDetailHeroBackground: View {
     }
 
     var body: some View {
-        surfaceColor
-            .overlay {
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0.68),
-                        .init(color: contentBackground.opacity(0.32), location: 0.84),
-                        .init(color: contentBackground, location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom,
-                )
-            }
+        Color.clear
             .onChange(of: coverIdentity, initial: true) { _, _ in
                 updateBackgroundColor()
             }
             .onChange(of: colorfulnessKey) { _, _ in
+                updateBackgroundColor()
+            }
+            .onChange(of: CoverColorBackfill.shared.version) { _, _ in
                 updateBackgroundColor()
             }
     }

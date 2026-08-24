@@ -6,6 +6,8 @@ struct EbookSearchPanel: View {
     @Bindable var searchManager: EbookSearchManager
     let onDismiss: () -> Void
     let onResultSelected: (SearchResult) -> Void
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,6 +15,14 @@ struct EbookSearchPanel: View {
             Divider()
             searchResultsContent
         }
+    }
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
     }
 
     private var searchHeader: some View {
@@ -134,6 +144,7 @@ struct EbookSearchPanel: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    .listRowBackground(paletteRowBackground)
                 }
             }
             .listStyle(.plain)

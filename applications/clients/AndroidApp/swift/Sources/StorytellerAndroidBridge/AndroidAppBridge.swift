@@ -4,6 +4,13 @@ import StorytellerKit
 
 public func bootstrapAndroid(filesDirectory: String) async throws {
     try AndroidPlatformBootstrap.bootstrap(filesDirectory: filesDirectory)
+    CoverCacheActor.deriveColorsFromData = { bookID, audio, _ in
+        notifyAndroidCoverColorsNeeded(
+            bookID: bookID.uuid,
+            sourceID: bookID.sourceID,
+            audio: audio,
+        )
+    }
     guard await StorytellerRuntime.start() else {
         throw AndroidBridgeError.runtimeStartupFailed
     }
@@ -324,6 +331,24 @@ private func encodeAppSettings() async throws -> String {
             experimentalSettings: library.experimentalSettings,
         )
     )
+}
+
+private struct AndroidFullPlayerCustomization: Encodable {
+    let statSlots: [PlayerComplication]
+    let controlSlots: [PlayerComplication]
+}
+
+public func fullPlayerCustomizationJSON(requestID: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try requireAndroidBootstrap()
+        let fullPlayer = await SettingsActor.shared.config.fullPlayer
+        return try encodeJSON(
+            AndroidFullPlayerCustomization(
+                statSlots: fullPlayer.statSlots,
+                controlSlots: fullPlayer.controlSlots,
+            )
+        )
+    }
 }
 
 public func librarySnapshotJSON(requestID: String, refresh: Bool) async throws {
@@ -1328,6 +1353,71 @@ public func coverResponseBytes(
     }
 }
 
+public func coverFullResponseBytes(
+    requestID: String,
+    bookID: String,
+    sourceID: String,
+    version: String,
+    audio: Bool,
+) async {
+    do {
+        try requireAndroidBootstrap()
+        let id = BookID(sourceID: sourceID, uuid: bookID)
+        let data = await BookServiceActor.shared.loadFullCover(
+            for: id,
+            audio: audio,
+            version: version.isEmpty ? nil : version,
+            allowNetwork: await BookServiceActor.shared.connectionStatus(sourceID: id.sourceID)
+                == .connected,
+        )
+        deliverAndroidCoverPayload(
+            requestID: requestID,
+            data: data ?? Data(),
+            shouldPersist: false,
+        )
+    } catch {
+        deliverAndroidCoverError(requestID: requestID, error: error)
+    }
+}
+
+public func prioritizeBookCoversJSON(
+    requestID: String,
+    bookID: String,
+    sourceID: String,
+    version: String,
+    includeEbook: Bool,
+    includeAudio: Bool,
+) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try requireAndroidBootstrap()
+        let id = BookID(sourceID: sourceID, uuid: bookID)
+        let resolvedVersion = version.isEmpty ? nil : version
+        var fullEbook = false
+        var fullAudio = false
+        if includeEbook {
+            fullEbook = await CoverCacheActor.shared.hasFullCover(for: id, audio: false)
+            if !fullEbook {
+                await CoverCacheActor.shared.prioritizeFullCover(
+                    for: id,
+                    audio: false,
+                    version: resolvedVersion,
+                )
+            }
+        }
+        if includeAudio {
+            fullAudio = await CoverCacheActor.shared.hasFullCover(for: id, audio: true)
+            if !fullAudio {
+                await CoverCacheActor.shared.prioritizeFullCover(
+                    for: id,
+                    audio: true,
+                    version: resolvedVersion,
+                )
+            }
+        }
+        return "{\"fullEbook\": \(fullEbook), \"fullAudio\": \(fullAudio)}"
+    }
+}
+
 public func persistCoverBytes(
     bookID: String,
     sourceID: String,
@@ -1364,15 +1454,47 @@ public func coverPaletteJSON(
     dark: Bool,
     colorMode: String,
     colorIntensity: Double,
+    bookID: String,
+    sourceID: String,
+    audio: Bool,
 ) throws -> String {
     guard let data = Data(base64Encoded: rgbaBase64) else {
         throw AndroidBridgeError.invalidCoverPixels
     }
-    let palette = adjustedPaletteValues(
-        rgbaPixels: Array(data),
-        colorMode: colorMode,
-        colorIntensity: colorIntensity,
+    let rgbaPixels = Array(data)
+
+    let derivedColors: [OkmainColor]? =
+        bookID.isEmpty || sourceID.isEmpty
+        ? nil
+        : CoverColorDerivation.cachedColors(
+            forKey: CoverColorDerivation.key(
+                bookID: BookID(sourceID: sourceID, uuid: bookID),
+                audio: audio,
+            )
+        )
+
+    let mode = CoverColorMode(rawValue: colorMode) ?? .full
+    let baseHSB: CoverHSB
+    if let primary = derivedColors?.first {
+        baseHSB = CoverColorAverager.surfaceHSB(
+            primary: CoverRGB8(red: primary.red, green: primary.green, blue: primary.blue)
+        )
+    } else {
+        baseHSB =
+            CoverColorAverager.surfaceHSB(rgbaPixels: rgbaPixels)
+            ?? CoverPaletteAdjustment.fallbackSurfaceHSB
+    }
+    let palette = CoverPaletteAdjustment.adjustedValues(
+        surfaceHSB: baseHSB,
+        mode: mode,
+        intensity: colorIntensity,
     )
+    let chromeHSB = CoverPaletteAdjustment.adjustedSurfaceHSB(
+        baseHSB,
+        mode: mode,
+        intensity: colorIntensity,
+    )
+    let isFinal = derivedColors != nil || rgbaPixels.isEmpty
     return try encodeJSON(
         AndroidCoverPalette(
             surface: argb(dark ? palette.surface : palette.lightSurface),
@@ -1387,7 +1509,56 @@ public func coverPaletteJSON(
             cardBackground: argb(dark ? palette.cardBackground : palette.lightCardBackground),
             cardBorder: argb(dark ? palette.cardBorder : palette.lightCardBorder),
             ratingAccent: argb(dark ? palette.brightAccent : palette.deepAccent),
+            gradientTop: argb(CoverPlayerChrome.gradientTop(surfaceHSB: chromeHSB, dark: dark)),
+            gradientBottom: argb(
+                CoverPlayerChrome.gradientBottom(surfaceHSB: chromeHSB, dark: dark)
+            ),
+            controlTint: argb(CoverPlayerChrome.controlTint(surfaceHSB: chromeHSB, dark: dark)),
+            readerHighlight: argb(CoverReaderChrome.highlight(surfaceHSB: chromeHSB, dark: dark)),
+            isFinal: isFinal,
         )
+    )
+}
+
+public func deriveCoverColors(
+    bookID: String,
+    sourceID: String,
+    audio: Bool,
+    fullRgbaBase64: String,
+    fullWidth: Int32,
+    fullHeight: Int32,
+) async throws {
+    try requireAndroidBootstrap()
+    guard
+        !bookID.isEmpty,
+        !sourceID.isEmpty,
+        let fullData = Data(base64Encoded: fullRgbaBase64)
+    else {
+        throw AndroidBridgeError.invalidCoverPixels
+    }
+    let width = Int(fullWidth)
+    let height = Int(fullHeight)
+    let rgbaPixels = Array(fullData)
+    guard width > 0, height > 0, rgbaPixels.count == width * height * 4 else {
+        throw AndroidBridgeError.invalidCoverPixels
+    }
+
+    var rgb = [UInt8]()
+    rgb.reserveCapacity(width * height * 3)
+    for offset in stride(from: 0, to: rgbaPixels.count, by: 4) {
+        let alpha = Double(rgbaPixels[offset + 3]) / 255
+        for channelOffset in 0..<3 {
+            let channel = Double(rgbaPixels[offset + channelOffset])
+            rgb.append(UInt8(clamping: Int((channel * alpha + 255 * (1 - alpha)).rounded())))
+        }
+    }
+
+    await CoverCacheActor.shared.deriveColors(
+        bookID: BookID(sourceID: sourceID, uuid: bookID),
+        audio: audio,
+        width: width,
+        height: height,
+        rgb: rgb,
     )
 }
 
@@ -1753,6 +1924,11 @@ private struct AndroidCoverPalette: Encodable {
     let cardBackground: UInt32
     let cardBorder: UInt32
     let ratingAccent: UInt32
+    let gradientTop: UInt32
+    let gradientBottom: UInt32
+    let controlTint: UInt32
+    let readerHighlight: UInt32
+    let isFinal: Bool
 }
 
 private struct AndroidHomeSection: Encodable {

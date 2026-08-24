@@ -94,11 +94,15 @@ struct ChapterReferenceWindow: View {
 
     private func styleCSS(settingsVM: SettingsViewModel) -> String {
         let isDark = colorScheme == .dark
+        let backgroundRaw = settingsVM.themeHex(
+            settingsVM.backgroundColor, role: .background, for: colorScheme)
+        let foregroundRaw = settingsVM.themeHex(
+            settingsVM.foregroundColor, role: .foreground, for: colorScheme)
         let background =
-            (settingsVM.backgroundColor?.isEmpty == false ? settingsVM.backgroundColor : nil)
+            (backgroundRaw?.isEmpty == false ? backgroundRaw : nil)
             ?? (isDark ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight)
         let foreground =
-            (settingsVM.foregroundColor?.isEmpty == false ? settingsVM.foregroundColor : nil)
+            (foregroundRaw?.isEmpty == false ? foregroundRaw : nil)
             ?? (isDark ? kDefaultForegroundColorDark : kDefaultForegroundColorLight)
         let family =
             settingsVM.fontFamily == "System Default"

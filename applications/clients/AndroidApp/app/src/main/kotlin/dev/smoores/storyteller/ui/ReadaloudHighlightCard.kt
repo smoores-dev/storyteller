@@ -61,6 +61,9 @@ internal fun ReadaloudHighlightCard(
     hasAudioNarration: Boolean,
     experimentalSettings: Boolean,
     activeTheme: ReaderTheme,
+    resolvedBackground: Color? = null,
+    resolvedForeground: Color? = null,
+    resolvedHighlight: Color? = null,
     dimOthers: Boolean,
     dimAmount: Double,
     highlightVisibility: String,
@@ -90,6 +93,9 @@ internal fun ReadaloudHighlightCard(
 
             ReadaloudPreviewPane(
                 theme = activeTheme,
+                resolvedBackground = resolvedBackground,
+                resolvedForeground = resolvedForeground,
+                resolvedHighlight = resolvedHighlight,
                 dimOthers = dimOthers,
                 dimAmount = dimAmount,
                 highlightVisibility = highlightVisibility,
@@ -332,6 +338,9 @@ private val readaloudSampleSentences = listOf(
 @Composable
 private fun ReadaloudPreviewPane(
     theme: ReaderTheme,
+    resolvedBackground: Color?,
+    resolvedForeground: Color?,
+    resolvedHighlight: Color?,
     dimOthers: Boolean,
     dimAmount: Double,
     highlightVisibility: String,
@@ -348,9 +357,9 @@ private fun ReadaloudPreviewPane(
         }
     }
 
-    val background = parseHexColor(theme.backgroundColor) ?: Color.White
-    val foreground = parseHexColor(theme.foregroundColor) ?: Color.Black
-    val highlight = parseHexColor(theme.highlightColor) ?: Color.Yellow
+    val background = parseHexColor(theme.backgroundColor) ?: resolvedBackground ?: Color.White
+    val foreground = parseHexColor(theme.foregroundColor) ?: resolvedForeground ?: Color.Black
+    val highlight = parseHexColor(theme.highlightColor) ?: resolvedHighlight ?: Color.Yellow
     val highlightVisible = isPlaying || highlightVisibility != "playing"
     val dimmedForeground = foreground.copy(
         alpha = maxOf(0.05f, 1f - dimAmount.toFloat()),

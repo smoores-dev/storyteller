@@ -9,6 +9,7 @@ enum CustomizeCard: String, Identifiable {
     case miniplayer
     #endif
     case dock
+    case fullPlayer
     case theme
 
     var id: String { rawValue }
@@ -35,6 +36,16 @@ struct ProgressIndicatorSection: View {
     let enabled: Binding<Bool>
     let scope: Binding<MiniPlayerProgressScope>
     let thickness: Binding<Double>
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         Section {
@@ -69,6 +80,7 @@ struct ProgressIndicatorSection: View {
                     + "you are in chapter or book."
             )
         }
+        .listRowBackground(paletteRowBackground)
     }
 }
 
@@ -77,6 +89,8 @@ struct CustomizeCardContainer<Content: View>: View {
     var onReset: (() -> Void)? = nil
     @ViewBuilder let content: () -> Content
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var confirmingReset = false
     #if os(macOS)
@@ -86,6 +100,10 @@ struct CustomizeCardContainer<Content: View>: View {
     var body: some View {
         NavigationStack {
             content()
+                .readerPaletteModalSurface(readerPalette)
+                #if os(iOS)
+                .readerPaletteNavigationBar(readerPalette, colorScheme: colorScheme)
+                #endif
                 .navigationTitle(title)
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)

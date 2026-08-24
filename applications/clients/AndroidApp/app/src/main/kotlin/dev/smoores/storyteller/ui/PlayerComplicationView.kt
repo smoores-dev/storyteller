@@ -27,6 +27,9 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.RotateLeft
 import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.automirrored.filled.Toc
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Battery0Bar
@@ -108,6 +111,7 @@ internal data class PlayerDisplayModel(
     val cover: ImageBitmap? = null,
     val isPlaying: Boolean = false,
     val playbackRate: Double = 1.0,
+    val volume: Double = 1.0,
     val chapterProgress: Double = 0.0,
     val chapterElapsedSeconds: Double? = null,
     val chapterTotalSeconds: Double? = null,
@@ -180,6 +184,7 @@ internal data class PlayerActions(
     val onOpenSearch: () -> Unit = {},
     val onOpenTextSettings: () -> Unit = {},
     val onOpenSleepTimer: () -> Unit = {},
+    val onOpenVolume: () -> Unit = {},
     val onToggleMirror: () -> Unit = {},
     val onToggleScrollingMode: () -> Unit = {},
     val onToggleFreeBrowse: () -> Unit = {},
@@ -198,38 +203,42 @@ internal sealed class ComplicationStyle {
     data class Dock(val transparency: Double) : ComplicationStyle()
     data object PickerThumb : ComplicationStyle()
     data class MenuBar(val tint: Color) : ComplicationStyle()
+    data class FullPlayer(val tint: Color) : ComplicationStyle()
 
     val controlSize: Dp
         get() = when (this) {
             is MiniRow -> 34.dp
             is Dock -> 36.dp
-            is MenuBar -> 44.dp
+            is MenuBar, is FullPlayer -> 44.dp
             else -> 30.dp
         }
 
     val controlGlyphSize: Dp
         get() = when (this) {
             is Dock -> 16.dp
-            is MenuBar -> 20.dp
+            is MenuBar, is FullPlayer -> 20.dp
             else -> 17.dp
         }
 
     fun controlColor(contentColor: Color): Color = when (this) {
         is Dock -> Color.Gray.copy(alpha = transparency.toFloat())
         is MenuBar -> tint
+        is FullPlayer -> tint
         else -> contentColor
     }
 
     fun statColor(contentColor: Color): Color = when (this) {
         is Dock -> Color.Gray.copy(alpha = transparency.toFloat())
         is MenuBar -> tint.copy(alpha = 0.75f)
+        is FullPlayer -> tint
         else -> contentColor.copy(alpha = 0.6f)
     }
 }
 
 @Composable
 private fun statTextStyle(style: ComplicationStyle): TextStyle = when (style) {
-    is ComplicationStyle.MiniRow -> MaterialTheme.typography.bodySmall
+    is ComplicationStyle.MiniRow, is ComplicationStyle.FullPlayer ->
+        MaterialTheme.typography.bodySmall
     else -> MaterialTheme.typography.labelSmall
 }.copy(fontFeatureSettings = "tnum")
 
@@ -276,7 +285,7 @@ internal fun Modifier.slotEditable(ref: SlotRef, editing: MutableState<SlotRef?>
                 ),
             )
         }
-        .padding(3.dp)
+        .padding(horizontal = 5.dp, vertical = 7.dp)
         .sizeIn(minWidth = 26.dp, minHeight = 22.dp)
 }
 
@@ -394,6 +403,10 @@ internal fun PlayerComplicationView(
         )
         PlayerComplication.SLEEP_TIMER ->
             SleepTimerControl(style, display, actions, contentColor)
+        PlayerComplication.VOLUME -> ControlButton(
+            volumeComplicationIcon(display.volume), "Volume", style,
+            actions.onOpenVolume, contentColor,
+        )
         PlayerComplication.TITLE_BLOCK -> TitleBlockThumb(contentColor)
         PlayerComplication.MIRROR -> ControlButton(
             Icons.Filled.SwapHoriz, "Swap hands", style, actions.onToggleMirror, contentColor,
@@ -451,7 +464,8 @@ private fun PlayPauseButton(
         }
         ComplicationStyle.ScrubRow -> Triple(34.dp, 20.dp, false)
         is ComplicationStyle.Dock -> Triple(44.dp, 22.dp, false)
-        is ComplicationStyle.MenuBar -> Triple(44.dp, 22.dp, false)
+        is ComplicationStyle.MenuBar, is ComplicationStyle.FullPlayer ->
+            Triple(44.dp, 22.dp, false)
         ComplicationStyle.StatBand, ComplicationStyle.PickerThumb -> Triple(32.dp, 18.dp, true)
     }
     Box(
@@ -488,7 +502,7 @@ private fun SkipButton(
     val (box, glyph) = when (style) {
         is ComplicationStyle.MiniRow, ComplicationStyle.ScrubRow -> 34.dp to 20.dp
         is ComplicationStyle.Dock -> 36.dp to 18.dp
-        is ComplicationStyle.MenuBar -> 44.dp to 20.dp
+        is ComplicationStyle.MenuBar, is ComplicationStyle.FullPlayer -> 44.dp to 20.dp
         ComplicationStyle.StatBand, ComplicationStyle.PickerThumb -> 30.dp to 16.dp
     }
     Box(
@@ -852,6 +866,12 @@ private fun rememberBatteryState(): BatteryState {
         onDispose { context.unregisterReceiver(receiver) }
     }
     return BatteryState(level, charging)
+}
+
+private fun volumeComplicationIcon(volume: Double): ImageVector = when {
+    volume <= 0.0 -> Icons.AutoMirrored.Filled.VolumeOff
+    volume < 0.66 -> Icons.AutoMirrored.Filled.VolumeDown
+    else -> Icons.AutoMirrored.Filled.VolumeUp
 }
 
 private fun batteryText(level: Float): String =

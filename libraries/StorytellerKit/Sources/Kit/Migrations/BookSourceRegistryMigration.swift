@@ -86,15 +86,17 @@ extension FilesystemActor {
         }
 
         for root in [modernRoot, legacyRoot] {
-            let markerURL = root.appendingPathComponent(
+            for filename in [
                 BookSourceRecord.sourceIDFilename,
-                isDirectory: false,
-            )
-            if let existing = try? String(contentsOf: markerURL, encoding: .utf8)
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-                !existing.isEmpty
-            {
-                return existing
+                BookSourceRecord.legacySourceIDFilename,
+            ] {
+                let markerURL = root.appendingPathComponent(filename, isDirectory: false)
+                if let existing = try? String(contentsOf: markerURL, encoding: .utf8)
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                    !existing.isEmpty
+                {
+                    return existing
+                }
             }
         }
 
@@ -123,18 +125,20 @@ extension FilesystemActor {
         for url in contents {
             let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
             guard values?.isDirectory == true else { continue }
-            let marker = url.appendingPathComponent(
+            for filename in [
                 BookSourceRecord.sourceIDFilename,
-                isDirectory: false,
-            )
-            guard fm.fileExists(atPath: marker.path),
-                let id = try? String(contentsOf: marker, encoding: .utf8)
-                    .trimmingCharacters(in: .whitespacesAndNewlines),
-                !id.isEmpty
-            else {
-                continue
+                BookSourceRecord.legacySourceIDFilename,
+            ] {
+                let marker = url.appendingPathComponent(filename, isDirectory: false)
+                guard fm.fileExists(atPath: marker.path),
+                    let id = try? String(contentsOf: marker, encoding: .utf8)
+                        .trimmingCharacters(in: .whitespacesAndNewlines),
+                    !id.isEmpty
+                else {
+                    continue
+                }
+                return id
             }
-            return id
         }
 
         return nil

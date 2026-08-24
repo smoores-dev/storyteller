@@ -157,16 +157,22 @@ public actor FilesystemActor {
     }
 
     public func sourceIDMarker(in directory: URL) throws -> BookSourceID? {
-        let marker = directory.appendingPathComponent(
+        let filenames = [
             BookSourceRecord.sourceIDFilename,
-            isDirectory: false,
-        )
-        guard FileManager.default.fileExists(atPath: marker.path) else {
-            return nil
+            BookSourceRecord.legacySourceIDFilename,
+        ]
+        for filename in filenames {
+            let marker = directory.appendingPathComponent(filename, isDirectory: false)
+            guard FileManager.default.fileExists(atPath: marker.path) else {
+                continue
+            }
+            let sourceID = try String(contentsOf: marker, encoding: .utf8)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !sourceID.isEmpty {
+                return sourceID
+            }
         }
-        let sourceID = try String(contentsOf: marker, encoding: .utf8)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return sourceID.isEmpty ? nil : sourceID
+        return nil
     }
 
     public func ensureSourceIDMarker(in directory: URL, sourceID: BookSourceID) throws {
@@ -719,6 +725,12 @@ public actor FilesystemActor {
         }
 
         return try? Data(contentsOf: coverURL)
+    }
+
+    public func removeCoverImage(bookID: BookID, variant: String) throws {
+        let coverURL = coverFileURL(bookID: bookID, variant: variant)
+        guard FileManager.default.fileExists(atPath: coverURL.path) else { return }
+        try FileManager.default.removeItem(at: coverURL)
     }
 
     public func removeAllCoverImages() throws {

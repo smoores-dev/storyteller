@@ -21,6 +21,7 @@ class EbookPlayerViewModel {
     private var bridgeInitialColorScheme: ColorScheme = .light
     @ObservationIgnored private var scenePhaseTask: Task<Void, Never>?
     var styleManager: ReaderStyleManager? = nil
+    var coverTone: CoverHSB? = nil
     var searchManager: EbookSearchManager? = nil
     var comicPageURLs: [URL] = []
     #if os(iOS)
@@ -762,6 +763,7 @@ class EbookPlayerViewModel {
             settingsVM: settingsVM,
             bridge: bridge,
         )
+        styleManager?.setCoverTone(coverTone)
 
         setupBridgeCallbacks(bridge)
     }

@@ -81,6 +81,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -954,6 +955,7 @@ internal fun BookCover(
     progressColor: Color? = null,
     progressBackgroundColor: Color? = null,
     preferredArtwork: CoverStyle = CoverStyle.Auto,
+    cornerRadius: Dp = 6.dp,
 ) {
     val ebookState = rememberCoverLoadState(
         book = book,
@@ -990,19 +992,21 @@ internal fun BookCover(
         loadedAudioImage
     }
     val darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val colorfulnessKey = CoverColorSettings.key
-    val backgroundColor = remember(ebookBitmap, audioBitmap, darkTheme, showsPanel, colorfulnessKey) {
-        if (showsPanel) {
-            coverBackgroundColor(ebookBitmap ?: audioBitmap, darkTheme)
-        } else {
-            Color.Transparent
-        }
+    val backgroundColor = if (showsPanel) {
+        rememberCoverBackgroundColor(
+            ebookBitmap ?: audioBitmap,
+            darkTheme,
+            book = book,
+            audio = ebookBitmap == null,
+        )
+    } else {
+        Color.Transparent
     }
     val primaryBitmap = ebookBitmap ?: audioBitmap
     LaunchedEffect(primaryBitmap) {
         primaryBitmap?.let(onPrimaryBitmap)
     }
-    val coverShape = RoundedCornerShape(6.dp)
+    val coverShape = RoundedCornerShape(cornerRadius)
 
     Surface(
         modifier = modifier,

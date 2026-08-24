@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.OpenInBrowser
@@ -75,8 +76,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -89,6 +88,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import dev.smoores.storyteller.bridge.CoverResolutionStatus
 import dev.smoores.storyteller.model.AlignmentOverrideState
 import dev.smoores.storyteller.model.Book
 import dev.smoores.storyteller.model.BookAlignmentReport
@@ -134,8 +134,21 @@ internal fun BookDetailsScreen(
         { _, _ -> QuickEditResult("failed", null, null) },
     loadAlignmentReport: (suspend (Book) -> BookAlignmentReport)? = null,
     saveAlignmentOverrides: suspend (Book, AlignmentOverrideState) -> Boolean = { _, _ -> false },
+    prioritizeCovers: (suspend (Book) -> CoverResolutionStatus)? = null,
 ) {
     var showAlignmentReport by remember(book.id) { mutableStateOf(false) }
+    var coverStatus by remember(book.id) { mutableStateOf<CoverResolutionStatus?>(null) }
+    LaunchedEffect(book.id) {
+        val prioritize = prioritizeCovers ?: return@LaunchedEffect
+        repeat(60) {
+            val status = runCatching { prioritize(book) }.getOrNull() ?: return@LaunchedEffect
+            coverStatus = status
+            val ebookDone = !book.hasEbook || status.fullEbook
+            val audioDone = !book.hasAudio || status.fullAudio
+            if (ebookDone && audioDone) return@LaunchedEffect
+            kotlinx.coroutines.delay(500)
+        }
+    }
     var quickEditState by remember(book.id) { mutableStateOf<QuickEditContext?>(null) }
     var showQuickEdit by remember(book.id) { mutableStateOf(false) }
     LaunchedEffect(book.id) {
@@ -162,12 +175,12 @@ internal fun BookDetailsScreen(
     val fallbackPalette = remember(darkTheme, colorfulnessKey) {
         coverBackgroundPalette(null, darkTheme)
     }
-    var backgroundPalette by remember(book.id, darkTheme, colorfulnessKey) {
-        mutableStateOf(fallbackPalette)
-    }
+    var primaryCoverBitmap by remember(book.id) { mutableStateOf<Bitmap?>(null) }
+    val backgroundPalette = primaryCoverBitmap?.let {
+        rememberCoverBackgroundPalette(it, darkTheme, book = book)
+    } ?: fallbackPalette
     val heroColor = backgroundPalette.surface
     val onHero = if (heroColor.luminance() < 0.48f) Color.White else Color(0xff171717)
-    val contentColor = backgroundPalette.contentBackground
     val relatedSeries = remember(book, library) {
         val series = book.series.firstOrNull()?.name
         if (series == null) emptyList() else library.filter {
@@ -186,24 +199,13 @@ internal fun BookDetailsScreen(
     Column(
         modifier
             .fillMaxSize()
-            .background(contentColor)
+            .background(backgroundPalette.playerGradient)
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp),
     ) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0f to heroColor,
-                            0.68f to heroColor,
-                            0.84f to lerp(heroColor, contentColor, 0.32f),
-                            1f to contentColor,
-                        ),
-                    ),
-                )
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(top = 12.dp)
@@ -300,9 +302,7 @@ internal fun BookDetailsScreen(
                 load = cover,
                 cached = cachedCover,
                 modifier = Modifier.width(152.dp).aspectRatio(0.675f),
-                onPrimaryBitmap = {
-                    backgroundPalette = coverBackgroundPalette(it, darkTheme)
-                },
+                onPrimaryBitmap = { primaryCoverBitmap = it },
                 artworkScale = 0.94f,
                 showsPanel = false,
                 layersMedia = false,
@@ -396,7 +396,7 @@ internal fun BookDetailsScreen(
         }
 
         Column(
-            Modifier.fillMaxWidth().background(contentColor)
+            Modifier.fillMaxWidth()
                 .padding(horizontal = 10.dp)
                 .padding(top = 18.dp, bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -486,7 +486,7 @@ internal fun BookDetailsScreen(
                 palette = backgroundPalette,
                 initiallyExpanded = true,
             ) {
-                MediaInfo(book)
+                MediaInfo(book, coverStatus)
             }
             book.alignmentSummary?.let { summary ->
                 if (loadAlignmentReport != null) {
@@ -1064,7 +1064,7 @@ private fun MetadataRows(rows: List<Pair<String, String>>) {
 }
 
 @Composable
-private fun MediaInfo(book: Book) {
+private fun MediaInfo(book: Book, coverStatus: CoverResolutionStatus?) {
     val byCategory = book.media.associateBy { it.category }
     val rows = listOf(
         Triple("Ebook", Icons.AutoMirrored.Filled.MenuBook, byCategory["ebook"]),
@@ -1086,6 +1086,40 @@ private fun MediaInfo(book: Book) {
                 }
             }
         }
+        coverSummaryLines(book, coverStatus).takeIf(List<String>::isNotEmpty)?.let { lines ->
+            HorizontalDivider(Modifier.padding(start = 30.dp))
+            Row(Modifier.fillMaxWidth().padding(vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Image,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Column(Modifier.padding(start = 10.dp)) {
+                    Text("Cover", fontWeight = FontWeight.Medium)
+                    lines.forEach { line ->
+                        Text(
+                            line,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun coverSummaryLines(book: Book, coverStatus: CoverResolutionStatus?): List<String> {
+    val status = coverStatus ?: return emptyList()
+    fun label(full: Boolean, dimensions: Pair<Int, Int>?): String {
+        if (!full) return "reduced size"
+        val size = dimensions?.let { " (${it.first} x ${it.second})" } ?: ""
+        return "full size$size"
+    }
+    return buildList {
+        if (book.hasEbook) add("Ebook ${label(status.fullEbook, status.ebookDimensions)}")
+        if (book.hasAudio) add("Audiobook ${label(status.fullAudio, status.audioDimensions)}")
     }
 }
 

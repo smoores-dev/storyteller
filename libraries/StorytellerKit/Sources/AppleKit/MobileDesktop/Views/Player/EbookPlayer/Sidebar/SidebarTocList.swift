@@ -160,15 +160,6 @@ struct SidebarTocList: View {
                     .buttonStyle(.plain)
                     .help("Open in reference window")
                 }
-
-                Image(systemName: "arrow.right")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(theme.secondary)
-                    .padding(5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(theme.foreground.opacity(0.07))
-                    )
             }
             .padding(.leading, 16 + CGFloat(max(0, item.level - 1)) * 12)
             .padding(.trailing, 12)

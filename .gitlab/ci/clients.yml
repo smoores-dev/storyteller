@@ -12,6 +12,9 @@
         - Package.swift
         - Package.resolved
         - .gitlab/ci/clients.yml
+    - if: "$CI_COMMIT_TAG == null"
+      when: manual
+      allow_failure: true
 
 .macos_runner:
   tags:
@@ -56,6 +59,9 @@ apple_setup:
         - Package.swift
         - Package.resolved
         - .gitlab/ci/clients.yml
+    - if: "$CI_COMMIT_TAG == null"
+      when: manual
+      allow_failure: true
   script:
     - cd applications/clients
     - brew install imagemagick xcbeautify xcodegen

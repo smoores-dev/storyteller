@@ -6,6 +6,7 @@ struct ThemeEditorView: View {
     let theme: ReaderTheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.readerPalette) private var readerPalette
     @State private var draft: ReaderTheme
     @State private var originalFlatValues: FlatColorSnapshot?
     @State private var tab: ThemeEditorTab = .theme
@@ -29,6 +30,8 @@ struct ThemeEditorView: View {
         #if os(iOS)
         NavigationStack {
             editorContent
+                .readerPaletteSurface(readerPalette)
+                .readerPaletteNavigationBar(readerPalette, colorScheme: colorScheme)
                 .navigationTitle(isBuiltInEdit ? theme.name : "Edit Theme")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -143,8 +146,20 @@ struct ThemeEditorView: View {
             Text("Reader Colors")
                 .font(.headline)
 
-            colorRow(label: "Background", key: "background", hex: $draft.backgroundColor)
-            colorRow(label: "Text", key: "text", hex: $draft.foregroundColor)
+            colorRow(
+                label: "Background",
+                key: "background",
+                hex: $draft.backgroundColor,
+                fallbackHex: kDefaultBackgroundColorLight,
+                role: .background,
+            )
+            colorRow(
+                label: "Text",
+                key: "text",
+                hex: $draft.foregroundColor,
+                fallbackHex: kDefaultForegroundColorLight,
+                role: .foreground,
+            )
         }
     }
 
@@ -168,7 +183,13 @@ struct ThemeEditorView: View {
 
             Text("Highlight Color")
                 .font(.headline)
-            InlineColorPicker(hex: $draft.highlightColor)
+            coverToggle(hex: $draft.highlightColor, fallbackHex: "#AE1917", role: .highlight)
+            if CoverReaderChrome.isToken(draft.highlightColor) {
+                strengthSlider(role: .highlight)
+            }
+            if !CoverReaderChrome.isToken(draft.highlightColor) {
+                InlineColorPicker(hex: $draft.highlightColor)
+            }
 
             switch draft.readaloudHighlightMode {
                 case "text":
@@ -386,9 +407,27 @@ struct ThemeEditorView: View {
     }
 
     @ViewBuilder
-    private func colorRow(label: String, key: String, hex: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+    private func colorRow(
+        label: String,
+        key: String,
+        hex: Binding<String>,
+        fallbackHex: String,
+        role: CoverReaderChrome.Role,
+    ) -> some View {
+        let usesCover = CoverReaderChrome.isToken(hex.wrappedValue)
+        let coverBinding = Binding(
+            get: { usesCover },
+            set: { enabled in
+                hex.wrappedValue = enabled ? CoverReaderChrome.token : restoreHex(for: role)
+                if enabled, expandedPicker == key { expandedPicker = nil }
+            },
+        )
+        let swatch = coverSwatch(role: role) ?? Color(hex: fallbackHex) ?? .clear
+
+
+        return VStack(alignment: .leading, spacing: 8) {
             Button {
+                guard !usesCover else { return }
                 withAnimation(.easeInOut(duration: 0.2)) {
                     expandedPicker = expandedPicker == key ? nil : key
                 }
@@ -397,11 +436,11 @@ struct ThemeEditorView: View {
                     Text(label)
                         .foregroundStyle(.primary)
                     Spacer()
-                    Text(hex.wrappedValue.uppercased())
+                    Text(usesCover ? "From Cover" : hex.wrappedValue.uppercased())
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
                     Circle()
-                        .fill(Color(hex: hex.wrappedValue) ?? .clear)
+                        .fill(usesCover ? swatch : (Color(hex: hex.wrappedValue) ?? .clear))
                         .frame(width: 32, height: 32)
                         .overlay(
                             Circle().strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1)
@@ -411,11 +450,120 @@ struct ThemeEditorView: View {
             }
             .buttonStyle(.plain)
 
-            if expandedPicker == key {
+            Toggle("Derive from cover", isOn: coverBinding)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                #if os(macOS)
+                .toggleStyle(.checkbox)
+                #endif
+
+            if usesCover {
+                strengthSlider(role: role)
+            }
+
+            if expandedPicker == key, !usesCover {
                 InlineColorPicker(hex: hex)
-                    .padding(.top, 10)
             }
         }
+    }
+
+    private func coverToggle(
+        hex: Binding<String>,
+        fallbackHex: String,
+        role: CoverReaderChrome.Role,
+    ) -> some View {
+        let usesCover = CoverReaderChrome.isToken(hex.wrappedValue)
+        return HStack(spacing: 10) {
+            Toggle(
+                "Derive from cover",
+                isOn: Binding(
+                    get: { usesCover },
+                    set: { hex.wrappedValue = $0 ? CoverReaderChrome.token : restoreHex(for: role) },
+                ),
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            #if os(macOS)
+            .toggleStyle(.checkbox)
+            #endif
+
+            if usesCover, let swatch = coverSwatch(role: role) {
+                Circle()
+                    .fill(swatch)
+                    .frame(width: 18, height: 18)
+                    .overlay(Circle().strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1))
+            }
+            Spacer()
+        }
+    }
+
+    private func restoreHex(for role: CoverReaderChrome.Role) -> String {
+        let original =
+            switch role {
+                case .background: theme.backgroundColor
+                case .foreground: theme.foregroundColor
+                case .highlight: theme.highlightColor
+            }
+        if !CoverReaderChrome.isToken(original) { return original }
+        let dark =
+            draft.appearance == .dark || (draft.appearance == .any && colorScheme == .dark)
+        switch role {
+            case .background:
+                return dark ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight
+            case .foreground:
+                return dark ? kDefaultForegroundColorDark : kDefaultForegroundColorLight
+            case .highlight:
+                return dark ? "#E63513" : "#AE1917"
+        }
+    }
+
+    private func strengthBinding(for role: CoverReaderChrome.Role) -> Binding<Double> {
+        switch role {
+            case .background: $draft.coverStrengthBackground
+            case .foreground: $draft.coverStrengthForeground
+            case .highlight: $draft.coverStrengthHighlight
+        }
+    }
+
+    private func strengthSlider(role: CoverReaderChrome.Role) -> some View {
+        let binding = strengthBinding(for: role)
+        return VStack(alignment: .leading, spacing: 2) {
+            Text("Cover Tint Strength: \(Int(binding.wrappedValue * 100))%")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Slider(value: binding, in: 0...1, step: 0.05)
+                #if os(macOS)
+                .frame(maxWidth: 260)
+                #endif
+        }
+        .padding(.leading, 20)
+    }
+
+    private func coverSwatch(role: CoverReaderChrome.Role) -> Color? {
+        let tone = readerPalette?.chromeHSB ?? CoverPaletteAdjustment.fallbackSurfaceHSB
+        let dark = colorScheme == .dark
+        let derived =
+            switch role {
+                case .background:
+                    CoverReaderChrome.background(
+                        surfaceHSB: tone,
+                        dark: dark,
+                        strength: draft.coverStrengthBackground,
+                    )
+                case .foreground:
+                    CoverReaderChrome.foreground(
+                        surfaceHSB: tone,
+                        dark: dark,
+                        strength: draft.coverStrengthForeground,
+                    )
+                case .highlight:
+                    CoverReaderChrome.highlight(
+                        surfaceHSB: tone,
+                        dark: dark,
+                        strength: draft.coverStrengthHighlight,
+                    )
+            }
+        return Color(hex: derived.hexString)
     }
 
     @ViewBuilder
@@ -460,6 +608,9 @@ struct ThemeEditorView: View {
             highlightThickness: settingsVM.highlightThickness,
             readaloudHighlightMode: settingsVM.readaloudHighlightMode,
             readaloudHighlightFade: settingsVM.readaloudHighlightFade,
+            coverStrengthBackground: settingsVM.coverStrengthBackground,
+            coverStrengthForeground: settingsVM.coverStrengthForeground,
+            coverStrengthHighlight: settingsVM.coverStrengthHighlight,
             readaloudTextItalic: settingsVM.readaloudTextItalic,
             readaloudTextBold: settingsVM.readaloudTextBold,
             readaloudUnderlineStyle: settingsVM.readaloudUnderlineStyle,
@@ -491,6 +642,9 @@ struct ThemeEditorView: View {
         settingsVM.highlightThickness = theme.highlightThickness
         settingsVM.readaloudHighlightMode = theme.readaloudHighlightMode
         settingsVM.readaloudHighlightFade = theme.readaloudHighlightFade
+        settingsVM.coverStrengthBackground = theme.coverStrengthBackground
+        settingsVM.coverStrengthForeground = theme.coverStrengthForeground
+        settingsVM.coverStrengthHighlight = theme.coverStrengthHighlight
         settingsVM.readaloudTextItalic = theme.readaloudTextItalic
         settingsVM.readaloudTextBold = theme.readaloudTextBold
         settingsVM.readaloudUnderlineStyle = theme.readaloudUnderlineStyle
@@ -532,6 +686,9 @@ struct ThemeEditorView: View {
             settingsVM.highlightThickness = snap.highlightThickness
             settingsVM.readaloudHighlightMode = snap.readaloudHighlightMode
             settingsVM.readaloudHighlightFade = snap.readaloudHighlightFade
+            settingsVM.coverStrengthBackground = snap.coverStrengthBackground
+            settingsVM.coverStrengthForeground = snap.coverStrengthForeground
+            settingsVM.coverStrengthHighlight = snap.coverStrengthHighlight
             settingsVM.readaloudTextItalic = snap.readaloudTextItalic
             settingsVM.readaloudTextBold = snap.readaloudTextBold
             settingsVM.readaloudUnderlineStyle = snap.readaloudUnderlineStyle
@@ -562,6 +719,9 @@ private struct FlatColorSnapshot {
     let highlightThickness: Double
     let readaloudHighlightMode: String
     let readaloudHighlightFade: Double
+    let coverStrengthBackground: Double
+    let coverStrengthForeground: Double
+    let coverStrengthHighlight: Double
     let readaloudTextItalic: Bool
     let readaloudTextBold: Bool
     let readaloudUnderlineStyle: String

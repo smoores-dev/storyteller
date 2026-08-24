@@ -311,7 +311,13 @@ internal fun CustomizePreviewDock(
                                         actions = demoActions,
                                         contentColor = foregroundColor,
                                         isOrientationLocked = isOrientationLocked,
-                                        modifier = Modifier.align(Alignment.BottomCenter),
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(
+                                                bottom = MiniPlayerMetrics.statBandInset(
+                                                    PreviewSafeAreaBottom,
+                                                ),
+                                            ),
                                     )
                                 }
                             }

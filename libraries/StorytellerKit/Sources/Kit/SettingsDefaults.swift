@@ -1,6 +1,6 @@
 import Foundation
 
-public let kDefaultFontSize: Double = 24
+public let kDefaultFontSize: Double = 16
 public let kDefaultFontFamily = "Literata"
 public let kDefaultLineSpacing: Double = 1.4
 public let kDefaultMarginLeftRightIOS: Double = 2
@@ -67,6 +67,8 @@ public let kDoubleTapPlayValues = ["never", "always", "headphones"]
 public let kDefaultReadaloudDimOthers = false
 public let kDefaultReadaloudDimAmount: Double = 0.5
 public let kDefaultReadaloudHighlightFade: Double = 0
+public let kDefaultCoverTintStrength: Double = 0.2
+public let kDefaultCoverTintStrengthLight: Double = 0.5
 public let kDefaultReadaloudTextItalic = false
 public let kDefaultReadaloudTextBold = false
 public let kDefaultReadaloudUnderlineStyle = "solid"

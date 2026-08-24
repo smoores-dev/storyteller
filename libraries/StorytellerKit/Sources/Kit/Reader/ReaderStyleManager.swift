@@ -9,6 +9,7 @@ public final class ReaderStyleManager {
     private var isDarkMode = false
     private var styleUpdateTask: Task<Void, Never>?
     private var hasAudioNarration = false
+    private var coverTone: CoverHSB?
     @ObservationIgnored private var fontObserverID: UUID?
 
     public init(settingsVM: any ReaderSettingsReading, bridge: ReaderCommsBridge) {
@@ -37,6 +38,12 @@ public final class ReaderStyleManager {
 
     public func updateBridge(_ bridge: ReaderCommsBridge) {
         self.bridge = bridge
+    }
+
+    public func setCoverTone(_ tone: CoverHSB?) {
+        guard coverTone != tone else { return }
+        coverTone = tone
+        scheduleStyleUpdate()
     }
 
     public func setReadaloudModeAvailable(_ available: Bool) {
@@ -82,6 +89,9 @@ public final class ReaderStyleManager {
             _ = settingsVM.readaloudTextItalic
             _ = settingsVM.readaloudTextBold
             _ = settingsVM.readaloudUnderlineStyle
+            _ = settingsVM.coverStrengthBackground
+            _ = settingsVM.coverStrengthForeground
+            _ = settingsVM.coverStrengthHighlight
         } onChange: {
             Task { @StorytellerUIActor in
                 self.scheduleStyleUpdate()
@@ -113,14 +123,35 @@ public final class ReaderStyleManager {
         let backgroundColorRaw = settingsVM.backgroundColor
         let foregroundColorRaw = settingsVM.foregroundColor
 
+        let resolvedHighlight = CoverReaderChrome.resolvedHex(
+            highlightColorRaw,
+            role: .highlight,
+            tone: coverTone,
+            dark: isDarkMode,
+            strength: settingsVM.coverStrengthHighlight,
+        )
         let effectiveHighlightColor =
-            (highlightColorRaw?.isEmpty == false ? highlightColorRaw : nil)
+            (resolvedHighlight?.isEmpty == false ? resolvedHighlight : nil)
             ?? (isDarkMode ? "#333333" : "#CCCCCC")
+        let resolvedBackground = CoverReaderChrome.resolvedHex(
+            backgroundColorRaw,
+            role: .background,
+            tone: coverTone,
+            dark: isDarkMode,
+            strength: settingsVM.coverStrengthBackground,
+        )
+        let resolvedForeground = CoverReaderChrome.resolvedHex(
+            foregroundColorRaw,
+            role: .foreground,
+            tone: coverTone,
+            dark: isDarkMode,
+            strength: settingsVM.coverStrengthForeground,
+        )
         let effectiveBackgroundColor =
-            (backgroundColorRaw?.isEmpty == false ? backgroundColorRaw : nil)
+            (resolvedBackground?.isEmpty == false ? resolvedBackground : nil)
             ?? (isDarkMode ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight)
         let effectiveForegroundColor =
-            (foregroundColorRaw?.isEmpty == false ? foregroundColorRaw : nil)
+            (resolvedForeground?.isEmpty == false ? resolvedForeground : nil)
             ?? (isDarkMode ? kDefaultForegroundColorDark : kDefaultForegroundColorLight)
 
         var effectiveCustomCSS = await CustomFontsActor.shared.fontFaceCSS(

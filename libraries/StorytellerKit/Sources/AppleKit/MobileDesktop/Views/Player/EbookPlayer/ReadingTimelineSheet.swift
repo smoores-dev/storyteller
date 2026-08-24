@@ -43,6 +43,7 @@ struct ReadingTimelineSheet: View {
     let onJump: (BookLocator, String) -> Void
     var sessionStart: Date? = nil
     var chapterTitle: ((BookLocator) -> String?)? = nil
+    var initialPalette: CoverDerivedPalette? = nil
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -53,7 +54,11 @@ struct ReadingTimelineSheet: View {
     @State private var showDebugHistory = false
     @State private var showClearConfirmation = false
     @State private var showClearShownConfirmation = false
-    @State private var coverPalette = CoverDerivedPalette.fallback()
+    @State private var loadedPalette: CoverDerivedPalette?
+
+    private var coverPalette: CoverDerivedPalette {
+        loadedPalette ?? initialPalette ?? .fallback()
+    }
     @State private var expandedVisits: Set<UUID> = []
 
     var body: some View {
@@ -96,7 +101,7 @@ struct ReadingTimelineSheet: View {
         .task { await refresh() }
         .onChange(of: period) { _, _ in selectedInterval = nil }
         .sheet(isPresented: $showDebugHistory) {
-            SyncHistorySheet(bookId: bookId, bookTitle: bookTitle)
+            SyncHistorySheet(bookId: bookId, bookTitle: bookTitle, palette: coverPalette)
         }
         .alert("Clear Reading Timeline?", isPresented: $showClearConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -710,7 +715,7 @@ struct ReadingTimelineSheet: View {
 
     private func loadCoverPalette() async {
         if let palette = await CoverDerivedPalette.load(for: bookId) {
-            coverPalette = palette
+            loadedPalette = palette
         }
     }
 }

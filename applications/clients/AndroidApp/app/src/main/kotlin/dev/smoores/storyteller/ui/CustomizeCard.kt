@@ -39,6 +39,7 @@ internal enum class CustomizeCard {
     MENU_BAR,
     MINIPLAYER,
     DOCK,
+    FULL_PLAYER,
     THEME,
 }
 

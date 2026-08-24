@@ -56,9 +56,7 @@ internal fun GlobalMiniPlayerBar(
         val target = book ?: return@produceState
         value = cover(target, true, 240, 240) ?: cover(target, false, 240, 240)
     }
-    val palette = remember(coverSource, darkTheme, CoverColorSettings.key) {
-        coverBackgroundPalette(coverSource, darkTheme)
-    }
+    val palette = rememberCoverBackgroundPalette(coverSource, darkTheme, book = book, audio = true)
 
     Box(
         modifier = modifier

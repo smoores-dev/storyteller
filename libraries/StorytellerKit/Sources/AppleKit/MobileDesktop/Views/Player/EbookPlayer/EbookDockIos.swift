@@ -27,6 +27,8 @@ struct EbookDockIos: View {
     var mirrored: Bool = false
     var editing: Binding<SlotRef?>? = nil
 
+    @State private var bandHeight: CGFloat = 0
+
     // Swapping hands moves the whole band across, stats included.
     private var leftSlots: [PlayerComplication] { mirrored ? trailingSlots : leadingSlots }
     private var rightSlots: [PlayerComplication] { mirrored ? leadingSlots : trailingSlots }
@@ -77,7 +79,7 @@ struct EbookDockIos: View {
         region: SlotRegion,
         alignment: HorizontalAlignment,
     ) -> some View {
-        VStack(alignment: alignment, spacing: 2) {
+        VStack(alignment: alignment, spacing: editing != nil ? 10 : 2) {
             ForEach(slots, id: \.0) { index, comp in
                 PlayerComplicationView(
                     complication: comp,
@@ -92,7 +94,7 @@ struct EbookDockIos: View {
     }
 
     private var centerControls: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: editing != nil ? 22 : 16) {
             ForEach(visibleCenter, id: \.0) { index, comp in
                 PlayerComplicationView(
                     complication: comp,
@@ -161,8 +163,10 @@ struct EbookDockIos: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .frame(
-                height: hasPlaybackControlsToDisplay
-                    ? Self.controlsContentHeight : Self.statsContentHeight,
+                height: editing == nil
+                    ? (hasPlaybackControlsToDisplay
+                        ? Self.controlsContentHeight : Self.statsContentHeight)
+                    : nil,
             )
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
@@ -173,6 +177,10 @@ struct EbookDockIos: View {
                     backgroundColor.ignoresSafeArea(edges: .bottom)
                 }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                bandHeight = $0
+            }
+            .preference(key: PreviewChromeBandHeightKey.self, value: bandHeight)
         }
         .ignoresSafeArea(.all)
     }

@@ -4,6 +4,7 @@ import SwiftUI
 struct ManageThemesView: View {
     @Bindable var settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.readerPalette) private var readerPalette
     @State private var editingTheme: ReaderTheme? = nil
     @State private var renamingThemeId: String? = nil
     @State private var renameText: String = ""
@@ -20,6 +21,14 @@ struct ManageThemesView: View {
                 ThemeEditorView(settingsVM: settingsVM, theme: theme)
             }
             #endif
+    }
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
     }
 
     private var activeTheme: ReaderTheme {
@@ -68,6 +77,7 @@ struct ManageThemesView: View {
                     newThemeMenu
                 }
             }
+            .listRowBackground(paletteRowBackground)
 
             if !settingsVM.customThemes.isEmpty {
                 Section("Custom Themes") {
@@ -92,6 +102,7 @@ struct ManageThemesView: View {
                             #endif
                     }
                 }
+                .listRowBackground(paletteRowBackground)
             }
         }
         .alert(
@@ -181,7 +192,10 @@ struct ManageThemesView: View {
         if activeDark {
             activeBadge("Dark", icon: "moon.fill", tint: .indigo)
         }
-        if !activeLight && !activeDark {
+        let light = theme.availableFor(colorScheme: "light")
+        let dark = theme.availableFor(colorScheme: "dark")
+        let fullyActive = (!light || activeLight) && (!dark || activeDark)
+        if !fullyActive {
             useThemeControl(theme)
         }
     }
@@ -191,21 +205,13 @@ struct ManageThemesView: View {
         let light = theme.availableFor(colorScheme: "light")
         let dark = theme.availableFor(colorScheme: "dark")
         if light && dark {
-            Menu {
-                Button {
-                    settingsVM.selectTheme(id: theme.id, for: .light)
-                } label: {
-                    Label("Use for Light Mode", systemImage: "sun.max")
-                }
-                Button {
-                    settingsVM.selectTheme(id: theme.id, for: .dark)
-                } label: {
-                    Label("Use for Dark Mode", systemImage: "moon")
-                }
+            Button {
+                settingsVM.selectTheme(id: theme.id, for: .light)
+                settingsVM.selectTheme(id: theme.id, for: .dark)
             } label: {
                 useThemeLabel
             }
-            .fixedSize()
+            .buttonStyle(.plain)
         } else {
             Button {
                 settingsVM.selectTheme(id: theme.id, for: light ? .light : .dark)
@@ -245,16 +251,29 @@ struct ManageThemesView: View {
     private func themePreviewSwatch(_ theme: ReaderTheme) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4)
-                .fill(Color(hex: theme.backgroundColor) ?? .white)
+                .fill(swatchColor(theme.backgroundColor, role: .background) ?? .white)
                 .frame(width: 32, height: 32)
             Text("Aa")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color(hex: theme.foregroundColor) ?? .black)
+                .foregroundStyle(swatchColor(theme.foregroundColor, role: .foreground) ?? .black)
         }
         .overlay(
             RoundedRectangle(cornerRadius: 4)
                 .strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1)
         )
+    }
+
+    private func swatchColor(_ raw: String, role: CoverReaderChrome.Role) -> Color? {
+        let tone = readerPalette?.chromeHSB ?? CoverPaletteAdjustment.fallbackSurfaceHSB
+        guard
+            let hex = CoverReaderChrome.resolvedHex(
+                raw,
+                role: role,
+                tone: tone,
+                dark: colorScheme == .dark,
+            )
+        else { return nil }
+        return Color(hex: hex)
     }
 
     @ViewBuilder

@@ -11,6 +11,7 @@ public struct ChaptersButton: View {
     private let showLabel: Bool
     private let buttonSize: CGFloat
     private let showBackground: Bool
+    private let iconFont: Font
     private let nativeToolbar: Bool
 
     @State private var showSheet = false
@@ -25,6 +26,7 @@ public struct ChaptersButton: View {
         showLabel: Bool = true,
         buttonSize: CGFloat = 38,
         showBackground: Bool = true,
+        iconFont: Font = .callout.weight(.semibold),
         nativeToolbar: Bool = false,
     ) {
         self.chapters = chapters
@@ -36,6 +38,7 @@ public struct ChaptersButton: View {
         self.showLabel = showLabel
         self.buttonSize = buttonSize
         self.showBackground = showBackground
+        self.iconFont = iconFont
         self.nativeToolbar = nativeToolbar
     }
 
@@ -78,7 +81,7 @@ public struct ChaptersButton: View {
 
     private var buttonLabel: some View {
         Image(systemName: "list.bullet")
-            .font(.callout.weight(.semibold))
+            .font(iconFont)
             .foregroundStyle(foregroundColor.opacity(transparency))
             .frame(width: buttonSize, height: buttonSize)
             .background(

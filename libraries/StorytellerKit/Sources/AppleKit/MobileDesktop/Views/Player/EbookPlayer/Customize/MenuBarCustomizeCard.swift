@@ -4,8 +4,17 @@ import SwiftUI
 struct MenuBarCustomizeCard: View {
     @Bindable var settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.readerPalette) private var readerPalette
 
     @State private var selectedSlot: SlotRef?
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         CustomizeCardContainer(title: "Menu Bar", onReset: resetToDefaults) {
@@ -66,8 +75,9 @@ struct MenuBarCustomizeCard: View {
                 .foregroundStyle(pageForeground.opacity(0.4))
                 .frame(width: 24, height: 34)
         }
-        .padding(.horizontal, 8)
-        .frame(height: 40)
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .frame(height: 52)
         .background(pageBackground)
     }
 
@@ -84,6 +94,7 @@ struct MenuBarCustomizeCard: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             }
+            .listRowBackground(paletteRowBackground)
         }
     }
 

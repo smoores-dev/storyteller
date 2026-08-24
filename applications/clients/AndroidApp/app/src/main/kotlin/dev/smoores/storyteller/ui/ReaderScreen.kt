@@ -76,6 +76,7 @@ import androidx.webkit.WebViewFeature
 import dev.smoores.storyteller.model.Book
 import dev.smoores.storyteller.model.BookImage
 import dev.smoores.storyteller.model.DockCustomization
+import dev.smoores.storyteller.model.FullPlayerCustomization
 import dev.smoores.storyteller.model.MenuBarCustomization
 import dev.smoores.storyteller.model.MiniPlayerCustomization
 import dev.smoores.storyteller.model.MiniPlayerProgressScope
@@ -223,9 +224,7 @@ internal fun ReaderScreen(
         cover(book, false, 240, 240)?.let { value = it }
     }
     val coverBitmap: ImageBitmap? = remember(coverSource) { coverSource?.asImageBitmap() }
-    val coverPalette = remember(coverSource, isDark, CoverColorSettings.key) {
-        coverBackgroundPalette(coverSource, isDark)
-    }
+    val coverPalette = rememberCoverBackgroundPalette(coverSource, isDark, book = book)
 
     val toggleCount = readerState?.overlayToggleCount ?: 0
     LaunchedEffect(toggleCount) {
@@ -302,12 +301,13 @@ internal fun ReaderScreen(
         miniPlayer: MiniPlayerCustomization? = null,
         dock: DockCustomization? = null,
         menuBar: MenuBarCustomization? = null,
+        fullPlayer: FullPlayerCustomization? = null,
         modes: PlaybackModes? = null,
     ) {
         readerControl(
             "updateCustomization",
             0.0,
-            customizationUpdateJson(miniPlayer, dock, menuBar, modes),
+            customizationUpdateJson(miniPlayer, dock, menuBar, fullPlayer, modes),
         )
     }
 
@@ -496,378 +496,392 @@ internal fun ReaderScreen(
         )
     }
 
-    readerState?.pendingServerPosition?.let { position ->
-        AlertDialog(
-            onDismissRequest = { readerControl("declineServerPosition", 0.0, "") },
-            title = { Text("Server Has Newer Position") },
-            text = {
-                val location = listOfNotNull(
-                    position.title,
-                    position.totalProgression?.let { "${(it * 100).roundToInt()}%" },
-                ).joinToString(", ")
-                Text(
-                    "Another device has synced a more recent reading position" +
-                        if (location.isBlank()) "." else " ($location).",
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { readerControl("acceptServerPosition", 0.0, "") }) {
-                    Text("Go to New Position")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { readerControl("declineServerPosition", 0.0, "") }) {
-                    Text("Stay Here")
-                }
-            },
-        )
-    }
-
-    if (showReadingTimeline) {
-        LaunchedEffect(showReadingTimeline) {
-            timelineLoading = true
-            timelineVisits = loadReadingTimeline()
-            timelineLoading = false
-        }
-        ReadingTimelineScreen(
-            visits = timelineVisits,
-            loading = timelineLoading,
-            palette = coverPalette,
-            sessionStartMillis = sessionStartMillis,
-            onResume = { visit ->
-                showReadingTimeline = false
-                readerControl("goToTimelineVisit", 0.0, visit.id)
-            },
-            onClear = { ids ->
-                scope.launch {
-                    clearReadingTimeline(ids)
-                    timelineVisits = loadReadingTimeline()
-                }
-            },
-            onDismiss = { showReadingTimeline = false },
-        )
-    }
-
-    if (showImageGallery) {
-        LaunchedEffect(showImageGallery) {
-            imagesLoading = bookImages.isEmpty()
-            bookImages = loadBookImages()
-            imagesLoading = false
-        }
-        ImageGalleryScreen(
-            images = bookImages,
-            loading = imagesLoading,
-            palette = coverPalette,
-            loadThumbnail = loadImageThumbnail,
-            loadFull = loadFullImage,
-            onGoTo = { image -> readerControl("goToImage", 0.0, image.id) },
-            onDismiss = { showImageGallery = false },
-        )
-    }
-
-    if (showBookmarks) {
-        ReaderBookmarksSheet(
-            highlights = readerState?.highlights.orEmpty(),
-            palette = readerState?.highlightPalette.orEmpty(),
-            onSelect = { highlight ->
-                readerControl("goToHighlight", 0.0, highlight.id)
-                showBookmarks = false
-            },
-            onDelete = { highlight ->
-                readerControl("deleteHighlight", 0.0, highlight.id)
-            },
-            onDismiss = { showBookmarks = false },
-        )
-    }
-
-    val highlightPalette = readerState?.highlightPalette.orEmpty()
-    readerState?.pendingSelectionText?.let { selectionText ->
-        HighlightEditorDialog(
-            title = "Add Highlight",
-            selectedText = selectionText,
-            palette = highlightPalette,
-            initialColorId = null,
-            initialNote = "",
-            isEditing = false,
-            onSave = { colorId, note ->
-                val payload = JSONObject().apply {
-                    colorId?.let { put("colorId", it) }
-                    put("note", note)
-                }.toString()
-                readerControl("saveHighlight", 0.0, payload)
-            },
-            onDelete = null,
-            onDismiss = { readerControl("cancelSelection", 0.0, "") },
-        )
-    }
-
-    readerState?.pendingEdit?.let { edit ->
-        HighlightEditorDialog(
-            title = "Edit Highlight",
-            selectedText = edit.text,
-            palette = highlightPalette,
-            initialColorId = edit.colorId,
-            initialNote = edit.note.orEmpty(),
-            isEditing = true,
-            onSave = { colorId, note ->
-                val payload = JSONObject().apply {
-                    put("id", edit.id)
-                    colorId?.let { put("colorId", it) }
-                    put("note", note)
-                }.toString()
-                readerControl("saveHighlight", 0.0, payload)
-            },
-            onDelete = {
-                readerControl("deleteHighlight", 0.0, edit.id)
-                readerControl("cancelSelection", 0.0, "")
-            },
-            onDismiss = { readerControl("cancelSelection", 0.0, "") },
-        )
-    }
-
-    if (showSearch) {
-        ReaderSearchSheet(
-            search = readerState?.search ?: ReaderSearchState(),
-            onSearch = { query, matchCase, matchWholeWords ->
-                val request = JSONObject().apply {
-                    put("query", query)
-                    put("matchCase", matchCase)
-                    put("matchWholeWords", matchWholeWords)
-                }.toString()
-                readerControl("startSearch", 0.0, request)
-            },
-            onClear = { readerControl("clearSearch", 0.0, "") },
-            onSelect = { cfi ->
-                readerControl("goToSearchResult", 0.0, cfi)
-                showSearch = false
-            },
-            onDismiss = { showSearch = false },
-        )
-    }
-
-    if (showToc) {
-        ReaderTocSheet(
-            toc = readerState?.toc.orEmpty(),
-            selectedIndex = selectedTocIndex(
-                readerState?.toc.orEmpty(),
-                readerState?.selectedChapterId,
-            ),
-            onSelect = { index ->
-                readerControl("selectTocEntry", index.toDouble(), "")
-                showToc = false
-            },
-            onDismiss = { showToc = false },
-        )
-    }
-
-    if (showSleepTimer) {
-        SleepTimerDialog(
-            dismiss = { showSleepTimer = false },
-            selectDuration = {
-                showSleepTimer = false
-                readerControl("startSleepTimer", it, "duration")
-            },
-            selectEndOfChapter = {
-                showSleepTimer = false
-                readerControl("startSleepTimer", 0.0, "endOfChapter")
-            },
-        )
-    }
-
-    val state = readerState
-    if (state != null) {
-        val activeTheme = state.themes.firstOrNull { it.id == state.activeThemeId }
-            ?: state.themes.firstOrNull()
-        when (customizeCard) {
-            CustomizeCard.TEXT_LAYOUT -> TextLayoutCustomizeCard(
-                settings = displaySettings,
-                themes = state.themes,
-                selectedLightThemeId = state.selectedLightThemeId,
-                selectedDarkThemeId = state.selectedDarkThemeId,
-                onPreview = { displaySettings = it },
-                onCommit = {
-                    displaySettings = it
-                    readerControl("updateReaderSettings", 0.0, it.toUpdateJson())
+    ReaderDynamicTheme(coverPalette) {
+        readerState?.pendingServerPosition?.let { position ->
+            AlertDialog(
+                onDismissRequest = { readerControl("declineServerPosition", 0.0, "") },
+                title = { Text("Server Has Newer Position") },
+                text = {
+                    val location = listOfNotNull(
+                        position.title,
+                        position.totalProgression?.let { "${(it * 100).roundToInt()}%" },
+                    ).joinToString(", ")
+                    Text(
+                        "Another device has synced a more recent reading position" +
+                            if (location.isBlank()) "." else " ($location).",
+                    )
                 },
-                onSelectLightTheme = { readerControl("selectLightTheme", 0.0, it) },
-                onSelectDarkTheme = { readerControl("selectDarkTheme", 0.0, it) },
-                onManageThemes = { showManageThemes = true },
-                onReset = {
-                    readerControl("resetReaderSettings", 0.0, "")
-                    settingsInitialized = false
+                confirmButton = {
+                    TextButton(onClick = { readerControl("acceptServerPosition", 0.0, "") }) {
+                        Text("Go to New Position")
+                    }
                 },
-                onDone = { customizeCard = null },
-                activeThemeBackground = chromeBg,
-                activeThemeForeground = chromeFg,
+                dismissButton = {
+                    TextButton(onClick = { readerControl("declineServerPosition", 0.0, "") }) {
+                        Text("Stay Here")
+                    }
+                },
             )
-            CustomizeCard.READALOUD -> if (activeTheme != null) {
-                ReadaloudHighlightCard(
-                    hasAudioNarration = hasAudioNarration,
-                    experimentalSettings = state.experimentalSettings,
-                    activeTheme = activeTheme,
-                    dimOthers = displaySettings.readaloudDimOthers,
-                    dimAmount = displaySettings.readaloudDimAmount,
-                    highlightVisibility = playbackModes.readaloudHighlightVisibility,
-                    doubleTapPlay = playbackModes.doubleTapPlay,
-                    freeBrowseMode = playbackModes.freeBrowseMode,
-                    playbackSpeed = state.playbackRate,
-                    automaticRewindEnabled = playbackModes.automaticRewindEnabled,
-                    automaticRewindAfterInterruption =
-                        playbackModes.automaticRewindAfterInterruption,
-                    automaticRewindAfterBreak = playbackModes.automaticRewindAfterBreak,
-                    onUpdateFocus = { dimOthers, dimAmount ->
-                        val updated = displaySettings.copy(
-                            readaloudDimOthers = dimOthers,
-                            readaloudDimAmount = dimAmount,
-                        )
-                        displaySettings = updated
-                        readerControl("updateReaderSettings", 0.0, updated.toUpdateJson())
+        }
+
+        if (showReadingTimeline) {
+            LaunchedEffect(showReadingTimeline) {
+                timelineLoading = true
+                timelineVisits = loadReadingTimeline()
+                timelineLoading = false
+            }
+            ReadingTimelineScreen(
+                visits = timelineVisits,
+                loading = timelineLoading,
+                palette = coverPalette,
+                sessionStartMillis = sessionStartMillis,
+                onResume = { visit ->
+                    showReadingTimeline = false
+                    readerControl("goToTimelineVisit", 0.0, visit.id)
+                },
+                onClear = { ids ->
+                    scope.launch {
+                        clearReadingTimeline(ids)
+                        timelineVisits = loadReadingTimeline()
+                    }
+                },
+                onDismiss = { showReadingTimeline = false },
+            )
+        }
+
+        if (showImageGallery) {
+            LaunchedEffect(showImageGallery) {
+                imagesLoading = bookImages.isEmpty()
+                bookImages = loadBookImages()
+                imagesLoading = false
+            }
+            ImageGalleryScreen(
+                images = bookImages,
+                loading = imagesLoading,
+                palette = coverPalette,
+                loadThumbnail = loadImageThumbnail,
+                loadFull = loadFullImage,
+                onGoTo = { image -> readerControl("goToImage", 0.0, image.id) },
+                onDismiss = { showImageGallery = false },
+            )
+        }
+
+        if (showBookmarks) {
+            ReaderBookmarksSheet(
+                highlights = readerState?.highlights.orEmpty(),
+                palette = readerState?.highlightPalette.orEmpty(),
+                onSelect = { highlight ->
+                    readerControl("goToHighlight", 0.0, highlight.id)
+                    showBookmarks = false
+                },
+                onDelete = { highlight ->
+                    readerControl("deleteHighlight", 0.0, highlight.id)
+                },
+                onDismiss = { showBookmarks = false },
+            )
+        }
+
+        val highlightPalette = readerState?.highlightPalette.orEmpty()
+        readerState?.pendingSelectionText?.let { selectionText ->
+            HighlightEditorDialog(
+                title = "Add Highlight",
+                selectedText = selectionText,
+                palette = highlightPalette,
+                initialColorId = null,
+                initialNote = "",
+                isEditing = false,
+                onSave = { colorId, note ->
+                    val payload = JSONObject().apply {
+                        colorId?.let { put("colorId", it) }
+                        put("note", note)
+                    }.toString()
+                    readerControl("saveHighlight", 0.0, payload)
+                },
+                onDelete = null,
+                onDismiss = { readerControl("cancelSelection", 0.0, "") },
+            )
+        }
+
+        readerState?.pendingEdit?.let { edit ->
+            HighlightEditorDialog(
+                title = "Edit Highlight",
+                selectedText = edit.text,
+                palette = highlightPalette,
+                initialColorId = edit.colorId,
+                initialNote = edit.note.orEmpty(),
+                isEditing = true,
+                onSave = { colorId, note ->
+                    val payload = JSONObject().apply {
+                        put("id", edit.id)
+                        colorId?.let { put("colorId", it) }
+                        put("note", note)
+                    }.toString()
+                    readerControl("saveHighlight", 0.0, payload)
+                },
+                onDelete = {
+                    readerControl("deleteHighlight", 0.0, edit.id)
+                    readerControl("cancelSelection", 0.0, "")
+                },
+                onDismiss = { readerControl("cancelSelection", 0.0, "") },
+            )
+        }
+
+        if (showSearch) {
+            ReaderSearchSheet(
+                search = readerState?.search ?: ReaderSearchState(),
+                onSearch = { query, matchCase, matchWholeWords ->
+                    val request = JSONObject().apply {
+                        put("query", query)
+                        put("matchCase", matchCase)
+                        put("matchWholeWords", matchWholeWords)
+                    }.toString()
+                    readerControl("startSearch", 0.0, request)
+                },
+                onClear = { readerControl("clearSearch", 0.0, "") },
+                onSelect = { cfi ->
+                    readerControl("goToSearchResult", 0.0, cfi)
+                    showSearch = false
+                },
+                onDismiss = { showSearch = false },
+            )
+        }
+
+        if (showToc) {
+            ReaderTocSheet(
+                toc = readerState?.toc.orEmpty(),
+                selectedIndex = selectedTocIndex(
+                    readerState?.toc.orEmpty(),
+                    readerState?.selectedChapterId,
+                ),
+                onSelect = { index ->
+                    readerControl("selectTocEntry", index.toDouble(), "")
+                    showToc = false
+                },
+                onDismiss = { showToc = false },
+            )
+        }
+
+        if (showSleepTimer) {
+            SleepTimerDialog(
+                dismiss = { showSleepTimer = false },
+                selectDuration = {
+                    showSleepTimer = false
+                    readerControl("startSleepTimer", it, "duration")
+                },
+                selectEndOfChapter = {
+                    showSleepTimer = false
+                    readerControl("startSleepTimer", 0.0, "endOfChapter")
+                },
+            )
+        }
+
+        val state = readerState
+        if (state != null) {
+            val activeTheme = state.themes.firstOrNull { it.id == state.activeThemeId }
+                ?: state.themes.firstOrNull()
+            when (customizeCard) {
+                CustomizeCard.TEXT_LAYOUT -> TextLayoutCustomizeCard(
+                    settings = displaySettings,
+                    themes = state.themes,
+                    selectedLightThemeId = state.selectedLightThemeId,
+                    selectedDarkThemeId = state.selectedDarkThemeId,
+                    onPreview = { displaySettings = it },
+                    onCommit = {
+                        displaySettings = it
+                        readerControl("updateReaderSettings", 0.0, it.toUpdateJson())
                     },
-                    onUpdateModes = { visibility, doubleTap, freeBrowse ->
-                        sendCustomization(
-                            modes = playbackModes.copy(
-                                freeBrowseMode = freeBrowse,
-                                readaloudHighlightVisibility = visibility,
-                                doubleTapPlay = doubleTap,
-                            ),
-                        )
-                    },
-                    onUpdateRewind = { enabled, afterInterruption, afterBreak ->
-                        sendCustomization(
-                            modes = playbackModes.copy(
-                                automaticRewindEnabled = enabled,
-                                automaticRewindAfterInterruption = afterInterruption,
-                                automaticRewindAfterBreak = afterBreak,
-                            ),
-                        )
-                    },
-                    onUpdatePlaybackSpeed = { readerControl("setRate", it, "") },
-                    onEditThemeReadaloud = { showReadaloudThemeEditor = true },
+                    onSelectLightTheme = { readerControl("selectLightTheme", 0.0, it) },
+                    onSelectDarkTheme = { readerControl("selectDarkTheme", 0.0, it) },
+                    onManageThemes = { showManageThemes = true },
                     onReset = {
-                        val updated = displaySettings.copy(
-                            readaloudDimOthers = false,
-                            readaloudDimAmount = 0.5,
+                        readerControl("resetReaderSettings", 0.0, "")
+                        settingsInitialized = false
+                    },
+                    onDone = { customizeCard = null },
+                    activeThemeBackground = chromeBg,
+                    activeThemeForeground = chromeFg,
+                )
+                CustomizeCard.READALOUD -> if (activeTheme != null) {
+                    ReadaloudHighlightCard(
+                        hasAudioNarration = hasAudioNarration,
+                        experimentalSettings = state.experimentalSettings,
+                        activeTheme = activeTheme,
+                        resolvedBackground = chromeBg,
+                        resolvedForeground = chromeFg,
+                        resolvedHighlight = coverPalette?.readerHighlight,
+                        dimOthers = displaySettings.readaloudDimOthers,
+                        dimAmount = displaySettings.readaloudDimAmount,
+                        highlightVisibility = playbackModes.readaloudHighlightVisibility,
+                        doubleTapPlay = playbackModes.doubleTapPlay,
+                        freeBrowseMode = playbackModes.freeBrowseMode,
+                        playbackSpeed = state.playbackRate,
+                        automaticRewindEnabled = playbackModes.automaticRewindEnabled,
+                        automaticRewindAfterInterruption =
+                            playbackModes.automaticRewindAfterInterruption,
+                        automaticRewindAfterBreak = playbackModes.automaticRewindAfterBreak,
+                        onUpdateFocus = { dimOthers, dimAmount ->
+                            val updated = displaySettings.copy(
+                                readaloudDimOthers = dimOthers,
+                                readaloudDimAmount = dimAmount,
+                            )
+                            displaySettings = updated
+                            readerControl("updateReaderSettings", 0.0, updated.toUpdateJson())
+                        },
+                        onUpdateModes = { visibility, doubleTap, freeBrowse ->
+                            sendCustomization(
+                                modes = playbackModes.copy(
+                                    freeBrowseMode = freeBrowse,
+                                    readaloudHighlightVisibility = visibility,
+                                    doubleTapPlay = doubleTap,
+                                ),
+                            )
+                        },
+                        onUpdateRewind = { enabled, afterInterruption, afterBreak ->
+                            sendCustomization(
+                                modes = playbackModes.copy(
+                                    automaticRewindEnabled = enabled,
+                                    automaticRewindAfterInterruption = afterInterruption,
+                                    automaticRewindAfterBreak = afterBreak,
+                                ),
+                            )
+                        },
+                        onUpdatePlaybackSpeed = { readerControl("setRate", it, "") },
+                        onEditThemeReadaloud = { showReadaloudThemeEditor = true },
+                        onReset = {
+                            val updated = displaySettings.copy(
+                                readaloudDimOthers = false,
+                                readaloudDimAmount = 0.5,
+                            )
+                            displaySettings = updated
+                            readerControl("updateReaderSettings", 0.0, updated.toUpdateJson())
+                            sendCustomization(modes = PlaybackModes())
+                            readerControl("setRate", 1.0, "")
+                        },
+                        onDone = { customizeCard = null },
+                    )
+                }
+                CustomizeCard.MENU_BAR -> MenuBarCustomizeCard(
+                    menuBar = state.menuBar,
+                    hasAudioNarration = hasAudioNarration,
+                    backgroundColor = chromeBg,
+                    foregroundColor = chromeFg,
+                    onUpdateMenuBar = { sendCustomization(menuBar = it) },
+                    onReset = { sendCustomization(menuBar = MenuBarCustomization()) },
+                    onDone = { customizeCard = null },
+                )
+                CustomizeCard.FULL_PLAYER -> FullPlayerCustomizeCard(
+                    fullPlayer = state.fullPlayer,
+                    hasAudioNarration = hasAudioNarration,
+                    palette = coverPalette,
+                    backgroundColor = chromeBg,
+                    foregroundColor = chromeFg,
+                    onUpdateFullPlayer = { sendCustomization(fullPlayer = it) },
+                    onReset = { sendCustomization(fullPlayer = FullPlayerCustomization()) },
+                    onDone = { customizeCard = null },
+                )
+                CustomizeCard.MINIPLAYER -> MiniPlayerCustomizeCard(
+                    miniPlayer = state.miniPlayer,
+                    dock = state.dock,
+                    alwaysShowMiniPlayer = overlayOptions.alwaysShowMiniPlayer,
+                    hasAudioNarration = hasAudioNarration,
+                    isScrollingMode = displaySettings.scrollingMode,
+                    freeBrowseMode = playbackModes.freeBrowseMode,
+                    isOrientationLocked = isOrientationLocked,
+                    backgroundColor = chromeBg,
+                    foregroundColor = chromeFg,
+                    onUpdateMiniPlayer = { sendCustomization(miniPlayer = it) },
+                    onUpdateAlwaysShow = {
+                        readerControl(
+                            "updateOverlayOptions",
+                            0.0,
+                            overlayOptions.copy(alwaysShowMiniPlayer = it).toUpdateJson(),
                         )
-                        displaySettings = updated
-                        readerControl("updateReaderSettings", 0.0, updated.toUpdateJson())
-                        sendCustomization(modes = PlaybackModes())
-                        readerControl("setRate", 1.0, "")
+                    },
+                    onToggleScrollingMode = { toggleScrollingMode() },
+                    onToggleFreeBrowse = { toggleFreeBrowse() },
+                    onToggleOrientationLock = { isOrientationLocked = !isOrientationLocked },
+                    onReset = {
+                        sendCustomization(miniPlayer = MiniPlayerCustomization())
+                        readerControl(
+                            "updateOverlayOptions",
+                            0.0,
+                            overlayOptions.copy(alwaysShowMiniPlayer = false).toUpdateJson(),
+                        )
                     },
                     onDone = { customizeCard = null },
                 )
+                CustomizeCard.DOCK -> DockCustomizeCard(
+                    dock = state.dock,
+                    miniPlayer = state.miniPlayer,
+                    alwaysShowMiniPlayer = overlayOptions.alwaysShowMiniPlayer,
+                    hasAudioNarration = hasAudioNarration,
+                    isScrollingMode = displaySettings.scrollingMode,
+                    freeBrowseMode = playbackModes.freeBrowseMode,
+                    isOrientationLocked = isOrientationLocked,
+                    backgroundColor = chromeBg,
+                    foregroundColor = chromeFg,
+                    onUpdateDock = { sendCustomization(dock = it) },
+                    onToggleCycleShowingSecond = {
+                        sendCustomization(
+                            miniPlayer = state.miniPlayer.copy(
+                                cycleShowingSecond = !state.miniPlayer.cycleShowingSecond,
+                            ),
+                        )
+                    },
+                    onToggleMirror = {
+                        sendCustomization(
+                            miniPlayer = state.miniPlayer.copy(
+                                mirrored = !state.miniPlayer.mirrored,
+                            ),
+                        )
+                    },
+                    onToggleScrollingMode = { toggleScrollingMode() },
+                    onToggleFreeBrowse = { toggleFreeBrowse() },
+                    onToggleOrientationLock = { isOrientationLocked = !isOrientationLocked },
+                    onReset = { sendCustomization(dock = DockCustomization()) },
+                    onDone = { customizeCard = null },
+                )
+                CustomizeCard.THEME -> ThemeCustomizeCard(
+                    themes = state.themes,
+                    selectedLightThemeId = state.selectedLightThemeId,
+                    selectedDarkThemeId = state.selectedDarkThemeId,
+                    onSelectLightTheme = { readerControl("selectLightTheme", 0.0, it) },
+                    onSelectDarkTheme = { readerControl("selectDarkTheme", 0.0, it) },
+                    onSaveTheme = { readerControl("saveTheme", 0.0, it) },
+                    onDeleteTheme = { readerControl("deleteTheme", 0.0, it) },
+                    onResetTheme = { readerControl("resetTheme", 0.0, it) },
+                    onDone = { customizeCard = null },
+                )
+                null -> {}
             }
-            CustomizeCard.MENU_BAR -> MenuBarCustomizeCard(
-                menuBar = state.menuBar,
-                hasAudioNarration = hasAudioNarration,
-                backgroundColor = chromeBg,
-                foregroundColor = chromeFg,
-                onUpdateMenuBar = { sendCustomization(menuBar = it) },
-                onReset = { sendCustomization(menuBar = MenuBarCustomization()) },
-                onDone = { customizeCard = null },
-            )
-            CustomizeCard.MINIPLAYER -> MiniPlayerCustomizeCard(
-                miniPlayer = state.miniPlayer,
-                dock = state.dock,
-                alwaysShowMiniPlayer = overlayOptions.alwaysShowMiniPlayer,
-                hasAudioNarration = hasAudioNarration,
-                isScrollingMode = displaySettings.scrollingMode,
-                freeBrowseMode = playbackModes.freeBrowseMode,
-                isOrientationLocked = isOrientationLocked,
-                backgroundColor = chromeBg,
-                foregroundColor = chromeFg,
-                onUpdateMiniPlayer = { sendCustomization(miniPlayer = it) },
-                onUpdateAlwaysShow = {
-                    readerControl(
-                        "updateOverlayOptions",
-                        0.0,
-                        overlayOptions.copy(alwaysShowMiniPlayer = it).toUpdateJson(),
-                    )
-                },
-                onToggleScrollingMode = { toggleScrollingMode() },
-                onToggleFreeBrowse = { toggleFreeBrowse() },
-                onToggleOrientationLock = { isOrientationLocked = !isOrientationLocked },
-                onReset = {
-                    // iOS reset also restores kDefaultAlwaysShowMiniPlayer.
-                    sendCustomization(miniPlayer = MiniPlayerCustomization())
-                    readerControl(
-                        "updateOverlayOptions",
-                        0.0,
-                        overlayOptions.copy(alwaysShowMiniPlayer = false).toUpdateJson(),
-                    )
-                },
-                onDone = { customizeCard = null },
-            )
-            CustomizeCard.DOCK -> DockCustomizeCard(
-                dock = state.dock,
-                miniPlayer = state.miniPlayer,
-                alwaysShowMiniPlayer = overlayOptions.alwaysShowMiniPlayer,
-                hasAudioNarration = hasAudioNarration,
-                isScrollingMode = displaySettings.scrollingMode,
-                freeBrowseMode = playbackModes.freeBrowseMode,
-                isOrientationLocked = isOrientationLocked,
-                backgroundColor = chromeBg,
-                foregroundColor = chromeFg,
-                onUpdateDock = { sendCustomization(dock = it) },
-                onToggleCycleShowingSecond = {
-                    sendCustomization(
-                        miniPlayer = state.miniPlayer.copy(
-                            cycleShowingSecond = !state.miniPlayer.cycleShowingSecond,
-                        ),
-                    )
-                },
-                onToggleMirror = {
-                    sendCustomization(
-                        miniPlayer = state.miniPlayer.copy(
-                            mirrored = !state.miniPlayer.mirrored,
-                        ),
-                    )
-                },
-                onToggleScrollingMode = { toggleScrollingMode() },
-                onToggleFreeBrowse = { toggleFreeBrowse() },
-                onToggleOrientationLock = { isOrientationLocked = !isOrientationLocked },
-                onReset = { sendCustomization(dock = DockCustomization()) },
-                onDone = { customizeCard = null },
-            )
-            CustomizeCard.THEME -> ThemeCustomizeCard(
-                themes = state.themes,
-                selectedLightThemeId = state.selectedLightThemeId,
-                selectedDarkThemeId = state.selectedDarkThemeId,
+            if (showReadaloudThemeEditor && activeTheme != null) {
+                ThemeEditorDialog(
+                    initial = activeTheme,
+                    existingId = activeTheme.id,
+                    initialTab = 1,
+                    onSave = {
+                        readerControl("saveTheme", 0.0, it)
+                        showReadaloudThemeEditor = false
+                    },
+                    onDelete = null,
+                    onDismiss = { showReadaloudThemeEditor = false },
+                )
+            }
+        }
+
+        if (showManageThemes) {
+            ManageThemesSheet(
+                themes = readerState?.themes.orEmpty(),
+                selectedLightThemeId = readerState?.selectedLightThemeId,
+                selectedDarkThemeId = readerState?.selectedDarkThemeId,
                 onSelectLightTheme = { readerControl("selectLightTheme", 0.0, it) },
                 onSelectDarkTheme = { readerControl("selectDarkTheme", 0.0, it) },
                 onSaveTheme = { readerControl("saveTheme", 0.0, it) },
                 onDeleteTheme = { readerControl("deleteTheme", 0.0, it) },
                 onResetTheme = { readerControl("resetTheme", 0.0, it) },
-                onDone = { customizeCard = null },
-            )
-            null -> {}
-        }
-        if (showReadaloudThemeEditor && activeTheme != null) {
-            ThemeEditorDialog(
-                initial = activeTheme,
-                existingId = activeTheme.id,
-                initialTab = 1,
-                onSave = {
-                    readerControl("saveTheme", 0.0, it)
-                    showReadaloudThemeEditor = false
-                },
-                onDelete = null,
-                onDismiss = { showReadaloudThemeEditor = false },
+                onDismiss = { showManageThemes = false },
             )
         }
-    }
-
-    if (showManageThemes) {
-        ManageThemesSheet(
-            themes = readerState?.themes.orEmpty(),
-            selectedLightThemeId = readerState?.selectedLightThemeId,
-            selectedDarkThemeId = readerState?.selectedDarkThemeId,
-            onSelectLightTheme = { readerControl("selectLightTheme", 0.0, it) },
-            onSelectDarkTheme = { readerControl("selectDarkTheme", 0.0, it) },
-            onSaveTheme = { readerControl("saveTheme", 0.0, it) },
-            onDeleteTheme = { readerControl("deleteTheme", 0.0, it) },
-            onResetTheme = { readerControl("resetTheme", 0.0, it) },
-            onDismiss = { showManageThemes = false },
-        )
     }
 }
 

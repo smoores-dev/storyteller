@@ -4,9 +4,18 @@ import SwiftUI
 struct MiniPlayerCustomizeCard: View {
     @Bindable var settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.readerPalette) private var readerPalette
 
     @State private var selectedSlot: SlotRef?
     @State private var showLeadingPicker = false
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         CustomizeCardContainer(title: "Miniplayer", onReset: resetToDefaults) {
@@ -135,6 +144,7 @@ struct MiniPlayerCustomizeCard: View {
                         + "until you tap the page, then floats over the text."
                 )
             }
+            .listRowBackground(paletteRowBackground)
 
             ProgressIndicatorSection(
                 settingsVM: settingsVM,
@@ -162,7 +172,6 @@ struct MiniPlayerCustomizeCard: View {
                 ),
             )
         }
-        .scrollContentBackground(.visible)
     }
 
     private var pageBackground: Color { settingsVM.pageBackground(for: colorScheme) }

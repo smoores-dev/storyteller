@@ -10,7 +10,9 @@ import AppKit
 struct SyncHistorySheet: View {
     let bookId: BookID
     let bookTitle: String
+    var palette: CoverDerivedPalette? = nil
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var history: [SyncHistoryEntry] = []
     @State private var isLoading = true
     @State private var showServerUpdates = false
@@ -35,6 +37,8 @@ struct SyncHistorySheet: View {
         #if os(iOS)
         NavigationStack {
             historyContent
+                .readerPaletteSurface(palette)
+                .readerPaletteNavigationBar(palette, colorScheme: colorScheme)
                 .navigationTitle("Sync History")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -75,7 +79,7 @@ struct SyncHistorySheet: View {
                             .foregroundStyle(showServerUpdates ? .primary : .tertiary)
                     }
                     .padding()
-                    .background(.regularMaterial)
+                    .background(bottomInsetBackground)
                 }
         }
         .task {
@@ -136,6 +140,7 @@ struct SyncHistorySheet: View {
             }
             .padding()
         }
+        .readerPaletteSurface(palette)
         .frame(minWidth: 400, minHeight: 500)
         .task {
             await refresh()
@@ -180,6 +185,14 @@ struct SyncHistorySheet: View {
         #endif
     }
 
+    private var bottomInsetBackground: AnyShapeStyle {
+        if let palette {
+            AnyShapeStyle(palette.resolved(for: colorScheme).surface)
+        } else {
+            AnyShapeStyle(.regularMaterial)
+        }
+    }
+
     @ViewBuilder
     private var historyContent: some View {
         if isLoading {
@@ -202,6 +215,9 @@ struct SyncHistorySheet: View {
                         entryToRestore = entry
                         showRestoreConfirmation = true
                     }
+                    .listRowBackground(
+                        palette.map { $0.resolved(for: colorScheme).cardBackground }
+                    )
                 }
             }
             #if os(iOS)
@@ -263,7 +279,7 @@ struct SyncHistoryEntryRow: View {
                     } label: {
                         Image(systemName: "arrow.uturn.backward.circle")
                             .font(.title)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(.tint)
                     }
                     .buttonStyle(.plain)
                 }

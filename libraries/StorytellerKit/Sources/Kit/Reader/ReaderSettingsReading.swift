@@ -30,6 +30,9 @@ public protocol ReaderSettingsReading: AnyObject {
     var readaloudDimOthers: Bool { get }
     var readaloudDimAmount: Double { get }
     var readaloudHighlightFade: Double { get }
+    var coverStrengthBackground: Double { get }
+    var coverStrengthForeground: Double { get }
+    var coverStrengthHighlight: Double { get }
     var readaloudTextItalic: Bool { get }
     var readaloudTextBold: Bool { get }
     var readaloudUnderlineStyle: String { get }

@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,15 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ParagraphStyle
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.smoores.storyteller.model.ReaderDisplaySettings
 import dev.smoores.storyteller.model.ReaderTheme
 import kotlin.math.roundToInt
@@ -438,45 +430,6 @@ private const val kTextPreviewSampleSecond =
         "carriage-drive owned by animals whose residences are nearer to the " +
         "sun and air."
 
-// Bundled families have no Compose font resources here, so serif stands in for
-// them; the webview is the real renderer and this pane is only indicative.
-private fun previewFontFamily(family: String): FontFamily = when (family) {
-    "sans-serif", "Open Sans", "Atkinson Hyperlegible", "OpenDyslexic" -> FontFamily.SansSerif
-    "monospace" -> FontFamily.Monospace
-    else -> FontFamily.Serif
-}
-
-// Compose has no word-spacing attribute; widen the spaces instead, as iOS does
-// with kerning.
-private fun previewSample(
-    settings: ReaderDisplaySettings,
-    sample: String,
-): AnnotatedString =
-    buildAnnotatedString {
-        if (settings.firstLineIndent) {
-            pushStyle(
-                ParagraphStyle(
-                    textIndent = TextIndent(
-                        firstLine = (1.4 * settings.fontSize).toFloat().sp,
-                    ),
-                ),
-            )
-        }
-        append(sample)
-        val wordKern = (settings.wordSpacing * settings.fontSize).toFloat()
-        if (wordKern == 0f) return@buildAnnotatedString
-        val letterKern = (settings.letterSpacing * settings.fontSize).toFloat()
-        sample.forEachIndexed { index, character ->
-            if (character == ' ') {
-                addStyle(
-                    SpanStyle(letterSpacing = (letterKern + wordKern).sp),
-                    index,
-                    index + 1,
-                )
-            }
-        }
-    }
-
 @Composable
 private fun TextSettingsPreviewPane(
     settings: ReaderDisplaySettings,
@@ -484,9 +437,7 @@ private fun TextSettingsPreviewPane(
     foreground: Color,
     modifier: Modifier = Modifier,
 ) {
-    val fontSize = settings.fontSize.toFloat()
-    val extraLineSpacing = maxOf(0.0, (settings.lineSpacing - 1.2) * settings.fontSize)
-    BoxWithConstraints(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .height(170.dp)
@@ -498,37 +449,12 @@ private fun TextSettingsPreviewPane(
                 RoundedCornerShape(14.dp),
             ),
     ) {
-        val horizontal = maxWidth * (settings.marginLeftRight.toFloat() / 100f)
-        val top = 10.dp + maxHeight * (settings.marginTop.toFloat() / 100f)
-        val paragraphGap =
-            if (settings.paragraphSpacing > 0) settings.paragraphSpacing else 1.0
-        Column(
-            modifier = Modifier.padding(
-                start = horizontal,
-                end = horizontal,
-                top = top,
-                bottom = maxHeight * (settings.marginBottom.toFloat() / 100f),
-            ),
-            verticalArrangement = Arrangement.spacedBy(
-                (paragraphGap * settings.fontSize).toFloat().dp,
-            ),
-        ) {
-            listOf(kTextPreviewSample, kTextPreviewSampleSecond).forEach { sample ->
-                Text(
-                    previewSample(settings, sample),
-                    color = foreground,
-                    fontSize = fontSize.sp,
-                    lineHeight = (fontSize + extraLineSpacing.toFloat()).sp,
-                    fontFamily = previewFontFamily(settings.fontFamily),
-                    letterSpacing = (settings.letterSpacing * settings.fontSize).toFloat().sp,
-                    textAlign = when (settings.textAlignment) {
-                        "right" -> TextAlign.Right
-                        "justify" -> TextAlign.Justify
-                        else -> TextAlign.Left
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        TextSettingsPreviewWebView(
+            settings = settings,
+            background = background,
+            foreground = foreground,
+            samples = listOf(kTextPreviewSample, kTextPreviewSampleSecond),
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }

@@ -56,7 +56,7 @@ private actor CoverLoadLimiter {
         if waiters.isEmpty {
             activeCount = max(activeCount - 1, 0)
         } else {
-            let waiter = waiters.removeFirst()
+            let waiter = waiters.removeLast()
             waiter.continuation.resume(returning: true)
         }
     }
@@ -326,9 +326,11 @@ public final class MediaViewModel {
 
     @ObservationIgnored private var coverStates: [CoverKey: CoverImageState] = [:]
     private var missingCoverKeys: Set<CoverKey> = []
+    @ObservationIgnored private var skippedCoverRetries:
+        [CoverKey: (item: BookMetadata, variant: CoverVariant)] = [:]
     @ObservationIgnored private var coverTasks: [CoverKey: Task<Void, Never>] = [:]
     @ObservationIgnored private var uncancellableCoverKeys: Set<CoverKey> = []
-    @ObservationIgnored private let coverLoadLimiter = CoverLoadLimiter(limit: 4)
+    @ObservationIgnored private let coverLoadLimiter = CoverLoadLimiter(limit: 12)
     @ObservationIgnored private var pendingCoverRequests: [CoverKey: PendingCoverRequest] = [:]
     @ObservationIgnored private var coverRequestFlushTask: Task<Void, Never>?
     @ObservationIgnored private var coverRequestSequence = 0
@@ -363,6 +365,9 @@ public final class MediaViewModel {
     public init(
         injectLibrary: BookLibrary? = nil
     ) {
+        #if os(iOS) || os(macOS)
+        _ = CoverColorBackfill.shared
+        #endif
         usesInjectedLibrary = injectLibrary != nil
         if let injectLibrary = injectLibrary {
             self.library = injectLibrary
@@ -432,6 +437,7 @@ public final class MediaViewModel {
                         for: self.library.bookMetaData,
                         retryEmpty: true,
                     )
+                    self.retrySkippedCoverLoads()
                 }
             }
         }
@@ -970,6 +976,7 @@ public final class MediaViewModel {
             uncancellableCoverKeys.remove(key)
         }
         pendingCoverRequests = pendingCoverRequests.filter { validIDs.contains($0.key.id) }
+        skippedCoverRetries = skippedCoverRetries.filter { validIDs.contains($0.key.id) }
     }
 
     private func metadataMatchesKind(_ metadata: BookMetadata, kind: MediaKind) -> Bool {
@@ -1809,25 +1816,28 @@ public final class MediaViewModel {
         return nil
     }
 
-    // Deep-link opens can run before the in-memory cover cache is warm, so fill any
-    // missing art from the on-disk cover cache, mirroring the restore path.
     public func makePlayerBookDataLoadingCovers(
         for item: BookMetadata,
         category: LocalMediaCategory,
     ) async -> PlayerBookData {
         var bookData = makePlayerBookData(for: item, category: category)
         let hasAudio = bookData.metadata.hasAvailableAudiobook
-        guard bookData.coverArt == nil || (hasAudio && bookData.ebookCoverArt == nil) else {
-            return bookData
-        }
 
-        let audioCover = hasAudio ? await cachedCoverImage(bookID: item.id, audio: true) : nil
-        let standardCover = await cachedCoverImage(bookID: item.id, audio: false)
-        if bookData.coverArt == nil {
-            bookData.coverArt =
-                hasAudio ? (audioCover ?? standardCover) : (standardCover ?? audioCover)
+        var audioCover: Image?
+        if hasAudio {
+            audioCover = await fullCoverImage(for: item.id, audio: true)
+            if audioCover == nil {
+                audioCover = await cachedCoverImage(bookID: item.id, audio: true)
+            }
         }
-        if hasAudio && bookData.ebookCoverArt == nil {
+        var standardCover = await fullCoverImage(for: item.id, audio: false)
+        if standardCover == nil {
+            standardCover = await cachedCoverImage(bookID: item.id, audio: false)
+        }
+        if let best = hasAudio ? (audioCover ?? standardCover) : (standardCover ?? audioCover) {
+            bookData.coverArt = best
+        }
+        if hasAudio, let standardCover {
             bookData.ebookCoverArt = standardCover
         }
         return bookData
@@ -1836,6 +1846,19 @@ public final class MediaViewModel {
     private func cachedCoverImage(bookID: BookID, audio: Bool) async -> Image? {
         guard let data = await BookServiceActor.shared.cachedCoverData(for: bookID, audio: audio),
             let payload = Self.makeCoverPayload(from: data)
+        else { return nil }
+        return Image(decorative: payload.cgImage.image, scale: 1, orientation: .up)
+    }
+
+    public func fullCoverImage(for bookID: BookID, audio: Bool) async -> Image? {
+        var data = await BookServiceActor.shared.cachedFullCoverData(for: bookID, audio: audio)
+        if data == nil {
+            data = await BookServiceActor.shared.loadFullCover(for: bookID, audio: audio)
+        }
+        if data == nil {
+            data = await BookServiceActor.shared.cachedCoverData(for: bookID, audio: audio)
+        }
+        guard let data, let payload = Self.makeCoverPayload(from: data, maxPixelSize: 2048)
         else { return nil }
         return Image(decorative: payload.cgImage.image, scale: 1, orientation: .up)
     }
@@ -2253,6 +2276,63 @@ public final class MediaViewModel {
         }
     }
 
+    public func coverStatusLines(for item: BookMetadata) async -> [String] {
+        var lines: [String] = []
+        if item.hasAvailableEbook || !item.hasAvailableAudiobook {
+            lines.append(await Self.coverStatusLine(label: "Ebook", bookID: item.id, audio: false))
+        }
+        if item.hasAvailableAudiobook {
+            lines.append(
+                await Self.coverStatusLine(label: "Audiobook", bookID: item.id, audio: true)
+            )
+        }
+        return lines
+    }
+
+    private static nonisolated func coverStatusLine(
+        label: String,
+        bookID: BookID,
+        audio: Bool,
+    ) async -> String {
+        guard let data = await CoverCacheActor.shared.cachedFullCoverData(for: bookID, audio: audio)
+        else { return "\(label) reduced size" }
+        guard
+            let source = CGImageSourceCreateWithData(data as CFData, nil),
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+            let width = properties[kCGImagePropertyPixelWidth] as? Int,
+            let height = properties[kCGImagePropertyPixelHeight] as? Int
+        else { return "\(label) full size" }
+        return "\(label) full size (\(width) x \(height))"
+    }
+
+    public func prioritizeFullCovers(for item: BookMetadata) {
+        Task(priority: .utility) {
+            if item.hasAvailableEbook || !item.hasAvailableAudiobook {
+                await CoverCacheActor.shared.prioritizeFullCover(
+                    for: item.id,
+                    audio: false,
+                    version: item.updatedAt,
+                )
+            }
+            if item.hasAvailableAudiobook {
+                await CoverCacheActor.shared.prioritizeFullCover(
+                    for: item.id,
+                    audio: true,
+                    version: item.updatedAt,
+                )
+            }
+        }
+    }
+
+    private func retrySkippedCoverLoads() {
+        guard !skippedCoverRetries.isEmpty else { return }
+        let retries = skippedCoverRetries
+        skippedCoverRetries.removeAll()
+        for entry in retries.values {
+            ensureCoverLoaded(for: entry.item, variant: entry.variant)
+        }
+    }
+
     public func cancelCoverLoad(
         for item: BookMetadata,
         variant overrideVariant: CoverVariant? = nil,
@@ -2264,8 +2344,14 @@ public final class MediaViewModel {
             recordCoverTrace("requestDropped", source: nil)
             return
         }
-        guard coverTasks[key] != nil else { return }
-        recordCoverTrace("cancelIgnoredVisible", source: nil)
+        guard let task = coverTasks[key] else { return }
+        if uncancellableCoverKeys.contains(key) {
+            recordCoverTrace("cancelIgnoredVisible", source: nil)
+            return
+        }
+        task.cancel()
+        coverTasks[key] = nil
+        recordCoverTrace("cancelledWaiting", source: nil)
     }
 
     private func enqueueCoverPublish(
@@ -2330,6 +2416,7 @@ public final class MediaViewModel {
         recordCoverTrace("publish", source: debugSource)
         switch result {
             case .found(let payload, let persist):
+                skippedCoverRetries.removeValue(forKey: key)
                 registerCover(payload, for: item, variant: variant, persist: persist)
             case .missing:
                 debugLog(
@@ -2337,7 +2424,7 @@ public final class MediaViewModel {
                 )
                 missingCoverKeys.insert(key)
             case .skipped:
-                break
+                skippedCoverRetries[key] = (item, variant)
         }
         uncancellableCoverKeys.remove(key)
     }
@@ -2576,6 +2663,11 @@ public final class MediaViewModel {
         }
 
         let cgImage = payload.cgImage.image
+        CoverImageBookIndex.register(
+            cgImage,
+            bookID: item.id,
+            audio: variant.requestParameters.audio,
+        )
         state.cgImage = cgImage
         #if canImport(AppKit)
         state.nsImage = NSImage(
@@ -2617,8 +2709,10 @@ public final class MediaViewModel {
         [.standard, .audioSquare]
     }
 
-    private static nonisolated func makeCoverPayload(from data: Data) -> CoverImagePayload? {
-        let maxPixelSize = 360
+    private static nonisolated func makeCoverPayload(
+        from data: Data,
+        maxPixelSize: Int = 360,
+    ) -> CoverImagePayload? {
         let options: CFDictionary =
             [
                 kCGImageSourceShouldCache: false

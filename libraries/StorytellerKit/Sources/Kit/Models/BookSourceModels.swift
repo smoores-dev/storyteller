@@ -53,6 +53,7 @@ public struct BookSourceCapabilities: Codable, Sendable, Hashable {
 
 public struct BookSourceRecord: Codable, Identifiable, Sendable, Hashable {
     public static let sourceIDFilename = ".storyteller_source_id"
+    public static let legacySourceIDFilename = ".silveran_source_id"
 
     public var id: BookSourceID
     public var name: String

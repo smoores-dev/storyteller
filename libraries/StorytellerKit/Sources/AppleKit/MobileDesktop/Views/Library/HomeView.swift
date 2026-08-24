@@ -339,7 +339,6 @@ struct HomeView: View {
                         onSeriesSelected: { seriesName in
                             navigationPath.append(SeriesNavIdentifier(name: seriesName))
                         },
-                        roundsTopTrailingCorner: true,
                     )
                     .frame(width: sidebarWidth)
                 }

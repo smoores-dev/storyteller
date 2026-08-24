@@ -5,8 +5,17 @@ struct ReadaloudHighlightCard: View {
     @Bindable var settingsVM: SettingsViewModel
     let hasAudioNarration: Bool
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.readerPalette) private var readerPalette
 
     @State private var showThemeEditor = false
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         CustomizeCardContainer(title: "Readaloud", onReset: resetToDefaults) {
@@ -20,12 +29,17 @@ struct ReadaloudHighlightCard: View {
 
                 List {
                     styleSection
+                        .listRowBackground(paletteRowBackground)
                     focusSection
+                        .listRowBackground(paletteRowBackground)
                     if settingsVM.experimentalSettings {
                         visibilitySection
+                            .listRowBackground(paletteRowBackground)
                     }
                     playbackSection
+                        .listRowBackground(paletteRowBackground)
                     rewindSection
+                        .listRowBackground(paletteRowBackground)
                 }
             }
         }
@@ -405,7 +419,7 @@ private struct ReadaloudPreviewPane: View {
                 .textRenderer(
                     UnderlineDecorationRenderer(
                         style: settingsVM.readaloudUnderlineStyle,
-                        color: Color(hex: settingsVM.highlightColor ?? "") ?? .yellow,
+                        color: highlightPreviewColor,
                     )
                 )
         } else {
@@ -426,7 +440,7 @@ private struct ReadaloudPreviewPane: View {
 
     private func attributedSentence(at index: Int) -> AttributedString {
         let fg = pageForeground
-        let highlight = Color(hex: settingsVM.highlightColor ?? "") ?? .yellow
+        let highlight = highlightPreviewColor
         let dimming = isPlaying && settingsVM.readaloudDimOthers
         let dimmedOpacity = max(0.05, 1 - settingsVM.readaloudDimAmount)
 
@@ -449,6 +463,12 @@ private struct ReadaloudPreviewPane: View {
             span.foregroundColor = dimming ? fg.opacity(dimmedOpacity) : fg
         }
         return span
+    }
+
+    private var highlightPreviewColor: Color {
+        let hex = settingsVM.themeHex(
+            settingsVM.highlightColor, role: .highlight, for: colorScheme)
+        return Color(hex: hex ?? "") ?? .yellow
     }
 
     private var pageBackground: Color { settingsVM.pageBackground(for: colorScheme) }

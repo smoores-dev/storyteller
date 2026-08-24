@@ -28,7 +28,7 @@ let package = Package(
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.7.0"),
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", from: "2.0.0"),
         .package(url: "https://github.com/kabiroberai/node-swift.git", from: "1.5.2"),
-        .package(url: "https://github.com/kyonifer/StoryAlign.git", from: "1.2.4"),
+        .package(url: "https://codeberg.org/richwaters/StoryAlign.git", from: "1.2.5"),
     ],
     targets: [
         .target(
@@ -51,6 +51,7 @@ let package = Package(
                 "Resources/WebResources/foliate-js/rollup.config.js",
                 "Resources/WebResources/foliate-js/README.md",
                 "Resources/assets/UPSTREAM.md",
+                "llm_generated/Okmain/README.md",
             ],
             resources: [
                 .copy("Resources/WebResources"),

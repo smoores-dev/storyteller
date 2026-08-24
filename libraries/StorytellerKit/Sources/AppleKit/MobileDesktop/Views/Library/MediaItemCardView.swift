@@ -1109,15 +1109,20 @@ struct DoubleCoverView: View {
                     // Nestled in the empty top-right corner with an equal gap to the ebook's right
                     // edge (horizontal) and the audio's top edge (vertical). The badge half-size
                     // cancels out of both gaps, so they stay equal at any icon size or hover spread.
+                    let flatBadge = !mediaViewModel.cachedConfig.library.progressBadgeBackground
                     ZStack {
-                        Circle()
-                            .fill(palette.accentBackground)
+                        if !flatBadge {
+                            Circle()
+                                .fill(palette.accentBackground)
+                        }
                         Image("readalong")
                             .renderingMode(.template)
                             .resizable()
                             .scaledToFit()
-                            .foregroundStyle(palette.accent)
-                            .padding(5)
+                            .foregroundStyle(
+                                flatBadge ? palette.ratingAccent(for: colorScheme) : palette.accent
+                            )
+                            .padding(flatBadge ? 2 : 5)
                     }
                     .frame(width: notchBadgeDiameter, height: notchBadgeDiameter)
                     .offset(x: badgeX, y: -badgeY)

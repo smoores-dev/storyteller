@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CallToAction
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Palette
@@ -108,6 +109,7 @@ private val customizeMenuItems = listOf(
     Triple("Menu Bar", Icons.Filled.WebAsset, CustomizeCard.MENU_BAR),
     Triple("Miniplayer", Icons.Filled.SmartDisplay, CustomizeCard.MINIPLAYER),
     Triple("Dock", Icons.Filled.CallToAction, CustomizeCard.DOCK),
+    Triple("Full Player", Icons.Filled.PlayCircle, CustomizeCard.FULL_PLAYER),
 )
 
 // Port of EbookPlayerMenuBar.swift: back chevron, then the configured slots,

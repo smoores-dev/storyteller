@@ -616,6 +616,7 @@ public actor BookServiceActor {
                     replacingSourceID: record.id,
                 )
             }
+            CoverCacheActor.shared.noteLibrary(books: named)
         }
 
         let loopElapsed = (Date().timeIntervalSinceReferenceDate - loopStart) * 1000
@@ -644,6 +645,7 @@ public actor BookServiceActor {
                 replacingSourceID: sourceID,
             )
         }
+        CoverCacheActor.shared.noteLibrary(books: named)
         return named
     }
 
@@ -921,22 +923,28 @@ public actor BookServiceActor {
         )
     }
 
-    private static func coverCacheVariant(audio: Bool) -> String {
-        audio ? "audioSquare" : "standard"
+    public func cachedCoverData(for bookID: BookID, audio: Bool) async -> Data? {
+        await CoverCacheActor.shared.cachedSizedCoverData(for: bookID, audio: audio)
     }
 
-    public func cachedCoverData(for bookID: BookID, audio: Bool) async -> Data? {
-        await FilesystemActor.shared.loadCoverImage(
-            bookID: bookID,
-            variant: Self.coverCacheVariant(audio: audio),
+    public func cachedFullCoverData(for bookID: BookID, audio: Bool) async -> Data? {
+        await CoverCacheActor.shared.cachedFullCoverData(for: bookID, audio: audio)
+    }
+
+    public func loadFullCover(
+        for bookID: BookID,
+        audio: Bool,
+        version: String? = nil,
+        allowNetwork: Bool = true,
+    ) async -> Data? {
+        await CoverCacheActor.shared.fullCover(
+            for: bookID,
+            audio: audio,
+            version: version,
+            allowNetwork: allowNetwork,
         )
     }
 
-    // Cache policy for covers lives here, mirroring metadata: cachedThenFetch
-    // serves the disk cache first (fast scroll), then falls back to the source;
-    // forceRefresh bypasses the cache and asks the source directly. Persisting
-    // fetched bytes is left to persistCachedCover so callers only cache
-    // payloads that proved decodable.
     public func loadCover(
         for bookID: BookID,
         audio: Bool,
@@ -946,80 +954,32 @@ public actor BookServiceActor {
         allowNetwork: Bool,
         policy: CoverLoadPolicy,
     ) async -> CoverLoadResponse {
-        if policy == .cachedThenFetch,
-            let data = await cachedCoverData(for: bookID, audio: audio)
-        {
-            return .cached(data)
-        }
-
-        if policy == .cachedThenFetch, await sourceKind(for: bookID.sourceID) == .localFolder {
-            guard
-                let cover = await fetchCoverImage(
-                    for: bookID,
-                    audio: false,
-                    width: nil,
-                    height: nil,
-                    version: nil,
-                )
-            else {
-                return .missing
+        let ask: CoverCacheActor.Ask =
+            if let width, let height {
+                .sized(width: width, height: height)
+            } else {
+                .full
             }
-            return .fetched(cover)
-        }
-
-        guard allowNetwork else { return .skippedOffline }
-
-        debugLog(
-            "[MetadataCoverRefresh] BSA loadCover sized fetch bookID=\(bookID) audio=\(audio) size=\(width.map(String.init) ?? "nil")x\(height.map(String.init) ?? "nil") version=\(version ?? "nil") policy=\(policy)"
-        )
-        if let cover = await fetchCoverImage(
+        return await CoverCacheActor.shared.cover(
             for: bookID,
             audio: audio,
-            width: width,
-            height: height,
+            ask: ask,
             version: version,
-        ) {
-            debugLog(
-                "[MetadataCoverRefresh] BSA loadCover sized fetch success bookID=\(bookID) audio=\(audio) bytes=\(cover.data.count) etag=\(cover.etag ?? "nil") lastModified=\(cover.lastModified ?? "nil") cacheControl=\(cover.cacheControl ?? "nil")"
-            )
-            return .fetched(cover)
-        }
-
-        debugLog(
-            "[MetadataCoverRefresh] BSA loadCover sized fetch nil, falling back raw bookID=\(bookID) audio=\(audio)"
+            allowNetwork: allowNetwork,
+            policy: policy,
         )
-        if let cover = await fetchCoverImage(
-            for: bookID,
-            audio: audio,
-            width: nil,
-            height: nil,
-        ) {
-            debugLog(
-                "[MetadataCoverRefresh] BSA loadCover raw fetch success bookID=\(bookID) audio=\(audio) bytes=\(cover.data.count) etag=\(cover.etag ?? "nil") lastModified=\(cover.lastModified ?? "nil") cacheControl=\(cover.cacheControl ?? "nil")"
-            )
-            return .fetched(cover)
-        }
-
-        debugLog(
-            "[MetadataCoverRefresh] BSA loadCover raw fetch nil bookID=\(bookID) audio=\(audio)"
-        )
-        return .missing
     }
 
     public func persistCachedCover(bookID: BookID, audio: Bool, data: Data) async {
-        try? await FilesystemActor.shared.saveCoverImage(
-            bookID: bookID,
-            data: data,
-            variant: Self.coverCacheVariant(audio: audio),
-        )
+        await CoverCacheActor.shared.persistSizedCover(bookID: bookID, audio: audio, data: data)
     }
 
     public func invalidateCachedCovers(for bookID: BookID) async throws {
-        try await FilesystemActor.shared.removeCoverImages(bookID: bookID)
+        await CoverCacheActor.shared.invalidate(bookID: bookID)
     }
 
     public func removeAllCachedCovers() async throws {
-        try await FilesystemActor.shared.removeAllCoverImages()
+        await CoverCacheActor.shared.removeAll()
     }
 
     func fetchBookDetails(for bookID: BookID) async -> BookMetadata? {

@@ -8,8 +8,10 @@ struct ImageGallerySheet: View {
     let provider: BookImageDataProvider?
     let positionLabel: (BookImageItem) -> String
     let onNavigate: (BookImageItem) -> Void
+    var palette: CoverDerivedPalette? = nil
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var viewing: BookImageItem?
 
     private let columns = [
@@ -19,6 +21,8 @@ struct ImageGallerySheet: View {
     var body: some View {
         NavigationStack {
             content
+                .readerPaletteModalSurface(palette)
+                .readerPaletteNavigationBar(palette, colorScheme: colorScheme)
                 .navigationTitle("Images")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -237,15 +241,11 @@ struct ImageGalleryViewer: View {
 
     private var topBar: some View {
         HStack(spacing: 12) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 34, height: 34)
-                    .background(Circle().fill(.black.opacity(0.45)))
-            }
+            Button("Go to", action: onNavigate)
+                .font(.system(size: 13, weight: .semibold))
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .fixedSize()
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(item.displayTitle)
@@ -260,11 +260,15 @@ struct ImageGalleryViewer: View {
 
             Spacer(minLength: 8)
 
-            Button("Go to", action: onNavigate)
-                .font(.system(size: 13, weight: .semibold))
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .fixedSize()
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(.black.opacity(0.45)))
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

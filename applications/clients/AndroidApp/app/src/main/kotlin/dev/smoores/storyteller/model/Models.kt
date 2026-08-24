@@ -421,6 +421,9 @@ data class ReaderTheme(
     val userHighlightLabels: List<String>,
     val customCSS: String?,
     val readaloudHighlightFade: Double = 0.0,
+    val coverStrengthBackground: Double = 0.2,
+    val coverStrengthForeground: Double = 0.2,
+    val coverStrengthHighlight: Double = 0.2,
     val readaloudTextItalic: Boolean = false,
     val readaloudTextBold: Boolean = false,
     val readaloudUnderlineStyle: String = "solid",
@@ -443,6 +446,9 @@ data class ReaderTheme(
         put("userHighlightLabels", JSONArray(userHighlightLabels))
         put("customCSS", customCSS.orEmpty())
         put("readaloudHighlightFade", readaloudHighlightFade)
+        put("coverStrengthBackground", coverStrengthBackground)
+        put("coverStrengthForeground", coverStrengthForeground)
+        put("coverStrengthHighlight", coverStrengthHighlight)
         put("readaloudTextItalic", readaloudTextItalic)
         put("readaloudTextBold", readaloudTextBold)
         put("readaloudUnderlineStyle", readaloudUnderlineStyle)
@@ -451,7 +457,7 @@ data class ReaderTheme(
 
 // Defaults mirror AndroidReaderSettings, which mirrors SettingsDefaults.swift.
 data class ReaderDisplaySettings(
-    val fontSize: Double = 24.0,
+    val fontSize: Double = 16.0,
     val fontFamily: String = "System Default",
     val lineSpacing: Double = 1.4,
     val marginLeftRight: Double = 2.0,
@@ -596,6 +602,7 @@ data class ReaderState(
     val miniPlayer: MiniPlayerCustomization = MiniPlayerCustomization(),
     val dock: DockCustomization = DockCustomization(),
     val menuBar: MenuBarCustomization = MenuBarCustomization(),
+    val fullPlayer: FullPlayerCustomization = FullPlayerCustomization(),
     val playbackModes: PlaybackModes = PlaybackModes(),
     val experimentalSettings: Boolean = false,
     val search: ReaderSearchState,

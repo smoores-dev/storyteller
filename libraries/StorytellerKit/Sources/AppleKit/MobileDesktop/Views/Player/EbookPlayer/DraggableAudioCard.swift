@@ -175,6 +175,7 @@ struct DraggableAudioCard<FullContent: View>: View {
                 Spacer(minLength: safeAreaBottom)
             }
         }
+        .background(palette.playerGradient(for: colorScheme))
         .overlay(alignment: .topTrailing) {
             Button(action: { setExpanded(false) }) {
                 Image(systemName: "chevron.down")

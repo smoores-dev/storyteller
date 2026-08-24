@@ -104,6 +104,9 @@ final class AndroidReaderSettings: ReaderSettingsReading {
     var readaloudDimOthers: Bool = kDefaultReadaloudDimOthers
     var readaloudDimAmount: Double = kDefaultReadaloudDimAmount
     var readaloudHighlightFade: Double = kDefaultReadaloudHighlightFade
+    var coverStrengthBackground: Double = kDefaultCoverTintStrength
+    var coverStrengthForeground: Double = kDefaultCoverTintStrength
+    var coverStrengthHighlight: Double = kDefaultCoverTintStrength
     var readaloudTextItalic: Bool = kDefaultReadaloudTextItalic
     var readaloudTextBold: Bool = kDefaultReadaloudTextBold
     var readaloudUnderlineStyle: String = kDefaultReadaloudUnderlineStyle
@@ -204,6 +207,7 @@ final class AndroidReaderSession {
     private var searchSections: [SearchResultsMessage] = []
     private var searchError: String?
     private var currentBookID: BookID?
+    private var coverTone: CoverHSB?
     private var highlights: [Highlight] = []
     private var pendingSelection: TextSelectionMessage?
     private var pendingEditHighlightID: UUID?
@@ -215,6 +219,7 @@ final class AndroidReaderSession {
     private var miniProgressThickness = kDefaultProgressIndicatorThickness
     private var dockOptions = DockOptions()
     private var menuBarSlots = StorytellerGlobalConfig.ReadingBar.defaultMenuBarSlots
+    private var fullPlayerConfig = StorytellerGlobalConfig.FullPlayer()
     private var experimentalSettings = kDefaultExperimentalSettings
     private var pendingServerPosition: IncomingServerPosition?
     private var imageItems: [BookImageItem] = []
@@ -289,6 +294,11 @@ final class AndroidReaderSession {
             var slots: [PlayerComplication]?
         }
 
+        struct FullPlayerUpdate: Decodable {
+            var statSlots: [PlayerComplication]?
+            var controlSlots: [PlayerComplication]?
+        }
+
         struct PlaybackModesUpdate: Decodable {
             var freeBrowseMode: String?
             var readaloudHighlightVisibility: String?
@@ -301,6 +311,7 @@ final class AndroidReaderSession {
         var miniPlayer: MiniPlayerUpdate?
         var dock: DockUpdate?
         var menuBar: MenuBarUpdate?
+        var fullPlayer: FullPlayerUpdate?
         var playbackModes: PlaybackModesUpdate?
     }
 
@@ -375,6 +386,14 @@ final class AndroidReaderSession {
         dockOptions.progressThickness = config.readingBar.progressIndicatorThicknessDock
         dockOptions.progressScope = config.readingBar.progressIndicatorScopeDock
         menuBarSlots = SlotLayout.sanitized(config.readingBar.menuBarSlots, for: .menuBar)
+        fullPlayerConfig.statSlots = SlotLayout.sanitized(
+            config.fullPlayer.statSlots,
+            for: .fullPlayerStats,
+        )
+        fullPlayerConfig.controlSlots = SlotLayout.sanitized(
+            config.fullPlayer.controlSlots,
+            for: .fullPlayerControls,
+        )
         defaultPlaybackSpeed = config.playback.defaultPlaybackSpeed
         customThemes = config.themes.customThemes
         builtInThemeOverrides = config.themes.builtInThemeOverrides
@@ -406,11 +425,49 @@ final class AndroidReaderSession {
         settings.highlightThickness = theme.highlightThickness
         settings.readaloudHighlightMode = theme.readaloudHighlightMode
         settings.readaloudHighlightFade = theme.readaloudHighlightFade
+        settings.coverStrengthBackground = theme.coverStrengthBackground
+        settings.coverStrengthForeground = theme.coverStrengthForeground
+        settings.coverStrengthHighlight = theme.coverStrengthHighlight
         settings.readaloudTextItalic = theme.readaloudTextItalic
         settings.readaloudTextBold = theme.readaloudTextBold
         settings.readaloudUnderlineStyle = theme.readaloudUnderlineStyle
         settings.userHighlightMode = theme.userHighlightMode
         settings.customCSS = theme.customCSS
+    }
+
+    func scheduleCoverToneRefresh() {
+        Task { @StorytellerUIActor [weak self] in
+            for _ in 0..<10 {
+                guard let self else { return }
+                await self.refreshCoverTone()
+                if self.coverTone != nil { return }
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+        }
+    }
+
+    func refreshCoverTone() async {
+        guard let bookID = currentBookID else { return }
+        let library = await SettingsActor.shared.config.library
+        let mode = CoverColorMode(rawValue: library.colorMode) ?? .full
+        let primary = CoverColorDerivation.keys(bookID: bookID)
+            .compactMap { CoverColorDerivation.cachedColors(forKey: $0)?.first }
+            .first
+        guard let primary else {
+            coverTone = nil
+            styleManager?.setCoverTone(nil)
+            return
+        }
+        let base = CoverColorAverager.surfaceHSB(
+            primary: CoverRGB8(red: primary.red, green: primary.green, blue: primary.blue)
+        )
+        let chrome = CoverPaletteAdjustment.adjustedSurfaceHSB(
+            base,
+            mode: mode,
+            intensity: library.colorIntensity,
+        )
+        coverTone = chrome
+        styleManager?.setCoverTone(chrome)
     }
 
     func open(bookID: BookID, mode: String) async throws -> String {
@@ -461,6 +518,7 @@ final class AndroidReaderSession {
 
         let styleManager = ReaderStyleManager(settingsVM: settings, bridge: bridge)
         self.styleManager = styleManager
+        scheduleCoverToneRefresh()
 
         let persistedRate = defaultPlaybackSpeed
         session.configureMediaOverlayManager = { [weak self] manager in
@@ -1282,6 +1340,16 @@ final class AndroidReaderSession {
             menuBarSlots = SlotLayout.sanitized(slots, for: .menuBar)
         }
 
+        if let fullPlayer = update.fullPlayer {
+            if let value = fullPlayer.statSlots {
+                fullPlayerConfig.statSlots = SlotLayout.sanitized(value, for: .fullPlayerStats)
+            }
+            if let value = fullPlayer.controlSlots {
+                fullPlayerConfig.controlSlots = SlotLayout.sanitized(
+                    value, for: .fullPlayerControls)
+            }
+        }
+
         if let modes = update.playbackModes {
             if let value = modes.freeBrowseMode, kFreeBrowseModeValues.contains(value) {
                 settings.freeBrowseMode = value
@@ -1353,6 +1421,10 @@ final class AndroidReaderSession {
             miniPlayerStatSlots: miniChanged ? miniPlayerConfig.statSlots : nil,
             miniPlayerScrubRowSlots: miniChanged ? miniPlayerConfig.scrubRowSlots : nil,
             miniPlayerExtraSlots: miniChanged ? miniPlayerConfig.extraSlots : nil,
+            fullPlayerStatSlots: update.fullPlayer?.statSlots != nil
+                ? fullPlayerConfig.statSlots : nil,
+            fullPlayerControlSlots: update.fullPlayer?.controlSlots != nil
+                ? fullPlayerConfig.controlSlots : nil,
             dockLeadingSlots: dockChanged ? dockOptions.leadingSlots : nil,
             dockTrailingSlots: dockChanged ? dockOptions.trailingSlots : nil,
             dockCenterSlots: dockChanged ? dockOptions.centerSlots : nil,
@@ -1425,6 +1497,9 @@ final class AndroidReaderSession {
         var highlightThickness: Double?
         var readaloudHighlightMode: String?
         var readaloudHighlightFade: Double?
+        var coverStrengthBackground: Double?
+        var coverStrengthForeground: Double?
+        var coverStrengthHighlight: Double?
         var readaloudTextItalic: Bool?
         var readaloudTextBold: Bool?
         var readaloudUnderlineStyle: String?
@@ -1493,6 +1568,9 @@ final class AndroidReaderSession {
         if let value = edit.highlightThickness { theme.highlightThickness = value }
         if let value = edit.readaloudHighlightMode { theme.readaloudHighlightMode = value }
         if let value = edit.readaloudHighlightFade { theme.readaloudHighlightFade = value }
+        if let value = edit.coverStrengthBackground { theme.coverStrengthBackground = value }
+        if let value = edit.coverStrengthForeground { theme.coverStrengthForeground = value }
+        if let value = edit.coverStrengthHighlight { theme.coverStrengthHighlight = value }
         if let value = edit.readaloudTextItalic { theme.readaloudTextItalic = value }
         if let value = edit.readaloudTextBold { theme.readaloudTextBold = value }
         if let value = edit.readaloudUnderlineStyle { theme.readaloudUnderlineStyle = value }
@@ -1562,6 +1640,9 @@ final class AndroidReaderSession {
             let highlightThickness: Double
             let readaloudHighlightMode: String
             let readaloudHighlightFade: Double
+            let coverStrengthBackground: Double
+            let coverStrengthForeground: Double
+            let coverStrengthHighlight: Double
             let readaloudTextItalic: Bool
             let readaloudTextBold: Bool
             let readaloudUnderlineStyle: String
@@ -1664,6 +1745,11 @@ final class AndroidReaderSession {
             let slots: [PlayerComplication]
         }
 
+        struct FullPlayerState: Encodable {
+            let statSlots: [PlayerComplication]
+            let controlSlots: [PlayerComplication]
+        }
+
         struct PlaybackModes: Encodable {
             let freeBrowseMode: String
             let readaloudHighlightVisibility: String
@@ -1707,6 +1793,7 @@ final class AndroidReaderSession {
         let miniPlayer: MiniPlayerState
         let dock: DockState
         let menuBar: MenuBarState
+        let fullPlayer: FullPlayerState
         let playbackModes: PlaybackModes
         let experimentalSettings: Bool
         let search: Search
@@ -1768,10 +1855,20 @@ final class AndroidReaderSession {
                 && overlayManager?.sleepTimerType == .endOfChapter,
             overlayToggleCount: overlayToggleCount,
             keepScreenOn: keepScreenOn,
-            backgroundColor: settings.backgroundColor
-                ?? (isDarkMode ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight),
-            foregroundColor: settings.foregroundColor
-                ?? (isDarkMode ? kDefaultForegroundColorDark : kDefaultForegroundColorLight),
+            backgroundColor: CoverReaderChrome.resolvedHex(
+                settings.backgroundColor,
+                role: .background,
+                tone: coverTone,
+                dark: isDarkMode,
+                strength: settings.coverStrengthBackground,
+            ) ?? (isDarkMode ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight),
+            foregroundColor: CoverReaderChrome.resolvedHex(
+                settings.foregroundColor,
+                role: .foreground,
+                tone: coverTone,
+                dark: isDarkMode,
+                strength: settings.coverStrengthForeground,
+            ) ?? (isDarkMode ? kDefaultForegroundColorDark : kDefaultForegroundColorLight),
             activeThemeId: activeThemeId,
             selectedLightThemeId: selectedLightThemeId,
             selectedDarkThemeId: selectedDarkThemeId,
@@ -1789,6 +1886,9 @@ final class AndroidReaderSession {
                     highlightThickness: theme.highlightThickness,
                     readaloudHighlightMode: theme.readaloudHighlightMode,
                     readaloudHighlightFade: theme.readaloudHighlightFade,
+                    coverStrengthBackground: theme.coverStrengthBackground,
+                    coverStrengthForeground: theme.coverStrengthForeground,
+                    coverStrengthHighlight: theme.coverStrengthHighlight,
                     readaloudTextItalic: theme.readaloudTextItalic,
                     readaloudTextBold: theme.readaloudTextBold,
                     readaloudUnderlineStyle: theme.readaloudUnderlineStyle,
@@ -1853,6 +1953,10 @@ final class AndroidReaderSession {
                 progressScope: dockOptions.progressScope,
             ),
             menuBar: ReaderState.MenuBarState(slots: menuBarSlots),
+            fullPlayer: ReaderState.FullPlayerState(
+                statSlots: fullPlayerConfig.statSlots,
+                controlSlots: fullPlayerConfig.controlSlots,
+            ),
             playbackModes: ReaderState.PlaybackModes(
                 freeBrowseMode: settings.freeBrowseMode,
                 readaloudHighlightVisibility: settings.readaloudHighlightVisibility,
@@ -1923,6 +2027,7 @@ final class AndroidReaderSession {
 private enum SlotRegion {
     case miniContentRow, miniStatBand, miniScrubRow, miniExtraRow
     case dockLeading, dockTrailing, dockCenter, menuBar
+    case fullPlayerStats, fullPlayerControls
 }
 
 private enum SlotLayout {
@@ -1936,13 +2041,17 @@ private enum SlotLayout {
             case .dockTrailing: return 2
             case .dockCenter: return 3
             case .menuBar: return 6
+            case .fullPlayerStats: return 4
+            case .fullPlayerControls: return 4
         }
     }
 
     static func isMiniRow(_ region: SlotRegion) -> Bool {
         switch region {
             case .miniContentRow, .miniStatBand, .miniScrubRow, .miniExtraRow: return true
-            case .dockLeading, .dockTrailing, .dockCenter, .menuBar: return false
+            case .dockLeading, .dockTrailing, .dockCenter, .menuBar,
+                .fullPlayerStats, .fullPlayerControls:
+                return false
         }
     }
 
@@ -1955,11 +2064,17 @@ private enum SlotLayout {
     static let dockOnlyStats: [PlayerComplication] = [.statClock, .statBattery]
 
     static func isTextOnly(_ region: SlotRegion) -> Bool {
-        region == .miniStatBand
+        region == .miniStatBand || region == .fullPlayerStats
     }
 
     static func readerControls(for region: SlotRegion) -> [PlayerComplication] {
         if isTextOnly(region) { return [] }
+        if region == .fullPlayerControls {
+            return [
+                .chapters, .bookmarks, .readingTimeline, .imageGallery, .search, .textSettings,
+                .sleepTimer,
+            ]
+        }
         return [
             .chapters, .bookmarks, .readingTimeline, .imageGallery, .search, .textSettings,
             .sleepTimer, .mirror, .scrollMode, .freeBrowseLock, .orientationLock,
@@ -1976,6 +2091,8 @@ private enum SlotLayout {
         switch region {
             case .dockCenter, .menuBar:
                 return [.playPause, .skipBackward, .skipForward, .playbackSpeed]
+            case .fullPlayerControls:
+                return [.playbackSpeed, .volume]
             default:
                 return []
         }

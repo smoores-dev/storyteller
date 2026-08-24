@@ -8,6 +8,7 @@ struct SidebarImagesGrid: View {
     let theme: EbookSidebarTheme
 
     @Environment(\.openWindow) private var openWindow
+    @State private var previewItem: BookImageItem?
 
     private var items: [BookImageItem] {
         viewModel.imageItems
@@ -55,23 +56,41 @@ struct SidebarImagesGrid: View {
     }
 
     private var grid: some View {
-        ScrollView {
-            LazyVGrid(
-                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())],
-                spacing: 14,
-            ) {
-                ForEach(items) { item in
-                    SidebarImageCell(
-                        item: item,
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                ScrollView {
+                    LazyVGrid(
+                        columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())],
+                        spacing: 14,
+                    ) {
+                        ForEach(items) { item in
+                            SidebarImageCell(
+                                item: item,
+                                provider: viewModel.imageProvider,
+                                theme: theme,
+                                positionLabel: positionLabel(for: item),
+                                isPreviewing: previewItem?.id == item.id,
+                                onPreview: { previewItem = item },
+                                onPopOut: { open(item) },
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+                }
+
+                if let previewItem {
+                    SidebarImagePreviewPanel(
+                        item: previewItem,
                         provider: viewModel.imageProvider,
                         theme: theme,
-                        positionLabel: positionLabel(for: item),
-                        onOpen: { open(item) },
+                        caption: positionLabel(for: previewItem),
+                        maxHeight: max(geometry.size.height * 0.55, 160),
+                        onPopOut: { open(previewItem) },
+                        onClose: { self.previewItem = nil },
                     )
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
         }
     }
 
@@ -99,48 +118,54 @@ private struct SidebarImageCell: View {
     let provider: BookImageDataProvider?
     let theme: EbookSidebarTheme
     let positionLabel: String
-    let onOpen: () -> Void
+    let isPreviewing: Bool
+    let onPreview: () -> Void
+    let onPopOut: () -> Void
 
     @State private var pixelSize: CGSize?
 
     var body: some View {
-        Button(action: onOpen) {
-            VStack(alignment: .leading, spacing: 4) {
-                ZStack(alignment: .bottomLeading) {
-                    SidebarImageThumbnail(
-                        item: item,
-                        provider: provider,
-                        placeholderColor: theme.foreground.opacity(0.08),
-                    )
-                    .frame(height: 86)
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-
-                    Text(item.kind.rawValue)
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule().fill(Color.black.opacity(0.45))
-                        )
-                        .padding(5)
-                }
-
-                Text(item.displayTitle)
-                    .font(.caption)
-                    .foregroundStyle(theme.foreground)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-
-                Text(subtitle)
-                    .font(.caption2)
-                    .foregroundStyle(theme.tertiary)
-                    .lineLimit(1)
+        VStack(alignment: .leading, spacing: 4) {
+            Button(action: onPreview) {
+                SidebarImageThumbnail(
+                    item: item,
+                    provider: provider,
+                    placeholderColor: theme.foreground.opacity(0.08),
+                )
+                .frame(height: 86)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(theme.accent, lineWidth: isPreviewing ? 2 : 0)
+            }
+            .overlay(alignment: .topTrailing) {
+                Button(action: onPopOut) {
+                    Image(systemName: "arrow.up.forward.square")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(4)
+                        .background(Circle().fill(Color.black.opacity(0.45)))
+                }
+                .buttonStyle(.plain)
+                .help("Open in separate window")
+                .padding(4)
+            }
+
+            Text(item.displayTitle)
+                .font(.caption)
+                .foregroundStyle(theme.foreground)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            Text(subtitle)
+                .font(.caption2)
+                .foregroundStyle(theme.tertiary)
+                .lineLimit(1)
         }
-        .buttonStyle(.plain)
         .help(pixelSize.map { "\(positionLabel) \(BookImageFormatting.dimensions($0))" }
             ?? positionLabel)
         .task(id: item.id) {
@@ -154,6 +179,77 @@ private struct SidebarImageCell: View {
     private var subtitle: String {
         guard let pixelSize else { return positionLabel }
         return "\(positionLabel) \u{00B7} \(BookImageFormatting.dimensions(pixelSize))"
+    }
+}
+
+private struct SidebarImagePreviewPanel: View {
+    let item: BookImageItem
+    let provider: BookImageDataProvider?
+    let theme: EbookSidebarTheme
+    let caption: String
+    let maxHeight: CGFloat
+    let onPopOut: () -> Void
+    let onClose: () -> Void
+
+    @State private var image: NSImage?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider()
+
+            ZStack(alignment: .topTrailing) {
+                Group {
+                    if let image {
+                        Image(nsImage: image)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                        ProgressView()
+                            .frame(height: 120)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(maxHeight: maxHeight)
+
+                HStack(spacing: 6) {
+                    Button(action: onPopOut) {
+                        Image(systemName: "arrow.up.forward.square")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(5)
+                            .background(Circle().fill(Color.black.opacity(0.5)))
+                    }
+                    .help("Open in separate window")
+
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(5)
+                            .background(Circle().fill(Color.black.opacity(0.5)))
+                    }
+                    .help("Close preview")
+                }
+                .buttonStyle(.plain)
+                .padding(8)
+            }
+
+            Text(item.displayTitle.isEmpty ? caption : "\(item.displayTitle) \u{00B7} \(caption)")
+                .font(.caption2)
+                .foregroundStyle(theme.tertiary)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+        }
+        .background(theme.foreground.opacity(0.05))
+        .task(id: item.id) {
+            image = nil
+            guard let provider else { return }
+            image = await Task.detached(priority: .userInitiated) {
+                provider.thumbnail(for: item, maxPixelSize: 1600)
+            }.value
+        }
     }
 }
 

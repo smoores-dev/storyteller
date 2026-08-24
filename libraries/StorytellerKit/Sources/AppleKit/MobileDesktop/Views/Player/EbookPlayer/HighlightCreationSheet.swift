@@ -14,6 +14,8 @@ struct HighlightCreationSheet: View {
     @State private var selectedColor: HighlightColor? = .yellow
     @State private var note: String = ""
     @State private var isBookmarkOnly: Bool = false
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
@@ -44,6 +46,8 @@ struct HighlightCreationSheet: View {
                 Spacer()
             }
             .padding()
+            .readerPaletteModalSurface(readerPalette)
+            .readerPaletteNavigationBar(readerPalette, colorScheme: colorScheme)
             .onAppear {
                 selectedColor = initialColor ?? .yellow
                 note = initialNote

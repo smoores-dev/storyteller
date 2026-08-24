@@ -30,6 +30,8 @@ object AndroidBridgeCallbacks {
     private var sessionListener: Registration<(String) -> Unit>? = null
     @Volatile
     private var readerWebView: Registration<WebView>? = null
+    @Volatile
+    private var coverColorsListener: Registration<(String, String, Boolean) -> Unit>? = null
     private val payloadRequests = ConcurrentHashMap<String, CompletableDeferred<String>>()
     private val coverRequests = ConcurrentHashMap<String, CompletableDeferred<CoverPayload>>()
     private val bytesRequests = ConcurrentHashMap<String, CompletableDeferred<ByteArray>>()
@@ -48,6 +50,11 @@ object AndroidBridgeCallbacks {
         if (sourceStatusListener?.owner === owner) sourceStatusListener = null
         if (readerStateListener?.owner === owner) readerStateListener = null
         if (sessionListener?.owner === owner) sessionListener = null
+        if (coverColorsListener?.owner === owner) coverColorsListener = null
+    }
+
+    fun observeCoverColorsNeeded(owner: Any, onNeeded: (String, String, Boolean) -> Unit) {
+        coverColorsListener = Registration(owner, onNeeded)
     }
 
     fun observeReaderState(owner: Any, onChange: (String) -> Unit) {
@@ -107,6 +114,11 @@ object AndroidBridgeCallbacks {
     @JvmStatic
     fun sessionStateDidChange(payload: String) {
         sessionListener?.callback?.invoke(payload)
+    }
+
+    @JvmStatic
+    fun coverColorsNeeded(bookID: String, sourceID: String, audio: Boolean) {
+        coverColorsListener?.callback?.invoke(bookID, sourceID, audio)
     }
 
     @JvmStatic

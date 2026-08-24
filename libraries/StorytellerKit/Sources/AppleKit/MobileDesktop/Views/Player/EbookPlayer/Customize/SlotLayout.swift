@@ -16,13 +16,17 @@ enum SlotLayout {
             case .dockTrailing: return 2
             case .dockCenter: return 3
             case .menuBar: return 6
+            case .fullPlayerStats: return 6
+            case .fullPlayerControls: return 6
         }
     }
 
     static func isMiniRow(_ region: SlotRegion) -> Bool {
         switch region {
             case .miniContentRow, .miniStatBand, .miniScrubRow, .miniExtraRow: return true
-            case .dockLeading, .dockTrailing, .dockCenter, .menuBar: return false
+            case .dockLeading, .dockTrailing, .dockCenter, .menuBar,
+                .fullPlayerStats, .fullPlayerControls:
+                return false
         }
     }
 
@@ -43,11 +47,17 @@ enum SlotLayout {
     // The stat band sits in the home-indicator strip, too close to the edge of
     // the screen to aim at, so it carries readouts only.
     static func isTextOnly(_ region: SlotRegion) -> Bool {
-        region == .miniStatBand
+        region == .miniStatBand || region == .fullPlayerStats
     }
 
     static func readerControls(for region: SlotRegion) -> [PlayerComplication] {
         if isTextOnly(region) { return [] }
+        if region == .fullPlayerControls {
+            return [
+                .chapters, .bookmarks, .readingTimeline, .imageGallery, .search, .textSettings,
+                .sleepTimer,
+            ]
+        }
         #if os(iOS)
         return [
             .chapters, .bookmarks, .readingTimeline, .imageGallery, .search, .textSettings,
@@ -73,6 +83,8 @@ enum SlotLayout {
         switch region {
             case .dockCenter, .menuBar:
                 return [.playPause, .skipBackward, .skipForward, .playbackSpeed]
+            case .fullPlayerControls:
+                return [.playbackSpeed, .volume]
             default:
                 return []
         }
@@ -149,6 +161,9 @@ extension SettingsViewModel {
         dockTrailingSlots = SlotLayout.sanitized(dockTrailingSlots, for: .dockTrailing)
         dockCenterSlots = SlotLayout.sanitized(dockCenterSlots, for: .dockCenter)
         menuBarSlots = SlotLayout.sanitized(menuBarSlots, for: .menuBar)
+        fullPlayerStatSlots = SlotLayout.sanitized(fullPlayerStatSlots, for: .fullPlayerStats)
+        fullPlayerControlSlots = SlotLayout.sanitized(
+            fullPlayerControlSlots, for: .fullPlayerControls)
     }
 
     func slotComplication(_ slot: SlotRef) -> PlayerComplication {
@@ -179,6 +194,8 @@ extension SettingsViewModel {
             case .dockTrailing: return dockTrailingSlots
             case .dockCenter: return dockCenterSlots
             case .menuBar: return menuBarSlots
+            case .fullPlayerStats: return fullPlayerStatSlots
+            case .fullPlayerControls: return fullPlayerControlSlots
         }
     }
 
@@ -196,6 +213,8 @@ extension SettingsViewModel {
             case .dockTrailing: dockTrailingSlots = slots
             case .dockCenter: dockCenterSlots = slots
             case .menuBar: menuBarSlots = slots
+            case .fullPlayerStats: fullPlayerStatSlots = slots
+            case .fullPlayerControls: fullPlayerControlSlots = slots
         }
     }
 }

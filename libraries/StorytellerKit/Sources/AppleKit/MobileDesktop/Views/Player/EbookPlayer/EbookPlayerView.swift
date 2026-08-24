@@ -44,9 +44,14 @@ public struct EbookPlayerView: View {
     #if os(macOS)
     @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
+    @AppStorage("EbookPlayerAudioSidebarWidth") private var audioSidebarWidth = 404.0
+    @AppStorage("EbookPlayerChapterSidebarWidth") private var chapterSidebarWidth = 328.0
+    @State private var isResizingSidebar = false
+    @State private var sidebarGrabOffset: CGFloat = 0
     @State private var baseContentWidth: CGFloat?
     @State private var isAnimatingRightSidebar = false
     @State private var isAnimatingLeftSidebar = false
+    @State private var isWindowFullscreen = false
     #else
     @Environment(\.dismiss) private var dismiss
     #endif
@@ -92,6 +97,7 @@ public struct EbookPlayerView: View {
         #if os(iOS)
         .fullScreenCover(isPresented: $viewModel.showCustomizePopover) {
             EbookPlayerSettings(settingsVM: viewModel.settingsVM)
+                .readerPaletteSurface(coverPalette)
         }
         .statusBarHidden(!viewModel.isMenuBarVisible)
         .persistentSystemOverlays(viewModel.isMenuBarVisible ? .automatic : .hidden)
@@ -153,9 +159,11 @@ public struct EbookPlayerView: View {
                 settingsVM: viewModel.settingsVM,
                 hasAudioNarration: viewModel.hasAudioNarration,
             )
+            .readerPaletteModalSurface(coverPalette)
         }
         .sheet(isPresented: $viewModel.showCustomizePopover) {
             EbookPlayerSettings(settingsVM: viewModel.settingsVM)
+                .readerPaletteModalSurface(coverPalette)
         }
         .sheet(isPresented: $viewModel.showSleepTimerSheet) {
             SleepTimerSheet(
@@ -176,6 +184,10 @@ public struct EbookPlayerView: View {
                             viewModel.showSearchPanel = false
                         },
                     )
+                    .readerPaletteModalSurface(coverPalette)
+                    #if os(iOS)
+                    .readerPaletteNavigationBar(coverPalette, colorScheme: colorScheme)
+                    #endif
                     .navigationTitle("Search")
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
@@ -221,6 +233,9 @@ public struct EbookPlayerView: View {
             guard let bookID = viewModel.bookData?.metadata.id else { return }
             if let palette = await CoverDerivedPalette.load(for: bookID) {
                 coverPalette = palette
+                viewModel.coverTone = palette.chromeHSB
+                viewModel.settingsVM.coverTone = palette.chromeHSB
+                viewModel.styleManager?.setCoverTone(palette.chromeHSB)
             }
         }
         .onDisappear {
@@ -275,6 +290,7 @@ public struct EbookPlayerView: View {
                         let hex = viewModel.settingsVM.hexColor(for: color)
                         return Color(hex: hex) ?? color.color
                     },
+                    palette: coverPalette,
                     initialTab: viewModel.bookmarksPanelInitialTab,
                 )
                 .navigationTitle("Bookmarks & Highlights")
@@ -395,11 +411,30 @@ public struct EbookPlayerView: View {
         } message: {
             Text(viewModel.serverPositionDescription)
         }
+        .environment(\.readerPalette, coverPalette)
     }
 
     #if os(macOS)
-    private let leftSidebarWidth: CGFloat = 300
-    private let leftSidebarTotalWidth: CGFloat = 301
+    private let audioSidebarGutter: CGFloat = 14
+    private let chapterSidebarGutter: CGFloat = 8
+    private static let audioSidebarWidthRange: ClosedRange<CGFloat> = 340...680
+    private static let chapterSidebarWidthRange: ClosedRange<CGFloat> = 320...640
+
+    private static func clamped(_ value: CGFloat, to range: ClosedRange<CGFloat>) -> CGFloat {
+        min(max(value, range.lowerBound), range.upperBound).rounded()
+    }
+
+    private var sidebarWidthKey: CGFloat {
+        audioSidebarTotalWidth + leftSidebarTotalWidth
+    }
+
+    private var audioSidebarTotalWidth: CGFloat {
+        Self.clamped(CGFloat(audioSidebarWidth), to: Self.audioSidebarWidthRange)
+    }
+
+    private var leftSidebarTotalWidth: CGFloat {
+        Self.clamped(CGFloat(chapterSidebarWidth), to: Self.chapterSidebarWidthRange)
+    }
     // Measured title-bar inset: the full-bleed webview otherwise paginates into the
     // 32px hidden behind the title bar, clipping the top line of every page.
     private let readerTopInset: CGFloat = 32
@@ -413,23 +448,18 @@ public struct EbookPlayerView: View {
 
     private var mainLayout: some View {
         GeometryReader { geometry in
-            let rightAdjustment: CGFloat = viewModel.showAudioSidebar ? 361 : 0
+            let rightAdjustment: CGFloat = viewModel.showAudioSidebar ? audioSidebarTotalWidth : 0
             let leftAdjustment: CGFloat = viewModel.showChapterSidebar ? leftSidebarTotalWidth : 0
+            let available = max(geometry.size.width - rightAdjustment - leftAdjustment, 0)
             let contentWidth =
-                baseContentWidth ?? (geometry.size.width - rightAdjustment - leftAdjustment)
+                isWindowFullscreen ? available : min(baseContentWidth ?? available, available)
 
             HStack(spacing: 0) {
                 if viewModel.showChapterSidebar {
-                    HStack(spacing: 0) {
-                        chapterSidebar
-                            .frame(width: leftSidebarWidth)
-                        Rectangle()
-                            .fill(separatorColor)
-                            .frame(width: 1)
-                    }
-                    .compositingGroup()
-                    .transition(.offset(x: leftSidebarTotalWidth))
-                    .zIndex(0)
+                    chapterSidebarCard
+                        .compositingGroup()
+                        .transition(.offset(x: leftSidebarTotalWidth))
+                        .zIndex(0)
                 }
 
                 readerContent
@@ -438,32 +468,30 @@ public struct EbookPlayerView: View {
                     .zIndex(1)
 
                 if viewModel.showAudioSidebar {
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .fill(separatorColor)
-                            .frame(width: 1)
-                        audiobookSidebar(palette: coverPalette)
-                            .frame(width: 360)
-                            .background(sidebarPaper)
-                    }
-                    .compositingGroup()
-                    .transition(.offset(x: -361))
-                    .zIndex(0)
+                    audioSidebarCard
+                        .compositingGroup()
+                        .transition(.offset(x: -audioSidebarTotalWidth))
+                        .zIndex(0)
                 }
             }
             .onAppear {
                 if baseContentWidth == nil {
-                    let rightAdj: CGFloat = viewModel.showAudioSidebar ? 361 : 0
+                    let rightAdj: CGFloat = viewModel.showAudioSidebar ? audioSidebarTotalWidth : 0
                     let leftAdj: CGFloat = viewModel.showChapterSidebar ? leftSidebarTotalWidth : 0
                     baseContentWidth = geometry.size.width - rightAdj - leftAdj
                 }
             }
             .onChange(of: geometry.size.width) { _, newWidth in
-                if !isAnimatingRightSidebar && !isAnimatingLeftSidebar {
-                    let rightAdj: CGFloat = viewModel.showAudioSidebar ? 361 : 0
+                if !isAnimatingRightSidebar && !isAnimatingLeftSidebar && !isResizingSidebar {
+                    let rightAdj: CGFloat = viewModel.showAudioSidebar ? audioSidebarTotalWidth : 0
                     let leftAdj: CGFloat = viewModel.showChapterSidebar ? leftSidebarTotalWidth : 0
                     baseContentWidth = newWidth - rightAdj - leftAdj
                 }
+            }
+            .onChange(of: sidebarWidthKey) { _, _ in
+                let rightAdj: CGFloat = viewModel.showAudioSidebar ? audioSidebarTotalWidth : 0
+                let leftAdj: CGFloat = viewModel.showChapterSidebar ? leftSidebarTotalWidth : 0
+                baseContentWidth = geometry.size.width - rightAdj - leftAdj
             }
             .onChange(of: viewModel.showAudioSidebar) { _, _ in
                 isAnimatingRightSidebar = true
@@ -484,15 +512,68 @@ public struct EbookPlayerView: View {
             WindowFrameAdjuster(
                 expandRight: viewModel.showAudioSidebar,
                 expandLeft: viewModel.showChapterSidebar,
-                rightAmount: 361,
+                rightAmount: audioSidebarTotalWidth,
                 leftAmount: leftSidebarTotalWidth,
                 savedWidthKey: "EbookPlayerWindowWidth",
+                isFullscreen: $isWindowFullscreen,
             )
         )
     }
 
-    private var sidebarPaper: Color {
-        coverPalette.resolved(for: colorScheme).contentBackground
+    private var audioSidebarCard: some View {
+        let cardWidth = audioSidebarTotalWidth - audioSidebarGutter * 2
+        return audiobookSidebar(palette: coverPalette, containerWidth: cardWidth)
+            .frame(width: cardWidth)
+            .playerCardChrome(coverPalette)
+            .overlay(alignment: .leading) {
+                sidebarResizeHandle(
+                    width: $audioSidebarWidth,
+                    range: Self.audioSidebarWidthRange,
+                    measuresFromLeadingEdge: false,
+                )
+                .offset(x: -6)
+            }
+            .padding(.horizontal, audioSidebarGutter)
+            .padding(.vertical, 10)
+            .frame(width: audioSidebarTotalWidth)
+    }
+
+    private var chapterSidebarCard: some View {
+        chapterSidebar
+            .frame(width: leftSidebarTotalWidth - chapterSidebarGutter * 2)
+            .playerCardChrome(coverPalette)
+            .overlay(alignment: .trailing) {
+                sidebarResizeHandle(
+                    width: $chapterSidebarWidth,
+                    range: Self.chapterSidebarWidthRange,
+                    measuresFromLeadingEdge: true,
+                )
+                .offset(x: 6)
+            }
+            .padding(.horizontal, chapterSidebarGutter)
+            .padding(.vertical, 10)
+            .frame(width: leftSidebarTotalWidth)
+    }
+
+    private func sidebarResizeHandle(
+        width: Binding<Double>,
+        range: ClosedRange<CGFloat>,
+        measuresFromLeadingEdge: Bool,
+    ) -> some View {
+        SidebarResizeHandle(
+            measuresFromLeadingEdge: measuresFromLeadingEdge,
+            onBegin: { distanceFromEdge in
+                isResizingSidebar = true
+                sidebarGrabOffset = CGFloat(width.wrappedValue) - distanceFromEdge
+            },
+            onChange: { distanceFromEdge in
+                let target = distanceFromEdge + sidebarGrabOffset
+                width.wrappedValue = Double(Self.clamped(target, to: range))
+            },
+            onEnd: { isResizingSidebar = false },
+        )
+        .frame(width: 12)
+        .frame(maxHeight: .infinity)
     }
 
     @State private var isSwitchingBook = false
@@ -517,7 +598,6 @@ public struct EbookPlayerView: View {
 
     private var chapterSidebar: some View {
         let theme = EbookSidebarTheme(
-            background: readerBackgroundColor,
             foreground: readerForegroundColor,
             accent: coverPalette.resolved(for: colorScheme).accent,
         )
@@ -525,7 +605,7 @@ public struct EbookPlayerView: View {
             viewModel: viewModel,
             sidebarModel: sidebarModel,
             theme: theme,
-            topInset: readerTopInset + 16,
+            topInset: readerTopInset - 6,
             quickBookSwitcher: onSwitchBook.map { onSwitch in
                 AnyView(
                     QuickBookSwitcherStrip(
@@ -552,7 +632,7 @@ public struct EbookPlayerView: View {
                 Rectangle()
                     .fill(separatorColor)
                     .frame(width: 1)
-                audiobookSidebar(foregroundColor: readerForegroundColor)
+                audiobookSidebar(foregroundColor: readerForegroundColor, containerWidth: 360)
                     .frame(width: 360)
                     .padding(.horizontal, 14)
                     .transition(.move(edge: .trailing))
@@ -568,7 +648,10 @@ public struct EbookPlayerView: View {
     }
 
     private var readerBackgroundColor: Color {
-        if let bgColor = viewModel.settingsVM.backgroundColor, let color = Color(hex: bgColor) {
+        if let bgColor = resolvedThemeHex(
+            viewModel.settingsVM.backgroundColor, role: .background),
+            let color = Color(hex: bgColor)
+        {
             return color
         }
         let defaultHex =
@@ -587,7 +670,8 @@ public struct EbookPlayerView: View {
     // colors: the theme background follows the user's theme while semantic colors
     // follow the system appearance, and the two can disagree.
     private var readerForegroundColor: Color {
-        if let fgColor = viewModel.settingsVM.foregroundColor, !fgColor.isEmpty,
+        if let fgColor = resolvedThemeHex(
+            viewModel.settingsVM.foregroundColor, role: .foreground), !fgColor.isEmpty,
             let color = Color(hex: fgColor)
         {
             return color
@@ -595,6 +679,16 @@ public struct EbookPlayerView: View {
         let defaultHex =
             colorScheme == .dark ? kDefaultForegroundColorDark : kDefaultForegroundColorLight
         return Color(hex: defaultHex) ?? .primary
+    }
+
+    private func resolvedThemeHex(_ raw: String?, role: CoverReaderChrome.Role) -> String? {
+        CoverReaderChrome.resolvedHex(
+            raw,
+            role: role,
+            tone: coverPalette.chromeHSB,
+            dark: colorScheme == .dark,
+            strength: viewModel.settingsVM.coverStrength(for: role),
+        )
     }
 
     private var separatorColor: Color {
@@ -728,6 +822,7 @@ public struct EbookPlayerView: View {
                     onSleepTimerCancel: viewModel.handleSleepTimerCancel,
                     settingsVM: viewModel.settingsVM,
                     customizeCard: $customizeCard,
+                    coverPalette: coverPalette,
                 )
                 .transition(.opacity)
             }
@@ -887,6 +982,7 @@ public struct EbookPlayerView: View {
                     else { return nil }
                     return viewModel.bookStructure[safe: index]?.label
                 },
+                initialPalette: coverPalette,
             )
         }
     }
@@ -907,6 +1003,7 @@ public struct EbookPlayerView: View {
             onNavigate: { item in
                 Task { await viewModel.navigateToImage(item) }
             },
+            palette: coverPalette,
         )
         // URL-keyed so a nil at first appear retries once the session prepares.
         .task(id: viewModel.session?.originalEbookURL) {
@@ -1218,6 +1315,7 @@ public struct EbookPlayerView: View {
     private func audiobookSidebar(
         foregroundColor: Color? = nil,
         palette: CoverDerivedPalette? = nil,
+        containerWidth: CGFloat? = nil,
     ) -> some View {
         let pm = viewModel.progressManager
         let mom = viewModel.mediaOverlayManager
@@ -1264,9 +1362,12 @@ public struct EbookPlayerView: View {
             ),
             mode: readingMode,
             foregroundColor: foregroundColor,
+            containerWidth: containerWidth,
             chapterProgress: viewModel.chapterProgressBinding,
             chapters: viewModel.chapterList,
             progressData: progressData,
+            statSlots: viewModel.settingsVM.fullPlayerStatSlots,
+            controlSlots: viewModel.settingsVM.fullPlayerControlSlots,
             onChapterSelected: { chapter in
                 viewModel.handleChapterSelection(chapter)
             },
@@ -1300,6 +1401,21 @@ public struct EbookPlayerView: View {
             onProgressSeek: { fraction in
                 viewModel.handleProgressSeek(fraction)
             },
+            onOpenBookmarks: { viewModel.showBookmarksPanel = true },
+            onOpenReadingTimeline: { viewModel.showReadingTimeline = true },
+            onOpenImageGallery: {
+                #if os(macOS)
+                UserDefaults.standard.set(
+                    EbookSidebarNavTab.images.rawValue,
+                    forKey: "EbookPlayerSidebarNavTab",
+                )
+                viewModel.showChapterSidebar = true
+                #else
+                viewModel.showImageGallery = true
+                #endif
+            },
+            onOpenSearch: { viewModel.showSearchPanel = true },
+            onOpenTextSettings: { viewModel.showCustomizePopover = true },
         )
         .coverPalette(palette)
     }
@@ -1377,6 +1493,31 @@ private class TitleBarDoubleClickGestureRecognizer: NSClickGestureRecognizer {
     var titlebarHeight: CGFloat = 52
 }
 
+private final class FullscreenToolbarDelegateProxy: NSObject, NSWindowDelegate {
+    weak var original: NSWindowDelegate?
+
+    func window(
+        _ window: NSWindow,
+        willUseFullScreenPresentationOptions proposedOptions: NSApplication.PresentationOptions,
+    ) -> NSApplication.PresentationOptions {
+        let base =
+            original?.window?(
+                window,
+                willUseFullScreenPresentationOptions: proposedOptions,
+            ) ?? proposedOptions
+        return base.union(.autoHideToolbar)
+    }
+
+    override func responds(to aSelector: Selector!) -> Bool {
+        super.responds(to: aSelector) || original?.responds(to: aSelector) == true
+    }
+
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        if original?.responds(to: aSelector) == true { return original }
+        return super.forwardingTarget(for: aSelector)
+    }
+}
+
 private struct TitleBarConfigurator: NSViewRepresentable {
     var isTitleBarVisible: Bool
     var windowTitle: String = "Ebook Reader"
@@ -1401,6 +1542,8 @@ private struct TitleBarConfigurator: NSViewRepresentable {
     }
 
     class Coordinator: NSObject {
+        var delegateProxy: FullscreenToolbarDelegateProxy?
+
         @MainActor @objc func handleDoubleClick(_ gesture: NSClickGestureRecognizer) {
             guard let window = gesture.view?.window,
                 let contentView = window.contentView,
@@ -1430,11 +1573,22 @@ private struct TitleBarConfigurator: NSViewRepresentable {
         window.titlebarAppearsTransparent = true
         window.styleMask.insert(.fullSizeContentView)
         window.isMovableByWindowBackground = true
-        window.toolbar?.isVisible = isTitleBarVisible
 
+        let isFullscreen = window.styleMask.contains(.fullScreen)
+        window.toolbar?.isVisible = isFullscreen ? true : isTitleBarVisible
+
+        installFullscreenToolbarDelegate(on: window, coordinator: coordinator)
         installDoubleClickGesture(on: window, coordinator: coordinator)
-        updateTitleBarVisibility(for: window)
+        updateTitleBarVisibility(for: window, forceVisible: isFullscreen)
         onApplied?()
+    }
+
+    private func installFullscreenToolbarDelegate(on window: NSWindow, coordinator: Coordinator) {
+        guard !(window.delegate is FullscreenToolbarDelegateProxy) else { return }
+        let proxy = FullscreenToolbarDelegateProxy()
+        proxy.original = window.delegate
+        coordinator.delegateProxy = proxy
+        window.delegate = proxy
     }
 
     private func installDoubleClickGesture(on window: NSWindow, coordinator: Coordinator) {
@@ -1459,29 +1613,30 @@ private struct TitleBarConfigurator: NSViewRepresentable {
         themeFrame.addGestureRecognizer(gesture)
     }
 
-    private func updateTitleBarVisibility(for window: NSWindow) {
+    private func updateTitleBarVisibility(for window: NSWindow, forceVisible: Bool = false) {
+        let visible = forceVisible || isTitleBarVisible
         let buttonTypes: [NSWindow.ButtonType] = [
             .closeButton, .miniaturizeButton, .zoomButton,
         ]
         buttonTypes
             .compactMap { window.standardWindowButton($0) }
             .forEach { button in
-                button.alphaValue = isTitleBarVisible ? 1 : 0
-                button.isEnabled = isTitleBarVisible
+                button.alphaValue = visible ? 1 : 0
+                button.isEnabled = visible
             }
 
         if let titlebarView = window.standardWindowButton(.closeButton)?.superview {
-            titlebarView.alphaValue = isTitleBarVisible ? 1 : 0
+            titlebarView.alphaValue = visible ? 1 : 0
             titlebarView.isHidden = false
         }
 
         if let toolbar = window.toolbar {
             for item in toolbar.items {
                 if let view = item.view {
-                    view.alphaValue = isTitleBarVisible ? 1 : 0
+                    view.alphaValue = visible ? 1 : 0
                     view.isHidden = false
                 }
-                item.isEnabled = isTitleBarVisible
+                item.isEnabled = visible
             }
         }
     }

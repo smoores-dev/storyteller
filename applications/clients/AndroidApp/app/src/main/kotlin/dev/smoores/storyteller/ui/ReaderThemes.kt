@@ -3,6 +3,7 @@ package dev.smoores.storyteller.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -613,6 +614,9 @@ internal fun ThemeEditorDialog(
     var highlightThickness by remember { mutableStateOf(initial.highlightThickness) }
     var readaloudMode by remember { mutableStateOf(initial.readaloudHighlightMode) }
     var readaloudFade by remember { mutableStateOf(initial.readaloudHighlightFade) }
+    var coverStrengthBackground by remember { mutableStateOf(initial.coverStrengthBackground) }
+    var coverStrengthForeground by remember { mutableStateOf(initial.coverStrengthForeground) }
+    var coverStrengthHighlight by remember { mutableStateOf(initial.coverStrengthHighlight) }
     var readaloudItalic by remember { mutableStateOf(initial.readaloudTextItalic) }
     var readaloudBold by remember { mutableStateOf(initial.readaloudTextBold) }
     var readaloudUnderlineStyle by remember { mutableStateOf(initial.readaloudUnderlineStyle) }
@@ -626,11 +630,17 @@ internal fun ThemeEditorDialog(
     var customCSS by remember { mutableStateOf(initial.customCSS.orEmpty()) }
     var tab by remember { mutableIntStateOf(initialTab) }
     var previewUserIndex by remember { mutableIntStateOf(0) }
+    val isDarkTheme = isSystemInDarkTheme()
+    val coverBackgroundSwatch = MaterialTheme.colorScheme.surface
+    val coverForegroundSwatch = MaterialTheme.colorScheme.onSurface
 
     val valid = (isBuiltInEdit || name.isNotBlank()) &&
-        parseHexColor(background) != null &&
-        parseHexColor(foreground) != null &&
-        parseHexColor(highlight) != null &&
+        (background.equals(COVER_COLOR_TOKEN, ignoreCase = true) ||
+            parseHexColor(background) != null) &&
+        (foreground.equals(COVER_COLOR_TOKEN, ignoreCase = true) ||
+            parseHexColor(foreground) != null) &&
+        (highlight.equals(COVER_COLOR_TOKEN, ignoreCase = true) ||
+            parseHexColor(highlight) != null) &&
         userColors.all { parseHexColor(it) != null }
 
     Dialog(
@@ -678,6 +688,9 @@ internal fun ThemeEditorDialog(
                                 put("userHighlightLabels", JSONArray(userLabels))
                                 put("customCSS", customCSS.trim())
                                 put("readaloudHighlightFade", readaloudFade)
+                                put("coverStrengthBackground", coverStrengthBackground)
+                                put("coverStrengthForeground", coverStrengthForeground)
+                                put("coverStrengthHighlight", coverStrengthHighlight)
                                 put("readaloudTextItalic", readaloudItalic)
                                 put("readaloudTextBold", readaloudBold)
                                 put("readaloudUnderlineStyle", readaloudUnderlineStyle)
@@ -753,11 +766,31 @@ internal fun ThemeEditorDialog(
                                 label = "Background",
                                 value = background,
                                 onChange = { background = it },
+                                coverFallback = restoreHex(
+                                    initial.backgroundColor,
+                                    appearance,
+                                    isDarkTheme,
+                                    "#FFFFFF",
+                                    "#1A1A1A",
+                                ),
+                                coverSwatch = coverBackgroundSwatch,
+                                coverStrength = coverStrengthBackground,
+                                onCoverStrengthChange = { coverStrengthBackground = it },
                             )
                             ThemeColorRow(
                                 label = "Text",
                                 value = foreground,
                                 onChange = { foreground = it },
+                                coverFallback = restoreHex(
+                                    initial.foregroundColor,
+                                    appearance,
+                                    isDarkTheme,
+                                    "#1A1A1A",
+                                    "#EDEDED",
+                                ),
+                                coverSwatch = coverForegroundSwatch,
+                                coverStrength = coverStrengthForeground,
+                                onCoverStrengthChange = { coverStrengthForeground = it },
                             )
                             if (onDelete != null) {
                                 Spacer(modifier = Modifier.padding(top = 8.dp))
@@ -774,10 +807,35 @@ internal fun ThemeEditorDialog(
                                 onSelect = { readaloudMode = it },
                             )
                             SettingsSectionHeader("Highlight Color")
-                            InlineColorPicker(
-                                value = highlight,
-                                onChange = { highlight = it },
+                            SettingSwitch(
+                                label = "Derive from cover",
+                                checked = highlight.equals(COVER_COLOR_TOKEN, ignoreCase = true),
+                                onToggle = { enabled ->
+                                    highlight = if (enabled) {
+                                        COVER_COLOR_TOKEN
+                                    } else {
+                                        restoreHex(
+                                            initial.highlightColor,
+                                            appearance,
+                                            isDarkTheme,
+                                            "#AE1917",
+                                            "#E63513",
+                                        )
+                                    }
+                                },
                             )
+                            if (highlight.equals(COVER_COLOR_TOKEN, ignoreCase = true)) {
+                                CoverStrengthSlider(
+                                    value = coverStrengthHighlight,
+                                    onChange = { coverStrengthHighlight = it },
+                                )
+                            }
+                            if (!highlight.equals(COVER_COLOR_TOKEN, ignoreCase = true)) {
+                                InlineColorPicker(
+                                    value = highlight,
+                                    onChange = { highlight = it },
+                                )
+                            }
                             // Mirrors ThemeEditorView.readaloudSection.
                             when (readaloudMode) {
                                 "text" -> {
@@ -868,20 +926,51 @@ internal fun ThemeEditorDialog(
     }
 }
 
+internal const val COVER_COLOR_TOKEN = "cover"
+
+private fun restoreHex(
+    original: String,
+    appearance: String,
+    systemIsDark: Boolean,
+    lightDefault: String,
+    darkDefault: String,
+): String {
+    if (!original.equals(COVER_COLOR_TOKEN, ignoreCase = true)) return original
+    val dark = appearance == "dark" || (appearance == "any" && systemIsDark)
+    return if (dark) darkDefault else lightDefault
+}
+
+@Composable
+private fun CoverStrengthSlider(value: Double, onChange: (Double) -> Unit) {
+    SettingSlider(
+        label = "Cover Tint Strength",
+        value = value,
+        range = 0f..1f,
+        format = { "${(it * 100).toInt()}%" },
+        onPreview = { onChange(it.toDouble()) },
+        onCommit = { onChange(it.toDouble()) },
+    )
+}
+
 @Composable
 private fun ThemeColorRow(
     label: String,
     value: String,
     onChange: (String) -> Unit,
     onExpand: (() -> Unit)? = null,
+    coverFallback: String? = null,
+    coverSwatch: Color? = null,
+    coverStrength: Double = 0.2,
+    onCoverStrengthChange: ((Double) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val usesCover = value.equals(COVER_COLOR_TOKEN, ignoreCase = true)
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
+                .clickable(enabled = !usesCover) {
                     expanded = !expanded
                     if (expanded) onExpand?.invoke()
                 }
@@ -893,7 +982,7 @@ private fun ThemeColorRow(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                value.uppercase(),
+                if (usesCover) "From Cover" else value.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(end = 12.dp),
@@ -901,11 +990,31 @@ private fun ThemeColorRow(
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .background(parseHexColor(value) ?: Color.Transparent, CircleShape)
+                    .background(
+                        if (usesCover) {
+                            coverSwatch ?: Color.Transparent
+                        } else {
+                            parseHexColor(value) ?: Color.Transparent
+                        },
+                        CircleShape,
+                    )
                     .border(1.dp, Color.Gray.copy(alpha = 0.5f), CircleShape),
             )
         }
-        AnimatedVisibility(visible = expanded) {
+        if (coverFallback != null) {
+            SettingSwitch(
+                label = "Derive from cover",
+                checked = usesCover,
+                onToggle = { enabled ->
+                    if (enabled) expanded = false
+                    onChange(if (enabled) COVER_COLOR_TOKEN else coverFallback)
+                },
+            )
+        }
+        if (usesCover && onCoverStrengthChange != null) {
+            CoverStrengthSlider(value = coverStrength, onChange = onCoverStrengthChange)
+        }
+        AnimatedVisibility(visible = expanded && !usesCover) {
             InlineColorPicker(
                 value = value,
                 onChange = onChange,

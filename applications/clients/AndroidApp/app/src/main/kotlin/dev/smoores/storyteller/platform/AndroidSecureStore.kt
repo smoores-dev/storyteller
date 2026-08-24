@@ -46,6 +46,9 @@ class AndroidSecureStore(context: Context) {
     }
 
     @Synchronized
+    private fun containsValue(key: String): Boolean = preferences.contains(key)
+
+    @Synchronized
     private fun removeValue(key: String): Boolean =
         preferences.edit().remove(key).commit()
 
@@ -86,6 +89,9 @@ class AndroidSecureStore(context: Context) {
 
         @JvmStatic
         fun load(key: String): String = instance?.loadValue(key).orEmpty()
+
+        @JvmStatic
+        fun contains(key: String): Boolean = instance?.containsValue(key) ?: false
 
         @JvmStatic
         fun remove(key: String): Boolean = instance?.removeValue(key) ?: false

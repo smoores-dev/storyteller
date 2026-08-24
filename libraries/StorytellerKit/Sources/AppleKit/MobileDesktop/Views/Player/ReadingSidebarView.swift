@@ -61,6 +61,7 @@ public struct ReadingSidebarView: View {
     private let bookData: PlayerBookData?
     private let model: Model
     private let mode: ReadingMode
+    private let containerWidth: CGFloat?
     private let foregroundColor: Color?
     private var palette: CoverDerivedPalette? = nil
     @Environment(\.colorScheme) private var colorScheme
@@ -71,9 +72,8 @@ public struct ReadingSidebarView: View {
     private let onProgressSeek: ((Double) -> Void)?
     private let seekWhileDragging: Bool
 
-    @State private var showVolumePopover = false
-    @State private var showSleepTimerPopover = false
     @State private var currentPlayerHeight: CGFloat = 800
+    @State private var currentPlayerWidth: CGFloat = 380
     @State private var isDraggingSlider = false
     @State private var draggedSliderValue: Double = 0.0
     @State private var seekDebounceUntil: Date?
@@ -88,15 +88,25 @@ public struct ReadingSidebarView: View {
     private let onVolumeChange: (Double) -> Void
     private let onSleepTimerStart: (TimeInterval?, SleepTimerType) -> Void
     private let onSleepTimerCancel: () -> Void
+    private let statSlots: [PlayerComplication]
+    private let controlSlots: [PlayerComplication]
+    private let onOpenBookmarks: (() -> Void)?
+    private let onOpenReadingTimeline: (() -> Void)?
+    private let onOpenImageGallery: (() -> Void)?
+    private let onOpenSearch: (() -> Void)?
+    private let onOpenTextSettings: (() -> Void)?
 
     public init(
         bookData: PlayerBookData?,
         model: Model,
         mode: ReadingMode = .readaloud,
         foregroundColor: Color? = nil,
+        containerWidth: CGFloat? = nil,
         chapterProgress: Binding<Double>,
         chapters: [ChapterItem] = [],
         progressData: ProgressData? = nil,
+        statSlots: [PlayerComplication]? = nil,
+        controlSlots: [PlayerComplication]? = nil,
         onChapterSelected: @escaping (ChapterItem) -> Void = { _ in },
         onPrevChapter: @escaping () -> Void = {},
         onSkipBackward: @escaping () -> Void = {},
@@ -109,14 +119,28 @@ public struct ReadingSidebarView: View {
         onSleepTimerCancel: @escaping () -> Void = {},
         onProgressSeek: ((Double) -> Void)? = nil,
         seekWhileDragging: Bool = true,
+        onOpenBookmarks: (() -> Void)? = nil,
+        onOpenReadingTimeline: (() -> Void)? = nil,
+        onOpenImageGallery: (() -> Void)? = nil,
+        onOpenSearch: (() -> Void)? = nil,
+        onOpenTextSettings: (() -> Void)? = nil,
     ) {
         self.bookData = bookData
         self.model = model
         self.mode = mode
         self.foregroundColor = foregroundColor
+        self.containerWidth = containerWidth
         self.progressData = progressData
         _chapterProgress = chapterProgress
         self.chapters = chapters
+        self.statSlots = SlotLayout.sanitized(
+            statSlots ?? StorytellerGlobalConfig.FullPlayer().statSlots,
+            for: .fullPlayerStats,
+        )
+        self.controlSlots = SlotLayout.sanitized(
+            controlSlots ?? StorytellerGlobalConfig.FullPlayer().controlSlots,
+            for: .fullPlayerControls,
+        )
         self.onChapterSelected = onChapterSelected
         self.onPrevChapter = onPrevChapter
         self.onSkipBackward = onSkipBackward
@@ -129,6 +153,11 @@ public struct ReadingSidebarView: View {
         self.onSleepTimerCancel = onSleepTimerCancel
         self.onProgressSeek = onProgressSeek
         self.seekWhileDragging = seekWhileDragging
+        self.onOpenBookmarks = onOpenBookmarks
+        self.onOpenReadingTimeline = onOpenReadingTimeline
+        self.onOpenImageGallery = onOpenImageGallery
+        self.onOpenSearch = onOpenSearch
+        self.onOpenTextSettings = onOpenTextSettings
     }
 
     func coverPalette(_ palette: CoverDerivedPalette?) -> ReadingSidebarView {
@@ -138,26 +167,55 @@ public struct ReadingSidebarView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 28) {
+        VStack(spacing: 20) {
+            Spacer(minLength: 0)
+
             metadataSection
+
             progressSection
             if mode != .ebook {
                 transportControls
             }
-            statsSection
-            secondaryControls
+
+            Spacer(minLength: 0)
+
+            VStack(spacing: 20) {
+                statsSection
+                secondaryControls
+            }
         }
-        .padding(.top, 25)
-        .padding(.bottom, 25)
+        .padding(.top, 16)
+        .padding(.bottom, 16)
         .frame(minHeight: 400)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(backgroundColor)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.height
-        } action: { height in
-            currentPlayerHeight = height
-            debugLog("[ReadingSidebarView] Height changed to \(height)")
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            currentPlayerHeight = size.height
+            currentPlayerWidth = size.width
         }
+    }
+
+    private var playerWidth: CGFloat {
+        containerWidth ?? currentPlayerWidth
+    }
+
+    #if os(macOS)
+    private var sectionPadding: CGFloat {
+        min(30, max(16, playerWidth * 0.08))
+    }
+    #else
+    private var sectionPadding: CGFloat { 20 }
+    #endif
+
+    private var contentWidth: CGFloat {
+        max(playerWidth - sectionPadding * 2, 1)
+    }
+
+    private static let transportNaturalWidth: CGFloat = 316
+
+    private var transportScale: CGFloat {
+        min(1, contentWidth / Self.transportNaturalWidth)
     }
 
     private var coverScale: CGFloat? {
@@ -259,7 +317,7 @@ public struct ReadingSidebarView: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, sectionPadding)
     }
 
     private var progressSection: some View {
@@ -302,9 +360,9 @@ public struct ReadingSidebarView: View {
         )
 
         return VStack(alignment: .leading, spacing: 16) {
-            Slider(
+            PlayerScrubBar(
                 value: sliderBinding,
-                in: 0...1,
+                tint: controlIcon,
                 onEditingChanged: { editing in
                     isDraggingSlider = editing
                     if editing {
@@ -318,7 +376,6 @@ public struct ReadingSidebarView: View {
                     }
                 },
             )
-            .tint(accentColor)
 
             HStack {
                 Text(formatOptionalTime(chapterElapsed))
@@ -334,125 +391,100 @@ public struct ReadingSidebarView: View {
             .font(.footnote.monospacedDigit())
             .foregroundStyle(secondaryColor)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, sectionPadding)
     }
 
     private var transportControls: some View {
-        HStack(spacing: 8) {
-            Button(action: onPrevChapter) {
-                Image(systemName: "backward.end.fill")
-                    .font(.title3)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Circle())
-                    .background(Circle().fill(controlFill))
-            }
-            .buttonStyle(.plain)
-            .help("Restart chapter / Previous chapter")
+        let scale = transportScale
+        return HStack(spacing: 12 * scale) {
+            transportButton(
+                icon: "backward.end",
+                size: 44 * scale,
+                iconSize: 24 * scale,
+                help: "Restart chapter / Previous chapter",
+                action: onPrevChapter,
+            )
 
-            Button(action: onSkipBackward) {
-                Image(systemName: "arrow.counterclockwise")
-                    .font(.title2.weight(.medium))
-                    .frame(width: 54, height: 54)
-                    .contentShape(Circle())
-                    .background(Circle().fill(controlFill))
-            }
-            .buttonStyle(.plain)
-            .help("Previous sentence")
+            transportButton(
+                icon: skipBackIcon,
+                size: 54 * scale,
+                iconSize: 26 * scale,
+                help: skipBackHelp,
+                action: onSkipBackward,
+            )
 
             Button(action: onPlayPause) {
                 Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.title)
+                    .font(.system(size: 32 * scale))
                     .foregroundStyle(playIcon)
-                    .frame(width: 72, height: 72)
+                    .frame(width: 72 * scale, height: 72 * scale)
                     .contentShape(Circle())
                     .background(Circle().fill(playFill))
             }
             .buttonStyle(.plain)
             .help("Play/pause")
 
-            Button(action: onSkipForward) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.title2.weight(.medium))
-                    .frame(width: 54, height: 54)
-                    .contentShape(Circle())
-                    .background(Circle().fill(controlFill))
-            }
-            .buttonStyle(.plain)
-            .help("Next sentence")
-
-            Button(action: onNextChapter) {
-                Image(systemName: "forward.end.fill")
-                    .font(.title3)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Circle())
-                    .background(Circle().fill(controlFill))
-            }
-            .buttonStyle(.plain)
-            .help("Next chapter")
-        }
-        .foregroundStyle(controlIcon)
-        .padding(.horizontal, 20)
-    }
-
-    private var secondaryControls: some View {
-        HStack(spacing: 32) {
-            if mode != .ebook {
-                PlaybackRateButton(
-                    currentRate: model.playbackRate,
-                    onRateChange: onPlaybackRateChange,
-                    backgroundColor: controlWash,
-                    foregroundColor: controlIcon,
-                    transparency: 1.0,
-                    showLabel: true,
-                )
-            }
-
-            ChaptersButton(
-                chapters: chapters,
-                selectedChapterId: progressData?.chapterId
-                    ?? progressData?.chapterLabel.flatMap { label in
-                        chapters.first(where: { $0.label == label })?.id
-                    },
-                onChapterSelected: onChapterSelected,
-                backgroundColor: controlWash,
-                foregroundColor: controlIcon,
-                transparency: 1.0,
-                showLabel: true,
+            transportButton(
+                icon: skipForwardIcon,
+                size: 54 * scale,
+                iconSize: 26 * scale,
+                help: skipForwardHelp,
+                action: onSkipForward,
             )
 
-            if mode != .ebook {
-                #if os(macOS)
-                VStack(spacing: 6) {
-                    Button(action: { showVolumePopover = true }) {
-                        Image(systemName: volumeIcon)
-                            .font(.callout.weight(.semibold))
-                            .foregroundStyle(controlIcon)
-                            .frame(width: 38, height: 38)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(controlFill)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .popover(isPresented: $showVolumePopover) {
-                        volumePopover
-                            .frame(minWidth: 200, maxWidth: 240)
-                    }
-
-                    Text("\(Int(model.volume * 100))%")
-                        .font(.footnote)
-                        .foregroundStyle(controlIcon.opacity(0.7))
-                }
-                #endif
-
-                sleepTimerButton
-            }
+            transportButton(
+                icon: "forward.end",
+                size: 44 * scale,
+                iconSize: 24 * scale,
+                help: "Next chapter",
+                action: onNextChapter,
+            )
         }
-        .padding(.horizontal, 20)
+        .foregroundStyle(controlIcon)
+        .padding(.horizontal, sectionPadding)
     }
 
-    @ViewBuilder
-    private var statsSection: some View {
+    private func transportButton(
+        icon: String,
+        size: CGFloat,
+        iconSize: CGFloat,
+        help: String,
+        action: @escaping () -> Void,
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: iconSize, weight: .regular))
+                .frame(width: size, height: size)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help(help)
+    }
+
+    private var skipBackIcon: String {
+        mode == .audiobook ? "gobackward.15" : "gobackward"
+    }
+
+    private var skipForwardIcon: String {
+        mode == .audiobook ? "goforward.15" : "goforward"
+    }
+
+    private var skipBackHelp: String {
+        mode == .audiobook ? "Skip back 15 seconds" : "Previous sentence"
+    }
+
+    private var skipForwardHelp: String {
+        mode == .audiobook ? "Skip forward 15 seconds" : "Next sentence"
+    }
+
+    private var selectedChapterId: String? {
+        progressData?.chapterId
+            ?? progressData?.chapterLabel.flatMap { label in
+                chapters.first(where: { $0.label == label })?.id
+            }
+    }
+
+    private var complicationDisplay: MiniPlayerDisplayModel {
         let data = progressData
         let bookFraction = data.flatMap { d in
             normalizedFraction(d.bookCurrentFraction)
@@ -461,239 +493,79 @@ public struct ReadingSidebarView: View {
                     total: d.bookTotalSecondsAudio,
                 )
         }
-        let pagesCurrent = data.flatMap { normalizedCurrentPage($0.chapterCurrentPage) }
-        let pagesTotal = data.flatMap { normalizedTotalPage($0.chapterTotalPages) }
-        let bookElapsedRaw = data.flatMap { normalizedSeconds($0.bookCurrentSecondsAudio) }
-        let bookTotalRaw = data.flatMap { normalizedSeconds($0.bookTotalSecondsAudio) }
-        let chapterElapsedRaw = data.flatMap { normalizedSeconds($0.chapterCurrentSecondsAudio) }
-        let chapterTotalRaw = data.flatMap { normalizedSeconds($0.chapterTotalSecondsAudio) }
-
         let bookRemaining = timeRemaining(
             atRate: model.playbackRate,
-            total: bookTotalRaw,
-            elapsed: bookElapsedRaw,
+            total: data.flatMap { normalizedSeconds($0.bookTotalSecondsAudio) },
+            elapsed: data.flatMap { normalizedSeconds($0.bookCurrentSecondsAudio) },
         )
-        let chapterRemaining = timeRemaining(
-            atRate: model.playbackRate,
-            total: chapterTotalRaw,
-            elapsed: chapterElapsedRaw,
+        return MiniPlayerDisplayModel(
+            bookTitle: model.title,
+            chapterTitle: model.chapterTitle,
+            authorName: model.author,
+            cover: nil,
+            isPlaying: model.isPlaying,
+            playbackRate: model.playbackRate,
+            volume: model.volume,
+            chapterProgress: min(max(chapterProgress, 0), 1),
+            chapterElapsedSeconds: data.flatMap { normalizedSeconds($0.chapterCurrentSecondsAudio) },
+            chapterTotalSeconds: data.flatMap { normalizedSeconds($0.chapterTotalSecondsAudio) },
+            bookTimeRemaining: bookRemaining,
+            bookFraction: bookFraction,
+            currentPage: data.flatMap { normalizedCurrentPage($0.chapterCurrentPage) },
+            totalPages: data.flatMap { normalizedTotalPage($0.chapterTotalPages) },
+            chapterIndex: chapters.firstIndex(where: { $0.id == selectedChapterId }),
+            chapterCount: chapters.isEmpty ? nil : chapters.count,
+            sleepTimerRemaining: model.sleepTimerActive ? model.sleepTimerRemaining : nil,
+            sleepTimerEndOfChapter: model.sleepTimerActive
+                && model.sleepTimerType == .endOfChapter,
+            chapters: chapters,
+            selectedChapterHref: selectedChapterId,
+            hasAudioNarration: mode != .ebook,
         )
-
-        let hasLeftStats =
-            bookFraction != nil || (pagesCurrent != nil && pagesTotal != nil && pagesTotal! > 0)
-        let hasRightStats = mode != .ebook
-
-        if hasLeftStats || hasRightStats {
-            HStack(alignment: .top) {
-                leftStatsColumn(
-                    bookFraction: bookFraction,
-                    pagesCurrent: pagesCurrent,
-                    pagesTotal: pagesTotal,
-                )
-                Spacer()
-                if hasRightStats {
-                    rightStatsColumn(
-                        bookRemaining: bookRemaining,
-                        chapterRemaining: chapterRemaining,
-                    )
-                }
-            }
-            .padding(.horizontal, 20)
-        }
     }
 
-    private func leftStatsColumn(bookFraction: Double?, pagesCurrent: Int?, pagesTotal: Int?)
-        -> some View
-    {
-        VStack(alignment: .leading, spacing: 4) {
-            if let fraction = bookFraction {
-                HStack(spacing: 6) {
-                    Image(systemName: "book.fill")
-                        .font(.footnote)
-                    Text(formatPercent(fraction))
-                        .font(.footnote.monospacedDigit())
-                }
-                .foregroundStyle(secondaryColor)
-            }
-
-            if let current = pagesCurrent, let total = pagesTotal, total > 0 {
-                HStack(spacing: 6) {
-                    Image(systemName: "bookmark.fill")
-                        .font(.footnote)
-                    Text("Page \(current) of \(total)")
-                        .font(.footnote.monospacedDigit())
-                }
-                .foregroundStyle(secondaryColor)
-            }
-        }
+    private var complicationActions: MiniPlayerActions {
+        MiniPlayerActions(
+            onPlayPause: onPlayPause,
+            onSkipBackward: onSkipBackward,
+            onSkipForward: onSkipForward,
+            onRateChange: onPlaybackRateChange,
+            onChapterSelected: onChapterSelected,
+            onOpenBookmarks: onOpenBookmarks ?? {},
+            onOpenReadingTimeline: onOpenReadingTimeline ?? {},
+            onOpenImageGallery: onOpenImageGallery ?? {},
+            onOpenSearch: onOpenSearch ?? {},
+            onOpenTextSettings: onOpenTextSettings ?? {},
+        )
     }
 
-    private func rightStatsColumn(bookRemaining: TimeInterval?, chapterRemaining: TimeInterval?)
-        -> some View
-    {
-        VStack(alignment: .trailing, spacing: 4) {
-            HStack(spacing: 6) {
-                Text(formatTimeHoursMinutes(bookRemaining))
-                    .font(.footnote.monospacedDigit())
-                Image(systemName: "book.fill")
-                    .font(.footnote)
-            }
-            .foregroundStyle(secondaryColor)
-
-            HStack(spacing: 6) {
-                Text(formatTimeMinutesSeconds(chapterRemaining))
-                    .font(.footnote.monospacedDigit())
-                Image(systemName: "bookmark.fill")
-                    .font(.footnote)
-            }
-            .foregroundStyle(secondaryColor)
-        }
+    private var secondaryControls: some View {
+        FullPlayerControlsRow(
+            availableWidth: contentWidth,
+            slots: controlSlots,
+            display: complicationDisplay,
+            actions: complicationActions,
+            accent: controlIcon,
+            fill: controlFill,
+            onOpenBookmarks: onOpenBookmarks,
+            onOpenReadingTimeline: onOpenReadingTimeline,
+            onOpenImageGallery: onOpenImageGallery,
+            onOpenSearch: onOpenSearch,
+            onOpenTextSettings: onOpenTextSettings,
+            onVolumeChange: onVolumeChange,
+            onSleepTimerStart: onSleepTimerStart,
+            onSleepTimerCancel: onSleepTimerCancel,
+        )
+        .padding(.horizontal, sectionPadding)
     }
 
-    private var volumePopover: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Volume")
-                .font(.headline)
-                .padding(.horizontal)
-                .padding(.top, 8)
-
-            VStack(spacing: 8) {
-                Slider(
-                    value: Binding(
-                        get: { model.volume },
-                        set: { newValue in
-                            onVolumeChange(newValue)
-                        },
-                    ),
-                    in: 0...1,
-                )
-                .padding(.horizontal)
-
-                Text("\(Int(model.volume * 100))%")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.bottom, 12)
-        }
-    }
-
-    private var sleepTimerButton: some View {
-        VStack(spacing: 6) {
-            Button(action: {
-                if model.sleepTimerActive {
-                    onSleepTimerCancel()
-                } else {
-                    showSleepTimerPopover = true
-                }
-            }) {
-                Image(systemName: model.sleepTimerActive ? "moon.zzz.fill" : "moon.zzz")
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(controlIcon)
-                    .frame(width: 38, height: 38)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(
-                                model.sleepTimerActive
-                                    ? sleepAccent.opacity(0.3)
-                                    : controlFill
-                            )
-                    )
-            }
-            .buttonStyle(.plain)
-            .popover(isPresented: $showSleepTimerPopover) {
-                sleepTimerPopover
-                    .frame(minWidth: 200, maxWidth: 240)
-            }
-
-            if let remaining = model.sleepTimerRemaining, model.sleepTimerActive {
-                if model.sleepTimerType == .endOfChapter {
-                    Text("End Ch.")
-                        .font(.footnote)
-                        .foregroundStyle(sleepAccent)
-                } else {
-                    Text(formatSleepTimerRemaining(remaining))
-                        .font(.footnote)
-                        .foregroundStyle(sleepAccent)
-                }
-            } else {
-                Text("Sleep")
-                    .font(.footnote)
-                    .foregroundStyle(controlIcon.opacity(0.7))
-            }
-        }
-    }
-
-    private var sleepTimerPopover: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Sleep Timer")
-                .font(.headline)
-                .padding(.horizontal)
-                .padding(.top, 8)
-
-            VStack(spacing: 4) {
-                sleepTimerOption(title: "10 minutes", duration: 10 * 60)
-                sleepTimerOption(title: "15 minutes", duration: 15 * 60)
-                sleepTimerOption(title: "30 minutes", duration: 30 * 60)
-                sleepTimerOption(title: "1 hour", duration: 60 * 60)
-
-                Divider()
-                    .padding(.horizontal)
-
-                sleepTimerOption(title: "At End of Chapter", duration: nil, type: .endOfChapter)
-            }
-            .padding(.bottom, 12)
-        }
-    }
-
-    private func sleepTimerOption(
-        title: String,
-        duration: TimeInterval?,
-        type: SleepTimerType = .duration,
-    )
-        -> some View
-    {
-        Button(action: {
-            onSleepTimerStart(duration, type)
-            showSleepTimerPopover = false
-        }) {
-            HStack {
-                Text(title)
-                    .font(.body)
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.primary)
-    }
-
-    private var volumeIcon: String {
-        if model.volume == 0 {
-            return "speaker.slash"
-        } else if model.volume < 0.33 {
-            return "speaker.wave.1"
-        } else if model.volume < 0.66 {
-            return "speaker.wave.2"
-        } else {
-            return "speaker.wave.3"
-        }
-    }
-
-    private func formatSleepTimerRemaining(_ time: TimeInterval) -> String {
-        let totalSeconds = max(Int(time.rounded()), 0)
-        let hours = totalSeconds / 3600
-        let minutes = (totalSeconds % 3600) / 60
-        let seconds = totalSeconds % 60
-
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        } else if minutes > 0 {
-            return String(format: "%d:%02d", minutes, seconds)
-        } else {
-            return String(format: "%ds", seconds)
-        }
+    private var statsSection: some View {
+        FullPlayerStatColumns(
+            slots: statSlots,
+            display: complicationDisplay,
+            tint: secondaryColor,
+        )
+        .padding(.horizontal, sectionPadding)
     }
 
     private var backgroundColor: Color {
@@ -706,43 +578,33 @@ public struct ReadingSidebarView: View {
     // instead or the two can disagree (e.g. white-on-white). Popover content is
     // excluded: popovers render on system backgrounds.
     private var primaryColor: Color {
-        foregroundColor ?? .primary
+        foregroundColor ?? palette?.controlTint(for: colorScheme) ?? .primary
     }
 
     private var secondaryColor: Color {
-        foregroundColor?.opacity(0.6) ?? .secondary
+        if let foregroundColor { return foregroundColor.opacity(0.6) }
+        if let palette { return palette.controlTint(for: colorScheme).opacity(0.62) }
+        return .secondary
     }
 
     private var resolvedPalette: CoverDerivedPalette? {
         palette?.resolved(for: colorScheme)
     }
 
-    private var accentColor: Color {
-        palette?.ratingAccent(for: colorScheme) ?? primaryColor
+    private var controlIcon: Color {
+        palette?.controlTint(for: colorScheme) ?? primaryColor
     }
 
     private var controlFill: Color {
-        accentColor.opacity(0.15)
-    }
-
-    private var controlIcon: Color {
-        accentColor
+        controlIcon.opacity(0.12)
     }
 
     private var playFill: Color {
-        palette != nil ? accentColor : secondaryColor.opacity(0.2)
+        palette != nil ? controlIcon : secondaryColor.opacity(0.2)
     }
 
     private var playIcon: Color {
         resolvedPalette?.contentBackground ?? primaryColor
-    }
-
-    private var controlWash: Color {
-        palette != nil ? accentColor : secondaryColor
-    }
-
-    private var sleepAccent: Color {
-        palette != nil ? accentColor : Color.accentColor
     }
 
     private var playbackRateDescription: String {

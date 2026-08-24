@@ -4,8 +4,17 @@ import SwiftUI
 struct DockCustomizeCard: View {
     @Bindable var settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.readerPalette) private var readerPalette
 
     @State private var selectedSlot: SlotRef?
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         CustomizeCardContainer(title: "Dock", onReset: resetToDefaults) {
@@ -97,6 +106,7 @@ struct DockCustomizeCard: View {
             } footer: {
                 Text("Opacity sets how solid the dock looks over the page.")
             }
+            .listRowBackground(paletteRowBackground)
 
             ProgressIndicatorSection(
                 settingsVM: settingsVM,

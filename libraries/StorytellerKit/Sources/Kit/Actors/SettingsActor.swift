@@ -10,6 +10,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
     public var playback: Playback
     public var readingBar: ReadingBar
     public var miniPlayer: MiniPlayer
+    public var fullPlayer: FullPlayer
     public var sync: Sync
     public var library: Library
     public var themes: Themes
@@ -19,6 +20,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         playback: Playback = Playback(),
         readingBar: ReadingBar = ReadingBar(),
         miniPlayer: MiniPlayer = MiniPlayer(),
+        fullPlayer: FullPlayer = FullPlayer(),
         sync: Sync = Sync(),
         library: Library = Library(),
         themes: Themes = Themes(),
@@ -27,6 +29,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         self.playback = playback
         self.readingBar = readingBar
         self.miniPlayer = miniPlayer
+        self.fullPlayer = fullPlayer
         self.sync = sync
         self.library = library
         self.themes = themes
@@ -46,13 +49,15 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             }
             miniPlayer = migrated
         }
+        fullPlayer =
+            (try? container.decode(FullPlayer.self, forKey: .fullPlayer)) ?? FullPlayer()
         sync = (try? container.decode(Sync.self, forKey: .sync)) ?? Sync()
         library = (try? container.decode(Library.self, forKey: .library)) ?? Library()
         themes = (try? container.decode(Themes.self, forKey: .themes)) ?? Themes()
     }
 
     private enum TopLevelCodingKeys: String, CodingKey {
-        case reading, playback, readingBar, miniPlayer, sync, library, themes
+        case reading, playback, readingBar, miniPlayer, fullPlayer, sync, library, themes
     }
 
     public struct Reading: Codable, Equatable, Sendable {
@@ -93,6 +98,9 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
         public var readaloudDimOthers: Bool
         public var readaloudDimAmount: Double
         public var readaloudHighlightFade: Double
+        public var coverStrengthBackground: Double
+        public var coverStrengthForeground: Double
+        public var coverStrengthHighlight: Double
         public var readaloudTextItalic: Bool
         public var readaloudTextBold: Bool
         public var readaloudUnderlineStyle: String
@@ -137,6 +145,9 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             readaloudDimOthers: Bool = kDefaultReadaloudDimOthers,
             readaloudDimAmount: Double = kDefaultReadaloudDimAmount,
             readaloudHighlightFade: Double = kDefaultReadaloudHighlightFade,
+            coverStrengthBackground: Double = kDefaultCoverTintStrength,
+            coverStrengthForeground: Double = kDefaultCoverTintStrength,
+            coverStrengthHighlight: Double = kDefaultCoverTintStrength,
             readaloudTextItalic: Bool = kDefaultReadaloudTextItalic,
             readaloudTextBold: Bool = kDefaultReadaloudTextBold,
             readaloudUnderlineStyle: String = kDefaultReadaloudUnderlineStyle,
@@ -184,6 +195,9 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             self.readaloudDimOthers = readaloudDimOthers
             self.readaloudDimAmount = readaloudDimAmount
             self.readaloudHighlightFade = readaloudHighlightFade
+            self.coverStrengthBackground = coverStrengthBackground
+            self.coverStrengthForeground = coverStrengthForeground
+            self.coverStrengthHighlight = coverStrengthHighlight
             self.readaloudTextItalic = readaloudTextItalic
             self.readaloudTextBold = readaloudTextBold
             self.readaloudUnderlineStyle = readaloudUnderlineStyle
@@ -320,6 +334,15 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             readaloudDimAmount =
                 (try? container?.decode(Double.self, forKey: .readaloudDimAmount))
                 ?? kDefaultReadaloudDimAmount
+            coverStrengthBackground =
+                (try? container?.decode(Double.self, forKey: .coverStrengthBackground))
+                ?? kDefaultCoverTintStrength
+            coverStrengthForeground =
+                (try? container?.decode(Double.self, forKey: .coverStrengthForeground))
+                ?? kDefaultCoverTintStrength
+            coverStrengthHighlight =
+                (try? container?.decode(Double.self, forKey: .coverStrengthHighlight))
+                ?? kDefaultCoverTintStrength
             readaloudHighlightFade =
                 (try? container?.decode(Double.self, forKey: .readaloudHighlightFade))
                 ?? kDefaultReadaloudHighlightFade
@@ -359,6 +382,7 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
             case userHighlightLabel4, userHighlightLabel5, userHighlightLabel6
             case userHighlightMode, readaloudHighlightMode, tvSubtitleFontSize
             case readaloudDimOthers, readaloudDimAmount, readaloudHighlightFade
+            case coverStrengthBackground, coverStrengthForeground, coverStrengthHighlight
             case readaloudTextItalic, readaloudTextBold, readaloudUnderlineStyle
             case tvReaderAppearance
         }
@@ -695,6 +719,39 @@ public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
 
         private enum LegacyCodingKeys: String, CodingKey {
             case scrubSlots, trailingSlots
+        }
+    }
+
+    public struct FullPlayer: Codable, Equatable, Sendable {
+        public var statSlots: [PlayerComplication]
+        public var controlSlots: [PlayerComplication]
+
+        public init(
+            statSlots: [PlayerComplication] = [
+                .statPercent, .none, .statTimeInBook,
+                .statPage, .none, .statTimeInChapter,
+            ],
+            controlSlots: [PlayerComplication] = [
+                .playbackSpeed, .chapters, .volume, .sleepTimer,
+            ],
+        ) {
+            self.statSlots = statSlots
+            self.controlSlots = controlSlots
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try? decoder.container(keyedBy: CodingKeys.self)
+            let defaults = FullPlayer()
+            statSlots =
+                (try? container?.decode([PlayerComplication].self, forKey: .statSlots))
+                ?? defaults.statSlots
+            controlSlots =
+                (try? container?.decode([PlayerComplication].self, forKey: .controlSlots))
+                ?? defaults.controlSlots
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case statSlots, controlSlots
         }
     }
 
@@ -1181,6 +1238,9 @@ public actor SettingsActor {
         readaloudDimOthers: Bool? = nil,
         readaloudDimAmount: Double? = nil,
         readaloudHighlightFade: Double? = nil,
+        coverStrengthBackground: Double? = nil,
+        coverStrengthForeground: Double? = nil,
+        coverStrengthHighlight: Double? = nil,
         readaloudTextItalic: Bool? = nil,
         readaloudTextBold: Bool? = nil,
         readaloudUnderlineStyle: String? = nil,
@@ -1195,6 +1255,8 @@ public actor SettingsActor {
         miniPlayerStatSlots: [PlayerComplication]? = nil,
         miniPlayerScrubRowSlots: [PlayerComplication]? = nil,
         miniPlayerExtraSlots: [PlayerComplication]? = nil,
+        fullPlayerStatSlots: [PlayerComplication]? = nil,
+        fullPlayerControlSlots: [PlayerComplication]? = nil,
         dockLeadingSlots: [PlayerComplication]? = nil,
         dockTrailingSlots: [PlayerComplication]? = nil,
         dockCenterSlots: [PlayerComplication]? = nil,
@@ -1321,6 +1383,15 @@ public actor SettingsActor {
         }
         if let readaloudDimOthers { updated.reading.readaloudDimOthers = readaloudDimOthers }
         if let readaloudDimAmount { updated.reading.readaloudDimAmount = readaloudDimAmount }
+        if let coverStrengthBackground {
+            updated.reading.coverStrengthBackground = coverStrengthBackground
+        }
+        if let coverStrengthForeground {
+            updated.reading.coverStrengthForeground = coverStrengthForeground
+        }
+        if let coverStrengthHighlight {
+            updated.reading.coverStrengthHighlight = coverStrengthHighlight
+        }
         if let readaloudHighlightFade {
             updated.reading.readaloudHighlightFade = readaloudHighlightFade
         }
@@ -1351,6 +1422,10 @@ public actor SettingsActor {
             updated.miniPlayer.scrubRowSlots = miniPlayerScrubRowSlots
         }
         if let miniPlayerExtraSlots { updated.miniPlayer.extraSlots = miniPlayerExtraSlots }
+        if let fullPlayerStatSlots { updated.fullPlayer.statSlots = fullPlayerStatSlots }
+        if let fullPlayerControlSlots {
+            updated.fullPlayer.controlSlots = fullPlayerControlSlots
+        }
         if let dockLeadingSlots {
             updated.readingBar.dockLeadingSlots = dockLeadingSlots
             updated.readingBar.showProgress = dockLeadingSlots.contains(.statPercent)

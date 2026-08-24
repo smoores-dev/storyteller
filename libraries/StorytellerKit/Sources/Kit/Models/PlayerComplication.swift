@@ -28,6 +28,7 @@ public enum PlayerComplication: String, Codable, CaseIterable, Equatable, Sendab
     case search
     case textSettings
     case sleepTimer
+    case volume
     case titleBlock
     case mirror
     case scrollMode
@@ -38,7 +39,7 @@ public enum PlayerComplication: String, Codable, CaseIterable, Equatable, Sendab
         switch self {
             case .playPause, .skipBackward, .skipForward, .playbackSpeed, .scrubBar,
                 .statTimeInBook, .statTimeInChapter, .statChapterElapsed, .statChapterLength,
-                .statSleepTimer, .statFinishTime, .sleepTimer, .freeBrowseLock:
+                .statSleepTimer, .statFinishTime, .sleepTimer, .volume, .freeBrowseLock:
                 return true
             case .none, .statPercent, .statPage, .statPagesLeft, .statChapterOf,
                 .statChapterPercent, .statSessionTime, .statClock, .statBattery,
@@ -84,6 +85,7 @@ public enum PlayerComplication: String, Codable, CaseIterable, Equatable, Sendab
             case .search: return "Search"
             case .textSettings: return "Text Settings"
             case .sleepTimer: return "Sleep Timer Button"
+            case .volume: return "Volume"
             case .titleBlock: return "Title Block"
             case .mirror: return "Swap Hands"
             case .scrollMode: return "Page/Scroll"

@@ -50,6 +50,9 @@ final class HeadlessReaderSettings: ReaderSettingsReading {
     var readaloudDimOthers: Bool { false }
     var readaloudDimAmount: Double { kDefaultReadaloudDimAmount }
     var readaloudHighlightFade: Double { kDefaultReadaloudHighlightFade }
+    var coverStrengthBackground: Double { kDefaultCoverTintStrength }
+    var coverStrengthForeground: Double { kDefaultCoverTintStrength }
+    var coverStrengthHighlight: Double { kDefaultCoverTintStrength }
     var readaloudTextItalic: Bool { kDefaultReadaloudTextItalic }
     var readaloudTextBold: Bool { kDefaultReadaloudTextBold }
     var readaloudUnderlineStyle: String { kDefaultReadaloudUnderlineStyle }

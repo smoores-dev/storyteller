@@ -16,7 +16,6 @@ enum EbookSidebarTab: String, CaseIterable {
 }
 
 struct EbookSidebarTheme {
-    let background: Color
     let foreground: Color
     let accent: Color
 
@@ -71,7 +70,6 @@ struct EbookSidebarView: View {
                 quickBookSwitcher
             }
         }
-        .background(theme.background)
         .onAppear { sidebarModel.startObservingVisits() }
         .onDisappear { sidebarModel.stopObservingVisits() }
     }
@@ -86,6 +84,8 @@ struct EbookSidebarView: View {
                         .font(.subheadline)
                         .fontWeight(selectedTab == tab ? .semibold : .regular)
                         .foregroundStyle(selectedTab == tab ? theme.foreground : theme.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .frame(maxWidth: .infinity)

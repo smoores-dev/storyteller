@@ -2,9 +2,12 @@ package dev.smoores.storyteller.ui
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.smoores.storyteller.bridge.AndroidBridgeCallbacks
+import dev.smoores.storyteller.bridge.CoverResolutionStatus
 import dev.smoores.storyteller.bridge.StorytellerBridgeClient
 import dev.smoores.storyteller.data.BrowserLoginStore
 import dev.smoores.storyteller.data.LastOpenBookRoute
@@ -13,6 +16,7 @@ import dev.smoores.storyteller.model.AlignmentOverrideState
 import dev.smoores.storyteller.model.AppSettings
 import dev.smoores.storyteller.model.AudiobookPlayerState
 import dev.smoores.storyteller.model.BookAlignmentReport
+import dev.smoores.storyteller.model.FullPlayerCustomization
 import dev.smoores.storyteller.model.SessionKind
 import dev.smoores.storyteller.model.SessionState
 import dev.smoores.storyteller.model.Book
@@ -86,6 +90,7 @@ class StorytellerViewModel private constructor(
     private val refreshMutex = Mutex()
     private val audiobookMutex = Mutex()
     private val libraryChanges = Channel<Unit>(Channel.CONFLATED)
+    private val coverColorRequests = Channel<Triple<String, String, Boolean>>(Channel.UNLIMITED)
     private var currentAudiobookID: BookID? = null
     private var audiobookRequest = 0L
     private var currentReaderKey: Pair<BookID, String>? = null
@@ -94,6 +99,15 @@ class StorytellerViewModel private constructor(
     private val bookDetailsLoading = mutableSetOf<BookID>()
 
     init {
+        AndroidBridgeCallbacks.observeCoverColorsNeeded(this) { bookID, sourceID, audio ->
+            coverColorRequests.trySend(Triple(bookID, sourceID, audio))
+        }
+        viewModelScope.launch {
+            for ((bookID, sourceID, audio) in coverColorRequests) {
+                runCatching { client.deriveCoverColors(bookID, sourceID, "", audio) }
+                    .onFailure { Log.w("CoverColors", "eager derivation failed", it) }
+            }
+        }
         client.observeAudiobookChanges { audiobook ->
             mutableState.value = mutableState.value.copy(audiobook = audiobook)
         }
@@ -190,6 +204,9 @@ class StorytellerViewModel private constructor(
 
     suspend fun liveSyncStatus(): LiveSyncStatus = client.liveSyncStatus()
 
+    suspend fun fullPlayerCustomization(): FullPlayerCustomization =
+        client.fullPlayerCustomization()
+
     suspend fun debugLog(): DebugLogState = client.debugLog()
 
     suspend fun clearDebugLog() = client.clearDebugLog()
@@ -221,6 +238,9 @@ class StorytellerViewModel private constructor(
     ): IdentifierType = client.createIdentifierType(sourceID, name, urlTemplate)
 
     suspend fun ratingContext(book: Book): RatingContext = client.bookRatingContext(book)
+
+    suspend fun prioritizeCovers(book: Book): CoverResolutionStatus =
+        client.prioritizeBookCovers(book)
 
     suspend fun saveRating(book: Book, draft: RatingDraft): RatingSaveResult =
         client.saveBookRating(book, draft)

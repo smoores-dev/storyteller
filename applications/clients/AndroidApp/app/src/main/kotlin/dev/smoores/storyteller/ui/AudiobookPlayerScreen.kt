@@ -2,16 +2,15 @@ package dev.smoores.storyteller.ui
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -54,12 +53,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -67,10 +68,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -84,6 +84,8 @@ import androidx.media3.common.Player
 import dev.smoores.storyteller.model.AudiobookChapter
 import dev.smoores.storyteller.model.AudiobookPlayerState
 import dev.smoores.storyteller.model.Book
+import dev.smoores.storyteller.model.FullPlayerCustomization
+import dev.smoores.storyteller.model.PlayerComplication
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -110,8 +112,18 @@ internal fun AudiobookPlayerScreen(
     cancelSleepTimer: () -> Unit,
     acceptServerPosition: () -> Unit,
     declineServerPosition: () -> Unit,
+    coverRevision: Int,
+    cover: suspend (Book, Boolean, Int, Int) -> Bitmap?,
+    cachedCover: (Book, Boolean) -> Bitmap?,
+    loadFullPlayerCustomization: suspend () -> FullPlayerCustomization = {
+        FullPlayerCustomization()
+    },
 ) {
     var artwork by remember(player) { mutableStateOf(player.mediaMetadata.artworkData) }
+    val fullPlayer by produceState(FullPlayerCustomization(), book.id) {
+        value = runCatching { loadFullPlayerCustomization() }
+            .getOrDefault(FullPlayerCustomization())
+    }
     var scrubbedProgress by remember(book.id) { mutableStateOf<Double?>(null) }
     var pendingSeekProgress by remember(book.id) { mutableStateOf<Double?>(null) }
     var showSpeed by remember { mutableStateOf(false) }
@@ -217,12 +229,10 @@ internal fun AudiobookPlayerScreen(
     val coverBitmap = remember(artwork) {
         artwork?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
     }
-    val palette = remember(coverBitmap, darkTheme, CoverColorSettings.key) {
-        coverBackgroundPalette(coverBitmap, darkTheme)
-    }
+    val palette = rememberCoverBackgroundPalette(coverBitmap, darkTheme, book = book, audio = true)
 
     Box(
-        modifier.fillMaxSize().background(palette.contentBackground),
+        modifier.fillMaxSize().background(palette.playerGradient),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
@@ -233,7 +243,16 @@ internal fun AudiobookPlayerScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            CoverArtwork(coverBitmap, book.title)
+            SwappablePlayerCover(
+                book = book,
+                coverRevision = coverRevision,
+                cover = cover,
+                cachedCover = cachedCover,
+                modifier = Modifier
+                    .widthIn(max = 400.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
+            )
             Spacer(Modifier.height(20.dp))
             Text(
                 state?.title ?: book.title,
@@ -248,6 +267,7 @@ internal fun AudiobookPlayerScreen(
                 PlayerControls(
                     state = state,
                     palette = palette,
+                    statSlots = fullPlayer.statSlots,
                     scrubbedProgress = scrubbedProgress ?: pendingSeekProgress,
                     updateScrubbedProgress = { scrubbedProgress = it },
                     finishScrubbing = {
@@ -264,89 +284,63 @@ internal fun AudiobookPlayerScreen(
                     nextChapter = nextChapter,
                 )
 
-                Row(
-                    Modifier.fillMaxWidth().padding(top = 24.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    SecondaryControl(
-                        icon = Icons.Filled.Speed,
-                        label = formatPlaybackRate(state.playbackRate),
-                        contentDescription = "Playback speed",
-                        onClick = { showSpeed = true },
-                        palette = palette,
-                        modifier = Modifier.weight(1f),
-                    )
-                    SecondaryControl(
-                        icon = Icons.AutoMirrored.Filled.List,
-                        label = "Chapters",
-                        contentDescription = "Chapters",
-                        onClick = { showChapters = true },
-                        palette = palette,
-                        modifier = Modifier.weight(1f),
-                    )
-                    SecondaryControl(
-                        icon = volumeIcon(state.volume),
-                        label = "${(state.volume * 100).roundToInt()}%",
-                        contentDescription = "Volume",
-                        onClick = { showVolume = true },
-                        palette = palette,
-                        modifier = Modifier.weight(1f),
-                    )
-                    SecondaryControl(
-                        icon = Icons.Filled.Bedtime,
-                        label = sleepTimerLabel(state),
-                        contentDescription = "Sleep timer",
-                        onClick = {
+                FullPlayerControlRow(
+                    slots = fullPlayer.controlSlots,
+                    display = audiobookDisplayModel(state),
+                    palette = palette,
+                    sleepLabel = sleepTimerLabel(state),
+                    sleepActive = state.sleepTimerMode != null,
+                    callbacks = FullPlayerControlCallbacks(
+                        onSpeed = { showSpeed = true },
+                        onChapters = { showChapters = true },
+                        onVolume = { showVolume = true },
+                        onSleepTimer = {
                             if (state.sleepTimerMode == null) {
                                 showSleepTimer = true
                             } else {
                                 cancelSleepTimer()
                             }
                         },
-                        palette = palette,
-                        active = state.sleepTimerMode != null,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CoverArtwork(artwork: Bitmap?, title: String) {
-    val image = remember(artwork) { artwork?.asImageBitmap() }
-    Surface(
-        modifier = Modifier.size(280.dp).aspectRatio(1f),
-        shape = RoundedCornerShape(16.dp),
-        tonalElevation = 3.dp,
-        shadowElevation = 6.dp,
-    ) {
-        if (image != null) {
-            Image(
-                bitmap = image,
-                contentDescription = "$title cover",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(24.dp),
+                    ),
+                    modifier = Modifier.padding(top = 24.dp),
                 )
             }
         }
     }
 }
 
+private fun audiobookDisplayModel(
+    state: AudiobookPlayerState,
+    elapsedOverride: Double? = null,
+): PlayerDisplayModel {
+    val playbackRate = state.playbackRate.coerceAtLeast(0.01)
+    return PlayerDisplayModel(
+        bookTitle = state.title,
+        chapterTitle = state.currentChapterIndex
+            ?.let { state.chapters.getOrNull(it)?.title },
+        isPlaying = state.isPlaying,
+        playbackRate = state.playbackRate,
+        volume = state.volume,
+        chapterProgress = state.chapterProgress.coerceIn(0.0, 1.0),
+        chapterElapsedSeconds = elapsedOverride ?: state.chapterElapsed,
+        chapterTotalSeconds = state.chapterDuration,
+        bookTimeRemaining = (state.duration - state.currentTime).coerceAtLeast(0.0) /
+            playbackRate,
+        bookFraction = state.bookProgress,
+        chapterIndex = state.currentChapterIndex,
+        chapterCount = state.chapters.size,
+        sleepTimerRemaining = state.sleepTimerRemaining
+            ?.takeIf { state.sleepTimerMode == "duration" },
+        sleepTimerEndOfChapter = state.sleepTimerMode == "endOfChapter",
+        hasAudioNarration = true,
+    )
+}
+
 @Composable
 private fun PlayerControls(
     state: AudiobookPlayerState,
     palette: CoverBackgroundPalette,
+    statSlots: List<PlayerComplication>,
     scrubbedProgress: Double?,
     updateScrubbedProgress: (Double) -> Unit,
     finishScrubbing: () -> Unit,
@@ -372,9 +366,9 @@ private fun PlayerControls(
         onValueChangeFinished = finishScrubbing,
         valueRange = 0f..1f,
         colors = SliderDefaults.colors(
-            thumbColor = palette.ratingAccent,
-            activeTrackColor = palette.ratingAccent,
-            inactiveTrackColor = palette.accentTrack,
+            thumbColor = palette.controlTint,
+            activeTrackColor = palette.controlTint,
+            inactiveTrackColor = palette.controlTint.copy(alpha = 0.3f),
         ),
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
     )
@@ -449,38 +443,12 @@ private fun PlayerControls(
         )
     }
 
-    Row(
-        Modifier.fillMaxWidth().padding(top = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top,
-    ) {
-        StatRow(
-            icon = Icons.Filled.AutoStories,
-            text = "${(state.bookProgress * 100).roundToInt()}%",
-            contentDescription = "Book progress",
-        )
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            StatRow(
-                icon = Icons.Filled.AutoStories,
-                text = formatTimeHoursMinutes(
-                    (state.duration - state.currentTime) / playbackRate
-                ),
-                contentDescription = "Book time remaining",
-                iconAfterText = true,
-            )
-            StatRow(
-                icon = Icons.Filled.Bookmark,
-                text = formatTimeMinutesSeconds(
-                    (state.chapterDuration - displayedElapsed) / playbackRate
-                ),
-                contentDescription = "Chapter time remaining",
-                iconAfterText = true,
-            )
-        }
-    }
+    FullPlayerStatSlots(
+        slots = statSlots,
+        display = audiobookDisplayModel(state, elapsedOverride = displayedElapsed),
+        tint = LocalContentColor.current,
+        modifier = Modifier.padding(top = 20.dp),
+    )
 }
 
 @Composable
@@ -493,7 +461,7 @@ internal fun SecondaryControl(
     modifier: Modifier = Modifier,
     active: Boolean = false,
 ) {
-    val accent = palette.ratingAccent
+    val accent = palette.controlTint
     Column(
         modifier = modifier
             .clickable(role = Role.Button, onClick = onClick)
@@ -504,7 +472,7 @@ internal fun SecondaryControl(
         Surface(
             modifier = Modifier.size(52.dp),
             shape = RoundedCornerShape(14.dp),
-            color = accent.copy(alpha = if (active) 0.3f else 0.15f),
+            color = accent.copy(alpha = if (active) 0.3f else 0.12f),
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Icon(icon, contentDescription, tint = accent, modifier = Modifier.size(26.dp))
@@ -531,12 +499,12 @@ internal fun TransportButton(
     primary: Boolean = false,
     mirrored: Boolean = false,
 ) {
-    val accent = palette.ratingAccent
+    val accent = palette.controlTint
     Surface(
         onClick = onClick,
         modifier = modifier.size(size),
         shape = CircleShape,
-        color = if (primary) accent else accent.copy(alpha = 0.15f),
+        color = if (primary) accent else Color.Transparent,
         contentColor = if (primary) palette.contentBackground else accent,
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -547,27 +515,6 @@ internal fun TransportButton(
                     .size(iconSize)
                     .graphicsLayer { if (mirrored) scaleX = -1f },
             )
-        }
-    }
-}
-
-@Composable
-private fun StatRow(
-    icon: ImageVector,
-    text: String,
-    contentDescription: String,
-    iconAfterText: Boolean = false,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (!iconAfterText) {
-            Icon(icon, contentDescription, modifier = Modifier.size(18.dp))
-        }
-        Text(text, style = MaterialTheme.typography.bodyMedium)
-        if (iconAfterText) {
-            Icon(icon, contentDescription, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -859,18 +806,3 @@ internal fun formatPlaybackTime(seconds: Double): String {
     }
 }
 
-private fun formatTimeHoursMinutes(seconds: Double): String {
-    val totalSeconds = seconds.takeIf(Double::isFinite)?.coerceAtLeast(0.0)?.roundToInt()
-        ?: return "—h—m"
-    val hours = totalSeconds / 3_600
-    val minutes = totalSeconds % 3_600 / 60
-    return "${hours}h${minutes}m"
-}
-
-private fun formatTimeMinutesSeconds(seconds: Double): String {
-    val totalSeconds = seconds.takeIf(Double::isFinite)?.coerceAtLeast(0.0)?.roundToInt()
-        ?: return "—m—s"
-    val minutes = totalSeconds / 60
-    val remainder = totalSeconds % 60
-    return "${minutes}m${remainder}s"
-}

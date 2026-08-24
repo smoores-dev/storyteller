@@ -81,6 +81,7 @@ struct iOSBookDetailView: View {
         }
         .onAppear {
             selectedStatusName = currentItem.status?.name
+            mediaViewModel.prioritizeFullCovers(for: currentItem)
         }
         .onChange(of: currentItem.status?.name) { _, newValue in
             selectedStatusName = newValue

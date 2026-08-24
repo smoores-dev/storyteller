@@ -30,6 +30,8 @@ struct EbookPlayerMenuBar: View {
 
     @Binding var customizeCard: CustomizeCard?
 
+    var coverPalette: CoverDerivedPalette? = nil
+
     private var isPad: Bool {
         #if os(iOS)
         UIDevice.current.userInterfaceIdiom == .pad
@@ -129,6 +131,7 @@ struct EbookPlayerMenuBar: View {
                             settingsVM: settingsVM,
                             hasAudioNarration: display.hasAudioNarration,
                         )
+                        .readerPaletteSurface(coverPalette)
                     }
                     #endif
                 }
@@ -159,6 +162,8 @@ struct EbookPlayerMenuBar: View {
                             showSearchSheet = false
                         },
                     )
+                    .readerPaletteSurface(coverPalette)
+                    .readerPaletteNavigationBar(coverPalette, colorScheme: colorScheme)
                     .navigationTitle("Search")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -200,6 +205,8 @@ struct SleepTimerSheet: View {
     let sleepTimerType: SleepTimerType?
     let onStart: (TimeInterval?, SleepTimerType) -> Void
     let onDone: () -> Void
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
@@ -210,6 +217,7 @@ struct SleepTimerSheet: View {
                     sleepTimerOption(title: "30 minutes", duration: 30 * 60)
                     sleepTimerOption(title: "1 hour", duration: 60 * 60)
                 }
+                .listRowBackground(paletteRowBackground)
 
                 Section {
                     sleepTimerOption(
@@ -218,7 +226,10 @@ struct SleepTimerSheet: View {
                         type: .endOfChapter,
                     )
                 }
+                .listRowBackground(paletteRowBackground)
             }
+            .readerPaletteModalSurface(readerPalette)
+            .readerPaletteNavigationBar(readerPalette, colorScheme: colorScheme)
             .navigationTitle("Sleep Timer")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -235,6 +246,14 @@ struct SleepTimerSheet: View {
         .presentationDetents([.medium])
         #else
         .frame(width: 320, height: 360)
+        #endif
+    }
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
         #endif
     }
 
@@ -306,6 +325,11 @@ struct CustomizeMenuContent: View {
                     systemImage: "rectangle.bottomhalf.inset.filled",
                 )
             }
+            Button {
+                customizeCard = .fullPlayer
+            } label: {
+                Label("Full Player", systemImage: "play.square.stack")
+            }
         }
         #if os(macOS)
         Section {
@@ -355,6 +379,8 @@ struct CustomizeCardView: View {
             #endif
             case .dock:
                 DockCustomizeCard(settingsVM: settingsVM)
+            case .fullPlayer:
+                FullPlayerCustomizeCard(settingsVM: settingsVM)
             case .theme:
                 ThemeCustomizeCard(settingsVM: settingsVM)
         }

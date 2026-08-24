@@ -23,6 +23,10 @@ public final class SettingsViewModel {
     public var textAlignment: String = kDefaultTextAlignment
     public var highlightColor: String? = nil
     public var highlightThickness: Double = kDefaultHighlightThickness
+    public var coverTone: CoverHSB? = nil
+    public var coverStrengthBackground: Double = kDefaultCoverTintStrength
+    public var coverStrengthForeground: Double = kDefaultCoverTintStrength
+    public var coverStrengthHighlight: Double = kDefaultCoverTintStrength
     public var backgroundColor: String? = nil
     public var foregroundColor: String? = nil
     public var customCSS: String? = nil
@@ -107,6 +111,11 @@ public final class SettingsViewModel {
         )
     }
     #endif
+
+    public var fullPlayerStatSlots: [PlayerComplication] =
+        StorytellerGlobalConfig.FullPlayer().statSlots
+    public var fullPlayerControlSlots: [PlayerComplication] =
+        StorytellerGlobalConfig.FullPlayer().controlSlots
 
     public var dockLeadingSlots: [PlayerComplication] = [.statPercent, .statPage]
     public var dockTrailingSlots: [PlayerComplication] = [
@@ -225,6 +234,9 @@ public final class SettingsViewModel {
         textAlignment = config.reading.textAlignment
         highlightColor = config.reading.highlightColor
         highlightThickness = config.reading.highlightThickness
+        coverStrengthBackground = config.reading.coverStrengthBackground
+        coverStrengthForeground = config.reading.coverStrengthForeground
+        coverStrengthHighlight = config.reading.coverStrengthHighlight
         backgroundColor = config.reading.backgroundColor
         foregroundColor = config.reading.foregroundColor
         customCSS = config.reading.customCSS
@@ -278,6 +290,8 @@ public final class SettingsViewModel {
         dockTrailingSlots = config.readingBar.dockTrailingSlots
         dockCenterSlots = config.readingBar.dockCenterSlots
         menuBarSlots = config.readingBar.menuBarSlots
+        fullPlayerStatSlots = config.fullPlayer.statSlots
+        fullPlayerControlSlots = config.fullPlayer.controlSlots
 
         progressSyncIntervalSeconds = config.sync.progressSyncIntervalSeconds
         metadataRefreshIntervalSeconds = config.sync.metadataRefreshIntervalSeconds
@@ -394,6 +408,9 @@ public final class SettingsViewModel {
     }
 
     public func applyThemeValues(_ theme: ReaderTheme) {
+        coverStrengthBackground = theme.coverStrengthBackground
+        coverStrengthForeground = theme.coverStrengthForeground
+        coverStrengthHighlight = theme.coverStrengthHighlight
         backgroundColor = theme.backgroundColor
         foregroundColor = theme.foregroundColor
         highlightColor = theme.highlightColor
@@ -561,6 +578,9 @@ public final class SettingsViewModel {
             readaloudDimOthers: readaloudDimOthers,
             readaloudDimAmount: readaloudDimAmount,
             readaloudHighlightFade: readaloudHighlightFade,
+            coverStrengthBackground: coverStrengthBackground,
+            coverStrengthForeground: coverStrengthForeground,
+            coverStrengthHighlight: coverStrengthHighlight,
             readaloudTextItalic: readaloudTextItalic,
             readaloudTextBold: readaloudTextBold,
             readaloudUnderlineStyle: readaloudUnderlineStyle,
@@ -575,6 +595,8 @@ public final class SettingsViewModel {
             miniPlayerStatSlots: miniPlayerStatSlotsValue,
             miniPlayerScrubRowSlots: miniPlayerScrubRowSlotsValue,
             miniPlayerExtraSlots: miniPlayerExtraSlotsValue,
+            fullPlayerStatSlots: fullPlayerStatSlots,
+            fullPlayerControlSlots: fullPlayerControlSlots,
             dockLeadingSlots: dockLeadingSlotsValue,
             dockTrailingSlots: dockTrailingSlotsValue,
             dockCenterSlots: dockCenterSlotsValue,
@@ -687,6 +709,26 @@ public final class SettingsViewModel {
 extension SettingsViewModel: ReaderSettingsReading {}
 
 extension SettingsViewModel {
+    public func coverStrength(for role: CoverReaderChrome.Role) -> Double {
+        switch role {
+            case .background: coverStrengthBackground
+            case .foreground: coverStrengthForeground
+            case .highlight: coverStrengthHighlight
+        }
+    }
+
+    public func themeHex(_ raw: String?, role: CoverReaderChrome.Role, for colorScheme: ColorScheme)
+        -> String?
+    {
+        CoverReaderChrome.resolvedHex(
+            raw,
+            role: role,
+            tone: coverTone,
+            dark: colorScheme == .dark,
+            strength: coverStrength(for: role),
+        )
+    }
+
     public func pageBackground(for colorScheme: ColorScheme) -> Color {
         if let hex = backgroundColor, let color = Color(hex: hex) {
             return color

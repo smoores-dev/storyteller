@@ -1,5 +1,5 @@
 {
-  "originHash" : "74b020096f95961173e5b8255b211d34d0b2609f8d295bd2f103b3ad6ae82a6b",
+  "originHash" : "261d90b8ea6e0c5ab0389c439ca7f0d2611690dbf06c75e5cbc17fe130ecdc84",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -40,10 +40,10 @@
     {
       "identity" : "storyalign",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/kyonifer/StoryAlign.git",
+      "location" : "https://codeberg.org/richwaters/StoryAlign.git",
       "state" : {
-        "revision" : "291897191cbdb69dbba163c976a3bcc50aa27ca0",
-        "version" : "1.2.4"
+        "revision" : "7b98e371757a94086fe3c87e5518dd373078111e",
+        "version" : "1.2.5"
       }
     },
     {

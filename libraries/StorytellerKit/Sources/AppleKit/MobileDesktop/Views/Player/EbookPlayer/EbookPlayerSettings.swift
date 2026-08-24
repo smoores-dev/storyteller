@@ -5,11 +5,20 @@ import UniformTypeIdentifiers
 struct EbookPlayerSettings: View {
     @Bindable var settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.readerPalette) private var readerPalette
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     @State private var fontSizeInput: String = "20"
     @State private var customFamilies: [CustomFontFamily] = []
     @State private var showFontManager = false
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         CustomizeCardContainer(title: "Text & Layout", onReset: resetToDefaults) {
@@ -23,8 +32,11 @@ struct EbookPlayerSettings: View {
 
                 List {
                     fontSection
+                        .listRowBackground(paletteRowBackground)
                     alignmentAndSpacingSection
+                        .listRowBackground(paletteRowBackground)
                     pageAnimationsSection
+                        .listRowBackground(paletteRowBackground)
                 }
             }
         }
@@ -330,10 +342,8 @@ struct EbookPlayerSettings: View {
     }
 }
 
-/// Fixed-height sample page rendering the current text settings: font, size,
-/// spacing, alignment, and margins, on the active theme's page colors. Sized in
-/// screen points, so it slightly overstates the reader's CSS-pixel sizing but
-/// tracks every change proportionally.
+/// Fixed-height sample page rendering the current text settings through a
+/// webview with the reader's own CSS and fonts.
 private struct TextSettingsPreviewPane: View {
     let settingsVM: SettingsViewModel
     @Environment(\.colorScheme) private var colorScheme
@@ -351,25 +361,15 @@ private struct TextSettingsPreviewPane: View {
         + "sun and air."
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack(
-                alignment: settingsVM.textAlignment == "right" ? .trailing : .leading,
-                spacing: paragraphGap,
-            ) {
-                Text(attributed(Self.sample))
-                Text(attributed(Self.sampleContinuation))
-            }
-            .font(previewFont)
-            .lineSpacing(extraLineSpacing)
-            .multilineTextAlignment(settingsVM.textAlignment == "right" ? .trailing : .leading)
-            .foregroundStyle(pageForeground)
-            .frame(
-                maxWidth: .infinity,
-                alignment: settingsVM.textAlignment == "right" ? .trailing : .leading,
-            )
-            .padding(.horizontal, geometry.size.width * settingsVM.marginLeftRight / 100)
-            .padding(.top, 10 + geometry.size.height * settingsVM.marginTop / 100)
-        }
+        TextPreviewWebView(
+            fontFamily: settingsVM.fontFamily,
+            html: textPreviewHTML(
+                settingsVM: settingsVM,
+                backgroundHex: pageBackgroundHex,
+                foregroundHex: pageForegroundHex,
+                samples: [Self.sample, Self.sampleContinuation],
+            ),
+        )
         .frame(height: 170)
         .background(pageBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -379,72 +379,17 @@ private struct TextSettingsPreviewPane: View {
         )
     }
 
-    private var previewFont: Font {
-        let size = settingsVM.fontSize
-        switch settingsVM.fontFamily {
-            case "System Default", "serif":
-                return .system(size: size, design: .serif)
-            case "sans-serif":
-                return .system(size: size)
-            case "monospace":
-                return .system(size: size, design: .monospaced)
-            default:
-                let family = settingsVM.fontFamily
-                #if os(iOS)
-                let familyExists =
-                    UIFont(name: family, size: size) != nil
-                    || !UIFont.fontNames(forFamilyName: family).isEmpty
-                #else
-                let familyExists =
-                    NSFont(name: family, size: size) != nil
-                    || NSFontManager.shared.availableMembers(ofFontFamily: family)?.isEmpty
-                        == false
-                #endif
-                if familyExists {
-                    return .custom(family, size: size)
-                }
-                return .system(size: size, design: .serif)
-        }
+    private var pageBackgroundHex: String {
+        settingsVM.backgroundColor
+            ?? (colorScheme == .dark ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight)
     }
 
-    // SwiftUI lineSpacing adds to the natural line height (~1.2em); the
-    // reader's setting is a CSS line-height multiplier of the font size.
-    private var extraLineSpacing: CGFloat {
-        max(0, (settingsVM.lineSpacing - 1.2) * settingsVM.fontSize)
-    }
-
-    private var paragraphGap: CGFloat {
-        (settingsVM.paragraphSpacing > 0 ? settingsVM.paragraphSpacing : 1.0)
-            * settingsVM.fontSize
-    }
-
-    private func attributed(_ text: String) -> AttributedString {
-        var sample = AttributedString(text)
-        let letterKern = settingsVM.letterSpacing * settingsVM.fontSize
-        let wordKern = settingsVM.wordSpacing * settingsVM.fontSize
-        sample.kern = letterKern
-        if wordKern != 0 {
-            var index = sample.startIndex
-            while index < sample.endIndex {
-                let next = sample.index(afterCharacter: index)
-                if sample.characters[index] == " " {
-                    sample[index..<next].kern = letterKern + wordKern
-                }
-                index = next
-            }
-        }
-        if settingsVM.firstLineIndent {
-            // SwiftUI Text ignores NSParagraphStyle and CoreText drops
-            // zero-width glyphs with their kern; the space is ~0.25em itself.
-            var indent = AttributedString(" ")
-            indent.kern = 1.15 * settingsVM.fontSize
-            sample.insert(indent, at: sample.startIndex)
-        }
-        return sample
+    private var pageForegroundHex: String {
+        settingsVM.foregroundColor
+            ?? (colorScheme == .dark ? kDefaultForegroundColorDark : kDefaultForegroundColorLight)
     }
 
     private var pageBackground: Color { settingsVM.pageBackground(for: colorScheme) }
-    private var pageForeground: Color { settingsVM.pageForeground(for: colorScheme) }
 }
 
 private struct FontManagerView: View {
@@ -452,7 +397,17 @@ private struct FontManagerView: View {
     @Binding var selectedFont: String
     let onSave: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.readerPalette) private var readerPalette
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showFontImporter = false
+
+    private var paletteRowBackground: Color? {
+        #if os(macOS)
+        return nil
+        #else
+        return readerPalette.map { $0.resolved(for: colorScheme).cardBackground }
+        #endif
+    }
 
     var body: some View {
         NavigationStack {
@@ -485,6 +440,7 @@ private struct FontManagerView: View {
                         }
                     }
                 }
+                .listRowBackground(paletteRowBackground)
 
                 Section("Custom Fonts") {
                     if customFamilies.isEmpty {
@@ -553,7 +509,10 @@ private struct FontManagerView: View {
                         }
                     }
                 }
+                .listRowBackground(paletteRowBackground)
             }
+            .readerPaletteModalSurface(readerPalette)
+            .readerPaletteNavigationBar(readerPalette, colorScheme: colorScheme)
             .navigationTitle("Manage Fonts")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
