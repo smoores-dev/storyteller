@@ -164,7 +164,7 @@ struct MiniPlayerSlotRow: View {
 
     private func cell(_ comp: PlayerComplication, index: Int, position: Int) -> some View {
         content(comp, position: position)
-            .frame(height: hasScrubBar && comp != .scrubBar
+            .frame(height: hasScrubBar && comp != .scrubBar && comp != .titleBlock
                 ? MiniPlayerMetrics.scrubControlHeight : nil)
             .slotEditable(SlotRef(region: region, index: index), editing)
             .frame(maxWidth: comp.isExpanding || !hasExpanding ? .infinity : nil)

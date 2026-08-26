@@ -2041,8 +2041,8 @@ private enum SlotLayout {
             case .dockTrailing: return 2
             case .dockCenter: return 3
             case .menuBar: return 6
-            case .fullPlayerStats: return 4
-            case .fullPlayerControls: return 4
+            case .fullPlayerStats: return 6
+            case .fullPlayerControls: return 6
         }
     }
 

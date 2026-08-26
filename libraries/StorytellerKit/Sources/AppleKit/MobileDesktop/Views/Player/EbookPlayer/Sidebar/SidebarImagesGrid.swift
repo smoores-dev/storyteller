@@ -9,9 +9,27 @@ struct SidebarImagesGrid: View {
 
     @Environment(\.openWindow) private var openWindow
     @State private var previewItem: BookImageItem?
+    @State private var showHiddenList = false
+    @AppStorage("SidebarImagesShowTiny") private var showTiny = false
 
-    private var items: [BookImageItem] {
-        viewModel.imageItems
+    private var visibleItems: [BookImageItem] {
+        let pinned = viewModel.pinnedImageIDs
+        let hidden = viewModel.hiddenImageIDs
+        let tiny = viewModel.tinyImageIDs
+        let shown = viewModel.imageItems.filter { item in
+            !hidden.contains(item.id) && (showTiny || !tiny.contains(item.id))
+        }
+        guard !pinned.isEmpty else { return shown }
+        return shown.filter { pinned.contains($0.id) }
+            + shown.filter { !pinned.contains($0.id) }
+    }
+
+    private var hiddenItems: [BookImageItem] {
+        viewModel.imageItems.filter { viewModel.hiddenImageIDs.contains($0.id) }
+    }
+
+    private var tinyFilteredCount: Int {
+        viewModel.tinyImageIDs.subtracting(viewModel.hiddenImageIDs).count
     }
 
     var body: some View {
@@ -30,12 +48,14 @@ struct SidebarImagesGrid: View {
                         message: "The book's images could not be indexed.",
                     )
                 case .ready:
-                    if items.isEmpty {
+                    if viewModel.imageItems.isEmpty {
                         unavailable(
                             "No Images",
                             icon: "photo",
                             message: "This book has no indexed images.",
                         )
+                    } else if let previewItem {
+                        zenPreview(previewItem)
                     } else {
                         grid
                     }
@@ -56,42 +76,133 @@ struct SidebarImagesGrid: View {
     }
 
     private var grid: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                ScrollView {
-                    LazyVGrid(
-                        columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())],
-                        spacing: 14,
-                    ) {
-                        ForEach(items) { item in
-                            SidebarImageCell(
-                                item: item,
-                                provider: viewModel.imageProvider,
-                                theme: theme,
-                                positionLabel: positionLabel(for: item),
-                                isPreviewing: previewItem?.id == item.id,
-                                onPreview: { previewItem = item },
-                                onPopOut: { open(item) },
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-                }
-
-                if let previewItem {
-                    SidebarImagePreviewPanel(
-                        item: previewItem,
+        ScrollView {
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())],
+                spacing: 14,
+            ) {
+                ForEach(visibleItems) { item in
+                    SidebarImageCell(
+                        item: item,
                         provider: viewModel.imageProvider,
                         theme: theme,
-                        caption: positionLabel(for: previewItem),
-                        maxHeight: max(geometry.size.height * 0.55, 160),
-                        onPopOut: { open(previewItem) },
-                        onClose: { self.previewItem = nil },
+                        positionLabel: positionLabel(for: item),
+                        isPinned: viewModel.pinnedImageIDs.contains(item.id),
+                        onPreview: { previewItem = item },
+                        onPopOut: { open(item) },
+                        onPin: { pinned in viewModel.setImagePinned(item, pinned: pinned) },
+                        onHide: { viewModel.setImageHidden(item, hidden: true) },
                     )
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+
+            footer
         }
+    }
+
+    @ViewBuilder
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if !hiddenItems.isEmpty {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { showHiddenList.toggle() }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: showHiddenList ? "chevron.down" : "chevron.right")
+                            .font(.caption2)
+                        Text("Hidden (\(hiddenItems.count))")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(theme.secondary)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if showHiddenList {
+                    ForEach(hiddenItems) { item in
+                        hiddenRow(item)
+                    }
+                }
+            }
+
+            if tinyFilteredCount > 0 {
+                Button {
+                    showTiny.toggle()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: showTiny ? "eye" : "eye.slash")
+                            .font(.caption2)
+                        Text(
+                            showTiny
+                                ? "Showing \(tinyFilteredCount) small images"
+                                : "\(tinyFilteredCount) small images filtered"
+                        )
+                        .font(.caption)
+                    }
+                    .foregroundStyle(theme.tertiary)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(showTiny ? "Filter small images" : "Show small images")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 14)
+    }
+
+    private func hiddenRow(_ item: BookImageItem) -> some View {
+        HStack(spacing: 8) {
+            SidebarImageThumbnail(
+                item: item,
+                provider: viewModel.imageProvider,
+                placeholderColor: theme.foreground.opacity(0.08),
+            )
+            .frame(width: 30, height: 22)
+            .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+
+            Text(item.displayTitle)
+                .font(.caption)
+                .foregroundStyle(theme.secondary)
+                .lineLimit(1)
+
+            Spacer()
+
+            Button {
+                viewModel.setImageHidden(item, hidden: false)
+            } label: {
+                Image(systemName: "eye")
+                    .font(.caption)
+                    .foregroundStyle(theme.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Unhide image")
+        }
+    }
+
+    private func zenPreview(_ item: BookImageItem) -> some View {
+        SidebarImageZenView(
+            item: item,
+            provider: viewModel.imageProvider,
+            theme: theme,
+            caption: positionLabel(for: item),
+            onPopOut: { open(item) },
+            onClose: { previewItem = nil },
+            onStep: { delta in step(from: item, by: delta) },
+        )
+    }
+
+    private func step(from item: BookImageItem, by delta: Int) {
+        let items = visibleItems
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else {
+            previewItem = items.first
+            return
+        }
+        let next = index + delta
+        guard items.indices.contains(next) else { return }
+        previewItem = items[next]
     }
 
     private func open(_ item: BookImageItem) {
@@ -118,9 +229,11 @@ private struct SidebarImageCell: View {
     let provider: BookImageDataProvider?
     let theme: EbookSidebarTheme
     let positionLabel: String
-    let isPreviewing: Bool
+    let isPinned: Bool
     let onPreview: () -> Void
     let onPopOut: () -> Void
+    let onPin: (Bool) -> Void
+    let onHide: () -> Void
 
     @State private var pixelSize: CGSize?
 
@@ -138,10 +251,6 @@ private struct SidebarImageCell: View {
             }
             .buttonStyle(.plain)
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(theme.accent, lineWidth: isPreviewing ? 2 : 0)
-            }
             .overlay(alignment: .topTrailing) {
                 Button(action: onPopOut) {
                     Image(systemName: "arrow.up.forward.square")
@@ -154,6 +263,16 @@ private struct SidebarImageCell: View {
                 .help("Open in separate window")
                 .padding(4)
             }
+            .overlay(alignment: .topLeading) {
+                if isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(4)
+                        .background(Circle().fill(Color.black.opacity(0.45)))
+                        .padding(4)
+                }
+            }
 
             Text(item.displayTitle)
                 .font(.caption)
@@ -165,6 +284,12 @@ private struct SidebarImageCell: View {
                 .font(.caption2)
                 .foregroundStyle(theme.tertiary)
                 .lineLimit(1)
+        }
+        .contextMenu {
+            Button(isPinned ? "Unpin" : "Pin") { onPin(!isPinned) }
+            Button("Hide Image") { onHide() }
+            Divider()
+            Button("Open in Separate Window") { onPopOut() }
         }
         .help(pixelSize.map { "\(positionLabel) \(BookImageFormatting.dimensions($0))" }
             ?? positionLabel)
@@ -182,74 +307,99 @@ private struct SidebarImageCell: View {
     }
 }
 
-private struct SidebarImagePreviewPanel: View {
+private struct SidebarImageZenView: View {
     let item: BookImageItem
     let provider: BookImageDataProvider?
     let theme: EbookSidebarTheme
     let caption: String
-    let maxHeight: CGFloat
     let onPopOut: () -> Void
     let onClose: () -> Void
+    let onStep: (Int) -> Void
 
     @State private var image: NSImage?
+    @State private var hovering = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-
-            ZStack(alignment: .topTrailing) {
-                Group {
-                    if let image {
-                        Image(nsImage: image)
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        ProgressView()
-                            .frame(height: 120)
-                    }
+        ZStack {
+            Group {
+                if let image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(14)
+                } else {
+                    ProgressView()
                 }
-                .frame(maxWidth: .infinity)
-                .frame(maxHeight: maxHeight)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                HStack(spacing: 6) {
-                    Button(action: onPopOut) {
-                        Image(systemName: "arrow.up.forward.square")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(5)
-                            .background(Circle().fill(Color.black.opacity(0.5)))
-                    }
-                    .help("Open in separate window")
+            VStack {
+                HStack {
+                    Spacer()
+                    HStack(spacing: 6) {
+                        Button(action: onPopOut) {
+                            Image(systemName: "arrow.up.forward.square")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(5)
+                                .background(Circle().fill(Color.black.opacity(0.5)))
+                        }
+                        .help("Open in separate window")
 
-                    Button(action: onClose) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(5)
-                            .background(Circle().fill(Color.black.opacity(0.5)))
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(5)
+                                .background(Circle().fill(Color.black.opacity(0.5)))
+                        }
+                        .help("Back to all images")
                     }
-                    .help("Close preview")
+                    .buttonStyle(.plain)
+                    .padding(10)
                 }
-                .buttonStyle(.plain)
-                .padding(8)
+                Spacer()
+                Text(item.displayTitle.isEmpty ? caption : "\(item.displayTitle) \u{00B7} \(caption)")
+                    .font(.caption2)
+                    .foregroundStyle(theme.tertiary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
             }
 
-            Text(item.displayTitle.isEmpty ? caption : "\(item.displayTitle) \u{00B7} \(caption)")
-                .font(.caption2)
-                .foregroundStyle(theme.tertiary)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+            if hovering {
+                HStack {
+                    stepButton(systemName: "chevron.left", delta: -1)
+                    Spacer()
+                    stepButton(systemName: "chevron.right", delta: 1)
+                }
+                .padding(.horizontal, 8)
+            }
         }
-        .background(theme.foreground.opacity(0.05))
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
         .task(id: item.id) {
             image = nil
             guard let provider else { return }
             image = await Task.detached(priority: .userInitiated) {
-                provider.thumbnail(for: item, maxPixelSize: 1600)
+                provider.thumbnail(for: item, maxPixelSize: 2600)
             }.value
         }
+    }
+
+    private func stepButton(systemName: String, delta: Int) -> some View {
+        Button {
+            onStep(delta)
+        } label: {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(7)
+                .background(Circle().fill(Color.black.opacity(0.4)))
+        }
+        .buttonStyle(.plain)
     }
 }
 

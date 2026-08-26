@@ -75,7 +75,7 @@ final class BookImageDataProvider: @unchecked Sendable {
     }
 
     func thumbnail(for item: BookImageItem, maxPixelSize: CGFloat) -> BookPlatformImage? {
-        let key = item.id as NSString
+        let key = "\(item.id)#\(Int(maxPixelSize))" as NSString
         if let cached = thumbnailCache.object(forKey: key) {
             return cached
         }

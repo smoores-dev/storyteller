@@ -43,7 +43,10 @@ struct ThemeEditorView: View {
                     }
                 }
         }
-        .onAppear { captureOriginalValues() }
+        .onAppear {
+            captureOriginalValues()
+            normalizeLegacyCoverValues()
+        }
         #else
         VStack(spacing: 0) {
             editorContent
@@ -58,7 +61,10 @@ struct ThemeEditorView: View {
             }
             .padding(12)
         }
-        .onAppear { captureOriginalValues() }
+        .onAppear {
+            captureOriginalValues()
+            normalizeLegacyCoverValues()
+        }
         #endif
     }
 
@@ -141,24 +147,39 @@ struct ThemeEditorView: View {
         }
     }
 
+    private var derivesDark: Bool {
+        draft.appearance == .dark || (draft.appearance == .any && colorScheme == .dark)
+    }
+
+    private var stockTheme: ReaderTheme {
+        ReaderTheme.allBuiltIn.first { $0.id == theme.id }
+            ?? (derivesDark ? .builtInDark : .builtInLight)
+    }
+
+    private var chromeTone: CoverHSB {
+        readerPalette?.chromeHSB ?? CoverPaletteAdjustment.fallbackSurfaceHSB
+    }
+
     private var readerColorsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 20) {
             Text("Reader Colors")
                 .font(.headline)
 
-            colorRow(
+            ThemeColorSliders(
                 label: "Background",
-                key: "background",
-                hex: $draft.backgroundColor,
-                fallbackHex: kDefaultBackgroundColorLight,
+                value: $draft.backgroundColor,
                 role: .background,
+                dark: derivesDark,
+                tone: chromeTone,
+                stockValue: stockTheme.backgroundColor,
             )
-            colorRow(
+            ThemeColorSliders(
                 label: "Text",
-                key: "text",
-                hex: $draft.foregroundColor,
-                fallbackHex: kDefaultForegroundColorLight,
+                value: $draft.foregroundColor,
                 role: .foreground,
+                dark: derivesDark,
+                tone: chromeTone,
+                stockValue: stockTheme.foregroundColor,
             )
         }
     }
@@ -181,15 +202,14 @@ struct ThemeEditorView: View {
                 #endif
             }
 
-            Text("Highlight Color")
-                .font(.headline)
-            coverToggle(hex: $draft.highlightColor, fallbackHex: "#AE1917", role: .highlight)
-            if CoverReaderChrome.isToken(draft.highlightColor) {
-                strengthSlider(role: .highlight)
-            }
-            if !CoverReaderChrome.isToken(draft.highlightColor) {
-                InlineColorPicker(hex: $draft.highlightColor)
-            }
+            ThemeColorSliders(
+                label: "Highlight Color",
+                value: $draft.highlightColor,
+                role: .highlight,
+                dark: derivesDark,
+                tone: chromeTone,
+                stockValue: derivesDark ? kDefaultHighlightColorDark : kDefaultHighlightColorLight,
+            )
 
             switch draft.readaloudHighlightMode {
                 case "text":
@@ -407,166 +427,6 @@ struct ThemeEditorView: View {
     }
 
     @ViewBuilder
-    private func colorRow(
-        label: String,
-        key: String,
-        hex: Binding<String>,
-        fallbackHex: String,
-        role: CoverReaderChrome.Role,
-    ) -> some View {
-        let usesCover = CoverReaderChrome.isToken(hex.wrappedValue)
-        let coverBinding = Binding(
-            get: { usesCover },
-            set: { enabled in
-                hex.wrappedValue = enabled ? CoverReaderChrome.token : restoreHex(for: role)
-                if enabled, expandedPicker == key { expandedPicker = nil }
-            },
-        )
-        let swatch = coverSwatch(role: role) ?? Color(hex: fallbackHex) ?? .clear
-
-
-        return VStack(alignment: .leading, spacing: 8) {
-            Button {
-                guard !usesCover else { return }
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    expandedPicker = expandedPicker == key ? nil : key
-                }
-            } label: {
-                HStack(spacing: 12) {
-                    Text(label)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Text(usesCover ? "From Cover" : hex.wrappedValue.uppercased())
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                    Circle()
-                        .fill(usesCover ? swatch : (Color(hex: hex.wrappedValue) ?? .clear))
-                        .frame(width: 32, height: 32)
-                        .overlay(
-                            Circle().strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1)
-                        )
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            Toggle("Derive from cover", isOn: coverBinding)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                #if os(macOS)
-                .toggleStyle(.checkbox)
-                #endif
-
-            if usesCover {
-                strengthSlider(role: role)
-            }
-
-            if expandedPicker == key, !usesCover {
-                InlineColorPicker(hex: hex)
-            }
-        }
-    }
-
-    private func coverToggle(
-        hex: Binding<String>,
-        fallbackHex: String,
-        role: CoverReaderChrome.Role,
-    ) -> some View {
-        let usesCover = CoverReaderChrome.isToken(hex.wrappedValue)
-        return HStack(spacing: 10) {
-            Toggle(
-                "Derive from cover",
-                isOn: Binding(
-                    get: { usesCover },
-                    set: { hex.wrappedValue = $0 ? CoverReaderChrome.token : restoreHex(for: role) },
-                ),
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            #if os(macOS)
-            .toggleStyle(.checkbox)
-            #endif
-
-            if usesCover, let swatch = coverSwatch(role: role) {
-                Circle()
-                    .fill(swatch)
-                    .frame(width: 18, height: 18)
-                    .overlay(Circle().strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1))
-            }
-            Spacer()
-        }
-    }
-
-    private func restoreHex(for role: CoverReaderChrome.Role) -> String {
-        let original =
-            switch role {
-                case .background: theme.backgroundColor
-                case .foreground: theme.foregroundColor
-                case .highlight: theme.highlightColor
-            }
-        if !CoverReaderChrome.isToken(original) { return original }
-        let dark =
-            draft.appearance == .dark || (draft.appearance == .any && colorScheme == .dark)
-        switch role {
-            case .background:
-                return dark ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight
-            case .foreground:
-                return dark ? kDefaultForegroundColorDark : kDefaultForegroundColorLight
-            case .highlight:
-                return dark ? "#E63513" : "#AE1917"
-        }
-    }
-
-    private func strengthBinding(for role: CoverReaderChrome.Role) -> Binding<Double> {
-        switch role {
-            case .background: $draft.coverStrengthBackground
-            case .foreground: $draft.coverStrengthForeground
-            case .highlight: $draft.coverStrengthHighlight
-        }
-    }
-
-    private func strengthSlider(role: CoverReaderChrome.Role) -> some View {
-        let binding = strengthBinding(for: role)
-        return VStack(alignment: .leading, spacing: 2) {
-            Text("Cover Tint Strength: \(Int(binding.wrappedValue * 100))%")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Slider(value: binding, in: 0...1, step: 0.05)
-                #if os(macOS)
-                .frame(maxWidth: 260)
-                #endif
-        }
-        .padding(.leading, 20)
-    }
-
-    private func coverSwatch(role: CoverReaderChrome.Role) -> Color? {
-        let tone = readerPalette?.chromeHSB ?? CoverPaletteAdjustment.fallbackSurfaceHSB
-        let dark = colorScheme == .dark
-        let derived =
-            switch role {
-                case .background:
-                    CoverReaderChrome.background(
-                        surfaceHSB: tone,
-                        dark: dark,
-                        strength: draft.coverStrengthBackground,
-                    )
-                case .foreground:
-                    CoverReaderChrome.foreground(
-                        surfaceHSB: tone,
-                        dark: dark,
-                        strength: draft.coverStrengthForeground,
-                    )
-                case .highlight:
-                    CoverReaderChrome.highlight(
-                        surfaceHSB: tone,
-                        dark: dark,
-                        strength: draft.coverStrengthHighlight,
-                    )
-            }
-        return Color(hex: derived.hexString)
-    }
-
-    @ViewBuilder
     private func highlightRow(index: Int, label: Binding<String>, hex: Binding<String>) -> some View
     {
         let key = "user\(index)"
@@ -597,6 +457,21 @@ struct ThemeEditorView: View {
                 InlineColorPicker(hex: hex)
                     .padding(.top, 10)
             }
+        }
+    }
+
+    private func normalizeLegacyCoverValues() {
+        if CoverReaderChrome.isToken(draft.backgroundColor) {
+            draft.backgroundColor = CoverReaderChrome.defaultCoverValue(
+                role: .background, dark: derivesDark)
+        }
+        if CoverReaderChrome.isToken(draft.foregroundColor) {
+            draft.foregroundColor = CoverReaderChrome.defaultCoverValue(
+                role: .foreground, dark: derivesDark)
+        }
+        if CoverReaderChrome.isToken(draft.highlightColor) {
+            draft.highlightColor = CoverReaderChrome.defaultCoverValue(
+                role: .highlight, dark: derivesDark)
         }
     }
 

@@ -44,7 +44,8 @@ struct ThemePreviewCard: View {
                 raw,
                 role: role,
                 tone: readerPalette?.chromeHSB ?? CoverPaletteAdjustment.fallbackSurfaceHSB,
-                dark: colorScheme == .dark,
+                dark: theme.appearance == .dark
+                    || (theme.appearance == .any && colorScheme == .dark),
                 strength: strength,
             )
         else { return nil }

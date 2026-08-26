@@ -18,9 +18,9 @@ enum EbookSidebarTab: String, CaseIterable {
 struct EbookSidebarTheme {
     let foreground: Color
     let accent: Color
+    let secondary: Color
+    let tertiary: Color
 
-    var secondary: Color { foreground.opacity(0.55) }
-    var tertiary: Color { foreground.opacity(0.35) }
     var rowHighlight: Color { accent.opacity(0.14) }
 }
 

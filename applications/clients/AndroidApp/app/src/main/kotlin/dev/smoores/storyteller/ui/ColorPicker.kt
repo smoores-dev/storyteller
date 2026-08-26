@@ -244,6 +244,53 @@ private fun HueSlider(hue: Float, onChange: (Float) -> Unit) {
 }
 
 @Composable
+internal fun GradientTrackSlider(
+    value: Float,
+    colors: List<Color>,
+    onChange: (Float) -> Unit,
+) {
+    var sliderSize by remember { mutableStateOf(IntSize.Zero) }
+    fun report(position: Offset) {
+        if (sliderSize.width <= 0) return
+        onChange((position.x / sliderSize.width).coerceIn(0f, 1f))
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(22.dp)
+            .onSizeChanged { sliderSize = it }
+            .clip(RoundedCornerShape(11.dp))
+            .background(Brush.horizontalGradient(colors))
+            .border(1.dp, Color.Gray.copy(alpha = 0.25f), RoundedCornerShape(11.dp))
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { report(it) },
+                    onDrag = { change, _ ->
+                        change.consume()
+                        report(change.position)
+                    },
+                )
+            }
+            .pointerInput(Unit) { detectTapGestures { report(it) } },
+    ) {
+        val radius = with(androidx.compose.ui.platform.LocalDensity.current) { 9.dp.roundToPx() }
+        Box(
+            modifier = Modifier
+                .offset {
+                    IntOffset(
+                        (value.coerceIn(0f, 1f) * (sliderSize.width - radius * 2)).roundToInt(),
+                        (sliderSize.height - radius * 2) / 2,
+                    )
+                }
+                .size(18.dp)
+                .shadow(2.dp, CircleShape)
+                .background(Color.White, CircleShape)
+                .border(1.dp, Color.Black.copy(alpha = 0.25f), CircleShape),
+        )
+    }
+}
+
+@Composable
 private fun PickerThumb(color: Color, position: IntOffset) {
     val radius = with(androidx.compose.ui.platform.LocalDensity.current) { 11.dp.roundToPx() }
     Box(

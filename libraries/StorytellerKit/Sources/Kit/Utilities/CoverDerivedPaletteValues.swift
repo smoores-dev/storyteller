@@ -60,16 +60,34 @@ public enum CoverPlayerChrome {
 
     public static func controlTint(surfaceHSB: CoverHSB, dark: Bool) -> CoverPaletteColor {
         guard dark else {
-            return CoverPaletteColor(
-                hue: surfaceHSB.hue,
-                saturation: min(surfaceHSB.saturation * 0.35, 0.16),
-                brightness: 0.15,
-            )
+            return CoverPaletteColor(hue: 0, saturation: 0, brightness: 0)
         }
         return CoverPaletteColor(
             hue: surfaceHSB.hue,
             saturation: min(surfaceHSB.saturation * 0.12, 0.06),
             brightness: 1,
+        )
+    }
+
+    public static func controlTintSecondary(surfaceHSB: CoverHSB, dark: Bool) -> CoverPaletteColor {
+        guard dark else {
+            return CoverPaletteColor(hue: 0, saturation: 0, brightness: 0.32)
+        }
+        return CoverPaletteColor(
+            hue: surfaceHSB.hue,
+            saturation: min(surfaceHSB.saturation * 0.12, 0.06),
+            brightness: 0.74,
+        )
+    }
+
+    public static func controlTintTertiary(surfaceHSB: CoverHSB, dark: Bool) -> CoverPaletteColor {
+        guard dark else {
+            return CoverPaletteColor(hue: 0, saturation: 0, brightness: 0.5)
+        }
+        return CoverPaletteColor(
+            hue: surfaceHSB.hue,
+            saturation: min(surfaceHSB.saturation * 0.12, 0.06),
+            brightness: 0.55,
         )
     }
 
@@ -237,6 +255,48 @@ public enum CoverReaderChrome {
         value?.lowercased() == token
     }
 
+    public static func isCoverValue(_ value: String?) -> Bool {
+        isToken(value) || coverComponents(value) != nil
+    }
+
+    public static func coverComponents(
+        _ value: String?
+    ) -> (saturation: Double, brightness: Double)? {
+        guard let value, value.lowercased().hasPrefix("\(token):") else { return nil }
+        let parts = value.dropFirst(token.count + 1).split(separator: ",")
+        guard
+            parts.count == 2,
+            let saturation = Double(parts[0]),
+            let brightness = Double(parts[1])
+        else { return nil }
+        return (min(max(saturation, 0), 1), min(max(brightness, 0), 1))
+    }
+
+    public static func coverValue(saturation: Double, brightness: Double) -> String {
+        let s = (min(max(saturation, 0), 1) * 1000).rounded() / 1000
+        let b = (min(max(brightness, 0), 1) * 1000).rounded() / 1000
+        return "\(token):\(s),\(b)"
+    }
+
+    public static func defaultCoverComponents(
+        role: Role,
+        dark: Bool,
+    ) -> (saturation: Double, brightness: Double) {
+        switch (role, dark) {
+            case (.background, true): (0.25, 0.10)
+            case (.background, false): (0.02, 0.98)
+            case (.foreground, true): (0.05, 0.95)
+            case (.foreground, false): (1.0, 0.25)
+            case (.highlight, true): (0.35, 1.0)
+            case (.highlight, false): (1.0, 0.65)
+        }
+    }
+
+    public static func defaultCoverValue(role: Role, dark: Bool) -> String {
+        let components = defaultCoverComponents(role: role, dark: dark)
+        return coverValue(saturation: components.saturation, brightness: components.brightness)
+    }
+
     private static func strengthScale(_ strength: Double) -> Double {
         let clamped = min(max(strength, 0), 1)
         return clamped * 3
@@ -318,6 +378,14 @@ public enum CoverReaderChrome {
         dark: Bool,
         strength: Double = kDefaultCoverTintStrength,
     ) -> String? {
+        if let components = coverComponents(raw) {
+            guard let tone else { return nil }
+            return CoverPaletteColor(
+                hue: tone.hue,
+                saturation: components.saturation,
+                brightness: components.brightness,
+            ).hexString
+        }
         guard isToken(raw) else { return raw }
         guard let tone else { return nil }
         let color =

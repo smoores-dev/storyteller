@@ -583,7 +583,7 @@ public struct ReadingSidebarView: View {
 
     private var secondaryColor: Color {
         if let foregroundColor { return foregroundColor.opacity(0.6) }
-        if let palette { return palette.controlTint(for: colorScheme).opacity(0.62) }
+        if let palette { return palette.controlTintSecondary(for: colorScheme) }
         return .secondary
     }
 

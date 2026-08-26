@@ -4,6 +4,8 @@ public let kDefaultBackgroundColorLight = "#FFFFFF"
 public let kDefaultForegroundColorLight = "#000000"
 public let kDefaultBackgroundColorDark = "#1A1A1A"
 public let kDefaultForegroundColorDark = "#EEEEEE"
+public let kDefaultHighlightColorLight = "#AE1917"
+public let kDefaultHighlightColorDark = "#E63513"
 
 public struct StorytellerGlobalConfig: Codable, Equatable, Sendable {
     public var reading: Reading

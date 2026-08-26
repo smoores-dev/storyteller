@@ -247,7 +247,10 @@ internal fun MiniPlayerSlotRow(
                         }
                     )
                     .then(
-                        if (hasScrubBar && comp != PlayerComplication.SCRUB_BAR) {
+                        if (hasScrubBar &&
+                            comp != PlayerComplication.SCRUB_BAR &&
+                            comp != PlayerComplication.TITLE_BLOCK
+                        ) {
                             Modifier.height(MiniPlayerMetrics.scrubControlHeight)
                         } else {
                             Modifier

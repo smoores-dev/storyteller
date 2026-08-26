@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Bedtime
@@ -103,13 +105,20 @@ private fun StatSlot(
     editing: MutableState<SlotRef?>?,
 ) {
     Box(
-        Modifier.then(
-            if (editing != null) {
-                Modifier.slotEditable(SlotRef(SlotRegion.FULL_PLAYER_STATS, index), editing)
-            } else {
-                Modifier
-            }
-        ),
+        Modifier
+            .widthIn(min = 72.dp)
+            .then(
+                if (editing != null) {
+                    Modifier.slotEditable(SlotRef(SlotRegion.FULL_PLAYER_STATS, index), editing)
+                } else {
+                    Modifier
+                }
+            ),
+        contentAlignment = if (slot == PlayerComplication.NONE) {
+            Alignment.Center
+        } else {
+            Alignment.CenterStart
+        },
     ) {
         PlayerComplicationView(
             complication = slot,
@@ -135,6 +144,12 @@ internal fun FullPlayerControlRow(
     modifier: Modifier = Modifier,
 ) {
     val padded = SlotLayout.padded(slots, SlotRegion.FULL_PLAYER_CONTROLS)
+    val visibleSlotCount = if (editing != null) {
+        padded.size
+    } else {
+        padded.count { it != PlayerComplication.NONE && (hasAudio || !it.requiresAudio) }
+    }
+    val compactLabels = visibleSlotCount > 4
     Row(
         modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -149,6 +164,7 @@ internal fun FullPlayerControlRow(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .weight(1f)
+                    .then(if (editing != null) Modifier.heightIn(min = 86.dp) else Modifier)
                     .then(
                         if (editing != null) {
                             Modifier.slotEditable(
@@ -167,6 +183,7 @@ internal fun FullPlayerControlRow(
                     sleepLabel = sleepLabel,
                     sleepActive = sleepActive,
                     callbacks = callbacks,
+                    compactLabels = compactLabels,
                     modifier = Modifier,
                 )
             }
@@ -182,6 +199,7 @@ private fun ControlSlot(
     sleepLabel: String,
     sleepActive: Boolean,
     callbacks: FullPlayerControlCallbacks,
+    compactLabels: Boolean,
     modifier: Modifier,
 ) {
     when (slot) {
@@ -191,6 +209,7 @@ private fun ControlSlot(
             contentDescription = "Playback speed",
             onClick = callbacks.onSpeed,
             palette = palette,
+            compactLabel = compactLabels,
             modifier = modifier,
         )
         PlayerComplication.CHAPTERS -> SecondaryControl(
@@ -199,6 +218,7 @@ private fun ControlSlot(
             contentDescription = "Chapters",
             onClick = callbacks.onChapters,
             palette = palette,
+            compactLabel = compactLabels,
             modifier = modifier,
         )
         PlayerComplication.VOLUME -> SecondaryControl(
@@ -207,6 +227,7 @@ private fun ControlSlot(
             contentDescription = "Volume",
             onClick = callbacks.onVolume,
             palette = palette,
+            compactLabel = compactLabels,
             modifier = modifier,
         )
         PlayerComplication.SLEEP_TIMER -> SecondaryControl(
@@ -216,6 +237,7 @@ private fun ControlSlot(
             onClick = callbacks.onSleepTimer,
             palette = palette,
             active = sleepActive,
+            compactLabel = compactLabels,
             modifier = modifier,
         )
         PlayerComplication.BOOKMARKS -> callbacks.onBookmarks?.let {
@@ -225,6 +247,7 @@ private fun ControlSlot(
                 contentDescription = "Bookmarks",
                 onClick = it,
                 palette = palette,
+                compactLabel = compactLabels,
                 modifier = modifier,
             )
         }
@@ -235,6 +258,7 @@ private fun ControlSlot(
                 contentDescription = "Reading timeline",
                 onClick = it,
                 palette = palette,
+                compactLabel = compactLabels,
                 modifier = modifier,
             )
         }
@@ -245,6 +269,7 @@ private fun ControlSlot(
                 contentDescription = "Images",
                 onClick = it,
                 palette = palette,
+                compactLabel = compactLabels,
                 modifier = modifier,
             )
         }
@@ -255,6 +280,7 @@ private fun ControlSlot(
                 contentDescription = "Search",
                 onClick = it,
                 palette = palette,
+                compactLabel = compactLabels,
                 modifier = modifier,
             )
         }
@@ -265,6 +291,7 @@ private fun ControlSlot(
                 contentDescription = "Text settings",
                 onClick = it,
                 palette = palette,
+                compactLabel = compactLabels,
                 modifier = modifier,
             )
         }

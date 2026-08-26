@@ -251,11 +251,13 @@ struct ManageThemesView: View {
     private func themePreviewSwatch(_ theme: ReaderTheme) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4)
-                .fill(swatchColor(theme.backgroundColor, role: .background) ?? .white)
+                .fill(swatchColor(theme.backgroundColor, role: .background, in: theme) ?? .white)
                 .frame(width: 32, height: 32)
             Text("Aa")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(swatchColor(theme.foregroundColor, role: .foreground) ?? .black)
+                .foregroundStyle(
+                    swatchColor(theme.foregroundColor, role: .foreground, in: theme) ?? .black
+                )
         }
         .overlay(
             RoundedRectangle(cornerRadius: 4)
@@ -263,14 +265,19 @@ struct ManageThemesView: View {
         )
     }
 
-    private func swatchColor(_ raw: String, role: CoverReaderChrome.Role) -> Color? {
+    private func swatchColor(
+        _ raw: String,
+        role: CoverReaderChrome.Role,
+        in theme: ReaderTheme,
+    ) -> Color? {
         let tone = readerPalette?.chromeHSB ?? CoverPaletteAdjustment.fallbackSurfaceHSB
         guard
             let hex = CoverReaderChrome.resolvedHex(
                 raw,
                 role: role,
                 tone: tone,
-                dark: colorScheme == .dark,
+                dark: theme.appearance == .dark
+                    || (theme.appearance == .any && colorScheme == .dark),
             )
         else { return nil }
         return Color(hex: hex)

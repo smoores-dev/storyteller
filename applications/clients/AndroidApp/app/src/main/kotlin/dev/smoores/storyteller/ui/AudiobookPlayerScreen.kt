@@ -76,8 +76,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -460,6 +462,7 @@ internal fun SecondaryControl(
     palette: CoverBackgroundPalette,
     modifier: Modifier = Modifier,
     active: Boolean = false,
+    compactLabel: Boolean = false,
 ) {
     val accent = palette.controlTint
     Column(
@@ -480,9 +483,19 @@ internal fun SecondaryControl(
         }
         Text(
             label,
-            style = MaterialTheme.typography.bodySmall,
-            color = accent.copy(alpha = 0.7f),
+            style = if (compactLabel) {
+                MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 10.sp,
+                    lineHeight = 12.sp,
+                )
+            } else {
+                MaterialTheme.typography.bodySmall
+            },
+            color = palette.controlTintSecondary,
             textAlign = TextAlign.Center,
+            maxLines = if (compactLabel) 1 else Int.MAX_VALUE,
+            overflow = TextOverflow.Ellipsis,
+            softWrap = !compactLabel,
         )
     }
 }
@@ -805,4 +818,3 @@ internal fun formatPlaybackTime(seconds: Double): String {
         String.format(Locale.US, "%d:%02d", minutes, remainder)
     }
 }
-

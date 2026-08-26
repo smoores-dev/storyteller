@@ -80,7 +80,7 @@ public enum CoverColorAverager {
         )
     }
 
-    static func hsb(red: Double, green: Double, blue: Double) -> CoverHSB {
+    public static func hsb(red: Double, green: Double, blue: Double) -> CoverHSB {
         let maximum = max(red, green, blue)
         let minimum = min(red, green, blue)
         let delta = maximum - minimum

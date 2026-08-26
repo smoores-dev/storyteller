@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,13 +46,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -87,7 +93,7 @@ internal fun ThemeSwatch(theme: ReaderTheme, size: Dp) {
         modifier = Modifier
             .size(size)
             .background(
-                parseHexColor(theme.backgroundColor) ?: Color.Gray,
+                resolveThemeColorPreview(theme.backgroundColor) ?: Color.Gray,
                 RoundedCornerShape(size / 4),
             )
             .border(
@@ -100,7 +106,7 @@ internal fun ThemeSwatch(theme: ReaderTheme, size: Dp) {
         Text(
             "Aa",
             style = MaterialTheme.typography.labelSmall,
-            color = parseHexColor(theme.foregroundColor) ?: Color.White,
+            color = resolveThemeColorPreview(theme.foregroundColor) ?: Color.White,
         )
     }
 }
@@ -462,9 +468,9 @@ private fun ThemePreviewCard(
     userMode: String,
     modifier: Modifier = Modifier,
 ) {
-    val backgroundParsed = parseHexColor(background) ?: Color.White
-    val foregroundParsed = parseHexColor(foreground) ?: Color.Black
-    val readaloudParsed = parseHexColor(readaloudColor) ?: Color.Blue
+    val backgroundParsed = resolveThemeColorPreview(background) ?: Color.White
+    val foregroundParsed = resolveThemeColorPreview(foreground) ?: Color.Black
+    val readaloudParsed = resolveThemeColorPreview(readaloudColor) ?: Color.Blue
     val userParsed = parseHexColor(userColor) ?: Color.Yellow
 
     val readaloudStart = kPreviewLead.length
@@ -606,11 +612,20 @@ internal fun ThemeEditorDialog(
     initialTab: Int = 0,
 ) {
     val isBuiltInEdit = initial.isBuiltIn && existingId != null
+    val isDarkTheme = isSystemInDarkTheme()
+    val initialDark =
+        initial.appearance == "dark" || (initial.appearance == "any" && isDarkTheme)
     var name by remember { mutableStateOf(initial.name) }
     var appearance by remember { mutableStateOf(initial.appearance) }
-    var background by remember { mutableStateOf(initial.backgroundColor) }
-    var foreground by remember { mutableStateOf(initial.foregroundColor) }
-    var highlight by remember { mutableStateOf(initial.highlightColor) }
+    var background by remember {
+        mutableStateOf(normalizeCoverValue(initial.backgroundColor, "background", initialDark))
+    }
+    var foreground by remember {
+        mutableStateOf(normalizeCoverValue(initial.foregroundColor, "foreground", initialDark))
+    }
+    var highlight by remember {
+        mutableStateOf(normalizeCoverValue(initial.highlightColor, "highlight", initialDark))
+    }
     var highlightThickness by remember { mutableStateOf(initial.highlightThickness) }
     var readaloudMode by remember { mutableStateOf(initial.readaloudHighlightMode) }
     var readaloudFade by remember { mutableStateOf(initial.readaloudHighlightFade) }
@@ -630,17 +645,12 @@ internal fun ThemeEditorDialog(
     var customCSS by remember { mutableStateOf(initial.customCSS.orEmpty()) }
     var tab by remember { mutableIntStateOf(initialTab) }
     var previewUserIndex by remember { mutableIntStateOf(0) }
-    val isDarkTheme = isSystemInDarkTheme()
-    val coverBackgroundSwatch = MaterialTheme.colorScheme.surface
-    val coverForegroundSwatch = MaterialTheme.colorScheme.onSurface
+    val editorDark = appearance == "dark" || (appearance == "any" && isDarkTheme)
 
     val valid = (isBuiltInEdit || name.isNotBlank()) &&
-        (background.equals(COVER_COLOR_TOKEN, ignoreCase = true) ||
-            parseHexColor(background) != null) &&
-        (foreground.equals(COVER_COLOR_TOKEN, ignoreCase = true) ||
-            parseHexColor(foreground) != null) &&
-        (highlight.equals(COVER_COLOR_TOKEN, ignoreCase = true) ||
-            parseHexColor(highlight) != null) &&
+        (isCoverValue(background) || parseHexColor(background) != null) &&
+        (isCoverValue(foreground) || parseHexColor(foreground) != null) &&
+        (isCoverValue(highlight) || parseHexColor(highlight) != null) &&
         userColors.all { parseHexColor(it) != null }
 
     Dialog(
@@ -766,31 +776,15 @@ internal fun ThemeEditorDialog(
                                 label = "Background",
                                 value = background,
                                 onChange = { background = it },
-                                coverFallback = restoreHex(
-                                    initial.backgroundColor,
-                                    appearance,
-                                    isDarkTheme,
-                                    "#FFFFFF",
-                                    "#1A1A1A",
-                                ),
-                                coverSwatch = coverBackgroundSwatch,
-                                coverStrength = coverStrengthBackground,
-                                onCoverStrengthChange = { coverStrengthBackground = it },
+                                role = "background",
+                                dark = editorDark,
                             )
                             ThemeColorRow(
                                 label = "Text",
                                 value = foreground,
                                 onChange = { foreground = it },
-                                coverFallback = restoreHex(
-                                    initial.foregroundColor,
-                                    appearance,
-                                    isDarkTheme,
-                                    "#1A1A1A",
-                                    "#EDEDED",
-                                ),
-                                coverSwatch = coverForegroundSwatch,
-                                coverStrength = coverStrengthForeground,
-                                onCoverStrengthChange = { coverStrengthForeground = it },
+                                role = "foreground",
+                                dark = editorDark,
                             )
                             if (onDelete != null) {
                                 Spacer(modifier = Modifier.padding(top = 8.dp))
@@ -807,35 +801,13 @@ internal fun ThemeEditorDialog(
                                 onSelect = { readaloudMode = it },
                             )
                             SettingsSectionHeader("Highlight Color")
-                            SettingSwitch(
-                                label = "Derive from cover",
-                                checked = highlight.equals(COVER_COLOR_TOKEN, ignoreCase = true),
-                                onToggle = { enabled ->
-                                    highlight = if (enabled) {
-                                        COVER_COLOR_TOKEN
-                                    } else {
-                                        restoreHex(
-                                            initial.highlightColor,
-                                            appearance,
-                                            isDarkTheme,
-                                            "#AE1917",
-                                            "#E63513",
-                                        )
-                                    }
-                                },
+                            ThemeColorRow(
+                                label = "Highlight",
+                                value = highlight,
+                                onChange = { highlight = it },
+                                role = "highlight",
+                                dark = editorDark,
                             )
-                            if (highlight.equals(COVER_COLOR_TOKEN, ignoreCase = true)) {
-                                CoverStrengthSlider(
-                                    value = coverStrengthHighlight,
-                                    onChange = { coverStrengthHighlight = it },
-                                )
-                            }
-                            if (!highlight.equals(COVER_COLOR_TOKEN, ignoreCase = true)) {
-                                InlineColorPicker(
-                                    value = highlight,
-                                    onChange = { highlight = it },
-                                )
-                            }
                             // Mirrors ThemeEditorView.readaloudSection.
                             when (readaloudMode) {
                                 "text" -> {
@@ -928,28 +900,76 @@ internal fun ThemeEditorDialog(
 
 internal const val COVER_COLOR_TOKEN = "cover"
 
-private fun restoreHex(
-    original: String,
-    appearance: String,
-    systemIsDark: Boolean,
-    lightDefault: String,
-    darkDefault: String,
-): String {
-    if (!original.equals(COVER_COLOR_TOKEN, ignoreCase = true)) return original
-    val dark = appearance == "dark" || (appearance == "any" && systemIsDark)
-    return if (dark) darkDefault else lightDefault
+private const val FALLBACK_COVER_HUE = 201.6f
+
+internal fun coverComponents(value: String?): Pair<Float, Float>? {
+    if (value == null) return null
+    val prefix = "$COVER_COLOR_TOKEN:"
+    if (!value.lowercase().startsWith(prefix)) return null
+    val parts = value.substring(prefix.length).split(",")
+    if (parts.size != 2) return null
+    val saturation = parts[0].toFloatOrNull() ?: return null
+    val brightness = parts[1].toFloatOrNull() ?: return null
+    return saturation.coerceIn(0f, 1f) to brightness.coerceIn(0f, 1f)
+}
+
+internal fun isCoverValue(value: String?): Boolean =
+    value.equals(COVER_COLOR_TOKEN, ignoreCase = true) || coverComponents(value) != null
+
+internal fun coverValueString(saturation: Float, brightness: Float): String {
+    val s = (saturation.coerceIn(0f, 1f) * 1000).roundToInt() / 1000.0
+    val b = (brightness.coerceIn(0f, 1f) * 1000).roundToInt() / 1000.0
+    return "$COVER_COLOR_TOKEN:$s,$b"
+}
+
+internal fun defaultCoverComponents(role: String, dark: Boolean): Pair<Float, Float> = when {
+    role == "background" && dark -> 0.25f to 0.10f
+    role == "background" -> 0.02f to 0.98f
+    role == "foreground" && dark -> 0.05f to 0.95f
+    role == "foreground" -> 1.0f to 0.25f
+    dark -> 0.35f to 1.0f
+    else -> 1.0f to 0.65f
+}
+
+internal fun stockThemeValue(role: String, dark: Boolean): String = when (role) {
+    "background" -> if (dark) "#1A1A1A" else "#FFFFFF"
+    "foreground" -> if (dark) "#EEEEEE" else "#000000"
+    else -> if (dark) "#E63513" else "#AE1917"
 }
 
 @Composable
-private fun CoverStrengthSlider(value: Double, onChange: (Double) -> Unit) {
-    SettingSlider(
-        label = "Cover Tint Strength",
-        value = value,
-        range = 0f..1f,
-        format = { "${(it * 100).toInt()}%" },
-        onPreview = { onChange(it.toDouble()) },
-        onCommit = { onChange(it.toDouble()) },
-    )
+internal fun resolveThemeColorPreview(value: String?): Color? {
+    coverComponents(value)?.let { (s, b) ->
+        return Color.hsv(LocalCoverHue.current ?: FALLBACK_COVER_HUE, s, b)
+    }
+    return parseHexColor(value)
+}
+
+private fun normalizeCoverValue(value: String, role: String, dark: Boolean): String {
+    if (!value.equals(COVER_COLOR_TOKEN, ignoreCase = true)) return value
+    val (s, b) = defaultCoverComponents(role, dark)
+    return coverValueString(s, b)
+}
+
+@Composable
+private fun SliderWithReset(
+    onReset: () -> Unit,
+    slider: @Composable () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(modifier = Modifier.weight(1f)) { slider() }
+        Icon(
+            Icons.Filled.Refresh,
+            contentDescription = "Reset",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .size(18.dp)
+                .clickable { onReset() },
+        )
+    }
 }
 
 @Composable
@@ -957,24 +977,85 @@ private fun ThemeColorRow(
     label: String,
     value: String,
     onChange: (String) -> Unit,
-    onExpand: (() -> Unit)? = null,
-    coverFallback: String? = null,
-    coverSwatch: Color? = null,
-    coverStrength: Double = 0.2,
-    onCoverStrengthChange: ((Double) -> Unit)? = null,
+    role: String,
+    dark: Boolean,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val usesCover = value.equals(COVER_COLOR_TOKEN, ignoreCase = true)
-    Column {
+    var showPicker by remember { mutableStateOf(false) }
+    val usesCoverHue = isCoverValue(value)
+    val coverHue = LocalCoverHue.current ?: FALLBACK_COVER_HUE
+    var hue by remember { mutableFloatStateOf(coverHue) }
+    var saturation by remember { mutableFloatStateOf(0f) }
+    var brightness by remember { mutableFloatStateOf(1f) }
+    var lastCommitted by remember { mutableStateOf<String?>(null) }
+
+    fun resetComponents(): Triple<Float, Float, Float> {
+        if (usesCoverHue) {
+            val (s, b) = defaultCoverComponents(role, dark)
+            return Triple(coverHue, s, b)
+        }
+        val stock = stockThemeValue(role, dark)
+        coverComponents(stock)?.let { (s, b) -> return Triple(coverHue, s, b) }
+        val color = parseHexColor(stock) ?: return Triple(hue, saturation, brightness)
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+        return Triple(hsv[0], hsv[1], hsv[2])
+    }
+
+    fun adopt(raw: String) {
+        coverComponents(raw)?.let { (s, b) ->
+            saturation = s
+            brightness = b
+            hue = coverHue
+            return
+        }
+        if (raw.equals(COVER_COLOR_TOKEN, ignoreCase = true)) {
+            val (s, b) = defaultCoverComponents(role, dark)
+            saturation = s
+            brightness = b
+            hue = coverHue
+            return
+        }
+        val color = parseHexColor(raw) ?: return
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+        if (hsv[1] > 0f || hsv[0] > 0f) hue = hsv[0]
+        saturation = hsv[1]
+        brightness = hsv[2]
+    }
+
+    LaunchedEffect(value) {
+        if (value != lastCommitted) adopt(value)
+    }
+
+    val displayHue = (if (usesCoverHue) coverHue else hue).coerceIn(0f, 360f)
+    val resolvedHex = colorToHex(Color.hsv(displayHue, saturation, brightness))
+
+    fun commit() {
+        val committed = if (usesCoverHue) {
+            coverValueString(saturation, brightness)
+        } else {
+            colorToHex(Color.hsv(hue.coerceIn(0f, 360f), saturation, brightness))
+        }
+        lastCommitted = committed
+        onChange(committed)
+    }
+
+    val clipboard = LocalClipboardManager.current
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                RoundedCornerShape(12.dp),
+            )
+            .padding(12.dp),
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = !usesCover) {
-                    expanded = !expanded
-                    if (expanded) onExpand?.invoke()
-                }
-                .padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
                 label,
@@ -982,41 +1063,106 @@ private fun ThemeColorRow(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                if (usesCover) "From Cover" else value.uppercase(),
+                resolvedHex.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(end = 12.dp),
+                modifier = Modifier
+                    .clickable { clipboard.setText(AnnotatedString(resolvedHex.uppercase())) }
+                    .padding(end = 12.dp),
             )
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .background(
-                        if (usesCover) {
-                            coverSwatch ?: Color.Transparent
-                        } else {
-                            parseHexColor(value) ?: Color.Transparent
-                        },
-                        CircleShape,
-                    )
-                    .border(1.dp, Color.Gray.copy(alpha = 0.5f), CircleShape),
+                    .background(parseHexColor(resolvedHex) ?: Color.Transparent, CircleShape)
+                    .border(1.dp, Color.Gray.copy(alpha = 0.5f), CircleShape)
+                    .clickable { showPicker = !showPicker },
             )
         }
-        if (coverFallback != null) {
-            SettingSwitch(
-                label = "Derive from cover",
-                checked = usesCover,
-                onToggle = { enabled ->
-                    if (enabled) expanded = false
-                    onChange(if (enabled) COVER_COLOR_TOKEN else coverFallback)
+        SettingSwitch(
+            label = "Derive hue from cover",
+            checked = usesCoverHue,
+            onToggle = { enabled ->
+                if (enabled) {
+                    if (saturation < 0.02f) {
+                        val (s, b) = defaultCoverComponents(role, dark)
+                        saturation = s
+                        brightness = b
+                    }
+                    onChange(coverValueString(saturation, brightness))
+                } else {
+                    hue = coverHue
+                    onChange(colorToHex(Color.hsv(coverHue, saturation, brightness)))
+                }
+            },
+        )
+        if (!usesCoverHue) {
+            Text(
+                "Hue: ${(hue / 360f * 100).roundToInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SliderWithReset(
+                onReset = {
+                    hue = resetComponents().first
+                    commit()
+                },
+            ) {
+                GradientTrackSlider(
+                    value = hue / 360f,
+                    colors = (0..360 step 60).map { Color.hsv(it.toFloat(), 1f, 1f) },
+                    onChange = {
+                        hue = it * 360f
+                        commit()
+                    },
+                )
+            }
+        }
+        Text(
+            "Saturation: ${(saturation * 100).roundToInt()}%",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SliderWithReset(
+            onReset = {
+                saturation = resetComponents().second
+                commit()
+            },
+        ) {
+            GradientTrackSlider(
+                value = saturation,
+                colors = listOf(
+                    Color.hsv(displayHue, 0f, brightness),
+                    Color.hsv(displayHue, 1f, brightness),
+                ),
+                onChange = {
+                    saturation = it
+                    commit()
                 },
             )
         }
-        if (usesCover && onCoverStrengthChange != null) {
-            CoverStrengthSlider(value = coverStrength, onChange = onCoverStrengthChange)
+        Text(
+            "Brightness: ${(brightness * 100).roundToInt()}%",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SliderWithReset(
+            onReset = {
+                brightness = resetComponents().third
+                commit()
+            },
+        ) {
+            GradientTrackSlider(
+                value = brightness,
+                colors = listOf(Color.Black, Color.hsv(displayHue, saturation, 1f)),
+                onChange = {
+                    brightness = it
+                    commit()
+                },
+            )
         }
-        AnimatedVisibility(visible = expanded && !usesCover) {
+        AnimatedVisibility(visible = showPicker) {
             InlineColorPicker(
-                value = value,
+                value = resolvedHex,
                 onChange = onChange,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
             )

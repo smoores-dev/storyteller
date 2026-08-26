@@ -16,6 +16,8 @@ class SlotLayoutTest {
         assertEquals(2, SlotLayout.slotCount(SlotRegion.DOCK_TRAILING))
         assertEquals(3, SlotLayout.slotCount(SlotRegion.DOCK_CENTER))
         assertEquals(6, SlotLayout.slotCount(SlotRegion.MENU_BAR))
+        assertEquals(6, SlotLayout.slotCount(SlotRegion.FULL_PLAYER_STATS))
+        assertEquals(6, SlotLayout.slotCount(SlotRegion.FULL_PLAYER_CONTROLS))
     }
 
     @Test

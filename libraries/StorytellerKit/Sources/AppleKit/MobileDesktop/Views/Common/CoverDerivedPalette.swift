@@ -75,6 +75,24 @@ struct CoverDerivedPalette {
         )
     }
 
+    func controlTintSecondary(for colorScheme: ColorScheme) -> Color {
+        Self.color(
+            CoverPlayerChrome.controlTintSecondary(
+                surfaceHSB: chromeHSB,
+                dark: colorScheme != .light,
+            )
+        )
+    }
+
+    func controlTintTertiary(for colorScheme: ColorScheme) -> Color {
+        Self.color(
+            CoverPlayerChrome.controlTintTertiary(
+                surfaceHSB: chromeHSB,
+                dark: colorScheme != .light,
+            )
+        )
+    }
+
     func playerGradient(for colorScheme: ColorScheme) -> LinearGradient {
         let dark = colorScheme != .light
         return LinearGradient(

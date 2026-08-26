@@ -1514,6 +1514,12 @@ public func coverPaletteJSON(
                 CoverPlayerChrome.gradientBottom(surfaceHSB: chromeHSB, dark: dark)
             ),
             controlTint: argb(CoverPlayerChrome.controlTint(surfaceHSB: chromeHSB, dark: dark)),
+            controlTintSecondary: argb(
+                CoverPlayerChrome.controlTintSecondary(surfaceHSB: chromeHSB, dark: dark)
+            ),
+            controlTintTertiary: argb(
+                CoverPlayerChrome.controlTintTertiary(surfaceHSB: chromeHSB, dark: dark)
+            ),
             readerHighlight: argb(CoverReaderChrome.highlight(surfaceHSB: chromeHSB, dark: dark)),
             isFinal: isFinal,
         )
@@ -1927,6 +1933,8 @@ private struct AndroidCoverPalette: Encodable {
     let gradientTop: UInt32
     let gradientBottom: UInt32
     let controlTint: UInt32
+    let controlTintSecondary: UInt32
+    let controlTintTertiary: UInt32
     let readerHighlight: UInt32
     let isFinal: Bool
 }

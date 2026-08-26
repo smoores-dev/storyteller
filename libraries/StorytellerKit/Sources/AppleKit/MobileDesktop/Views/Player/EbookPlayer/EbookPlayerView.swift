@@ -455,24 +455,32 @@ public struct EbookPlayerView: View {
                 isWindowFullscreen ? available : min(baseContentWidth ?? available, available)
 
             HStack(spacing: 0) {
-                if viewModel.showChapterSidebar {
+                ZStack(alignment: .trailing) {
                     chapterSidebarCard
                         .compositingGroup()
-                        .transition(.offset(x: leftSidebarTotalWidth))
-                        .zIndex(0)
                 }
+                .frame(
+                    width: viewModel.showChapterSidebar ? leftSidebarTotalWidth : 0,
+                    alignment: .trailing,
+                )
+                .clipped()
+                .zIndex(0)
 
                 readerContent
                     .padding(.top, readerTopInset)
                     .frame(width: contentWidth, height: geometry.size.height)
                     .zIndex(1)
 
-                if viewModel.showAudioSidebar {
+                ZStack(alignment: .leading) {
                     audioSidebarCard
                         .compositingGroup()
-                        .transition(.offset(x: -audioSidebarTotalWidth))
-                        .zIndex(0)
                 }
+                .frame(
+                    width: viewModel.showAudioSidebar ? audioSidebarTotalWidth : 0,
+                    alignment: .leading,
+                )
+                .clipped()
+                .zIndex(0)
             }
             .onAppear {
                 if baseContentWidth == nil {
@@ -598,8 +606,10 @@ public struct EbookPlayerView: View {
 
     private var chapterSidebar: some View {
         let theme = EbookSidebarTheme(
-            foreground: readerForegroundColor,
+            foreground: coverPalette.controlTint(for: colorScheme),
             accent: coverPalette.resolved(for: colorScheme).accent,
+            secondary: coverPalette.controlTintSecondary(for: colorScheme),
+            tertiary: coverPalette.controlTintTertiary(for: colorScheme),
         )
         return EbookSidebarView(
             viewModel: viewModel,
@@ -990,7 +1000,10 @@ public struct EbookPlayerView: View {
     #if os(iOS)
     private var imageGallerySheet: some View {
         ImageGallerySheet(
-            items: viewModel.imageItems,
+            items: viewModel.imageItems.filter {
+                !viewModel.hiddenImageIDs.contains($0.id)
+                    && !viewModel.tinyImageIDs.contains($0.id)
+            },
             state: viewModel.imageIndexState,
             provider: viewModel.imageProvider,
             positionLabel: { item in

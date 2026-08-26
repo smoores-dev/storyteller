@@ -57,6 +57,8 @@ internal data class CoverBackgroundPalette(
     val gradientTop: Color,
     val gradientBottom: Color,
     val controlTint: Color,
+    val controlTintSecondary: Color,
+    val controlTintTertiary: Color,
     val readerHighlight: Color,
     val isFinal: Boolean = true,
 ) {
@@ -149,6 +151,8 @@ internal fun coverBackgroundPalette(
         gradientTop = palette.color("gradientTop"),
         gradientBottom = palette.color("gradientBottom"),
         controlTint = palette.color("controlTint"),
+        controlTintSecondary = palette.color("controlTintSecondary"),
+        controlTintTertiary = palette.color("controlTintTertiary"),
         readerHighlight = palette.color("readerHighlight"),
         isFinal = palette.getBoolean("isFinal"),
     )

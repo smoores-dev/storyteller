@@ -950,7 +950,17 @@ class EbookPlayerViewModel {
 
     var imageItems: [BookImageItem] = []
     var imageIndexState: ImageIndexState = .idle
+    var hiddenImageIDs: Set<String> = []
+    var pinnedImageIDs: Set<String> = []
+    var tinyImageIDs: Set<String> = []
     private(set) var imageProvider: BookImageDataProvider?
+
+    private static let tinyImageAreaThreshold: CGFloat = 22_500
+
+    private var imagePrefsKey: String? {
+        guard let id = bookData?.metadata.id else { return nil }
+        return "\(id.sourceID):\(id.uuid)"
+    }
 
     func buildImageIndexIfNeeded() async {
         guard imageIndexState == .idle, !isComicBook else { return }
@@ -961,16 +971,63 @@ class EbookPlayerViewModel {
                 try BookImageIndexer.buildIndex(epubURL: epubURL)
             }.value
             // Must exist before items publish; cells load thumbnails on appear.
-            imageProvider = BookImageDataProvider(
+            let provider = BookImageDataProvider(
                 extractedRoot: extractedEbookPath,
                 archiveURL: epubURL,
             )
+            imageProvider = provider
             imageItems = items
+            loadImagePrefs()
             imageIndexState = .ready
+            let threshold = Self.tinyImageAreaThreshold
+            tinyImageIDs = await Task.detached(priority: .utility) {
+                var tiny: Set<String> = []
+                for item in items {
+                    guard let size = provider.pixelSize(for: item) else { continue }
+                    if size.width * size.height < threshold {
+                        tiny.insert(item.id)
+                    }
+                }
+                return tiny
+            }.value
         } catch {
             debugLog("[EbookPlayerViewModel] Image index failed: \(error)")
             imageIndexState = .failed
         }
+    }
+
+    private func loadImagePrefs() {
+        guard let key = imagePrefsKey else { return }
+        let defaults = UserDefaults.standard
+        hiddenImageIDs = Set(defaults.stringArray(forKey: "EbookImagesHidden:\(key)") ?? [])
+        pinnedImageIDs = Set(defaults.stringArray(forKey: "EbookImagesPinned:\(key)") ?? [])
+    }
+
+    func setImageHidden(_ item: BookImageItem, hidden: Bool) {
+        if hidden {
+            hiddenImageIDs.insert(item.id)
+            pinnedImageIDs.remove(item.id)
+        } else {
+            hiddenImageIDs.remove(item.id)
+        }
+        saveImagePrefs()
+    }
+
+    func setImagePinned(_ item: BookImageItem, pinned: Bool) {
+        if pinned {
+            pinnedImageIDs.insert(item.id)
+            hiddenImageIDs.remove(item.id)
+        } else {
+            pinnedImageIDs.remove(item.id)
+        }
+        saveImagePrefs()
+    }
+
+    private func saveImagePrefs() {
+        guard let key = imagePrefsKey else { return }
+        let defaults = UserDefaults.standard
+        defaults.set(Array(hiddenImageIDs).sorted(), forKey: "EbookImagesHidden:\(key)")
+        defaults.set(Array(pinnedImageIDs).sorted(), forKey: "EbookImagesPinned:\(key)")
     }
 
     func navigateToImage(_ item: BookImageItem) async {
