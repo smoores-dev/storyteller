@@ -162,12 +162,9 @@ android_app:
     - ./scripts/genicons
   script:
     - ./scripts/androidbuild
-    - '"${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose
-      --print-certs AndroidApp/app/build/outputs/apk/debug/app-debug.apk'
-    - mv AndroidApp/app/build/outputs/apk/debug/app-debug.apk
-      AndroidApp/app/build/outputs/apk/debug/storyteller-debug.apk
+    - ci_scripts/gitlab_publish_android_apk.sh
   artifacts:
     name: storyteller-clients-android-$CI_COMMIT_SHORT_SHA
     expire_in: 1 week
     paths:
-      - applications/clients/AndroidApp/app/build/outputs/apk/debug/storyteller-debug.apk
+      - storyteller-debug.apk
