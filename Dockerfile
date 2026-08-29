@@ -48,14 +48,10 @@ COPY . .
 
 RUN cp docker-scripts/* ./scripts/
 
-RUN gcc -g -fPIC -rdynamic -shared applications/web/sqlite/uuid.c -o applications/web/sqlite/uuid.c.so
-
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG CI_COMMIT_TAG
 ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
-
-ENV SQLITE_NATIVE_BINDING=/app/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 
 RUN yarn workspaces foreach -Rpt --from @storyteller-platform/web --exclude @storyteller-platform/eslint run build
 
@@ -125,8 +121,6 @@ RUN ln -sf /opt/readium /usr/local/bin/readium
 COPY --from=builder /app/applications/web/.next/standalone ./.next/standalone
 COPY --from=builder /app/applications/web/public ./.next/standalone/applications/web/public
 COPY --from=builder /app/applications/web/.next/static ./.next/standalone/applications/web/.next/static
-COPY --from=builder /app/applications/web/sqlite/uuid.c.so ./.next/standalone/applications/web/sqlite/uuid.c.so
-
 RUN mkdir -p ./.next/standalone/applications/web/.next/cache \
     && chown storyteller:storyteller ./.next/standalone/applications/web/.next/cache
 
@@ -150,6 +144,9 @@ COPY --from=builder /app/node_modules/@echogarden/icu-segmentation-wasm/wasm/*.w
 # @parcel/watcher native binaries are loaded dynamically at runtime and
 # not traced by next.js into the standalone output
 COPY --from=builder /app/node_modules/@parcel ./.next/standalone/node_modules/@parcel
+
+# better-sqlite3 v13+ ships platform prebuilds that are loaded dynamically
+COPY --from=builder /app/node_modules/better-sqlite3/prebuilds ./.next/standalone/node_modules/better-sqlite3/prebuilds
 
 # kuromoji package: the bundled kuroshiro-analyzer-kuromoji still calls
 # require.resolve("kuromoji") at runtime to locate its dict/ directory, so the
@@ -178,7 +175,6 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 ENV ERROR_ALIGN_NATIVE_BINDING=/app/.next/standalone/applications/web/work-dist/@storyteller-platform/align/
-ENV SQLITE_NATIVE_BINDING=/app/.next/standalone/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 ENV STORYTELLER_WORKER=worker.mjs
 ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.mjs
 

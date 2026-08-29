@@ -18,7 +18,7 @@ import { type UUID } from "@/uuid"
 import { pathBelongsTo } from "./folder"
 import { filepathFolder, scan } from "./scan"
 import { type Candidate, type ScanFormat } from "./types"
-import { suppressPrefix, unsuppressPrefix } from "./write-intent"
+import { releasePrefixAfterSettle, suppressPrefix } from "./write-intent"
 
 async function clearInternalAssetForFormat(book: Book, format: ScanFormat) {
   const assetDir = getInternalBookDirectory(book)
@@ -39,7 +39,7 @@ async function clearInternalAssetForFormat(book: Book, format: ScanFormat) {
         : getInternalReadaloudFilepath(book)
     await rm(filepath, { force: true })
   } finally {
-    unsuppressPrefix(assetDir)
+    releasePrefixAfterSettle(assetDir)
   }
 }
 

@@ -7,7 +7,6 @@ import {
   statSync,
 } from "node:fs"
 import { mkdir, rm } from "node:fs/promises"
-import os from "node:os"
 import path from "node:path"
 import { pipeline } from "node:stream/promises"
 import { createGunzip } from "node:zlib"
@@ -15,6 +14,8 @@ import { createGunzip } from "node:zlib"
 import chalk from "chalk"
 import { Presets, SingleBar } from "cli-progress"
 import { extract } from "tar"
+
+import { scratchPath } from "@storyteller-platform/fs"
 
 import {
   type BuildVariant,
@@ -212,7 +213,7 @@ export async function installBinary(
   }
 
   const url = getBinaryDownloadUrl(variant)
-  const tmpDir = path.join(os.tmpdir(), "ghost-story-whisper-install")
+  const tmpDir = scratchPath("ghost-story-whisper-install")
   const tarballPath = path.join(tmpDir, `whisper-cpp-${variant}.tar.gz`)
 
   if (printOutput) {
@@ -356,7 +357,7 @@ export async function installCoremlModel(
   }
 
   const url = getCoremlModelDownloadUrl(model)
-  const tmpDir = path.join(os.tmpdir(), "ghost-story-coreml-install")
+  const tmpDir = scratchPath("ghost-story-coreml-install")
   const tarballPath = path.join(tmpDir, `ggml-${model}-encoder.mlmodelc.tar.gz`)
 
   if (printOutput) {

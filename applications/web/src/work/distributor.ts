@@ -8,8 +8,8 @@ import Piscina from "piscina"
 import { pathBelongsTo } from "@/assets/library/scanner/folder"
 import { filepathFolder, scan } from "@/assets/library/scanner/scan"
 import {
+  releasePrefixAfterSettle,
   suppressPrefix,
-  unsuppressPrefix,
 } from "@/assets/library/scanner/write-intent"
 import { getReadaloudFilepath } from "@/assets/paths"
 import {
@@ -356,7 +356,7 @@ async function runJob(job: Job): Promise<void> {
     logger.error(`Processing for job ${job.uuid} failed unexpectedly`)
     logger.error(err)
   } finally {
-    for (const fp of toSupress) unsuppressPrefix(fp)
+    for (const fp of toSupress) releasePrefixAfterSettle(fp)
   }
 }
 

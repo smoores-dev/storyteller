@@ -1,7 +1,6 @@
-import { tmpdir } from "node:os"
-import { join } from "node:path"
-
 import { Converter } from "ffmpeg-stream"
+
+import { scratchPath } from "@storyteller-platform/fs"
 
 import { type AudioFormat, formatToExtension } from "./audio/AudioFormat.ts"
 
@@ -10,7 +9,7 @@ export async function fileToWav(
   options: { sampleRate?: number; channels?: number } = {},
 ): Promise<string> {
   const converter = new Converter()
-  const outputPath = join(tmpdir(), `vad-${Date.now()}.wav`)
+  const outputPath = scratchPath(`vad-${Date.now()}.wav`)
   converter.createInputFromFile(file)
   converter.createOutputToFile(outputPath, {
     f: "wav",
@@ -29,7 +28,7 @@ export async function fileToFormat(
 ): Promise<string> {
   const converter = new Converter()
   const ext = formatToExtension(targetFormat)
-  const outputPath = join(tmpdir(), `convert-${Date.now()}${ext}`)
+  const outputPath = scratchPath(`convert-${Date.now()}${ext}`)
   converter.createInputFromFile(file)
   converter.createOutputToFile(
     outputPath,

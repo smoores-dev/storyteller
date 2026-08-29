@@ -2,10 +2,9 @@ import { exec, execFile } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { writeFileSync } from "node:fs"
 import { cp, rm, writeFile } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import { promisify } from "node:util"
 
+import { scratchPath } from "@storyteller-platform/fs"
 import { extname } from "@storyteller-platform/path"
 
 const execPromise = promisify(exec)
@@ -378,13 +377,11 @@ export async function writeTrackMetadata(
   metadataArgs.push("-map 0:a -map_metadata 0")
 
   const ext = extname(path)
-  const tmpPath = join(
-    tmpdir(),
+  const tmpPath = scratchPath(
     `storyteller-platform-audiobook-${randomUUID()}${ext}`,
   )
 
-  const chapterFilePath = join(
-    tmpdir(),
+  const chapterFilePath = scratchPath(
     `storyteller-platform-audiobook-${randomUUID()}.txt`,
   )
 
@@ -414,8 +411,7 @@ END=${Math.floor(chapter.endTime * 1000)}
     if (attachedPic) {
       // Determine file extension from mime type
       const imageExt = attachedPic.mimeType.split("/")[1]
-      picPath = join(
-        tmpdir(),
+      picPath = scratchPath(
         `storyteller-platform-audiobook-${randomUUID()}.${imageExt}`,
       )
 
@@ -462,7 +458,7 @@ END=${Math.floor(chapter.endTime * 1000)}
 }
 
 export async function getTrackMetadataFromBuffer(buffer: Uint8Array) {
-  const tempFile = join(tmpdir(), `ffprobe-${randomUUID()}`)
+  const tempFile = scratchPath(`ffprobe-${randomUUID()}`)
 
   try {
     writeFileSync(tempFile, buffer)

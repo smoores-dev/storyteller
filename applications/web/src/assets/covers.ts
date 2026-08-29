@@ -1,5 +1,4 @@
 import { mkdir, open, readdir, rm, writeFile } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { basename, dirname, extname, join } from "node:path"
 
 import { extension, lookup } from "mime-types"
@@ -13,6 +12,7 @@ import {
   type EpubReader,
   MemoryAdapter,
 } from "@storyteller-platform/epub"
+import { scratchPath } from "@storyteller-platform/fs"
 
 import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
 import { type Book, touchBook } from "@/database/books"
@@ -94,7 +94,7 @@ async function readAudioCoverFromReadaloudAudio(
   if (!firstAudioItem) return null
 
   const audio = await epub.readItemContents(firstAudioItem.id)
-  const tmpAudioPath = join(tmpdir(), "storyteller", firstAudioItem.href)
+  const tmpAudioPath = scratchPath("storyteller", firstAudioItem.href)
 
   try {
     await mkdir(dirname(tmpAudioPath), { recursive: true })

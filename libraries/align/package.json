@@ -60,6 +60,7 @@
     "@readium/shared": "^2.2.0",
     "@storyteller-platform/audiobook": "workspace:^",
     "@storyteller-platform/epub": "workspace:^",
+    "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/ghost-story": "workspace:^",
     "@storyteller-platform/mapping": "workspace:*",
     "@storyteller-platform/transliteration": "^4.0.6",

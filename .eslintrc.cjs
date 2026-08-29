@@ -14,5 +14,6 @@ module.exports = {
       files: ["lint-staged.config.js"],
       parserOptions: { ecmaVersion: 2022, sourceType: "module" },
     },
+    ...base.overrides,
   ],
 }

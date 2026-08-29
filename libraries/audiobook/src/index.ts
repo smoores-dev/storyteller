@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto"
 import { createWriteStream, rmSync } from "node:fs"
 import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { pipeline } from "node:stream/promises"
 
 import { lookup } from "mime-types"
 import { open } from "yauzl-promise"
 import { ZipFile } from "yazl"
 
+import { scratchPath } from "@storyteller-platform/fs"
 import { basename, dirname, extname, join } from "@storyteller-platform/path"
 
 import { AudiobookEntry } from "./entry.ts"
@@ -69,8 +69,7 @@ export class Audiobook {
   private async getEntries() {
     if (this.isZip) {
       const [first] = this.inputs
-      const extractPath = join(
-        tmpdir(),
+      const extractPath = scratchPath(
         `storyteller-platform-audiobook-${randomUUID()}`,
       )
       this.extractPath = extractPath
@@ -324,8 +323,7 @@ export class Audiobook {
     }
 
     if (this.isZip && this.extractPath) {
-      const tmpArchivePath = join(
-        tmpdir(),
+      const tmpArchivePath = scratchPath(
         `storyteller-platform-epub-${randomUUID()}`,
       )
 

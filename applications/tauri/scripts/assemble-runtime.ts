@@ -86,17 +86,6 @@ if (!existsSync(join(standalone, "applications", "web", "server.js"))) {
   )
 }
 
-const uuidExt = {
-  darwin: "uuid.c.dylib",
-  linux: "uuid.c.so",
-  win32: "uuid.c.dll",
-}[target.platform]
-if (!existsSync(join(webRoot, "sqlite", uuidExt))) {
-  throw new Error(
-    `missing sqlite extension ${uuidExt} — on darwin/linux the web build produces it via build-sqlite-ext.sh; on windows compile it manually (cl /LD sqlite/uuid.c)`,
-  )
-}
-
 console.log(`staging runtime tree for ${triple}`)
 rmSync(stagingDir, { recursive: true, force: true })
 mkdirSync(stagingDir, { recursive: true })
@@ -113,11 +102,6 @@ copy(
   join(webRoot, ".next", "static"),
   join(webStaging, ".next", "static"),
   "static assets",
-)
-copy(
-  join(webRoot, "sqlite", uuidExt),
-  join(webStaging, "sqlite", uuidExt),
-  "sqlite uuid extension",
 )
 copy(join(webRoot, "migrations"), join(webStaging, "migrations"), "migrations")
 copy(join(webRoot, "work-dist"), join(webStaging, "work-dist"), "worker bundle")
@@ -237,16 +221,15 @@ if (existsSync(napiDir)) {
   }
 }
 
-const sqliteBinding = join(
+const sqlitePrebuild = join(
   stagingDir,
   "node_modules",
   "better-sqlite3",
-  "build",
-  "Release",
-  "better_sqlite3.node",
+  "prebuilds",
+  `${target.platform}-${target.arch}.node`,
 )
-if (!existsSync(sqliteBinding)) {
-  throw new Error(`better-sqlite3 native binding missing at ${sqliteBinding}`)
+if (!existsSync(sqlitePrebuild)) {
+  throw new Error(`better-sqlite3 prebuild missing at ${sqlitePrebuild}`)
 }
 
 // symlink extraction on windows

@@ -1,4 +1,6 @@
 import { open } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { resolve } from "node:path"
 
 /**
  * Like readFile, but streams the file into memory in chunks
@@ -35,4 +37,12 @@ export async function* getFileChunks(path: string): AsyncGenerator<Buffer> {
   } finally {
     await fileHandle.close()
   }
+}
+
+export function scratchPath(...segments: string[]): string {
+  return resolve(
+    // eslint-disable-next-line no-restricted-syntax
+    process.env["STORYTELLER_SCRATCH_DIR"] || tmpdir(),
+    ...segments,
+  )
 }

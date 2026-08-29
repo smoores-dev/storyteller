@@ -25,6 +25,7 @@ export const documentedServerEnvVars = {
     .describe("Port for the Readium server."),
   STORYTELLER_DATA_DIR: z
     .string()
+    .min(1, "STORYTELLER_DATA_DIR must not be empty")
     .default(() => process.cwd())
     .describe(
       "Directory where Storyteller will store its data. | Current Directory (`/data` in container)",

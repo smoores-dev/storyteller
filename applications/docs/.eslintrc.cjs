@@ -32,5 +32,6 @@ module.exports = {
         "react/react-in-jsx-scope": "error",
       },
     },
+    ...base.overrides,
   ],
 }

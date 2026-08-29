@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process"
+import { randomUUID } from "node:crypto"
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -13,7 +14,6 @@ import { logger } from "@/logging"
 
 const SCHEMA_SQL_PATH = join(cwd(), "schema.sql")
 const SCHEMA_TS_PATH = join(cwd(), "src", "database", "schema.ts")
-const UUID_EXT_PATH = join(cwd(), "sqlite", "uuid.c")
 
 function dumpSchemaSql(sqlite: Db.Database): string {
   const rows = sqlite
@@ -28,9 +28,10 @@ function dumpSchemaSql(sqlite: Db.Database): string {
 
 async function main() {
   const sqlite = new Db(":memory:")
+
+  sqlite.function("uuid", () => randomUUID())
   sqlite.pragma("journal_mode = WAL")
   sqlite.pragma("busy_timeout = 5000")
-  sqlite.loadExtension(UUID_EXT_PATH)
 
   replaceDatabase(createKyselyDb(sqlite))
 

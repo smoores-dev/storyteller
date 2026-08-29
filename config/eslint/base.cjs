@@ -39,5 +39,19 @@ module.exports = {
       },
     ],
     "import/no-duplicates": ["error", { "prefer-inline": true }],
+    "no-restricted-syntax": [
+      "error",
+      {
+        selector:
+          "CallExpression[callee.name='tmpdir'], CallExpression[callee.property.name='tmpdir']",
+        message: "Use `scratchPath()` from `@storyteller-platform/fs` instead",
+      },
+    ],
   },
+  overrides: [
+    {
+      files: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**", "**/test/**"],
+      rules: { "no-restricted-syntax": "off" },
+    },
+  ],
 }

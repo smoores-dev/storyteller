@@ -15,35 +15,45 @@ export interface EpubStorageCapabilities {
 }
 
 export interface EpubListEntry {
-  /** absolute path under {@link EpubStorageAdapter.rootPath} */
+  /** location the adapter can read the entry back from, in whatever form it stores */
   absolutePath: string
-  /** path relative to {@link EpubStorageAdapter.rootPath}, slash-separated */
+  /** the entry name, as it appears in the archive */
   relativePath: string
 }
 
+/**
+ * Adapters only receive entry names, which is:
+ * - the name a file has in the archive itself
+ * - relative to the container root, slash-separated,
+ * - already percent-decoded (eg `OEBPS/a b.xhtml`, not `OEBPS/a%20b.xhtml`)
+ *
+ * Adapter decides where to store files under what name
+ * In previous versions of the EPUB lib, this was a little bit more muddled, leading to
+ * eg the TmpFsAdapter trying to read `OEBPS/a%20b.xhtml`, whereas it was stored as `OEBPS/a b.xhtml`
+ */
 export interface EpubStorageAdapter {
-  /**
-   * Opaque path prefix used by `resolveInternalHref` to anchor absolute
-   * paths within the archive. For TmpFsAdapter this is the tmp dir;
-   * for MemoryAdapter it's a virtual prefix that's never written to disk
-   */
-  readonly rootPath: string
+  read(entry: string): Promise<Uint8Array>
+  read(entry: string, encoding: "utf-8"): Promise<string>
 
-  read(path: string): Promise<Uint8Array>
-  read(path: string, encoding: "utf-8"): Promise<string>
+  /**
+   * Whether the archive holds an entry under exactly this name.
+   * Used to choose between different canditates for an href
+   * so should be exact
+   */
+  exists(entry: string): Promise<boolean>
 
   /**
    * Length of an entry in bytes, for the readium page-count heuristic
    * which expects compressed size when available
    */
-  archiveLength(path: string): Promise<number>
+  archiveLength(entry: string): Promise<number>
 
   /** Required for any mutation method on Epub */
-  write?(path: string, data: Uint8Array): Promise<void>
-  write?(path: string, data: string, encoding: "utf-8"): Promise<void>
+  write?(entry: string, data: Uint8Array): Promise<void>
+  write?(entry: string, data: string, encoding: "utf-8"): Promise<void>
 
   /** Required for removeManifestItem / setCoverImage replacement */
-  remove?(path: string): Promise<void>
+  remove?(entry: string): Promise<void>
 
   /** Required for Epub.saveAndClose to walk the contents */
   list?(): AsyncIterable<EpubListEntry>
@@ -63,18 +73,14 @@ export interface EpubStorageAdapterClass<Opts extends object = object> {
   readonly capabilities: EpubStorageCapabilities
 
   /**
-   * Open an archive from a path or buffer. The returned adapter is
-   * ready to read; the Epub class will assert it's a valid EPUB 3
-   * afterwards.
+   * Open an archive from a path or buffer.
+   * Will throw if the archive is not a valid EPUB 3
    */
   init(source: string | Uint8Array, opts?: Opts): Promise<EpubStorageAdapter>
 
   /**
    * Initialize an empty extract root for {@link Epub.create}.
-   *
-   * Optional — adapters that can't be written to from scratch
-   * (e.g. read-only zip handles) should leave this off, and
-   * `Epub.using(...).create(...)` will throw.
+   * Only necessary for adapters that can write
    */
   initEmpty?(opts?: Opts): Promise<EpubStorageAdapter>
 }

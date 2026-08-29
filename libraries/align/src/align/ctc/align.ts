@@ -9,7 +9,6 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import {
   basename as autoBasename,
   dirname as autoDirname,
@@ -22,6 +21,7 @@ import { ZipFile } from "yazl"
 
 import { isAudioFile } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
+import { scratchPath } from "@storyteller-platform/fs"
 import { type EmissionResult } from "@storyteller-platform/ghost-story"
 
 import {
@@ -50,8 +50,7 @@ export async function ctcAlign(
   const outFormat = options.outFormat ?? "epub"
   const epubPath =
     outFormat === "epub"
-      ? autoJoin(
-          tmpdir(),
+      ? scratchPath(
           `storyteller-platform-align-${randomUUID()}`,
           autoBasename(output),
         )
@@ -156,8 +155,7 @@ export async function ctcAlign(
       guidedNavigationDocuments,
     )
 
-    const tmpArchivePath = autoJoin(
-      tmpdir(),
+    const tmpArchivePath = scratchPath(
       `storyteller-platform-epub-${randomUUID()}`,
     )
 

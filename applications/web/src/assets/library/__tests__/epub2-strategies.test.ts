@@ -1,6 +1,6 @@
 import assert from "node:assert"
 import { readFile, readdir } from "node:fs/promises"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { describe, it } from "node:test"
 
 import { ZipFile } from "yazl"
@@ -11,6 +11,7 @@ import { setupTestDb } from "@/__tests__/harness/testDb"
 import { createTestLibrary } from "@/__tests__/harness/testFs"
 import { canonicalizePath } from "@/assets/library/scanner/folder"
 import { scanLibrary } from "@/assets/library/scanner/scan"
+import { isSuppressed } from "@/assets/library/scanner/write-intent"
 import { getBooks } from "@/database/books"
 import { createImportRule, getIgnorePaths } from "@/database/importRules"
 
@@ -357,6 +358,12 @@ void describe("epub2 import strategies", () => {
 
     const ignorePaths = await getIgnorePaths()
     assert.ok(!ignorePaths.includes(await canonicalizePath(backupPath)))
+
+    assert.ok(
+      isSuppressed(source) &&
+        isSuppressed(join(dirname(source), "book_epub2.epub")),
+      "the rollback writes must stay suppressed, or the watcher rescans the file and retries the failing conversion forever",
+    )
   })
 
   void it("convert-alongside rolls back when the conversion fails", async () => {
@@ -385,6 +392,11 @@ void describe("epub2 import strategies", () => {
     await folder.expectFiles(["book.epub"])
     assert.ok((await readFile(source)).equals(originalBytes))
     assert.ok(!(await getIgnorePaths()).includes(source))
+
+    assert.ok(
+      isSuppressed(source),
+      "the rollback writes must stay suppressed, or the watcher rescans the file and retries the failing conversion forever",
+    )
   })
 })
 

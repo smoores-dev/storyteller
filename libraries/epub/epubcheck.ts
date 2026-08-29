@@ -1,10 +1,11 @@
 import { execFile } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { readFile, unlink } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
+
+import { scratchPath } from "@storyteller-platform/fs"
 
 const here = dirname(fileURLToPath(import.meta.url))
 const JAR = join(here, "vendors", "epubcheck-5.3.0", "epubcheck.jar")
@@ -30,7 +31,7 @@ export interface Report {
 }
 
 export async function epubcheck(epubFile: string): Promise<Report> {
-  const output = join(tmpdir(), `epubcheck-${randomUUID()}.json`)
+  const output = scratchPath(`epubcheck-${randomUUID()}.json`)
   const execFilePromise = promisify(execFile)
 
   try {

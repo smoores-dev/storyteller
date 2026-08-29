@@ -4,8 +4,8 @@ import { dirname, join } from "node:path"
 import { copyWithHardlink, copyWithReflink, move } from "@/assets/fs"
 import { type ScanFormat } from "@/assets/library/scanner/types"
 import {
+  releasePrefixAfterSettle,
   suppressPrefix,
-  unsuppressPrefix,
 } from "@/assets/library/scanner/write-intent"
 import {
   getInternalAudioDirectory,
@@ -55,8 +55,8 @@ function resolveRelocator(
       }
       await resolver(source, destination)
     } finally {
-      unsuppressPrefix(destination)
-      unsuppressPrefix(source)
+      releasePrefixAfterSettle(destination)
+      releasePrefixAfterSettle(source)
     }
   }
 }
