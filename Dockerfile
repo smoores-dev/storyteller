@@ -7,6 +7,21 @@ FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BAS
 
 WORKDIR /app
 
+# onnxruntime-node's postinstall on linux/x64 downloads the 205MB CUDA execution
+# provider nupkg from nuget.org inside the yarn link step, with no retries and
+# no progress output, which is what stalls the amd64 builds. fetch it here
+# instead so it gets its own cached layer, curl retries, and readable logs.
+# only cuda-12 bases can load it (built against cuda 12 + cudnn 9), so every
+# other variant skips it and runs cpu inference from the bundled binary.
+ARG BASE_TAG
+ARG ORT_VERSION=1.24.3
+RUN mkdir -p /tmp/ort && case "$BASE_TAG" in cuda-12*) \
+      curl -fsSL --retry 5 --retry-all-errors -o /tmp/ort.nupkg \
+        "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime.gpu.linux/$ORT_VERSION/microsoft.ml.onnxruntime.gpu.linux.$ORT_VERSION.nupkg" \
+      && python3 -c "import zipfile,sys; z=zipfile.ZipFile('/tmp/ort.nupkg'); [open('/tmp/ort/'+n.rsplit('/',1)[1],'wb').write(z.read(n)) for n in z.namelist() if n.startswith('runtimes/linux-x64/native/libonnxruntime_providers_')]" \
+      && rm /tmp/ort.nupkg && ls -la /tmp/ort ;; \
+    esac
+
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/cache ./.yarn/cache
 COPY .yarn/patches ./.yarn/patches
@@ -28,10 +43,13 @@ COPY config/tsup/package.json ./config/tsup/package.json
 COPY config/eslint/package.json ./config/eslint/package.json
 
 # --inline-builds streams native build-script output so a hang during the
-# --inline-builds makes link step sayswhich package the crashes/hangs
-# ipv4first avoids stalls from ipv6 attempts inside the buildkit container
-# (onnxruntime-node downloads from azure cdn which returns AAAA records)
-RUN NODE_OPTIONS="--dns-result-order=ipv4first" timeout 300 yarn install --inline-builds
+# link step names the offending package instead of freezing silently.
+# ONNXRUNTIME_NODE_INSTALL=skip makes the onnxruntime-node postinstall exit
+# without downloading anything, then the prefetched cuda provider libs (if any)
+# are dropped into the location the postinstall would have written them to.
+RUN ONNXRUNTIME_NODE_INSTALL=skip NODE_OPTIONS="--dns-result-order=ipv4first" yarn install --inline-builds \
+    && if [ -n "$(ls /tmp/ort)" ]; then cp /tmp/ort/*.so node_modules/onnxruntime-node/bin/napi-v6/linux/x64/; fi \
+    && rm -rf /tmp/ort
 
 COPY docker-scripts/ ./scripts/
 
@@ -117,6 +135,13 @@ COPY --from=builder /app/node_modules/better-sqlite3/prebuilds ./.next/standalon
 # require.resolve("kuromoji") at runtime to locate its dict/ directory, so the
 # package must exist on disk in a location reachable from web/work-dist/.
 COPY --from=builder /app/node_modules/kuromoji ./.next/standalone/node_modules/kuromoji
+
+# onnxruntime-node loads its native binding via dynamic path.join() that
+# next.js file tracing cannot follow. copy the js files and only the linux
+# platform binaries (skips ~160mb of darwin/win32 binaries from the tarball).
+COPY --from=builder /app/node_modules/onnxruntime-node/dist ./.next/standalone/node_modules/onnxruntime-node/dist
+COPY --from=builder /app/node_modules/onnxruntime-node/package.json ./.next/standalone/node_modules/onnxruntime-node/package.json
+COPY --from=builder /app/node_modules/onnxruntime-node/bin/napi-v6/linux ./.next/standalone/node_modules/onnxruntime-node/bin/napi-v6/linux
 
 
 # Copy pre-installed whisper binaries and models from builder
