@@ -46,14 +46,18 @@ export const ReportChapterRowSchemaV2 = z.object({
   lastMatchedSentenceId: z.number(),
   firstMatchedSentenceContext: SentenceContextSchemaV2,
   lastMatchedSentenceContext: SentenceContextSchemaV2,
-  transcriptionContext: z.object({
-    before: z.string(),
-    after: z.string(),
-  }),
-  endTranscriptionContext: z.object({
-    before: z.string(),
-    after: z.string(),
-  }),
+  transcriptionContext: z
+    .object({
+      before: z.string(),
+      after: z.string(),
+    })
+    .optional(),
+  endTranscriptionContext: z
+    .object({
+      before: z.string(),
+      after: z.string(),
+    })
+    .optional(),
   markedOk: z.boolean().meta({
     description: "This chapter is fine as-is.",
   }),

@@ -18,7 +18,11 @@ import { extract } from "tar"
 
 import {
   type BuildVariant,
+  DEFAULT_WAV2VEC2_MODEL,
   MODEL_SIZES,
+  type Wav2Vec2DataType,
+  type Wav2Vec2Device,
+  type Wav2Vec2Model,
   type WhisperModel,
 } from "../constants.ts"
 
@@ -38,6 +42,7 @@ import {
   isVariantCompatibleWithCurrentPlatform,
   needsCoremlModel,
   resolveVariant,
+  resolveWav2Vec2Dtype,
   writeConfig,
 } from "./config.ts"
 
@@ -443,6 +448,44 @@ export async function installVadModel(
   }
 
   return modelPath
+}
+
+export interface InstallWav2Vec2ModelOptions {
+  model?: Wav2Vec2Model | undefined
+  modelDir?: string | undefined
+  device?: Wav2Vec2Device | undefined
+  dtype?: Wav2Vec2DataType | undefined
+  printOutput?: boolean | undefined
+  signal?: AbortSignal | null | undefined
+}
+
+export async function installWav2Vec2Model(
+  options: InstallWav2Vec2ModelOptions = {},
+): Promise<string> {
+  const {
+    model = DEFAULT_WAV2VEC2_MODEL,
+    modelDir = getModelDir(),
+    device = "auto",
+    dtype = resolveWav2Vec2Dtype(device),
+    printOutput = true,
+    signal,
+  } = options
+
+  if (printOutput) {
+    console.log(
+      `Downloading wav2vec2 model ${model} (${device}, ${dtype}) into ${modelDir}`,
+    )
+  }
+
+  const { loadWav2Vec2Model } = await import("../emission/Wav2Vec2Emission.ts")
+
+  await loadWav2Vec2Model({ model, modelDir, device, dtype, signal })
+
+  if (printOutput) {
+    console.log(`Model ${model} installed successfully`)
+  }
+
+  return modelDir
 }
 
 export interface EnsureInstalledOptions {

@@ -276,15 +276,20 @@ function StatusBadge({ status }: { status: PublicJob["status"] }) {
 function useEstimatedRemaining(job: PublicJob) {
   const isRunning = job.status === "RUNNING"
   const bookUuid = job.bookUuid ?? ("" as UUID)
+  const isCtc = job.config?.aligner === "ctc"
+  const engine =
+    (isCtc ? job.config?.ctcEngine : job.config?.transcriptionEngine) ?? ""
+  const model =
+    (isCtc ? job.config?.ctcModel : job.config?.whisperModel) ?? null
 
   const { data } = useGetAlignmentEstimateQuery(
     {
       bookUuid,
-      engine: job.config?.transcriptionEngine ?? "",
-      whisperModel: job.config?.whisperModel ?? null,
+      engine,
+      whisperModel: model,
       restart: (job as { restart?: string | false }).restart || false,
     },
-    { skip: !isRunning || !job.bookUuid || !job.config?.transcriptionEngine },
+    { skip: !isRunning || !job.bookUuid || !engine },
   )
 
   if (!isRunning || !data?.estimateSeconds || !job.startedAt) return null
@@ -360,11 +365,15 @@ function JobItem({
       job.status.toLowerCase()
     )
 
-  const configSummary = [
-    job.config?.transcriptionEngine,
-    job.config?.whisperModel,
-    job.config?.language,
-  ]
+  const configSummary = (
+    job.config?.aligner === "ctc"
+      ? [job.config.ctcEngine, job.config.ctcModel, job.config.language]
+      : [
+          job.config?.transcriptionEngine,
+          job.config?.whisperModel,
+          job.config?.language,
+        ]
+  )
     .filter(Boolean)
     .join(" · ")
 

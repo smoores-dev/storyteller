@@ -71,6 +71,7 @@ const nextConfig: import("next").NextConfig = {
     "pino",
     "pino-pretty",
     "onnxruntime-node",
+    "@huggingface/transformers",
     "@node-rs/crc32",
     "@node-rs/xxhash",
     "@parcel/watcher",

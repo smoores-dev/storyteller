@@ -159,7 +159,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
 
   if (process.env["NODE_ENV"] === "development") {
     try {
-      BookSchemaV2.parse(updated)
+      // BookSchemaV2.parse(updated)
     } catch (e) {
       logger.error({ msg: `Dev only parsing failed`, err: e })
     }

@@ -64,6 +64,7 @@ export interface AlignOptions {
   primaryLocale?: Intl.Locale | null | undefined
   logger?: Logger | null | undefined
   onProgress?: ((progress: number) => void) | null | undefined
+  signal?: AbortSignal | null | undefined
 }
 
 export class Aligner {
@@ -104,6 +105,7 @@ export class Aligner {
     textRef: "id-fragment" | "text-fragment" | null | undefined,
     private languageOverride?: Intl.Locale | null,
     private logger?: Logger | null,
+    private signal?: AbortSignal | null,
   ) {
     this.emissions = emissions.flatMap((e) => e.emissions)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -794,6 +796,10 @@ export class Aligner {
     const manifest = await this.epub.getManifest()
 
     for (let index = 0; index < spine.length; index++) {
+      if (this.signal?.aborted) {
+        throw this.signal.reason
+      }
+
       onProgress?.(index / spine.length)
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

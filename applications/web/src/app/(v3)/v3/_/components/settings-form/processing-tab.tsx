@@ -4,6 +4,15 @@ import { type ReactNode, useState } from "react"
 import { Controller, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
+import {
+  ALIGNERS,
+  CTC_ENGINES,
+  DEFAULT_WAV2VEC2_MODEL,
+  WAV2VEC2_DEVICES,
+  WAV2VEC2_MODELS,
+  WAV2VEC2_MODEL_LABELS,
+} from "@storyteller-platform/ghost-story/constants"
+
 import { Button } from "@v3/_/components/ui/button"
 import {
   Card,
@@ -123,6 +132,16 @@ function SettingsCard({
   )
 }
 
+const alignerSettingsComponents = {
+  whisper: WhisperAlignerSettings,
+  ctc: CtcAlignerSettings,
+}
+
+const ctcEngineSettingsComponents = {
+  "ctc-local": CtcLocalSettings,
+  "ctc-server": CtcServerSettings,
+}
+
 const engineSettingsComponents = {
   "whisper.cpp": WhisperSettings,
   "whisper-server": WhisperServerSettings,
@@ -139,84 +158,22 @@ export function ProcessingSettingsFields({
   collapsible?: boolean
 } = {}) {
   const { form } = useSettingsForm()
-  const tt = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const tt = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   const tp = useTranslation(
     "SettingsPage.tabs.processing.sections.parallelization",
   )
   const ta = useTranslation("SettingsPage.tabs.processing.sections.audio")
 
-  const transcriptionEngine = useWatch({
-    control: form.control,
-    name: "transcriptionEngine",
-  })
+  const aligner = useWatch({ control: form.control, name: "aligner" })
   const codec = useWatch({ control: form.control, name: "codec" })
 
-  const engineCategories = [
-    {
-      key: "local",
-      label: tt("tabLocal"),
-      engines: [
-        {
-          value: "whisper.cpp" as const,
-          label: tt("whisperCpp"),
-          description: tt("whisperCppDescription"),
-        },
-      ],
-    },
-    {
-      key: "remote",
-      label: tt("tabRemote"),
-      engines: [
-        {
-          value: "whisper-server" as const,
-          label: tt("whisperServer"),
-          description: tt("whisperServerDescription"),
-        },
-      ],
-    },
-    {
-      key: "thirdParty",
-      label: tt("tabThirdParty"),
-      engines: [
-        {
-          value: "openai-cloud" as const,
-          label: tt("openaiCloud"),
-          description: tt("openaiCloudDescription"),
-        },
-        {
-          value: "deepgram" as const,
-          label: tt("deepgram"),
-          description: tt("deepgramDescription"),
-        },
-        {
-          value: "google-cloud" as const,
-          label: tt("googleCloud"),
-          description: tt("googleCloudDescription"),
-        },
-        {
-          value: "microsoft-azure" as const,
-          label: tt("microsoftAzure"),
-          description: tt("microsoftAzureDescription"),
-        },
-        {
-          value: "amazon-transcribe" as const,
-          label: tt("amazonTranscribe"),
-          description: tt("amazonTranscribeDescription"),
-        },
-      ],
-    },
-  ]
+  const AlignerSettings = alignerSettingsComponents[aligner ?? "whisper"]
 
-  const engineCategoryOf = (engine: string | null | undefined) =>
-    engineCategories.find((category) =>
-      category.engines.some((e) => e.value === engine),
-    )?.key ?? "local"
-
-  const [engineTab, setEngineTab] = useState(() =>
-    engineCategoryOf(transcriptionEngine),
-  )
+  const alignerOptions = ALIGNERS.map((value) => ({
+    value,
+    label: tt(`aligners.${value}.label`),
+    description: tt(`aligners.${value}.description`),
+  }))
 
   const trackLengths = [
     { value: 0.75, label: ta("maxTrackLength45") },
@@ -252,7 +209,7 @@ export function ProcessingSettingsFields({
 
   return (
     <div className="space-y-6">
-      <SettingsSection tab="processing" section="transcription">
+      <SettingsSection tab="processing" section="alignment">
         <SettingsCard
           collapsible={collapsible}
           defaultOpen
@@ -260,77 +217,51 @@ export function ProcessingSettingsFields({
           description={tt("description")}
         >
           <SettingsFormField
-            name="transcriptionEngine"
-            label={tt("engine")}
+            name="aligner"
+            label={tt("aligner")}
             render={(field, _fieldState, isLocked) => (
-              <Tabs
-                value={engineTab}
+              <RadioGroup
+                value={field.value ?? "whisper"}
                 onValueChange={(value) => {
-                  if (typeof value === "string") setEngineTab(value)
+                  if (typeof value === "string") field.onChange(value)
                 }}
+                disabled={isLocked}
               >
-                <TabsList className="w-full">
-                  {engineCategories.map((category) => (
-                    <TabsTrigger key={category.key} value={category.key}>
-                      {category.label}
-                      {engineCategoryOf(field.value) === category.key && (
-                        <span className="bg-primary size-1.5 shrink-0 rounded-full" />
+                {alignerOptions.map((option) => {
+                  const selected = (field.value ?? "whisper") === option.value
+                  return (
+                    <div
+                      key={option.value}
+                      className={cn(
+                        "overflow-hidden rounded-md border",
+                        selected && "border-primary",
                       )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                {engineCategories.map((category) => (
-                  <TabsContent key={category.key} value={category.key}>
-                    <RadioGroup
-                      value={field.value}
-                      onValueChange={(value) => {
-                        if (typeof value === "string") field.onChange(value)
-                      }}
-                      disabled={isLocked}
                     >
-                      {category.engines.map((engine) => {
-                        const selected = field.value === engine.value
-                        const EngineSettings =
-                          engineSettingsComponents[engine.value]
-                        return (
-                          <div
-                            key={engine.value}
-                            className={cn(
-                              "overflow-hidden rounded-md border",
-                              selected && "border-primary",
-                            )}
-                          >
-                            <FieldLabel
-                              htmlFor={`engine-${engine.value}`}
-                              className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
-                            >
-                              <Field orientation="horizontal">
-                                <FieldContent>
-                                  <FieldTitle>{engine.label}</FieldTitle>
-                                  <FieldDescription>
-                                    {engine.description}
-                                  </FieldDescription>
-                                </FieldContent>
-                                <RadioGroupItem
-                                  value={engine.value}
-                                  id={`engine-${engine.value}`}
-                                />
-                              </Field>
-                            </FieldLabel>
-                            {selected && (
-                              <div className="space-y-4 border-t p-3">
-                                <EngineSettings />
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </RadioGroup>
-                  </TabsContent>
-                ))}
-              </Tabs>
+                      <FieldLabel
+                        htmlFor={`aligner-${option.value}`}
+                        className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
+                      >
+                        <Field orientation="horizontal">
+                          <FieldContent>
+                            <FieldTitle>{option.label}</FieldTitle>
+                            <FieldDescription>
+                              {option.description}
+                            </FieldDescription>
+                          </FieldContent>
+                          <RadioGroupItem
+                            value={option.value}
+                            id={`aligner-${option.value}`}
+                          />
+                        </Field>
+                      </FieldLabel>
+                    </div>
+                  )
+                })}
+              </RadioGroup>
             )}
           />
+
+          <AlignerSettings />
         </SettingsCard>
       </SettingsSection>
 
@@ -521,10 +452,356 @@ export function ProcessingSettingsFields({
   )
 }
 
-function WhisperSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
+function WhisperAlignerSettings() {
+  const { form } = useSettingsForm()
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+
+  const transcriptionEngine = useWatch({
+    control: form.control,
+    name: "transcriptionEngine",
+  })
+
+  const engineCategories = [
+    {
+      key: "local",
+      label: t("tabLocal"),
+      engines: [
+        {
+          value: "whisper.cpp" as const,
+          label: t("whisperCpp"),
+          description: t("whisperCppDescription"),
+        },
+      ],
+    },
+    {
+      key: "remote",
+      label: t("tabRemote"),
+      engines: [
+        {
+          value: "whisper-server" as const,
+          label: t("whisperServer"),
+          description: t("whisperServerDescription"),
+        },
+      ],
+    },
+    {
+      key: "thirdParty",
+      label: t("tabThirdParty"),
+      engines: [
+        {
+          value: "openai-cloud" as const,
+          label: t("openaiCloud"),
+          description: t("openaiCloudDescription"),
+        },
+        {
+          value: "deepgram" as const,
+          label: t("deepgram"),
+          description: t("deepgramDescription"),
+        },
+        {
+          value: "google-cloud" as const,
+          label: t("googleCloud"),
+          description: t("googleCloudDescription"),
+        },
+        {
+          value: "microsoft-azure" as const,
+          label: t("microsoftAzure"),
+          description: t("microsoftAzureDescription"),
+        },
+        {
+          value: "amazon-transcribe" as const,
+          label: t("amazonTranscribe"),
+          description: t("amazonTranscribeDescription"),
+        },
+      ],
+    },
+  ]
+
+  const engineCategoryOf = (engine: string | null | undefined) =>
+    engineCategories.find((category) =>
+      category.engines.some((e) => e.value === engine),
+    )?.key ?? "local"
+
+  const [engineTab, setEngineTab] = useState(() =>
+    engineCategoryOf(transcriptionEngine),
   )
+
+  return (
+    <SettingsFormField
+      name="transcriptionEngine"
+      label={t("engine")}
+      render={(field, _fieldState, isLocked) => (
+        <Tabs
+          value={engineTab}
+          onValueChange={(value) => {
+            if (typeof value === "string") setEngineTab(value)
+          }}
+        >
+          <TabsList className="w-full">
+            {engineCategories.map((category) => (
+              <TabsTrigger key={category.key} value={category.key}>
+                {category.label}
+                {engineCategoryOf(field.value) === category.key && (
+                  <span className="bg-primary size-1.5 shrink-0 rounded-full" />
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {engineCategories.map((category) => (
+            <TabsContent key={category.key} value={category.key}>
+              <RadioGroup
+                value={field.value}
+                onValueChange={(value) => {
+                  if (typeof value === "string") field.onChange(value)
+                }}
+                disabled={isLocked}
+              >
+                {category.engines.map((engine) => {
+                  const selected = field.value === engine.value
+                  const EngineSettings = engineSettingsComponents[engine.value]
+                  return (
+                    <div
+                      key={engine.value}
+                      className={cn(
+                        "overflow-hidden rounded-md border",
+                        selected && "border-primary",
+                      )}
+                    >
+                      <FieldLabel
+                        htmlFor={`engine-${engine.value}`}
+                        className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
+                      >
+                        <Field orientation="horizontal">
+                          <FieldContent>
+                            <FieldTitle>{engine.label}</FieldTitle>
+                            <FieldDescription>
+                              {engine.description}
+                            </FieldDescription>
+                          </FieldContent>
+                          <RadioGroupItem
+                            value={engine.value}
+                            id={`engine-${engine.value}`}
+                          />
+                        </Field>
+                      </FieldLabel>
+                      {selected && (
+                        <div className="space-y-4 border-t p-3">
+                          <EngineSettings />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </RadioGroup>
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
+    />
+  )
+}
+
+function CtcAlignerSettings() {
+  const { form } = useSettingsForm()
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+
+  const ctcEngine = useWatch({ control: form.control, name: "ctcEngine" })
+
+  const ctcEngines = CTC_ENGINES.map((value) => ({
+    value,
+    label: t(`ctcEngines.${value}.label`),
+    description: t(`ctcEngines.${value}.description`),
+  }))
+
+  const [engineTab, setEngineTab] = useState<string>(ctcEngine ?? "ctc-local")
+
+  return (
+    <SettingsFormField
+      name="ctcEngine"
+      label={t("ctcEngine")}
+      render={(field, _fieldState, isLocked) => {
+        const selectedEngine = field.value ?? "ctc-local"
+        return (
+          <Tabs
+            value={engineTab}
+            onValueChange={(value) => {
+              if (typeof value === "string") setEngineTab(value)
+            }}
+          >
+            <TabsList className="w-full">
+              {ctcEngines.map((engine) => (
+                <TabsTrigger key={engine.value} value={engine.value}>
+                  {engine.label}
+                  {selectedEngine === engine.value && (
+                    <span className="bg-primary size-1.5 shrink-0 rounded-full" />
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {ctcEngines.map((engine) => {
+              const selected = selectedEngine === engine.value
+              const EngineSettings = ctcEngineSettingsComponents[engine.value]
+              return (
+                <TabsContent key={engine.value} value={engine.value}>
+                  <RadioGroup
+                    value={selectedEngine}
+                    onValueChange={(value) => {
+                      if (typeof value === "string") field.onChange(value)
+                    }}
+                    disabled={isLocked}
+                  >
+                    <div
+                      className={cn(
+                        "overflow-hidden rounded-md border",
+                        selected && "border-primary",
+                      )}
+                    >
+                      <FieldLabel
+                        htmlFor={`ctc-engine-${engine.value}`}
+                        className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
+                      >
+                        <Field orientation="horizontal">
+                          <FieldContent>
+                            <FieldTitle>{engine.label}</FieldTitle>
+                            <FieldDescription>
+                              {engine.description}
+                            </FieldDescription>
+                          </FieldContent>
+                          <RadioGroupItem
+                            value={engine.value}
+                            id={`ctc-engine-${engine.value}`}
+                          />
+                        </Field>
+                      </FieldLabel>
+                      {selected && (
+                        <div className="space-y-4 border-t p-3">
+                          <EngineSettings />
+                        </div>
+                      )}
+                    </div>
+                  </RadioGroup>
+                </TabsContent>
+              )
+            })}
+          </Tabs>
+        )
+      }}
+    />
+  )
+}
+
+function CtcLocalSettings() {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+
+  const modelOptions = WAV2VEC2_MODELS.map((value) => ({
+    value,
+    label: WAV2VEC2_MODEL_LABELS[value],
+  }))
+
+  const deviceOptions = WAV2VEC2_DEVICES.map((value) => ({
+    value,
+    label: t(`ctcDevices.${value}`),
+  }))
+
+  return (
+    <>
+      <SettingsFormField
+        name="ctcModel"
+        label={t("ctcModel")}
+        description={t("ctcModelDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Select
+            items={modelOptions}
+            value={field.value ?? DEFAULT_WAV2VEC2_MODEL}
+            onValueChange={field.onChange}
+            disabled={isLocked}
+            aria-invalid={fieldState.invalid}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {modelOptions.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+
+      <SettingsFormField
+        name="ctcDevice"
+        label={t("ctcDevice")}
+        description={t("ctcDeviceDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Select
+            items={deviceOptions}
+            value={field.value ?? "auto"}
+            onValueChange={(value) => {
+              field.onChange(value === "auto" ? null : value)
+            }}
+            disabled={isLocked}
+            aria-invalid={fieldState.invalid}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {deviceOptions.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+    </>
+  )
+}
+
+function CtcServerSettings() {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+
+  return (
+    <>
+      <SettingsFormField
+        name="ctcServerUrl"
+        label={t("ctcServerUrl")}
+        description={t("ctcServerUrlDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Input
+            id="ctcServerUrl"
+            disabled={isLocked}
+            {...field}
+            value={field.value || ""}
+            aria-invalid={fieldState.invalid}
+          />
+        )}
+      />
+      <SettingsFormField
+        name="ctcServerApiKey"
+        label={t("ctcServerApiKey")}
+        description={t("ctcServerApiKeyDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Input
+            id="ctcServerApiKey"
+            type="password"
+            disabled={isLocked}
+            {...field}
+            value={field.value || ""}
+            aria-invalid={fieldState.invalid}
+          />
+        )}
+      />
+    </>
+  )
+}
+
+function WhisperSettings() {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
 
   const whisperModelOptions = [
     {
@@ -661,9 +938,7 @@ function WhisperSettings() {
 }
 
 function WhisperServerSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
 
   return (
     <>
@@ -701,9 +976,7 @@ function WhisperServerSettings() {
 }
 
 function GoogleCloudSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <SettingsFormField
       name="googleCloudApiKey"
@@ -723,9 +996,7 @@ function GoogleCloudSettings() {
 }
 
 function AzureSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <>
       <SettingsFormField
@@ -760,9 +1031,7 @@ function AzureSettings() {
 }
 
 function AmazonSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <>
       <SettingsFormField
@@ -824,9 +1093,7 @@ function AmazonSettings() {
 }
 
 function OpenAiSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <>
       <SettingsFormField
@@ -889,9 +1156,7 @@ function OpenAiSettings() {
 }
 
 function DeepgramSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <>
       <SettingsFormField

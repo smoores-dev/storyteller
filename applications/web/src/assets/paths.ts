@@ -150,6 +150,10 @@ export function getTranscriptionsFilepath(book: Book, filename = "") {
   return join(getInternalBookDirectory(book), "transcriptions", filename)
 }
 
+export function getEmissionsFilepath(book: Book, filename = "") {
+  return join(getInternalBookDirectory(book), "emissions", filename)
+}
+
 export function getAlignmentReportFilepath(book: Book) {
   return join(getInternalBookDirectory(book), ".storyteller", "report.json")
 }

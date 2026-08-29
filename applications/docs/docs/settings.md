@@ -166,6 +166,41 @@ audiobook narration to text (visit [How it works!](the-algorithm.md) for more
 details.) This is by far the most resource-intensive phase of the alignment
 process.
 
+### Choosing an aligner
+
+The "Aligner" setting picks how Storyteller lines the book text up with the
+narration.
+
+- **CTC forced alignment** (recommended) aligns the book text straight to the
+  audio with a wav2vec2 model. It is more accurate, gives better word timings
+  and works well across languages.
+- **Whisper transcription** transcribes the narration with Whisper first and
+  then matches that transcript to the book text. This is the original approach,
+  and it is the one that can be handed off to a paid third-party service.
+
+The Whisper settings below only apply when the aligner is set to Whisper
+transcription. The CTC settings are described in
+[CTC forced alignment](#ctc-forced-alignment).
+
+### CTC forced alignment
+
+"Where it runs" chooses between doing the work on the machine hosting
+Storyteller and sending the audio to a Ghost Story server on another machine.
+See [Offloading transcription](tutorials/offloading-transcription.mdx) for how
+to run that server.
+
+"Model" picks the wav2vec2 model. The multilingual MMS model handles books in
+any language, and the English-only model is smaller and faster.
+
+"Device" picks the hardware. Auto follows the Storyteller build you run, so a
+CUDA 12 or CUDA 13 image aligns on the GPU and every other build aligns on the
+CPU. If your build cannot use the device you pick, Storyteller falls back to
+Auto. Pick CPU if alignment crashes on your GPU.
+
+When "Where it runs" is set to another server you also need to fill in the
+server URL, for example `http://192.168.1.19:8080`, and the API key if that
+server requires one.
+
 ### Transcribing locally
 
 The default transcription engine is whisper.cpp, which runs the open source
@@ -184,16 +219,23 @@ acceleration frameworks are:
 
 #### NVIDIA GPUs
 
-- cuBLAS-11.8. This is a CUDA-based BLAS library. It requires a CUDA-enabled
-  NVIDIA GPU. Specifically, this is for GPUs with CUDA 11; use cuBLAS-12.4 if
-  you are running CUDA 12
-- cuBLAS-12.4. Same as cuBLAS-11.8, but for CUDA 12.
+- CUDA 13.1, CUDA 12.9 and CUDA 11.8. Pick the one that matches the CUDA version
+  your driver supports.
 
-#### AMD GPUs:
+#### AMD GPUs
 
-- hipBLAS. This is an AMD-based BLAS library. It requires an AMD GPU that
-  supports the ROCm computation framework, and for the AMD GPU drivers to be
-  installed on the host
+- ROCm. This requires an AMD GPU that supports the ROCm computation framework,
+  and the AMD GPU drivers installed on the host.
+- Vulkan. This works on a wider range of AMD and Intel GPUs than ROCm does.
+
+#### Intel GPUs
+
+- SYCL, for Intel Arc and integrated Intel graphics.
+
+The CTC aligner does not use these builds. It runs on CUDA in the CUDA 12 and
+CUDA 13 images and on the CPU everywhere else, and you choose that with the
+"Device" setting. The CUDA 11.8 image aligns on the CPU, because onnxruntime no
+longer ships a CUDA 11 provider.
 
 Additionally, we have a community guide for how to use CoreML for
 hardware-accelerated transcription on macOS.

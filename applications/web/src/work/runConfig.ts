@@ -9,6 +9,12 @@ export const RUN_CONFIG_SETTING_KEYS = [
   "codec",
   "bitrate",
   "parallelTranscodes",
+  "aligner",
+  "ctcEngine",
+  "ctcModel",
+  "ctcDevice",
+  "ctcServerUrl",
+  "ctcServerApiKey",
   // transcription
   "transcriptionEngine",
   "whisperModel",
@@ -30,7 +36,7 @@ export const RUN_CONFIG_SETTING_KEYS = [
   "openAiModelName",
   "deepgramApiKey",
   "deepgramModel",
-] as const
+] as const satisfies (keyof Settings)[]
 
 export const RunConfigSchema = SettingsSchema.pick(
   Object.fromEntries(RUN_CONFIG_SETTING_KEYS.map((k) => [k, true])) as {
@@ -44,6 +50,9 @@ export type RunConfig = z.infer<typeof RunConfigSchema>
 
 export type RunConfigSummary = Pick<
   RunConfig,
+  | "aligner"
+  | "ctcEngine"
+  | "ctcModel"
   | "transcriptionEngine"
   | "whisperModel"
   | "language"
@@ -57,6 +66,9 @@ export function summarizeRunConfig(
 ): RunConfigSummary | null {
   if (!config) return null
   return {
+    aligner: config.aligner,
+    ctcEngine: config.ctcEngine,
+    ctcModel: config.ctcModel,
     transcriptionEngine: config.transcriptionEngine,
     whisperModel: config.whisperModel,
     language: config.language,

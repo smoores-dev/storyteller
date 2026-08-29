@@ -1,17 +1,26 @@
 import { type Selectable, sql } from "kysely"
 
-import { type Report } from "@storyteller-platform/align"
+import { type CtcReport, type Report } from "@storyteller-platform/align"
 
-import { type AlignmentFacets } from "@/alignmentReportView"
+import {
+  type AlignmentFacets,
+  type MergedChapter,
+  mergeChapterChunks,
+} from "@/alignmentReportView"
 import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
 
 import { db } from "./connection"
 import { type DB } from "./schema"
 
-export type { Report }
+export type { CtcReport, Report }
 
-type ChapterReport = Report["chapters"][number]
+export type AnyReport = Report | CtcReport
+
+type ChapterReport = AnyReport["chapters"][number]
+type UnalignedChapterReport = AnyReport["unalignedChapters"][number]
+type AudioFileReport = AnyReport["audioFiles"][number]
+type UnalignedAudioFileReport = AnyReport["unalignedAudioFiles"][number]
 
 export interface AlignmentSummary {
   grade: AlignmentGrade
@@ -44,16 +53,15 @@ function chapterExcluded(
 }
 
 export function summarizeReport(
-  report: Omit<
-    Report,
-    "unalignedChapters" | "audioFiles" | "unalignedAudioFiles"
-  > &
-    Partial<
-      Pick<Report, "unalignedChapters" | "audioFiles" | "unalignedAudioFiles">
-    >,
+  report: {
+    chapters: ChapterReport[]
+    unalignedChapters?: UnalignedChapterReport[]
+    audioFiles?: AudioFileReport[]
+    unalignedAudioFiles?: UnalignedAudioFileReport[]
+  },
   overrides?: AlignmentOverrides | null,
 ): AlignmentSummary {
-  const chapters = report.chapters
+  const chapters = mergeChapterChunks(report.chapters)
   const scored = chapters.filter(
     (ch) => !chapterExcluded(ch.href, overrides ?? undefined),
   )
@@ -109,7 +117,7 @@ export function summarizeReport(
 
 function computeGrade(
   score: number | null,
-  chapters: ChapterReport[],
+  chapters: MergedChapter[],
 ): AlignmentGrade {
   if (chapters.length === 0) return "F"
   if (score == null || score < 80) return "F"
@@ -144,7 +152,7 @@ export type AlignmentReport = Omit<
   jobUuid: UUID | null
   bookUuid: UUID | null
   // null on old reports
-  report: Report | null
+  report: AnyReport | null
 }
 
 function parseAlignmentReport(row: AlignmentReportRow): AlignmentReport {
@@ -154,7 +162,7 @@ function parseAlignmentReport(row: AlignmentReportRow): AlignmentReport {
 export async function createAlignmentReport(input: {
   jobUuid: UUID | null
   bookUuid: UUID | null
-  report: Report
+  report: AnyReport
 }): Promise<AlignmentReport> {
   const s = summarizeReport(input.report)
 

@@ -115,17 +115,29 @@ function RunConfigForm({
   const t = useTranslation("Processing")
   const formatDuration = useFormatDuration()
 
+  const watchedAligner = useWatch({ control: form.control, name: "aligner" })
   const watchedEngine = useWatch({
     control: form.control,
     name: "transcriptionEngine",
   })
   const watchedModel = useWatch({ control: form.control, name: "whisperModel" })
+  const watchedCtcEngine = useWatch({
+    control: form.control,
+    name: "ctcEngine",
+  })
+  const watchedCtcModel = useWatch({ control: form.control, name: "ctcModel" })
+
+  const isCtc = (watchedAligner ?? settings.aligner) === "ctc"
 
   const { data: estimate } = useGetAlignmentEstimateQuery(
     {
       bookUuid: book.uuid,
-      engine: watchedEngine ?? settings.transcriptionEngine ?? "whisper.cpp",
-      whisperModel: watchedModel ?? settings.whisperModel ?? null,
+      engine: isCtc
+        ? watchedCtcEngine ?? settings.ctcEngine ?? "ctc-local"
+        : watchedEngine ?? settings.transcriptionEngine ?? "whisper.cpp",
+      whisperModel: isCtc
+        ? watchedCtcModel ?? settings.ctcModel ?? null
+        : watchedModel ?? settings.whisperModel ?? null,
       restart: restart || false,
     },
     { skip: !book.uuid },

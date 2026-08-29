@@ -134,7 +134,7 @@ async function backfillSummaries() {
     const report: Report =
       typeof row.report === "string"
         ? (JSON.parse(row.report) as Report)
-        : row.report
+        : (row.report as Report)
     const s = summarizeReport(report)
 
     await sql`
@@ -173,7 +173,7 @@ async function enrichUnalignedAudio() {
     const report: Partial<Report> =
       typeof row.report === "string"
         ? (JSON.parse(row.report) as Report)
-        : row.report
+        : (row.report as Report)
     if (report.unalignedAudioFiles?.length === 0) continue
 
     let changed = false

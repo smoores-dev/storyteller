@@ -916,9 +916,10 @@ function MatchCard({
     matchedSentence: string
     nextSentence: string | null
   }
-  transcript: { before: string; after: string }
+  transcript?: { before: string; after: string } | undefined
 }) {
-  const transcriptText = `${transcript.before} ${transcript.after}`.trim()
+  const transcriptText =
+    `${transcript?.before ?? ""} ${transcript?.after ?? ""}`.trim()
   const { ebookNodes, otherNodes } = highlightOverlap(
     ebook.matchedSentence,
     transcriptText,
@@ -949,15 +950,17 @@ function MatchCard({
           )}
         </p>
       </div>
-      <div className="border-t border-dashed px-3 py-2.5">
-        <span className="text-muted-foreground flex items-center gap-1 text-[9px] font-medium tracking-wider uppercase">
-          <icon.Headphones className="size-3" />{" "}
-          {tNouns("transcript", { count: 1 })}
-        </span>
-        <p className="text-muted-foreground mt-1 font-mono text-[11px] leading-relaxed">
-          {otherNodes}
-        </p>
-      </div>
+      {transcript && (
+        <div className="border-t border-dashed px-3 py-2.5">
+          <span className="text-muted-foreground flex items-center gap-1 text-[9px] font-medium tracking-wider uppercase">
+            <icon.Headphones className="size-3" />{" "}
+            {tNouns("transcript", { count: 1 })}
+          </span>
+          <p className="text-muted-foreground mt-1 font-mono text-[11px] leading-relaxed">
+            {otherNodes}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

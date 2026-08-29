@@ -3,6 +3,8 @@ import { readFile } from "node:fs/promises"
 
 import { ZodError, z } from "zod"
 
+import { DEFAULT_WAV2VEC2_MODEL } from "@storyteller-platform/ghost-story/constants"
+
 import { getScheduler } from "@/assets/library/scanner/triggers/scheduler"
 import { env } from "@/env"
 import { logger } from "@/logging"
@@ -63,6 +65,12 @@ async function encryptSettingValue(name: string, value: unknown) {
 }
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
+  if (settings.aligner === "ctc") {
+    const engine = settings.ctcEngine ?? "ctc-local"
+    if (engine !== "ctc-local") return engine
+    return `${engine}:${settings.ctcModel ?? DEFAULT_WAV2VEC2_MODEL}`
+  }
+
   let details = settings.transcriptionEngine ?? "whisper.cpp"
   if (settings.transcriptionEngine === "whisper.cpp") {
     details += `:${settings.whisperModel ?? "tiny"}`

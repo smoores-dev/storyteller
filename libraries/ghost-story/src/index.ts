@@ -47,6 +47,7 @@ export {
   detectPlatform,
   getConfiguredVariant,
   getInstallDir,
+  getInstalledVariant,
   getModelDir,
   getModelPath,
   getVadModelPath,
@@ -54,16 +55,33 @@ export {
   getWhisperServerExecutablePath,
   isValidModel,
   resolveVariant,
+  resolveWav2Vec2Device,
+  resolveWav2Vec2Dtype,
 } from "./cli/config.ts"
 export {
   type InstallBinaryOptions,
   type InstallModelOptions,
   type InstallVadModelOptions,
+  type InstallWav2Vec2ModelOptions,
   ensureWhisperInstalled,
   installBinary,
   installModel,
   installVadModel,
+  installWav2Vec2Model,
 } from "./cli/install.ts"
+export {
+  type EmissionWireResult,
+  decodeEmissions,
+  encodeEmissions,
+} from "./emission/EmissionWire.ts"
+export {
+  type LoadWav2Vec2ModelOptions,
+  type Wav2Vec2ModelBundle,
+  type Wav2Vec2Options,
+  type Wav2Vec2Result,
+  loadWav2Vec2Model,
+} from "./emission/Wav2Vec2Emission.ts"
+export { type Wav2Vec2ServerOptions } from "./emission/Wav2Vec2ServerEmission.ts"
 export {
   type ConversionMode,
   getConfig,

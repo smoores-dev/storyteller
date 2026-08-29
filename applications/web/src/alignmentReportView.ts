@@ -1,10 +1,9 @@
 import type z from "zod"
 
-import { type Report } from "@storyteller-platform/align"
-
 import {
   type AlignmentOverrides,
   type AlignmentSummary,
+  type AnyReport,
 } from "@/database/alignmentReports"
 import { type UUID } from "@/uuid"
 
@@ -45,7 +44,96 @@ type ManifestLike = {
   toc?: { href?: string; title?: string }[]
 }
 
-type RawChapter = Report["chapters"][number]
+type RawChapter = AnyReport["chapters"][number]
+
+type SentenceContext = RawChapter["firstMatchedSentenceContext"]
+
+type TranscriptionContext = { before: string; after: string }
+
+export type MergedChapter = {
+  href: string
+  chapterSentenceCount: number
+  alignedSentenceCount: number
+  firstMatchedSentenceId: number
+  lastMatchedSentenceId: number
+  firstMatchedSentenceContext: SentenceContext
+  lastMatchedSentenceContext: SentenceContext
+  transcriptionContext?: TranscriptionContext
+  endTranscriptionContext?: TranscriptionContext
+  audioFiles: { filepath: string; start: number; end: number }[]
+}
+
+function mergeAudioFiles(
+  files: { filepath: string; start: number; end: number }[],
+): { filepath: string; start: number; end: number }[] {
+  const merged: { filepath: string; start: number; end: number }[] = []
+  for (const file of files) {
+    const existing = merged.find((f) => f.filepath === file.filepath)
+    if (existing) {
+      existing.start = Math.min(existing.start, file.start)
+      existing.end = Math.max(existing.end, file.end)
+    } else {
+      merged.push({ ...file })
+    }
+  }
+  return merged
+}
+
+function toMerged(chapter: RawChapter): MergedChapter {
+  return {
+    href: chapter.href,
+    chapterSentenceCount: chapter.chapterSentenceCount,
+    alignedSentenceCount: chapter.alignedSentenceCount,
+    firstMatchedSentenceId: chapter.firstMatchedSentenceId,
+    lastMatchedSentenceId: chapter.lastMatchedSentenceId,
+    firstMatchedSentenceContext: chapter.firstMatchedSentenceContext,
+    lastMatchedSentenceContext: chapter.lastMatchedSentenceContext,
+    ...("transcriptionContext" in chapter && {
+      transcriptionContext: chapter.transcriptionContext,
+    }),
+    ...("endTranscriptionContext" in chapter && {
+      endTranscriptionContext: chapter.endTranscriptionContext,
+    }),
+    audioFiles: mergeAudioFiles(chapter.audioFiles),
+  }
+}
+
+export function mergeChapterChunks(chapters: RawChapter[]): MergedChapter[] {
+  const merged: MergedChapter[] = []
+  const indexByHref = new Map<string, number>()
+
+  for (const chapter of chapters) {
+    const index = indexByHref.get(chapter.href)
+    const existing = index === undefined ? undefined : merged[index]
+
+    if (!existing) {
+      indexByHref.set(chapter.href, merged.length)
+      merged.push(toMerged(chapter))
+      continue
+    }
+
+    existing.chapterSentenceCount += chapter.chapterSentenceCount
+    existing.alignedSentenceCount += chapter.alignedSentenceCount
+    existing.firstMatchedSentenceId = Math.min(
+      existing.firstMatchedSentenceId,
+      chapter.firstMatchedSentenceId,
+    )
+    existing.lastMatchedSentenceId = Math.max(
+      existing.lastMatchedSentenceId,
+      chapter.lastMatchedSentenceId,
+    )
+    existing.lastMatchedSentenceContext = chapter.lastMatchedSentenceContext
+    if ("endTranscriptionContext" in chapter) {
+      existing.endTranscriptionContext = chapter.endTranscriptionContext
+    }
+    existing.audioFiles = mergeAudioFiles([
+      ...existing.audioFiles,
+      ...chapter.audioFiles,
+    ])
+  }
+
+  return merged
+}
 
 function baseKey(path: string): string {
   const base = path.split("/").pop() ?? path
@@ -93,7 +181,7 @@ function chapterTitlesFromManifest(
   return map
 }
 
-function chapterDiagnostics(ch: RawChapter): {
+function chapterDiagnostics(ch: MergedChapter): {
   flags: ReportFlag[]
   flagged: boolean
 } {
@@ -133,7 +221,7 @@ function chapterDiagnostics(ch: RawChapter): {
 }
 
 export function buildReportView(args: {
-  report: Report
+  report: AnyReport
   bookUuid: UUID
   bookTitle: string | null
   reportUuid: UUID
@@ -158,16 +246,23 @@ export function buildReportView(args: {
     alignedAudioDuration += af.alignedDuration
   }
 
+  const rawUnalignedChapters: AnyReport["unalignedChapters"][number][] =
+    report.unalignedChapters
+  const rawUnalignedAudioFiles: AnyReport["unalignedAudioFiles"][number][] =
+    report.unalignedAudioFiles
+
+  const mergedChapters = mergeChapterChunks(report.chapters)
+
   const chapterPrefix = commonPrefix(
-    report.chapters.map((ch) => baseKey(ch.href)),
+    mergedChapters.map((ch) => baseKey(ch.href)),
   )
   const unalignedPrefix = commonPrefix(
-    report.unalignedChapters.map((uc) => baseKey(uc.href)),
+    rawUnalignedChapters.map((uc) => baseKey(uc.href)),
   )
   const strip = (key: string, prefix: string) =>
     prefix && key.startsWith(prefix) ? key.slice(prefix.length) : key
 
-  const chapters: ReportChapterRow[] = report.chapters.map((ch) => {
+  const chapters: ReportChapterRow[] = mergedChapters.map((ch) => {
     const key = baseKey(ch.href)
     const title = chapterTitles.get(key) ?? null
     const count = ch.chapterSentenceCount || 0
@@ -199,16 +294,20 @@ export function buildReportView(args: {
       lastMatchedSentenceId: ch.lastMatchedSentenceId,
       firstMatchedSentenceContext: ch.firstMatchedSentenceContext,
       lastMatchedSentenceContext: ch.lastMatchedSentenceContext,
-      transcriptionContext: ch.transcriptionContext,
-      endTranscriptionContext: ch.endTranscriptionContext,
+      ...(ch.transcriptionContext && {
+        transcriptionContext: ch.transcriptionContext,
+      }),
+      ...(ch.endTranscriptionContext && {
+        endTranscriptionContext: ch.endTranscriptionContext,
+      }),
       markedOk: overrides?.chapters?.[ch.href]?.markedOk ?? false,
       excludedFromScore:
         overrides?.chapters?.[ch.href]?.excludeFromScore ?? false,
     }
   })
 
-  const unalignedChapters: ReportUnalignedChapter[] =
-    report.unalignedChapters.map((uc) => ({
+  const unalignedChapters: ReportUnalignedChapter[] = rawUnalignedChapters.map(
+    (uc) => ({
       href: uc.href,
       label:
         chapterTitles.get(baseKey(uc.href)) ??
@@ -219,18 +318,21 @@ export function buildReportView(args: {
           ? uc.start.replace(/\n/g, " ").trim().slice(0, 160) || null
           : null,
       intended: overrides?.unalignedChapters?.[uc.href]?.intended ?? false,
-    }))
+    }),
+  )
 
   const unalignedAudioFiles: ReportUnalignedAudio[] =
-    report.unalignedAudioFiles.map((uaf) => {
+    rawUnalignedAudioFiles.map((uaf) => {
       const key = baseKey(uaf.filepath)
       const meta = audioMeta.get(key)
+      const duration = "duration" in uaf ? uaf.duration : null
+      const transcription =
+        "transcription" in uaf ? uaf.transcription?.text ?? null : null
       return {
         filepath: uaf.filepath,
         title: meta?.title ?? null,
-        duration:
-          uaf.duration ?? meta?.duration ?? durationByFile.get(key) ?? null,
-        transcription: uaf.transcription?.text ?? null,
+        duration: duration ?? meta?.duration ?? durationByFile.get(key) ?? null,
+        transcription,
         excluded: overrides?.audioFiles?.[uaf.filepath]?.excluded ?? false,
       }
     })

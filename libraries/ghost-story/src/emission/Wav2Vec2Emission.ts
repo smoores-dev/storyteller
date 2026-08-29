@@ -23,7 +23,7 @@ import {
   toReadStream,
 } from "../audio/AudioSource.ts"
 import { getModelDir } from "../cli/config.ts"
-import { type Language, type Wav2Vec2Model } from "../constants.ts"
+import { WAV2VEC2_SECONDS_PER_CHUNK, type Wav2Vec2Model } from "../constants.ts"
 import { type Timing } from "../utilities/Timing.ts"
 
 declare module "@huggingface/transformers" {
@@ -40,22 +40,69 @@ export interface Wav2Vec2Options {
   modelDir?: string
   device?: DeviceType
   dtype?: DataType
-  autoInstall?: boolean
-  language?: Language
   inputFormat?: AudioFormat
-  printOutput?: boolean
+  loaded?: Wav2Vec2ModelBundle
   onStart?: () => void
   onCheckpoint?: (emissions: number[][]) => void
   onProgress?: (progress: number) => void
 }
 
-const defaultOptions: Required<
-  Pick<Wav2Vec2Options, "autoInstall" | "device" | "dtype" | "printOutput">
-> = {
-  autoInstall: true,
+const defaultOptions: Required<Pick<Wav2Vec2Options, "device" | "dtype">> = {
   device: "auto",
   dtype: "fp32",
-  printOutput: false,
+}
+
+export interface LoadWav2Vec2ModelOptions {
+  model: Wav2Vec2Model
+  modelDir?: string | undefined
+  device?: DeviceType | undefined
+  dtype?: DataType | undefined
+  signal?: AbortSignal | null | undefined
+}
+
+export interface Wav2Vec2ModelBundle {
+  modelId: Wav2Vec2Model
+  model: Awaited<ReturnType<typeof Wav2Vec2ForCTC.from_pretrained>>
+  tokenizer: Awaited<ReturnType<typeof Wav2Vec2CTCTokenizer.from_pretrained>>
+  featureExtractor: Awaited<
+    ReturnType<typeof Wav2Vec2FeatureExtractor.from_pretrained>
+  >
+}
+
+export async function loadWav2Vec2Model(
+  options: LoadWav2Vec2ModelOptions,
+): Promise<Wav2Vec2ModelBundle> {
+  const modelDir = options.modelDir ?? getModelDir()
+  await ensureDir(modelDir)
+
+  const model = await Wav2Vec2ForCTC.from_pretrained(options.model, {
+    cache_dir: modelDir,
+    device: options.device ?? defaultOptions.device,
+    dtype: options.dtype ?? defaultOptions.dtype,
+  })
+
+  if (options.signal?.aborted) {
+    throw options.signal.reason
+  }
+
+  const tokenizer = await Wav2Vec2CTCTokenizer.from_pretrained(options.model, {
+    cache_dir: modelDir,
+  })
+
+  if (options.signal?.aborted) {
+    throw options.signal.reason
+  }
+
+  const featureExtractor = await Wav2Vec2FeatureExtractor.from_pretrained(
+    options.model,
+    { cache_dir: modelDir },
+  )
+
+  if (options.signal?.aborted) {
+    throw options.signal.reason
+  }
+
+  return { modelId: options.model, model, tokenizer, featureExtractor }
 }
 
 export async function emit(
@@ -106,32 +153,15 @@ export async function emit(
     secondsPerChunk,
     secondsPerFrame,
   } = await timing.timeAsync("transcription", async () => {
-    const model = await Wav2Vec2ForCTC.from_pretrained(opts.model, {
-      cache_dir: modelDir,
-      device: opts.device,
-      dtype: opts.dtype,
-    })
-
-    if (signal?.aborted) {
-      throw signal.reason
-    }
-
-    const tokenizer = await Wav2Vec2CTCTokenizer.from_pretrained(opts.model, {
-      cache_dir: modelDir,
-    })
-
-    if (signal?.aborted) {
-      throw signal.reason
-    }
-
-    const featureExtractor = await Wav2Vec2FeatureExtractor.from_pretrained(
-      opts.model,
-      { cache_dir: modelDir },
-    )
-
-    if (signal?.aborted) {
-      throw signal.reason
-    }
+    const { model, tokenizer, featureExtractor } =
+      opts.loaded ??
+      (await loadWav2Vec2Model({
+        model: opts.model,
+        modelDir,
+        device: opts.device,
+        dtype: opts.dtype,
+        signal,
+      }))
 
     const audio = await readAudioAsFloat32(prepared.source)
 
@@ -141,8 +171,7 @@ export async function emit(
 
     const SAMPLE_RATE = 16000
 
-    const SECONDS_PER_CHUNK = 25
-    const CHUNK_SIZE_SAMPLES = SAMPLE_RATE * SECONDS_PER_CHUNK
+    const CHUNK_SIZE_SAMPLES = SAMPLE_RATE * WAV2VEC2_SECONDS_PER_CHUNK
 
     const strides = model.config.conv_stride
 

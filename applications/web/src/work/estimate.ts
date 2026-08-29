@@ -35,11 +35,18 @@ export function estimateAlignment(
     return { estimateSeconds: null, sampleSize: 0 }
   }
 
-  const matching = history.filter(
-    (row) =>
+  const matching = history.filter((row) => {
+    if (row.config.aligner === "ctc") {
+      return (
+        row.config.ctcEngine === target.engine &&
+        row.config.ctcModel === target.whisperModel
+      )
+    }
+    return (
       row.config.transcriptionEngine === target.engine &&
-      row.config.whisperModel === target.whisperModel,
-  )
+      row.config.whisperModel === target.whisperModel
+    )
+  })
 
   if (matching.length === 0) {
     return { estimateSeconds: null, sampleSize: 0 }

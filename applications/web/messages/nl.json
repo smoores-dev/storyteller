@@ -398,7 +398,7 @@
     "deleteTitle": "{count} boek(en) verwijderen?",
     "deleteDescription": "Bestanden in je assets-map worden verwijderd. Dit kan niet ongedaan worden.",
     "clearCacheTitle": "Cache wissen voor {count} boek(en)?",
-    "clearCacheDescription": "Verwijdert verwerkte audio- en transcriptiecachebestanden. Bronbestanden blijven behouden.",
+    "clearCacheDescription": "Verwijdert verwerkte audio, transcripties en uitlijningsgegevens uit de cache. Bronbestanden blijven behouden.",
     "processTitle": "Verwerken starten voor {count} boek(en)?",
     "processDescription": "Start de verwerkingspijplijn voor de geselecteerde boeken.",
     "upgradeTitle": "EPUB upgraden voor {count} boek(en)?",
@@ -688,11 +688,11 @@
             "locationTypeCustomFolder": "In een specifieke folder",
             "locationTypeInternal": "In de interne Storyteller-folder",
             "cleanCacheAfterReadaloud": "Cache opruimen na synchronisatie",
-            "cleanCacheAfterReadaloudDescription": "Verwijder automatisch verwerkte audio- en transcriptiebestanden nadat een readaloud succesvol is aangemaakt. Bespaart schijfruimte, maar betekent dat een volledige herstart nodig is als je later opnieuw wilt synchroniseren.",
+            "cleanCacheAfterReadaloudDescription": "Verwijder automatisch verwerkte audio, transcripties en uitlijningsgegevens nadat een readaloud succesvol is aangemaakt. Bespaart schijfruimte, maar betekent dat een volledige herstart nodig is als je later opnieuw wilt synchroniseren.",
             "clearCacheNow": "Cache wissen voor alle boeken",
-            "clearCacheNowDescription": "Verwijder nu alle verwerkte audio- en transcriptiebestanden in de bibliotheek. Originele bestanden blijven ongemoeid.",
+            "clearCacheNowDescription": "Verwijder nu alle verwerkte audio, transcripties en uitlijningsgegevens in de bibliotheek. Originele bestanden blijven ongemoeid.",
             "clearCacheConfirmTitle": "Cache wissen voor alle boeken",
-            "clearCacheConfirmDescription": "Verwerkte audio- en transcriptiebestanden verwijderen voor elk boek in de bibliotheek? Dit maakt schijfruimte vrij, maar betekent dat een volledige herstart nodig is om boeken later opnieuw te synchroniseren. Originele bestanden blijven ongemoeid.",
+            "clearCacheConfirmDescription": "Verwerkte audio, transcripties en uitlijningsgegevens verwijderen voor elk boek in de bibliotheek? Dit maakt schijfruimte vrij, maar betekent dat een volledige herstart nodig is om boeken later opnieuw te synchroniseren. Originele bestanden blijven ongemoeid.",
             "clearCacheConfirm": "Cache wissen",
             "clearCacheSuccess": "Verwerkte cache gewist",
             "clearCacheError": "Cache wissen mislukt"
@@ -716,9 +716,20 @@
             "bitrateDefault": "Standaard (32 Kb/s)",
             "mp3BitrateDefault": "Standaard"
           },
-          "transcription": {
-            "title": "Transcriptie Instellingen",
-            "description": "Stel in hoe <em>Storyteller</em> audioboeken naar tekst transcribeert. Standaard wordt transcriptie lokaal uitgevoerd met whisper.cpp. Je kunt ook betaalde externe diensten gebruiken.",
+          "alignment": {
+            "title": "Uitlijning",
+            "description": "Kies hoe Storyteller de tekst van het boek uitlijnt op de voorgelezen audio.",
+            "aligner": "Uitlijner",
+            "aligners": {
+              "whisper": {
+                "label": "Whisper-transcriptie",
+                "description": "Transcribeert de voorlezing met Whisper en legt die transcriptie daarna naast de tekst van het boek."
+              },
+              "ctc": {
+                "label": "CTC forced alignment (aanbevolen)",
+                "description": "Legt de tekst van het boek direct naast de audio. Dit is nauwkeuriger, geeft betere woordtijden en werkt goed in veel talen."
+              }
+            },
             "engine": "Transcriptie-engine",
             "tabLocal": "Op deze server",
             "tabRemote": "Op een andere server",
@@ -772,7 +783,32 @@
             "modelName": "Modelnaam (optioneel)",
             "modelNameDescription": "bijv. Systran/faster-distil-whisper-large-v3 voor faster-whisper-server, of whisper-1 voor OpenAI Cloud.",
             "deepgramModel": "Modelnaam",
-            "deepgramModelDescription": "Kan elk model zijn dat de server ondersteunt, zoals nova-3, nova-2, nova, enhanced, base of whisper. Standaard is nova-3."
+            "deepgramModelDescription": "Kan elk model zijn dat de server ondersteunt, zoals nova-3, nova-2, nova, enhanced, base of whisper. Standaard is nova-3.",
+            "ctcEngines": {
+              "ctc-local": {
+                "label": "Op deze server",
+                "description": "Draait op de machine waarop Storyteller draait. Er gaat niets van deze machine af."
+              },
+              "ctc-server": {
+                "label": "Op een andere server",
+                "description": "Stuurt de audio naar een Ghost Story-server op een andere machine."
+              }
+            },
+            "ctcEngine": "Waar het draait",
+            "ctcModel": "Model",
+            "ctcModelDescription": "Het meertalige model werkt voor boeken in elke taal. Het Engelstalige model is kleiner en sneller.",
+            "ctcDevice": "Apparaat",
+            "ctcDeviceDescription": "Auto kiest de beste optie voor de Storyteller-build die je draait, en Storyteller valt daarop terug als je build het gekozen apparaat niet kan gebruiken. Kies CPU als de uitlijning crasht.",
+            "ctcDevices": {
+              "auto": "Auto",
+              "cpu": "CPU",
+              "webgpu": "GPU (WebGPU)",
+              "cuda": "NVIDIA GPU (CUDA)"
+            },
+            "ctcServerUrl": "Server-URL",
+            "ctcServerUrlDescription": "bijv. http://192.168.1.19:8080 voor een Ghost Story-server.",
+            "ctcServerApiKey": "API key",
+            "ctcServerApiKeyDescription": "Alleen nodig als je server een API key vereist."
           },
           "parallelization": {
             "title": "Parallellisatie Instellingen",
@@ -1404,7 +1440,7 @@
       "lastAligned": "Laatst gesynchroniseerd",
       "alignedIn": "Gesynchroniseerd in",
       "estimatedRemaining": "{duration} resterend",
-      "transcriptionEngine": "Transcriptie engine",
+      "transcriptionEngine": "Uitlijnings-engine",
       "storytellerVersion": "<em>Storyteller</em> versie"
     },
     "identifiers": {
@@ -1640,7 +1676,7 @@
         "alignmentMutedChapters": "Gedempte hoofdstukken",
         "alignmentMissingChapters": "Ontbrekende hoofdstukken",
         "alignedAt": "Laatst gesynchroniseerd",
-        "alignedWith": "Transcriptie-engine",
+        "alignedWith": "Uitlijnings-engine",
         "alignedByStorytellerVersion": "Aligner-versie",
         "lastRead": "Laatst gelezen",
         "readingPosition": "Voortgang",
@@ -1740,8 +1776,8 @@
     "startProcessing": "Verwerken starten",
     "continue": "Doorgaan",
     "resync": "Opnieuw synchroniseren (alle bestanden behouden)",
-    "fromSync": "Vanaf synchronisatiestap (transcripties behouden)",
-    "fromTranscription": "Vanaf transcriptiestap (audio behouden)",
+    "fromSync": "Vanaf synchronisatiestap (analyse behouden)",
+    "fromTranscription": "Vanaf analysestap (audio behouden)",
     "fullRestart": "Volledig opnieuw (alle cache verwijderen)",
     "reprocess": "Opnieuw verwerken",
     "deleteCache": "Cachebestanden verwijderen",
@@ -1761,7 +1797,7 @@
     "noEstimateHistory": "Niet genoeg geschiedenis om te schatten",
     "stage": {
       "SPLIT_TRACKS": "Audio voorbereiden",
-      "TRANSCRIBE_CHAPTERS": "Tracks transcriberen",
+      "TRANSCRIBE_CHAPTERS": "Tracks analyseren",
       "SYNC_CHAPTERS": "Hoofdstukken synchroniseren"
     },
     "viewReport": "Synchronisatierapport bekijken"

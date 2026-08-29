@@ -13,6 +13,8 @@ import {
   SILERO_VAD_VERSION,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
+  type Wav2Vec2DataType,
+  type Wav2Vec2Device,
   type Wav2Vec2Model,
   type WhisperModel,
 } from "../constants.ts"
@@ -366,6 +368,43 @@ export function resolveVariant(requestedVariant?: BuildVariant): BuildVariant {
     "No variant configured or installed. Falling back to platform detection.",
   )
   return applyLegacyCpuFallback(detectPlatform())
+}
+
+const ORT_MIN_CUDA_MAJOR = 12
+
+export function resolveWav2Vec2Device(
+  requested: Wav2Vec2Device | null | undefined,
+  variant: string | null | undefined,
+): Wav2Vec2Device {
+  const variantName = variant ?? ""
+  const cudaMajor = Number(/cuda-(\d+)/.exec(variantName)?.[1] ?? "0")
+  const cudaAvailable =
+    process.platform === "linux" &&
+    process.arch === "x64" &&
+    (cudaMajor === 0 || cudaMajor >= ORT_MIN_CUDA_MAJOR)
+
+  if (requested && requested !== "auto") {
+    if (requested !== "cuda") return requested
+    if (cudaAvailable) return "cuda"
+  }
+
+  if (cudaMajor >= ORT_MIN_CUDA_MAJOR && cudaAvailable) {
+    return "cuda"
+  }
+
+  if (
+    variantName.includes("rocm") ||
+    variantName.includes("sycl") ||
+    variantName.includes("vulkan")
+  ) {
+    return "webgpu"
+  }
+
+  return "auto"
+}
+
+export function resolveWav2Vec2Dtype(device: Wav2Vec2Device): Wav2Vec2DataType {
+  return device === "cuda" ? "fp16" : "fp32"
 }
 
 export function isValidModel(model: string): model is WhisperModel {

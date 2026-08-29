@@ -1,5 +1,6 @@
 import { type AudioFormat } from "../audio/AudioFormat.ts"
 import { type Wav2Vec2Options } from "../emission/Wav2Vec2Emission.ts"
+import { type Wav2Vec2ServerOptions } from "../emission/Wav2Vec2ServerEmission.ts"
 import { extendDeep } from "../utilities/ObjectUtilities.ts"
 import { type TimingSummary, createTiming } from "../utilities/Timing.ts"
 
@@ -19,7 +20,6 @@ export async function emit(
   timing.setMetadata("inputFormat", source.format)
 
   switch (opts.engine) {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     case "wav2vec2": {
       const Wav2Vec2Emission = await import("../emission/Wav2Vec2Emission.ts")
 
@@ -37,8 +37,30 @@ export async function emit(
         timing: timing.summary(),
       }
     }
+    case "wav2vec2-server": {
+      const Wav2Vec2ServerEmission = await import(
+        "../emission/Wav2Vec2ServerEmission.ts"
+      )
+
+      timing.setMetadata("baseURL", opts.options.baseURL)
+
+      const result = await Wav2Vec2ServerEmission.emit(
+        source,
+        timing,
+        opts.options,
+        opts.signal,
+      )
+
+      return {
+        ...result,
+        timing: timing.summary(),
+      }
+    }
     default: {
-      throw new Error(`Unknown engine: ${(opts as { engine: string }).engine}`)
+      const _engine: never = opts
+      throw new Error(
+        `Unknown engine: ${(_engine as { engine: string }).engine}`,
+      )
     }
   }
 }
@@ -48,10 +70,16 @@ interface BaseEmissionOptions {
   inputFormat?: AudioFormat
 }
 
-export type EmissionOptions = BaseEmissionOptions & {
-  engine: "wav2vec2"
-  options: Wav2Vec2Options
-}
+export type EmissionOptions =
+  | (BaseEmissionOptions & {
+      engine: "wav2vec2"
+      options: Wav2Vec2Options
+    })
+  | (BaseEmissionOptions & {
+      engine: "wav2vec2-server"
+      options: Wav2Vec2ServerOptions
+    })
+
 const defaultEmissionOptions: Partial<EmissionOptions> = {
   engine: "wav2vec2",
   options: {

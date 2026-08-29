@@ -434,7 +434,7 @@
     "deleteTitle": "Delete {count, number} book(s)?",
     "deleteDescription": "Files in your assets folder will be deleted. This cannot be undone.",
     "clearCacheTitle": "Clear cache for {count, number} book(s)?",
-    "clearCacheDescription": "Deletes processed audio and transcription cache files. Source files are kept.",
+    "clearCacheDescription": "Deletes processed audio, transcripts and alignment data from the cache. Source files are kept.",
     "processTitle": "Begin processing {count, number} book(s)?",
     "processDescription": "Starts the audiobook processing pipeline for the selected books.",
     "upgradeTitle": "Upgrade EPUB for {count, number} book(s)?",
@@ -744,11 +744,11 @@
             "locationTypeCustomFolder": "In a custom folder",
             "locationTypeInternal": "In the Storyteller internal folder",
             "cleanCacheAfterReadaloud": "Clean up cache after alignment",
-            "cleanCacheAfterReadaloudDescription": "Automatically delete processed audio and transcription files after a readaloud is successfully created. Saves disk space, but means a full restart is needed if you want to re-align later.",
+            "cleanCacheAfterReadaloudDescription": "Automatically delete processed audio, transcripts and alignment data after a readaloud is successfully created. Saves disk space, but means a full restart is needed if you want to re-align later.",
             "clearCacheNow": "Clear cache for all books",
-            "clearCacheNowDescription": "Delete all processed audio and transcription files across the library now. Original files are left untouched.",
+            "clearCacheNowDescription": "Delete all processed audio, transcripts and alignment data across the library now. Original files are left untouched.",
             "clearCacheConfirmTitle": "Clear cache for all books",
-            "clearCacheConfirmDescription": "Delete processed audio and transcription files for every book in the library? This frees disk space but means a full restart is needed to re-align books later. Original files are left untouched.",
+            "clearCacheConfirmDescription": "Delete processed audio, transcripts and alignment data for every book in the library? This frees disk space but means a full restart is needed to re-align books later. Original files are left untouched.",
             "clearCacheConfirm": "Clear cache",
             "clearCacheSuccess": "Cleared processed cache",
             "clearCacheError": "Failed to clear cache"
@@ -772,9 +772,20 @@
             "bitrateDefault": "Default (32 Kb/s)",
             "mp3BitrateDefault": "Default"
           },
-          "transcription": {
-            "title": "Transcription Settings",
-            "description": "Configure how Storyteller transcribes audiobook narration to text. By default, transcription runs locally using whisper.cpp. You can also use paid third-party services.",
+          "alignment": {
+            "title": "Alignment",
+            "description": "Choose how Storyteller lines up the book text with the audiobook narration.",
+            "aligner": "Aligner",
+            "aligners": {
+              "whisper": {
+                "label": "Whisper transcription",
+                "description": "Transcribes the narration with Whisper, then matches that transcript to the book text."
+              },
+              "ctc": {
+                "label": "CTC forced alignment (recommended)",
+                "description": "Aligns the book text straight to the audio. It is more accurate, gives better word timings and works well across languages."
+              }
+            },
             "engine": "Transcription engine",
             "tabLocal": "On this server",
             "tabRemote": "On another server",
@@ -829,7 +840,32 @@
             "modelName": "Model name (optional)",
             "modelNameDescription": "e.g. Systran/faster-distil-whisper-large-v3 for faster-whisper-server, or whisper-1 for OpenAI Cloud.",
             "deepgramModel": "Model name",
-            "deepgramModelDescription": "Can be any model the server supports, like nova-3, nova-2, nova, enhanced, base or whisper. Defaults to nova-3."
+            "deepgramModelDescription": "Can be any model the server supports, like nova-3, nova-2, nova, enhanced, base or whisper. Defaults to nova-3.",
+            "ctcEngines": {
+              "ctc-local": {
+                "label": "On this server",
+                "description": "Runs on the machine hosting Storyteller. Nothing leaves this machine."
+              },
+              "ctc-server": {
+                "label": "On another server",
+                "description": "Sends the audio to a Ghost Story server on another machine."
+              }
+            },
+            "ctcEngine": "Where it runs",
+            "ctcModel": "Model",
+            "ctcModelDescription": "The multilingual model handles books in any language. The English-only model is smaller and faster.",
+            "ctcDevice": "Device",
+            "ctcDeviceDescription": "Auto picks the best option for the Storyteller build you run, and Storyteller falls back to it when your build cannot use the device you pick. Pick CPU if alignment crashes.",
+            "ctcDevices": {
+              "auto": "Auto",
+              "cpu": "CPU",
+              "webgpu": "GPU (WebGPU)",
+              "cuda": "NVIDIA GPU (CUDA)"
+            },
+            "ctcServerUrl": "Server URL",
+            "ctcServerUrlDescription": "e.g. http://192.168.1.19:8080 for a Ghost Story server.",
+            "ctcServerApiKey": "API key",
+            "ctcServerApiKeyDescription": "Only necessary if your server requires an API key."
           },
           "parallelization": {
             "title": "Parallelization Settings",
@@ -1482,7 +1518,7 @@
       "lastAligned": "Last aligned",
       "alignedIn": "Aligned in",
       "estimatedRemaining": "{duration} left",
-      "transcriptionEngine": "Transcription engine",
+      "transcriptionEngine": "Alignment engine",
       "storytellerVersion": "Storyteller version"
     },
     "identifiers": {
@@ -1602,7 +1638,7 @@
         "alignmentMissingChapters": "Missing Chapters",
         "alignmentUnalignedFiles": "Unaligned Audio Files",
         "alignedAt": "Date Aligned",
-        "alignedWith": "Transcription engine",
+        "alignedWith": "Alignment engine",
         "alignedByStorytellerVersion": "Aligner version",
         "lastRead": "Last Read",
         "readingPosition": "Reading Progress",
@@ -1889,8 +1925,8 @@
     "startProcessing": "Start processing",
     "continue": "Continue",
     "resync": "Re-sync (keep all files)",
-    "fromSync": "From sync step (keep transcriptions)",
-    "fromTranscription": "From transcription step (keep audio)",
+    "fromSync": "From sync step (keep the track analysis)",
+    "fromTranscription": "From the analysis step (keep audio)",
     "fullRestart": "Full restart (delete all cache)",
     "reprocess": "Reprocess",
     "deleteCache": "Delete cache files",
@@ -1910,7 +1946,7 @@
     "noEstimateHistory": "Not enough history to estimate",
     "stage": {
       "SPLIT_TRACKS": "Pre-processing audio",
-      "TRANSCRIBE_CHAPTERS": "Transcribing tracks",
+      "TRANSCRIBE_CHAPTERS": "Analyzing tracks",
       "SYNC_CHAPTERS": "Aligning chapters"
     },
     "viewReport": "View alignment report"

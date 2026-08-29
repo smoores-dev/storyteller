@@ -3,6 +3,8 @@ ARG BASE_TAG=main
 # WHISPER_VARIANT is the whisper.cpp build to pre-install (e.g., linux-x64-cuda-12.9.0)
 # declared at top level so it's available in all stages
 ARG WHISPER_VARIANT=""
+# TARGETARCH is declared globally so it can be used in a FROM line
+ARG TARGETARCH
 FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS builder
 
 WORKDIR /app
@@ -28,8 +30,17 @@ COPY config/tsup/package.json ./config/tsup/package.json
 COPY config/eslint/package.json ./config/eslint/package.json
 
 # --inline-builds streams native build-script output so a hang during the
-# link step names the offending package instead of freezing silently
-RUN yarn install --inline-builds
+# link step names the offending package instead of freezing silently.
+# onnxruntime-node's postinstall downloads the CUDA execution provider on
+# linux/x64, which is dead weight in images that have no CUDA runtime.
+# It only ships a CUDA 12 provider, so the cuda-11 images skip it too, matching
+# the package set scripts/install-cuda.sh picks for CUDA 11.
+ARG WHISPER_VARIANT
+RUN case "$WHISPER_VARIANT" in \
+      *cuda-1[2-9]*) ;; \
+      *) export ONNXRUNTIME_NODE_INSTALL=skip ;; \
+    esac; \
+    yarn install --inline-builds
 
 COPY docker-scripts/ ./scripts/
 
@@ -68,8 +79,34 @@ RUN if [ -z "$WHISPER_VARIANT" ]; then \
         install binary linux-x64-cpu-legacy; \
     fi
 
+# Pre-download the CTC alignment model so a fresh container can align offline.
+# It resolves the same device and precision the worker will, so the weights it
+# fetches are the ones the run actually loads.
+RUN node ./libraries/ghost-story/dist/cli/bin.js install ctc-model \
+    || echo "CTC model pre-install failed, it will download on first use"
+
+# The worker bundle keeps onnxruntime and transformers external, so their
+# dependency closure has to exist on disk. Next's tracing never sees them
+# because nothing in the Next graph imports them.
+RUN node -e 'const fs=require("node:fs"),path=require("node:path");const seen=new Set();const walk=(name)=>{const dir=path.join("node_modules",name);if(seen.has(name)||!fs.existsSync(dir))return;seen.add(name);const pkg=JSON.parse(fs.readFileSync(path.join(dir,"package.json"),"utf8"));for(const dep of [...Object.keys(pkg.dependencies??{}),...Object.keys(pkg.optionalDependencies??{})])walk(dep)};["onnxruntime-node","onnxruntime-web","onnxruntime-common","@huggingface/transformers"].forEach(walk);for(const name of seen){const dest=path.join("/app/ort-deps",name);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.cpSync(path.join("node_modules",name),dest,{recursive:true,dereference:true})}'
+# onnxruntime-node ships prebuilt bindings for every platform in one tarball,
+# and the win32 and darwin ones are ~160 MB a Linux image can never load.
+RUN rm -rf /app/ort-deps/onnxruntime-node/bin/napi-v6/win32 \
+           /app/ort-deps/onnxruntime-node/bin/napi-v6/darwin
+
+# The whisper variant defaults per architecture, and ENV cannot branch, so the
+# runner picks an arch-specific base that carries the right default.
 ARG BASE_TAG=main
-FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS runner
+FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS runner-base-amd64
+ARG WHISPER_VARIANT
+ENV STORYTELLER_WHISPER_VARIANT=${WHISPER_VARIANT:-linux-x64-cpu}
+
+ARG BASE_TAG=main
+FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS runner-base-arm64
+ARG WHISPER_VARIANT
+ENV STORYTELLER_WHISPER_VARIANT=${WHISPER_VARIANT:-linux-arm64-cpu}
+
+FROM runner-base-${TARGETARCH} AS runner
 
 WORKDIR /app
 
@@ -119,6 +156,10 @@ COPY --from=builder /app/node_modules/@parcel ./.next/standalone/node_modules/@p
 # package must exist on disk in a location reachable from web/work-dist/.
 COPY --from=builder /app/node_modules/kuromoji ./.next/standalone/node_modules/kuromoji
 
+# onnxruntime-node loads its .node binding through a dynamic require that
+# esbuild cannot bundle, so the packages stay external and are copied whole
+COPY --from=builder /app/ort-deps ./.next/standalone/node_modules
+
 
 # Copy pre-installed whisper binaries and models from builder
 COPY --from=builder --chown=storyteller:storyteller /root/.local/share/ghost-story /home/storyteller/.local/share/ghost-story
@@ -140,11 +181,6 @@ ENV ERROR_ALIGN_NATIVE_BINDING=/app/.next/standalone/applications/web/work-dist/
 ENV SQLITE_NATIVE_BINDING=/app/.next/standalone/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 ENV STORYTELLER_WORKER=worker.mjs
 ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.mjs
-
-# set the whisper variant that was pre-installed in this image
-# this tells the runtime which binary to use without needing detection
-ARG WHISPER_VARIANT
-ENV STORYTELLER_WHISPER_VARIANT=${WHISPER_VARIANT}
 
 WORKDIR /app/.next/standalone/applications/web
 

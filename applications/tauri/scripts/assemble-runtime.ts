@@ -179,6 +179,64 @@ copy(
   "kuromoji",
 )
 
+const externalWorkerPackages = [
+  "onnxruntime-node",
+  "onnxruntime-web",
+  "onnxruntime-common",
+  "@huggingface/transformers",
+  "sharp",
+]
+
+const stagedPackages = new Set<string>()
+function collectPackageTree(name: string) {
+  if (stagedPackages.has(name)) return
+  const dir = join(repoRoot, "node_modules", name)
+  if (!existsSync(dir)) return
+  stagedPackages.add(name)
+  const manifest = JSON.parse(
+    readFileSync(join(dir, "package.json"), "utf8"),
+  ) as {
+    dependencies?: Record<string, string>
+    optionalDependencies?: Record<string, string>
+  }
+  for (const dep of [
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.optionalDependencies ?? {}),
+  ]) {
+    collectPackageTree(dep)
+  }
+}
+
+for (const name of externalWorkerPackages) {
+  if (!existsSync(join(repoRoot, "node_modules", name))) {
+    throw new Error(
+      `${name} is not installed at the repo root, the worker bundle keeps it external and cannot resolve it at runtime`,
+    )
+  }
+  collectPackageTree(name)
+}
+
+for (const name of stagedPackages) {
+  const dest = join(stagingDir, "node_modules", name)
+  if (existsSync(dest)) continue
+  copy(join(repoRoot, "node_modules", name), dest, name)
+}
+
+const napiDir = join(
+  stagingDir,
+  "node_modules",
+  "onnxruntime-node",
+  "bin",
+  "napi-v6",
+)
+if (existsSync(napiDir)) {
+  for (const entry of readdirSync(napiDir)) {
+    if (entry === target.platform) continue
+    rmSync(join(napiDir, entry), { recursive: true, force: true })
+    console.log(`pruned onnxruntime-node binaries for ${entry}`)
+  }
+}
+
 const sqliteBinding = join(
   stagingDir,
   "node_modules",

@@ -1,8 +1,12 @@
 import { z } from "zod"
 
 import {
+  ALIGNERS,
+  CTC_ENGINES,
   LANGUAGES,
   RECOGNITION_ENGINES,
+  WAV2VEC2_DEVICES,
+  WAV2VEC2_MODELS,
   WHISPER_MODELS,
 } from "@storyteller-platform/ghost-story/constants"
 
@@ -16,6 +20,15 @@ import { PreferenceDefaultsSchema } from "@/database/userPreferencesTypes"
 import { type UUID } from "@/uuid"
 
 export const TranscriptionEngineSchema = z.enum(RECOGNITION_ENGINES)
+
+export const AlignerSchema = z.enum(ALIGNERS)
+export type Aligner = z.infer<typeof AlignerSchema>
+
+export const CtcEngineSchema = z.enum(CTC_ENGINES)
+export type CtcEngine = z.infer<typeof CtcEngineSchema>
+
+export const Wav2Vec2DeviceSchema = z.enum(WAV2VEC2_DEVICES)
+export type Wav2Vec2Device = z.infer<typeof Wav2Vec2DeviceSchema>
 
 export const WhisperModelSchema = z.enum(WHISPER_MODELS)
 export type WhisperModel = z.infer<typeof WhisperModelSchema>
@@ -257,6 +270,7 @@ export const ENCRYPTED_SETTING_KEYS = [
   "amazonTranscribeSecretAccessKey",
   "openAiApiKey",
   "deepgramApiKey",
+  "ctcServerApiKey",
 ] as const
 
 export type EncryptedSettingKey = (typeof ENCRYPTED_SETTING_KEYS)[number]
@@ -266,6 +280,9 @@ export function isEncryptedSettingKey(
 ): name is EncryptedSettingKey {
   return (ENCRYPTED_SETTING_KEYS as readonly string[]).includes(name)
 }
+
+export const Wav2Vec2ModelSchema = z.enum(WAV2VEC2_MODELS)
+export type Wav2Vec2Model = z.infer<typeof Wav2Vec2ModelSchema>
 
 // Main settings schema
 export const SettingsSchema = z.object({
@@ -286,6 +303,12 @@ export const SettingsSchema = z.object({
   codec: z.string().nullable(),
   bitrate: z.string().nullable(),
   maxTrackLength: z.coerce.number().nullable(),
+  aligner: AlignerSchema.nullable(),
+  ctcEngine: CtcEngineSchema.nullable(),
+  ctcModel: Wav2Vec2ModelSchema.nullable(),
+  ctcDevice: Wav2Vec2DeviceSchema.nullable(),
+  ctcServerUrl: z.string().nullable(),
+  ctcServerApiKey: z.string().nullable(),
   // Transcription settings
   transcriptionEngine: TranscriptionEngineSchema.nullable(),
   whisperModel: WhisperModelSchema.nullable(),
