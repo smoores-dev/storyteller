@@ -13,6 +13,10 @@ WHERE
       name = 'aligner'
   );
 
+DELETE FROM settings
+WHERE
+  name = 'ctcEngine';
+
 INSERT INTO
   settings (name, value)
 SELECT
@@ -42,29 +46,3 @@ WHERE
     WHERE
       name = 'ctcDevice'
   );
-
--- INSERT INTO settings(name, value)
--- SELECT
---   'ctcServerUrl',
---   'null'
--- WHERE
---   NOT EXISTS (
---     SELECT
---       1
---     FROM
---       settings
---     WHERE
---       name = 'ctcServerUrl');
---
--- INSERT INTO settings(name, value)
--- SELECT
---   'ctcServerApiKey',
---   'null'
--- WHERE
---   NOT EXISTS (
---     SELECT
---       1
---     FROM
---       settings
---     WHERE
---       name = 'ctcServerApiKey');

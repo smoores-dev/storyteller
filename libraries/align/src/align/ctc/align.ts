@@ -81,11 +81,12 @@ export async function ctcAlign(
         .map((f) => autoJoin(emissionsDir, f)),
     )
     .then((filepaths) => {
-      if (filepaths.length !== audiobookFiles.length) {
-        throw new Error(
-          `Found ${filepaths.length} emission files in ${emissionsDir} for ${audiobookFiles.length} audio files. Restart processing from the transcription step to regenerate them.`,
-        )
-      }
+      // TODO: maybe good check to do
+      // if (filepaths.length !== audiobookFiles.length) {
+      //   throw new Error(
+      //     `Found ${filepaths.length} emission files in ${emissionsDir} for ${audiobookFiles.length} audio files. Restart processing from the transcription step to regenerate them.`,
+      //   )
+      // }
       return Promise.all(
         filepaths.map(async (p) => readFile(p, { encoding: "utf-8" })),
       )

@@ -300,7 +300,7 @@ export const SettingsSchema = z.object({
   bitrate: z.string().nullable(),
   maxTrackLength: z.coerce.number().nullable(),
   aligner: AlignerSchema.nullable(),
-  ctcEngine: Wav2VecEngineSchema.nullable(),
+  ctcEngine: Wav2VecEngineSchema.nullish(),
   ctcDevice: Wav2Vec2DeviceSchema.nullable(),
   // ctcServerUrl: z.string().nullable(),
   // ctcServerApiKey: z.string().nullable(),

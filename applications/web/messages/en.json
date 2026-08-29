@@ -782,7 +782,7 @@
                 "description": "Transcribes the narration with Whisper, then matches that transcript to the book text."
               },
               "ctc": {
-                "label": "CTC forced alignment (recommended)",
+                "label": "CTC forced alignment (experimental)",
                 "description": "Aligns the book text straight to the audio. It is more accurate, gives better word timings and works well across languages."
               }
             },

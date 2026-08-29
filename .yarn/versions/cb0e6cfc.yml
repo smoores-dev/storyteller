@@ -1,0 +1,8 @@
+releases:
+  "@storyteller-platform/align": patch
+  "@storyteller-platform/ghost-story": patch
+  "@storyteller-platform/tauri": patch
+
+declined:
+  - "@storyteller-platform/docs"
+  - "@storyteller-platform/web"

@@ -31,7 +31,7 @@ const DEFAULT_SETTINGS: Settings = {
   bitrate: null,
   maxTrackLength: null,
   aligner: "whisper",
-  ctcEngine: "wav2vec-local",
+  ctcEngine: "wav2vec-local" as const,
   ctcDevice: null,
   // ctcServerUrl: null,
   // ctcServerApiKey: null,
