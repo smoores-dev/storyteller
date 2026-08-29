@@ -1,8 +1,8 @@
 .base-image-build:
   needs: []
-  image: docker:24.0.5
+  image: docker:29.6.2
   services:
-    - name: docker:24.0.5-dind
+    - name: docker:29.6.2-dind
       alias: docker
   stage: build-base
   before_script:
