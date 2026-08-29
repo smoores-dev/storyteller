@@ -6,6 +6,11 @@ export {
   recognize,
 } from "./api/Recognition.ts"
 export {
+  type EmissionOptions,
+  type EmissionResult,
+  emit,
+} from "./api/Emission.ts"
+export {
   type AudioFormat,
   type AudioFormatInfo,
   type AudioSource,

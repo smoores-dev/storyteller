@@ -54,7 +54,7 @@ class Parser {
       pos + 1,
     )
 
-    if (tagName === "a" && attrs["epub:type"] === "noteref") {
+    if (tagName === "a") {
       const node = new NoterefNode(tagName, attrs, blockChildren, marks)
       const href = node.attrs["href"]
       const fragment = href?.split("#")[1]

@@ -143,7 +143,11 @@ function createReplacers(locale: Intl.Locale) {
   ]
 }
 
-export async function slugify(text: string, locale: Intl.Locale) {
+export async function slugify(
+  text: string,
+  locale: Intl.Locale,
+  separator = "-",
+) {
   const replacers = replacerMap.get(locale) ?? createReplacers(locale)
   replacerMap.set(locale, replacers)
 
@@ -151,6 +155,7 @@ export async function slugify(text: string, locale: Intl.Locale) {
     allowedChars: "a-zA-Z0-9",
     locale,
     replace: replacers,
+    separator,
   })
 
   return { result, mapping }

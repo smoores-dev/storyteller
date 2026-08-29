@@ -102,3 +102,5 @@ applications/web/migrations/93_add_formats_sidebar.sql
 
 /libraries/StorytellerKit/Sources/Kit/Resources/WebResources/foliate-js/vendor/fflate.js
 /libraries/StorytellerKit/Sources/Kit/Resources/WebResources/foliate-js/vendor/zip.js
+
+/libraries/align/bundle/

@@ -11,7 +11,9 @@ export async function segmentChapter(
     ...(options.primaryLocale && {
       language: options.primaryLocale.language,
     }),
-    enableEastAsianPostprocessing: true,
+    // TODO: re-enable this, only disabled until we figure out
+    // why it's not working in the SEA!
+    enableEastAsianPostprocessing: false,
   })
 
   return result.sentences

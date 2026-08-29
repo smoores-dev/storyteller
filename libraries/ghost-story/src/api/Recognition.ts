@@ -52,7 +52,7 @@ export async function recognize(
 
   timing.setMetadata("language", languageCode)
 
-  const source = resolveAudioSource(input, opts)
+  const source = resolveAudioSource(input, opts.inputFormat)
   timing.setMetadata("inputFormat", source.format)
 
   let transcript: string = ""
@@ -242,14 +242,14 @@ export async function recognize(
   }
 }
 
-function resolveAudioSource(
+export function resolveAudioSource(
   input: AudioInput,
-  opts: RecognitionOptions,
+  inputFormat: AudioFormat | undefined,
 ): AudioSource {
   if (isAudioSource(input)) {
     return input
   }
-  return normalizeToAudioSource(input, opts.inputFormat)
+  return normalizeToAudioSource(input, inputFormat)
 }
 
 export interface RecognitionResult {

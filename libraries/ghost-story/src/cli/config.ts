@@ -13,6 +13,7 @@ import {
   SILERO_VAD_VERSION,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
+  type Wav2Vec2Model,
   type WhisperModel,
 } from "../constants.ts"
 import { getAppDataDir } from "../utilities/FileSystem.ts"
@@ -156,6 +157,14 @@ export function getWhisperServerExecutablePath(installDir?: string): string {
 export function getModelPath(model: WhisperModel, modelDir?: string): string {
   const dir = modelDir ?? getModelDir()
   return path.join(dir, `ggml-${model}.bin`)
+}
+
+export function getWav2VecModelPath(
+  model: Wav2Vec2Model,
+  modelDir?: string,
+): string {
+  const dir = modelDir ?? getModelDir()
+  return path.join(dir, `hf-${model}.bin`)
 }
 
 export function getCoremlModelPath(

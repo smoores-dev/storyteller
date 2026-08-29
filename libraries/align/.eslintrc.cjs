@@ -10,6 +10,7 @@ module.exports = {
     "/tsup.config.ts",
     "/scripts/bundle.js",
     "/scripts/import.meta.dirname-polyfill.js",
+    "/bundle",
   ],
   overrides: [
     {

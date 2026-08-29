@@ -89,7 +89,9 @@ function getAlignmentsForSentence(sentence: string, alignments: Alignment[]) {
   }
   return {
     alignments: result,
-    score: result.some((a) => a.opType === "MATCH") ? score : -1,
+    score: result.some((a) => a.opType === "MATCH")
+      ? score / sentence.length
+      : -1,
   }
 }
 
@@ -212,6 +214,9 @@ export async function getSentenceRanges(
     slugifiedChapterSentences.push(result)
   }
 
+  let totalScore = 0
+  let totalSentences = 0
+
   let firstFoundSentence = 0
   let lastFoundSentence = sentences.length - 1
   let chapterTranscriptEndIndex = chapterOffset
@@ -288,6 +293,9 @@ export async function getSentenceRanges(
           slugifiedSentence,
           alignments.slice(alignmentIndex),
         )
+
+      totalScore += score
+      totalSentences += 1
 
       const sentenceLengthInSlugifiedTranscript = sentenceAlignments
         .filter((a) => a.opType !== "DELETE")
@@ -416,6 +424,7 @@ export async function getSentenceRanges(
           firstFoundSentence,
           chapterSentenceIndex - 1,
         ),
+        score: (totalScore / totalSentences) * 100 + 50,
       }
     }
     chapterSentenceIndex += lastGoodSentenceIndex + 1
@@ -434,6 +443,7 @@ export async function getSentenceRanges(
     transcriptionOffset: chapterTranscriptEndIndex,
     firstFoundSentence,
     lastFoundSentence,
+    score: (totalScore / totalSentences) * 100 + 50,
   }
 }
 

@@ -70,6 +70,18 @@ export const WHISPER_MODELS = [
 ] as const
 export type WhisperModel = (typeof WHISPER_MODELS)[number]
 
+export const WAV2VEC2_MODELS = [
+  "Xenova/wav2vec2-base-960h",
+  "onnx-community/mms-300m-1130-forced-aligner-ONNX",
+] as const
+export type Wav2Vec2Model = (typeof WAV2VEC2_MODELS)[number]
+
+export const WAV2VEC2_DEVICES = ["auto", "cpu", "webgpu", "cuda"] as const
+export type Wav2Vec2Device = (typeof WAV2VEC2_DEVICES)[number]
+
+export const WAV2VEC2_DTYPES = ["fp32", "fp16", "q8"] as const
+export type Wav2Vec2DataType = (typeof WAV2VEC2_DTYPES)[number]
+
 export const RECOGNITION_ENGINES = [
   "whisper.cpp",
   "whisper-server",
