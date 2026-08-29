@@ -28,8 +28,10 @@ COPY config/tsup/package.json ./config/tsup/package.json
 COPY config/eslint/package.json ./config/eslint/package.json
 
 # --inline-builds streams native build-script output so a hang during the
-# link step names the offending package instead of freezing silently
-RUN yarn install --inline-builds
+# --inline-builds makes link step sayswhich package the crashes/hangs
+# ipv4first avoids stalls from ipv6 attempts inside the buildkit container
+# (onnxruntime-node downloads from azure cdn which returns AAAA records)
+RUN NODE_OPTIONS="--dns-result-order=ipv4first" timeout 300 yarn install --inline-builds
 
 COPY docker-scripts/ ./scripts/
 
