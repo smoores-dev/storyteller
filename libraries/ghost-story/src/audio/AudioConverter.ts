@@ -1,13 +1,13 @@
 import { execFile } from "node:child_process"
 import { createReadStream, createWriteStream } from "node:fs"
 import { rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import type { Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
 import { promisify } from "node:util"
 
 import { Converter } from "ffmpeg-stream"
+
+import { scratchPath } from "@storyteller-platform/fs"
 
 const execFilePromisified = promisify(execFile)
 
@@ -102,8 +102,7 @@ export async function convertToFile(
   source: AudioSource,
   options: ConversionOptions,
 ): Promise<PreparedAudio> {
-  const tempPath = join(
-    tmpdir(),
+  const tempPath = scratchPath(
     `audio-convert-${Date.now()}${formatToExtension(options.targetFormat)}`,
   )
 
@@ -251,8 +250,7 @@ export async function prepareForService(
 }
 
 async function writeToTempFile(source: AudioSource): Promise<PreparedAudio> {
-  const tempPath = join(
-    tmpdir(),
+  const tempPath = scratchPath(
     `audio-temp-${Date.now()}${formatToExtension(source.format)}`,
   )
   const readable = toReadStream(source)
@@ -326,8 +324,7 @@ export async function createStreamForUpload(
   }
 
   if (mode === "file-first") {
-    const tempPath = join(
-      tmpdir(),
+    const tempPath = scratchPath(
       `upload-${Date.now()}${formatToExtension(options.targetFormat)}`,
     )
 

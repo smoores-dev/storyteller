@@ -15,6 +15,10 @@ import {
 import { move } from "@/assets/fs"
 import { type PipelineCtx, type ScanCtx } from "@/assets/library/scanner/ctx"
 import { type Candidate } from "@/assets/library/scanner/types"
+import {
+  releasePrefixAfterSettle,
+  suppressPrefix,
+} from "@/assets/library/scanner/write-intent"
 import { isAudioFile, isHiddenFile } from "@/audio"
 import {
   type BookWithRelations,
@@ -87,6 +91,22 @@ async function upgradeToPath(
  * needed for `copy` mode
  *
  */
+async function withSuppressedWrites<T>(
+  paths: string[],
+  fn: () => Promise<T>,
+): Promise<T> {
+  for (const path of paths) {
+    suppressPrefix(path)
+  }
+  try {
+    return await fn()
+  } finally {
+    for (const path of paths) {
+      releasePrefixAfterSettle(path)
+    }
+  }
+}
+
 export async function openOrUpgradeEpub(
   filepath: string,
   epub2ImportStrategy?: Epub2ImportStrategy,
@@ -110,19 +130,21 @@ export async function openOrUpgradeEpub(
         filepath,
         renderEpubSuffix(suffixTemplate, 2),
       )
-      await addIgnoreRule(backupPath, { source: "import-backup" })
-      await move(filepath, backupPath)
-      try {
-        await upgradeToPath(backupPath, filepath)
-      } catch (upgradeError) {
-        await rm(filepath, { force: true })
-        await move(backupPath, filepath)
-        await removeImportBackupIgnoreRule(backupPath)
-        throw upgradeError
-      }
+      return await withSuppressedWrites([filepath, backupPath], async () => {
+        await addIgnoreRule(backupPath, { source: "import-backup" })
+        await move(filepath, backupPath)
+        try {
+          await upgradeToPath(backupPath, filepath)
+        } catch (upgradeError) {
+          await rm(filepath, { force: true })
+          await move(backupPath, filepath)
+          await removeImportBackupIgnoreRule(backupPath)
+          throw upgradeError
+        }
 
-      const reader = await Epub.using(MemoryAdapter).from(filepath)
-      return { reader, effectivePath: filepath }
+        const reader = await Epub.using(MemoryAdapter).from(filepath)
+        return { reader, effectivePath: filepath }
+      })
     }
 
     if (strategy === "convert-alongside" && !upgradeTo) {
@@ -130,36 +152,40 @@ export async function openOrUpgradeEpub(
         filepath,
         renderEpubSuffix(suffixTemplate, 3),
       )
-      // ignore the original file as a backup
-      await addIgnoreRule(filepath, { source: "import-backup" })
-      // once bitten twice shy
-      // this should be handled by the upgradeToPath function, but...
-      try {
-        await upgradeToPath(filepath, convertedPath)
-      } catch (upgradeError) {
-        await rm(convertedPath, { force: true })
-        await removeImportBackupIgnoreRule(filepath)
-        throw upgradeError
-      }
+      return await withSuppressedWrites([filepath, convertedPath], async () => {
+        // ignore the original file as a backup
+        await addIgnoreRule(filepath, { source: "import-backup" })
+        // once bitten twice shy
+        // this should be handled by the upgradeToPath function, but...
+        try {
+          await upgradeToPath(filepath, convertedPath)
+        } catch (upgradeError) {
+          await rm(convertedPath, { force: true })
+          await removeImportBackupIgnoreRule(filepath)
+          throw upgradeError
+        }
 
-      const reader = await Epub.using(MemoryAdapter).from(convertedPath)
-      return { reader, effectivePath: convertedPath }
+        const reader = await Epub.using(MemoryAdapter).from(convertedPath)
+        return { reader, effectivePath: convertedPath }
+      })
     }
 
     // "replace": upgrade in place, or write to upgradeTo when the source must
     // remain untouched (copy mode).
     const outputPath = upgradeTo ?? filepath
-    try {
-      await upgradeToPath(filepath, outputPath)
-    } catch (upgradeError) {
-      if (upgradeTo) {
-        await rm(upgradeTo, { force: true })
+    return await withSuppressedWrites([filepath, outputPath], async () => {
+      try {
+        await upgradeToPath(filepath, outputPath)
+      } catch (upgradeError) {
+        if (upgradeTo) {
+          await rm(upgradeTo, { force: true })
+        }
+        throw upgradeError
       }
-      throw upgradeError
-    }
 
-    const reader = await Epub.using(MemoryAdapter).from(outputPath)
-    return { reader, effectivePath: outputPath }
+      const reader = await Epub.using(MemoryAdapter).from(outputPath)
+      return { reader, effectivePath: outputPath }
+    })
   }
 }
 

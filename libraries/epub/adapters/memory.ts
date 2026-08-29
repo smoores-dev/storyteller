@@ -1,12 +1,7 @@
-import { randomUUID } from "node:crypto"
-import { tmpdir } from "node:os"
-
 import {
   type Entry as YauzlEntry,
   type ZipFile as YauzlZipFile,
 } from "yauzl-promise"
-
-import { join, sep } from "@storyteller-platform/path"
 
 import { openZip } from "../zip.ts"
 
@@ -54,64 +49,52 @@ export class MemoryAdapter implements EpubStorageAdapter {
       throw error
     }
 
-    // virtual root anchors absolute paths used by Epub's resolveInternalHref.
-    // nothing is written to this path, it's a key prefix only.
-    const rootPath = join(
-      tmpdir(),
-      `storyteller-platform-epub-zip-${randomUUID()}.epub`,
-    )
-
-    return new MemoryAdapter(rootPath, zip, entries, cache ? new Map() : null)
+    return new MemoryAdapter(zip, entries, cache ? new Map() : null)
   }
 
   private constructor(
-    public readonly rootPath: string,
     private zip: YauzlZipFile,
     private entries: Map<string, YauzlEntry>,
     private cache: Map<string, Buffer> | null,
   ) {}
 
-  private toZipEntryKey(path: string): string {
-    const prefix = this.rootPath.endsWith(sep)
-      ? this.rootPath
-      : this.rootPath + sep
-    const rel = path.startsWith(prefix) ? path.slice(prefix.length) : path
-    return sep === "/" ? rel : rel.split(sep).join("/")
-  }
-
-  async read(path: string): Promise<Uint8Array>
-  async read(path: string, encoding: "utf-8"): Promise<string>
-  async read(path: string, encoding?: "utf-8"): Promise<string | Uint8Array> {
-    const key = this.toZipEntryKey(path)
-    const cached = this.cache?.get(key)
+  async read(entry: string): Promise<Uint8Array>
+  async read(entry: string, encoding: "utf-8"): Promise<string>
+  async read(entry: string, encoding?: "utf-8"): Promise<string | Uint8Array> {
+    const cached = this.cache?.get(entry)
     if (cached) {
       return encoding ? cached.toString(encoding) : new Uint8Array(cached)
     }
 
-    const entry = this.entries.get(key)
-    if (!entry) {
+    const zipEntry = this.entries.get(entry)
+    if (!zipEntry) {
       const err = new Error(
-        `ENOENT: zip entry not found in EPUB archive: ${key}`,
+        `ENOENT: zip entry not found in EPUB archive: ${entry}`,
       )
       ;(err as Error & { code?: string }).code = "ENOENT"
       throw err
     }
 
-    const stream = await entry.openReadStream()
+    const stream = await zipEntry.openReadStream()
     const chunks: Buffer[] = []
     for await (const chunk of stream) {
       chunks.push(chunk as Buffer)
     }
     const buf = Buffer.concat(chunks)
-    this.cache?.set(key, buf)
+    this.cache?.set(entry, buf)
     return encoding ? buf.toString(encoding) : new Uint8Array(buf)
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  async archiveLength(path: string): Promise<number> {
-    const entry = this.entries.get(this.toZipEntryKey(path))
-    if (!entry) return 0
-    return entry.compressedSize || entry.uncompressedSize
+  async exists(entry: string): Promise<boolean> {
+    return this.entries.has(entry)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async archiveLength(entry: string): Promise<number> {
+    const zipEntry = this.entries.get(entry)
+    if (!zipEntry) return 0
+    return zipEntry.compressedSize || zipEntry.uncompressedSize
   }
 
   dispose(): void {

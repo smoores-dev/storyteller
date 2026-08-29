@@ -1,6 +1,7 @@
 import { mkdir, readdir, rm, stat } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { join } from "node:path"
+
+import { scratchPath } from "@storyteller-platform/fs"
 
 import { backupDatabase } from "@/database/connection"
 import { BACKUP_DIR } from "@/directories"
@@ -88,8 +89,7 @@ export async function pruneAutoBackups(retentionCount: number): Promise<void> {
 }
 
 export async function snapshotToTempFile(): Promise<string> {
-  const path = join(
-    tmpdir(),
+  const path = scratchPath(
     `storyteller-download-${process.pid}-${timestamp()}.db`,
   )
   await backupDatabase(path)

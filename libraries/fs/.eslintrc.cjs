@@ -25,5 +25,6 @@ module.exports = {
       },
       rules: typescriptRules,
     },
+    ...base.overrides,
   ],
 }

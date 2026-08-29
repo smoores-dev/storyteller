@@ -2,6 +2,7 @@ import { resolve } from "node:path"
 
 // ttl prevents leaked entries if a write fails without cleanup
 const DEFAULT_TTL_MS = 60_000
+const SETTLE_MS = 2_000
 
 type Entry = {
   timer: NodeJS.Timeout
@@ -36,15 +37,10 @@ export function suppressPrefix(filepath: string, ttlMs = DEFAULT_TTL_MS) {
   pending.set(key, { timer })
 }
 
-export function unsuppressPrefix(filepath: string) {
-  const key = toKey(filepath)
-  const existing = pending.get(key)
-  if (!existing) {
-    return
-  }
+export function releasePrefixAfterSettle(filepath: string) {
+  if (!pending.has(toKey(filepath))) return
 
-  clearTimeout(existing.timer)
-  pending.delete(key)
+  suppressPrefix(filepath, SETTLE_MS)
 }
 
 export function isSuppressed(filepath: string): boolean {

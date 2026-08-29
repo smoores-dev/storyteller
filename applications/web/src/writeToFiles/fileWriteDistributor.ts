@@ -5,8 +5,8 @@ import { MessageChannel } from "node:worker_threads"
 import Piscina, { transferableSymbol, valueSymbol } from "piscina"
 
 import {
+  releasePrefixAfterSettle,
   suppressPrefix,
-  unsuppressPrefix,
 } from "@/assets/library/scanner/write-intent"
 import { getBook, updateBook } from "@/database/books"
 import { env } from "@/env"
@@ -167,7 +167,7 @@ export async function queueWritesToFiles(
       { transferList: [port1] },
     )
   } finally {
-    for (const fp of filepaths) unsuppressPrefix(fp)
-    for (const dp of dirpaths) unsuppressPrefix(dp)
+    for (const fp of filepaths) releasePrefixAfterSettle(fp)
+    for (const dp of dirpaths) releasePrefixAfterSettle(dp)
   }
 }

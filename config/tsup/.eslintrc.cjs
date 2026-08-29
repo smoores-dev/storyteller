@@ -21,5 +21,6 @@ module.exports = {
         sourceType: "module",
       },
     },
+    ...base.overrides,
   ],
 }

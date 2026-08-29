@@ -2,8 +2,7 @@
 
 import { randomUUID } from "node:crypto"
 import { rmSync } from "node:fs"
-import * as os from "node:os"
-import { basename, join } from "node:path"
+import { basename } from "node:path"
 
 import {
   constant,
@@ -23,6 +22,7 @@ import { path } from "@optique/run/valueparser"
 import { Presets, SingleBar } from "cli-progress"
 
 import { Epub } from "@storyteller-platform/epub"
+import { scratchPath } from "@storyteller-platform/fs"
 
 import packageJson from "../../package.json" with { type: "json" }
 import { align } from "../align/align.ts"
@@ -237,8 +237,7 @@ async function main() {
       let input = parsed.input
       if (parsed.autoupgrade) {
         logger.info("Upgrading EPUB 2 to EPUB 3")
-        input = join(
-          os.tmpdir(),
+        input = scratchPath(
           `stalign-autoupgrade-${randomUUID()}`,
           basename(parsed.input),
         )
@@ -263,8 +262,7 @@ async function main() {
       let input = parsed.epub
       if (parsed.autoupgrade) {
         logger.info("Upgrading EPUB 2 to EPUB 3")
-        input = join(
-          os.tmpdir(),
+        input = scratchPath(
           `stalign-autoupgrade-${randomUUID()}`,
           basename(parsed.epub),
         )
@@ -320,8 +318,7 @@ async function main() {
       let input = parsed.epub
       if (parsed.autoupgrade) {
         logger.info("Upgrading EPUB 2 to EPUB 3")
-        input = join(
-          os.tmpdir(),
+        input = scratchPath(
           `stalign-autoupgrade-${randomUUID()}`,
           basename(parsed.epub),
         )
@@ -339,7 +336,7 @@ async function main() {
 
       const processedAudio =
         parsed.processedAudio ??
-        join(os.tmpdir(), `stalign-processed-${randomUUID()}`)
+        scratchPath(`stalign-processed-${randomUUID()}`)
 
       if (!parsed.processedAudio) {
         stack.defer(() => {
@@ -380,8 +377,7 @@ async function main() {
       let transcriptions!: string
       if ("ctc" in parsed) {
         emissions =
-          parsed.emissions ??
-          join(os.tmpdir(), `stalign-emissions-${randomUUID()}`)
+          parsed.emissions ?? scratchPath(`stalign-emissions-${randomUUID()}`)
 
         if (!parsed.emissions) {
           stack.defer(() => {
@@ -408,7 +404,7 @@ async function main() {
       } else {
         transcriptions =
           parsed.transcriptions ??
-          join(os.tmpdir(), `stalign-transcriptions-${randomUUID()}`)
+          scratchPath(`stalign-transcriptions-${randomUUID()}`)
 
         if (!parsed.transcriptions) {
           stack.defer(() => {
@@ -443,7 +439,7 @@ async function main() {
       const markedup =
         parsed.textRef === "id-fragment"
           ? parsed.markedup ??
-            join(os.tmpdir(), `stalign-markedup-${randomUUID()}.epub`)
+            scratchPath(`stalign-markedup-${randomUUID()}.epub`)
           : parsed.epub
 
       if (parsed.textRef === "id-fragment") {

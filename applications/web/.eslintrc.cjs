@@ -90,5 +90,6 @@ module.exports = {
         ],
       },
     },
+    ...base.overrides,
   ],
 }

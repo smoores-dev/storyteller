@@ -9,11 +9,11 @@ import {
   stat,
   writeFile,
 } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { pipeline } from "node:stream/promises"
 
 import { ZipFile } from "yazl"
 
+import { scratchPath } from "@storyteller-platform/fs"
 import { dirname, join, sep } from "@storyteller-platform/path"
 
 import { openZip } from "../zip.ts"
@@ -52,7 +52,20 @@ function isAudioFile(filenameOrExt: string): boolean {
 }
 
 function mintRootPath(): string {
-  return join(tmpdir(), `storyteller-platform-epub-${randomUUID()}`)
+  return scratchPath(`storyteller-platform-epub-${randomUUID()}`)
+}
+
+/**
+ * Whether an entry name can be laid down inside the extract root.
+ *
+ * A `.` or `..` segment cannot name a real file, and joining one onto the
+ * root would walk out of it, so such an entry is unreachable here whether it
+ * came from a hostile archive or from an href that spelled it `%2E%2E`.
+ */
+function isStorableEntryName(entry: string): boolean {
+  return !entry
+    .split("/")
+    .some((segment) => segment === "" || segment === "." || segment === "..")
 }
 
 /**
@@ -79,8 +92,9 @@ export class TmpFsAdapter implements EpubStorageAdapter {
           // directory entries are skipped; parent dirs are created implicitly
           continue
         }
+        if (!isStorableEntryName(entry.filename)) continue
 
-        const writePath = join(rootPath, entry.filename)
+        const writePath = join(rootPath, ...entry.filename.split("/"))
         const readStream = await entry.openReadStream()
         await mkdir(dirname(writePath), { recursive: true })
         const writeStream = createWriteStream(writePath)
@@ -100,32 +114,51 @@ export class TmpFsAdapter implements EpubStorageAdapter {
     return new TmpFsAdapter(rootPath)
   }
 
-  private constructor(public readonly rootPath: string) {}
+  private constructor(private readonly rootPath: string) {}
 
-  async read(path: string): Promise<Uint8Array>
-  async read(path: string, encoding: "utf-8"): Promise<string>
-  async read(path: string, encoding?: "utf-8"): Promise<string | Uint8Array> {
-    return await readFile(path, encoding)
+  private diskPath(entry: string): string {
+    if (!isStorableEntryName(entry)) {
+      const err = new Error(`ENOENT: no such entry in EPUB archive: ${entry}`)
+      ;(err as Error & { code?: string }).code = "ENOENT"
+      throw err
+    }
+    return join(this.rootPath, ...entry.split("/"))
   }
 
-  async write(path: string, data: Uint8Array): Promise<void>
-  async write(path: string, data: string, encoding: "utf-8"): Promise<void>
+  async read(entry: string): Promise<Uint8Array>
+  async read(entry: string, encoding: "utf-8"): Promise<string>
+  async read(entry: string, encoding?: "utf-8"): Promise<string | Uint8Array> {
+    return await readFile(this.diskPath(entry), encoding)
+  }
+
+  async write(entry: string, data: Uint8Array): Promise<void>
+  async write(entry: string, data: string, encoding: "utf-8"): Promise<void>
   async write(
-    path: string,
+    entry: string,
     data: Uint8Array | string,
     encoding?: "utf-8",
   ): Promise<void> {
+    const path = this.diskPath(entry)
     await mkdir(dirname(path), { recursive: true })
     await writeFile(path, data, encoding)
   }
 
-  async remove(path: string): Promise<void> {
-    await rm(path)
+  async remove(entry: string): Promise<void> {
+    await rm(this.diskPath(entry))
   }
 
-  async archiveLength(path: string): Promise<number> {
+  async exists(entry: string): Promise<boolean> {
     try {
-      const st = await stat(path)
+      await stat(this.diskPath(entry))
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async archiveLength(entry: string): Promise<number> {
+    try {
+      const st = await stat(this.diskPath(entry))
       return st.size
     } catch {
       return 0
@@ -142,7 +175,10 @@ export class TmpFsAdapter implements EpubStorageAdapter {
       const absolutePath = join(entry.parentPath, entry.name)
       yield {
         absolutePath,
-        relativePath: absolutePath.replace(`${this.rootPath}${sep}`, ""),
+        relativePath: absolutePath
+          .slice(this.rootPath.length + 1)
+          .split(sep)
+          .join("/"),
       }
     }
   }
@@ -159,10 +195,7 @@ export class TmpFsAdapter implements EpubStorageAdapter {
   }
 
   async serialize(targetPath: string): Promise<void> {
-    const tmpArchivePath = join(
-      tmpdir(),
-      `storyteller-platform-epub-${randomUUID()}`,
-    )
+    const tmpArchivePath = mintRootPath()
 
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
     const { promise, resolve, reject } = Promise.withResolvers<void>()

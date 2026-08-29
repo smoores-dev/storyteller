@@ -171,6 +171,220 @@ void describe("opf documents with a prefixed package namespace", () => {
   })
 })
 
+const ENCODED_CHAPTER_NAME =
+  "Clarke, Arthur C - [Non-Fiction] The View from Serendip [v1_0001.HTML"
+const ENCODED_CHAPTER_HREF = encodeURIComponent(ENCODED_CHAPTER_NAME)
+
+function encodedHrefOpf(
+  version: "2.0" | "3.0",
+  chapterHref: string = ENCODED_CHAPTER_HREF,
+): string {
+  const navItem =
+    version === "3.0"
+      ? `\n    <item href="nav.xhtml" id="nav" media-type="application/xhtml+xml" properties="nav" />`
+      : ""
+  return `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" unique-identifier="uid" version="${version}">
+  <metadata>
+    <dc:title>The View from Serendip</dc:title>
+    <dc:language>en</dc:language>
+    <dc:identifier id="uid">test-encoded-href</dc:identifier>
+  </metadata>
+  <manifest>
+    <item href="${chapterHref}" id="chapter" media-type="application/xhtml+xml" />
+    <item href="toc.ncx" id="ncx" media-type="application/x-dtbncx+xml" />${navItem}
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="chapter" />
+  </spine>
+</package>
+`
+}
+
+const ENCODED_HREF_NCX = `<?xml version="1.0" encoding="utf-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head><meta name="dtb:uid" content="test-encoded-href"/></head>
+  <docTitle><text>The View from Serendip</text></docTitle>
+  <navMap>
+    <navPoint id="np1" playOrder="1">
+      <navLabel><text>Chapter One</text></navLabel>
+      <content src="${ENCODED_CHAPTER_HREF}#top"/>
+    </navPoint>
+  </navMap>
+</ncx>
+`
+
+const ENCODED_HREF_NAV = `<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head><title>Navigation</title></head>
+<body><nav epub:type="toc"><ol><li><a href="${ENCODED_CHAPTER_HREF}#top">Chapter One</a></li></ol></nav></body>
+</html>
+`
+
+void describe("hrefs pointing at entries whose names need percent encoding", () => {
+  void it("reads an entry stored under the decoded name", async () => {
+    const data = await buildZip({
+      "META-INF/container.xml": CONTAINER_XML,
+      "content.opf": encodedHrefOpf("3.0"),
+      [ENCODED_CHAPTER_NAME]: CHAPTER_XHTML,
+      "toc.ncx": ENCODED_HREF_NCX,
+      "nav.xhtml": ENCODED_HREF_NAV,
+    })
+
+    using epub = await Epub.using(MemoryAdapter).from(data)
+    const contents = await epub.readItemContents("chapter", "utf-8")
+    assert.match(contents, /Chapter One/)
+
+    const navigation = await epub.getTableOfContents()
+    assert.strictEqual(
+      navigation?.children[0]?.href,
+      `${ENCODED_CHAPTER_HREF}#top`,
+    )
+  })
+
+  void it("falls back to the name as written when the entry is stored encoded", async () => {
+    const data = await buildZip({
+      "META-INF/container.xml": CONTAINER_XML,
+      "content.opf": encodedHrefOpf("3.0"),
+      [ENCODED_CHAPTER_HREF]: CHAPTER_XHTML,
+      "toc.ncx": ENCODED_HREF_NCX,
+      "nav.xhtml": ENCODED_HREF_NAV,
+    })
+
+    using epub = await Epub.using(MemoryAdapter).from(data)
+    const contents = await epub.readItemContents("chapter", "utf-8")
+    assert.match(contents, /Chapter One/)
+  })
+
+  void it("reports an archive length for an entry stored encoded", async () => {
+    const data = await buildZip({
+      "META-INF/container.xml": CONTAINER_XML,
+      "content.opf": encodedHrefOpf("3.0"),
+      [ENCODED_CHAPTER_HREF]: CHAPTER_XHTML,
+      "toc.ncx": ENCODED_HREF_NCX,
+      "nav.xhtml": ENCODED_HREF_NAV,
+    })
+
+    using epub = await Epub.using(MemoryAdapter).from(data)
+    assert.ok((await epub.getItemArchiveLength("chapter")) > 0)
+  })
+
+  void it("reads an entry whose stored name encodes a character encodeURIComponent leaves bare", async () => {
+    const name = "chapter%2Done.xhtml"
+    const data = await buildZip({
+      "META-INF/container.xml": CONTAINER_XML,
+      "content.opf": encodedHrefOpf("3.0", name),
+      [name]: CHAPTER_XHTML,
+      "toc.ncx": ENCODED_HREF_NCX,
+      "nav.xhtml": ENCODED_HREF_NAV,
+    })
+
+    using epub = await Epub.using(MemoryAdapter).from(data)
+    assert.match(await epub.readItemContents("chapter", "utf-8"), /Chapter One/)
+    assert.ok((await epub.getItemArchiveLength("chapter")) > 0)
+  })
+
+  void it("upgrades an epub 2 whose hrefs are percent encoded", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "epub-encoded-href-test-"))
+    const inputPath = join(dir, "encoded.epub")
+    const outputPath = join(dir, "encoded-epub3.epub")
+    await writeFile(
+      inputPath,
+      await buildZip({
+        "META-INF/container.xml": CONTAINER_XML,
+        "content.opf": encodedHrefOpf("2.0"),
+        [ENCODED_CHAPTER_NAME]: CHAPTER_XHTML,
+        "toc.ncx": ENCODED_HREF_NCX,
+      }),
+    )
+
+    {
+      using upgraded = await Epub.upgrade(inputPath, { outputPath })
+      await upgraded.saveAndClose()
+    }
+
+    using epub3 = await Epub.using(MemoryAdapter).from(outputPath)
+    assert.strictEqual(await epub3.getVersion(), "3.0")
+
+    const spineItems = await epub3.getSpineItems()
+    assert.strictEqual(spineItems[0]?.href, ENCODED_CHAPTER_HREF)
+    assert.match(
+      await epub3.readItemContents("chapter", "utf-8"),
+      /Chapter One/,
+    )
+
+    const navigation = await epub3.getTableOfContents()
+    assert.strictEqual(
+      navigation?.children[0]?.href,
+      `${ENCODED_CHAPTER_HREF}#top`,
+    )
+  })
+})
+
+void describe("hrefs that address entries outside the container", () => {
+  const NESTED_CONTAINER_XML = `<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>
+`
+
+  void it("climbs on %2E%2E the way the URL standard does", async () => {
+    const data = await buildZip({
+      "META-INF/container.xml": NESTED_CONTAINER_XML,
+      "OEBPS/content.opf": encodedHrefOpf("3.0", "%2E%2E/outside.xhtml"),
+      "outside.xhtml": CHAPTER_XHTML,
+      "OEBPS/toc.ncx": ENCODED_HREF_NCX,
+      "OEBPS/nav.xhtml": ENCODED_HREF_NAV,
+    })
+
+    using epub = await Epub.using(MemoryAdapter).from(data)
+    assert.match(await epub.readItemContents("chapter", "utf-8"), /Chapter One/)
+    assert.strictEqual(
+      await epub.resolveHref("%2E%2E/outside.xhtml"),
+      "../outside.xhtml",
+    )
+  })
+
+  void it("hands back an href that leaves the publication unchanged", async () => {
+    const data = await buildZip({
+      "META-INF/container.xml": NESTED_CONTAINER_XML,
+      "OEBPS/content.opf": encodedHrefOpf("3.0"),
+      [`OEBPS/${ENCODED_CHAPTER_NAME}`]: CHAPTER_XHTML,
+      "OEBPS/toc.ncx": ENCODED_HREF_NCX,
+      "OEBPS/nav.xhtml": ENCODED_HREF_NAV,
+    })
+
+    using epub = await Epub.using(MemoryAdapter).from(data)
+    for (const href of [
+      "https://example.com/a b.xhtml",
+      "mailto:someone@example.com",
+    ]) {
+      assert.strictEqual(await epub.resolveHref(href), href)
+    }
+  })
+
+  void it("clamps a climb above the container root instead of escaping it", async () => {
+    const data = await buildZip({
+      "META-INF/container.xml": NESTED_CONTAINER_XML,
+      "OEBPS/content.opf": encodedHrefOpf("3.0", "../../../outside.xhtml"),
+      "outside.xhtml": CHAPTER_XHTML,
+      "OEBPS/toc.ncx": ENCODED_HREF_NCX,
+      "OEBPS/nav.xhtml": ENCODED_HREF_NAV,
+    })
+
+    using epub = await Epub.using(MemoryAdapter).from(data)
+    assert.match(await epub.readItemContents("chapter", "utf-8"), /Chapter One/)
+    assert.strictEqual(
+      await epub.resolveHref("../../../outside.xhtml", undefined, {
+        toRoot: true,
+      }),
+      "outside.xhtml",
+    )
+  })
+})
+
 void describe("failed upgrades", () => {
   void it("does not leave extracted temp directories behind", async () => {
     const canary = `leak-canary-${randomUUID()}.txt`

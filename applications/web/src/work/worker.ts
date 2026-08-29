@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { mkdir, readFile, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { dirname, join } from "node:path"
+import { dirname } from "node:path"
 import type { MessagePort } from "node:worker_threads"
 
 import {
@@ -11,6 +10,7 @@ import {
   transcribe,
 } from "@storyteller-platform/align"
 import { Epub } from "@storyteller-platform/epub"
+import { scratchPath } from "@storyteller-platform/fs"
 import {
   createTiming,
   formatSingleReport,
@@ -231,8 +231,7 @@ export default async function processBook({
 
       if (stage === "SYNC_CHAPTERS") {
         await processTiming.timeAsync("sync", async () => {
-          const markupFilepath = join(
-            tmpdir(),
+          const markupFilepath = scratchPath(
             `storyteller-${randomUUID()}`,
             `${book.uuid}.epub`,
           )

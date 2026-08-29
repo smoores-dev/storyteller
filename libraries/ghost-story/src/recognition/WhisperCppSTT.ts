@@ -1,9 +1,10 @@
 import { spawn } from "node:child_process"
 import fs, { existsSync } from "node:fs"
-import os from "node:os"
 import path from "node:path"
 
 import { ensureDir } from "fs-extra"
+
+import { scratchPath } from "@storyteller-platform/fs"
 
 import {
   type AudioFormat,
@@ -251,7 +252,7 @@ async function transcribe(
     throw new Error(`Model not found at ${modelPath}`)
   }
 
-  const tmpDir = path.join(os.tmpdir(), "ghost-story-whisper")
+  const tmpDir = scratchPath("ghost-story-whisper")
   await ensureDir(tmpDir)
   const tmpJsonPath = path.join(tmpDir, `transcription-${Date.now()}`)
 

@@ -1,0 +1,16 @@
+releases:
+  "@storyteller-platform/align": patch
+  "@storyteller-platform/audiobook": patch
+  "@storyteller-platform/epub": patch
+  "@storyteller-platform/fs": minor
+  "@storyteller-platform/ghost-story": patch
+  "@storyteller-platform/path": minor
+  "@storyteller-platform/tauri": patch
+
+declined:
+  - "@storyteller-platform/docs"
+  - "@storyteller-platform/mobile"
+  - "@storyteller-platform/web"
+  - "@storyteller-platform/mapping"
+  - "@storyteller-platform/nodekit"
+  - "@storyteller-platform/opds"

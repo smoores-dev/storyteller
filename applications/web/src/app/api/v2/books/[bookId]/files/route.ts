@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto"
 import { createWriteStream } from "node:fs"
 import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { dirname, extname, join } from "node:path"
 
 import { createReadableStreamFromReadable } from "@remix-run/node"
@@ -15,6 +14,7 @@ import {
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
+import { scratchPath } from "@storyteller-platform/fs"
 
 import { getExtractedCover } from "@/assets/covers"
 import { computeFileHash } from "@/assets/fs"
@@ -72,11 +72,7 @@ async function getFilepath(
     return join(filepath, audioFiles[0]!)
   }
 
-  const zipFilepath = join(
-    tmpdir(),
-    "storyteller-downloads",
-    `${book.uuid}.zip`,
-  )
+  const zipFilepath = scratchPath("storyteller-downloads", `${book.uuid}.zip`)
   await mkdir(dirname(zipFilepath), { recursive: true })
 
   // eslint-disable-next-line @typescript-eslint/no-invalid-void-type

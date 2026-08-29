@@ -1042,7 +1042,6 @@ fn spawn_server(
                     | "NODE_ENV"
                     | "NODE_OPTIONS"
                     | "READIUM_PORT"
-                    | "SQLITE_NATIVE_BINDING"
                     | "ERROR_ALIGN_NATIVE_BINDING"
             )
         {
@@ -1070,15 +1069,6 @@ fn spawn_server(
                 .join("work-dist")
                 .join("@storyteller-platform")
                 .join("align"),
-        )
-        .env(
-            "SQLITE_NATIVE_BINDING",
-            runtime_dir
-                .join("node_modules")
-                .join("better-sqlite3")
-                .join("build")
-                .join("Release")
-                .join("better_sqlite3.node"),
         )
         .stdin(Stdio::null())
         .stdout(Stdio::from(log.try_clone()?))

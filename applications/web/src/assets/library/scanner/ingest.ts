@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto"
 import { rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 
 import { type Audiobook } from "@storyteller-platform/audiobook"
 import { type InMemoryEpubReader } from "@storyteller-platform/epub"
+import { scratchPath } from "@storyteller-platform/fs"
 
 import { reserveBookDirectory } from "@/assets/fs"
 import {
@@ -117,7 +116,7 @@ function resolveEpubOpenOpts(importMode: ImportMode): OpenEpubOpts {
   if (importMode === "copy") {
     return {
       strategyOverride: "replace",
-      upgradeTo: join(tmpdir(), `storyteller-upgrade-${randomUUID()}.epub`),
+      upgradeTo: scratchPath(`storyteller-upgrade-${randomUUID()}.epub`),
     }
   }
 

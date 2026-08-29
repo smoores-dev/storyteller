@@ -6,12 +6,7 @@ import memoize from "mem"
 import { lookup } from "mime-types"
 import { nanoid } from "nanoid"
 
-import {
-  dirname,
-  hrefToPlatformPath,
-  join,
-  resolve,
-} from "@storyteller-platform/path"
+import { dirname } from "@storyteller-platform/path"
 
 import type {
   AdapterOptions,
@@ -238,6 +233,30 @@ export class EpubVersionError extends Error {}
 export class EpubReadOnlyError extends Error {}
 
 const OPF_NAMESPACE = "http://www.idpf.org/2007/opf"
+
+/**
+ * makes it easy to distinguish normal hrefs from external/invalid ones
+ */
+const ENTRY_ORIGIN = "epub:///"
+
+/**
+ * Needs to be convoluted like this, bc
+ * - `encodeURIComponent` escapes `/` and `\`
+ * - `encodeURI` does not escape `#` and `?`
+ */
+function entryToUrlPath(entry: string) {
+  return entry.split("/").map(encodeURIComponent).join("/")
+}
+
+function resolveEntryUrl(from: string, href: string): URL | null {
+  const base = new URL(entryToUrlPath(from), ENTRY_ORIGIN)
+
+  if (!URL.canParse(href, base.toString())) return null
+
+  const url = new URL(href, base)
+
+  return url.href.startsWith(ENTRY_ORIGIN) ? url : null
+}
 
 function renameOpfAttributes(
   attrs: Record<string, string>,
@@ -705,23 +724,7 @@ export class Epub {
       )
     }
     const rootfile = await this.getRootfile()
-    const filename = this.resolveInternalHref(rootfile, href)
-    await this.adapter.remove(filename)
-  }
-
-  /**
-   * Read raw bytes (or utf-8 text) from the underlying adapter
-   */
-  private async getFileData(path: string): Promise<Uint8Array>
-  private async getFileData(path: string, encoding: "utf-8"): Promise<string>
-  private async getFileData(
-    path: string,
-    encoding?: "utf-8",
-  ): Promise<string | Uint8Array> {
-    if (encoding) {
-      return this.adapter.read(path, encoding)
-    }
-    return this.adapter.read(path)
+    await this.adapter.remove(await this.resolveEntry(rootfile, href))
   }
 
   /**
@@ -735,15 +738,16 @@ export class Epub {
     const manifestItem = manifest[id]
     if (!manifestItem)
       throw new Error(`Could not find item with id "${id}" in manifest`)
-    const path = this.resolveInternalHref(rootfile, manifestItem.href)
-    return this.adapter.archiveLength(path)
+    return this.adapter.archiveLength(
+      await this.resolveEntry(rootfile, manifestItem.href),
+    )
   }
 
   async getRootfile() {
     if (this.rootfile !== null) return this.rootfile
 
-    const containerString = await this.getFileData(
-      join(this.adapter.rootPath, "META-INF", "container.xml"),
+    const containerString = await this.adapter.read(
+      "META-INF/container.xml",
       "utf-8",
     )
 
@@ -782,14 +786,14 @@ export class Epub {
         "Failed to parse EPUB container.xml: Found no rootfile element",
       )
 
-    this.rootfile = resolve(this.adapter.rootPath, fullPath)
+    this.rootfile = await this.resolveEntry("", fullPath)
 
     return this.rootfile
   }
 
   private async getPackageDocument() {
     const rootfile = await this.getRootfile()
-    const packageDocumentString = await this.getFileData(rootfile, "utf-8")
+    const packageDocumentString = await this.adapter.read(rootfile, "utf-8")
 
     if (!packageDocumentString)
       throw new Error(
@@ -2813,20 +2817,57 @@ export class Epub {
   }
 
   /**
-   * Returns a Zip Entry path for an HREF
+   * Name the entry a resolved URL addresses.
+   *
+   * A correctly authored publication percent-encodes its hrefs, so the
+   * decoded reading is the one the spec calls for and the one we prefer.
+   * Some publications instead write the entry name verbatim, so when the two
+   * readings differ we ask the archive which one it holds. A verbatim name
+   * carrying a bare `%`, as `100%.xhtml` does, is not a valid encoding at all
+   * and can only be its own answer.
    */
-  private resolveInternalHref(from: string, href: string) {
-    const startPath = dirname(from)
-    return resolve(
-      this.adapter.rootPath,
-      hrefToPlatformPath(startPath),
-      hrefToPlatformPath(href),
-    )
+  private async entryForUrl(url: URL): Promise<string> {
+    const asWritten = url.pathname.slice(1)
+
+    let decoded: string
+    try {
+      decoded = decodeURIComponent(asWritten)
+    } catch {
+      return asWritten
+    }
+
+    if (decoded === asWritten) {
+      return decoded
+    }
+    if (await this.adapter.exists(decoded)) {
+      return decoded
+    }
+    return (await this.adapter.exists(asWritten)) ? asWritten : decoded
+  }
+
+  /**
+   * Resolve an href to the name of the archive entry it addresses.
+   *
+   * @param from The entry the href appears in; it resolves against that
+   *   entry's directory
+   * @throws when the href addresses something outside the publication
+   */
+  private async resolveEntry(from: string, href: string): Promise<string> {
+    const url = resolveEntryUrl(from, href)
+    if (!url) {
+      throw new Error(
+        `href does not address an entry in this publication: ${href}`,
+      )
+    }
+    return this.entryForUrl(url)
   }
 
   /**
    * Returns a path-relative-scheme-less URL, relative to the
    * container root.
+   *
+   * An href that points outside the publication, such as an external link in
+   * a navigation document, is handed back unchanged.
    *
    * @param href The href to resolve
    * @param [relativeTo] Optional - The href to resolve this href relative to.
@@ -2837,14 +2878,30 @@ export class Epub {
     relativeTo?: string,
     { toRoot }: { toRoot?: boolean | undefined } = {},
   ): Promise<string> {
+    if (href.startsWith("#")) return href
+
     const rootfile = await this.getRootfile()
+
     const from = relativeTo
-      ? this.resolveInternalHref(rootfile, relativeTo)
+      ? await this.resolveEntry(rootfile, relativeTo)
       : rootfile
-    const path = this.resolveInternalHref(from, href)
-    return path
-      .replace(toRoot ? this.adapter.rootPath : dirname(rootfile), "")
-      .slice(1)
+
+    const url = resolveEntryUrl(from, href)
+    if (!url) return href
+
+    const entry = (await this.entryForUrl(url)).split("/")
+
+    const base = toRoot ? [] : rootfile.split("/").slice(0, -1)
+    let shared = 0
+    while (shared < base.length && base[shared] === entry[shared]) {
+      shared++
+    }
+
+    const relative = [
+      ...Array<string>(base.length - shared).fill(".."),
+      ...entry.slice(shared).map(encodeURIComponent),
+    ]
+    return relative.join("/") + url.hash
   }
 
   /**
@@ -2873,13 +2930,13 @@ export class Epub {
   ): Promise<string | Uint8Array> {
     const rootfile = await this.getRootfile()
     const from = relativeTo
-      ? this.resolveInternalHref(rootfile, relativeTo)
+      ? await this.resolveEntry(rootfile, relativeTo)
       : rootfile
-    const path = this.resolveInternalHref(from, href)
+    const entry = await this.resolveEntry(from, href)
 
     const itemEntry = encoding
-      ? await this.getFileData(path, encoding)
-      : await this.getFileData(path)
+      ? await this.adapter.read(entry, encoding)
+      : await this.adapter.read(entry)
     return itemEntry
   }
 
@@ -2906,10 +2963,10 @@ export class Epub {
     if (!manifestItem)
       throw new Error(`Could not find item with id "${id}" in manifest`)
 
-    const path = this.resolveInternalHref(rootfile, manifestItem.href)
+    const entry = await this.resolveEntry(rootfile, manifestItem.href)
     const itemEntry = encoding
-      ? await this.getFileData(path, encoding)
-      : await this.getFileData(path)
+      ? await this.adapter.read(entry, encoding)
+      : await this.adapter.read(entry)
     return itemEntry
   }
 
@@ -3033,11 +3090,11 @@ export class Epub {
     // readXhtmlItemContents is already explicitly bound in the constructor
     // eslint-disable-next-line @typescript-eslint/unbound-method
     memoize.clear(this.readXhtmlItemContents)
-    const href = this.resolveInternalHref(rootfile, manifestItem.href)
+    const entry = await this.resolveEntry(rootfile, manifestItem.href)
     if (encoding === "utf-8") {
-      await this.writeEntryContents(href, contents as string, encoding)
+      await this.writeEntryContents(entry, contents as string, encoding)
     } else {
-      await this.writeEntryContents(href, contents as Uint8Array)
+      await this.writeEntryContents(entry, contents as Uint8Array)
     }
   }
 
@@ -3152,7 +3209,7 @@ export class Epub {
 
     const rootfile = await this.getRootfile()
 
-    const filename = this.resolveInternalHref(rootfile, item.href)
+    const filename = await this.resolveEntry(rootfile, item.href)
 
     const data =
       encoding === "utf-8" || encoding === "xml"
@@ -3643,10 +3700,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
   </rootfiles>
 </container>
 `)
-    await adapter.write(
-      join(adapter.rootPath, "META-INF", "container.xml"),
-      container,
-    )
+    await adapter.write("META-INF/container.xml", container)
 
     const packageDocument = encoder.encode(`<?xml version="1.0"?>
 <package unique-identifier="pub-id" dir="${language.textInfo.direction}" xml:lang="${language.toString()}" version="3.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -3658,10 +3712,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
   </spine>
 </package>
 `)
-    await adapter.write(
-      join(adapter.rootPath, "OEBPS", "content.opf"),
-      packageDocument,
-    )
+    await adapter.write("OEBPS/content.opf", packageDocument)
 
     const epub = new Epub(this.adapterClass, adapter, path)
     const metadata: MetadataEntry[] = [

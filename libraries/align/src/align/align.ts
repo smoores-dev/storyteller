@@ -9,7 +9,6 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import {
   basename as autoBasename,
   dirname as autoDirname,
@@ -32,6 +31,7 @@ import {
   type ManifestItem,
   type ParsedXml,
 } from "@storyteller-platform/epub"
+import { scratchPath } from "@storyteller-platform/fs"
 import {
   createAggregator,
   createTiming,
@@ -193,8 +193,7 @@ export async function align(
   const outFormat = options.outFormat ?? "epub"
   const epubPath =
     outFormat === "epub"
-      ? autoJoin(
-          tmpdir(),
+      ? scratchPath(
           `storyteller-platform-align-${randomUUID()}`,
           autoBasename(output),
         )
@@ -285,8 +284,7 @@ export async function align(
       guidedNavigationDocuments,
     )
 
-    const tmpArchivePath = autoJoin(
-      tmpdir(),
+    const tmpArchivePath = scratchPath(
       `storyteller-platform-epub-${randomUUID()}`,
     )
 

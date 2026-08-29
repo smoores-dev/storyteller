@@ -37,9 +37,7 @@ async function exists(path: string): Promise<boolean> {
 // care about inode sharing we put the fixture next to ASSETS_DIR instead.
 async function createSameDeviceLibrary(prefix: string) {
   const parent = dirname(ASSETS_DIR)
-  if (await exists(parent)) {
-    await rm(parent, { recursive: true, force: true })
-  }
+  await rm(ASSETS_DIR, { recursive: true, force: true })
   await mkdir(parent, { recursive: true })
   const root = await mkdtemp(join(parent, `import-mode-test-${prefix}-`))
   return {

@@ -32,11 +32,6 @@ yarn-error.log*
 src/__fixtures__/__output__/*
 !src/__fixtures__/__output__/**/.gitkeep
 
-# e.g. uuid.c.so sqlite extension
-*.so
-*.dylib
-*.dylib.dSYM/
-
 work-dist
 file-write-dist
 migrate-dist

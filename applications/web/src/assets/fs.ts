@@ -20,8 +20,8 @@ import { type UUID } from "@/uuid"
 
 import { pathBelongsTo } from "./library/scanner/folder"
 import {
+  releasePrefixAfterSettle,
   suppressPrefix,
-  unsuppressPrefix,
 } from "./library/scanner/write-intent"
 import {
   getCoverImageCacheDirectory,
@@ -264,8 +264,8 @@ export async function changeBookAssetDir(
     try {
       await move(oldDir, targetDir)
     } finally {
-      unsuppressPrefix(oldDir)
-      unsuppressPrefix(targetDir)
+      releasePrefixAfterSettle(oldDir)
+      releasePrefixAfterSettle(targetDir)
     }
   } else {
     await mkdir(targetDir, { recursive: true })
@@ -308,8 +308,8 @@ async function mergeIntoTarget(
 
     await rm(oldDir, { recursive: true, force: true })
   } finally {
-    unsuppressPrefix(oldDir)
-    unsuppressPrefix(targetDir)
+    releasePrefixAfterSettle(oldDir)
+    releasePrefixAfterSettle(targetDir)
   }
 }
 
@@ -537,8 +537,8 @@ export async function relocateAssetsIntoBook(
     try {
       await move(from, to)
     } finally {
-      unsuppressPrefix(from)
-      unsuppressPrefix(to)
+      releasePrefixAfterSettle(from)
+      releasePrefixAfterSettle(to)
     }
   }
 
@@ -590,7 +590,7 @@ export async function deleteTranscriptions(book: BookWithRelations) {
     recursive: true,
     force: true,
   })
-  unsuppressPrefix(transcriptionsDir)
+  releasePrefixAfterSettle(transcriptionsDir)
 }
 
 export async function deleteProcessedAudio(book: BookWithRelations) {
@@ -600,14 +600,14 @@ export async function deleteProcessedAudio(book: BookWithRelations) {
     recursive: true,
     force: true,
   })
-  unsuppressPrefix(processedAudioDir)
+  releasePrefixAfterSettle(processedAudioDir)
 }
 
 export async function deleteOriginals(book: BookWithRelations) {
   if (book.ebook) {
     suppressPrefix(book.ebook.filepath)
     await rm(book.ebook.filepath, { force: true })
-    unsuppressPrefix(book.ebook.filepath)
+    releasePrefixAfterSettle(book.ebook.filepath)
   }
   if (book.audiobook) {
     suppressPrefix(book.audiobook.filepath)
@@ -615,7 +615,7 @@ export async function deleteOriginals(book: BookWithRelations) {
       recursive: true,
       force: true,
     })
-    unsuppressPrefix(book.audiobook.filepath)
+    releasePrefixAfterSettle(book.audiobook.filepath)
   }
 }
 
@@ -627,7 +627,7 @@ export async function deleteAssets(book: BookWithRelations) {
   const bookDir = getInternalBookDirectory(book)
   suppressPrefix(bookDir)
   await rm(bookDir, { recursive: true, force: true })
-  unsuppressPrefix(bookDir)
+  releasePrefixAfterSettle(bookDir)
 
   if (
     book.readaloud?.filepath &&
@@ -635,18 +635,18 @@ export async function deleteAssets(book: BookWithRelations) {
   ) {
     suppressPrefix(book.readaloud.filepath)
     await rm(book.readaloud.filepath, { force: true })
-    unsuppressPrefix(book.readaloud.filepath)
+    releasePrefixAfterSettle(book.readaloud.filepath)
   }
 
   if (book.ebook && pathBelongsTo(ASSETS_DIR, book.ebook.filepath)) {
     suppressPrefix(book.ebook.filepath)
     await rm(book.ebook.filepath, { force: true })
-    unsuppressPrefix(book.ebook.filepath)
+    releasePrefixAfterSettle(book.ebook.filepath)
   }
   if (book.audiobook && pathBelongsTo(ASSETS_DIR, book.audiobook.filepath)) {
     suppressPrefix(book.audiobook.filepath)
     await rm(book.audiobook.filepath, { recursive: true, force: true })
-    unsuppressPrefix(book.audiobook.filepath)
+    releasePrefixAfterSettle(book.audiobook.filepath)
   }
 
   await deleteCachedCoverImages(book.uuid)

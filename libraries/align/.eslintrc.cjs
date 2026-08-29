@@ -38,5 +38,6 @@ module.exports = {
         "@typescript-eslint/no-non-null-assertion": "off",
       },
     },
+    ...base.overrides,
   ],
 }

@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto"
 import { mkdir, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { basename, dirname, extname, join } from "node:path"
 
 import { type Logger } from "pino"
 
 import { type AudiobookChapter } from "@storyteller-platform/audiobook"
+import { scratchPath } from "@storyteller-platform/fs"
 import { detectVoiceActivity } from "@storyteller-platform/ghost-story/vad"
 
 import { splitFile } from "../common/ffmpeg.ts"
@@ -91,7 +91,7 @@ export async function getSafeRanges(
   const ext = extname(input)
   const rawFilename = basename(input, ext)
 
-  const tmpDir = join(tmpdir(), `storyteller-align-silence-${randomUUID()}`)
+  const tmpDir = scratchPath(`storyteller-align-silence-${randomUUID()}`)
 
   await using stack = new AsyncDisposableStack()
   stack.defer(async () => {

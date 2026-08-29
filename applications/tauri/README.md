@@ -179,8 +179,6 @@ because the reader sniffs `AppleWebKit`). The web app checks either via
 
 ## Windows notes
 
-- `sqlite/uuid.c` must be compiled to `uuid.c.dll` before assembly
-  (`cl /LD sqlite/uuid.c`); `build-sqlite-ext.sh` only covers macOS/Linux.
 - Shutdown uses `taskkill /T /F` (no POSIX signals); whisper/okmain specifics
   are handled on a separate branch.
 

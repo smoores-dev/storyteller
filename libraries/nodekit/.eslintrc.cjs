@@ -43,5 +43,6 @@ module.exports = {
         "no-console": "off",
       },
     },
+    ...base.overrides,
   ],
 }
