@@ -32,15 +32,10 @@ COPY config/eslint/package.json ./config/eslint/package.json
 # --inline-builds streams native build-script output so a hang during the
 # link step names the offending package instead of freezing silently.
 # onnxruntime-node's postinstall downloads the CUDA execution provider on
-# linux/x64, which is dead weight in images that have no CUDA runtime.
-# It only ships a CUDA 12 provider, so the cuda-11 images skip it too, matching
-# the package set scripts/install-cuda.sh picks for CUDA 11.
-ARG WHISPER_VARIANT
-RUN case "$WHISPER_VARIANT" in \
-      *cuda-1[2-9]*) ;; \
-      *) export ONNXRUNTIME_NODE_INSTALL=skip ;; \
-    esac; \
-    yarn install --inline-builds
+# linux/x64, which stalls inside buildkit and is unused: wav2vec runs on the
+# WebGPU provider that ships inside the npm tarball.
+ENV ONNXRUNTIME_NODE_INSTALL=skip
+RUN yarn install --inline-builds
 
 COPY docker-scripts/ ./scripts/
 
@@ -91,7 +86,9 @@ FROM runner-base-${TARGETARCH} AS runner
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 \
+# libvulkan1 and the mesa ICDs back onnxruntime's WebGPU provider on AMD and
+# Intel GPUs, NVIDIA mounts its own ICD through the container toolkit
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 libvulkan1 mesa-vulkan-drivers \
     && rm -rf /var/lib/apt/lists/*
 
 RUN  (userdel -r ubuntu || true) \
@@ -140,7 +137,7 @@ ENV HOSTNAME=0.0.0.0
 ENV STORYTELLER_DATA_DIR=/data
 ENV READIUM_PORT=9000
 ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 
 ENV ERROR_ALIGN_NATIVE_BINDING=/app/.next/standalone/applications/web/work-dist/@storyteller-platform/align/
 ENV STORYTELLER_WORKER=worker.mjs

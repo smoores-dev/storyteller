@@ -370,41 +370,31 @@ export function resolveVariant(requestedVariant?: BuildVariant): BuildVariant {
   return applyLegacyCpuFallback(detectPlatform())
 }
 
-const ORT_MIN_CUDA_MAJOR = 12
-
 export function resolveWav2Vec2Device(
   requested: Wav2Vec2Device | null | undefined,
   variant: string | null | undefined,
 ): Wav2Vec2Device {
-  const variantName = variant ?? ""
-  const cudaMajor = Number(/cuda-(\d+)/.exec(variantName)?.[1] ?? "0")
-  const cudaAvailable =
-    process.platform === "linux" &&
-    process.arch === "x64" &&
-    (cudaMajor === 0 || cudaMajor >= ORT_MIN_CUDA_MAJOR)
+  const webgpuAvailable = !(
+    process.platform === "linux" && process.arch === "arm64"
+  )
 
   if (requested && requested !== "auto") {
-    if (requested !== "cuda") return requested
-    if (cudaAvailable) return "cuda"
+    return requested === "webgpu" && !webgpuAvailable ? "cpu" : requested
   }
 
-  if (cudaMajor >= ORT_MIN_CUDA_MAJOR && cudaAvailable) {
-    return "cuda"
-  }
-
-  if (
+  const variantName = variant ?? ""
+  const gpuVariant =
+    variantName.includes("cuda") ||
     variantName.includes("rocm") ||
     variantName.includes("sycl") ||
-    variantName.includes("vulkan")
-  ) {
-    return "webgpu"
-  }
+    variantName.includes("vulkan") ||
+    variantName.includes("coreml")
 
-  return "auto"
+  return gpuVariant && webgpuAvailable ? "webgpu" : "cpu"
 }
 
 export function resolveWav2Vec2Dtype(device: Wav2Vec2Device): Wav2Vec2DataType {
-  return device === "cuda" ? "fp16" : "fp32"
+  return device === "webgpu" ? "fp16" : "fp32"
 }
 
 export function isValidModel(model: string): model is WhisperModel {

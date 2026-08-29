@@ -184,22 +184,12 @@ transcription. The CTC settings are described in
 
 ### CTC forced alignment
 
-"Where it runs" chooses between doing the work on the machine hosting
-Storyteller and sending the audio to a Ghost Story server on another machine.
-See [Offloading transcription](tutorials/offloading-transcription.mdx) for how
-to run that server.
+CTC forced alignment runs on the machine hosting Storyteller with the
+multilingual MMS wav2vec2 model, which handles books in any language.
 
-"Model" picks the wav2vec2 model. The multilingual MMS model handles books in
-any language, and the English-only model is smaller and faster.
-
-"Device" picks the hardware. Auto follows the Storyteller build you run, so a
-CUDA 12 or CUDA 13 image aligns on the GPU and every other build aligns on the
-CPU. If your build cannot use the device you pick, Storyteller falls back to
-Auto. Pick CPU if alignment crashes on your GPU.
-
-When "Where it runs" is set to another server you also need to fill in the
-server URL, for example `http://192.168.1.19:8080`, and the API key if that
-server requires one.
+"Device" picks the hardware. Auto follows the Storyteller build you run, so
+every GPU image (CUDA, ROCm, Vulkan, SYCL) aligns on the GPU through WebGPU and
+the CPU images align on the CPU. Pick CPU if alignment crashes on your GPU.
 
 ### Transcribing locally
 
@@ -232,10 +222,9 @@ acceleration frameworks are:
 
 - SYCL, for Intel Arc and integrated Intel graphics.
 
-The CTC aligner does not use these builds. It runs on CUDA in the CUDA 12 and
-CUDA 13 images and on the CPU everywhere else, and you choose that with the
-"Device" setting. The CUDA 11.8 image aligns on the CPU, because onnxruntime no
-longer ships a CUDA 11 provider.
+The CTC aligner does not use these builds directly. It talks to the GPU through
+WebGPU (Vulkan on Linux), which every GPU image supports, and you choose that
+with the "Device" setting.
 
 Additionally, we have a community guide for how to use CoreML for
 hardware-accelerated transcription on macOS.

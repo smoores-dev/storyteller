@@ -98,7 +98,9 @@ Usage:
         .describe("Device the CTC model will run on"),
       dtype: wav2vec2DtypeSchema
         .optional()
-        .describe("Weight precision. Defaults to fp16 on cuda, fp32 otherwise"),
+        .describe(
+          "Weight precision. Defaults to fp16 on webgpu, fp32 otherwise",
+        ),
     }),
     { f: "force", l: "list", d: "device" },
   ),
