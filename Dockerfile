@@ -29,11 +29,7 @@ COPY libraries/nodekit/package.json ./libraries/nodekit/package.json
 COPY config/tsup/package.json ./config/tsup/package.json
 COPY config/eslint/package.json ./config/eslint/package.json
 
-# --inline-builds streams native build-script output so a hang during the
-# link step names the offending package instead of freezing silently.
-# onnxruntime-node's postinstall downloads the CUDA execution provider on
-# linux/x64, which stalls inside buildkit and is unused: wav2vec runs on the
-# WebGPU provider that ships inside the npm tarball.
+# skip onnxruntime-node's postinstall to avoid CUDA execution provider download
 ENV ONNXRUNTIME_NODE_INSTALL=skip
 RUN yarn install --inline-builds
 

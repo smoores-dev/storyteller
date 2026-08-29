@@ -166,31 +166,6 @@ audiobook narration to text (visit [How it works!](the-algorithm.md) for more
 details.) This is by far the most resource-intensive phase of the alignment
 process.
 
-### Choosing an aligner
-
-The "Aligner" setting picks how Storyteller lines the book text up with the
-narration.
-
-- **CTC forced alignment** (recommended) aligns the book text straight to the
-  audio with a wav2vec2 model. It is more accurate, gives better word timings
-  and works well across languages.
-- **Whisper transcription** transcribes the narration with Whisper first and
-  then matches that transcript to the book text. This is the original approach,
-  and it is the one that can be handed off to a paid third-party service.
-
-The Whisper settings below only apply when the aligner is set to Whisper
-transcription. The CTC settings are described in
-[CTC forced alignment](#ctc-forced-alignment).
-
-### CTC forced alignment
-
-CTC forced alignment runs on the machine hosting Storyteller with the
-multilingual MMS wav2vec2 model, which handles books in any language.
-
-"Device" picks the hardware. Auto follows the Storyteller build you run, so
-every GPU image (CUDA, ROCm, Vulkan, SYCL) aligns on the GPU through WebGPU and
-the CPU images align on the CPU. Pick CPU if alignment crashes on your GPU.
-
 ### Transcribing locally
 
 The default transcription engine is whisper.cpp, which runs the open source
@@ -209,22 +184,16 @@ acceleration frameworks are:
 
 #### NVIDIA GPUs
 
-- CUDA 13.1, CUDA 12.9 and CUDA 11.8. Pick the one that matches the CUDA version
-  your driver supports.
+- cuBLAS-11.8. This is a CUDA-based BLAS library. It requires a CUDA-enabled
+  NVIDIA GPU. Specifically, this is for GPUs with CUDA 11; use cuBLAS-12.4 if
+  you are running CUDA 12
+- cuBLAS-12.4. Same as cuBLAS-11.8, but for CUDA 12.
 
-#### AMD GPUs
+#### AMD GPUs:
 
-- ROCm. This requires an AMD GPU that supports the ROCm computation framework,
-  and the AMD GPU drivers installed on the host.
-- Vulkan. This works on a wider range of AMD and Intel GPUs than ROCm does.
-
-#### Intel GPUs
-
-- SYCL, for Intel Arc and integrated Intel graphics.
-
-The CTC aligner does not use these builds directly. It talks to the GPU through
-WebGPU (Vulkan on Linux), which every GPU image supports, and you choose that
-with the "Device" setting.
+- hipBLAS. This is an AMD-based BLAS library. It requires an AMD GPU that
+  supports the ROCm computation framework, and for the AMD GPU drivers to be
+  installed on the host
 
 Additionally, we have a community guide for how to use CoreML for
 hardware-accelerated transcription on macOS.
