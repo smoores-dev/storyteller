@@ -17,7 +17,7 @@ INSERT INTO
   settings (name, value)
 SELECT
   'ctcEngine',
-  '"ctc-local"'
+  '"wav2vec-local"'
 WHERE
   NOT EXISTS (
     SELECT
@@ -26,21 +26,6 @@ WHERE
       settings
     WHERE
       name = 'ctcEngine'
-  );
-
-INSERT INTO
-  settings (name, value)
-SELECT
-  'ctcModel',
-  '"onnx-community/mms-300m-1130-forced-aligner-ONNX"'
-WHERE
-  NOT EXISTS (
-    SELECT
-      1
-    FROM
-      settings
-    WHERE
-      name = 'ctcModel'
   );
 
 INSERT INTO
@@ -58,32 +43,28 @@ WHERE
       name = 'ctcDevice'
   );
 
-INSERT INTO
-  settings (name, value)
-SELECT
-  'ctcServerUrl',
-  'null'
-WHERE
-  NOT EXISTS (
-    SELECT
-      1
-    FROM
-      settings
-    WHERE
-      name = 'ctcServerUrl'
-  );
-
-INSERT INTO
-  settings (name, value)
-SELECT
-  'ctcServerApiKey',
-  'null'
-WHERE
-  NOT EXISTS (
-    SELECT
-      1
-    FROM
-      settings
-    WHERE
-      name = 'ctcServerApiKey'
-  );
+-- INSERT INTO settings(name, value)
+-- SELECT
+--   'ctcServerUrl',
+--   'null'
+-- WHERE
+--   NOT EXISTS (
+--     SELECT
+--       1
+--     FROM
+--       settings
+--     WHERE
+--       name = 'ctcServerUrl');
+--
+-- INSERT INTO settings(name, value)
+-- SELECT
+--   'ctcServerApiKey',
+--   'null'
+-- WHERE
+--   NOT EXISTS (
+--     SELECT
+--       1
+--     FROM
+--       settings
+--     WHERE
+--       name = 'ctcServerApiKey');

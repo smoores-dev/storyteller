@@ -125,7 +125,6 @@ function RunConfigForm({
     control: form.control,
     name: "ctcEngine",
   })
-  const watchedCtcModel = useWatch({ control: form.control, name: "ctcModel" })
 
   const isCtc = (watchedAligner ?? settings.aligner) === "ctc"
 
@@ -133,10 +132,10 @@ function RunConfigForm({
     {
       bookUuid: book.uuid,
       engine: isCtc
-        ? watchedCtcEngine ?? settings.ctcEngine ?? "ctc-local"
+        ? watchedCtcEngine ?? settings.ctcEngine ?? "wav2vec-local"
         : watchedEngine ?? settings.transcriptionEngine ?? "whisper.cpp",
       whisperModel: isCtc
-        ? watchedCtcModel ?? settings.ctcModel ?? null
+        ? null
         : watchedModel ?? settings.whisperModel ?? null,
       restart: restart || false,
     },

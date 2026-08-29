@@ -279,8 +279,7 @@ function useEstimatedRemaining(job: PublicJob) {
   const isCtc = job.config?.aligner === "ctc"
   const engine =
     (isCtc ? job.config?.ctcEngine : job.config?.transcriptionEngine) ?? ""
-  const model =
-    (isCtc ? job.config?.ctcModel : job.config?.whisperModel) ?? null
+  const model = isCtc ? null : job.config?.whisperModel ?? null
 
   const { data } = useGetAlignmentEstimateQuery(
     {
@@ -367,7 +366,7 @@ function JobItem({
 
   const configSummary = (
     job.config?.aligner === "ctc"
-      ? [job.config.ctcEngine, job.config.ctcModel, job.config.language]
+      ? [job.config.ctcEngine, job.config.language]
       : [
           job.config?.transcriptionEngine,
           job.config?.whisperModel,

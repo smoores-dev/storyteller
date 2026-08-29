@@ -1,3 +1,4 @@
+/*
 import { type TimingSummary } from "../utilities/Timing.ts"
 
 export interface EmissionWireResult {
@@ -61,3 +62,6 @@ export function decodeEmissions(
 
   return rows
 }
+*/
+
+export {}

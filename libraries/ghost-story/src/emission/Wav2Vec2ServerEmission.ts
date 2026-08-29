@@ -1,3 +1,4 @@
+/*
 import { openAsBlob } from "node:fs"
 import { basename } from "node:path"
 
@@ -111,3 +112,6 @@ export async function emit(
 
   return result
 }
+*/
+
+export {}

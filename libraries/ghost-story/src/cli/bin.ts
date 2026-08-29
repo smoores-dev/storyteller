@@ -14,15 +14,12 @@ import { z } from "zod/v4"
 import { type RecognitionOptions } from "../api/Recognition.ts"
 import {
   BUILD_VARIANTS,
-  DEFAULT_WAV2VEC2_MODEL,
   RECOGNITION_ENGINES,
   WAV2VEC2_DEVICES,
   WAV2VEC2_DTYPES,
-  WAV2VEC2_MODELS,
-  WAV2VEC2_MODEL_LABELS,
+  WAV2VEC2_MODEL,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
-  type Wav2Vec2Model,
 } from "../constants.ts"
 
 import {
@@ -61,10 +58,6 @@ function isInstallTarget(value: string): value is InstallTarget {
   return INSTALL_TARGETS.includes(value as InstallTarget)
 }
 
-function isValidWav2Vec2Model(value: string): value is Wav2Vec2Model {
-  return WAV2VEC2_MODELS.includes(value as Wav2Vec2Model)
-}
-
 const installCommand = defineCommand({
   description: `Install whisper.cpp binary and models.
 
@@ -72,7 +65,7 @@ Usage:
   ghost-story install binary [variant]    - Install binary (auto-detects platform if variant not specified)
   ghost-story install model <model>       - Install a whisper model
   ghost-story install vad                 - Install Silero VAD model
-  ghost-story install ctc-model [model]   - Install a wav2vec2 CTC alignment model
+  ghost-story install ctc-model           - Install the wav2vec2 CTC alignment model
   ghost-story install all                 - Install binary, all models, and VAD`,
   args: z.union([
     z.tuple([
@@ -87,9 +80,7 @@ Usage:
       z
         .string()
         .optional()
-        .describe(
-          "Variant (for binary) or model name (for model and ctc-model)",
-        ),
+        .describe("Variant (for binary) or model name (for model)"),
     ]),
   ]),
   options: defineOptions(
@@ -138,14 +129,7 @@ Usage:
         }
         return
       }
-      if (target === "ctc-model") {
-        console.log("Available CTC alignment models:")
-        for (const model of WAV2VEC2_MODELS) {
-          console.log(`  ${model} - ${WAV2VEC2_MODEL_LABELS[model]}`)
-        }
-        return
-      }
-      console.error("Use --list with 'binary', 'model' or 'ctc-model'")
+      console.error("Use --list with 'binary' or 'model'")
       process.exit(1)
     }
 
@@ -192,18 +176,10 @@ Usage:
       }
 
       if (target === "ctc-model") {
-        if (argument !== undefined && !isValidWav2Vec2Model(argument)) {
-          console.error(`Unknown CTC model: ${argument}`)
-          console.error("\nAvailable CTC models:")
-          for (const m of WAV2VEC2_MODELS) {
-            console.log(`  ${m} - ${WAV2VEC2_MODEL_LABELS[m]}`)
-          }
-          process.exit(1)
-        }
         const variant = getConfiguredVariant() ?? getInstalledVariant()
         const device = resolveWav2Vec2Device(options.device, variant)
         await installWav2Vec2Model({
-          model: argument ?? DEFAULT_WAV2VEC2_MODEL,
+          model: WAV2VEC2_MODEL,
           device,
           dtype: options.dtype ?? resolveWav2Vec2Dtype(device),
           printOutput: true,

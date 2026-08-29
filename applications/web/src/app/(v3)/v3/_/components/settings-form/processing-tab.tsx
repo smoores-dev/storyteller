@@ -6,11 +6,7 @@ import { toast } from "sonner"
 
 import {
   ALIGNERS,
-  CTC_ENGINES,
-  DEFAULT_WAV2VEC2_MODEL,
   WAV2VEC2_DEVICES,
-  WAV2VEC2_MODELS,
-  WAV2VEC2_MODEL_LABELS,
 } from "@storyteller-platform/ghost-story/constants"
 
 import { Button } from "@v3/_/components/ui/button"
@@ -137,10 +133,10 @@ const alignerSettingsComponents = {
   ctc: CtcAlignerSettings,
 }
 
-const ctcEngineSettingsComponents = {
-  "ctc-local": CtcLocalSettings,
-  "ctc-server": CtcServerSettings,
-}
+// const wav2vecEngineSettingsComponents = {
+//   "wav2vec-local": Wav2VecLocalSettings,
+//   "wav2vec-server": Wav2VecServerSettings,
+// }
 
 const engineSettingsComponents = {
   "whisper.cpp": WhisperSettings,
@@ -602,101 +598,100 @@ function WhisperAlignerSettings() {
 }
 
 function CtcAlignerSettings() {
-  const { form } = useSettingsForm()
-  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
-
-  const ctcEngine = useWatch({ control: form.control, name: "ctcEngine" })
-
-  const ctcEngines = CTC_ENGINES.map((value) => ({
-    value,
-    label: t(`ctcEngines.${value}.label`),
-    description: t(`ctcEngines.${value}.description`),
-  }))
-
-  const [engineTab, setEngineTab] = useState<string>(ctcEngine ?? "ctc-local")
-
-  return (
-    <SettingsFormField
-      name="ctcEngine"
-      label={t("ctcEngine")}
-      render={(field, _fieldState, isLocked) => {
-        const selectedEngine = field.value ?? "ctc-local"
-        return (
-          <Tabs
-            value={engineTab}
-            onValueChange={(value) => {
-              if (typeof value === "string") setEngineTab(value)
-            }}
-          >
-            <TabsList className="w-full">
-              {ctcEngines.map((engine) => (
-                <TabsTrigger key={engine.value} value={engine.value}>
-                  {engine.label}
-                  {selectedEngine === engine.value && (
-                    <span className="bg-primary size-1.5 shrink-0 rounded-full" />
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {ctcEngines.map((engine) => {
-              const selected = selectedEngine === engine.value
-              const EngineSettings = ctcEngineSettingsComponents[engine.value]
-              return (
-                <TabsContent key={engine.value} value={engine.value}>
-                  <RadioGroup
-                    value={selectedEngine}
-                    onValueChange={(value) => {
-                      if (typeof value === "string") field.onChange(value)
-                    }}
-                    disabled={isLocked}
-                  >
-                    <div
-                      className={cn(
-                        "overflow-hidden rounded-md border",
-                        selected && "border-primary",
-                      )}
-                    >
-                      <FieldLabel
-                        htmlFor={`ctc-engine-${engine.value}`}
-                        className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
-                      >
-                        <Field orientation="horizontal">
-                          <FieldContent>
-                            <FieldTitle>{engine.label}</FieldTitle>
-                            <FieldDescription>
-                              {engine.description}
-                            </FieldDescription>
-                          </FieldContent>
-                          <RadioGroupItem
-                            value={engine.value}
-                            id={`ctc-engine-${engine.value}`}
-                          />
-                        </Field>
-                      </FieldLabel>
-                      {selected && (
-                        <div className="space-y-4 border-t p-3">
-                          <EngineSettings />
-                        </div>
-                      )}
-                    </div>
-                  </RadioGroup>
-                </TabsContent>
-              )
-            })}
-          </Tabs>
-        )
-      }}
-    />
-  )
+  return <Wav2VecLocalSettings />
 }
 
-function CtcLocalSettings() {
-  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+// function Wav2VecEnginePicker() {
+//   const { form } = useSettingsForm()
+//   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+//
+//   const ctcEngine = useWatch({ control: form.control, name: "ctcEngine" })
+//
+//   const ctcEngines = WAV2VEC_ENGINES.map((value) => ({
+//     value,
+//     label: t(`ctcEngines.${value}.label`),
+//     description: t(`ctcEngines.${value}.description`),
+//   }))
+//
+//   const [engineTab, setEngineTab] = useState<string>(ctcEngine ?? "wav2vec-local")
+//
+//   return (
+//     <SettingsFormField
+//       name="ctcEngine"
+//       label={t("ctcEngine")}
+//       render={(field, _fieldState, isLocked) => {
+//         const selectedEngine = field.value ?? "wav2vec-local"
+//         return (
+//           <Tabs
+//             value={engineTab}
+//             onValueChange={(value) => {
+//               if (typeof value === "string") setEngineTab(value)
+//             }}
+//           >
+//             <TabsList className="w-full">
+//               {ctcEngines.map((engine) => (
+//                 <TabsTrigger key={engine.value} value={engine.value}>
+//                   {engine.label}
+//                   {selectedEngine === engine.value && (
+//                     <span className="bg-primary size-1.5 shrink-0 rounded-full" />
+//                   )}
+//                 </TabsTrigger>
+//               ))}
+//             </TabsList>
+//             {ctcEngines.map((engine) => {
+//               const selected = selectedEngine === engine.value
+//               const EngineSettings = wav2vecEngineSettingsComponents[engine.value]
+//               return (
+//                 <TabsContent key={engine.value} value={engine.value}>
+//                   <RadioGroup
+//                     value={selectedEngine}
+//                     onValueChange={(value) => {
+//                       if (typeof value === "string") field.onChange(value)
+//                     }}
+//                     disabled={isLocked}
+//                   >
+//                     <div
+//                       className={cn(
+//                         "overflow-hidden rounded-md border",
+//                         selected && "border-primary",
+//                       )}
+//                     >
+//                       <FieldLabel
+//                         htmlFor={`ctc-engine-${engine.value}`}
+//                         className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
+//                       >
+//                         <Field orientation="horizontal">
+//                           <FieldContent>
+//                             <FieldTitle>{engine.label}</FieldTitle>
+//                             <FieldDescription>
+//                               {engine.description}
+//                             </FieldDescription>
+//                           </FieldContent>
+//                           <RadioGroupItem
+//                             value={engine.value}
+//                             id={`ctc-engine-${engine.value}`}
+//                           />
+//                         </Field>
+//                       </FieldLabel>
+//                       {selected && (
+//                         <div className="space-y-4 border-t p-3">
+//                           <EngineSettings />
+//                         </div>
+//                       )}
+//                     </div>
+//                   </RadioGroup>
+//                 </TabsContent>
+//               )
+//             })}
+//           </Tabs>
+//         )
+//       }}
+//     />
+//   )
+// }
 
-  const modelOptions = WAV2VEC2_MODELS.map((value) => ({
-    value,
-    label: WAV2VEC2_MODEL_LABELS[value],
-  }))
+function Wav2VecLocalSettings() {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
 
   const deviceOptions = WAV2VEC2_DEVICES.map((value) => ({
     value,
@@ -705,32 +700,6 @@ function CtcLocalSettings() {
 
   return (
     <>
-      <SettingsFormField
-        name="ctcModel"
-        label={t("ctcModel")}
-        description={t("ctcModelDescription")}
-        render={(field, fieldState, isLocked) => (
-          <Select
-            items={modelOptions}
-            value={field.value ?? DEFAULT_WAV2VEC2_MODEL}
-            onValueChange={field.onChange}
-            disabled={isLocked}
-            aria-invalid={fieldState.invalid}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {modelOptions.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      />
-
       <SettingsFormField
         name="ctcDevice"
         label={t("ctcDevice")}
@@ -762,43 +731,43 @@ function CtcLocalSettings() {
   )
 }
 
-function CtcServerSettings() {
-  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
-
-  return (
-    <>
-      <SettingsFormField
-        name="ctcServerUrl"
-        label={t("ctcServerUrl")}
-        description={t("ctcServerUrlDescription")}
-        render={(field, fieldState, isLocked) => (
-          <Input
-            id="ctcServerUrl"
-            disabled={isLocked}
-            {...field}
-            value={field.value || ""}
-            aria-invalid={fieldState.invalid}
-          />
-        )}
-      />
-      <SettingsFormField
-        name="ctcServerApiKey"
-        label={t("ctcServerApiKey")}
-        description={t("ctcServerApiKeyDescription")}
-        render={(field, fieldState, isLocked) => (
-          <Input
-            id="ctcServerApiKey"
-            type="password"
-            disabled={isLocked}
-            {...field}
-            value={field.value || ""}
-            aria-invalid={fieldState.invalid}
-          />
-        )}
-      />
-    </>
-  )
-}
+// function Wav2VecServerSettings() {
+//   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+//
+//   return (
+//     <>
+//       <SettingsFormField
+//         name="ctcServerUrl"
+//         label={t("ctcServerUrl")}
+//         description={t("ctcServerUrlDescription")}
+//         render={(field, fieldState, isLocked) => (
+//           <Input
+//             id="ctcServerUrl"
+//             disabled={isLocked}
+//             {...field}
+//             value={field.value || ""}
+//             aria-invalid={fieldState.invalid}
+//           />
+//         )}
+//       />
+//       <SettingsFormField
+//         name="ctcServerApiKey"
+//         label={t("ctcServerApiKey")}
+//         description={t("ctcServerApiKeyDescription")}
+//         render={(field, fieldState, isLocked) => (
+//           <Input
+//             id="ctcServerApiKey"
+//             type="password"
+//             disabled={isLocked}
+//             {...field}
+//             value={field.value || ""}
+//             aria-invalid={fieldState.invalid}
+//           />
+//         )}
+//       />
+//     </>
+//   )
+// }
 
 function WhisperSettings() {
   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")

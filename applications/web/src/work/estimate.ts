@@ -37,10 +37,7 @@ export function estimateAlignment(
 
   const matching = history.filter((row) => {
     if (row.config.aligner === "ctc") {
-      return (
-        row.config.ctcEngine === target.engine &&
-        row.config.ctcModel === target.whisperModel
-      )
+      return row.config.ctcEngine === target.engine
     }
     return (
       row.config.transcriptionEngine === target.engine &&

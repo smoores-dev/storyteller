@@ -19,8 +19,8 @@ import { scratchPath } from "@storyteller-platform/fs"
 
 import {
   type BuildVariant,
-  DEFAULT_WAV2VEC2_MODEL,
   MODEL_SIZES,
+  WAV2VEC2_MODEL,
   type Wav2Vec2DataType,
   type Wav2Vec2Device,
   type Wav2Vec2Model,
@@ -464,7 +464,7 @@ export async function installWav2Vec2Model(
   options: InstallWav2Vec2ModelOptions = {},
 ): Promise<string> {
   const {
-    model = DEFAULT_WAV2VEC2_MODEL,
+    model = WAV2VEC2_MODEL,
     modelDir = getModelDir(),
     device = "auto",
     dtype = resolveWav2Vec2Dtype(device),

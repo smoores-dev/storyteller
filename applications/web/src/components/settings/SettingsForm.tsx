@@ -36,8 +36,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
-import { DEFAULT_WAV2VEC2_MODEL } from "@storyteller-platform/ghost-story/constants"
-
 import type { Settings } from "@/apiModels"
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import {
@@ -1145,11 +1143,10 @@ export function SettingsForm({
     codec: settings.codec ?? "",
     bitrate: settings.bitrate ?? "",
     aligner: settings.aligner ?? "whisper",
-    ctcEngine: settings.ctcEngine ?? "ctc-local",
-    ctcModel: settings.ctcModel ?? DEFAULT_WAV2VEC2_MODEL,
+    ctcEngine: settings.ctcEngine ?? "wav2vec-local",
     ctcDevice: settings.ctcDevice ?? null,
-    ctcServerUrl: settings.ctcServerUrl ?? "",
-    ctcServerApiKey: settings.ctcServerApiKey ?? "",
+    // ctcServerUrl: settings.ctcServerUrl ?? "",
+    // ctcServerApiKey: settings.ctcServerApiKey ?? "",
     transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
     whisperModel: settings.whisperModel ?? "tiny",
     whisperThreads: settings.whisperThreads,

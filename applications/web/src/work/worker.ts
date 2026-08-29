@@ -243,12 +243,11 @@ export default async function processBook({
           )
           await processTiming.timeAsync("transcribe_chapters", () =>
             emit(getProcessedAudioFilepath(book), getEmissionsFilepath(book), {
-              engine: settings.ctcEngine ?? "ctc-local",
-              model: settings.ctcModel,
+              engine: settings.ctcEngine ?? "wav2vec-local",
               device,
               dtype: resolveWav2Vec2Dtype(device),
-              serverUrl: settings.ctcServerUrl,
-              serverApiKey: settings.ctcServerApiKey,
+              // serverUrl: settings.ctcServerUrl,
+              // serverApiKey: settings.ctcServerApiKey,
               onProgress,
               logger,
             }),

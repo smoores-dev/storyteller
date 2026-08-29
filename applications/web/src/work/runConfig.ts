@@ -11,10 +11,9 @@ export const RUN_CONFIG_SETTING_KEYS = [
   "parallelTranscodes",
   "aligner",
   "ctcEngine",
-  "ctcModel",
   "ctcDevice",
-  "ctcServerUrl",
-  "ctcServerApiKey",
+  // "ctcServerUrl",
+  // "ctcServerApiKey",
   // transcription
   "transcriptionEngine",
   "whisperModel",
@@ -52,7 +51,6 @@ export type RunConfigSummary = Pick<
   RunConfig,
   | "aligner"
   | "ctcEngine"
-  | "ctcModel"
   | "transcriptionEngine"
   | "whisperModel"
   | "language"
@@ -68,7 +66,6 @@ export function summarizeRunConfig(
   return {
     aligner: config.aligner,
     ctcEngine: config.ctcEngine,
-    ctcModel: config.ctcModel,
     transcriptionEngine: config.transcriptionEngine,
     whisperModel: config.whisperModel,
     language: config.language,

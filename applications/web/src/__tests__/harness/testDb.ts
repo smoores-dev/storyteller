@@ -6,8 +6,6 @@ import { cwd } from "node:process"
 import Db, { type Database } from "better-sqlite3"
 import type { Kysely } from "kysely"
 
-import { DEFAULT_WAV2VEC2_MODEL } from "@storyteller-platform/ghost-story/constants"
-
 import { getSafeFilepathSegment } from "@/assets/paths"
 import { replaceDatabase } from "@/database/connection"
 import { createKyselyDb } from "@/database/factory"
@@ -33,11 +31,10 @@ const DEFAULT_SETTINGS: Settings = {
   bitrate: null,
   maxTrackLength: null,
   aligner: "whisper",
-  ctcEngine: "ctc-local",
-  ctcModel: DEFAULT_WAV2VEC2_MODEL,
+  ctcEngine: "wav2vec-local",
   ctcDevice: null,
-  ctcServerUrl: null,
-  ctcServerApiKey: null,
+  // ctcServerUrl: null,
+  // ctcServerApiKey: null,
   transcriptionEngine: null,
   whisperModel: null,
   whisperThreads: 4,

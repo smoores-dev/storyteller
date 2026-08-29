@@ -21,22 +21,20 @@ import {
   formatSingleReport,
 } from "@storyteller-platform/ghost-story"
 import {
-  type CtcEngine,
-  DEFAULT_WAV2VEC2_MODEL,
+  WAV2VEC2_MODEL,
   type Wav2Vec2DataType,
   type Wav2Vec2Device,
-  type Wav2Vec2Model,
+  type Wav2VecEngine,
 } from "@storyteller-platform/ghost-story/constants"
 
 export interface EmitOptions {
   onProgress?: ((progress: number) => void) | null | undefined
   signal?: AbortSignal | null | undefined
-  engine?: CtcEngine | null | undefined
-  model?: Wav2Vec2Model | null | undefined
+  engine?: Wav2VecEngine | null | undefined
   device?: Wav2Vec2Device | null | undefined
   dtype?: Wav2Vec2DataType | null | undefined
-  serverUrl?: string | null | undefined
-  serverApiKey?: string | null | undefined
+  // serverUrl?: string | null | undefined
+  // serverApiKey?: string | null | undefined
   logger?: Logger | null | undefined
 }
 
@@ -68,32 +66,28 @@ export async function emit(
     )
   }
 
-  const engine = options.engine ?? "ctc-local"
-  const serverUrl = options.serverUrl ?? ""
-
-  if (engine === "ctc-server" && !serverUrl) {
-    throw new Error("Missing CTC server URL")
-  }
-
-  const model = options.model ?? DEFAULT_WAV2VEC2_MODEL
+  const engine = options.engine ?? "wav2vec-local"
+  // const serverUrl = options.serverUrl ?? ""
+  //
+  // if (engine === "wav2vec-server" && !serverUrl) {
+  //   throw new Error("Missing wav2vec server URL")
+  // }
 
   // Prevent incorrect type narrowing
   function aborted() {
     return signal.aborted
   }
 
-  const identity = JSON.stringify(
-    engine === "ctc-server" ? { engine, serverUrl } : { engine, model },
-  )
+  const identity = JSON.stringify({ engine, model: WAV2VEC2_MODEL })
+  // const identity = JSON.stringify(
+  //   engine === "wav2vec-server"
+  //     ? { engine, serverUrl }
+  //     : { engine, model: WAV2VEC2_MODEL },
+  // )
 
   const timing = createAggregator()
-  timing.setMetadata(
-    "engine",
-    engine === "ctc-server" ? "wav2vec2-server" : "wav2vec2",
-  )
-  if (engine === "ctc-local") {
-    timing.setMetadata("model", model)
-  }
+  timing.setMetadata("engine", engine)
+  timing.setMetadata("model", WAV2VEC2_MODEL)
 
   for (const [i, filename] of enumerate(filenames)) {
     if (aborted()) throw new Error("Aborted")
@@ -136,27 +130,37 @@ export async function emit(
       options.onProgress?.(updatedProgress)
     }
 
-    const emissionOptions: EmissionOptions =
-      engine === "ctc-server"
-        ? {
-            signal,
-            engine: "wav2vec2-server",
-            options: {
-              baseURL: serverUrl,
-              ...(options.serverApiKey && { apiKey: options.serverApiKey }),
-              onProgress: onFileProgress,
-            },
-          }
-        : {
-            signal,
-            engine: "wav2vec2",
-            options: {
-              model,
-              ...(options.device && { device: options.device }),
-              ...(options.dtype && { dtype: options.dtype }),
-              onProgress: onFileProgress,
-            },
-          }
+    const emissionOptions: EmissionOptions = {
+      signal,
+      engine,
+      options: {
+        model: WAV2VEC2_MODEL,
+        ...(options.device && { device: options.device }),
+        ...(options.dtype && { dtype: options.dtype }),
+        onProgress: onFileProgress,
+      },
+    }
+    // const emissionOptions: EmissionOptions =
+    //   engine === "wav2vec-server"
+    //     ? {
+    //         signal,
+    //         engine,
+    //         options: {
+    //           baseURL: serverUrl,
+    //           ...(options.serverApiKey && { apiKey: options.serverApiKey }),
+    //           onProgress: onFileProgress,
+    //         },
+    //       }
+    //     : {
+    //         signal,
+    //         engine,
+    //         options: {
+    //           model: WAV2VEC2_MODEL,
+    //           ...(options.device && { device: options.device }),
+    //           ...(options.dtype && { dtype: options.dtype }),
+    //           onProgress: onFileProgress,
+    //         },
+    //       }
 
     const result = await emitFile(filepath, emissionOptions)
 

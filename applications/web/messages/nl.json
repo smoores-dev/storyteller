@@ -785,18 +785,12 @@
             "deepgramModel": "Modelnaam",
             "deepgramModelDescription": "Kan elk model zijn dat de server ondersteunt, zoals nova-3, nova-2, nova, enhanced, base of whisper. Standaard is nova-3.",
             "ctcEngines": {
-              "ctc-local": {
+              "wav2vec-local": {
                 "label": "Op deze server",
                 "description": "Draait op de machine waarop Storyteller draait. Er gaat niets van deze machine af."
-              },
-              "ctc-server": {
-                "label": "Op een andere server",
-                "description": "Stuurt de audio naar een Ghost Story-server op een andere machine."
               }
             },
             "ctcEngine": "Waar het draait",
-            "ctcModel": "Model",
-            "ctcModelDescription": "Het meertalige model werkt voor boeken in elke taal. Het Engelstalige model is kleiner en sneller.",
             "ctcDevice": "Apparaat",
             "ctcDeviceDescription": "Auto kiest de beste optie voor de Storyteller-build die je draait, en Storyteller valt daarop terug als je build het gekozen apparaat niet kan gebruiken. Kies CPU als de uitlijning crasht.",
             "ctcDevices": {
@@ -804,11 +798,7 @@
               "cpu": "CPU",
               "webgpu": "GPU (WebGPU)",
               "cuda": "NVIDIA GPU (CUDA)"
-            },
-            "ctcServerUrl": "Server-URL",
-            "ctcServerUrlDescription": "bijv. http://192.168.1.19:8080 voor een Ghost Story-server.",
-            "ctcServerApiKey": "API key",
-            "ctcServerApiKeyDescription": "Alleen nodig als je server een API key vereist."
+            }
           },
           "parallelization": {
             "title": "Parallellisatie Instellingen",

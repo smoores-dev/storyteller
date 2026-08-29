@@ -70,20 +70,8 @@ export const WHISPER_MODELS = [
 ] as const
 export type WhisperModel = (typeof WHISPER_MODELS)[number]
 
-export const WAV2VEC2_MODELS = [
-  "Xenova/wav2vec2-base-960h",
-  "onnx-community/mms-300m-1130-forced-aligner-ONNX",
-] as const
-export type Wav2Vec2Model = (typeof WAV2VEC2_MODELS)[number]
-
-export const DEFAULT_WAV2VEC2_MODEL: Wav2Vec2Model =
-  "onnx-community/mms-300m-1130-forced-aligner-ONNX"
-
-export const WAV2VEC2_MODEL_LABELS: Record<Wav2Vec2Model, string> = {
-  "onnx-community/mms-300m-1130-forced-aligner-ONNX":
-    "MMS forced aligner (multilingual, recommended)",
-  "Xenova/wav2vec2-base-960h": "Wav2Vec2 base (English only)",
-}
+export const WAV2VEC2_MODEL = "onnx-community/mms-300m-1130-forced-aligner-ONNX"
+export type Wav2Vec2Model = typeof WAV2VEC2_MODEL
 
 export const WAV2VEC2_DEVICES = ["auto", "cpu", "webgpu", "cuda"] as const
 export type Wav2Vec2Device = (typeof WAV2VEC2_DEVICES)[number]
@@ -96,11 +84,11 @@ export type Wav2Vec2DataType = (typeof WAV2VEC2_DTYPES)[number]
 export const ALIGNERS = ["whisper", "ctc"] as const
 export type Aligner = (typeof ALIGNERS)[number]
 
-export const CTC_ENGINES = ["ctc-local", "ctc-server"] as const
-export type CtcEngine = (typeof CTC_ENGINES)[number]
-
-export const EMISSION_ENGINES = ["wav2vec2", "wav2vec2-server"] as const
-export type EmissionEngine = (typeof EMISSION_ENGINES)[number]
+export const WAV2VEC_ENGINES = [
+  "wav2vec-local",
+  // "wav2vec-server",
+] as const
+export type Wav2VecEngine = (typeof WAV2VEC_ENGINES)[number]
 
 export const RECOGNITION_ENGINES = [
   "whisper.cpp",
