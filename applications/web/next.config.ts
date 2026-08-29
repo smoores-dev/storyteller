@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { resolve } from "node:path"
 
 import createNextIntlPlugin from "next-intl/plugin"
@@ -9,6 +9,50 @@ import { V3_ROOTS } from "./src/v3Routes"
 const pkg = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf-8"),
 ) as Record<string, unknown>
+
+const repoRoot = resolve(new URL(import.meta.url).pathname, "../../..")
+
+function packageClosure(roots: string[]) {
+  const seen = new Set<string>()
+  const walk = (name: string) => {
+    const dir = resolve(repoRoot, "node_modules", name)
+    if (seen.has(name) || !existsSync(dir)) return
+    seen.add(name)
+    const pkg = JSON.parse(
+      readFileSync(resolve(dir, "package.json"), "utf-8"),
+    ) as {
+      dependencies?: Record<string, string>
+      optionalDependencies?: Record<string, string>
+    }
+    for (const dep of [
+      ...Object.keys(pkg.dependencies ?? {}),
+      ...Object.keys(pkg.optionalDependencies ?? {}),
+    ]) {
+      walk(dep)
+    }
+  }
+  roots.forEach(walk)
+  return [...seen]
+}
+
+const untracedRuntimePackages = packageClosure([
+  "onnxruntime-node",
+  "@huggingface/transformers",
+  "@parcel/watcher",
+  "kuromoji",
+])
+
+function packageGlobs(name: string) {
+  const dir = resolve(repoRoot, "node_modules", name)
+  const prefix = `../../node_modules/${name}`
+  if (name !== "onnxruntime-node") return [`${prefix}/**`]
+  return readdirSync(dir).map((entry) => {
+    if (entry === "bin") return `${prefix}/bin/napi-v6/${process.platform}/**`
+    return statSync(resolve(dir, entry)).isDirectory()
+      ? `${prefix}/${entry}/**`
+      : `${prefix}/${entry}`
+  })
+}
 
 const withNextIntl = createNextIntlPlugin({
   experimental: {
@@ -79,9 +123,15 @@ const nextConfig: import("next").NextConfig = {
     "@storyteller-platform/okmain",
   ],
   output: "standalone",
-  outputFileTracingRoot: resolve(new URL(import.meta.url).pathname, "../../.."),
+  outputFileTracingRoot: repoRoot,
+  outputFileTracingIncludes: {
+    "*": [
+      ...untracedRuntimePackages.flatMap(packageGlobs),
+      "../../node_modules/better-sqlite3/prebuilds/**",
+    ],
+  },
   outputFileTracingExcludes: {
-    "*": ["./applications/web/src/__fixtures__/**"],
+    "*": ["./src/__fixtures__/**"],
   },
   reactCompiler: true,
   productionBrowserSourceMaps: true,

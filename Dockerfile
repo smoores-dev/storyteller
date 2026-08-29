@@ -75,21 +75,6 @@ RUN if [ -z "$WHISPER_VARIANT" ]; then \
         install binary linux-x64-cpu-legacy; \
     fi
 
-# Pre-download the CTC alignment model so a fresh container can align offline.
-# It resolves the same device and precision the worker will, so the weights it
-# fetches are the ones the run actually loads.
-RUN node ./libraries/ghost-story/dist/cli/bin.js install ctc-model \
-    || echo "CTC model pre-install failed, it will download on first use"
-
-# The worker bundle keeps onnxruntime and transformers external, so their
-# dependency closure has to exist on disk. Next's tracing never sees them
-# because nothing in the Next graph imports them.
-RUN node -e 'const fs=require("node:fs"),path=require("node:path");const seen=new Set();const walk=(name)=>{const dir=path.join("node_modules",name);if(seen.has(name)||!fs.existsSync(dir))return;seen.add(name);const pkg=JSON.parse(fs.readFileSync(path.join(dir,"package.json"),"utf8"));for(const dep of [...Object.keys(pkg.dependencies??{}),...Object.keys(pkg.optionalDependencies??{})])walk(dep)};["onnxruntime-node","onnxruntime-web","onnxruntime-common","@huggingface/transformers"].forEach(walk);for(const name of seen){const dest=path.join("/app/ort-deps",name);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.cpSync(path.join("node_modules",name),dest,{recursive:true,dereference:true})}'
-# onnxruntime-node ships prebuilt bindings for every platform in one tarball,
-# and the win32 and darwin ones are ~160 MB a Linux image can never load.
-RUN rm -rf /app/ort-deps/onnxruntime-node/bin/napi-v6/win32 \
-           /app/ort-deps/onnxruntime-node/bin/napi-v6/darwin
-
 # The whisper variant defaults per architecture, and ENV cannot branch, so the
 # runner picks an arch-specific base that carries the right default.
 ARG BASE_TAG=main
@@ -140,23 +125,6 @@ COPY --from=builder /app/libraries/align/prebuilds/linux-arm64 ./.next/standalon
 
 # Echogarden tries to naively resolve its own wasm builds
 COPY --from=builder /app/node_modules/@echogarden/icu-segmentation-wasm/wasm/*.wasm ./.next/standalone/applications/web/work-dist/
-
-# @parcel/watcher native binaries are loaded dynamically at runtime and
-# not traced by next.js into the standalone output
-COPY --from=builder /app/node_modules/@parcel ./.next/standalone/node_modules/@parcel
-
-# better-sqlite3 v13+ ships platform prebuilds that are loaded dynamically
-COPY --from=builder /app/node_modules/better-sqlite3/prebuilds ./.next/standalone/node_modules/better-sqlite3/prebuilds
-
-# kuromoji package: the bundled kuroshiro-analyzer-kuromoji still calls
-# require.resolve("kuromoji") at runtime to locate its dict/ directory, so the
-# package must exist on disk in a location reachable from web/work-dist/.
-COPY --from=builder /app/node_modules/kuromoji ./.next/standalone/node_modules/kuromoji
-
-# onnxruntime-node loads its .node binding through a dynamic require that
-# esbuild cannot bundle, so the packages stay external and are copied whole
-COPY --from=builder /app/ort-deps ./.next/standalone/node_modules
-
 
 # Copy pre-installed whisper binaries and models from builder
 COPY --from=builder --chown=storyteller:storyteller /root/.local/share/ghost-story /home/storyteller/.local/share/ghost-story
