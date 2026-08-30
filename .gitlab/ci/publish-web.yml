@@ -2,9 +2,9 @@
 # Triggered on web-* tags (e.g., web-v2.3.0, web-v2.3.0-experimental.1)
 
 .publish-web-base:
-  image: docker:24.0.5
+  image: docker:29.6.2
   services:
-    - name: docker:24.0.5-dind
+    - name: docker:29.6.2-dind
       alias: docker
   stage: publish
   rules:
@@ -75,9 +75,9 @@ publish-web-gpu:
 
 # Create multi-arch manifests and version tags
 publish-web-multiarch:
-  image: docker:24.0.5
+  image: docker:29.6.2
   services:
-    - name: docker:24.0.5-dind
+    - name: docker:29.6.2-dind
       alias: docker
   stage: post-publish
   rules:
