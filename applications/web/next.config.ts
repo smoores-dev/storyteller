@@ -47,7 +47,8 @@ function packageGlobs(name: string) {
   const prefix = `../../node_modules/${name}`
   if (name !== "onnxruntime-node") return [`${prefix}/**`]
   return readdirSync(dir).map((entry) => {
-    if (entry === "bin") return `${prefix}/bin/napi-v6/${process.platform}/**`
+    if (entry === "bin")
+      return `${prefix}/bin/napi-v6/${process.platform}/${process.arch}/**`
     return statSync(resolve(dir, entry)).isDirectory()
       ? `${prefix}/${entry}/**`
       : `${prefix}/${entry}`
