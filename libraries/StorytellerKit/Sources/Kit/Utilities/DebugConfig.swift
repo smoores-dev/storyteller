@@ -20,6 +20,8 @@ public final class DebugLogBuffer: @unchecked Sendable {
         "[PerfTrace]",
         "[CoverPerf]",
         "[MetadataCoverRefresh]",
+        "[CoverDiag]",
+        "[StorytellerActor] fetchCoverImage",
     ]
 
     static let verboseDefaultsKey = "StorytellerVerboseLogging"
@@ -80,8 +82,15 @@ public final class DebugLogBuffer: @unchecked Sendable {
     }
 }
 
+private let logTimestampFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MM-dd HH:mm:ss.SSS"
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    return formatter
+}()
+
 private func emit(_ message: String) {
-    DebugLogBuffer.shared.append(message)
+    DebugLogBuffer.shared.append("\(logTimestampFormatter.string(from: Date())) \(message)")
 
     #if DEBUG
     #if canImport(os)

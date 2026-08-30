@@ -260,6 +260,7 @@ public actor AudioSessionActor {
         epubPath: URL,
         title: String?,
         author: String?,
+        fallbackLocator: BookLocator? = nil,
     ) async throws -> ReadaloudOpenResult {
         let loadedBookID = await SMILPlayerActor.shared.getLoadedBookID()
         let isPlaying = await SMILPlayerActor.shared.getCurrentState()?.isPlaying ?? false
@@ -275,7 +276,7 @@ public actor AudioSessionActor {
 
         await closeAudiobookArmIfActive()
 
-        try await SMILPlayerActor.shared.loadBook(
+        let didLoad = try await SMILPlayerActor.shared.loadBook(
             epubPath: epubPath,
             bookID: bookID,
             title: title,
@@ -284,6 +285,10 @@ public actor AudioSessionActor {
         let config = await SettingsActor.shared.config
         await SMILPlayerActor.shared.setPlaybackRate(config.playback.defaultPlaybackSpeed)
         await SMILPlayerActor.shared.setVolume(config.playback.defaultVolume)
+
+        if didLoad {
+            await restoreReadaloudPosition(bookID: bookID, fallbackLocator: fallbackLocator)
+        }
 
         currentKind = .readaloud(bookID)
         readaloudTitle = title
@@ -1017,6 +1022,29 @@ public actor AudioSessionActor {
                 domRange: nil,
             ),
             text: nil,
+        )
+    }
+
+    private func restoreReadaloudPosition(bookID: BookID, fallbackLocator: BookLocator?) async {
+        var locator: BookLocator? = nil
+        if let progress = await ProgressSyncActor.shared.getBookProgress(for: bookID),
+            let psaLocator = progress.locator
+        {
+            debugLog("[AudioSessionActor] Restoring readaloud position from PSA (source: \(progress.source))")
+            locator = psaLocator
+        } else if let fallbackLocator {
+            debugLog("[AudioSessionActor] Restoring readaloud position from metadata fallback")
+            locator = fallbackLocator
+        }
+
+        guard let locator else {
+            debugLog("[AudioSessionActor] No saved readaloud position, starting from beginning")
+            return
+        }
+
+        let restored = await SMILPlayerActor.shared.seekToLocator(locator)
+        debugLog(
+            "[AudioSessionActor] Readaloud position restore \(restored ? "succeeded" : "failed") for \(locator.href)"
         )
     }
 

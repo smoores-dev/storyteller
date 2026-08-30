@@ -34,6 +34,7 @@ public final class MediaOverlayManager {
     /// Cached state from SMILPlayerActor
     public private(set) var cachedSectionIndex: Int = 0
     public private(set) var cachedEntryIndex: Int = 0
+    public private(set) var hasCachedPosition = false
     private var lastObservedFragment: String = ""
 
     /// Suppress actor-driven highlights briefly after user-initiated navigation
@@ -238,6 +239,7 @@ public final class MediaOverlayManager {
 
         cachedSectionIndex = state.currentSectionIndex
         cachedEntryIndex = state.currentEntryIndex
+        hasCachedPosition = true
         lastObservedFragment = state.currentFragment
 
         let wasPlaying = isPlaying
@@ -387,6 +389,7 @@ public final class MediaOverlayManager {
         let entry = section.mediaOverlay[resolvedEntryIndex]
         cachedSectionIndex = sectionIndex
         cachedEntryIndex = resolvedEntryIndex
+        hasCachedPosition = true
         currentFragment = "\(entry.textHref)#\(entry.textId)"
         liveSyncFollowRate = remoteRate > 0 ? remoteRate : 1.0
         lastLiveSyncApplyTime = Date()

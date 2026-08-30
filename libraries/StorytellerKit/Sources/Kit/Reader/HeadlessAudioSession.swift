@@ -39,7 +39,6 @@ public enum HeadlessAudioSession {
         if let cover = await coverData(for: bookID) {
             await AudioSessionActor.shared.setSessionCover(cover, for: bookID)
         }
-        await session.restoreEnginePositionFromSavedProgress()
     }
 
     private static func endHeadlessReadaloud() async {

@@ -161,7 +161,6 @@ public final class ReadingSession {
     @ObservationIgnored private var liveSyncObserverId: UUID?
     @ObservationIgnored private var headlessEngineObserverId: UUID?
     @ObservationIgnored private var audioAttachmentID: UUID?
-    @ObservationIgnored private var lastOpenResult: ReadaloudOpenResult?
     @ObservationIgnored private var isEnded = false
     @ObservationIgnored private let audioPositionAccess: ReadingSessionAudioPositionAccess
     /// Survives replacement of the view-bound managers while the app is
@@ -270,8 +269,8 @@ public final class ReadingSession {
                 epubPath: epubPath,
                 title: metadata.title,
                 author: metadata.authors?.first?.name,
+                fallbackLocator: metadata.position?.locator,
             )
-            lastOpenResult = result
 
             if result == .joinedLiveSession {
                 debugLog(
@@ -318,65 +317,21 @@ public final class ReadingSession {
 
         let savedSectionIndex = mediaOverlayManager?.cachedSectionIndex ?? 0
         let savedEntryIndex = mediaOverlayManager?.cachedEntryIndex ?? 0
+        let hasCachedPosition = mediaOverlayManager?.hasCachedPosition ?? false
 
         await loadBookIntoActor(epubPath: localPath)
 
-        if savedSectionIndex > 0 || savedEntryIndex > 0 {
-            do {
-                try await SMILPlayerActor.shared.seekToEntry(
-                    sectionIndex: savedSectionIndex,
-                    entryIndex: savedEntryIndex,
-                )
-                debugLog(
-                    "[ReadingSession] Restored position to section \(savedSectionIndex), entry \(savedEntryIndex)"
-                )
-            } catch {
-                debugLog("[ReadingSession] Failed to restore position: \(error)")
-            }
-        }
-    }
-
-    /// Headless restore; a view restores through the bridge instead.
-    public func restoreEnginePositionFromSavedProgress() async {
-        guard lastOpenResult == .openedFresh else { return }
-
-        var locatorToUse: BookLocator? = nil
-        if let psaProgress = await ProgressSyncActor.shared.getBookProgress(for: bookID),
-            let psaLocator = psaProgress.locator
-        {
-            debugLog("[ReadingSession] Got SMIL position from PSA (source: \(psaProgress.source))")
-            locatorToUse = psaLocator
-        } else if let metadataLocator = metadata.position?.locator {
-            debugLog("[ReadingSession] Using fallback SMIL position from metadata")
-            locatorToUse = metadataLocator
-        }
-
-        if let locator = locatorToUse {
-            let structure = await SMILPlayerActor.shared.getBookStructure()
-            if let sectionIndex = findSectionIndex(for: locator.href, in: structure),
-                let fragment = locator.locations?.fragments?.first
-            {
-                let success = await SMILPlayerActor.shared.seekToFragment(
-                    sectionIndex: sectionIndex,
-                    textId: fragment,
-                )
-                if success {
-                    debugLog(
-                        "[ReadingSession] Restored SMIL position to section \(sectionIndex), fragment: \(fragment)"
-                    )
-                }
-            } else if let totalProg = locator.locations?.totalProgression, totalProg > 0,
-                totalProg <= 1
-            {
-                let success = await SMILPlayerActor.shared.seekToTotalProgression(totalProg)
-                debugLog(
-                    "[ReadingSession] Restored SMIL position using totalProgression \(totalProg): \(success ? "success" : "failed")"
-                )
-            } else {
-                debugLog("[ReadingSession] No usable SMIL position data, starting from beginning")
-            }
-        } else {
-            debugLog("[ReadingSession] No saved SMIL position, starting from beginning")
+        guard hasCachedPosition else { return }
+        do {
+            try await SMILPlayerActor.shared.seekToEntry(
+                sectionIndex: savedSectionIndex,
+                entryIndex: savedEntryIndex,
+            )
+            debugLog(
+                "[ReadingSession] Restored position to section \(savedSectionIndex), entry \(savedEntryIndex)"
+            )
+        } catch {
+            debugLog("[ReadingSession] Failed to restore position: \(error)")
         }
     }
 

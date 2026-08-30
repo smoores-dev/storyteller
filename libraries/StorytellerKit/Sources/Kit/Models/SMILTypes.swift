@@ -117,6 +117,27 @@ public func findSectionIndex(for locatorHref: String, in sections: [SectionInfo]
     return nil
 }
 
+public enum LocatorSeekPlan: Equatable, Sendable {
+    case fragment(sectionIndex: Int, textId: String)
+    case totalProgression(Double)
+    case none
+}
+
+/// Falls back to totalProgression when the href or fragment does not match
+/// this device's parse, e.g. locators written by other clients.
+public func resolveLocatorSeek(locator: BookLocator, sections: [SectionInfo]) -> LocatorSeekPlan {
+    if let fragment = locator.locations?.fragments?.first,
+        let sectionIndex = findSectionIndex(for: locator.href, in: sections),
+        sections[sectionIndex].mediaOverlay.contains(where: { $0.textId == fragment })
+    {
+        return .fragment(sectionIndex: sectionIndex, textId: fragment)
+    }
+    if let progression = locator.locations?.totalProgression, progression > 0, progression <= 1 {
+        return .totalProgression(progression)
+    }
+    return .none
+}
+
 public struct TocEntry: Sendable {
     public let label: String
     public let href: String
