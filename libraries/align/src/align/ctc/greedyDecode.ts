@@ -1,3 +1,5 @@
+import { type EmissionsReader } from "../../emit/fs.ts"
+
 export function argmax(vector: number[]) {
   let best = 0
   for (let i = 1; i < vector.length; i++) {
@@ -12,14 +14,12 @@ export function argmax(vector: number[]) {
  * Returns the decoded text along with, for each character, the emission
  * frame at which it was first observed.
  */
-export function ctcGreedyDecode(
-  emissions: number[][],
-  blankIndex: number,
-  vocab: Map<string, number>,
-): { text: string; frames: number[] } {
+export async function ctcGreedyDecode(
+  emissionsReader: EmissionsReader,
+): Promise<{ text: string; frames: number[] }> {
   const charByToken = new Map<number, string>()
-  for (const [char, id] of vocab.entries()) {
-    if (id !== blankIndex && char.length === 1 && char !== "|") {
+  for (const [char, id] of emissionsReader.vocab.entries()) {
+    if (id !== emissionsReader.blankId && char.length === 1 && char !== "|") {
       charByToken.set(id, char)
     }
   }
@@ -28,9 +28,8 @@ export function ctcGreedyDecode(
   const frames: number[] = []
 
   let previous = -1
-  for (let t = 0; t < emissions.length; t++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const row = emissions[t]!
+  let t = 0
+  for await (const row of emissionsReader.frames()) {
     const best = argmax(row)
 
     if (best !== previous) {
@@ -41,6 +40,7 @@ export function ctcGreedyDecode(
       }
     }
     previous = best
+    t++
   }
 
   return { text: chars.join(""), frames }

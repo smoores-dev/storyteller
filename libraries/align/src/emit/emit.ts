@@ -27,6 +27,8 @@ import {
   type Wav2VecEngine,
 } from "@storyteller-platform/ghost-story/constants"
 
+import { writeEmissionsFile } from "./fs.ts"
+
 export interface EmitOptions {
   onProgress?: ((progress: number) => void) | null | undefined
   signal?: AbortSignal | null | undefined
@@ -174,14 +176,7 @@ export async function emit(
 
     const tmpFilepath = `${emissionFilepath}.tmp`
     try {
-      await writeFile(
-        tmpFilepath,
-        JSON.stringify({
-          ...result,
-          vocab: Object.fromEntries(result.vocab),
-        }),
-        { signal },
-      )
+      await writeEmissionsFile(tmpFilepath, result, { signal })
       await rm(identityFilepath, { force: true })
       await rename(tmpFilepath, emissionFilepath)
       await writeFile(identityFilepath, identity, { encoding: "utf-8" })

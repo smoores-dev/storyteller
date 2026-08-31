@@ -15,13 +15,13 @@ import { type Logger } from "pino"
 import { lookupAudioMime } from "@storyteller-platform/audiobook"
 import { Epub, type ManifestItem } from "@storyteller-platform/epub"
 import {
-  type EmissionResult,
   type Timing,
   createAggregator,
   createTiming,
 } from "@storyteller-platform/ghost-story"
 import { type Mapping } from "@storyteller-platform/mapping"
 
+import { type EmissionsReader } from "../../emit/fs.ts"
 import { parseDom } from "../../markup/parseDom.ts"
 import { segmentChapter } from "../../markup/segmentation.ts"
 import { inlineFootnotes, liftText } from "../../markup/transform.ts"
@@ -67,12 +67,6 @@ export interface AlignOptions {
 }
 
 export class Aligner {
-  private emissions: number[][]
-
-  private vocab: Map<string, number>
-
-  private blankId: number
-
   private audiofileFrames: Map<string, [number, number]>
 
   private audiofileEmissionTimings: Map<string, EmissionTimings>
@@ -99,38 +93,24 @@ export class Aligner {
   constructor(
     public epub: Epub,
     private audiofiles: string[],
-    emissions: EmissionResult[],
+    private emissionsReader: EmissionsReader,
     granularity: "sentence" | "word" | null | undefined,
     textRef: "id-fragment" | "text-fragment" | null | undefined,
     private languageOverride?: Intl.Locale | null,
     private logger?: Logger | null,
   ) {
-    this.emissions = emissions.flatMap((e) => e.emissions)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    this.vocab = emissions[0]!.vocab
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    this.blankId = emissions[0]!.blankIndex
-
     this.audiofileFrames = new Map()
     this.audiofileEmissionTimings = new Map()
-    let lastFrame = 0
     for (const [i, audiofile] of enumerate(audiofiles)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const emissionsResult = emissions[i]!
+      const [, framesStart, framesEnd] = emissionsReader.frameMap[i]!
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const timings = emissionsReader.timings[i]!
 
-      const endFrame = lastFrame + emissionsResult.emissions.length
-      this.audiofileFrames.set(audiofile, [lastFrame, endFrame])
-      this.audioFileDurations[audiofile] = framesToSeconds(
-        emissionsResult.emissions.length,
-        emissionsResult,
-      )
-      this.audiofileEmissionTimings.set(audiofile, {
-        secondsPerChunk: emissionsResult.secondsPerChunk,
-        secondsPerFrame: emissionsResult.secondsPerFrame,
-        framesPerChunk: emissionsResult.framesPerChunk,
-      })
-
-      lastFrame = endFrame
+      const length = framesEnd - framesStart
+      this.audiofileFrames.set(audiofile, [framesStart, framesEnd])
+      this.audioFileDurations[audiofile] = framesToSeconds(length, timings)
+      this.audiofileEmissionTimings.set(audiofile, timings)
     }
 
     this.getChapterSentences = memoize(this.getChapterSentences.bind(this))
@@ -321,7 +301,7 @@ export class Aligner {
     updateAudioFileReports(this.report, audioFiles, this.audioFileDurations)
   }
 
-  private getSentenceRanges(
+  private async getSentenceRanges(
     chapterId: string,
     slugifiedChapter: string,
     sentenceStarts: [number, number][],
@@ -350,10 +330,10 @@ export class Aligner {
 
     let alignments = ctcForcedAlign(
       slugifiedChapter,
-      this.emissions.slice(emissionsStart, emissionsEnd),
+      await this.emissionsReader.readFrames(emissionsStart, emissionsEnd),
       windowAnchors,
-      this.vocab,
-      this.blankId,
+      this.emissionsReader.vocab,
+      this.emissionsReader.blankId,
     )
 
     const finiteScores = alignments.filter(({ score }) => score !== -Infinity)
@@ -372,10 +352,10 @@ export class Aligner {
     if (droppedLabelRanges.length) {
       alignments = ctcForcedAlign(
         slugifiedChapter,
-        this.emissions.slice(emissionsStart, emissionsEnd),
+        await this.emissionsReader.readFrames(emissionsStart, emissionsEnd),
         windowAnchors,
-        this.vocab,
-        this.blankId,
+        this.emissionsReader.vocab,
+        this.emissionsReader.blankId,
         droppedLabelRanges,
       )
     }
@@ -687,7 +667,7 @@ export class Aligner {
       alignedEmissionsEnd,
       firstFoundSentence,
       lastFoundSentence,
-    } = this.getSentenceRanges(
+    } = await this.getSentenceRanges(
       chapterId,
       slugifiedChapter,
       sentenceStarts,
@@ -881,10 +861,9 @@ export class Aligner {
       return []
     }
 
-    const boundaries = findCtcBoundaries(
+    const boundaries = await findCtcBoundaries(
       slugifiedChapterSentences.join(""),
-      this.emissions,
-      this.vocab,
+      this.emissionsReader,
       this.getMatchedBoundaries(),
     )
 
@@ -955,10 +934,9 @@ export class Aligner {
 
       const chunkString = chunkSentences.join("")
 
-      const boundaries = findCtcBoundaries(
+      const boundaries = await findCtcBoundaries(
         chunkString,
-        this.emissions,
-        this.vocab,
+        this.emissionsReader,
         this.getMatchedBoundaries(),
       )
 

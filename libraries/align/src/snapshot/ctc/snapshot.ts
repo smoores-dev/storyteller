@@ -1,4 +1,4 @@
-import { readFile, readdir, writeFile } from "node:fs/promises"
+import { readdir, writeFile } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
 import {
   basename as posixBasename,
@@ -17,6 +17,7 @@ import { type EmissionResult } from "@storyteller-platform/ghost-story"
 
 import { ctcGreedyDecode } from "../../align/ctc/greedyDecode.ts"
 import { slugify } from "../../align/slugify.ts"
+import { EmissionsReader } from "../../emit/fs.ts"
 import { parseDom } from "../../markup/parseDom.ts"
 import { segmentChapter } from "../../markup/segmentation.ts"
 import { inlineFootnotes, liftText } from "../../markup/transform.ts"
@@ -70,23 +71,14 @@ function secondsToFrame(seconds: number, timings: EmissionTimings) {
 async function loadDecodedEmissions(
   filepath: string,
 ): Promise<DecodedEmissions> {
-  const parsed = JSON.parse(
-    await readFile(filepath, { encoding: "utf-8" }),
-  ) as Omit<EmissionResult, "vocab"> & { vocab: Record<string, number> }
-
-  const vocab = new Map(Object.entries(parsed.vocab))
-  const { text, frames } = ctcGreedyDecode(
-    parsed.emissions,
-    parsed.blankIndex,
-    vocab,
-  )
+  const emissionsReader = await EmissionsReader.from(filepath)
+  const { text, frames } = await ctcGreedyDecode(emissionsReader)
 
   return {
     text,
     frames,
-    secondsPerChunk: parsed.secondsPerChunk,
-    secondsPerFrame: parsed.secondsPerFrame,
-    framesPerChunk: parsed.framesPerChunk,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    ...emissionsReader.timings[0]!,
   }
 }
 

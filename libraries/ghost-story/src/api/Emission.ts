@@ -7,6 +7,12 @@ import { type TimingSummary, createTiming } from "../utilities/Timing.ts"
 
 import { type AudioInput, resolveAudioSource } from "./Recognition.ts"
 
+export {
+  type EmissionData,
+  decodeEmissions,
+  encodeEmissions,
+} from "../emission/encoding.ts"
+
 export async function emit(
   input: AudioInput,
   options: EmissionOptions,
@@ -87,6 +93,7 @@ const defaultEmissionOptions: Partial<EmissionOptions> = {
 
 export interface EmissionResult {
   emissions: number[][]
+  numFrames: number
   vocab: Map<string, number>
   blankIndex: number
   timing: TimingSummary
