@@ -328,12 +328,19 @@ export class Aligner {
       )
       .map((a) => ({ ...a, position: a.position - emissionsStart }))
 
-    let alignments = ctcForcedAlign(
+    const alignments = ctcForcedAlign(
       slugifiedChapter,
       await this.emissionsReader.readFrames(emissionsStart, emissionsEnd),
       windowAnchors,
       this.emissionsReader.vocab,
       this.emissionsReader.blankId,
+      (labelOffset, alignments) =>
+        sentenceStarts.filter(
+          ([s, e]) =>
+            s >= labelOffset &&
+            e < labelOffset + alignments.length &&
+            detectDroppedLabels(alignments, s - labelOffset, e - labelOffset),
+        ),
     )
 
     const finiteScores = alignments.filter(({ score }) => score !== -Infinity)
@@ -344,21 +351,6 @@ export class Aligner {
 
     const score =
       finiteScores.length > 0 ? Math.max((unscaledScore + 10) * 10, 0) : 0
-
-    const droppedLabelRanges = sentenceStarts.filter(([s, e]) =>
-      detectDroppedLabels(alignments, s, e),
-    )
-
-    if (droppedLabelRanges.length) {
-      alignments = ctcForcedAlign(
-        slugifiedChapter,
-        await this.emissionsReader.readFrames(emissionsStart, emissionsEnd),
-        windowAnchors,
-        this.emissionsReader.vocab,
-        this.emissionsReader.blankId,
-        droppedLabelRanges,
-      )
-    }
 
     const {
       sentenceRanges,
