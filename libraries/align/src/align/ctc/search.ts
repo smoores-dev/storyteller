@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { enumerate, range } from "itertools"
 
+import { type EmissionsReader } from "../../emit/fs.ts"
+
 import { ctcGreedyDecode } from "./greedyDecode.ts"
 
 const NGRAM_SIZE = 10
@@ -70,7 +72,7 @@ export type Match = {
 const ngramIndexes = new WeakMap<PositionedDocument, Map<string, number[]>>()
 
 /** Greedy decodings are cached per emissions matrix */
-const decodedEmissions = new WeakMap<number[][], PositionedDocument>()
+const decodedEmissions = new WeakMap<EmissionsReader, PositionedDocument>()
 
 function median(values: number[]) {
   const sorted = Array.from(values).sort((a, b) => a - b)
@@ -591,18 +593,16 @@ export function findBoundariesInDocument(
   }
 }
 
-export function findCtcBoundaries(
+export async function findCtcBoundaries(
   query: string,
-  emissions: number[][],
-  vocab: Map<string, number>,
+  emissionsReader: EmissionsReader,
   excludedRanges: [number, number][],
 ) {
-  let document = decodedEmissions.get(emissions)
+  let document = decodedEmissions.get(emissionsReader)
   if (!document) {
-    const blankIndex = vocab.get("<blank>") ?? 0
-    const { text, frames } = ctcGreedyDecode(emissions, blankIndex, vocab)
+    const { text, frames } = await ctcGreedyDecode(emissionsReader)
     document = { text, positions: frames }
-    decodedEmissions.set(emissions, document)
+    decodedEmissions.set(emissionsReader, document)
   }
 
   const result = findBoundariesInDocument(query, document, {
@@ -611,11 +611,12 @@ export function findCtcBoundaries(
     maxSlope: 15,
     inlierTolerance: 2500,
   })
+
   if (!result) return null
 
   return {
     ...result,
     start: Math.max(result.start, 0),
-    end: Math.min(result.end, emissions.length - 1),
+    end: Math.min(result.end, emissionsReader.numFrames - 1),
   }
 }

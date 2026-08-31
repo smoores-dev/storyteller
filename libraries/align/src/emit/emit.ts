@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, readdir } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
 
 import { enumerate } from "itertools"
@@ -16,6 +16,8 @@ import {
   type Wav2Vec2Device,
   type Wav2Vec2Model,
 } from "@storyteller-platform/ghost-story/constants"
+
+import { writeEmissionsFile } from "./fs.ts"
 
 export interface EmitOptions {
   onProgress?: ((progress: number) => void) | null | undefined
@@ -115,14 +117,7 @@ export async function emit(
     )
     timing.add(result.timing)
 
-    await writeFile(
-      emissionFilepath,
-      JSON.stringify({
-        ...result,
-        vocab: Object.fromEntries(result.vocab),
-      }),
-      { signal },
-    )
+    await writeEmissionsFile(emissionFilepath, result, { signal })
 
     emissions.push(emissionFilepath)
     options.onProgress?.((i + 1) / filenames.length)

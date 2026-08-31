@@ -1,14 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { createWriteStream, rmSync } from "node:fs"
-import {
-  copyFile,
-  cp,
-  mkdir,
-  readFile,
-  readdir,
-  rm,
-  writeFile,
-} from "node:fs/promises"
+import { copyFile, cp, mkdir, readdir, rm, writeFile } from "node:fs/promises"
 import {
   basename as autoBasename,
   dirname as autoDirname,
@@ -22,8 +14,8 @@ import { ZipFile } from "yazl"
 import { isAudioFile } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
-import { type EmissionResult } from "@storyteller-platform/ghost-story"
 
+import { EmissionsReader } from "../../emit/fs.ts"
 import {
   generateGuidedNavigationDocuments,
   generateGuidedNavigationManifest,
@@ -73,29 +65,7 @@ export async function ctcAlign(
 
   using epub = await Epub.from(epubPath)
 
-  const emissions = await readdir(emissionsDir)
-    .then((filenames) =>
-      filenames
-        .filter((f) => f.endsWith(".json"))
-        .toSorted()
-        .map((f) => autoJoin(emissionsDir, f)),
-    )
-    .then((filepaths) =>
-      Promise.all(
-        filepaths.map(async (p) => readFile(p, { encoding: "utf-8" })),
-      ),
-    )
-    .then((contents) =>
-      contents.map((c) => {
-        const parsed = JSON.parse(c) as Omit<EmissionResult, "vocab"> & {
-          vocab: Record<string, number>
-        }
-        return {
-          ...parsed,
-          vocab: new Map(Object.entries(parsed.vocab)),
-        } as EmissionResult
-      }),
-    )
+  const emissions = await EmissionsReader.from(emissionsDir)
 
   const aligner = new Aligner(
     epub,

@@ -5,9 +5,9 @@ import { describe, it } from "node:test"
 
 import { isAudioFile } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
-import { type EmissionResult } from "@storyteller-platform/ghost-story"
 
 import { createLogger } from "../../common/logging.ts"
+import { EmissionsReader } from "../../emit/fs.ts"
 import { createAlignmentSnapshot } from "../../snapshot/ctc/snapshot.ts"
 import { Aligner } from "../ctc/Aligner.ts"
 
@@ -123,25 +123,13 @@ async function testAlignBook(
       .map((f) => join(audiobookPath, f)),
   )
 
+  const emissionsReader = await EmissionsReader.from(emissionsPath)
+
   const emissionFilepaths = await readdir(emissionsPath).then((filenames) =>
     filenames
-      .filter((f) => f.endsWith(".json"))
+      .filter((f) => f.endsWith(".json") || f.endsWith(".emissions"))
       .toSorted()
       .map((f) => join(emissionsPath, f)),
-  )
-
-  const emissions = await Promise.all(
-    emissionFilepaths.map(async (p) => readFile(p, { encoding: "utf-8" })),
-  ).then((contents) =>
-    contents.map((c) => {
-      const parsed = JSON.parse(c) as Omit<EmissionResult, "vocab"> & {
-        vocab: Record<string, number>
-      }
-      return {
-        ...parsed,
-        vocab: new Map(Object.entries(parsed.vocab)),
-      } as EmissionResult
-    }),
   )
 
   const textFragmentEpub = await epub.copy()
@@ -149,7 +137,7 @@ async function testAlignBook(
   const aligner = new Aligner(
     epub,
     audiobookFiles,
-    emissions,
+    emissionsReader,
     granularity,
     "id-fragment",
     undefined,

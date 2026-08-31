@@ -230,6 +230,7 @@ export async function emit(
 
   return {
     emissions,
+    numFrames: emissions.length,
     vocab,
     blankIndex,
     secondsPerChunk,
@@ -285,6 +286,7 @@ export async function readAudioAsFloat32(
 
 export interface Wav2Vec2Result {
   emissions: number[][]
+  numFrames: number
   vocab: Map<string, number>
   blankIndex: number
   secondsPerChunk: number
