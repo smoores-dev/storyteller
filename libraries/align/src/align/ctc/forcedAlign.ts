@@ -160,7 +160,6 @@ export function detectDroppedLabels(
 ) {
   const endFrame = alignments[endOffset]?.endFrame
   if (endFrame === undefined) {
-    console.error(endOffset, alignments.length)
     throw new Error(`endOffset ${endOffset} out of bounds`)
   }
   const startFrame = alignments[startOffset]?.startFrame
@@ -177,21 +176,21 @@ export function detectDroppedLabels(
   return framesPerChar < 2
 }
 
-function removeCharRanges(
-  input: string,
+function removeLabelRanges(
+  input: number[],
   /* inclusive */ removals: [number, number][],
 ) {
   const inputIndices: number[] = []
   let nextRemovalIndex = 0
-  let result = ""
+  const result: number[] = []
   let i = 0
   while (i < input.length) {
-    const c = input[i]!
+    const l = input[i]!
     const nextRemoval = removals[nextRemovalIndex]
 
     if (!nextRemoval) {
       inputIndices.push(i)
-      result += c
+      result.push(l)
       i++
       continue
     }
@@ -207,40 +206,16 @@ function removeCharRanges(
     }
 
     inputIndices.push(i)
-    result += c
+    result.push(l)
     i++
   }
 
   return { result, inputIndices }
 }
 
-function adjustAnchorsForRemovals(
-  anchors: Match[],
-  removals: [number, number][],
-) {
-  const result: Match[] = []
-  for (const a of anchors) {
-    let drop = false
-    let shift = 0
-    for (const [s, e] of removals) {
-      if (a.offset < s) break
-      if (a.offset > e) shift += e - s + 1
-      else {
-        drop = true
-        break
-      }
-    }
-    if (drop) continue
-    result.push({
-      offset: a.offset - shift,
-      position: a.position,
-    })
-  }
-  return result
-}
-
 type Segment = {
   labels: number[]
+  labelsStart: number
   emissions: number[][]
   emissionsStart: number
 }
@@ -253,27 +228,23 @@ export function ctcForcedAlign(
   anchors: Match[],
   vocab: Map<string, number>,
   blankId: number,
-  /* inclusive */
-  droppedLabelRanges: [number, number][] = [],
+  dropLabels: (
+    labelOffset: number,
+    alignments: TokenAlignment[],
+  ) => [number, number][] = () => [],
 ) {
-  const { result: adjustedBaseline, inputIndices } = removeCharRanges(
-    baseline,
-    droppedLabelRanges,
-  )
-
-  const adjustedAnchors = adjustAnchorsForRemovals(anchors, droppedLabelRanges)
-
   const star = vocab.size
 
   const segments: Segment[] = []
-  for (let i = 0; i < adjustedAnchors.length + 1; i++) {
-    const prevAnchor = adjustedAnchors[i - 1]
-    const nextAnchor = adjustedAnchors[i]
+  for (let i = 0; i < anchors.length + 1; i++) {
+    const prevAnchor = anchors[i - 1]
+    const nextAnchor = anchors[i]
     segments.push({
-      labels: adjustedBaseline
+      labels: baseline
         .slice(prevAnchor?.offset, nextAnchor?.offset)
         .split("")
         .map((c) => vocab.get(c) ?? star),
+      labelsStart: prevAnchor?.offset ?? 0,
       emissions: emissions.slice(prevAnchor?.position, nextAnchor?.position),
       emissionsStart: prevAnchor?.position ?? 0,
     })
@@ -283,9 +254,24 @@ export function ctcForcedAlign(
   segments.at(-1)?.labels.push(star)
 
   const alignmentsWithRemovals: TokenAlignment[] = []
+  const inputIndices: number[] = []
 
   for (const segment of segments) {
-    const unmapped = ctcViterbiAlign(
+    // eslint-disable-next-line no-inner-declarations
+    function stripBoundingStars<E>(arr: E[]) {
+      let result = arr
+      if (segment === segments[0]) {
+        result = result.slice(1)
+      }
+      if (segment === segments.at(-1)) {
+        result = result.slice(0, -1)
+      }
+      return result
+    }
+
+    let indices = Array.from(range(stripBoundingStars(segment.labels).length))
+
+    let unmapped = ctcViterbiAlign(
       segment.emissions,
       segment.labels,
       blankId,
@@ -293,13 +279,44 @@ export function ctcForcedAlign(
       STAR_SCORE,
     )
 
-    alignmentsWithRemovals.push(
-      ...unmapped.map((a) => ({
-        ...a,
-        startFrame: a.startFrame + segment.emissionsStart,
-        endFrame: a.endFrame + segment.emissionsStart,
-      })),
-    )
+    const dropped = dropLabels(
+      segment.labelsStart,
+      stripBoundingStars(unmapped),
+    ).map<[number, number]>(([s, e]) => [
+      s - segment.labelsStart,
+      e - segment.labelsStart,
+    ])
+
+    if (dropped.length) {
+      const { result: adjustedLabels, inputIndices: adjustedIndices } =
+        removeLabelRanges(stripBoundingStars(segment.labels), dropped)
+
+      indices = adjustedIndices
+
+      if (segment === segments[0]) {
+        adjustedLabels.unshift(star)
+      }
+      if (segment === segments.at(-1)) {
+        adjustedLabels.push(star)
+      }
+
+      unmapped = ctcViterbiAlign(
+        segment.emissions,
+        adjustedLabels,
+        blankId,
+        star,
+        STAR_SCORE,
+      )
+    }
+
+    const segmentAlignments = unmapped.map((a) => ({
+      ...a,
+      startFrame: a.startFrame + segment.emissionsStart,
+      endFrame: a.endFrame + segment.emissionsStart,
+    }))
+
+    inputIndices.push(...indices.map((i) => i + segment.labelsStart))
+    alignmentsWithRemovals.push(...segmentAlignments)
   }
 
   const alignments: TokenAlignment[] = []
