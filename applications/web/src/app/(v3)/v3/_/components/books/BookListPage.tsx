@@ -1,7 +1,6 @@
 "use client"
 
 import { useHotkey } from "@tanstack/react-hotkeys"
-import dynamic from "next/dynamic"
 import {
   type ReactNode,
   createContext,
@@ -86,21 +85,10 @@ import {
 import { type UUID } from "@/uuid"
 
 import { BookCountIndicator } from "./BookCountIndicator"
-import { BookDetailsSkeleton } from "./BookDetails/BookDetailsSkeleton"
+import { DynamicBookDetailsContent } from "./BookDetails/DynamicBookDetailsContent"
 import { useCoverScope } from "./CoverScope"
 import { GRID_CARD_WIDTHS, GRID_SPACING_PX } from "./Grid/BookGrid"
 import { PanelResizeProvider } from "./panel-resize-context"
-
-const DynamicBookDetailsContent = dynamic(
-  () =>
-    import("@/app/(v3)/v3/_/components/books/BookDetails/BookDetailsPage").then(
-      (mod) => mod.BookDetailsContent,
-    ),
-  {
-    ssr: false,
-    loading: () => <BookDetailsSkeleton compact={true} />,
-  },
-)
 
 export type BookListSource =
   | {
@@ -134,8 +122,6 @@ type BookListPageProps = {
   headerActions?: ReactNode
   sidebar?: ReactNode
   description?: string | null | undefined
-  beforeFilters?: ReactNode
-  afterFilters?: ReactNode
   filtersClassName?: string
   contentClassName?: string
   listDisplayFields?: DisplayField[]
@@ -193,8 +179,6 @@ function BookListPageInner({
   headerActions,
   sidebar,
   description,
-  beforeFilters,
-  afterFilters,
   filtersClassName,
   contentClassName,
   listDisplayFields,
@@ -530,6 +514,7 @@ function BookListPageInner({
 
   const isMobile = useIsMobile()
 
+  // add back if we have grid nav
   const focusCollection = useCallback(() => {
     document.getElementById(BOOK_COLLECTION_ID)?.focus()
   }, [])
@@ -849,10 +834,6 @@ function BookListPageInner({
             </PageHeader>
 
             {descriptionText}
-
-            {beforeFilters}
-
-            {afterFilters}
 
             <PageContent
               className={cn(contentClassName ?? "p-6 pt-0", "relative")}

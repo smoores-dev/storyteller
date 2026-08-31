@@ -175,10 +175,10 @@ export default async function writeMetadataToFiles({
         },
       })
     } catch (e) {
-      logger.error(
-        `Failed to write metadata to readaloud ${book.title} ${book.assetDir}, skipping`,
-      )
-      logger.error(e)
+      logger.error({
+        msg: `Failed to write metadata to readaloud ${book.title} ${book.assetDir}, skipping`,
+        err: e,
+      })
     }
   }
 

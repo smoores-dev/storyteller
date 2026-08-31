@@ -143,12 +143,14 @@ public actor SMILPlayerActor {
 
     private init() {}
 
+    /// Returns false when the book was already loaded and its position preserved.
+    @discardableResult
     public func loadBook(
         epubPath: URL,
         bookID: BookID,
         title: String?,
         author: String?,
-    ) async throws {
+    ) async throws -> Bool {
         debugLog(
             "[SMILPlayerActor] Loading book: \(bookID) from \(epubPath.path) (existingBookID=\(self.bookID?.description ?? "nil"), structureCount=\(bookStructure.count))"
         )
@@ -162,7 +164,7 @@ public actor SMILPlayerActor {
             sessionID = UUID()
             try? await factory.prepareSession(longForm: true)
             await notifyStateChange()
-            return
+            return false
         }
 
         sessionID = UUID()
@@ -190,6 +192,7 @@ public actor SMILPlayerActor {
 
         debugLog("[SMILPlayerActor] Book loaded with \(result.sections.count) sections")
         await notifyStateChange()
+        return true
     }
 
     public func getBookStructure() -> [SectionInfo] {
@@ -347,6 +350,26 @@ public actor SMILPlayerActor {
             endTime: entry.end,
         )
         return true
+    }
+
+    public func seekToLocator(_ locator: BookLocator) async -> Bool {
+        switch resolveLocatorSeek(locator: locator, sections: bookStructure) {
+            case .fragment(let sectionIndex, let textId):
+                if await seekToFragment(sectionIndex: sectionIndex, textId: textId) {
+                    return true
+                }
+                if let progression = locator.locations?.totalProgression,
+                    progression > 0, progression <= 1
+                {
+                    return await seekToTotalProgression(progression)
+                }
+                return false
+            case .totalProgression(let progression):
+                return await seekToTotalProgression(progression)
+            case .none:
+                debugLog("[SMILPlayerActor] seekToLocator - no usable position in locator")
+                return false
+        }
     }
 
     public func seekToTotalProgression(_ progression: Double) async -> Bool {

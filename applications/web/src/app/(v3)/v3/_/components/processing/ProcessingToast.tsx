@@ -16,6 +16,8 @@ import {
 import {
   Item,
   ItemContent,
+  ItemDescription,
+  ItemFooter,
   ItemMedia,
   ItemTitle,
 } from "@v3/_/components/ui/item"
@@ -35,12 +37,27 @@ import {
   usePauseJobMutation,
   useResumeJobMutation,
 } from "@/store/api"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
+import {
+  selectProcessingToastLocation,
+  uiSettingsSlice,
+} from "@/store/slices/uiSettingsSlice"
 
 import { ProgressVisualization } from "./ProgressVisualization"
 import { jobToView, overallProgress } from "./shared"
 import { useStageLabels } from "./useStageLabels"
 
 export function ProcessingToast() {
+  const processingToastLocation = useAppSelector(selectProcessingToastLocation)
+
+  if (processingToastLocation === "sidebar") {
+    return null
+  }
+
+  return <ProcessingToastInner />
+}
+
+function ProcessingToastInner() {
   const { data: jobs } = useGetJobsQuery(
     { type: "active" },
     { pollingInterval: 30_000, skipPollingIfUnfocused: true },
@@ -50,8 +67,8 @@ export function ProcessingToast() {
   const [pauseJob] = usePauseJobMutation()
   const [resumeJob] = useResumeJobMutation()
   const [minimized, setMinimized] = useState(false)
-  const [dismissed, setDismissed] = useState<string | null>(null)
 
+  const dispatch = useAppDispatch()
   const t = useTranslation("Queue")
   const c = useCommon()
   const stageLabels = useStageLabels()
@@ -90,7 +107,6 @@ export function ProcessingToast() {
       : skipToken,
   )
   if (!current) return null
-  if (dismissed === current.uuid) return null
 
   const view = jobToView(current)
   const pct = Math.round(overallProgress(view) * 100)
@@ -106,20 +122,28 @@ export function ProcessingToast() {
           : t("toast.processing")
 
   return (
-    <div className="fixed right-4 bottom-4 z-50 w-[320px] max-w-[calc(100vw-2rem)]">
+    <div className="fixed right-4 bottom-4 z-50 w-[320px]">
       <Item
         variant="outline"
-        size="sm"
-        className="bg-popover text-popover-foreground items-start shadow-lg"
+        size="xs"
+        className="bg-popover text-popover-foreground shadow-lg"
       >
         {!minimized && (
-          <ItemMedia variant="image" className="h-18! w-10! object-contain!">
-            {book && <Cover interactive={false} book={book} width={96} />}
+          <ItemMedia variant="image" className="h-18! w-12! object-contain!">
+            {book && (
+              <Cover
+                interactive={false}
+                book={book}
+                width={96}
+                fit="cover"
+                displayMode="ebook"
+              />
+            )}
           </ItemMedia>
         )}
 
         <ItemContent className="gap-1.5">
-          <ItemTitle className="max-w-full">
+          <ItemTitle>
             <icon.Loader
               className={cn(
                 "text-primary size-3.5 shrink-0",
@@ -129,7 +153,7 @@ export function ProcessingToast() {
             {current.bookUuid ? (
               <V3Link
                 href={`/books/${current.bookUuid}`}
-                className="hover:text-primary truncate hover:underline"
+                className="hover:text-primary line-clamp-1 hover:underline"
               >
                 {current.bookTitle ?? t("untitled")}
               </V3Link>
@@ -137,25 +161,27 @@ export function ProcessingToast() {
               <span className="truncate">{t("toast.processing")}</span>
             )}
           </ItemTitle>
-
-          {minimized ? (
-            <div className="bg-muted h-1 w-full overflow-hidden rounded-full">
-              <div
-                className="bg-primary h-full rounded-full transition-all"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          ) : (
-            <>
-              <ProgressVisualization view={view} percent={pct} />
-            </>
-          )}
-          <div className="flex items-center justify-between gap-0.5">
+          <ItemDescription>
+            {minimized ? (
+              <div className="bg-muted h-1 w-full overflow-hidden rounded-full">
+                <div
+                  className="bg-primary h-full rounded-full transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            ) : (
+              <>
+                <ProgressVisualization view={view} percent={pct} />
+              </>
+            )}
+          </ItemDescription>
+          <ItemFooter className="flex items-center justify-between gap-0.5">
             <span className="text-muted-foreground text-xs">
               {headline}
-              {queuedCount > 0
+              {queuedCount > 0 ? ` · +${queuedCount}` : ""}
+              {/* {queuedCount > 0
                 ? ` · ${t("toast.queuedSuffix", { count: queuedCount })}`
-                : ""}
+                : ""} */}
             </span>
 
             <div className="flex items-center gap-0.5">
@@ -229,20 +255,25 @@ export function ProcessingToast() {
                 className="size-6"
                 aria-label={t("toast.dismiss")}
                 onClick={() => {
-                  setDismissed(current.uuid)
+                  // setDismissed(current.uuid)
+                  dispatch(
+                    uiSettingsSlice.actions.setProcessingToastLocation(
+                      "sidebar",
+                    ),
+                  )
                 }}
               >
                 <icon.Close className="size-3.5" />
               </Button>
             </div>
-          </div>
+          </ItemFooter>
         </ItemContent>
       </Item>
     </div>
   )
 }
 
-function useFinishedNotifications(
+export function useFinishedNotifications(
   finishedJobs: PublicJob[] | undefined,
   basePath: string,
   router: ReturnType<typeof useRouter>,

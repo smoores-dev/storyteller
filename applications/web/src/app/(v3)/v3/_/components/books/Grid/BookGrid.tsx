@@ -85,14 +85,15 @@ export const GRID_SPACING_PX: Record<GridSpacing, number> = {
 const COVER_ASPECT = 16 / 13 // cover box is aspect-13/16 -> height = width * 16/13
 const MOBILE_COLUMNS = 2
 
+export const TITLE_HEIGHT = 42
+
 function metaHeightFor(fields: DisplayField[]): number {
   if (fields.length === 0) return 0
   const TOP = 8 // mt-2
-  const TITLE = 40 // 2 lines, leading-tight
   const LINE = 20 // one text-xs line + gap-0.5
   const rows = groupDisplayRows(fields)
   const titleRows = rows.filter((row) => row[0] === "title").length
-  return TOP + titleRows * TITLE + (rows.length - titleRows) * LINE
+  return TOP + titleRows * TITLE_HEIGHT + (rows.length - titleRows) * LINE
 }
 
 export function BookGrid({
@@ -126,10 +127,7 @@ export function BookGrid({
 
   const animate = useLayoutAnimations() && !isMobile
 
-  const metaHeight = useMemo(
-    () => metaHeightFor(displayFields ?? ["authors", "title"]),
-    [displayFields],
-  )
+  const metaHeight = metaHeightFor(displayFields ?? ["authors", "title"])
 
   const geometry = useMemo<VirtualGridGeometry>(
     () => ({

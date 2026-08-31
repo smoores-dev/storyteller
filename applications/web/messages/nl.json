@@ -1462,6 +1462,10 @@
       "move": "Sectie verplaatsen",
       "moreByAuthor": "Meer door auteur",
       "moreInSeries": "Meer in reeks"
+    },
+    "unsavedChanges": {
+      "title": "Je hebt niet-opgeslagen wijzigingen",
+      "description": "Sla ze op of verwerp ze voordat je dit boek verlaat."
     }
   },
   "Labels": {

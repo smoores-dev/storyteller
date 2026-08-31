@@ -1,6 +1,5 @@
 "use client"
 
-import dynamic from "next/dynamic"
 import {
   type ReactNode,
   createContext,
@@ -14,6 +13,7 @@ import {
 import {
   MAX_PANEL_WIDTH,
   MIN_PANEL_WIDTH,
+  ResizeHandle,
 } from "@v3/_/components/ui/page-layout"
 import {
   ESCAPE_PRIORITY,
@@ -23,26 +23,17 @@ import { useBookInSidePanel } from "@v3/_/hooks/use-open-book"
 import {
   PANEL_SLIDE_DURATION,
   PANEL_SLIDE_EASING,
+  usePanelWidthDriver,
 } from "@v3/_/hooks/use-panel-width-driver"
 
-import { BookDetailsSkeleton } from "@/app/(v3)/v3/_/components/books/BookDetails/BookDetailsSkeleton"
+import { DynamicBookDetailsContent } from "@/app/(v3)/v3/_/components/books/BookDetails/DynamicBookDetailsContent"
 import { useIsMobile } from "@/app/(v3)/v3/_/hooks/use-mobile"
 import { cn } from "@/cn"
-import { useAppSelector } from "@/store/appState"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
+import { uiSettingsSlice } from "@/store/slices/uiSettingsSlice"
 import { type UUID } from "@/uuid"
 
 import { BookDetailDrawer } from "./BookListPage"
-
-const DynamicBookDetailsContent = dynamic(
-  () =>
-    import("@/app/(v3)/v3/_/components/books/BookDetails/BookDetailsPage").then(
-      (mod) => mod.BookDetailsContent,
-    ),
-  {
-    ssr: false,
-    loading: () => <BookDetailsSkeleton compact={true} />,
-  },
-)
 
 const FloatingBookPanelClaimContext = createContext<(() => () => void) | null>(
   null,
@@ -90,6 +81,20 @@ function FloatingBookPanel({ suppressed }: { suppressed: boolean }) {
   )
 
   const open = !suppressed && !!selectedBookUuid
+
+  const dispatch = useAppDispatch()
+  const commitWidth = useCallback(
+    (nextWidth: number) => {
+      dispatch(uiSettingsSlice.actions.setDetailPanelWidth(nextWidth))
+    },
+    [dispatch],
+  )
+  const driver = usePanelWidthDriver({
+    open: open && !isMobile,
+    storedWidth: width,
+    animate: false,
+    commit: commitWidth,
+  })
 
   const handleClose = useCallback(() => {
     void setSelectedBookUuid(null)
@@ -141,6 +146,7 @@ function FloatingBookPanel({ suppressed }: { suppressed: boolean }) {
 
   return (
     <div
+      ref={driver.panelRef}
       role="dialog"
       aria-label="Book details"
       className={cn(
@@ -154,6 +160,12 @@ function FloatingBookPanel({ suppressed }: { suppressed: boolean }) {
         transitionTimingFunction: PANEL_SLIDE_EASING,
       }}
     >
+      <ResizeHandle
+        side="left"
+        dragging={driver.dragging}
+        onPointerDown={driver.startDrag}
+        className="absolute inset-y-0 left-[7.5px] border-0"
+      />
       <DynamicBookDetailsContent
         uuid={shownUuid as UUID}
         compact

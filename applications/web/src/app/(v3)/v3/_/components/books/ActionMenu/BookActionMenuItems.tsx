@@ -557,16 +557,15 @@ export function useBookActionItems({
       title: blockedTitle(unprocessable.map((b) => b.title)),
       submenuSearchable: false,
       submenu: ({ close }) => (
-        <div className="flex flex-col">
+        <>
           {processingRun.positions.map((position) => (
-            <button
+            <FilterableMenuItem
               key={position.key}
-              type="button"
               disabled={position.disabled}
               title={count > 1 ? blockedTitle(position.blockedBy) : undefined}
-              onClick={(event) => {
+              onSelect={(event) => {
                 processingRun.start(position.restart, {
-                  shiftKey: event.shiftKey,
+                  shiftKey: !!event?.shiftKey,
                 })
                 close()
               }}
@@ -574,9 +573,9 @@ export function useBookActionItems({
             >
               {position.icon}
               {tp(position.labelKey)}
-            </button>
+            </FilterableMenuItem>
           ))}
-        </div>
+        </>
       ),
     })
 

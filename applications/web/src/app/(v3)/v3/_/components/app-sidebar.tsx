@@ -51,6 +51,7 @@ import { usePermission } from "@/hooks/usePermission"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
 import {
+  useGetJobsQuery,
   useGetLatestChangelogQuery,
   useListCollectionsQuery,
   useListSidebarGroupsQuery,
@@ -60,6 +61,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   selectCollapsedSidebarGroups,
+  selectProcessingToastLocation,
   selectTheme,
   uiSettingsSlice,
 } from "@/store/slices/uiSettingsSlice"
@@ -76,6 +78,8 @@ import {
   SHELF_ICON,
 } from "./nav/sidebar-items"
 import { toSidebarGroupInputs } from "./nav/sidebar-payload"
+import { useFinishedNotifications } from "./processing/ProcessingToast"
+import { jobToView, overallProgress } from "./processing/shared"
 import {
   DISMISSED_VERSION_KEY,
   formatChangelogDescription,
@@ -133,6 +137,7 @@ export function AppSidebar({
   const [creatingShelf, setCreatingShelf] = useState(false)
   const [setSidebarGroupsMut] = useSetSidebarGroupsMutation()
   const canAccessSettings = usePermission("settingsUpdate")
+  const canProcess = usePermission("bookProcess")
   const { pinned } = useSidebar()
 
   // editing only makes sense while the sidebar stays open
@@ -245,6 +250,8 @@ export function AppSidebar({
     toggleTheme()
   })
 
+  const processingToastLocation = useAppSelector(selectProcessingToastLocation)
+
   const navSecondary: NavSecondaryItem[] = [
     {
       onClick: () => {
@@ -306,6 +313,14 @@ export function AppSidebar({
       ),
       key: "search",
     },
+    ...(processingToastLocation === "sidebar" && canProcess
+      ? [
+          {
+            custom: <ProcessingJobs />,
+            key: "processingJobs",
+          },
+        ]
+      : []),
     ...(canAccessSettings
       ? [
           {
@@ -890,4 +905,58 @@ function resolveItem(
   }
 
   return null
+}
+
+function ProcessingJobs() {
+  const { data: jobs } = useGetJobsQuery(
+    { type: "active" },
+    { pollingInterval: 30_000, skipPollingIfUnfocused: true },
+  )
+  const { data: finishedJobs } = useGetJobsQuery({ type: "finished", limit: 5 })
+  const basePath = useVersionBasePath()
+  const router = useRouter()
+
+  const dispatch = useAppDispatch()
+  useFinishedNotifications(finishedJobs, basePath, router)
+
+  if (!jobs || jobs.length === 0) {
+    return null
+  }
+  const current = jobs[0]
+  if (!current) {
+    return null
+  }
+
+  const view = jobToView(current)
+  const pct = Math.round(overallProgress(view) * 100)
+  return (
+    <SidebarMenuItem className="relative">
+      <SidebarMenuButton
+        onClick={() => {
+          dispatch(
+            uiSettingsSlice.actions.setProcessingToastLocation("bottom-right"),
+          )
+        }}
+        className="line-clamp-1 inline-flex items-center gap-2"
+      >
+        <icon.Loader
+          className={cn(
+            "text-primary size-3.5 shrink-0",
+            current.status !== "PAUSED" && "animate-spin",
+          )}
+        />
+        <span>{jobs[0]?.bookTitle}</span>
+      </SidebarMenuButton>
+
+      {jobs.length > 1 && (
+        <SidebarMenuBadge>+{jobs.length - 1}</SidebarMenuBadge>
+      )}
+      <div
+        className="bg-muted absolute right-3.5 bottom-0 left-3.5 h-0.5"
+        style={{ width: `${pct}%` }}
+      >
+        <div className="bg-primary h-full" />
+      </div>
+    </SidebarMenuItem>
+  )
 }

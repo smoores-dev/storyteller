@@ -169,7 +169,9 @@ function useFilterableMenuItem(
   const { register, unregister } = ctx
   useEffect(() => {
     const element = ref.current
-    if (!matches || !element) return
+    if (!matches || !element) {
+      return
+    }
     register(id, { element, metaRef })
     return () => {
       unregister(id)
@@ -242,7 +244,9 @@ export function useMenuSurface({
   }, [])
 
   useEffect(() => {
-    if (!searchable) return
+    if (!searchable) {
+      return
+    }
     userNavigatedRef.current = false
     setActiveId(orderedIds()[0] ?? null)
   }, [query, searchable, orderedIds])
@@ -251,7 +255,9 @@ export function useMenuSurface({
   // the first item is
   // follow it until the user picks a highlight themselves.
   useEffect(() => {
-    if (!searchable) return
+    if (!searchable) {
+      return
+    }
     setActiveId((prev) =>
       userNavigatedRef.current && prev !== null && registryRef.current.has(prev)
         ? prev
@@ -294,8 +300,9 @@ export function useMenuSurface({
       event.key === "End"
     ) {
       userNavigatedRef.current = true
+      event.preventDefault()
+      event.stopPropagation()
       if (nav) {
-        event.preventDefault()
         nav.move(
           event.key === "Home"
             ? "home"
@@ -308,22 +315,29 @@ export function useMenuSurface({
         return
       }
       const ids = orderedIds()
-      if (ids.length === 0) return
-      event.preventDefault()
+      if (ids.length === 0) {
+        return
+      }
+
       const current = activeId ? ids.indexOf(activeId) : -1
       let next: number
-      if (event.key === "Home") next = 0
-      else if (event.key === "End") next = ids.length - 1
-      else if (event.key === "ArrowDown")
+      if (event.key === "Home") {
+        next = 0
+      } else if (event.key === "End") {
+        next = ids.length - 1
+      } else if (event.key === "ArrowDown") {
         next = current < ids.length - 1 ? current + 1 : 0
-      else next = current > 0 ? current - 1 : ids.length - 1
+      } else {
+        next = current > 0 ? current - 1 : ids.length - 1
+      }
       const nextId = ids[next] ?? null
       setActiveId(nextId)
       // keyboard should scroll, but hovering should not
-      if (nextId)
+      if (nextId) {
         registryRef.current
           .get(nextId)
           ?.element.scrollIntoView({ block: "nearest" })
+      }
       return
     }
 
@@ -335,9 +349,14 @@ export function useMenuSurface({
     const inInput = input !== null && event.target === input
 
     if (event.key === outwardKey && onExit) {
-      if (inInput && !(input.selectionStart === 0 && input.selectionEnd === 0))
+      if (
+        inInput &&
+        !(input.selectionStart === 0 && input.selectionEnd === 0)
+      ) {
         return
+      }
       event.preventDefault()
+      event.stopPropagation()
       onExit()
       return
     }
@@ -350,32 +369,48 @@ export function useMenuSurface({
       }
       if (nav) {
         event.preventDefault()
+        event.stopPropagation()
         nav.activate(modifiers)
         return
       }
-      if (!activeId) return
+      if (!activeId) {
+        return
+      }
       const entry = registryRef.current.get(activeId)
-      if (!entry) return
+      if (!entry) {
+        return
+      }
       event.preventDefault()
+      event.stopPropagation()
       entry.metaRef.current.onActivate(modifiers)
       return
     }
 
     if (event.key === inwardKey) {
-      if (nav) return
+      if (nav) {
+        return
+      }
       if (
         inInput &&
         !(
           input.selectionStart === input.value.length &&
           input.selectionEnd === input.value.length
         )
-      )
+      ) {
         return
-      if (!activeId) return
+      }
+      if (!activeId) {
+        return
+      }
       const entry = registryRef.current.get(activeId)
-      if (!entry) return
-      if (!entry.metaRef.current.isSubmenu) return
+      if (!entry) {
+        return
+      }
+      if (!entry.metaRef.current.isSubmenu) {
+        return
+      }
       event.preventDefault()
+      event.stopPropagation()
       entry.metaRef.current.onActivate({ shiftKey: event.shiftKey })
     }
   }
@@ -447,7 +482,9 @@ export function FilterableMenu({
   const setOpen = useCallback(
     (next: boolean) => {
       onOpenChange?.(next)
-      if (!isControlled) setUncontrolledOpen(next)
+      if (!isControlled) {
+        setUncontrolledOpen(next)
+      }
     },
     [isControlled, onOpenChange],
   )
@@ -720,12 +757,16 @@ export function FilterableMenuItem({
       isSubmenu: false,
       onActivate: (modifiers) => {
         onSelect?.(modifiers)
-        if (closeOnClick !== false) close()
+        if (closeOnClick !== false) {
+          close()
+        }
       },
     },
   )
 
-  if (!matches) return null
+  if (!matches) {
+    return null
+  }
 
   return (
     <div
@@ -804,7 +845,9 @@ export function FilterableMenuSubTrigger({
     },
   })
 
-  if (!matches) return null
+  if (!matches) {
+    return null
+  }
 
   return (
     <Popover.Trigger
@@ -824,7 +867,9 @@ export function FilterableMenuSubTrigger({
           title={title}
           className={cn(menuSubTriggerClassName, className)}
           onMouseMove={(event) => {
-            if (!disabled && pointerMoved(lastPointer, event)) setActive()
+            if (!disabled && pointerMoved(lastPointer, event)) {
+              setActive()
+            }
           }}
         >
           {icon}
@@ -983,7 +1028,9 @@ export function VirtualizedFilterableMenuItems<T>({
       create?.onCreate(trimmed)
     } else {
       const item = filtered[active]
-      if (!item) return
+      if (!item) {
+        return
+      }
       onSelect(item, modifiers)
     }
     if (closeOnSelect) close()
@@ -993,9 +1040,15 @@ export function VirtualizedFilterableMenuItems<T>({
   moveRef.current = (to) => {
     if (rowCount === 0) return
     setActive((prev) => {
-      if (to === "home") return 0
-      if (to === "end") return rowCount - 1
-      if (to === "down") return prev < rowCount - 1 ? prev + 1 : 0
+      if (to === "home") {
+        return 0
+      }
+      if (to === "end") {
+        return rowCount - 1
+      }
+      if (to === "down") {
+        return prev < rowCount - 1 ? prev + 1 : 0
+      }
       return prev > 0 ? prev - 1 : rowCount - 1
     })
   }
@@ -1020,7 +1073,9 @@ export function VirtualizedFilterableMenuItems<T>({
     }
   }, [active, filtered.length, virtualizer])
 
-  if (loading) return <LoadingRows />
+  if (loading) {
+    return <LoadingRows />
+  }
 
   if (rowCount === 0) {
     return (
@@ -1038,7 +1093,9 @@ export function VirtualizedFilterableMenuItems<T>({
         >
           {virtualizer.getVirtualItems().map((row) => {
             const item = filtered[row.index]
-            if (!item) return null
+            if (!item) {
+              return null
+            }
             return (
               <div
                 key={getKey(item)}
@@ -1085,7 +1142,9 @@ export function VirtualizedFilterableMenuItems<T>({
           }}
           onClick={() => {
             create.onCreate(trimmed)
-            if (closeOnSelect) close()
+            if (closeOnSelect) {
+              close()
+            }
           }}
         >
           <icon.Add />

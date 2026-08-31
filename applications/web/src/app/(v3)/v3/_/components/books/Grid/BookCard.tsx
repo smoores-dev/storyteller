@@ -41,6 +41,8 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 import { type UUID } from "@/uuid"
 
+import { TITLE_HEIGHT } from "./BookGrid"
+
 type BookCardProps = {
   book: BookWithRelations
   index?: number
@@ -452,7 +454,7 @@ export const BookCard = memo(function BookCard({
       </div>
 
       {displayRows.length > 0 && (
-        <div className="mt-2 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden px-1">
+        <div className="mt-2 flex min-h-0 flex-1 flex-col gap-0.5 px-1">
           {displayRows.map((row) => {
             const [field] = row
             if (!field) return null
@@ -470,9 +472,11 @@ export const BookCard = memo(function BookCard({
                     className={cn(
                       "group-hover:text-tinted-strong line-clamp-2",
                       "font-heading font-medium",
-                      "leading-[1.3] hyphens-auto",
+                      "hyphens-auto",
+                      "leading-[1.2]",
                       "[font-variant-ligatures:none]",
                     )}
+                    style={{ height: TITLE_HEIGHT }}
                   >
                     {book.title}
                   </h3>

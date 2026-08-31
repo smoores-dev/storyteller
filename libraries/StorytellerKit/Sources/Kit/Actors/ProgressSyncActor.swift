@@ -43,7 +43,9 @@ public struct BookProgress: Sendable, Equatable {
 public actor ProgressSyncActor {
     public static let shared = ProgressSyncActor()
 
-    private static let maxHistoryEntriesPerBook = 20
+    private static let maxHistoryEntriesPerBook = 5000
+    private static let minHistoryEntriesPerBook = 20
+    private static let historyRetentionMs: Double = 24 * 60 * 60 * 1000
 
     private enum QueueResult {
         case queued  // Successfully added to queue
@@ -817,6 +819,20 @@ public actor ProgressSyncActor {
         }
     }
 
+    /// Keeps everything from the last 24 hours up to a hard cap, but never
+    /// trims below the floor so rarely-synced books still show recent events.
+    private static func trimHistory(_ entries: [SyncHistoryEntry]) -> [SyncHistoryEntry] {
+        let cutoff = Date().timeIntervalSince1970 * 1000 - historyRetentionMs
+        var trimmed = entries.filter { $0.arrivedAt >= cutoff }
+        if trimmed.count < minHistoryEntriesPerBook {
+            trimmed = Array(entries.suffix(minHistoryEntriesPerBook))
+        }
+        if trimmed.count > maxHistoryEntriesPerBook {
+            trimmed = Array(trimmed.suffix(maxHistoryEntriesPerBook))
+        }
+        return trimmed
+    }
+
     private func saveQueueToDisk() async {
         guard queueLoaded else {
             debugLog("[PSA] saveQueueToDisk: skipped because the queue is not loaded")
@@ -854,10 +870,7 @@ public actor ProgressSyncActor {
 
         var entries = syncHistory[bookID] ?? []
         entries.append(entry)
-
-        if entries.count > Self.maxHistoryEntriesPerBook {
-            entries = Array(entries.suffix(Self.maxHistoryEntriesPerBook))
-        }
+        entries = Self.trimHistory(entries)
 
         syncHistory[bookID] = entries
         await saveHistoryToDisk()
