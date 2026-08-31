@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { existsSync } from "node:fs"
 import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
-import { dirname, extname, join } from "node:path"
+import { basename, dirname, extname, join } from "node:path"
 
 import { createReadableStreamFromReadable } from "@remix-run/node"
 import { lookup } from "mime-types"
@@ -169,6 +169,13 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       )
       const targetChapter = chapters[targetChapterIdx]
       if (targetChapterIdx === -1 || !targetChapter) {
+        const processed = getProcessedAudioFilepath(
+          book,
+          basename(requestedFile),
+        )
+        if (existsSync(processed)) {
+          return await streamPartialFile(request, processed)
+        }
         return Response.json({ message: "Chapter not found" }, { status: 404 })
       }
 
@@ -245,7 +252,10 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       return await streamPartialFile(request, transcodePath)
     } else {
       // handle directory-based files
-      const filePath = join(audiobookPath, requestedFile)
+      const sourceFile = join(audiobookPath, requestedFile)
+      const filePath = existsSync(sourceFile)
+        ? sourceFile
+        : getProcessedAudioFilepath(book, basename(requestedFile))
 
       try {
         return await streamPartialFile(request, filePath)

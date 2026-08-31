@@ -614,7 +614,8 @@ export class Aligner {
           (context) => context.filepath === range.audiofile,
         )
         if (existing) {
-          existing.end = range.end
+          existing.start = Math.min(existing.start, range.start)
+          existing.end = Math.max(existing.end, range.end)
           return acc
         }
         acc.push({

@@ -3,7 +3,6 @@ import { withHasPermission } from "@/auth/auth"
 import {
   type AlignmentOverrides,
   getAlignmentReportForBook,
-  summarizeReport,
   updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"
@@ -55,7 +54,6 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     reportUuid: report.uuid,
     jobUuid: report.jobUuid,
     createdAt: report.createdAt,
-    summary: summarizeReport(report.report, overrides),
     overrides,
     ebookManifest: (book?.ebook?.manifest as ManifestLike | null) ?? null,
     audiobookManifest:

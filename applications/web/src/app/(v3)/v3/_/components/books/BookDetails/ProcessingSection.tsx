@@ -338,7 +338,7 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
         },
         {
           label: tr("marks.unalignedChapters"),
-          value: `${summary.failedChapters}`,
+          value: `${summary.notFoundBody}`,
         },
       ]
     : []
@@ -376,12 +376,6 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
         >
           <icon.FileText className="size-3.5" /> {tp("viewReport")}
         </button>
-        <V3Link
-          href={`/books/${book.uuid}/alignment`}
-          className="hover:text-primary inline-flex items-center gap-1 hover:underline"
-        >
-          <icon.ExternalLink className="size-3.5" /> {tr("openFullPage")}
-        </V3Link>
         {data?.jobUuid && (
           <V3Link
             href="/settings?tab=queue"

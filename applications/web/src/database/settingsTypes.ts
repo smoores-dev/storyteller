@@ -79,20 +79,26 @@ export function defaultMetadataFieldOverrides(
   ) as MetadataFieldOverrides
 }
 
-export const ReadaloudLocationTypeSchema = z.enum([
+export const READALOUD_LOCATION_TYPES = [
   "SUFFIX",
   "SIBLING_FOLDER",
   "INTERNAL",
   "CUSTOM_FOLDER",
-])
+] as const
 
-export const Epub2ImportStrategySchema = z.enum([
+export type ReadaloudLocationType = (typeof READALOUD_LOCATION_TYPES)[number]
+
+export const ReadaloudLocationTypeSchema = z.enum(READALOUD_LOCATION_TYPES)
+
+export const EPUB2_IMPORT_STRATEGIES = [
   "backup-and-convert",
   "convert-alongside",
   "replace",
   "skip",
-])
-export type Epub2ImportStrategy = z.infer<typeof Epub2ImportStrategySchema>
+] as const
+export type Epub2ImportStrategy = (typeof EPUB2_IMPORT_STRATEGIES)[number]
+
+export const Epub2ImportStrategySchema = z.enum(EPUB2_IMPORT_STRATEGIES)
 
 export const EPUB_VERSION_PLACEHOLDER = "{version}"
 

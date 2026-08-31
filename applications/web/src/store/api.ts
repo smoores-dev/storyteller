@@ -80,6 +80,7 @@ import {
 import { type UserBookRating } from "@/database/userRatings"
 import { type UserPermissionSet } from "@/database/users"
 import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
+import { type TranscodedAudioFile } from "@/schemas/v2/transcodedAudio"
 import { type ShelfFilter } from "@/shelves"
 import { type SortField } from "@/sort"
 import { type UUID } from "@/uuid"
@@ -149,6 +150,7 @@ export const api = createApi({
     "Sidebar",
     "Jobs",
     "BookAlignmentReport",
+    "TranscodedAudio",
     "Settings",
     "Identifiers",
     "BookIdentifiers",
@@ -2336,6 +2338,12 @@ export const api = createApi({
         { type: "BookAlignmentReport", id: uuid },
       ],
     }),
+    getTranscodedAudio: build.query<TranscodedAudioFile[], { uuid: UUID }>({
+      query: ({ uuid }) => `/books/${uuid}/transcoded-audio`,
+      providesTags: (_result, _error, { uuid }) => [
+        { type: "TranscodedAudio", id: uuid },
+      ],
+    }),
     updateBookAlignmentOverrides: build.mutation<
       { ok: boolean },
       { uuid: UUID; overrides: AlignmentOverrides }
@@ -2412,6 +2420,7 @@ export const {
   useGetJobsQuery,
   useGetAlignmentEstimateQuery,
   useGetBookAlignmentReportQuery,
+  useGetTranscodedAudioQuery,
   useUpdateBookAlignmentOverridesMutation,
   useCancelJobMutation,
   useReorderJobsMutation,

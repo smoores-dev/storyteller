@@ -1845,73 +1845,112 @@
     "importBooksDescription": "Pick EPUB or audio files on the server to import as new books."
   },
   "AlignmentReport": {
-    "notAvailable": "No alignment report is available for this book.",
     "title": "Alignment report",
     "loading": "Loading report…",
+    "notAvailable": "No alignment report is available for this book.",
+    "untitled": "Untitled",
+    "back": "Back",
+    "close": "Close",
     "openFullPage": "Open full page",
+    "openBook": "Book",
     "createdByJob": "Created {relativeTime}",
-    "heading": {
-      "excellentAlignment": "Excellent alignment",
-      "nearlyEverySentenceMatched": "nearly every sentence matched",
-      "almostEverythingLinedUp": "almost everything lined up",
-      "strongAlignment": "Strong Alignment",
-      "withOnlyAFewGaps": "with only a handful of gaps",
-      "goodAlignment": "Good alignment",
-      "withAFewRoughPatches": "with a few rough patches",
-      "roughAlignment": "Rough alignment",
-      "noticeableGapsRemain": "noticeable gaps remain",
-      "patchyAlignment": "Patchy alignment",
-      "largeStretchesDrifted": "large stretches drifted",
-      "alignmentFailed": "Alignment failed",
-      "muchOfTheBookDidNotMatch": "much of the book did not match",
-      "partAlignedScore": "{score}% of the ebook aligned to the narration across {chapters} chapters.",
-      "partNotAlignedScore": "Across {chapters} chapters, no sentence-level alignment was recorded.",
-      "partAllAudioPlaced": "All audio was placed.",
-      "partSomeAudioNotPlaced": "{count, number} audio file(s) could not be placed.",
-      "partFewGaps": "The few gaps are scattered single sentences, not whole sections.",
-      "partManyGaps": "{count, number} sentences went unmatched."
+    "lastGraded": "Last graded {date}",
+    "ignored": "Ignored",
+    "verdict": {
+      "excellent": "Excellent alignment",
+      "strong": "Strong alignment",
+      "good": "Good alignment",
+      "fair": "Fair alignment",
+      "rough": "Rough alignment",
+      "patchy": "Patchy alignment",
+      "failed": "Alignment failed",
+      "score": "Weighted score {score} across {sentences, number} sentences.",
+      "noScore": "Nothing in the ebook matched the narration.",
+      "notFound": "{count, plural, one {# chapter inside the book was not found.} other {# chapters inside the book were not found.}}",
+      "looseAudio": "{count, plural, one {# audio file was not placed.} other {# audio files were not placed.}}",
+      "ignored": "{count, plural, one {# chapter is ignored.} other {# chapters are ignored.}}"
+    },
+    "stats": {
+      "score": "Score",
+      "scoreSub": "weighted by sentences",
+      "sentences": "Sentences",
+      "audio": "Audio placed",
+      "audioOf": "of {total}",
+      "filesLoose": "{count, plural, one {# file loose} other {# files loose}}",
+      "allPlaced": "all placed",
+      "needsLook": "Needs a look",
+      "needsNoAudio": "{count, number} no audio",
+      "needsNotFound": "{count, number} not found"
+    },
+    "table": {
+      "needsLookOnly": "Needs a look only",
+      "selectAll": "Select all rows",
+      "rangeSuspicious": "range?",
+      "columns": {
+        "chapter": "Chapter",
+        "score": "Score",
+        "sentences": "Sentences",
+        "audio": "Audio",
+        "length": "Length",
+        "status": "Status"
+      }
+    },
+    "bulk": {
+      "selected": "{count, plural, one {# selected} other {# selected}}",
+      "playInOrder": "Play in order",
+      "clear": "Clear selection"
+    },
+    "actions": {
+      "menu": "Row options",
+      "ignore": "Ignore",
+      "unignore": "Un-ignore"
+    },
+    "reason": {
+      "not-found": "not found",
+      "too-short": "too short",
+      "is-nav": "navigation",
+      "no-text": "no text"
+    },
+    "hint": {
+      "front-matter": "front matter",
+      "part-title": "part title",
+      "promo": "promo",
+      "after-last-match": "after the last match",
+      "before-first-match": "before the first match"
+    },
+    "status": {
+      "missing": "sentences missing",
+      "no-audio": "no audio",
+      "range": "audio looks short"
+    },
+    "detail": {
+      "firstMatch": "First match",
+      "lastMatch": "Last match",
+      "noAudioFiles": "No audio was placed in this chapter.",
+      "sharedBefore": "also {label}",
+      "sharedAfter": "then {label}"
+    },
+    "loose": {
+      "title": "Audio not placed",
+      "between": "{before} → {after}",
+      "beforeFirst": "before {label}",
+      "afterLast": "after {label}",
+      "notOnDisk": "not on disk"
     },
     "marks": {
       "score": "% Sentences aligned",
-      "alignmentGrade": "Grade",
-      "audioIncluded": "Audio included",
-      "excludedClips": "{count, number} excluded clips",
-      "mutedChapters": "{count, number} muted",
-      "sentencesAligned": "Sentences aligned",
-      "significantMisalignment": "{count, number} chapters with significant misalignment",
       "unalignedChapters": "Unaligned chapters"
-    },
-    "overrides": {
-      "menu": "Chapter options",
-      "markOk": "Mark as OK",
-      "ok": "OK",
-      "excludeFromScore": "Exclude from score",
-      "excluded": "Excluded",
-      "markIntended": "Mark intended",
-      "intended": "Intended",
-      "excludeClip": "Exclude clip",
-      "clipExcluded": "Excluded"
-    },
-    "table": {
-      "flaggedOnly": "Flagged only",
-      "detail": {
-        "transcript": "Transcript"
-      },
-      "columns": {
-        "chapter": "Chapter",
-        "audio": "Audio",
-        "duration": "Dur.",
-        "sentences": "Sentences",
-        "notes": "Notes"
-      }
-    },
-    "lastGraded": "Last graded {date}",
-    "unalignedChapters": "Unaligned chapters",
-    "unalignedAudio": {
-      "title": "Unaligned audio",
-      "noTranscription": "no transcription on file",
-      "heard": "heard"
     }
+  },
+  "Player": {
+    "label": "Audio player",
+    "play": "Play",
+    "pause": "Pause",
+    "back10": "Back 10 seconds",
+    "forward10": "Forward 10 seconds",
+    "wholeFile": "Whole file",
+    "speed": "Playback speed",
+    "close": "Close player"
   },
   "Processing": {
     "menuTitle": "Processing",

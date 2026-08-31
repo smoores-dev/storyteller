@@ -2,11 +2,7 @@ import { type Selectable, sql } from "kysely"
 
 import { type CtcReport, type Report } from "@storyteller-platform/align"
 
-import {
-  type AlignmentFacets,
-  type MergedChapter,
-  mergeChapterChunks,
-} from "@/alignmentReportView"
+import { type AlignmentFacets, buildReportModel } from "@/alignmentReportView"
 import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
 
@@ -24,7 +20,7 @@ type UnalignedAudioFileReport = AnyReport["unalignedAudioFiles"][number]
 
 export interface AlignmentSummary {
   grade: AlignmentGrade
-  /* 0-100 */
+  band: number
   score: number | null
   chapters: number
   missingSentences: number
@@ -33,23 +29,14 @@ export interface AlignmentSummary {
   unalignedAudio: number
 }
 
-export interface AlignmentChapterOverride {
-  excludeFromScore?: boolean
-  markedOk?: boolean
+export interface AlignmentIgnoreOverride {
+  ignored?: boolean
 }
 
 export interface AlignmentOverrides {
-  chapters?: Record<string, AlignmentChapterOverride>
-  unalignedChapters?: Record<string, { intended?: boolean }>
-  audioFiles?: Record<string, { excluded?: boolean }>
-}
-
-function chapterExcluded(
-  href: string,
-  overrides?: AlignmentOverrides,
-): boolean {
-  const o = overrides?.chapters?.[href]
-  return !!(o?.excludeFromScore || o?.markedOk)
+  chapters?: Record<string, AlignmentIgnoreOverride>
+  unalignedChapters?: Record<string, AlignmentIgnoreOverride>
+  audioFiles?: Record<string, AlignmentIgnoreOverride>
 }
 
 export function summarizeReport(
@@ -61,85 +48,28 @@ export function summarizeReport(
   },
   overrides?: AlignmentOverrides | null,
 ): AlignmentSummary {
-  const chapters = mergeChapterChunks(report.chapters)
-  const scored = chapters.filter(
-    (ch) => !chapterExcluded(ch.href, overrides ?? undefined),
-  )
+  const { summary, items } = buildReportModel({ report, overrides })
 
-  let totalSents = 0
-  let totalAligned = 0
   let missingSentences = 0
-  for (const ch of scored) {
-    const total = ch.chapterSentenceCount || 0
-    if (total > 0) {
-      const al = ch.alignedSentenceCount
-      totalSents += total
-      totalAligned += al
-      missingSentences += Math.max(total - al, 0)
+  let noMatch = 0
+  for (const item of items) {
+    if (item.kind !== "chapter" || item.ignored) continue
+    missingSentences += item.missing
+    if (item.chapterSentenceCount > 0 && item.alignedSentenceCount === 0) {
+      noMatch += 1
     }
   }
-  const score =
-    totalSents > 0 ? Math.round((totalAligned / totalSents) * 100) : null
-
-  const mutedChapters = chapters.filter(
-    (ch) =>
-      !overrides?.chapters?.[ch.href]?.markedOk &&
-      ch.audioFiles.length === 0 &&
-      (ch.chapterSentenceCount || 0) > 2,
-  ).length
-
-  const notFound = (report.unalignedChapters ?? []).filter(
-    (c) =>
-      c.reason === "not-found" &&
-      !overrides?.unalignedChapters?.[c.href]?.intended,
-  ).length
-  const noMatch = chapters.filter(
-    (ch) =>
-      !overrides?.chapters?.[ch.href]?.markedOk &&
-      (ch.chapterSentenceCount || 0) > 0 &&
-      ch.alignedSentenceCount === 0,
-  ).length
-
-  const unalignedAudio = (report.unalignedAudioFiles ?? []).filter(
-    (uaf) => !overrides?.audioFiles?.[uaf.filepath]?.excluded,
-  ).length
 
   return {
-    grade: computeGrade(score, scored),
-    score,
-    chapters: chapters.length,
+    grade: summary.grade,
+    band: summary.band,
+    score: summary.score,
+    chapters: summary.chapters,
     missingSentences,
-    mutedChapters,
-    failedChapters: notFound + noMatch,
-    unalignedAudio,
+    mutedChapters: summary.noAudio,
+    failedChapters: summary.notFoundBody + noMatch,
+    unalignedAudio: summary.looseAudio,
   }
-}
-
-function computeGrade(
-  score: number | null,
-  chapters: MergedChapter[],
-): AlignmentGrade {
-  if (chapters.length === 0) return "F"
-  if (score == null || score < 80) return "F"
-  if (score < 90) return "D"
-  if (score < 95) return "C"
-  if (score >= 99) return "A+"
-
-  const sig = chapters.filter((ch) => {
-    const cnt = ch.chapterSentenceCount || 0
-    if (cnt === 0) return false
-    const al = ch.alignedSentenceCount
-    return cnt - al > 5 && (al / cnt) * 100 < 95
-  }).length
-  const severe = chapters.filter((ch) => {
-    const cnt = ch.chapterSentenceCount || 0
-    if (cnt === 0) return false
-    const al = ch.alignedSentenceCount
-    return cnt - al > 10 && (al / cnt) * 100 < 90
-  }).length
-
-  if (score >= 97) return sig >= 3 ? "A-" : "A"
-  return severe >= 3 ? "B-" : "B"
 }
 
 type AlignmentReportRow = Selectable<DB["alignmentReport"]>

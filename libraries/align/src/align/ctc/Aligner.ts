@@ -502,11 +502,8 @@ export class Aligner {
       lastFoundSentence = i
       lastFoundSentenceEnd = alignments[endOffset]!.endFrame
 
-      const { position: start, audiofile } = this.frameToAudioPosition(
+      const { start, end, audiofile } = this.frameRangeToAudioRange(
         startFrame,
-        emissionsStart,
-      )
-      const { position: end } = this.frameToAudioPosition(
         alignments[endOffset]!.endFrame,
         emissionsStart,
       )
@@ -577,12 +574,8 @@ export class Aligner {
 
         lastFoundWordEnd = alignments[endOffset]!.endFrame
 
-        const { position: start, audiofile } = this.frameToAudioPosition(
+        const { start, end, audiofile } = this.frameRangeToAudioRange(
           startFrame,
-          emissionsStart,
-        )
-
-        const { position: end } = this.frameToAudioPosition(
           alignments[endOffset]!.endFrame,
           emissionsStart,
         )
@@ -623,6 +616,26 @@ export class Aligner {
     }
 
     throw new Error(`Frame ${globalFrame} is beyond the end of the emissions`)
+  }
+
+  private frameRangeToAudioRange(
+    startFrame: number,
+    endFrame: number,
+    emissionsStart: number,
+  ): { start: number; end: number; audiofile: string } {
+    const { position: start, audiofile } = this.frameToAudioPosition(
+      startFrame,
+      emissionsStart,
+    )
+    const endPosition = this.frameToAudioPosition(endFrame, emissionsStart)
+    if (endPosition.audiofile === audiofile) {
+      return { start, end: endPosition.position, audiofile }
+    }
+    return {
+      start,
+      end: this.audioFileDurations[audiofile] ?? start,
+      audiofile,
+    }
   }
 
   private refineStartFrame(

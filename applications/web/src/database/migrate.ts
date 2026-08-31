@@ -92,6 +92,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "112_encrypt_secrets.sql": (
     await import("./migrations/112_encrypt_secrets.sql")
   ).default,
+  "115_alignment_overrides_ignored.sql": (
+    await import("./migrations/115_alignment_overrides_ignored.sql")
+  ).default,
 }
 
 async function isFirstStartup() {

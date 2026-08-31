@@ -8197,7 +8197,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hono/node-server@npm:^1.19.9 || ^2.0.5":
+"@hono/node-server@npm:^1.19.9 || ^2.0.5, @hono/node-server@npm:^2.1.1":
   version: 2.1.1
   resolution: "@hono/node-server@npm:2.1.1"
   peerDependencies:
@@ -15732,6 +15732,7 @@ __metadata:
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.994.0"
     "@aws-sdk/client-transcribe": "npm:^3.994.0"
+    "@hono/node-server": "npm:^2.1.1"
     "@huggingface/transformers": "npm:^4.2.0"
     "@robingenz/zli": "npm:^0.2.0"
     "@storyteller-platform/eslint": "workspace:*"
@@ -15748,6 +15749,7 @@ __metadata:
     eslint: "npm:^8.0.0"
     ffmpeg-stream: "npm:^1.0.1"
     fs-extra: "npm:~11.3.0"
+    hono: "npm:^4.13.5"
     lodash.merge: "npm:^4.6.2"
     microsoft-cognitiveservices-speech-sdk: "npm:~1.44.0"
     openai: "npm:~4.103.0"
@@ -29184,6 +29186,13 @@ __metadata:
   version: 4.13.2
   resolution: "hono@npm:4.13.2"
   checksum: 10c0/063daaa596bfb1ed3a4dc523a9f47725cf8d56e0918c21a241161f6f1996229f5525bf0f70d6b15cc28912720ddde519584eeb06fb92730a66f01e39faba8131
+  languageName: node
+  linkType: hard
+
+"hono@npm:^4.13.5":
+  version: 4.13.5
+  resolution: "hono@npm:4.13.5"
+  checksum: 10c0/c4ec94e9d6fdefbdfc011b3f06a201ed134c38c8db77fb65ef7282ef445526ce188ce3f80a2f2638ad30d93bb2a03e43bb34ed254a82b8e82011e5d7e0dc02ba
   languageName: node
   linkType: hard
 

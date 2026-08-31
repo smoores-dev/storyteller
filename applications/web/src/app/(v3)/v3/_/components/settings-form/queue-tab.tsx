@@ -407,7 +407,7 @@ function JobItem({
           <StatusBadge status={job.status} />
           {job.status === "DONE" && job.alignmentGrade && job.bookUuid && (
             <V3Link
-              href={`/books/${job.bookUuid}/alignment`}
+              href={`/books/${job.bookUuid}?report=true`}
               className="inline-flex items-center gap-1"
             >
               <GradePill grade={job.alignmentGrade} />
@@ -519,7 +519,7 @@ function JobItem({
             className="size-7"
             aria-label={t("actions.alignmentReport")}
             tooltip={t("actions.alignmentReport")}
-            render={<V3Link href={`/books/${job.bookUuid}/alignment`} />}
+            render={<V3Link href={`/books/${job.bookUuid}?report=true`} />}
           >
             <icon.FileText className="size-4" />
           </TooltipButton>

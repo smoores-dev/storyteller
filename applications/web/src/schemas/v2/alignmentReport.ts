@@ -3,83 +3,123 @@ import z from "zod"
 import { ALIGNMENT_GRADES } from "@/fields"
 import { uuidv4 } from "@/schemas/uuid"
 
-export const ReportAudioFileSchemaV2 = z.object({
-  filepath: z.string(),
-  title: z.string().nullable(),
-  duration: z.number().nullable(),
-  start: z.number(),
-  end: z.number(),
-})
-
-export const ReportFlagSchemaV2 = z.object({
-  label: z.string(),
-  tone: z.enum(["poor", "moderate", "good", "info"]),
-})
-
 export const SentenceContextSchemaV2 = z.object({
   prevSentence: z.string().nullable(),
   matchedSentence: z.string(),
   nextSentence: z.string().nullable(),
 })
 
-export const ReportChapterRowSchemaV2 = z.object({
-  href: z.string(),
-  label: z.string().meta({
-    description:
-      "Resolved chapter title, or a prefix-stripped filename fallback.",
-  }),
-  title: z.string().nullable(),
-  audioFiles: z.array(ReportAudioFileSchemaV2),
-  chapterSentenceCount: z.number(),
-  alignedSentenceCount: z.number(),
-  coverage: z.number().nullable().meta({
-    description:
-      "aligned / total, 0..1; null when the chapter has no sentence data.",
-  }),
-  delta: z.number().meta({
-    description: "Unmatched sentence count and its share of the chapter.",
-  }),
-  deltaPct: z.number(),
-  flagged: z.boolean(),
-  flags: z.array(ReportFlagSchemaV2),
-  firstMatchedSentenceId: z.number(),
-  lastMatchedSentenceId: z.number(),
-  firstMatchedSentenceContext: SentenceContextSchemaV2,
-  lastMatchedSentenceContext: SentenceContextSchemaV2,
-  transcriptionContext: z
-    .object({
-      before: z.string(),
-      after: z.string(),
-    })
-    .optional(),
-  endTranscriptionContext: z
-    .object({
-      before: z.string(),
-      after: z.string(),
-    })
-    .optional(),
-  markedOk: z.boolean().meta({
-    description: "This chapter is fine as-is.",
-  }),
-  excludedFromScore: z
-    .boolean()
-    .meta({ description: "Left out of th escore/grade math." }),
+export const TranscriptionContextSchemaV2 = z.object({
+  before: z.string(),
+  after: z.string(),
 })
 
-export const ReportUnalignedChapterSchemaV2 = z.object({
-  href: z.string(),
-  label: z.string(),
-  reason: z.string(),
-  preview: z.string().nullable(),
-  intended: z.boolean(),
-})
+export const ReportRangeToneSchemaV2 = z.enum(["good", "moderate", "poor"])
 
-export const ReportUnalignedAudioSchemaV2 = z.object({
+export const ReportChapterAudioSchemaV2 = z.object({
+  name: z.string().meta({ description: "The audio file's basename." }),
   filepath: z.string(),
+  start: z.number(),
+  end: z.number(),
+  seconds: z.number(),
+  sharedWith: z.array(
+    z.object({
+      href: z.string(),
+      label: z.string(),
+      role: z.enum(["before", "after"]),
+    }),
+  ),
+})
+
+export const ReportChapterItemSchemaV2 = z.object({
+  kind: z.literal("chapter"),
+  href: z.string(),
+  spineIndex: z.number(),
+  label: z.string().meta({
+    description: "Resolved chapter title, or the href stem as a fallback.",
+  }),
   title: z.string().nullable(),
+  score: z.number().meta({ description: "The aligner's 0-100 chapter score." }),
+  alignedSentenceCount: z.number(),
+  chapterSentenceCount: z.number(),
+  missing: z.number(),
+  audio: z.array(ReportChapterAudioSchemaV2),
+  audioSeconds: z.number(),
+  durationSuspicious: z.boolean(),
+  status: z.enum(["ok", "missing", "no-audio", "range"]),
+  needsLook: z.boolean(),
+  ignored: z.boolean(),
+  firstMatch: SentenceContextSchemaV2,
+  lastMatch: SentenceContextSchemaV2,
+  transcriptionContext: TranscriptionContextSchemaV2.optional(),
+  endTranscriptionContext: TranscriptionContextSchemaV2.optional(),
+})
+
+export const ReportUnalignedItemSchemaV2 = z.object({
+  kind: z.literal("unaligned"),
+  href: z.string(),
+  spineIndex: z.number().nullable(),
+  label: z.string(),
+  reason: z.enum(["not-found", "too-short", "is-nav", "no-text"]),
+  chapterSentenceCount: z.number().nullable(),
+  preview: z.string().nullable(),
+  inBody: z.boolean().meta({
+    description:
+      "The chapter sits between the first and last matched chapter of the spine.",
+  }),
+  hint: z
+    .enum([
+      "front-matter",
+      "part-title",
+      "promo",
+      "after-last-match",
+      "before-first-match",
+    ])
+    .nullable(),
+  needsLook: z.boolean(),
+  ignored: z.boolean(),
+})
+
+export const ReportSpineItemSchemaV2 = z.discriminatedUnion("kind", [
+  ReportChapterItemSchemaV2,
+  ReportUnalignedItemSchemaV2,
+])
+
+export const ReportStripFileSchemaV2 = z.object({
+  name: z.string(),
+  filepath: z.string(),
   duration: z.number().nullable(),
-  transcription: z.string().nullable(),
-  excluded: z.boolean(),
+  placed: z.boolean(),
+  ignored: z.boolean(),
+  ranges: z.array(
+    z.object({
+      start: z.number(),
+      end: z.number(),
+      href: z.string(),
+      label: z.string(),
+      tone: ReportRangeToneSchemaV2,
+    }),
+  ),
+  between: z.object({
+    before: z.string().nullable(),
+    after: z.string().nullable(),
+  }),
+})
+
+export const AlignmentReportSummarySchemaV2 = z.object({
+  grade: z.enum(ALIGNMENT_GRADES),
+  band: z.number().meta({ description: "0 is the best band, 6 the worst." }),
+  score: z.number().nullable(),
+  sentencesAligned: z.number(),
+  sentencesTotal: z.number(),
+  audioPlacedSeconds: z.number(),
+  audioTotalSeconds: z.number(),
+  needsLook: z.number(),
+  ignored: z.number(),
+  notFoundBody: z.number(),
+  noAudio: z.number(),
+  looseAudio: z.number(),
+  chapters: z.number(),
 })
 
 export const AlignmentReportViewSchemaV2 = z.object({
@@ -88,36 +128,17 @@ export const AlignmentReportViewSchemaV2 = z.object({
   reportUuid: uuidv4,
   jobUuid: uuidv4.nullable(),
   createdAt: z.string(),
-  summary: z.object({
-    grade: z.enum(ALIGNMENT_GRADES),
-    score: z.number().nullable(),
-    chapters: z.number(),
-    missingSentences: z.number(),
-    mutedChapters: z.number(),
-    failedChapters: z.number(),
-    unalignedAudio: z.number(),
-  }),
-  totalAudioDuration: z.number(),
-  alignedAudioDuration: z.number(),
-  totalSentences: z.number(),
-  alignedSentences: z.number(),
-  significantChapters: z.number(),
-  chapters: z.array(ReportChapterRowSchemaV2),
-  unalignedChapters: z.array(ReportUnalignedChapterSchemaV2),
-  unalignedAudioFiles: z.array(ReportUnalignedAudioSchemaV2),
+  summary: AlignmentReportSummarySchemaV2,
+  items: z.array(ReportSpineItemSchemaV2),
+  audioFiles: z.array(ReportStripFileSchemaV2),
 })
 
-export const AlignmentChapterOverrideSchemaV2 = z.object({
-  excludeFromScore: z.boolean().optional(),
-  markedOk: z.boolean().optional(),
+export const AlignmentIgnoreSchemaV2 = z.object({
+  ignored: z.boolean().optional(),
 })
 
 export const AlignmentOverridesSchemaV2 = z.object({
-  chapters: z.record(z.string(), AlignmentChapterOverrideSchemaV2),
-  unalignedChapters: z
-    .record(z.string(), z.object({ intended: z.boolean().optional() }))
-    .optional(),
-  audioFiles: z
-    .record(z.string(), z.object({ excluded: z.boolean().optional() }))
-    .optional(),
+  chapters: z.record(z.string(), AlignmentIgnoreSchemaV2).optional(),
+  unalignedChapters: z.record(z.string(), AlignmentIgnoreSchemaV2).optional(),
+  audioFiles: z.record(z.string(), AlignmentIgnoreSchemaV2).optional(),
 })

@@ -115,6 +115,10 @@ import {
   IconSettings,
   IconSettingsUp,
   IconShield,
+  IconRewindForward10,
+  IconRewindBackward10,
+  IconPlayerSkipForward,
+  IconPlayerSkipBack,
   IconSortAscending,
   IconSortAscendingLetters,
   IconSortAscendingNumbers,
@@ -320,3 +324,8 @@ export const LightMode = /*#__PURE__*/ styled(IconSun)
 export const System = /*#__PURE__*/ styled(IconDeviceLaptop)
 export const Star = /*#__PURE__*/ styled(IconStar)
 export const LibraryDefault = /*#__PURE__*/ styled(IconHomeCog)
+
+export const PlayerTrackForward = /*#__PURE__*/ styled(IconPlayerSkipForward)
+export const PlayerTrackBack = /*#__PURE__*/ styled(IconPlayerSkipBack)
+export const PlayerSkipForward10 = /*#__PURE__*/ styled(IconRewindForward10)
+export const PlayerSkipBack10 = /*#__PURE__*/ styled(IconRewindBackward10)

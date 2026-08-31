@@ -480,7 +480,7 @@ export function BookTable({
               <button
                 type="button"
                 className={cn(
-                  "text-muted-foreground flex min-w-0 cursor-pointer items-center gap-0.5 truncate text-xs font-medium tracking-wider uppercase",
+                  "text-muted-foreground flex min-w-0 cursor-pointer items-center gap-0.5 truncate text-[11px] font-medium tracking-wider uppercase",
                   sortField === "title" && "text-foreground",
                   sortField !== "title" && "hover:text-foreground",
                 )}
@@ -849,7 +849,7 @@ function BookTableHeader({
         <button
           type="button"
           className={cn(
-            "text-muted-foreground hover:text-foreground flex min-w-0 grow cursor-pointer items-center justify-end gap-0.5 truncate text-xs font-medium tracking-wider uppercase",
+            "text-muted-foreground hover:text-foreground flex min-w-0 grow cursor-pointer items-center justify-end gap-0.5 truncate text-[11px] font-medium tracking-wider uppercase",
             isActive && "text-foreground",
           )}
           aria-label={`Sort by ${label}`}

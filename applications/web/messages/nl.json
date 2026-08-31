@@ -1585,6 +1585,114 @@
     "importBooksTitle": "Importeer boeken van server",
     "importBooksDescription": "Kies EPUB- of audiobestanden op de server om als nieuwe boeken te importeren."
   },
+  "AlignmentReport": {
+    "title": "Uitlijnrapport",
+    "loading": "Rapport laden…",
+    "notAvailable": "Voor dit boek is geen uitlijnrapport beschikbaar.",
+    "untitled": "Zonder titel",
+    "back": "Terug",
+    "close": "Sluiten",
+    "openFullPage": "Op volledige pagina openen",
+    "openBook": "Boek",
+    "createdByJob": "Gemaakt {relativeTime}",
+    "lastGraded": "Laatst beoordeeld op {date}",
+    "ignored": "Genegeerd",
+    "verdict": {
+      "excellent": "Uitstekend uitgelijnd",
+      "strong": "Sterk uitgelijnd",
+      "good": "Goed uitgelijnd",
+      "fair": "Redelijk uitgelijnd",
+      "rough": "Ruw uitgelijnd",
+      "patchy": "Rommelig uitgelijnd",
+      "failed": "Uitlijnen mislukt",
+      "score": "Gewogen score {score} over {sentences, number} zinnen.",
+      "noScore": "Niets uit het ebook kwam overeen met de opname.",
+      "notFound": "{count, plural, one {# hoofdstuk in het boek is niet gevonden.} other {# hoofdstukken in het boek zijn niet gevonden.}}",
+      "looseAudio": "{count, plural, one {# audiobestand is niet geplaatst.} other {# audiobestanden zijn niet geplaatst.}}",
+      "ignored": "{count, plural, one {# hoofdstuk wordt genegeerd.} other {# hoofdstukken worden genegeerd.}}"
+    },
+    "stats": {
+      "score": "Score",
+      "scoreSub": "gewogen naar zinnen",
+      "sentences": "Zinnen",
+      "audio": "Audio geplaatst",
+      "audioOf": "van {total}",
+      "filesLoose": "{count, plural, one {# bestand los} other {# bestanden los}}",
+      "allPlaced": "alles geplaatst",
+      "needsLook": "Nakijken",
+      "needsNoAudio": "{count, number} zonder audio",
+      "needsNotFound": "{count, number} niet gevonden"
+    },
+    "table": {
+      "needsLookOnly": "Alleen nakijken",
+      "selectAll": "Alle rijen selecteren",
+      "rangeSuspicious": "bereik?",
+      "columns": {
+        "chapter": "Hoofdstuk",
+        "score": "Score",
+        "sentences": "Zinnen",
+        "audio": "Audio",
+        "length": "Duur",
+        "status": "Status"
+      }
+    },
+    "bulk": {
+      "selected": "{count, plural, one {# geselecteerd} other {# geselecteerd}}",
+      "playInOrder": "Op volgorde afspelen",
+      "clear": "Selectie wissen"
+    },
+    "actions": {
+      "menu": "Rijopties",
+      "ignore": "Negeren",
+      "unignore": "Niet meer negeren"
+    },
+    "reason": {
+      "not-found": "niet gevonden",
+      "too-short": "te kort",
+      "is-nav": "navigatie",
+      "no-text": "geen tekst"
+    },
+    "hint": {
+      "front-matter": "voorwerk",
+      "part-title": "deeltitel",
+      "promo": "promotie",
+      "after-last-match": "na de laatste match",
+      "before-first-match": "voor de eerste match"
+    },
+    "status": {
+      "missing": "zinnen ontbreken",
+      "no-audio": "geen audio",
+      "range": "audio lijkt te kort"
+    },
+    "detail": {
+      "firstMatch": "Eerste match",
+      "lastMatch": "Laatste match",
+      "noAudioFiles": "In dit hoofdstuk is geen audio geplaatst.",
+      "sharedBefore": "ook {label}",
+      "sharedAfter": "daarna {label}"
+    },
+    "loose": {
+      "title": "Audio niet geplaatst",
+      "between": "{before} → {after}",
+      "beforeFirst": "voor {label}",
+      "afterLast": "na {label}",
+      "notOnDisk": "niet op schijf"
+    },
+    "marks": {
+      "score": "% zinnen uitgelijnd",
+      "unalignedChapters": "Niet-uitgelijnde hoofdstukken"
+    }
+  },
+  "Player": {
+    "label": "Audiospeler",
+    "play": "Afspelen",
+    "pause": "Pauzeren",
+    "back10": "10 seconden terug",
+    "forward10": "10 seconden vooruit",
+    "wholeFile": "Hele bestand",
+    "speed": "Afspeelsnelheid",
+    "close": "Speler sluiten"
+  },
   "Common": {
     "Nouns": {
       "ebook": "{count, plural, one {Ebook} other {Ebooks}}",
