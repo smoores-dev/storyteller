@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
 import {
@@ -23,6 +24,7 @@ import {
   resolveCoverColors,
 } from "@v3/_/components/books/coverSwatches"
 import { useTranslation } from "@v3/_/hooks/use-translation"
+import { useUnsavedChangesGuard } from "@v3/_/hooks/use-unsaved-changes"
 import { apiErrorMessage } from "@v3/_/lib/api-error"
 
 import { type Role } from "@/components/books/edit/marcRelators"
@@ -309,6 +311,28 @@ export function BookFormProvider({
       })
     }
   }, [errors])
+
+  const c = useTranslation("Common.actions")
+  const guardRef = useRef({ isDirty, saveAndClose, discard, t, c })
+  guardRef.current = { isDirty, saveAndClose, discard, t, c }
+
+  const guard = useMemo(
+    () => ({
+      isDirty: () => guardRef.current.isDirty,
+      save: () => guardRef.current.saveAndClose(),
+      discard: () => {
+        guardRef.current.discard()
+      },
+      labels: () => ({
+        title: guardRef.current.t("unsavedChanges.title"),
+        description: guardRef.current.t("unsavedChanges.description"),
+        save: guardRef.current.c("save"),
+        discard: guardRef.current.c("discard"),
+      }),
+    }),
+    [],
+  )
+  useUnsavedChangesGuard(guard)
 
   const contextValue = useMemo(
     () => ({

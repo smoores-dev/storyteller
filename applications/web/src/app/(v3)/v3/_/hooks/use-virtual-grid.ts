@@ -106,7 +106,9 @@ function metricsForColumns(
   const inner = Math.max(0, width - g.padX)
   const safeCols = Math.max(1, cols)
   let colWidth = Math.max(0, (inner - g.gapX * (safeCols - 1)) / safeCols)
-  if (itemCount < safeCols) colWidth = Math.min(colWidth, g.minColumnWidth)
+  if (itemCount < safeCols) {
+    colWidth = Math.min(colWidth, g.minColumnWidth)
+  }
   const rowHeight = g.rowHeightForColumnWidth(colWidth)
   return { cols: safeCols, colWidth, rowHeight, step: rowHeight + g.gapY }
 }
@@ -117,7 +119,9 @@ function totalHeightFor(
   g: VirtualGridGeometry,
 ): number {
   const rows = m.cols > 0 ? Math.ceil(count / m.cols) : 0
-  if (rows === 0) return 0
+  if (rows === 0) {
+    return 0
+  }
   return g.padY * 2 + rows * m.rowHeight + (rows - 1) * g.gapY
 }
 
@@ -297,7 +301,9 @@ export function useVirtualGrid(options: UseVirtualGridOptions): VirtualGrid {
   const updateRange = useCallback(
     (growOnly?: boolean) => {
       const scroller = scrollElRef.current
-      if (!scroller) return undefined
+      if (!scroller) {
+        return undefined
+      }
       const g = geometryRef.current
       const cols =
         appliedColsRef.current || metricsFor(widthRef.current, g).cols
@@ -343,21 +349,28 @@ export function useVirtualGrid(options: UseVirtualGridOptions): VirtualGrid {
       oldScrollTop: number,
       newScrollTop: number,
     ) => {
-      if (!animateRef.current || reducedRef.current) return
+      if (!animateRef.current || reducedRef.current) {
+        return
+      }
       const grid = gridRef.current
-      if (!grid || oldM.cols === 0) return
+      if (!grid || oldM.cols === 0) {
+        return
+      }
       const g = geometryRef.current
       const duration = liveResizeRef.current
         ? Math.min(flipDurationRef.current, LIVE_RESIZE_FLIP_DURATION)
         : flipDurationRef.current
       const nodes = grid.querySelectorAll<HTMLElement>("[data-index]")
+
       for (const node of nodes) {
         const index = Number(node.dataset["index"])
         const from = cellViewport(index, oldM, g, containerTop, oldScrollTop)
         const to = cellViewport(index, newM, g, containerTop, newScrollTop)
         const dx = from.left - to.left
         const dy = from.top - to.top
-        if (Math.abs(dx) + Math.abs(dy) < 1) continue
+        if (Math.abs(dx) + Math.abs(dy) < 1) {
+          continue
+        }
 
         flipAnims.current.get(node)?.cancel()
         const anim = node.animate(

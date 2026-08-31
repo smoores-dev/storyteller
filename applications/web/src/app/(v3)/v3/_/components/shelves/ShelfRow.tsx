@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { type ReactNode, useCallback, useRef } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
@@ -37,15 +38,23 @@ export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
 
   const { bookOpenTarget } = useUserPreferences()
   const { selectedBookUuid, setSelectedBookUuid } = useBookInSidePanel()
+
+  const router = useRouter()
+
   const handleBookClick = useCallback(
     (book: BookWithRelations) => {
+      if (bookOpenTarget === "page") {
+        router.push(`/books/${book.uuid}`)
+        return
+      }
+
       if (selectedBookUuid === book.uuid) {
         void setSelectedBookUuid(null)
       } else {
         void setSelectedBookUuid(book.uuid)
       }
     },
-    [selectedBookUuid, setSelectedBookUuid],
+    [selectedBookUuid, setSelectedBookUuid, router, bookOpenTarget],
   )
 
   const scrollLeft = () => {
@@ -133,7 +142,7 @@ export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
             <BookCard
               book={book}
               displayFields={[displayField ?? "authors", "title"]}
-              {...(bookOpenTarget === "panel" && { onClick: handleBookClick })}
+              onClick={handleBookClick}
             />
           </div>
         ))}

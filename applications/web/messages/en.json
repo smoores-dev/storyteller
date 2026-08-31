@@ -1515,6 +1515,10 @@
       "move": "Move section",
       "moreByAuthor": "More by author",
       "moreInSeries": "More in series"
+    },
+    "unsavedChanges": {
+      "title": "You have unsaved changes",
+      "description": "Save or discard them before leaving this book."
     }
   },
   "Common": {

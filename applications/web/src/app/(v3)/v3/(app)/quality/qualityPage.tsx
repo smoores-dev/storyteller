@@ -15,6 +15,7 @@ const ALIGNMENT_DISPLAY_FIELDS: DisplayField[] = [
   "alignmentScore",
   "alignmentMissingSentences",
   "alignmentMutedChapters",
+  "alignedAt",
 ]
 const FORCE_DISPLAY_MODE: ForceDisplayMode = {
   layout: "list",

@@ -1,14 +1,7 @@
 "use client"
 
 import { parseAsString, useQueryState } from "nuqs"
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import {
   BookListPage,
@@ -54,9 +47,6 @@ type LibraryPageProps = {
   initialSelectedItem?: string
   noneLabel?: string
   itemLabels?: Record<string, string>
-
-  beforeFilters?: ReactNode
-  afterFilters?: ReactNode
   bookClickMode?: "panel" | "report"
   contentClassName?: string
   emptyMessage?: string
@@ -72,8 +62,6 @@ export function LibraryPage({
   initialSelectedItem,
   noneLabel,
   itemLabels,
-  beforeFilters,
-  afterFilters,
   bookClickMode,
   contentClassName,
   emptyMessage,
@@ -381,8 +369,6 @@ export function LibraryPage({
         }
         sidebar={sidebar}
         description={selectedDescription}
-        beforeFilters={beforeFilters}
-        afterFilters={afterFilters}
         bookClickMode={bookClickMode}
         contentClassName={contentClassName}
         listDisplayFields={listDisplayFields}

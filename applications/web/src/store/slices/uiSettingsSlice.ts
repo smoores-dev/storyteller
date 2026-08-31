@@ -48,6 +48,8 @@ export type UISettings = {
   hiddenDetailSections: string[]
   detailCoverWidth: number | null
 
+  processingToastLocation: "bottom-right" | "sidebar"
+
   theme: "light" | "dark" | "system"
 }
 
@@ -94,6 +96,7 @@ const defaults: UISettings = {
   detailCoverWidth: null,
   theme: "system",
   defaultSorts: {},
+  processingToastLocation: "bottom-right",
 }
 
 export { defaults as UI_SETTINGS_DEFAULTS }
@@ -334,6 +337,14 @@ export const uiSettingsSlice = createSlice({
       )
       saveToCookie(state)
     },
+
+    setProcessingToastLocation: (
+      state,
+      action: PayloadAction<"bottom-right" | "sidebar">,
+    ) => {
+      state.processingToastLocation = action.payload
+      saveToCookie(state)
+    },
   },
 })
 
@@ -407,3 +418,7 @@ export const selectTheme = (state: { uiSettings: UISettings }) =>
 export const selectDefaultSorts = (state: { uiSettings: UISettings }) => {
   return state.uiSettings.defaultSorts
 }
+
+export const selectProcessingToastLocation = (state: {
+  uiSettings: UISettings
+}) => state.uiSettings.processingToastLocation
