@@ -98,7 +98,7 @@ export async function emit(
 
     const filepath = join(input, filename)
     const emissionName = basename(filename, extname(filename))
-    const emissionFilepath = join(output, `${emissionName}.json`)
+    const emissionFilepath = join(output, `${emissionName}.emissions`)
     const identityFilepath = join(output, `${emissionName}.identity`)
 
     const emissionSize = await stat(emissionFilepath).then(
