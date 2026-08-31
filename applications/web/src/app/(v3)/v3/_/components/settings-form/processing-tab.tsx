@@ -56,6 +56,7 @@ import {
 } from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import { cn } from "@/cn"
+import { type ReadaloudLocationType } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
 import { useClearBooksCacheMutation } from "@/store/api"
@@ -1197,7 +1198,7 @@ function ReadaloudSection() {
     { value: "SIBLING_FOLDER", label: tr("locationTypeSiblingFolder") },
     { value: "CUSTOM_FOLDER", label: tr("locationTypeCustomFolder") },
     { value: "INTERNAL", label: tr("locationTypeInternal") },
-  ]
+  ] as const satisfies { value: ReadaloudLocationType; label: string }[]
 
   return (
     <SettingsSection tab="processing" section="readaloud">

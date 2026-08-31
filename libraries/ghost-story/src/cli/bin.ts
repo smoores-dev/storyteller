@@ -46,7 +46,7 @@ import {
 const recognitionEngineSchema = z.enum(RECOGNITION_ENGINES)
 const whisperModelSchema = z.enum(WHISPER_MODELS)
 const buildVariantSchema = z.enum(BUILD_VARIANTS)
-const wav2vec2ModelSchema = z.enum(WAV2VEC2_MODELS)
+// const wav2vec2ModelSchema = z.enum([WAV2VEC2_MODEL])
 const wav2vec2DeviceSchema = z.enum(WAV2VEC2_DEVICES)
 const wav2vec2DtypeSchema = z.enum(WAV2VEC2_DTYPES)
 
@@ -402,68 +402,68 @@ const serverCommand = defineCommand({
   },
 })
 
-const emitServerCommand = defineCommand({
-  description: "Start a wav2vec2 CTC emission server",
-  options: defineOptions(
-    z.object({
-      model: wav2vec2ModelSchema
-        .default(DEFAULT_WAV2VEC2_MODEL)
-        .describe("Wav2Vec2 model"),
-      device: wav2vec2DeviceSchema
-        .default("auto")
-        .describe("Device to run inference on"),
-      dtype: wav2vec2DtypeSchema
-        .optional()
-        .describe("Weight precision. Defaults to fp16 on cuda, fp32 otherwise"),
-      host: z.string().default("0.0.0.0").describe("Host to bind to"),
-      port: z.coerce.number().default(8080).describe("Port to listen on"),
-      apiKey: z
-        .string()
-        .optional()
-        .describe("Bearer token required on every request"),
-    }),
-    { m: "model", p: "port", d: "device" },
-  ),
-  action: async (options) => {
-    const { startEmissionServer } = await import("../server/emissionServer.ts")
+// const emitServerCommand = defineCommand({
+//   description: "Start a wav2vec2 CTC emission server",
+//   options: defineOptions(
+//     z.object({
+//       model: wav2vec2ModelSchema
+//         .default(WAV2VEC2_MODEL)
+//         .describe("Wav2Vec2 model"),
+//       device: wav2vec2DeviceSchema
+//         .default("auto")
+//         .describe("Device to run inference on"),
+//       dtype: wav2vec2DtypeSchema
+//         .optional()
+//         .describe("Weight precision. Defaults to fp16 on cuda, fp32 otherwise"),
+//       host: z.string().default("0.0.0.0").describe("Host to bind to"),
+//       port: z.coerce.number().default(8080).describe("Port to listen on"),
+//       apiKey: z
+//         .string()
+//         .optional()
+//         .describe("Bearer token required on every request"),
+//     }),
+//     { m: "model", p: "port", d: "device" },
+//   ),
+//   action: async (options) => {
+//     const { startEmissionServer } = await import("../server/emissionServer.ts")
 
-    const variant = getConfiguredVariant() ?? getInstalledVariant()
-    const device = resolveWav2Vec2Device(options.device, variant)
-    const dtype = options.dtype ?? resolveWav2Vec2Dtype(device)
-    const apiKey = options.apiKey ?? process.env["GHOST_STORY_API_KEY"] ?? null
+//     const variant = getConfiguredVariant() ?? getInstalledVariant()
+//     const device = resolveWav2Vec2Device(options.device, variant)
+//     const dtype = options.dtype ?? resolveWav2Vec2Dtype(device)
+//     const apiKey = options.apiKey ?? process.env["GHOST_STORY_API_KEY"] ?? null
 
-    console.log("Setting up CTC emission server...")
-    console.log(`  Model: ${options.model}`)
-    console.log(`  Device: ${device}`)
-    console.log(`  Dtype: ${dtype}`)
-    console.log(`  Host: ${options.host}`)
-    console.log(`  Port: ${options.port}`)
-    console.log(`  Auth: ${apiKey ? "bearer token" : "none"}`)
-    console.log("")
-    console.log("Loading model, this can take a while on a cold cache...")
+//     console.log("Setting up CTC emission server...")
+//     console.log(`  Model: ${options.model}`)
+//     console.log(`  Device: ${device}`)
+//     console.log(`  Dtype: ${dtype}`)
+//     console.log(`  Host: ${options.host}`)
+//     console.log(`  Port: ${options.port}`)
+//     console.log(`  Auth: ${apiKey ? "bearer token" : "none"}`)
+//     console.log("")
+//     console.log("Loading model, this can take a while on a cold cache...")
 
-    const server = await startEmissionServer({
-      model: options.model,
-      device,
-      dtype,
-      host: options.host,
-      port: options.port,
-      apiKey,
-    })
+//     const server = await startEmissionServer({
+//       model: options.model,
+//       device,
+//       dtype,
+//       host: options.host,
+//       port: options.port,
+//       apiKey,
+//     })
 
-    console.log(`Listening on http://${options.host}:${options.port}`)
+//     console.log(`Listening on http://${options.host}:${options.port}`)
 
-    const shutdown = () => {
-      console.log("\nShutting down emission server...")
-      server.close(() => {
-        process.exit(0)
-      })
-    }
+//     const shutdown = () => {
+//       console.log("\nShutting down emission server...")
+//       server.close(() => {
+//         process.exit(0)
+//       })
+//     }
 
-    process.on("SIGINT", shutdown)
-    process.on("SIGTERM", shutdown)
-  },
-})
+//     process.on("SIGINT", shutdown)
+//     process.on("SIGTERM", shutdown)
+//   },
+// })
 
 const vadCommand = defineCommand({
   description: "Run voice activity detection on an audio file",
@@ -545,7 +545,7 @@ const config = defineConfig({
     status: statusCommand,
     transcribe: transcribeCommand,
     server: serverCommand,
-    "emit-server": emitServerCommand,
+    // "emit-server": emitServerCommand,
     vad: vadCommand,
   },
   defaultCommand: statusCommand,
