@@ -22,8 +22,11 @@ publish-web-amd64:
   extends: .publish-web-base
   tags: [saas-linux-large-amd64]
   script:
-    - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg
-      BASE_TAG=main --push -f Dockerfile --cache-from
+    # TODO: remove --provenance=false --sbom=false once
+    # https://gitlab.com/gitlab-org/container-registry/-/work_items/2375
+    - docker buildx build --provenance=false --sbom=false --build-arg
+      CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg BASE_TAG=main --push -f
+      Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64:latest,mode=max --tag
       $CI_REGISTRY_IMAGE/amd64:$CI_COMMIT_SHORT_SHA .
@@ -32,8 +35,9 @@ publish-web-arm64:
   extends: .publish-web-base
   tags: [saas-linux-large-arm64]
   script:
-    - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg
-      BASE_TAG=main --push -f Dockerfile --cache-from
+    - docker buildx build --provenance=false --sbom=false --build-arg
+      CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg BASE_TAG=main --push -f
+      Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-arm64:latest --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-arm64:latest,mode=max --tag
       $CI_REGISTRY_IMAGE/arm64:$CI_COMMIT_SHORT_SHA .
@@ -65,9 +69,9 @@ publish-web-gpu:
       - VARIANT: sycl
         BASE_TAG: sycl
   script:
-    - docker buildx build --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg
-      BASE_TAG=$BASE_TAG --build-arg WHISPER_VARIANT=linux-x64-$VARIANT --push
-      -f Dockerfile --cache-from
+    - docker buildx build --provenance=false --sbom=false --build-arg
+      CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg BASE_TAG=$BASE_TAG --build-arg
+      WHISPER_VARIANT=linux-x64-$VARIANT --push -f Dockerfile --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64-$VARIANT:latest
       --cache-to
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64-$VARIANT:latest,mode=max
