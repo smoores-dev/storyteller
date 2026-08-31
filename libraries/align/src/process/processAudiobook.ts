@@ -70,7 +70,7 @@ export async function processAudiobook(
   await Promise.all(
     filenames
       .map(async (filename, index) => {
-        if (signal.aborted) throw new Error("Aborted")
+        signal.throwIfAborted()
 
         const filepath = join(input, filename)
 

@@ -44,6 +44,9 @@ import type processBook from "./worker"
 export type RestartMode = false | "full" | "transcription" | "sync"
 
 const MAX_CONCURRENT = 1
+const WORKER_STOP_GRACE_MS = 30_000
+
+export type ControlMessage = { type: "abort" }
 
 /**
  * Next.js app directory seems to have a bug where, in production,
@@ -224,6 +227,22 @@ async function runJob(job: Job): Promise<void> {
 
   const { port1, port2 } = new MessageChannel()
 
+  const terminate = new AbortController()
+  let terminateTimer: NodeJS.Timeout | undefined
+  abortController.signal.addEventListener(
+    "abort",
+    () => {
+      port2.postMessage({ type: "abort" } satisfies ControlMessage)
+      terminateTimer = setTimeout(() => {
+        logger.warn(
+          `Worker for job ${job.uuid} did not stop within ${WORKER_STOP_GRACE_MS}ms, terminating it`,
+        )
+        terminate.abort()
+      }, WORKER_STOP_GRACE_MS)
+    },
+    { once: true },
+  )
+
   port2.on(
     "message",
     async (message: {
@@ -266,7 +285,7 @@ async function runJob(job: Job): Promise<void> {
         config: job.config,
         port: port1,
       } satisfies Parameters<typeof processBook>[0],
-      { transferList: [port1], signal: abortController.signal },
+      { transferList: [port1], signal: terminate.signal },
     )) as JobStats | undefined
 
     const finished = await getBookOrThrow(bookUuid)
@@ -313,7 +332,10 @@ async function runJob(job: Job): Promise<void> {
       stats: stats ?? undefined,
     })
   } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
+    if (
+      abortController.signal.aborted ||
+      (err instanceof Error && err.name === "AbortError")
+    ) {
       const intent = abortIntents.get(job.uuid) ?? "cancel"
       const current = await getBookOrThrow(bookUuid)
       const stage = current.readaloud?.currentStage ?? "SPLIT_TRACKS"
@@ -356,6 +378,7 @@ async function runJob(job: Job): Promise<void> {
     logger.error(`Processing for job ${job.uuid} failed unexpectedly`)
     logger.error(err)
   } finally {
+    clearTimeout(terminateTimer)
     for (const fp of toSupress) releasePrefixAfterSettle(fp)
   }
 }

@@ -50,7 +50,7 @@ import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
 
-import type { RestartMode } from "./distributor"
+import type { ControlMessage, RestartMode } from "./distributor"
 import { type JobStats, buildJobStats } from "./jobStats"
 import type { RunConfig } from "./runConfig"
 
@@ -75,6 +75,14 @@ export default async function processBook({
   config: RunConfig | null
   port: MessagePort
 }): Promise<JobStats | undefined> {
+  const abort = new AbortController()
+  const { signal } = abort
+  port.on("message", (message: Partial<ControlMessage> | null) => {
+    if (message?.type === "abort") {
+      abort.abort(new DOMException("Processing stopped by user", "AbortError"))
+    }
+  })
+
   const processTiming = createTiming()
   processTiming.setMetadata("bookUuid", bookUuid)
   processTiming.setMetadata("restartMode", restart || "continue")
@@ -204,6 +212,8 @@ export default async function processBook({
     }
 
     try {
+      signal.throwIfAborted()
+
       if (stage === "SPLIT_TRACKS") {
         // clean stale files from previous runs to prevent mismatches
         // shame not to reuse stuff, but too easy to produce bugs if we do
@@ -225,6 +235,7 @@ export default async function processBook({
               },
               logger,
               onProgress,
+              signal,
             },
           ),
         )
@@ -250,6 +261,7 @@ export default async function processBook({
               // serverApiKey: settings.ctcServerApiKey,
               onProgress,
               logger,
+              signal,
             }),
           )
         } else {
@@ -285,6 +297,7 @@ export default async function processBook({
                 whisperServerApiKey: settings.whisperServerApiKey,
                 deepgramApiKey: settings.deepgramApiKey,
                 deepgramModel: settings.deepgramModel,
+                signal,
               },
             ),
           )
@@ -312,6 +325,8 @@ export default async function processBook({
               },
               logger,
             })
+
+            signal.throwIfAborted()
 
             if (settings.aligner === "ctc") {
               await ctcAlign(
@@ -417,6 +432,8 @@ export default async function processBook({
         })
       }
     } catch (e) {
+      if (signal.aborted) throw signal.reason
+
       logger.error({
         msg: `Encountered error while running task "${stage}" for book ${bookUuid}`,
         err: e,
