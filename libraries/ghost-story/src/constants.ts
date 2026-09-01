@@ -73,7 +73,7 @@ export type WhisperModel = (typeof WHISPER_MODELS)[number]
 export const WAV2VEC2_MODEL = "onnx-community/mms-300m-1130-forced-aligner-ONNX"
 export type Wav2Vec2Model = typeof WAV2VEC2_MODEL
 
-export const WAV2VEC2_DEVICES = ["auto", "cpu", "webgpu"] as const
+export const WAV2VEC2_DEVICES = ["auto", "cpu", "webgpu", "cuda"] as const
 export type Wav2Vec2Device = (typeof WAV2VEC2_DEVICES)[number]
 
 export const WAV2VEC2_SECONDS_PER_CHUNK = 25

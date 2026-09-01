@@ -16,6 +16,19 @@ rm cuda-keyring_1.1-1_all.deb
 
 apt-get update
 apt-get install -y --no-install-recommends "cuda-cudart-${CUDA_VERSION}" "libcublas-${CUDA_VERSION}"
+
+ORT_CUDA_VERSION="${ORT_CUDA_VERSION:-12-9}"
+case "$CUDA_VERSION" in
+  11-*) ;;
+  *)
+    apt-get install -y --no-install-recommends \
+      "cuda-cudart-${ORT_CUDA_VERSION}" \
+      "libcublas-${ORT_CUDA_VERSION}" \
+      "libcufft-${ORT_CUDA_VERSION}" \
+      "libcurand-${ORT_CUDA_VERSION}" \
+      libcudnn9-cuda-12
+    ;;
+esac
 rm -rf /var/lib/apt/lists/*
 
 # create symlink so /usr/local/cuda always points to the installed version

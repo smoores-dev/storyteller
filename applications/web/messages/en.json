@@ -853,7 +853,8 @@
             "ctcDevices": {
               "auto": "Auto",
               "cpu": "CPU",
-              "webgpu": "GPU (WebGPU)"
+              "webgpu": "GPU (WebGPU)",
+              "cuda": "GPU (CUDA)"
             }
           },
           "parallelization": {

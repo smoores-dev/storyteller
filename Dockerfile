@@ -39,6 +39,13 @@ COPY . .
 
 RUN cp docker-scripts/* ./scripts/
 
+ARG BASE_TAG
+RUN case "$BASE_TAG" in \
+      cuda-12*|cuda-13*) \
+        ONNXRUNTIME_NODE_INSTALL=cuda12 node node_modules/onnxruntime-node/script/install.js && \
+        rm -f node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime_providers_tensorrt.so ;; \
+    esac
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG CI_COMMIT_TAG
