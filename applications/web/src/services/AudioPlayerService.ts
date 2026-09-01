@@ -48,13 +48,8 @@ type AudioStateListener = (state: AudioState) => void
 
 export const READER_AUDIO_PLAYER_ID = "reader-audio-player" as const
 
-export const readerPlayer = () => {
-  const player = AudioPlayerService.getPlayer(READER_AUDIO_PLAYER_ID)
-  if (!player) {
-    throw new Error("Reader audio player not found")
-  }
-  return player
-}
+export const readerPlayer = () =>
+  AudioPlayerService.getOrCreate(READER_AUDIO_PLAYER_ID)
 
 export class AudioPlayer {
   readonly id: string
@@ -87,11 +82,14 @@ export class AudioPlayer {
 
   constructor(id: string) {
     // detect safari
-    this.isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    this.isSafari =
+      typeof navigator !== "undefined" &&
+      /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     this.id = id
   }
 
   initialize(element: HTMLAudioElement) {
+    if (this.audioElement === element) return
     this.audioElement = element
     this.setupEventHandlers()
   }
@@ -152,8 +150,13 @@ export class AudioPlayer {
         duration > 0 ? (currentTime / duration) * 100 : 0
 
       const end = this.getActiveTrack()?.end
-      if (end && currentTime >= end - 0.05) {
-        this.pause()
+      if (end != null && currentTime >= end - 0.05 && !this.audioElement.paused) {
+        if (this.state.trackIndex < this.playlist.length - 1) {
+          void this.skipToNext().then(() => this.play())
+        } else {
+          this.pause()
+        }
+        this.updateState({ currentTime })
         return
       }
 
@@ -266,6 +269,7 @@ export class AudioPlayer {
   }
 
   private setupMediaSession() {
+    if (typeof navigator === "undefined") return
     if (!("mediaSession" in navigator)) {
       if (typeof window !== "undefined") {
         console.warn("Media Session API not supported")
@@ -312,7 +316,8 @@ export class AudioPlayer {
   }
 
   private updateMediaSessionMetadata() {
-    if (!("mediaSession" in navigator)) return
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator))
+      return
 
     const track = this.getActiveTrack()
     if (!track) {
@@ -335,7 +340,8 @@ export class AudioPlayer {
   }
 
   private updateMediaSessionPositionState() {
-    if (!("mediaSession" in navigator)) return
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator))
+      return
     if (!this.audioElement) return
 
     const duration = this.state.duration
@@ -357,7 +363,8 @@ export class AudioPlayer {
   }
 
   private updateMediaSessionPlaybackState() {
-    if (!("mediaSession" in navigator)) return
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator))
+      return
     navigator.mediaSession.playbackState = this.state.playing
       ? "playing"
       : "paused"
@@ -369,21 +376,19 @@ export class AudioPlayer {
 
     const activeTrack = this.getActiveTrack()
     const { start, end } = activeTrack || {}
+    const from = start ?? 0
 
     if (
-      end &&
-      start &&
-      (this.audioElement.currentTime < start - 0.05 ||
-        this.audioElement.currentTime > end + 0.05)
+      end != null &&
+      (this.audioElement.currentTime < from - 0.05 ||
+        this.audioElement.currentTime >= end - 0.05)
     ) {
-      this.seekTo(start)
+      this.seekTo(from)
     }
 
     await this.audioElement.play()
     this.updateState({ playing: true })
-    if (!("mediaSession" in navigator)) {
-      this.setupMediaSession()
-    }
+    this.setupMediaSession()
 
     this.updateMediaSessionPlaybackState()
   }
@@ -413,17 +418,16 @@ export class AudioPlayer {
   setPlaybackRate(rate: number) {
     if (!this.audioElement) return
     this.audioElement.playbackRate = rate
+    this.updateState({ playbackRate: rate })
     this.updateMediaSessionPositionState()
   }
 
   seekTo(time: number) {
     if (!this.audioElement) return
-    const normalized = Math.min(
-      Math.max(0, time),
-      isNaN(this.audioElement.duration)
-        ? 1e11
-        : this.audioElement.duration || 0,
-    )
+    const duration = this.audioElement.duration
+    const ceiling =
+      Number.isFinite(duration) && duration > 0 ? duration : 1e11
+    const normalized = Math.min(Math.max(0, time), ceiling)
     this.audioElement.currentTime = normalized
     this.lastTimeUpdate = Date.now()
 
@@ -441,7 +445,7 @@ export class AudioPlayer {
     this.seekTo(this.audioElement.currentTime + step)
   }
 
-  async skip(trackIndex: number, startTime: number = 0) {
+  async skip(trackIndex: number, startTimeArg?: number) {
     if (trackIndex < 0 || trackIndex >= this.playlist.length) {
       console.error("Invalid track index", trackIndex)
       return
@@ -449,6 +453,8 @@ export class AudioPlayer {
 
     const track = this.playlist[trackIndex]
     if (!track || !this.audioElement) return
+
+    const startTime = startTimeArg ?? track.start ?? 0
 
     const isTrackDifferent =
       trackIndex !== this.state.trackIndex ||
@@ -490,8 +496,7 @@ export class AudioPlayer {
     }
   }
 
-  async skipToNext(startTime: number = 0) {
-    console.log("skipToNext", this.state.trackIndex)
+  async skipToNext(startTime?: number) {
     const nextIndex =
       this.state.trackIndex === this.playlist.length - 1
         ? 0
@@ -499,7 +504,7 @@ export class AudioPlayer {
     await this.skip(nextIndex, startTime)
   }
 
-  async skipToPrevious(startTime: number = 0) {
+  async skipToPrevious(startTime?: number) {
     if (this.audioElement && this.audioElement.currentTime > this.startMargin) {
       this.seekTo(0)
       return
@@ -515,13 +520,23 @@ export class AudioPlayer {
   async replacePlaylist(
     tracks: AudioTrack[],
     trackIndex: number = 0,
-    start: number = 0,
+    start?: number,
   ) {
     this.playlist = tracks
     if (tracks.length > 0) {
       await this.skip(trackIndex, start)
       this.updateMediaSessionMetadata()
+    } else {
+      this.updateState({ trackIndex: 0 })
     }
+  }
+
+  clearActiveTrackBounds() {
+    const track = this.getActiveTrack()
+    if (!track) return
+    delete track.start
+    delete track.end
+    this.updateState({})
   }
 
   getQueue() {
@@ -565,32 +580,29 @@ export class AudioPlayer {
   }
 }
 
-export class AudioPlayerService {
-  private static players: Map<string, AudioPlayer> = new Map([
-    [READER_AUDIO_PLAYER_ID, new AudioPlayer(READER_AUDIO_PLAYER_ID)],
-  ])
+const players = new Map<string, AudioPlayer>()
 
-  static initialize(element: HTMLAudioElement) {
+export const AudioPlayerService = {
+  getOrCreate(id: string) {
+    const existing = players.get(id)
+    if (existing) return existing
+    const player = new AudioPlayer(id)
+    players.set(id, player)
+    return player
+  },
+
+  initialize(element: HTMLAudioElement) {
     const elementId = element.id
     if (!elementId) {
       throw new Error("Audio element must have an id")
     }
 
-    const existingPlayer = this.getPlayer(elementId)
-    if (existingPlayer) {
-      console.log("Reinitializing existing player", elementId)
-      existingPlayer.initialize(element)
-
-      return existingPlayer
-    }
-
-    const player = new AudioPlayer(elementId)
-    this.players.set(elementId, player)
+    const player = this.getOrCreate(elementId)
     player.initialize(element)
     return player
-  }
+  },
 
-  static getPlayer(elementId: string) {
-    return this.players.get(elementId)
-  }
+  getPlayer(elementId: string) {
+    return players.get(elementId)
+  },
 }

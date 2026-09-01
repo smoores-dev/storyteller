@@ -81,7 +81,7 @@ export default async function AppLayout({
                   currentDataDir={DATA_DIR}
                 />
               )}
-              {children}
+              <div className="flex min-h-0 flex-1 flex-col">{children}</div>
             </SidebarInset>
           </FloatingBookPanelProvider>
         </EscapeCascadeProvider>

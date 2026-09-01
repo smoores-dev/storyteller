@@ -4,7 +4,6 @@ import { useMemo, useState } from "react"
 
 import { type Clip, PlayerDock, usePlayer } from "@v3/_/components/audio"
 import { Button } from "@v3/_/components/ui/button"
-import { ScrollArea } from "@v3/_/components/ui/scroll-area"
 import { V3Link } from "@v3/_/components/v3-link"
 import { cn } from "@v3/_/lib/utils"
 
@@ -40,7 +39,7 @@ export function AlignmentReportContent({
   const t = useTranslation("AlignmentReport")
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div className="relative flex min-h-full flex-col">
       {data ? (
         <ReportHeader
           view={data}
@@ -118,12 +117,12 @@ function ReportBody({ view }: { view: BookAlignmentReportView }) {
   return (
     <div className="flex flex-col gap-7 p-4">
       <Masthead view={view} />
-      {/* <BulkBar
+      <BulkBar
         view={view}
         selected={selected}
         ignore={ignore}
         onClear={clear}
-      /> */}
+      />
       <SpineTable
         bookUuid={view.bookUuid}
         items={items}
@@ -178,6 +177,7 @@ function BulkBar({
     if (!file.ignored) allIgnored = false
     clips.push({
       bookUuid: view.bookUuid,
+      path: file.filepath,
       name: file.name,
       label: file.name,
     })
@@ -462,20 +462,20 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
           : t("stats.allPlaced"),
       tone: summary.looseAudio > 0 ? "moderate" : "muted",
       percent:
-        summary.audioPlacedSeconds === null
-          ? null
-          : Math.round(
+        summary.audioTotalSeconds > 0
+          ? Math.round(
               (summary.audioPlacedSeconds / summary.audioTotalSeconds) * 100,
-            ),
+            )
+          : null,
     },
-    {
-      key: "needsLook",
-      label: t("stats.needsLook"),
-      value: `${summary.needsLook}`,
-      sub: needsLookParts.join(", "),
-      tone: summary.needsLook > 0 ? "moderate" : "muted",
-      percent: null,
-    },
+    // {
+    //   key: "needsLook",
+    //   label: t("stats.needsLook"),
+    //   value: `${summary.needsLook}`,
+    //   sub: needsLookParts.join(", "),
+    //   tone: summary.needsLook > 0 ? "moderate" : "muted",
+    //   percent: null,
+    // },
   ]
 
   return (
@@ -507,7 +507,7 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
         </div>
       </div>
 
-      <div className="bg-border grid grid-cols-2 gap-px border-t @sm/book:grid-cols-4">
+      <div className="bg-border grid grid-cols-3 gap-px border-t">
         {boxes.map((box) => (
           <div key={box.key} className="bg-card relative p-3.5">
             <div

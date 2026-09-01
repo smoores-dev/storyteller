@@ -236,7 +236,7 @@ function SpineRow({
           </div>
           {item.kind === "chapter" && item.audio.length > 0 && (
             <div
-              className="flex flex-wrap items-center gap-1"
+              className="w-fit shrink items-center gap-1"
               onClick={(event) => {
                 event.stopPropagation()
               }}

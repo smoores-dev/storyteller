@@ -10,19 +10,12 @@ import { cn } from "@v3/_/lib/utils"
 import * as icon from "@/icons"
 
 import { formatClock } from "./clip"
-import { ALIGNMENT_AUDIO_PLAYER_ID, usePlayer } from "./store"
-import { AudioPlayerService } from "@/services/AudioPlayerService"
+import { usePlayer } from "./store"
 
 const RATES = [1, 1.25, 1.5, 2]
 
 export function PlayerDock({ className }: { className?: string } = {}) {
   const t = useTranslation("Player")
-  const audioRef = useRef<HTMLAudioElement>(null)
-  useEffect(() => {
-    if (audioRef.current) {
-      AudioPlayerService.initialize(audioRef.current)
-    }
-  }, [])
 
   const {
     clip,
@@ -32,9 +25,10 @@ export function PlayerDock({ className }: { className?: string } = {}) {
     rate,
     toggle,
     seek,
-    setPlaybackRate,
-    play,
-    pause,
+    skip,
+    setRate,
+    wholeFile,
+    stop,
     unbounded,
   } = usePlayer()
   const dockRef = useRef<HTMLDivElement>(null)
@@ -56,19 +50,19 @@ export function PlayerDock({ className }: { className?: string } = {}) {
       }
       if (event.key === "ArrowLeft") {
         event.preventDefault()
-        seek(currentTime + 5)
+        skip(-5)
         return
       }
       if (event.key === "ArrowRight") {
         event.preventDefault()
-        seek(currentTime - 5)
+        skip(5)
       }
     }
     document.addEventListener("keydown", onKeyDown)
     return () => {
       document.removeEventListener("keydown", onKeyDown)
     }
-  }, [toggle, seek, currentTime])
+  }, [toggle, skip])
 
   if (!clip) return null
 
@@ -93,7 +87,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
       role="group"
       aria-label={t("label")}
       className={cn(
-        "bg-card/95 border-border animate-in slide-in-from-bottom-2 sticky bottom-0 z-40 flex items-center gap-3 border-t px-3 py-2 shadow-lg outline-none supports-backdrop-filter:backdrop-blur-sm motion-reduce:animate-none",
+        "bg-card/95 border-border animate-in slide-in-from-bottom-2 @container/dock sticky bottom-0 z-40 flex items-center gap-3 border-t px-3 py-2 shadow-lg outline-none supports-backdrop-filter:backdrop-blur-sm motion-reduce:animate-none",
         className,
       )}
     >
@@ -108,7 +102,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
         {playing ? <icon.PlayerPause /> : <icon.PlayerPlay />}
       </Button>
 
-      <div className="flex min-w-0 shrink-0 flex-col max-[719px]:max-w-[8rem] min-[720px]:w-fit">
+      <div className="@max-2xl/dock:max-w-32 flex min-w-0 shrink flex-col max-w-72">
         <span className="truncate text-xs font-medium">{clip.label}</span>
         {clip.sublabel !== undefined && (
           <span className="text-muted-foreground truncate text-[0.625rem]">
@@ -122,7 +116,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           {formatClock(currentTime)}
         </span>
         <div
-          className="group/track relative h-4 flex-1 cursor-pointer touch-none"
+          className="group/track relative h-4 min-w-10 flex-1 cursor-pointer touch-none"
           onPointerDown={(event) => {
             event.currentTarget.setPointerCapture(event.pointerId)
             seekFromPointer(event)
@@ -166,9 +160,9 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           size="xs"
           tooltip={t("back10")}
           aria-label={t("back10")}
-          className="max-[719px]:hidden"
+          className="@max-2xl/dock:hidden"
           onClick={() => {
-            seek(currentTime - 10)
+            skip(-10)
           }}
         >
           <icon.PlayerSkipBack10 />
@@ -178,9 +172,9 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           size="xs"
           aria-label={t("forward10")}
           tooltip={t("forward10")}
-          className="max-[719px]:hidden"
+          className="@max-2xl/dock:hidden"
           onClick={() => {
-            seek(currentTime + 10)
+            skip(10)
           }}
         >
           <icon.PlayerSkipForward10 />
@@ -192,7 +186,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
             aria-pressed={unbounded}
             className={cn("max-[719px]:hidden", unbounded && "text-primary")}
             onClick={() => {
-              play()
+              wholeFile()
             }}
           >
             {t("wholeFile")}
@@ -203,9 +197,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           size="xs"
           aria-label={t("speed")}
           onClick={() => {
-            setPlaybackRate(
-              RATES[(RATES.indexOf(rate) + 1) % RATES.length] ?? 1,
-            )
+            setRate(RATES[(RATES.indexOf(rate) + 1) % RATES.length] ?? 1)
           }}
         >
           {rate}x
@@ -215,13 +207,12 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           size="icon-xs"
           aria-label={t("close")}
           onClick={() => {
-            pause()
+            stop()
           }}
         >
           <icon.Close />
         </Button>
       </div>
-      <audio ref={audioRef} preload="auto" id={ALIGNMENT_AUDIO_PLAYER_ID} />
     </div>
   )
 }
