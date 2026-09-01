@@ -460,7 +460,7 @@ export function buildReportModel(args: {
       }))
       return {
         name: fileName(filepath),
-        filepath,
+        filepath: fileName(filepath),
         duration: duration ?? manifestDurations.get(baseKey(filepath)) ?? null,
         placed: ranges.length > 0,
         ignored: overrides?.audioFiles?.[filepath]?.ignored ?? false,
