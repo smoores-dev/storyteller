@@ -34,6 +34,7 @@ export function chapterClip(
 ): Clip {
   return {
     bookUuid,
+    path: audio.filepath,
     name: audio.name,
     start: audio.start,
     end: audio.end,

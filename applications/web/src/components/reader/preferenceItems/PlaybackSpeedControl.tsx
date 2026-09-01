@@ -2,7 +2,7 @@ import { Popover, Slider, Text } from "@mantine/core"
 import { IconMinus, IconPlus } from "@tabler/icons-react"
 
 import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectPlaybackRate } from "@/store/slices/audioPlayerSlice"
 import {
@@ -43,7 +43,7 @@ const SpeedControl = () => {
               onClick={() => {
                 if (!currentBook) return
 
-                AudioPlayer.setPlaybackRate(speed)
+                readerPlayer().setPlaybackRate(speed)
                 dispatch(
                   preferencesSlice.actions.updatePreference({
                     key: "playbackSpeed",
@@ -71,7 +71,7 @@ const SpeedControl = () => {
           className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative mb-1.5 rounded-full bg-transparent p-1.5"
           onClick={() => {
             if (!currentBook) return
-            AudioPlayer.setPlaybackRate(playbackSpeed - 0.1)
+            readerPlayer().setPlaybackRate(playbackSpeed - 0.1)
             dispatch(
               preferencesSlice.actions.incrementPlaybackRate({
                 target: currentBook.uuid,
@@ -89,7 +89,7 @@ const SpeedControl = () => {
           onChange={(value) => {
             if (!currentBook) return
 
-            AudioPlayer.setPlaybackRate(value)
+            readerPlayer().setPlaybackRate(value)
             dispatch(
               preferencesSlice.actions.updatePreference({
                 key: "playbackSpeed",
@@ -114,7 +114,7 @@ const SpeedControl = () => {
           className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover relative mb-1.5 rounded-full bg-transparent p-1.5"
           onClick={() => {
             if (!currentBook) return
-            AudioPlayer.setPlaybackRate(playbackSpeed + 0.1)
+            readerPlayer().setPlaybackRate(playbackSpeed + 0.1)
             dispatch(
               preferencesSlice.actions.incrementPlaybackRate({
                 target: currentBook.uuid,

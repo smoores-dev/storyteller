@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/cn"
 import { AudiobookCoverImage } from "@/components/books/BookThumbnailImage"
 import type { BookWithRelations } from "@/database/books"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import { nextPagePressed, previousPagePressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { getActiveFrame } from "@/store/readerRegistry"
@@ -147,12 +147,12 @@ const ReaderComponent = ({
     }
 
     if (documentVisibility === "hidden") {
-      AudioPlayer.setUpdateInterval(5_000)
+      readerPlayer().setUpdateInterval(5_000)
       if (!pipWindow) {
         void requestPipWindow(MINI_PLAYER_WIDTH, MINI_PLAYER_HEIGHT)
       }
     } else {
-      AudioPlayer.setUpdateInterval(200)
+      readerPlayer().setUpdateInterval(200)
       // technically superfluous bc it should happen in useWakeLock above, but just in case
       void acquireWakeLock()
 

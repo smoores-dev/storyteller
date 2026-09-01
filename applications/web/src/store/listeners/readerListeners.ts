@@ -15,7 +15,7 @@ import {
 } from "@/components/reader/helpers"
 import { getReaderKeyboardHotkeys } from "@/components/reader/hooks/useReaderKeyboard"
 import { isSameLocator } from "@/components/reader/locators"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   bookLocatorChanged,
   nextPagePressed,
@@ -182,11 +182,11 @@ startAppListening({
 
     const shouldPause = (scrolling || isAtEndOfChapter) && isSyncing
 
-    const wasPlaying = AudioPlayer.getState().playing
+    const wasPlaying = readerPlayer().getState().playing
 
     if (shouldPause && wasPlaying) {
       // pause if we are skipping chapters, or we scrolling
-      AudioPlayer.pause()
+      readerPlayer().pause()
     }
 
     await new Promise<void>((resolve) => {
@@ -273,7 +273,7 @@ startAppListening({
     })
 
     if (isSyncing && wasPlaying) {
-      await AudioPlayer.play()
+      await readerPlayer().play()
     }
   },
 })

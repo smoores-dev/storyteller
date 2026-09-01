@@ -1,10 +1,10 @@
-export function formatTime(time: number) {
+export function formatTime(time: number, alwaysPrintHours: boolean = false) {
   const hours = Math.floor(time / 3600)
   const minutes = Math.floor(time / 60 - hours * 60)
   const seconds = Math.floor(time - hours * 3600 - minutes * 60)
     .toString()
     .padStart(2, "0")
-  if (hours) {
+  if (hours || alwaysPrintHours) {
     return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds}`
   }
   return `${minutes}:${seconds}`

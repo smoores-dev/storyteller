@@ -12,8 +12,8 @@ import { Toaster } from "@v3/_/components/ui/sonner"
 import { VersionProvider } from "@v3/_/components/version-context"
 
 import StoreProvider from "@/components/StoreProvider"
-import { AudioProviderRedux } from "@/components/reader/AudioProviderRedux"
 import { PiPProvider } from "@/components/reader/PipProvider"
+import { ReaderAudioProvider } from "@/components/reader/ReaderAudioProvider"
 import { getSetting } from "@/database/settings"
 import { env } from "@/env"
 import {
@@ -120,8 +120,8 @@ export default async function RootLayout({
         {/* <TweaksPanel /> */}
         <VersionProvider basePath={basePath}>
           <NextIntlClientProvider>
-            <StoreProvider initialUISettings={initialUISettings}>
-              <AudioProviderRedux>
+            <ReaderAudioProvider>
+              <StoreProvider initialUISettings={initialUISettings}>
                 <PiPProvider>
                   <ThemeProvider
                     attribute="class"
@@ -136,8 +136,8 @@ export default async function RootLayout({
                     </NuqsAdapter>
                   </ThemeProvider>
                 </PiPProvider>
-              </AudioProviderRedux>
-            </StoreProvider>
+              </StoreProvider>
+            </ReaderAudioProvider>
           </NextIntlClientProvider>
         </VersionProvider>
       </body>

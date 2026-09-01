@@ -2,9 +2,12 @@
 
 import { useEffect, useRef } from "react"
 
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import {
+  AudioPlayerService,
+  READER_AUDIO_PLAYER_ID,
+} from "@/services/AudioPlayerService"
 
-export const AudioProviderRedux = ({
+export const ReaderAudioProvider = ({
   children,
 }: {
   children: React.ReactNode
@@ -15,7 +18,7 @@ export const AudioProviderRedux = ({
   useEffect(() => {
     if (!audioRef.current) return
 
-    AudioPlayer.initialize(audioRef.current)
+    AudioPlayerService.initialize(audioRef.current)
 
     return () => {
       // AudioPlayer.destroy()
@@ -25,7 +28,7 @@ export const AudioProviderRedux = ({
   return (
     <>
       {children}
-      <audio ref={audioRef} preload="auto" />
+      <audio ref={audioRef} preload="auto" id={READER_AUDIO_PLAYER_ID} />
     </>
   )
 }

@@ -40,7 +40,7 @@ export function AlignmentReportContent({
   const t = useTranslation("AlignmentReport")
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
       {data ? (
         <ReportHeader
           view={data}
@@ -116,36 +116,34 @@ function ReportBody({ view }: { view: BookAlignmentReportView }) {
   )
 
   return (
-    <ScrollArea className="min-h-0 flex-1">
-      <div className="flex flex-col gap-7 p-4">
-        <Masthead view={view} />
-        <BulkBar
-          view={view}
-          selected={selected}
-          ignore={ignore}
-          onClear={clear}
-        />
-        <SpineTable
-          bookUuid={view.bookUuid}
-          items={items}
-          total={view.items.length}
-          needsLookCount={needsLookCount}
-          needsLookOnly={needsLookOnly}
-          onNeedsLookOnlyChange={setNeedsLookOnly}
-          selected={selected}
-          onSelect={toggle}
-          onSelectMany={setMany}
-          ignore={ignore}
-        />
-        <LooseAudio
-          bookUuid={view.bookUuid}
-          files={looseFiles}
-          selected={selected}
-          onSelect={toggle}
-          ignore={ignore}
-        />
-      </div>
-    </ScrollArea>
+    <div className="flex flex-col gap-7 p-4">
+      <Masthead view={view} />
+      {/* <BulkBar
+        view={view}
+        selected={selected}
+        ignore={ignore}
+        onClear={clear}
+      /> */}
+      <SpineTable
+        bookUuid={view.bookUuid}
+        items={items}
+        total={view.items.length}
+        needsLookCount={needsLookCount}
+        needsLookOnly={needsLookOnly}
+        onNeedsLookOnlyChange={setNeedsLookOnly}
+        selected={selected}
+        onSelect={toggle}
+        onSelectMany={setMany}
+        ignore={ignore}
+      />
+      <LooseAudio
+        bookUuid={view.bookUuid}
+        files={looseFiles}
+        selected={selected}
+        onSelect={toggle}
+        ignore={ignore}
+      />
+    </div>
   )
 }
 
@@ -428,6 +426,7 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
     sub?: React.ReactNode
     extra?: React.ReactNode
     tone: MarkTone
+    percent: number | null
   }[] = [
     {
       key: "score",
@@ -435,6 +434,8 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
       value: summary.score === null ? "—" : summary.score.toFixed(1),
       sub: t("stats.scoreSub"),
       tone: scoreTone(summary.score),
+      percent:
+        summary.score === null ? null : Math.round((summary.score / 100) * 100),
     },
     {
       key: "sentences",
@@ -445,6 +446,8 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
           ? `${summary.sentencesAligned.toLocaleString()} / ${summary.sentencesTotal.toLocaleString()}`
           : "—",
       tone: scoreTone(sentencePct),
+      percent:
+        sentencePct === null ? null : Math.round((sentencePct / 100) * 100),
     },
     {
       key: "audio",
@@ -458,6 +461,12 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
           ? t("stats.filesLoose", { count: summary.looseAudio })
           : t("stats.allPlaced"),
       tone: summary.looseAudio > 0 ? "moderate" : "muted",
+      percent:
+        summary.audioPlacedSeconds === null
+          ? null
+          : Math.round(
+              (summary.audioPlacedSeconds / summary.audioTotalSeconds) * 100,
+            ),
     },
     {
       key: "needsLook",
@@ -465,6 +474,7 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
       value: `${summary.needsLook}`,
       sub: needsLookParts.join(", "),
       tone: summary.needsLook > 0 ? "moderate" : "muted",
+      percent: null,
     },
   ]
 
@@ -499,7 +509,7 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
 
       <div className="bg-border grid grid-cols-2 gap-px border-t @sm/book:grid-cols-4">
         {boxes.map((box) => (
-          <div key={box.key} className="bg-card p-3.5">
+          <div key={box.key} className="bg-card relative p-3.5">
             <div
               className={cn(
                 "text-xl leading-none font-medium tabular-nums",
@@ -520,6 +530,17 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
               <div className="text-muted-foreground/70 mt-0.5 text-[10px]">
                 {box.extra}
               </div>
+            )}
+            {box.percent !== null && (
+              <div
+                className={cn(
+                  "text-muted-foreground absolute bottom-0 left-0 z-10 h-1 text-center text-xs",
+                  box.tone !== "muted" ? TILE_TONE[box.tone] : "",
+                )}
+                style={{
+                  width: `${box.percent}%`,
+                }}
+              ></div>
             )}
           </div>
         ))}

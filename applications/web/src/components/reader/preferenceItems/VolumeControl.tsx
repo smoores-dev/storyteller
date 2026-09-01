@@ -3,7 +3,7 @@ import { IconVolume, IconVolumeOff } from "@tabler/icons-react"
 import classNames from "classnames"
 
 import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectVolume } from "@/store/slices/audioPlayerSlice"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
@@ -35,7 +35,7 @@ const VolumeSlider = () => {
         defaultValue={volume}
         onChangeEnd={(value) => {
           const snappedValue = snapVolume(value)
-          AudioPlayer.setVolume(snappedValue)
+          readerPlayer().setVolume(snappedValue)
           dispatch(
             preferencesSlice.actions.updatePreference({
               key: "volume",

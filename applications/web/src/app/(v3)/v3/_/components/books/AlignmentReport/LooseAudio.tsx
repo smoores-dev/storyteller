@@ -7,7 +7,7 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type ReportStripFile } from "@/alignmentReportView"
-import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
+import { formatTime } from "@/components/reader/preferenceItems/formatTime"
 import * as icon from "@/icons"
 import { useGetTranscodedAudioQuery } from "@/store/api"
 import type { UUID } from "@/uuid"
@@ -30,7 +30,9 @@ export function LooseAudio({
   const t = useTranslation("AlignmentReport")
   const { data: transcoded } = useGetTranscodedAudioQuery({ uuid: bookUuid })
 
-  if (files.length === 0) return null
+  if (files.length === 0) {
+    return null
+  }
 
   const order = files.map((file) => file.filepath)
 
@@ -80,7 +82,12 @@ export function LooseAudio({
                 />
               </div>
               <PlayButton
-                clip={{ bookUuid, name: file.name, label: file.name }}
+                clip={{
+                  bookUuid,
+                  path: file.filepath,
+                  name: file.filepath,
+                  label: file.name,
+                }}
               />
               <span className="truncate font-mono text-xs">{file.name}</span>
               {between !== null && (
@@ -89,7 +96,7 @@ export function LooseAudio({
                 </span>
               )}
               <span className="text-muted-foreground ml-auto shrink-0 font-mono text-[11px] tabular-nums">
-                {seconds !== null ? formatTimeHuman(seconds) : "—"}
+                {seconds !== null ? formatTime(seconds, true) : "—"}
               </span>
               {missing && (
                 <FlagBadge tone="poor">{t("loose.notOnDisk")}</FlagBadge>

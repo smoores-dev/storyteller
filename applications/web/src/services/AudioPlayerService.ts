@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+
 import type { TocItem } from "@/components/reader/BookService"
 
 export type RepeatMode = "track" | "playlist" | "none"
@@ -16,6 +17,8 @@ export type AudioTrack = {
   album?: string
   artwork?: string | MediaImage[]
   tocItem?: TocItem | undefined
+  start?: number
+  end?: number
 } & Record<string, unknown>
 
 export type AudioState = {
@@ -41,8 +44,20 @@ export type AudioState = {
 
 type AudioStateListener = (state: AudioState) => void
 
-// singleton audio player service that can be used from anywhere
-class AudioPlayerService {
+// (not so) singleton audio player service that can be used from anywhere
+
+export const READER_AUDIO_PLAYER_ID = "reader-audio-player" as const
+
+export const readerPlayer = () => {
+  const player = AudioPlayerService.getPlayer(READER_AUDIO_PLAYER_ID)
+  if (!player) {
+    throw new Error("Reader audio player not found")
+  }
+  return player
+}
+
+export class AudioPlayer {
+  readonly id: string
   private audioElement: HTMLAudioElement | null = null
   private playlist: AudioTrack[] = []
   private state: AudioState = {
@@ -70,10 +85,10 @@ class AudioPlayerService {
   private isSafari = false
   private startMargin = 5
 
-  constructor() {
+  constructor(id: string) {
     // detect safari
     this.isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-    this.setupMediaSession()
+    this.id = id
   }
 
   initialize(element: HTMLAudioElement) {
@@ -135,6 +150,13 @@ class AudioPlayerService {
       const duration = this.audioElement.duration
       const progressPercentage =
         duration > 0 ? (currentTime / duration) * 100 : 0
+
+      const end = this.getActiveTrack()?.end
+      if (end && currentTime >= end - 0.05) {
+        this.pause()
+        return
+      }
+
       if (Date.now() - this.lastTimeUpdate < this.state.updateInterval) {
         return
       }
@@ -345,8 +367,23 @@ class AudioPlayerService {
     if (!this.audioElement) throw new Error("Audio element not initialized")
     if (!this.audioElement.paused) return
 
+    const activeTrack = this.getActiveTrack()
+    const { start, end } = activeTrack || {}
+
+    if (
+      end &&
+      start &&
+      (this.audioElement.currentTime < start - 0.05 ||
+        this.audioElement.currentTime > end + 0.05)
+    ) {
+      this.seekTo(start)
+    }
+
     await this.audioElement.play()
     this.updateState({ playing: true })
+    if (!("mediaSession" in navigator)) {
+      this.setupMediaSession()
+    }
 
     this.updateMediaSessionPlaybackState()
   }
@@ -528,4 +565,32 @@ class AudioPlayerService {
   }
 }
 
-export const AudioPlayer = new AudioPlayerService()
+export class AudioPlayerService {
+  private static players: Map<string, AudioPlayer> = new Map([
+    [READER_AUDIO_PLAYER_ID, new AudioPlayer(READER_AUDIO_PLAYER_ID)],
+  ])
+
+  static initialize(element: HTMLAudioElement) {
+    const elementId = element.id
+    if (!elementId) {
+      throw new Error("Audio element must have an id")
+    }
+
+    const existingPlayer = this.getPlayer(elementId)
+    if (existingPlayer) {
+      console.log("Reinitializing existing player", elementId)
+      existingPlayer.initialize(element)
+
+      return existingPlayer
+    }
+
+    const player = new AudioPlayer(elementId)
+    this.players.set(elementId, player)
+    player.initialize(element)
+    return player
+  }
+
+  static getPlayer(elementId: string) {
+    return this.players.get(elementId)
+  }
+}

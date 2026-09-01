@@ -122,6 +122,13 @@ export const textNavigatedFromAudio = createAction(
   }),
 )
 
+export const progressBarMarkPressed = createAction(
+  "progressBarMarkPressed",
+  (payload: { type: "text"; locator: Locator }) => ({
+    payload,
+  }),
+)
+
 export const userRequestedTextNavigation = createAction(
   "userRequestedTextNavigation",
   (payload: { locator: Locator }) => ({

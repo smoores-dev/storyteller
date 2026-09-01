@@ -1,4 +1,8 @@
 import { buildReportView } from "@/alignmentReportView"
+import {
+  getInternalAudioDirectory,
+  getProcessedAudioFilepath,
+} from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
   type AlignmentOverrides,
@@ -6,6 +10,7 @@ import {
   updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"
+import { createDirectoryManifest } from "@/utils/audioManifest"
 import type { UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
@@ -31,7 +36,11 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
   const { bookId } = await context.params
   const bookUuid = bookId as UUID
 
-  const report = await getAlignmentReportForBook(bookUuid)
+  const [report, book] = await Promise.all([
+    getAlignmentReportForBook(bookUuid),
+    getBook(bookUuid, request.auth.user.id),
+  ])
+
   if (!report?.report) {
     return Response.json(
       { message: `No alignment report for book ${bookId}` },
@@ -39,7 +48,12 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     )
   }
 
-  const book = await getBook(bookUuid, request.auth.user.id)
+  if (!book) {
+    return Response.json(
+      { message: `Book ${bookId} not found` },
+      { status: 404 },
+    )
+  }
 
   const overrides = report.overrides
     ? typeof report.overrides === "string"
@@ -47,17 +61,27 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
       : report.overrides
     : null
 
+  const transcodedAudioDir = getProcessedAudioFilepath(book)
+  const audiobookManifest = await createDirectoryManifest(transcodedAudioDir, {
+    bookId: book.uuid,
+    updatedAt: new Date(book.updatedAt),
+    title: book.title,
+    subtitle: book.subtitle ?? undefined,
+    description: book.description ?? undefined,
+    language: book.language ?? undefined,
+  })
+
   const view = buildReportView({
     report: report.report,
     bookUuid,
-    bookTitle: book?.title ?? null,
+    bookTitle: book.title,
     reportUuid: report.uuid,
     jobUuid: report.jobUuid,
     createdAt: report.createdAt,
     overrides,
-    ebookManifest: (book?.ebook?.manifest as ManifestLike | null) ?? null,
+    ebookManifest: (book.ebook?.manifest as ManifestLike | null) ?? null,
     audiobookManifest:
-      (book?.audiobook?.manifest as ManifestLike | null) ?? null,
+      (audiobookManifest.serialize() as ManifestLike | null) ?? null,
   })
 
   return Response.json(view)

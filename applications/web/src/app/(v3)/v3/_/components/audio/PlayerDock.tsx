@@ -10,25 +10,32 @@ import { cn } from "@v3/_/lib/utils"
 import * as icon from "@/icons"
 
 import { formatClock } from "./clip"
-import { usePlayer } from "./store"
+import { ALIGNMENT_AUDIO_PLAYER_ID, usePlayer } from "./store"
+import { AudioPlayerService } from "@/services/AudioPlayerService"
 
 const RATES = [1, 1.25, 1.5, 2]
 
 export function PlayerDock({ className }: { className?: string } = {}) {
   const t = useTranslation("Player")
+  const audioRef = useRef<HTMLAudioElement>(null)
+  useEffect(() => {
+    if (audioRef.current) {
+      AudioPlayerService.initialize(audioRef.current)
+    }
+  }, [])
+
   const {
     clip,
     playing,
     currentTime,
     duration,
     rate,
-    unbounded,
     toggle,
     seek,
-    skip,
-    wholeFile,
-    stop,
-    setRate,
+    setPlaybackRate,
+    play,
+    pause,
+    unbounded,
   } = usePlayer()
   const dockRef = useRef<HTMLDivElement>(null)
 
@@ -49,19 +56,19 @@ export function PlayerDock({ className }: { className?: string } = {}) {
       }
       if (event.key === "ArrowLeft") {
         event.preventDefault()
-        skip(-5)
+        seek(currentTime + 5)
         return
       }
       if (event.key === "ArrowRight") {
         event.preventDefault()
-        skip(5)
+        seek(currentTime - 5)
       }
     }
     document.addEventListener("keydown", onKeyDown)
     return () => {
       document.removeEventListener("keydown", onKeyDown)
     }
-  }, [toggle, skip])
+  }, [toggle, seek, currentTime])
 
   if (!clip) return null
 
@@ -161,7 +168,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           aria-label={t("back10")}
           className="max-[719px]:hidden"
           onClick={() => {
-            skip(-10)
+            seek(currentTime - 10)
           }}
         >
           <icon.PlayerSkipBack10 />
@@ -173,7 +180,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           tooltip={t("forward10")}
           className="max-[719px]:hidden"
           onClick={() => {
-            skip(10)
+            seek(currentTime + 10)
           }}
         >
           <icon.PlayerSkipForward10 />
@@ -185,7 +192,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
             aria-pressed={unbounded}
             className={cn("max-[719px]:hidden", unbounded && "text-primary")}
             onClick={() => {
-              wholeFile()
+              play()
             }}
           >
             {t("wholeFile")}
@@ -196,7 +203,9 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           size="xs"
           aria-label={t("speed")}
           onClick={() => {
-            setRate(RATES[(RATES.indexOf(rate) + 1) % RATES.length] ?? 1)
+            setPlaybackRate(
+              RATES[(RATES.indexOf(rate) + 1) % RATES.length] ?? 1,
+            )
           }}
         >
           {rate}x
@@ -206,12 +215,13 @@ export function PlayerDock({ className }: { className?: string } = {}) {
           size="icon-xs"
           aria-label={t("close")}
           onClick={() => {
-            stop()
+            pause()
           }}
         >
           <icon.Close />
         </Button>
       </div>
+      <audio ref={audioRef} preload="auto" id={ALIGNMENT_AUDIO_PLAYER_ID} />
     </div>
   )
 }

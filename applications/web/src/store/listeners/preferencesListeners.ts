@@ -1,7 +1,7 @@
 import { isAnyOf } from "@reduxjs/toolkit"
 
 import { withActiveFrame } from "@/components/reader/frameUtils"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import { closeMiniPlayer } from "@/store/actions"
 import { getNavigator } from "@/store/readerRegistry"
 import {
@@ -97,7 +97,7 @@ startAppListening({
       }),
     )
     listenerApi.dispatch(readingSessionSlice.actions.closeBook())
-    AudioPlayer.pause()
-    await AudioPlayer.replacePlaylist([])
+    readerPlayer().pause()
+    await readerPlayer().replacePlaylist([])
   },
 })

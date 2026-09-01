@@ -252,6 +252,14 @@ function rangeTone(score: number): ReportRangeTone {
   return "poor"
 }
 
+/**
+ * Grade algo
+ *
+ * Count each non-ignored body chapter's aligned/total sentences
+ * Weight them by the chapter's sentence count
+ * Non-found chapters have a score of 0
+ *
+ */
 export function buildReportModel(args: {
   report: ReportLike
   overrides?: AlignmentOverrides | null
@@ -270,252 +278,209 @@ export function buildReportModel(args: {
 
   const merged = mergeChapterChunks(args.report.chapters)
 
+  const audioReadingOrderByFilepath = new Map<
+    string,
+    { href: string; title: string; duration: number }
+  >()
+  for (const item of args.audiobookManifest?.readingOrder ?? []) {
+    if (!item.href || !item.duration) continue
+    audioReadingOrderByFilepath.set(fileName(item.href), item)
+  }
+
+  const nrIgnoredChapters = Object.values(overrides?.chapters ?? {}).filter(
+    (override) => override.ignored,
+  ).length
+
+  const audioTotalSeconds =
+    args.audiobookManifest?.readingOrder?.reduce(
+      (acc, item) => acc + (item.duration ?? 0),
+      0,
+    ) ?? 0
+
+  const {
+    sentencesAligned,
+    sentencesTotal,
+    audioPlacedSeconds,
+    // audioTotalSeconds,
+  } = merged.reduce(
+    (acc, chapter) => {
+      if (overrides?.chapters?.[chapter.href]?.ignored) {
+        return acc
+        //
+      }
+
+      acc.sentencesAligned += chapter.alignedSentenceCount
+      acc.sentencesTotal += chapter.chapterSentenceCount
+      acc.audioPlacedSeconds += chapter.audioFiles.reduce(
+        (acc, file) => acc + file.end - file.start,
+        0,
+      )
+      // acc.audioTotalSeconds += manifestDurations.get(chapter.href) ?? 0
+
+      return acc
+    },
+    {
+      sentencesAligned: 0,
+      sentencesTotal: 0,
+      audioPlacedSeconds: 0,
+      // audioTotalSeconds: 0,
+      bodyUnaligned: 0,
+    },
+  )
+
+  const score = merged.reduce((acc, chapter) => {
+    if (overrides?.chapters?.[chapter.href]?.ignored) {
+      return acc
+    }
+
+    acc += chapter.score * (chapter.chapterSentenceCount / sentencesTotal)
+
+    return acc
+  }, 0)
+
+  const items = [] as ReportSpineItem[]
+
   const rangesByFile = new Map<
     string,
     { href: string; label: string; start: number; end: number; score: number }[]
   >()
 
-  const chapterItems: ReportChapterItem[] = merged.map((ch) => {
-    const title = chapterTitles.get(baseKey(ch.href)) ?? null
-    const label = title ?? stem(ch.href)
-    const count = ch.chapterSentenceCount || 0
-    const missing = Math.max(count - ch.alignedSentenceCount, 0)
-    const audioSeconds = ch.audioFiles.reduce(
-      (acc, af) => acc + (af.end - af.start),
-      0,
-    )
-    const durationSuspicious = count > 20 && audioSeconds < 0.5 * count
-    const coverage = count > 0 ? ch.alignedSentenceCount / count : 1
-    const ignored = overrides?.chapters?.[ch.href]?.ignored ?? false
+  const chapterLikes = [...merged, ...(args.report.unalignedChapters ?? [])]
+    .map((chapter) => {
+      if ("alignedSentenceCount" in chapter) {
+        return { ...chapter, kind: "chapter" as const }
+      } else {
+        return {
+          // stuff like TOC, cover,
+          spineIndex: 0,
+          ...chapter,
+          kind: "unaligned" as const,
+        }
+      }
+    })
+    .sort((a, b) => a.spineIndex - b.spineIndex)
 
-    for (const af of ch.audioFiles) {
-      const ranges = rangesByFile.get(af.filepath) ?? []
-      ranges.push({
-        href: ch.href,
-        label,
-        start: af.start,
-        end: af.end,
-        score: ch.score,
-      })
-      rangesByFile.set(af.filepath, ranges)
-    }
+  for (const item of chapterLikes) {
+    const href = item.href
+    const ignored = !!overrides?.chapters?.[href]?.ignored
 
-    const status =
-      ch.audioFiles.length === 0 && count > 0
-        ? "no-audio"
-        : missing > 5 && coverage < 0.95
-          ? "missing"
-          : durationSuspicious
-            ? "range"
+    if (item.kind === "chapter") {
+      const chapter = item
+      const needsLook =
+        chapter.alignedSentenceCount / chapter.chapterSentenceCount < 0.9
+
+      const title = chapterTitles.get(baseKey(chapter.href)) ?? null
+      const label = title ?? stem(chapter.href)
+      for (const af of chapter.audioFiles) {
+        const ranges = rangesByFile.get(af.filepath) ?? []
+        ranges.push({
+          href: chapter.href,
+          label,
+          start: af.start,
+          end: af.end,
+          score: chapter.score,
+        })
+        rangesByFile.set(af.filepath, ranges)
+      }
+
+      const audioSeconds = chapter.audioFiles.reduce(
+        (acc, af) => acc + (af.end - af.start),
+        0,
+      )
+
+      const missingSentenceCount =
+        chapter.chapterSentenceCount - chapter.alignedSentenceCount
+      const status =
+        chapter.audioFiles.length === 0 && chapter.chapterSentenceCount > 0
+          ? "no-audio"
+          : missingSentenceCount > 5 &&
+              audioSeconds / chapter.chapterSentenceCount < 0.9
+            ? "missing"
             : "ok"
 
-    return {
-      kind: "chapter",
-      href: ch.href,
-      spineIndex: ch.spineIndex,
-      label,
-      title,
-      score: round1(ch.score),
-      alignedSentenceCount: ch.alignedSentenceCount,
-      chapterSentenceCount: count,
-      missing,
-      audio: [],
-      audioSeconds,
-      durationSuspicious,
-      status,
-      needsLook: !ignored && status !== "ok",
-      ignored,
-      firstMatch: ch.firstMatchedSentenceContext,
-      lastMatch: ch.lastMatchedSentenceContext,
-      ...(ch.transcriptionContext && {
-        transcriptionContext: ch.transcriptionContext,
-      }),
-      ...(ch.endTranscriptionContext && {
-        endTranscriptionContext: ch.endTranscriptionContext,
-      }),
-    }
-  })
+      const durationSuspicious =
+        chapter.chapterSentenceCount > 20 &&
+        audioSeconds < 0.5 * chapter.chapterSentenceCount
 
-  for (const ranges of rangesByFile.values()) {
-    ranges.sort((a, b) => a.start - b.start)
-  }
-
-  for (const [index, item] of chapterItems.entries()) {
-    const ch = merged[index]
-    if (!ch) continue
-    item.audio = ch.audioFiles.map((af) => ({
-      name: fileName(af.filepath),
-      filepath: af.filepath,
-      start: af.start,
-      end: af.end,
-      seconds: af.end - af.start,
-      sharedWith: (rangesByFile.get(af.filepath) ?? [])
-        .filter((range) => range.href !== ch.href)
-        .map((range) => ({
-          href: range.href,
-          label: range.label,
-          role: range.start < af.start ? "before" : "after",
+      const chapterItem = {
+        kind: "chapter",
+        alignedSentenceCount: chapter.alignedSentenceCount,
+        chapterSentenceCount: chapter.chapterSentenceCount,
+        score: chapter.score,
+        ignored,
+        needsLook,
+        href: chapter.href,
+        title,
+        label,
+        firstMatch: chapter.firstMatchedSentenceContext,
+        lastMatch: chapter.lastMatchedSentenceContext,
+        spineIndex: chapter.spineIndex,
+        status,
+        audioSeconds,
+        durationSuspicious,
+        missing: chapter.chapterSentenceCount - chapter.alignedSentenceCount,
+        audio: chapter.audioFiles.map((aud) => ({
+          filepath: fileName(aud.filepath),
+          start: aud.start,
+          end: aud.end,
+          seconds: aud.end - aud.start,
+          name:
+            audioReadingOrderByFilepath.get(fileName(aud.filepath))?.title ??
+            fileName(aud.filepath),
+          sharedWith: [],
         })),
-    }))
-  }
+      } satisfies ReportChapterItem
 
-  const scored = chapterItems.filter((item) => !item.ignored)
-  const spineIndexes = scored.map((item) => item.spineIndex)
-  const firstSpine = spineIndexes.length > 0 ? Math.min(...spineIndexes) : null
-  const lastSpine = spineIndexes.length > 0 ? Math.max(...spineIndexes) : null
-
-  const unalignedItems: ReportUnalignedItem[] = (
-    args.report.unalignedChapters ?? []
-  ).map((uc: RawUnalignedChapter) => {
-    const raw = uc as {
-      spineIndex?: number
-      chapterSentenceCount?: number
+      items.push(chapterItem)
+      continue
     }
-    const spineIndex =
-      typeof raw.spineIndex === "number" ? raw.spineIndex : null
-    const chapterSentenceCount =
-      typeof raw.chapterSentenceCount === "number"
-        ? raw.chapterSentenceCount
-        : null
-    const label = chapterTitles.get(baseKey(uc.href)) ?? stem(uc.href)
-    const ignored = overrides?.unalignedChapters?.[uc.href]?.ignored ?? false
-    const inBody =
-      spineIndex !== null &&
-      firstSpine !== null &&
-      lastSpine !== null &&
-      spineIndex > firstSpine &&
-      spineIndex < lastSpine
+    const missingChapter = item
 
-    const hint =
-      chapterSentenceCount !== null &&
-      chapterSentenceCount <= 3 &&
-      /^part/i.test(label)
-        ? "part-title"
-        : PROMO_PATTERN.test(uc.href) || PROMO_PATTERN.test(label)
-          ? "promo"
-          : spineIndex !== null &&
-              firstSpine !== null &&
-              spineIndex < firstSpine
-            ? "front-matter"
-            : spineIndex !== null &&
-                lastSpine !== null &&
-                spineIndex > lastSpine
-              ? "after-last-match"
-              : null
+    const title = chapterTitles.get(baseKey(missingChapter.href)) ?? null
+    const label = title ?? stem(missingChapter.href)
+    // no need to look for navs or too short chapters
+    const needsLook = !ignored && missingChapter.reason === "not-found"
 
-    return {
+    const unalignedItem = {
       kind: "unaligned",
-      href: uc.href,
-      spineIndex,
-      label,
-      reason: uc.reason,
-      chapterSentenceCount,
-      preview:
-        uc.reason === "not-found"
-          ? uc.start.replace(/\s+/g, " ").trim().slice(0, 160) || null
-          : null,
-      inBody,
-      hint,
-      needsLook: !ignored && uc.reason === "not-found" && inBody,
+      href: missingChapter.href,
+      reason: missingChapter.reason,
+      chapterSentenceCount:
+        "chapterSentenceCount" in missingChapter
+          ? missingChapter.chapterSentenceCount
+          : 0,
       ignored,
-    }
-  })
+      needsLook,
+      spineIndex: missingChapter.spineIndex,
+      label,
+      preview:
+        "start" in missingChapter
+          ? `${missingChapter.start.slice(0, 100)}...${missingChapter.end.slice(0, 100)}`
+          : null,
+    } satisfies ReportUnalignedItem
 
-  const items = [...chapterItems, ...unalignedItems]
-    .map((item, index) => ({ item, index }))
-    .sort((a, b) => {
-      const left = a.item.spineIndex
-      const right = b.item.spineIndex
-      if (left === null && right === null) return a.index - b.index
-      if (left === null) return -1
-      if (right === null) return 1
-      return left - right || a.index - b.index
-    })
-    .map(({ item }) => item)
-
-  const durationsByPath = new Map<string, number | null>()
-  for (const af of args.report.audioFiles ?? []) {
-    durationsByPath.set(af.filepath, af.duration > 0 ? af.duration : null)
+    items.push(unalignedItem)
   }
-  for (const uaf of args.report.unalignedAudioFiles ?? []) {
-    const raw = uaf as { duration?: number | null }
-    if (durationsByPath.has(uaf.filepath)) continue
-    durationsByPath.set(
-      uaf.filepath,
-      typeof raw.duration === "number" ? raw.duration : null,
+
+  const audioFiles = [] as ReportStripFile[]
+
+  for (const item of args.report.unalignedAudioFiles ?? []) {
+    const manifestItem = audioReadingOrderByFilepath.get(
+      fileName(item.filepath),
     )
-  }
-  for (const filepath of rangesByFile.keys()) {
-    if (!durationsByPath.has(filepath)) durationsByPath.set(filepath, null)
-  }
+    if (!manifestItem) continue
 
-  const audioFiles: ReportStripFile[] = [...durationsByPath.entries()]
-    .map(([filepath, duration]) => {
-      const ranges = (rangesByFile.get(filepath) ?? []).map((range) => ({
-        start: range.start,
-        end: range.end,
-        href: range.href,
-        label: range.label,
-        tone: rangeTone(range.score),
-      }))
-      return {
-        name: fileName(filepath),
-        filepath,
-        duration: duration ?? manifestDurations.get(baseKey(filepath)) ?? null,
-        placed: ranges.length > 0,
-        ignored: overrides?.audioFiles?.[filepath]?.ignored ?? false,
-        ranges,
-        between: { before: null, after: null },
-      }
+    audioFiles.push({
+      name: manifestItem?.title ?? fileName(item.filepath),
+      filepath: fileName(item.filepath),
+      placed: false,
+      ignored: false,
+      between: {
+        before: "",
+        after: "",
+      },
+      duration: manifestItem?.duration ?? null,
     })
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
-
-  for (const [index, file] of audioFiles.entries()) {
-    for (let before = index - 1; before >= 0; before--) {
-      const last = audioFiles[before]?.ranges.at(-1)
-      if (last) {
-        file.between.before = last.label
-        break
-      }
-    }
-    for (let after = index + 1; after < audioFiles.length; after++) {
-      const first = audioFiles[after]?.ranges[0]
-      if (first) {
-        file.between.after = first.label
-        break
-      }
-    }
-  }
-
-  const bodyUnaligned = unalignedItems.filter(
-    (item) => item.reason === "not-found" && item.inBody && !item.ignored,
-  )
-
-  let weighted = 0
-  let weight = 0
-  let sentencesAligned = 0
-  let sentencesTotal = 0
-  for (const item of scored) {
-    weighted += item.score * item.chapterSentenceCount
-    weight += item.chapterSentenceCount
-    sentencesAligned += item.alignedSentenceCount
-    sentencesTotal += item.chapterSentenceCount
-  }
-  for (const item of bodyUnaligned) {
-    weight += item.chapterSentenceCount ?? 0
-    sentencesTotal += item.chapterSentenceCount ?? 0
-  }
-
-  const score =
-    scored.length > 0 && weight > 0 ? round1(weighted / weight) : null
-
-  let audioPlacedSeconds = 0
-  let audioTotalSeconds = 0
-  for (const file of audioFiles) {
-    for (const range of file.ranges) {
-      audioPlacedSeconds += range.end - range.start
-    }
-    audioTotalSeconds += file.duration ?? 0
   }
 
   return {
@@ -528,13 +493,16 @@ export function buildReportModel(args: {
       audioTotalSeconds,
       needsLook: items.filter((item) => item.needsLook).length,
       ignored: items.filter((item) => item.ignored).length,
-      notFoundBody: bodyUnaligned.length,
-      noAudio: chapterItems.filter(
-        (item) => !item.ignored && item.status === "no-audio",
+      notFoundBody: 0,
+      noAudio: items.filter(
+        (item) =>
+          item.kind === "chapter" &&
+          !item.ignored &&
+          item.status === "no-audio",
       ).length,
       looseAudio: audioFiles.filter((file) => !file.placed && !file.ignored)
         .length,
-      chapters: chapterItems.length,
+      chapters: items.filter((item) => item.kind === "chapter").length,
     },
     items,
     audioFiles,

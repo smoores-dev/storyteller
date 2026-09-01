@@ -5,7 +5,7 @@ import {
 } from "@/store/slices/audioPlayerSlice"
 import { type AppStore } from "@/store/store"
 
-import { AudioPlayer, type AudioState } from "./AudioPlayerService"
+import { type AudioState, readerPlayer } from "./AudioPlayerService"
 
 let store: AppStore | null = null
 let unsubscribe: (() => void) | null = null
@@ -51,7 +51,7 @@ export function initializeAudioPlayerBridge(appStore: AppStore) {
     throttleTimer = null
   }
 
-  unsubscribe = AudioPlayer.subscribe((audioState) => {
+  unsubscribe = readerPlayer().subscribe((audioState) => {
     if (!store) return
 
     const reduxState = selectAudioPlayerState(store.getState())
@@ -106,7 +106,7 @@ export function initializeAudioPlayerBridge(appStore: AppStore) {
       immediateChanges.shuffle = audioState.shuffle
     }
 
-    const queue = AudioPlayer.getQueue()
+    const queue = readerPlayer().getQueue()
     if (
       queue.length !== previousQueueLength ||
       hasChanged(reduxState.trackIndex, audioState.trackIndex)

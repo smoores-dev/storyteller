@@ -11,7 +11,7 @@ import {
   getResourceHrefFromApiUrl,
 } from "@/components/reader/BookService"
 import { withActiveFrame } from "@/components/reader/frameUtils"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   getAudioToTextMap,
   getGuide,
@@ -387,6 +387,6 @@ export function handleChapterSkip(
 
   if (!nextTocItem || !nextTocItem.locator) return
 
-  AudioPlayer.pause()
+  readerPlayer().pause()
   requestTextNavigation(nextTocItem.locator)
 }

@@ -16,7 +16,7 @@ import {
   traverseToc,
 } from "@/components/reader/BookService"
 import type { BookWithRelations } from "@/database/books"
-import { AudioPlayer, type AudioTrack } from "@/services/AudioPlayerService"
+import { type AudioTrack, readerPlayer } from "@/services/AudioPlayerService"
 import { syncPosition } from "@/store/actions"
 import { api, getCoverUrl } from "@/store/api"
 import {
@@ -693,7 +693,7 @@ async function initializeAudioPlayer({
   playbackSpeed: number
   volume: number
 }) {
-  await AudioPlayer.replacePlaylist(tracks, startTrackIndex, startPosition)
-  AudioPlayer.setPlaybackRate(playbackSpeed)
-  AudioPlayer.setVolume(volume)
+  await readerPlayer().replacePlaylist(tracks, startTrackIndex, startPosition)
+  readerPlayer().setPlaybackRate(playbackSpeed)
+  readerPlayer().setVolume(volume)
 }
