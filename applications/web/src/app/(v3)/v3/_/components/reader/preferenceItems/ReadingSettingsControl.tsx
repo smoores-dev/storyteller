@@ -677,9 +677,6 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
                   </span>
                 </ResetOrSetGlobalButton>
                 <Select
-                  // label={}
-                  // comboboxProps={{ withinPortal: false }}
-                  classNames={selectClassNames}
                   defaultValue={preferences.smoothScrollImplementation}
                   onChange={(value) => {
                     updatePref(
@@ -839,7 +836,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           </ResetOrSetGlobalButton>
           <ReaderSlider
             defaultValue={preferences.paragraphSpacing}
-            onChangeEnd={(val) => {
+            onValueCommitted={(val) => {
               updatePref("paragraphSpacing", val, scope)
             }}
             min={0}
@@ -868,7 +865,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           </ResetOrSetGlobalButton>
           <ReaderSlider
             defaultValue={preferences.lineLength}
-            onChangeEnd={(val) => {
+            onValueCommitted={(val) => {
               updatePref("lineLength", val, scope)
             }}
             min={0}
@@ -896,7 +893,7 @@ const ReadingSettingsContent = ({ scope }: { scope: "global" | UUID }) => {
           </ResetOrSetGlobalButton>
           <ReaderSlider
             defaultValue={preferences.lineHeight}
-            onChangeEnd={(val) => {
+            onValueCommitted={(val) => {
               updatePref("lineHeight", val, scope)
             }}
             min={1}
@@ -1184,15 +1181,13 @@ export const ResetOrSetGlobalButton = <K extends keyof ReadingPreferences>(
       <div className="flex items-center gap-2">{props.children}</div>
       {props.preference.globalValue !== props.preference.value && (
         <DropdownMenu>
-          <DropdownMenuTrigger>
-            <button
-              className="hover:bg-reader-surface-hover hover:text-reader-accent-hover text-reader-text absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-md px-1 py-1"
-              onClick={(e) => {
-                e.stopPropagation()
-              }}
-            >
-              <IconDotsVertical size={16} />
-            </button>
+          <DropdownMenuTrigger
+            className="hover:bg-reader-surface-hover hover:text-reader-accent-hover text-reader-text absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-md px-1 py-1"
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+          >
+            <IconDotsVertical size={16} />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="border-reader-border bg-reader-surface">
             <DropdownMenuItem

@@ -632,6 +632,8 @@ export const readiumIfyPreferences = (
     scroll: preferences.layout === "scrollable",
     scrollPaddingBottom: 100,
     scrollPaddingTop: 100,
+    scrollPaddingLeft: 100,
+    scrollPaddingRight: 100,
     maximalLineLength: preferences.lineLength + 10,
     minimalLineLength: preferences.lineLength - 10,
     optimalLineLength: preferences.lineLength,

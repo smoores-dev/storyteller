@@ -35,6 +35,10 @@ const TocList = () => {
     <>
       {tocItems && tocItems.length > 0 ? (
         tocItems.map((item) => {
+          const isCurrentChapter =
+            item.href === currentChapterLocator?.href ||
+            item.locator?.href === currentChapterLocator?.href
+
           return (
             <FilterableMenuItem
               key={item.id}
@@ -42,15 +46,11 @@ const TocList = () => {
                 "hover:bg-reader-surface-hover data-highlighted:bg-reader-accent/30 w-full rounded-sm p-2 text-left",
                 {
                   "text-reader-text-muted": !item.locator,
-                  "bg-reader-accent/10":
-                    item.href === currentChapterLocator?.href ||
-                    item.locator?.href === currentChapterLocator?.href,
+                  "bg-reader-accent/10": isCurrentChapter,
                 },
               )}
-              id={item.id}
               textValue={item.title}
-              style={{ paddingLeft: `${item.level * 16}px` }}
-              onClick={() => {
+              onSelect={() => {
                 if (!item.locator) {
                   console.warn("[TableOfContentsControl] No locator", item)
                   return
@@ -59,11 +59,20 @@ const TocList = () => {
                 dispatch(navItemPressed({ locator: item.locator }))
               }}
             >
-              <span className="text-reader-text grow text-sm">
+              <span
+                className="text-reader-text grow text-sm"
+                style={{ paddingLeft: `${item.level * 16}px` }}
+              >
                 {item.title}
               </span>
-              {(item.href === currentChapterLocator?.href ||
-                item.locator?.href === currentChapterLocator?.href) && (
+              <span
+                className={cn("text-reader-text-muted text-xs tabular-nums", {
+                  hidden: isCurrentChapter,
+                })}
+              >
+                {item.locator?.locations.position}
+              </span>
+              {isCurrentChapter && (
                 <icon.Check size="sm" className="text-reader-accent" />
               )}
             </FilterableMenuItem>
