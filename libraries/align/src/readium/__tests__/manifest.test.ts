@@ -55,7 +55,7 @@ function flattenTocHrefs(
 void describe("generateReadiumManifest", () => {
   before(async () => {
     await execPromise(
-      `${new URL("../../../../../applications/web/install-readium-cli.sh", import.meta.url).pathname} 0.7.1`,
+      `${new URL("../../../../../applications/web/install-readium-cli.sh", import.meta.url).pathname} 0.9.1`,
     )
   })
 

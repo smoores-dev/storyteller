@@ -112,7 +112,7 @@ export const readingSessionSlice = createSlice({
     },
 
     setActiveFrame: (state, action: PayloadAction<FrameManager | null>) => {
-      state.activeFrameUrl = action.payload?.iframe.src ?? null
+      state.activeFrameUrl = action.payload?.source ?? null
       registerActiveFrame(action.payload)
     },
 

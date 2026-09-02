@@ -569,7 +569,12 @@ startAppListening({
             return
           }
 
-          const guide = await publication.guideForLink(link)
+          const guide = link.alternates?.items.length
+            ? await publication.guideForLink(link).catch((error: unknown) => {
+                console.warn("Failed to load guide for saved position", error)
+                return null
+              })
+            : null
 
           listenerApi.dispatch(
             syncPosition({

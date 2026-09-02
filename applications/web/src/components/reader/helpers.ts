@@ -1,6 +1,7 @@
 import {
   type EpubNavigator,
   type VisualNavigatorViewport,
+  getScriptMode,
 } from "@readium/navigator"
 import {
   type GuidedNavigationDocument,
@@ -8,7 +9,32 @@ import {
   LocatorLocations,
 } from "@readium/shared"
 
+import { getPublication } from "@/store/readerRegistry"
+import { type LayoutMode } from "@/store/slices/preferencesSlice"
+
 import { withActiveFrame } from "./frameUtils"
+
+export function isVerticalPublication(publication = getPublication()) {
+  if (!publication) return false
+  const scriptMode = getScriptMode(publication.metadata)
+  return scriptMode === "cjk-vertical" || scriptMode === "mongolian-vertical"
+}
+
+export function isScrollingLayout(layout: LayoutMode) {
+  return layout === "scrollable" || isVerticalPublication()
+}
+
+function getWritingMode(wnd: Window) {
+  return (
+    wnd.getComputedStyle(wnd.document.documentElement).writingMode ||
+    wnd.getComputedStyle(wnd.document.body).writingMode
+  )
+}
+
+export function isVerticalWriting(wnd: Window) {
+  const writingMode = getWritingMode(wnd)
+  return writingMode === "vertical-rl" || writingMode === "vertical-lr"
+}
 
 export const CSS_SELECTOR_TYPE = {
   id: "id",
@@ -211,11 +237,10 @@ export function isElementVisible(
   }
 
   const rect = element.getBoundingClientRect()
-  if (scrolling) {
+  if (scrolling && !isVerticalWriting(wnd)) {
     return rect.bottom > 0 && rect.top < wnd.innerHeight
-  } else {
-    return rect.right > 0 && rect.left < wnd.innerWidth
   }
+  return rect.right > 0 && rect.left < wnd.innerWidth
 }
 
 function shouldIgnoreElement(element: Element) {
@@ -466,20 +491,32 @@ export function scrollToLocator(
       currentScrollWindow = null
     }
 
-    const startY = window.scrollY
+    const writingMode = getWritingMode(window)
+    const vertical =
+      writingMode === "vertical-rl" || writingMode === "vertical-lr"
+    const scrollingElement =
+      document.scrollingElement ?? document.documentElement
+    const start = vertical ? scrollingElement.scrollLeft : window.scrollY
     currentScrollWindow = window
 
-    const calculateTarget = () => {
-      const rect = element.getBoundingClientRect()
-      const target =
-        window.scrollY + rect.top - window.innerHeight / 2 + rect.height / 2
-      const maxScroll =
-        document.documentElement.scrollHeight - window.innerHeight
-      return Math.max(0, Math.min(target, maxScroll))
-    }
-
-    const targetY = calculateTarget()
-    const distance = Math.abs(targetY - startY)
+    const rect = element.getBoundingClientRect()
+    const maxScrollX = scrollingElement.scrollWidth - window.innerWidth
+    const target = vertical
+      ? Math.max(
+          writingMode === "vertical-lr" ? 0 : -maxScrollX,
+          Math.min(
+            start + rect.left - window.innerWidth / 2 + rect.width / 2,
+            writingMode === "vertical-lr" ? maxScrollX : 0,
+          ),
+        )
+      : Math.max(
+          0,
+          Math.min(
+            start + rect.top - window.innerHeight / 2 + rect.height / 2,
+            scrollingElement.scrollHeight - window.innerHeight,
+          ),
+        )
+    const distance = Math.abs(target - start)
 
     // if already close enough, just jump there instantly
     // if (distance < 10) {
@@ -512,9 +549,13 @@ export function scrollToLocator(
       const progress = Math.min(elapsed / duration, 1)
 
       const easedProgress = easeOutCubic(progress)
-      const currentY = startY + (targetY - startY) * easedProgress
+      const current = start + (target - start) * easedProgress
 
-      window.scrollTo({ top: currentY })
+      if (vertical) {
+        scrollingElement.scrollLeft = current
+      } else {
+        window.scrollTo({ top: current })
+      }
 
       if (progress < 1) {
         currentScrollAnimation = window.requestAnimationFrame(animate)

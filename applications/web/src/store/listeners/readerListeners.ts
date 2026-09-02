@@ -11,6 +11,7 @@ import { withActiveFrame } from "@/components/reader/frameUtils"
 import {
   findFirstVisibleLocator,
   isLocatorWithinViewport,
+  isScrollingLayout,
   scrollToLocator,
 } from "@/components/reader/helpers"
 import { getReaderKeyboardHotkeys } from "@/components/reader/hooks/useReaderKeyboard"
@@ -60,8 +61,9 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
   const nav = getNavigator()
   if (!nav) return false
 
-  const isScrolling =
-    selectPreference(listenerApi.getState(), "layout") === "scrollable"
+  const isScrolling = isScrollingLayout(
+    selectPreference(listenerApi.getState(), "layout"),
+  )
 
   if (isSameLocator(locator, nav.currentLocator)) {
     return false
@@ -148,8 +150,9 @@ startAppListening({
     if (!currentBook) return
 
     const isSyncing = selectIsSyncing(listenerApi.getState())
-    const scrolling =
-      selectPreference(listenerApi.getState(), "layout") === "scrollable"
+    const scrolling = isScrollingLayout(
+      selectPreference(listenerApi.getState(), "layout"),
+    )
     const currentTocItem = selectCurrentToCLocator(listenerApi.getState())
     const mode = selectReadingMode(listenerApi.getState())
     const skipOnTurnPage = selectPreference(
