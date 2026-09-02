@@ -1,51 +1,46 @@
-import { IconVolume, IconVolumeOff } from "@tabler/icons-react"
-import classNames from "classnames"
+"use client"
 
+import { useState } from "react"
+
+import { useMenuToggle } from "@v3/_/components/reader/hooks/useMenuToggle"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/app/(v3)/v3/_/components/ui/dropdown-menu"
-import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
+} from "@v3/_/components/ui/dropdown-menu"
+import { cn } from "@v3/_/lib/utils"
+
+import * as icon from "@/icons"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectVolume } from "@/store/slices/audioPlayerSlice"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
 
-import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
-import { popoverClassNames, sliderClassNames } from "./classNames"
-import { Slider } from "@/app/(v3)/v3/_/components/ui/slider"
 import { ReaderSlider } from "./ReaderSlider"
-
-const snapVolume = (value: number): number => {
-  // snap to 0 if very close to 0
-  if (value <= 1.5) return 0
-
-  // snap to 100 if very close to 100
-  if (value >= 98.5) return 100
-
-  // round to whole number
-  return Math.round(value)
-}
+import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
+import { readerMenuClassName, stopMenuNavigation } from "./readerSettingsRows"
 
 const VolumeSlider = () => {
   const volume = useAppSelector(selectVolume)
   const dispatch = useAppDispatch()
+  const [draft, setDraft] = useState<number | null>(null)
 
   return (
-    <div className="p-2">
+    <div className="p-2" onKeyDown={stopMenuNavigation}>
       <ReaderSlider
-        // classNames={{ ...sliderClassNames, root: "md:pb-0" }}
-        size="sm"
-        // thumbSize={10}
-        defaultValue={volume}
+        value={draft ?? volume}
+        onValueChange={(value) => {
+          setDraft(value)
+        }}
         onValueCommitted={(value) => {
-          const snappedValue = snapVolume(value)
-          readerPlayer().setVolume(snappedValue)
+          setDraft(null)
+          const snapped =
+            value <= 1.5 ? 0 : value >= 98.5 ? 100 : Math.round(value)
+          readerPlayer().setVolume(snapped)
           dispatch(
             preferencesSlice.actions.updatePreference({
               key: "volume",
-              value: snappedValue,
+              value: snapped,
               target: "global",
             }),
           )
@@ -57,22 +52,16 @@ const VolumeSlider = () => {
           { value: 0, label: "0%" },
           { value: 100, label: "100%" },
         ]}
-        label={(value) => `${Math.round(value)}%`}
       />
     </div>
   )
 }
 
 export const VolumeControl = (props: ToolProps) => {
-  const { isOpen, closeMenu, toggleMenu } = useMenuToggle()
+  const { isOpen, openMenu, closeMenu } = useMenuToggle()
   const volume = useAppSelector(selectVolume)
-  const isMuted = volume === 0
 
-  const volumeIcon = isMuted ? (
-    <IconVolumeOff size={18} />
-  ) : (
-    <IconVolume size={18} />
-  )
+  const volumeIcon = volume === 0 ? <icon.VolumeOff /> : <icon.Volume />
 
   if (props.mode === "raw") {
     return <VolumeSlider />
@@ -91,20 +80,20 @@ export const VolumeControl = (props: ToolProps) => {
   }
 
   return (
-    <DropdownMenu //open={isOpen} onOpenChange={toggleMenu}
+    <DropdownMenu
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (open) openMenu()
+        else closeMenu()
+      }}
     >
       <DropdownMenuTrigger
-        render={
-          <ToolbarIcon
-            label="Volume"
-            icon={volumeIcon}
-            onClick={(e) => {
-              toggleMenu()
-            }}
-          />
-        }
+        render={<ToolbarIcon label="Volume" icon={volumeIcon} />}
       />
-      <DropdownMenuContent className="w-60">
+      <DropdownMenuContent
+        align="end"
+        className={cn(readerMenuClassName, "w-60")}
+      >
         <VolumeSlider />
       </DropdownMenuContent>
     </DropdownMenu>

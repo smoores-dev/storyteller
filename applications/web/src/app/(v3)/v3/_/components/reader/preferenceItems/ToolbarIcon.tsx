@@ -1,11 +1,16 @@
-import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
-import { cn } from "@/cn"
+"use client"
+
+import { type ComponentProps } from "react"
+
+import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { cn } from "@v3/_/lib/utils"
+
 import { type UUID } from "@/uuid"
 
-type DrawerContentType =
+export type DrawerContentType =
   | {
       type: "reading-settings"
-      scope: "global" | UUID
+      bookUuid: UUID
     }
   | {
       type: "sleep-timer"
@@ -30,35 +35,34 @@ export type ToolProps =
       openDrawer: (content: DrawerContentType, title: string) => void
     }
 
+type ToolbarIconProps = Omit<
+  ComponentProps<typeof TooltipButton>,
+  "tooltip" | "aria-label" | "children"
+> & {
+  label: string
+  icon: React.ReactNode
+  pressed?: boolean
+}
+
 export const ToolbarIcon = ({
   className,
   label,
   icon,
-  onClick,
-  ref,
-  // targetDocument = window.document,
-}: {
-  label: string
-  icon: React.ReactNode
-  onClick: (e: React.MouseEvent) => void
-  /* for popover target */
-  ref?: React.RefObject<HTMLButtonElement>
-  className?: string
-  // targetDocument?: Document
-}) => {
+  pressed,
+  ...props
+}: ToolbarIconProps) => {
   return (
     <TooltipButton
       variant="real-ghost"
-      // tooltipClassName="bg-reader-surface-hover text-reader-text"
+      size="icon-lg"
+      {...props}
       tooltip={label}
       aria-label={label}
-      onClick={onClick}
-      size="icon-lg"
+      aria-pressed={pressed}
       className={cn(
-        "text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover flex items-center justify-center",
+        "text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover focus-visible:border-reader-accent/40 focus-visible:ring-reader-accent/40 aria-expanded:bg-reader-surface-hover aria-expanded:text-reader-accent aria-pressed:bg-reader-surface-hover aria-pressed:text-reader-accent flex items-center justify-center",
         className,
       )}
-      ref={ref}
     >
       {icon}
     </TooltipButton>
