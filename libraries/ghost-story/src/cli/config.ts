@@ -1,9 +1,7 @@
 import { execSync } from "node:child_process"
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
-import { createRequire } from "node:module"
 import os from "node:os"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
 
 import z from "zod"
 
@@ -372,35 +370,6 @@ export function resolveVariant(requestedVariant?: BuildVariant): BuildVariant {
   return applyLegacyCpuFallback(detectPlatform())
 }
 
-const moduleFile =
-  typeof __filename === "string" ? __filename : fileURLToPath(import.meta.url)
-
-export function getCudaProviderPath(): string | null {
-  if (process.platform !== "linux" || process.arch !== "x64") {
-    return null
-  }
-  try {
-    const packageJson = createRequire(moduleFile).resolve(
-      "onnxruntime-node/package.json",
-    )
-    return path.join(
-      path.dirname(packageJson),
-      "bin",
-      "napi-v6",
-      "linux",
-      "x64",
-      "libonnxruntime_providers_cuda.so",
-    )
-  } catch {
-    return null
-  }
-}
-
-export function isCudaProviderInstalled(): boolean {
-  const providerPath = getCudaProviderPath()
-  return providerPath !== null && existsSync(providerPath)
-}
-
 export function resolveWav2Vec2Device(
   requested: Wav2Vec2Device | null | undefined,
   variant: string | null | undefined,
@@ -408,7 +377,7 @@ export function resolveWav2Vec2Device(
   const webgpuAvailable = !(
     process.platform === "linux" && process.arch === "arm64"
   )
-  const cudaAvailable = isCudaProviderInstalled()
+  const cudaAvailable = process.platform === "linux" && process.arch === "x64"
 
   if (requested && requested !== "auto") {
     if (requested === "cuda" && !cudaAvailable) {
@@ -418,7 +387,11 @@ export function resolveWav2Vec2Device(
   }
 
   const variantName = variant ?? ""
-  if (variantName.includes("cuda") && cudaAvailable) {
+  if (
+    cudaAvailable &&
+    variantName.includes("cuda") &&
+    !variantName.includes("cuda-11")
+  ) {
     return "cuda"
   }
 
