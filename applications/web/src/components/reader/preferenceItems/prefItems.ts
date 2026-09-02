@@ -1,83 +1,79 @@
 import {
   type FontFamily,
-  type ReadingPreferences,
+  type HighlightColor,
+  READER_THEMES,
   type ReadingTheme,
+  type ReadingThemeScheme,
   type SpacingMode,
 } from "@/store/slices/preferencesSlice"
 
-export const readingThemes = [
-  {
-    value: "light",
-    label: "Light",
-    bg: "bg-white border",
-    text: "text-gray-900",
-  },
-  { value: "paper", label: "Paper", bg: "bg-amber-50", text: "text-amber-900" },
-  {
-    value: "sepia",
-    label: "Sepia",
-    bg: "bg-yellow-50",
-    text: "text-yellow-900",
-  },
-  {
-    value: "auto",
-    label: "Auto",
-    bg: "bg-linear-to-br from-white to-gray-900",
-    text: "text-gray-900",
-  },
-  { value: "dark", label: "Dark", bg: "bg-gray-900", text: "text-gray-50" },
-  {
-    value: "cattpuccin",
-    label: "Catppuccin",
-    bg: "bg-slate-700",
-    text: "text-slate-50",
-  },
-] as const satisfies {
+export type ReadingThemeOption = {
   value: ReadingTheme
   label: string
+  group: ReadingThemeScheme
   bg: string
   text: string
-}[]
+  attributes: { "data-reader-theme": ReadingTheme }
+}
+
+export const readingThemes: ReadingThemeOption[] = READER_THEMES.map(
+  (theme) => ({
+    value: theme.id,
+    label: theme.label,
+    group: theme.scheme,
+    bg: "bg-reader-bg border-reader-border border",
+    text: "text-reader-text",
+    attributes: { "data-reader-theme": theme.id },
+  }),
+)
+
+export const lightReadingThemes = readingThemes.filter(
+  (theme) => theme.group === "light",
+)
+
+export const darkReadingThemes = readingThemes.filter(
+  (theme) => theme.group === "dark",
+)
 
 export const highlightColors = [
   {
     value: "yellow",
     label: "Yellow",
     icon: "🟡",
-    className: "bg-reader-highlight-color-yellow",
+    className: "bg-reader-highlight-yellow",
   },
   {
     value: "red",
     label: "Red",
     icon: "🟥",
-    className: "bg-reader-highlight-color-red",
+    className: "bg-reader-highlight-red",
   },
   {
     value: "green",
     label: "Green",
     icon: "🟢",
-    className: "bg-reader-highlight-color-green",
+    className: "bg-reader-highlight-green",
   },
   {
     value: "blue",
     label: "Blue",
     icon: "🟦",
-    className: "bg-reader-highlight-color-blue",
+    className: "bg-reader-highlight-blue",
   },
   {
     value: "magenta",
     label: "Magenta",
     icon: "🟪",
-    className: "bg-reader-highlight-color-magenta",
+    className: "bg-reader-highlight-magenta",
   },
   {
     value: "custom",
     label: "Custom",
     icon: "🎨",
-    className: "bg-reader-highlight-color-custom",
+    className: "bg-reader-highlight-custom",
   },
 ] as const satisfies {
-  value: ReadingPreferences["highlightColor"]
+  value: HighlightColor
   label: string
   icon: string
   className: string

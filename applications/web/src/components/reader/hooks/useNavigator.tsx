@@ -24,9 +24,10 @@ import {
   registerNavigator,
 } from "@/store/readerRegistry"
 import {
-  applyThemeToDocument,
+  applyFrameTheme,
+  readReaderTokens,
+  readiumIfyPreferences,
   selectBookPreferences,
-  selectEpubPreferences,
 } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
@@ -63,11 +64,6 @@ export const useNavigator = ({
   const { data: initialPosition, isLoading: initialPositionLoading } =
     useGetPositionQuery({ uuid: book.uuid })
 
-  const epubPreferences = useAppSelector((state) =>
-    selectEpubPreferences(state, book.uuid),
-  )
-  const epubPreferencesRef = useRef(epubPreferences)
-  epubPreferencesRef.current = epubPreferences
   const preferences = useAppSelector((state) =>
     selectBookPreferences(state, book.uuid),
   )
@@ -75,6 +71,11 @@ export const useNavigator = ({
   preferencesRef.current = preferences
 
   const publicationLoading = useAppSelector(selectIsLoadingPublication)
+
+  const epubPreferences = useCallback(
+    () => readiumIfyPreferences(preferencesRef.current, readReaderTokens()),
+    [],
+  )
 
   const dispatch = useAppDispatch()
   const mode = useAppSelector(selectReadingMode)
@@ -127,7 +128,11 @@ export const useNavigator = ({
                   const frameDocument =
                     frameManager.iframe.contentWindow?.document
                   // faster to do it here
-                  applyThemeToDocument(preferencesRef.current, frameDocument)
+                  applyFrameTheme(
+                    preferencesRef.current,
+                    readReaderTokens(),
+                    frameDocument,
+                  )
                   if (
                     frameDocument &&
                     isVerticalPublication(publication) &&
@@ -139,7 +144,7 @@ export const useNavigator = ({
                     frameDocument.head.appendChild(style)
                   }
                   void navigatorRef.current?.submitPreferences(
-                    new EpubPreferences(epubPreferencesRef.current),
+                    new EpubPreferences(epubPreferences()),
                   )
                   dispatch(
                     readingSessionSlice.actions.setActiveFrame(
@@ -209,8 +214,8 @@ export const useNavigator = ({
           positions,
           initialLocator ?? undefined,
           {
-            defaults: epubPreferencesRef.current,
-            preferences: epubPreferencesRef.current,
+            defaults: epubPreferences(),
+            preferences: epubPreferences(),
           },
         )
 
@@ -250,6 +255,7 @@ export const useNavigator = ({
       book.uuid,
       containerRef,
       dispatch,
+      epubPreferences,
       initialPositionLoading,
       mode,
       navigatorRef,
