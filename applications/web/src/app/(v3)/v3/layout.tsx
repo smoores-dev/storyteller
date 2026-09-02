@@ -6,14 +6,14 @@ import { NextIntlClientProvider } from "next-intl"
 import { getTranslations } from "next-intl/server"
 import { NuqsAdapter } from "nuqs/adapters/next"
 
+import { PiPProvider } from "@v3/_/components/reader/PipProvider"
+import { ReaderAudioProvider } from "@v3/_/components/reader/ReaderAudioProvider"
 import { TauriTitlebarSync } from "@v3/_/components/tauri-titlebar-sync"
 import { ThemeProvider } from "@v3/_/components/theme-provider"
 import { Toaster } from "@v3/_/components/ui/sonner"
 import { VersionProvider } from "@v3/_/components/version-context"
 
 import StoreProvider from "@/components/StoreProvider"
-import { PiPProvider } from "@/components/reader/PipProvider"
-import { ReaderAudioProvider } from "@/components/reader/ReaderAudioProvider"
 import { getSetting } from "@/database/settings"
 import { env } from "@/env"
 import {
