@@ -1,112 +1,95 @@
-import { IconList } from "@tabler/icons-react"
+import { useEffect } from "react"
 
-import { useCallback, useEffect, useMemo } from "react"
-
+import { useMenuToggle } from "@v3/_/components/reader/hooks/useMenuToggle"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/app/(v3)/v3/_/components/ui/dropdown-menu"
-import { cn } from "@/cn"
-import { useMenuToggle } from "@/components/reader/hooks/useMenuToggle"
+  FilterableMenu,
+  FilterableMenuContent,
+  FilterableMenuItem,
+  FilterableMenuTrigger,
+} from "@v3/_/components/ui/filterable-menu"
+import { cn } from "@v3/_/lib/utils"
+
+import * as icon from "@/icons"
 import { navItemPressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { getTocItems } from "@/store/readerRegistry"
 import { selectCurrentToCLocator } from "@/store/slices/readingSessionSlice"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
-import * as icon from "@/icons"
-import {
-  FilterableMenuItem,
-  FilterableMenu,
-  FilterableMenuContent,
-  FilterableMenuTrigger,
-} from "@v3/_/components/ui/filterable-menu"
-
-type Props = ToolProps & { opened?: boolean }
 
 const TocList = () => {
   const tocItems = getTocItems()
   const currentChapterLocator = useAppSelector(selectCurrentToCLocator)
   const dispatch = useAppDispatch()
 
+  if (!tocItems || tocItems.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <span className="text-reader-text-muted text-sm">
+          No table of contents available
+        </span>
+      </div>
+    )
+  }
+
   return (
     <>
-      {tocItems && tocItems.length > 0 ? (
-        tocItems.map((item) => {
-          return (
-            <FilterableMenuItem
-              key={item.id}
-              className={cn(
-                "hover:bg-reader-surface-hover data-highlighted:bg-reader-accent/30 w-full rounded-sm p-2 text-left",
-                {
-                  "text-reader-text-muted": !item.locator,
-                  "bg-reader-accent/10":
-                    item.href === currentChapterLocator?.href ||
-                    item.locator?.href === currentChapterLocator?.href,
-                },
-              )}
+      {tocItems.map((item) => {
+        const isCurrent =
+          item.href === currentChapterLocator?.href ||
+          item.locator?.href === currentChapterLocator?.href
+        return (
+          <FilterableMenuItem
+            key={item.id}
+            textValue={item.title}
+            disabled={!item.locator}
+            className={cn(
+              "hover:bg-reader-surface-hover data-highlighted:bg-reader-accent/30 w-full rounded-sm p-2 text-left transition-colors",
+              isCurrent && "bg-reader-accent/10",
+            )}
+            onSelect={() => {
+              if (!item.locator) return
+              dispatch(navItemPressed({ locator: item.locator }))
+            }}
+          >
+            <span
               id={item.id}
-              textValue={item.title}
-              style={{ paddingLeft: `${item.level * 16}px` }}
-              onClick={() => {
-                if (!item.locator) {
-                  console.warn("[TableOfContentsControl] No locator", item)
-                  return
-                }
-
-                dispatch(navItemPressed({ locator: item.locator }))
-              }}
-            >
-              <span className="text-reader-text grow text-sm">
-                {item.title}
-              </span>
-              {(item.href === currentChapterLocator?.href ||
-                item.locator?.href === currentChapterLocator?.href) && (
-                <icon.Check size="sm" className="text-reader-accent" />
+              className={cn(
+                "text-reader-text flex grow items-center text-sm",
+                !item.locator && "text-reader-text-muted",
               )}
-            </FilterableMenuItem>
-          )
-        })
-      ) : (
-        <div className="py-8 text-center">
-          <span className="text-reader-text-muted text-sm">
-            No table of contents available
-          </span>
-        </div>
-      )}
+              style={{ paddingLeft: `${item.level * 16}px` }}
+            >
+              {item.title}
+            </span>
+            {isCurrent && (
+              <icon.Check size="sm" className="text-reader-accent shrink-0" />
+            )}
+          </FilterableMenuItem>
+        )
+      })}
     </>
   )
 }
 
-export const TableOfContentsControl = (props: Props) => {
+export const TableOfContentsControl = (props: ToolProps) => {
   const currentChapterLocator = useAppSelector(selectCurrentToCLocator)
 
-  const { isOpen, closeMenu, toggleMenu } = useMenuToggle()
+  const { isOpen, setOpen, toggleMenu } = useMenuToggle()
 
   useEffect(() => {
-    async function onTocOpenChange(open: boolean) {
-      await new Promise((resolve) => setTimeout(resolve, 50))
+    if (!isOpen || !currentChapterLocator?.id) return
 
-      if (open) {
-        if (currentChapterLocator?.id) {
-          document.getElementById(currentChapterLocator.id)?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          })
-        }
-      }
+    const timeout = setTimeout(() => {
+      document.getElementById(currentChapterLocator.id)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      })
+    }, 50)
+    return () => {
+      clearTimeout(timeout)
     }
-    void onTocOpenChange(props.opened ?? isOpen)
-  }, [currentChapterLocator?.id, isOpen, props.opened])
-
-  const onClickDrawer = useCallback(() => {
-    if (props.mode !== "drawer") return
-    props.openDrawer({ type: "table-of-contents" }, "Table of Contents")
-  }, [props])
-
-  const Icon = useMemo(() => <IconList size={18} />, [])
+  }, [currentChapterLocator?.id, isOpen])
 
   if (props.mode === "raw") {
     return <TocList />
@@ -115,20 +98,22 @@ export const TableOfContentsControl = (props: Props) => {
   if (props.mode === "drawer") {
     return (
       <ToolbarIcon
-        label="Table of Contents"
-        icon={Icon}
-        onClick={onClickDrawer}
+        label="Table of contents"
+        icon={<icon.List size="lg" />}
+        onClick={() => {
+          props.openDrawer({ type: "table-of-contents" }, "Table of contents")
+        }}
       />
     )
   }
 
   return (
-    <FilterableMenu open={props.opened ?? isOpen} onOpenChange={toggleMenu}>
+    <FilterableMenu open={isOpen} onOpenChange={setOpen}>
       <FilterableMenuTrigger
         render={
           <ToolbarIcon
-            label="Table of Contents"
-            icon={Icon}
+            label="Table of contents"
+            icon={<icon.List size="lg" />}
             onClick={toggleMenu}
           />
         }

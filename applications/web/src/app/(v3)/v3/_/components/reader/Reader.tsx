@@ -1,26 +1,27 @@
 "use client"
 
-import { useDocumentVisibility, usePrevious } from "@mantine/hooks"
 import type { EpubNavigator } from "@readium/navigator"
-import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconLoader2,
-} from "@tabler/icons-react"
-import classNames from "classnames"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import dynamic from "next/dynamic"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { cn } from "@/cn"
-import { AudiobookCoverImage } from "@/components/books/BookThumbnailImage"
+import { Tile } from "@v3/_/components/books/Cover"
+import { Button } from "@v3/_/components/ui/button"
+import { Spinner } from "@v3/_/components/ui/spinner"
+import { useDocumentVisibility } from "@v3/_/hooks/use-document-visibility"
+import { usePrevious } from "@v3/_/hooks/use-previous"
+import { cn } from "@v3/_/lib/utils"
+
 import type { BookWithRelations } from "@/database/books"
+import * as icon from "@/icons"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import { nextPagePressed, previousPagePressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
+import { getActiveFrame } from "@/store/readerRegistry"
 import {
-  applyThemeToDocument,
+  applyReaderTheme,
   getInitialHydratedPreferences,
-  removeThemeFromDocument,
+  removeReaderTheme,
   selectPreference,
 } from "@/store/slices/preferencesSlice"
 import {
@@ -37,8 +38,7 @@ import {
 
 import { usePiPWindow } from "./PipProvider"
 import { MINI_PLAYER_HEIGHT, MINI_PLAYER_WIDTH } from "./constants"
-import { withActiveFrame } from "./frameUtils"
-import { isVerticalPublication } from "./helpers"
+import { isRtlPublication, isVerticalPublication } from "./helpers"
 import { getClientXY } from "./hooks/mouseHelpers"
 import { useNavigator } from "./hooks/useNavigator"
 import { NavigatorEventsProvider } from "./hooks/useNavigatorEvents"
@@ -46,6 +46,16 @@ import { useReaderKeyboard } from "./hooks/useReaderKeyboard"
 import { ReaderFooter } from "./readerParts/ReaderFooter"
 import { ReaderHeader } from "./readerParts/ReaderHeader"
 import { useWakeLock } from "./useWakeLock"
+
+const ERROR_TITLES = {
+  book_not_found: "Book not found",
+  resource_not_found: "Part of this book is missing",
+  service_unavailable: "The server is not reachable",
+  internal_error: "The book could not be opened",
+} as const
+
+const EDGE_BUTTON_CLASS =
+  "group hover:text-reader-text-muted focus-visible:text-reader-text absolute inset-y-0 flex w-[10%] items-center justify-center border-none bg-transparent text-transparent transition-colors duration-200 outline-none md:w-[5%]"
 
 const ReaderComponent = ({
   book,
@@ -61,12 +71,11 @@ const ReaderComponent = ({
   const currentReadingBook = useAppSelector(selectCurrentBook)
 
   const actualMode = useAppSelector(selectReadingMode)
+  const reducedMotion = useReducedMotion()
 
   const isThemeApplied = useRef(false)
   if (!isThemeApplied.current) {
-    const preferences = getInitialHydratedPreferences(book.uuid)
-
-    applyThemeToDocument(preferences, document)
+    applyReaderTheme(getInitialHydratedPreferences(book.uuid), book, document)
     isThemeApplied.current = true
   }
 
@@ -76,7 +85,7 @@ const ReaderComponent = ({
         dispatch(readingSessionSlice.actions.closeBook())
       }
 
-      removeThemeFromDocument(document)
+      removeReaderTheme(document)
       isThemeApplied.current = false
     }
   }, [dispatch, actualMode])
@@ -86,9 +95,7 @@ const ReaderComponent = ({
   const readerErrorMessage = useAppSelector(selectReaderErrorMessage)
 
   useEffect(() => {
-    // we are returning from the mini player to the same book
     if (currentReadingBook?.uuid === book.uuid) {
-      // turn syncing back on
       dispatch(
         readingSessionSlice.actions.setSyncing(actualMode === "readaloud"),
       )
@@ -122,20 +129,11 @@ const ReaderComponent = ({
 
   const currentLocator = useAppSelector(selectCurrentLocator)
 
-  // TODO: maybe stop navigating as well?
   const documentVisibility = useDocumentVisibility()
-
   const previousDocumentVisibility = usePrevious(documentVisibility)
 
-  const documentRef = useRef<HTMLElement | null>(null)
-  useEffect(() => {
-    documentRef.current = document.body
-  }, [])
-
-  const { acquireWakeLock } = useWakeLock(documentRef, {
-    onError: (error) => {
-      console.error("ERROR", error)
-    },
+  useWakeLock((error) => {
+    console.warn("Wake lock unavailable", error)
   })
   const { requestPipWindow, pipWindow } = usePiPWindow()
 
@@ -156,24 +154,15 @@ const ReaderComponent = ({
       if (shouldShowPip) {
         void requestPipWindow(MINI_PLAYER_WIDTH, MINI_PLAYER_HEIGHT)
       }
-    } else {
-      readerPlayer().setUpdateInterval(200)
-      // technically superfluous bc it should happen in useWakeLock above, but just in case
-      void acquireWakeLock()
+      return
+    }
 
-      // sometimes when tab is not active, readium either premeptively destroys the frame or never "undestroys" it
-      // this is rather heavy handed, but the easiest way to do it is to just reload the navigator
+    readerPlayer().setUpdateInterval(200)
 
-      withActiveFrame((frame) => {
-        // @ts-expect-error private property, but no other way to check if the frame is destroyed or hidden
-        if (!frame.destroyed && !frame.hidden) {
-          return
-        }
-
-        // manually reload the navigator to reshow the frame
-        // TODO: maybe there's a better way to do this
-        void loadNavigator(currentLocator)
-      })
+    const frame = getActiveFrame()
+    // @ts-expect-error private properties, mirrors frameUtils.isFrameValid
+    if (frame && (frame.destroyed || frame.hidden)) {
+      void loadNavigator(currentLocator)
     }
   }, [
     documentVisibility,
@@ -181,7 +170,6 @@ const ReaderComponent = ({
     loadNavigator,
     pipWindow,
     requestPipWindow,
-    acquireWakeLock,
     currentLocator,
     mode,
   ])
@@ -190,9 +178,18 @@ const ReaderComponent = ({
     if (actualMode === "audiobook") {
       return (
         <div className="relative mx-auto flex h-full items-center justify-center [&>iframe]:relative [&>iframe]:h-full [&>iframe]:w-full">
-          <div className="my-8">
-            <AudiobookCoverImage book={book} height="200" width="200" />
-          </div>
+          <Tile
+            image={
+              book.audiobook?.cover ??
+              book.ebook?.cover ??
+              book.readaloud?.cover
+            }
+            size={400}
+            alt={book.title}
+            type="audiobook"
+            fit="cover"
+            className="my-8 size-[200px] shadow-lg"
+          />
         </div>
       )
     }
@@ -201,37 +198,44 @@ const ReaderComponent = ({
       <div
         ref={containerRef}
         suppressHydrationWarning
-        className={cn(
-          "relative mx-auto h-full [&>iframe]:relative [&>iframe]:h-full [&>iframe]:w-full",
-        )}
+        className="relative mx-auto h-full [&>iframe]:relative [&>iframe]:h-full [&>iframe]:w-full"
       />
     )
   }, [actualMode, book])
 
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const canFullscreen =
+    typeof document !== "undefined" && document.fullscreenEnabled
 
-  const setFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      void document.documentElement.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      void document.exitFullscreen()
-      setIsFullscreen(false)
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement !== null)
+    }
+    onFullscreenChange()
+    document.addEventListener("fullscreenchange", onFullscreenChange)
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange)
     }
   }, [])
 
-  useReaderKeyboard(book.uuid)
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen()
+      return
+    }
+    void document.documentElement.requestFullscreen()
+  }, [])
 
   const layout = useAppSelector((state) => selectPreference(state, "layout"))
   const activeFrameUrl = useAppSelector(selectActiveFrameUrl)
   const scrollsVertically = layout === "scrollable" && !isVerticalPublication()
+  const rtl = !publicationLoading && isRtlPublication()
 
   const [hideUi, setHideUi] = useState(false)
   const toggleUI = useCallback((event: MouseEvent | TouchEvent) => {
     const [middleX, middleY] = getClientXY(event)
     if (middleX === undefined || middleY === undefined) return
 
-    // check if tap is in middleish of screen
     if (
       middleX > window.innerWidth / 3 &&
       middleX < (window.innerWidth / 3) * 2 &&
@@ -244,8 +248,17 @@ const ReaderComponent = ({
     return false
   }, [])
 
+  const revealUi = useCallback(() => {
+    setHideUi(false)
+  }, [])
+
+  useReaderKeyboard({
+    bookId: book.uuid,
+    ...(canFullscreen ? { onToggleFullscreen: toggleFullscreen } : {}),
+    ...(hideUi ? { onRevealUi: revealUi } : {}),
+  })
+
   const [hoverOverUi, setHoverOverUi] = useState(false)
-  // to show the ui when its hidden and the user is hovering over the top or bottom of the screen
   const handleUIMouseMove = useCallback(
     (event: MouseEvent) => {
       if (!hideUi) return
@@ -253,7 +266,6 @@ const ReaderComponent = ({
       const [middleX, middleY] = getClientXY(event)
       if (middleX === undefined || middleY === undefined) return
 
-      // top or bottom 60px
       if (middleY < 60 || middleY > window.innerHeight - 60) {
         setHoverOverUi(true)
       } else {
@@ -265,9 +277,7 @@ const ReaderComponent = ({
     [hideUi],
   )
 
-  const showUi = useMemo(() => {
-    return !hideUi || hoverOverUi
-  }, [hideUi, hoverOverUi])
+  const showUi = !hideUi || hoverOverUi
 
   const listeners = useMemo(() => {
     return {
@@ -276,99 +286,134 @@ const ReaderComponent = ({
     }
   }, [toggleUI, handleUIMouseMove])
 
+  const showLoading =
+    actualMode !== "audiobook" &&
+    (navigatorLoading || publicationLoading) &&
+    !readerError
+
   return (
-    <>
-      <NavigatorEventsProvider
-        activeFrameKey={activeFrameUrl}
-        listeners={listeners}
-      >
-        <div className="bg-reader-bg text-reader-text relative flex h-full max-h-screen w-full max-w-[100vw] flex-col overflow-clip">
-          <ReaderHeader
-            book={book}
-            isVisible={showUi}
-            isFullscreen={isFullscreen}
-            onToggleFullscreen={setFullscreen}
-          />
+    <NavigatorEventsProvider
+      activeFrameKey={activeFrameUrl}
+      listeners={listeners}
+    >
+      <div className="bg-reader-bg text-reader-text relative flex h-full max-h-screen w-full max-w-[100vw] flex-col overflow-clip">
+        <ReaderHeader
+          book={book}
+          isVisible={showUi}
+          {...(canFullscreen
+            ? { isFullscreen, onToggleFullscreen: toggleFullscreen }
+            : {})}
+        />
 
-          <div
-            className={classNames(
-              "relative mx-auto h-full w-full flex-1 touch-manipulation md:touch-auto",
-              scrollsVertically ? "-mt-14 -mb-20" : "my-4",
-            )}
-          >
-            {memoizedContainerRef}
-            {actualMode !== "audiobook" && (
-              // no point in having navigation buttons in audiobook mode
-              <>
-                <button
-                  type="button"
-                  className="hover:text-reader-text absolute top-1/2 right-0 flex h-screen w-[10%] -translate-y-1/2 items-center justify-center border-none bg-transparent text-transparent transition-colors md:w-[5%]"
+        <div
+          className={cn(
+            "relative mx-auto h-full w-full flex-1 touch-manipulation md:touch-auto",
+            scrollsVertically ? "-mt-12 -mb-20 md:-mb-16" : "my-4",
+          )}
+        >
+          {memoizedContainerRef}
+          {actualMode !== "audiobook" && (
+            <>
+              <button
+                type="button"
+                aria-label={rtl ? "Previous page" : "Next page"}
+                className={cn(EDGE_BUTTON_CLASS, "right-0")}
+                onClick={() => {
+                  dispatch(rtl ? previousPagePressed() : nextPagePressed())
+                }}
+              >
+                <icon.ChevronRight
+                  size="lg"
+                  className="transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-active:scale-90"
+                />
+              </button>
+              <button
+                type="button"
+                aria-label={rtl ? "Next page" : "Previous page"}
+                className={cn(EDGE_BUTTON_CLASS, "left-0")}
+                onClick={() => {
+                  dispatch(rtl ? nextPagePressed() : previousPagePressed())
+                }}
+              >
+                <icon.ChevronLeft
+                  size="lg"
+                  className="transition-transform duration-200 ease-out group-hover:-translate-x-0.5 group-active:scale-90"
+                />
+              </button>
+            </>
+          )}
+        </div>
+
+        <AnimatePresence>
+          {showLoading && (
+            <motion.div
+              key="reader-loading"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: reducedMotion ? 0 : 0.25,
+                ease: "easeOut",
+              }}
+              className="bg-reader-bg absolute inset-0 z-10 flex items-center justify-center"
+            >
+              <Spinner className="text-reader-text-muted size-6" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {readerError && (
+          <div className="bg-reader-bg absolute inset-0 z-10 flex items-center justify-center">
+            <div className="text-reader-text mx-8 flex max-w-md flex-col items-center gap-3 text-center">
+              <icon.AlertCircle className="text-reader-accent size-8" />
+              <h2 className="font-heading text-xl font-semibold">
+                {ERROR_TITLES[readerError]}
+              </h2>
+              {readerErrorMessage && (
+                <p className="text-reader-text-secondary text-sm">
+                  {readerErrorMessage}
+                </p>
+              )}
+              <div className="mt-3 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="border-reader-border text-reader-text hover:bg-reader-surface-hover"
                   onClick={() => {
-                    dispatch(nextPagePressed())
+                    dispatch(readingSessionSlice.actions.clearReaderError())
+                    dispatch(
+                      readingSessionSlice.actions.startBook({
+                        book,
+                        requestedMode: mode ?? "epub",
+                      }),
+                    )
                   }}
                 >
-                  <IconChevronRight size={20} />
-                </button>
-                <button
-                  type="button"
-                  className="hover:text-reader-text absolute top-1/2 left-0 flex h-screen w-[10%] -translate-y-1/2 items-center justify-center border-none bg-transparent text-transparent transition-colors md:w-[5%]"
-                  onClick={() => {
-                    dispatch(previousPagePressed())
-                  }}
-                >
-                  <IconChevronLeft size={20} />
-                </button>
-              </>
-            )}
-          </div>
-
-          {actualMode !== "audiobook" &&
-            (navigatorLoading || publicationLoading) &&
-            !readerError && (
-              <div className="bg-reader-bg absolute flex h-full w-full items-center justify-center">
-                <div className="text-reader-text text-lg">
-                  <IconLoader2 className="animate-spin" size={20} />
-                </div>
-              </div>
-            )}
-
-          {readerError && (
-            <div className="bg-reader-bg absolute flex h-full w-full items-center justify-center">
-              <div className="text-reader-text mx-8 max-w-md text-center">
-                <div className="mb-4 text-xl font-semibold">
-                  {readerError === "book_not_found" && "Book Not Found"}
-                  {readerError === "resource_not_found" && "Resource Not Found"}
-                  {readerError === "service_unavailable" &&
-                    "Service Unavailable"}
-                  {readerError === "internal_error" && "Error Loading Book"}
-                </div>
-                <div className="mb-6">{readerErrorMessage}</div>
-                <button
-                  type="button"
-                  className="bg-reader-accent text-reader-surface rounded-lg px-6 py-2 hover:opacity-80"
+                  Try again
+                </Button>
+                <Button
+                  className="bg-reader-accent text-reader-bg hover:bg-reader-accent-hover"
                   onClick={() => {
                     dispatch(readingSessionSlice.actions.clearReaderError())
                     window.history.back()
                   }}
                 >
-                  Go Back
-                </button>
+                  Go back
+                </Button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          <ReaderFooter book={book} isVisible={showUi} />
-        </div>
-      </NavigatorEventsProvider>
-    </>
+        <ReaderFooter book={book} isVisible={showUi} />
+      </div>
+    </NavigatorEventsProvider>
   )
 }
 
 export const Reader = dynamic(() => Promise.resolve(ReaderComponent), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center">
-      <IconLoader2 className="animate-spin" size={20} />
+    <div className="bg-reader-bg flex h-full w-full items-center justify-center">
+      <Spinner className="text-reader-text-muted size-6" />
     </div>
   ),
 })

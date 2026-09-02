@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react"
 
-import { cn } from "@/cn"
+import { cn } from "@v3/_/lib/utils"
 
 type ScrollingTitleProps = {
   children: React.ReactNode
   className?: string
   scrollSpeed?: number
   scrollInterval?: number
-  fadeWidth?: number
 }
 
 export const ScrollingTitle = ({
@@ -18,28 +17,21 @@ export const ScrollingTitle = ({
 }: ScrollingTitleProps) => {
   const titleRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [isOverflowing, setIsOverflowing] = useState(false)
+  const [scrollDistance, setScrollDistance] = useState(0)
   const [scrollDirection, setScrollDirection] = useState<
     "none" | "forward" | "backward"
   >("none")
-  const [scrollDuration, setScrollDuration] = useState(4000)
+
+  const isOverflowing = scrollDistance > 20
+  const scrollDuration = (scrollDistance / scrollSpeed) * 1000
 
   useEffect(() => {
     const abortController = new AbortController()
     const checkOverflow = () => {
       if (!titleRef.current || !containerRef.current) return
-
-      const element = titleRef.current
-      const container = containerRef.current
-      const isOverflow = element.scrollWidth > container.clientWidth + 20
-
-      setIsOverflowing(isOverflow)
-
-      if (isOverflow) {
-        const distance = element.scrollWidth - container.clientWidth
-        const duration = (distance / scrollSpeed) * 1000
-        setScrollDuration(duration)
-      }
+      setScrollDistance(
+        titleRef.current.scrollWidth - containerRef.current.clientWidth,
+      )
     }
 
     checkOverflow()
@@ -49,7 +41,7 @@ export const ScrollingTitle = ({
     return () => {
       abortController.abort()
     }
-  }, [children, scrollSpeed])
+  }, [children])
 
   useEffect(() => {
     if (!isOverflowing) return
@@ -80,27 +72,26 @@ export const ScrollingTitle = ({
   return (
     <div ref={containerRef} className="relative w-full">
       <div
+        className="-ms-1.5 overflow-hidden"
         style={{
-          marginInlineStart: "-6px",
-          overflow: "hidden",
           maskImage: isOverflowing
-            ? `linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent)`
+            ? "linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent)"
             : undefined,
         }}
       >
         <div
           ref={titleRef}
           className={cn(
-            "relative whitespace-nowrap transition-[left] motion-reduce:left-0!",
+            "relative w-max whitespace-nowrap transition-transform will-change-transform motion-reduce:transform-none! motion-reduce:transition-none",
             className,
           )}
           style={{
             transitionTimingFunction: "cubic-bezier(0.0, 0, 0.8, 1)",
             transitionDuration: `${scrollDuration}ms`,
-            left:
+            transform:
               scrollDirection === "forward" && isOverflowing
-                ? `calc(100% - ${(titleRef.current?.scrollWidth ?? 0) + 6}px)`
-                : "6px",
+                ? `translateX(${-scrollDistance - 6}px)`
+                : "translateX(6px)",
           }}
         >
           {children}

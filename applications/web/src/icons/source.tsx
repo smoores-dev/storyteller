@@ -98,7 +98,11 @@ import {
   IconPin,
   IconPinFilled,
   IconPlayerPause,
+  IconPlayerPauseFilled,
   IconPlayerPlay,
+  IconPlayerPlayFilled,
+  IconPlayerSkipBack,
+  IconPlayerSkipForward,
   IconPlus,
   IconPointer,
   IconProgress,
@@ -106,6 +110,10 @@ import {
   IconReload,
   IconReplace,
   IconReportAnalytics,
+  IconRewindBackward10,
+  IconRewindBackward15,
+  IconRewindForward10,
+  IconRewindForward15,
   IconRotate2,
   IconRss,
   IconScan,
@@ -116,10 +124,6 @@ import {
   IconSettings,
   IconSettingsUp,
   IconShield,
-  IconRewindForward10,
-  IconRewindBackward10,
-  IconPlayerSkipForward,
-  IconPlayerSkipBack,
   IconSortAscending,
   IconSortAscendingLetters,
   IconSortAscendingNumbers,
@@ -330,5 +334,9 @@ export const PlayerTrackForward = /*#__PURE__*/ styled(IconPlayerSkipForward)
 export const PlayerTrackBack = /*#__PURE__*/ styled(IconPlayerSkipBack)
 export const PlayerSkipForward10 = /*#__PURE__*/ styled(IconRewindForward10)
 export const PlayerSkipBack10 = /*#__PURE__*/ styled(IconRewindBackward10)
+export const PlayerPlayFilled = /*#__PURE__*/ styled(IconPlayerPlayFilled)
+export const PlayerPauseFilled = /*#__PURE__*/ styled(IconPlayerPauseFilled)
+export const RewindBackward15 = /*#__PURE__*/ styled(IconRewindBackward15)
+export const RewindForward15 = /*#__PURE__*/ styled(IconRewindForward15)
 
 export const Aa = /*#__PURE__*/ styled(IconLetterCase)
