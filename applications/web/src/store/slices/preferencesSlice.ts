@@ -58,6 +58,12 @@ export type HighlightColor =
   | "magenta"
   | "custom"
 
+export type MiniPlayerCorner =
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right"
+
 export type EdgePosition = {
   horizontalEdge: "left" | "right"
   verticalEdge: "top" | "bottom"
@@ -93,6 +99,7 @@ export type ReadingPreferences = {
   minimizedMiniPlayer: boolean
   pinnedMiniPlayer: boolean
   miniPlayerPosition: EdgePosition | null
+  miniPlayerCorner: MiniPlayerCorner
   customFontFamily: {
     url: string
     name: string
@@ -122,6 +129,7 @@ const GLOBAL_ONLY_PREFERENCES = [
   "neverShowMiniPlayer",
   "pinnedMiniPlayer",
   "miniPlayerPosition",
+  "miniPlayerCorner",
   "annotationPanel",
 ] as const
 type GLOBAL_ONLY_PREFERENCE = (typeof GLOBAL_ONLY_PREFERENCES)[number]
@@ -160,6 +168,7 @@ export const defaultPreferences: ReadingPreferences = {
   minimizedMiniPlayer: false,
   pinnedMiniPlayer: false,
   miniPlayerPosition: null,
+  miniPlayerCorner: "bottom-right",
   volume: 100,
   fontWeight: 400,
   customFontFamily: {

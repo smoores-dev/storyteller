@@ -1,3 +1,4 @@
+import { MiniPlayer } from "@v3/_/components/reader/MiniPlayer/MiniPlayer"
 import { UserPreferencesProvider } from "@v3/_/components/user-preferences-provider"
 
 import { assertAuthenticatedUser } from "@/auth/auth"
@@ -5,7 +6,7 @@ import { getPreferenceDefaults } from "@/database/settings"
 import { resolveUserPreferences } from "@/database/userPreferencesTypes"
 import { getUserSettings } from "@/database/userSettings"
 
-export default async function AppLayout({
+export default async function ReaderLayout({
   children,
 }: {
   children: React.ReactNode
@@ -25,6 +26,7 @@ export default async function AppLayout({
       preferenceDefaults={preferenceDefaults}
     >
       {children}
+      <MiniPlayer />
     </UserPreferencesProvider>
   )
 }
