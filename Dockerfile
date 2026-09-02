@@ -99,7 +99,7 @@ RUN  (userdel -r ubuntu || true) \
     && useradd -u 1000 -g storyteller -m storyteller \
     && (usermod -aG render,video storyteller 2>/dev/null || true)
 
-COPY --from=ghcr.io/readium/readium:0.6.5 /opt/readium /opt/readium
+COPY --from=ghcr.io/readium/readium:0.9.1 /opt/readium /opt/readium
 RUN ln -sf /opt/readium /usr/local/bin/readium
 
 

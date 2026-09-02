@@ -6,6 +6,10 @@ import {
   getLocatorWithClosestPositionAsync,
   translateLocator,
 } from "@/components/reader/BookService"
+import {
+  isScrollingLayout,
+  isVerticalPublication,
+} from "@/components/reader/helpers"
 import { type BookWithRelations } from "@/database/books"
 import { syncPosition } from "@/store/actions"
 import { useGetPositionQuery } from "@/store/api"
@@ -26,6 +30,8 @@ import {
   selectIsSyncing,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
+
+const VERTICAL_OVERFLOW_STYLE_ID = "reader-vertical-overflow"
 
 type UseNavigatorOptions = {
   book: BookWithRelations
@@ -114,11 +120,20 @@ export const useNavigator = ({
                 if (!frameManager) return
 
                 if (frameManager.msg) {
+                  const frameDocument =
+                    frameManager.iframe.contentWindow?.document
                   // faster to do it here
-                  applyThemeToDocument(
-                    preferencesRef.current,
-                    frameManager.iframe.contentWindow?.document,
-                  )
+                  applyThemeToDocument(preferencesRef.current, frameDocument)
+                  if (
+                    frameDocument &&
+                    isVerticalPublication(publication) &&
+                    !frameDocument.getElementById(VERTICAL_OVERFLOW_STYLE_ID)
+                  ) {
+                    const style = frameDocument.createElement("style")
+                    style.id = VERTICAL_OVERFLOW_STYLE_ID
+                    style.textContent = "body { overflow: visible !important; }"
+                    frameDocument.head.appendChild(style)
+                  }
                   void navigatorRef.current?.submitPreferences(
                     epubPreferencesRef.current,
                   )
@@ -136,7 +151,7 @@ export const useNavigator = ({
             positionChanged(locator) {
               if (
                 mode === "epub" &&
-                preferencesRef.current.layout === "scrollable"
+                isScrollingLayout(preferencesRef.current.layout)
               ) {
                 dispatch(
                   syncPosition({
@@ -172,6 +187,18 @@ export const useNavigator = ({
             },
 
             textSelected() {
+              return true
+            },
+            timelineItemChanged() {
+              return true
+            },
+            contentProtection() {
+              return true
+            },
+            contextMenu() {
+              return true
+            },
+            peripheral() {
               return true
             },
           },

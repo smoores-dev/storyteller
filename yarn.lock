@@ -13508,6 +13508,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@readium/decorator@npm:1.0.2":
+  version: 1.0.2
+  resolution: "@readium/decorator@npm:1.0.2"
+  dependencies:
+    "@readium/navigator-html-injectables": "npm:2.6.3"
+    "@readium/shared": "npm:2.4.0"
+  checksum: 10c0/df95159ba897f7d86f78090224a406de92e787dfc034b35f4a198dbed82f79015b5a0c2f81d69db741ec2e60e3767a7153218532bb7bbbdb482080e44a4ac4cb
+  languageName: node
+  linkType: hard
+
 "@readium/helpers@npm:1.0.0":
   version: 1.0.0
   resolution: "@readium/helpers@npm:1.0.0"
@@ -13517,21 +13527,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@readium/navigator-html-injectables@npm:2.1.1":
-  version: 2.1.1
-  resolution: "@readium/navigator-html-injectables@npm:2.1.1"
-  checksum: 10c0/de36b26d1cc959a7b36c5f6aaa501dc956c9b5966045676c379b759fc47dd9ebfa24e4437c6710ed3a8af15596ae43c86318fb69054a14278992c8748fa4c816
-  languageName: node
-  linkType: hard
-
-"@readium/navigator@npm:2.1.1":
-  version: 2.1.1
-  resolution: "@readium/navigator@npm:2.1.1"
-  checksum: 10c0/cee9df927a857b3bd74c161029eb82456d1c0006dec1e766ec3bc1ab1cd77461c627d092ef3018a4130a22f879308548ff9937fa406d26c4e94281894c293c52
-  languageName: node
-  linkType: hard
-
-"@readium/new-navigator-html-injectables@npm:@readium/navigator-html-injectables@latest":
+"@readium/navigator-html-injectables@npm:2.6.3, @readium/new-navigator-html-injectables@npm:@readium/navigator-html-injectables@latest":
   version: 2.6.3
   resolution: "@readium/navigator-html-injectables@npm:2.6.3"
   dependencies:
@@ -13541,7 +13537,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@readium/shared@npm:2.4.0":
+"@readium/navigator@npm:2.8.2":
+  version: 2.8.2
+  resolution: "@readium/navigator@npm:2.8.2"
+  dependencies:
+    "@readium/decorator": "npm:1.0.2"
+    "@readium/helpers": "npm:1.0.0"
+    "@readium/navigator-html-injectables": "npm:2.6.3"
+    "@readium/shared": "npm:2.4.0"
+  checksum: 10c0/455539592477ec427c2b8643fb159645e18d8d1066b1e4237a57d4a3d0d9866259fed0872f60b5133d096f7c1c113c737decebcc0de5482e701b4d605497b5a8
+  languageName: node
+  linkType: hard
+
+"@readium/shared@npm:2.4.0, @readium/shared@npm:^2.4.0":
   version: 2.4.0
   resolution: "@readium/shared@npm:2.4.0"
   checksum: 10c0/b799ba21119c93ff2a8d09ffa5b2ec0695d049d78632f6edbf54831b11af691ff66d84daec53b336f625bd1848d7239baffcd1357d3d81d45452f5f916372ebb
@@ -16130,10 +16138,10 @@ __metadata:
     "@mantine/hooks": "npm:^8.3.0"
     "@node-rs/xxhash": "npm:^1.7.6"
     "@parcel/watcher": "npm:^2.5.6"
-    "@readium/navigator": "npm:2.1.1"
-    "@readium/navigator-html-injectables": "npm:2.1.1"
+    "@readium/navigator": "npm:2.8.2"
+    "@readium/navigator-html-injectables": "npm:2.6.3"
     "@readium/new-navigator-html-injectables": "npm:@readium/navigator-html-injectables@latest"
-    "@readium/shared": "npm:^2.2.0"
+    "@readium/shared": "npm:^2.4.0"
     "@reduxjs/toolkit": "npm:^2.11.2"
     "@reflink/reflink": "npm:^0.1.19"
     "@remix-run/node": "npm:^2.17.0"
