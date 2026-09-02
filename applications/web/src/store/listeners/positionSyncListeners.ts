@@ -88,7 +88,7 @@ startAppListening({
         listenerApi.dispatch(
           readingSessionSlice.actions.setCurrentSyncTimeout(null),
         )
-      }, 10_000)
+      }, 2_000)
 
       listenerApi.dispatch(
         readingSessionSlice.actions.setCurrentSyncTimeout(timeout),
