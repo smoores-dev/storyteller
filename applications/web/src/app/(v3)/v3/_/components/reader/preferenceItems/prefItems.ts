@@ -1,39 +1,8 @@
 import {
   type FontFamily,
   type HighlightColor,
-  READER_THEMES,
-  type ReadingTheme,
-  type ReadingThemeScheme,
   type SpacingMode,
 } from "@/store/slices/preferencesSlice"
-
-export type ReadingThemeOption = {
-  value: ReadingTheme
-  label: string
-  group: ReadingThemeScheme
-  bg: string
-  text: string
-  attributes: { "data-reader-theme": ReadingTheme }
-}
-
-export const readingThemes: ReadingThemeOption[] = READER_THEMES.map(
-  (theme) => ({
-    value: theme.id,
-    label: theme.label,
-    group: theme.scheme,
-    bg: "bg-reader-bg border-reader-border border",
-    text: "text-reader-text",
-    attributes: { "data-reader-theme": theme.id },
-  }),
-)
-
-export const lightReadingThemes = readingThemes.filter(
-  (theme) => theme.group === "light",
-)
-
-export const darkReadingThemes = readingThemes.filter(
-  (theme) => theme.group === "dark",
-)
 
 export const highlightColors = [
   {

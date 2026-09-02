@@ -1,3 +1,5 @@
+import { useReaderShortcuts } from "@v3/_/components/reader/hooks/useReaderKeyboard"
+
 import * as icon from "@/icons"
 
 import { ToolbarIcon } from "./ToolbarIcon"
@@ -9,9 +11,12 @@ export const FullscreenToggle = ({
   isFullscreen: boolean
   onToggleFullscreen: () => void
 }) => {
+  const shortcuts = useReaderShortcuts()
   return (
     <ToolbarIcon
       label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+      shortcut={[shortcuts.fullscreen]}
+      pressed={isFullscreen}
       icon={
         isFullscreen ? <icon.Minimize size="lg" /> : <icon.Maximize size="lg" />
       }

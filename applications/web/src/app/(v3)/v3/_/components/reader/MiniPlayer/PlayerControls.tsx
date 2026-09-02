@@ -52,9 +52,9 @@ export function PlayerControls({ tooltips = true }: { tooltips?: boolean }) {
         ) : error ? (
           <icon.AlertCircle size="lg" />
         ) : playing ? (
-          <icon.PlayerPause size="lg" />
+          <icon.PlayerPauseFilled size="lg" />
         ) : (
-          <icon.PlayerPlay size="lg" />
+          <icon.PlayerPlayFilled size="lg" />
         )}
       </TransportButton>
       <SkipButton direction="next" tooltips={tooltips} />
@@ -132,9 +132,9 @@ function SkipButton({
         )}
       />
       {direction === "previous" ? (
-        <icon.PlayerSkipBack10 />
+        <icon.RewindBackward15 />
       ) : (
-        <icon.PlayerSkipForward10 />
+        <icon.RewindForward15 />
       )}
     </TransportButton>
   )

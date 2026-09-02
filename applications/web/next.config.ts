@@ -83,19 +83,11 @@ const nextConfig: import("next").NextConfig = {
   rewrites: () => ({
     beforeFiles: [
       { source: "/", missing: unlessV2Cookie, destination: "/v3" },
-      ...V3_ROOTS
-        // .filter((root) => root !== "books")
-        .map((root) => ({
-          source: `/${root}/:path*`,
-          missing: unlessV2Cookie,
-          destination: `/v3/${root}/:path*`,
-        })),
-      // { source: "/books", missing: unlessV2Cookie, destination: "/v3/books" },
-      // {
-      //   source: "/books/:path((?![^/]+/read$).+)",
-      //   missing: unlessV2Cookie,
-      //   destination: "/v3/books/:path",
-      // },
+      ...V3_ROOTS.map((root) => ({
+        source: `/${root}/:path*`,
+        missing: unlessV2Cookie,
+        destination: `/v3/${root}/:path*`,
+      })),
     ],
   }),
   env: {
