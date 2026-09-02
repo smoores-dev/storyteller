@@ -561,10 +561,11 @@ export const themes = {
 const getResolvedColorScheme = (): "light" | "dark" => {
   if (typeof document === "undefined") return "light"
 
-  const scheme = document.documentElement.getAttribute(
-    "data-mantine-color-scheme",
-  )
-  if (scheme === "dark") return "dark"
+  const scheme = document.documentElement.classList.contains("dark")
+    ? "dark"
+    : "light"
+  return { scheme }
+  if (scheme) return "dark"
   if (scheme === "light") return "light"
 
   // fallback to media query when mantine attribute is not set

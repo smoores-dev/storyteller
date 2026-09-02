@@ -75,6 +75,7 @@ import {
   IconLayoutGrid,
   IconLayoutList,
   IconLayoutSidebar,
+  IconLetterCase,
   IconLibrary,
   IconLink,
   IconLinkOff,
@@ -329,3 +330,5 @@ export const PlayerTrackForward = /*#__PURE__*/ styled(IconPlayerSkipForward)
 export const PlayerTrackBack = /*#__PURE__*/ styled(IconPlayerSkipBack)
 export const PlayerSkipForward10 = /*#__PURE__*/ styled(IconRewindForward10)
 export const PlayerSkipBack10 = /*#__PURE__*/ styled(IconRewindBackward10)
+
+export const Aa = /*#__PURE__*/ styled(IconLetterCase)

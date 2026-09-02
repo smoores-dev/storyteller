@@ -457,6 +457,7 @@ export function SearchBox({
           setQuery(event.target.value)
         }}
         className={cn(searchBoxClassName, className)}
+        data-slot="filterable-menu-search-box"
       />
     </div>
   )

@@ -17,6 +17,72 @@
   --color-st-orange-800: var(--st-orange-8);
   --color-st-orange-900: var(--st-orange-9);
 
+  /* --color-reader-bg: hsl(var(--reader-ui-bg, 0 0% 100%));
+  --color-reader-surface: hsl(var(--reader-ui-surface, 0 0% 100%));
+  --color-reader-surface-hover: hsl(var(--reader-ui-surface-hover, 0 0% 96.1%));
+  --color-reader-border: hsl(var(--reader-ui-border, 0 0% 89.8%));
+  --color-reader-text: hsl(var(--reader-ui-text, 0 0% 0%));
+  --color-reader-text-secondary: hsl(
+    var(--reader-ui-text-secondary, 0 0% 32.2%)
+  );
+  --color-reader-text-muted: hsl(var(--reader-ui-text-muted, 0 0% 45.1%));
+  --color-reader-accent: hsl(var(--reader-ui-accent, 24.6 95% 53.1%));
+  --color-reader-accent-hover: hsl(
+    var(--reader-ui-accent-hover, 20.5 90.2% 48.2%)
+  );
+  --color-reader-highlight-color-yellow: var(
+    --reader-highlight-color-yellow,
+    #ffff0088
+  );
+  --color-reader-highlight-color-red: var(
+    --reader-highlight-color-red,
+    #ff000088
+  );
+  --color-reader-highlight-color-green: var(
+    --reader-highlight-color-green,
+    #00ff0088
+  );
+  --color-reader-highlight-color-blue: var(
+    --reader-highlight-color-blue,
+    #0000ff88
+  );
+  --color-reader-highlight-color-magenta: var(
+    --reader-highlight-color-magenta,
+    #ff00ff88
+  );
+  --color-reader-highlight-color-custom: var(
+    --reader-highlight-color-custom,
+    #ffffff88
+  ); */
+
+  @keyframes swap-right {
+    0% {
+      transform: translateX(15%) scale(70%);
+      z-index: 10;
+    }
+    50% {
+      transform: translateX(38%) scale(80%);
+      z-index: 30;
+    }
+    100% {
+      transform: translateX(15%) scale(80%);
+      z-index: 30;
+    }
+  }
+  @keyframes swap-left {
+    0% {
+      transform: translateX(-15%) scale(70%);
+    }
+    50% {
+      transform: translateX(-38%) scale(70%);
+    }
+    100% {
+      transform: translateX(-15%) scale(70%);
+    }
+  }
+}
+
+@theme inline {
   --color-reader-bg: hsl(var(--reader-ui-bg, 0 0% 100%));
   --color-reader-surface: hsl(var(--reader-ui-surface, 0 0% 100%));
   --color-reader-surface-hover: hsl(var(--reader-ui-surface-hover, 0 0% 96.1%));
@@ -55,34 +121,6 @@
     #ffffff88
   );
 
-  @keyframes swap-right {
-    0% {
-      transform: translateX(15%) scale(70%);
-      z-index: 10;
-    }
-    50% {
-      transform: translateX(38%) scale(80%);
-      z-index: 30;
-    }
-    100% {
-      transform: translateX(15%) scale(80%);
-      z-index: 30;
-    }
-  }
-  @keyframes swap-left {
-    0% {
-      transform: translateX(-15%) scale(70%);
-    }
-    50% {
-      transform: translateX(-38%) scale(70%);
-    }
-    100% {
-      transform: translateX(-15%) scale(70%);
-    }
-  }
-}
-
-@theme inline {
   --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-heading: var(--font-literata), Georgia, serif;
@@ -351,16 +389,6 @@
     --text-5xl--line-height: 1;
     --text-7xl: 4.5rem;
     --text-7xl--line-height: 1; */
-}
-
-.rounded-full:not(#id#id#id) {
-  border-radius: var(--radius-lg);
-}
-
-.small-caps {
-  font-size: 12px;
-  /* letter-spacing: 0.18em; */
-  text-transform: uppercase;
 }
 
 /* the spine shell dresses the frame in dark leather: the rail and the gutter

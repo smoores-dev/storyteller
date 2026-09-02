@@ -53,7 +53,10 @@ startAppListening({
 
     const preferences = selectBookPreferences(listenerApi.getState(), target)
 
-    if (window.location.pathname.includes("/read")) {
+    if (
+      window.location.pathname.includes("/read") ||
+      window.location.pathname.includes("/book")
+    ) {
       applyThemeToDocument(preferences)
     }
 

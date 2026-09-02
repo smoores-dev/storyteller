@@ -32,21 +32,24 @@ export default async function AppLayout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
   await ensureSidebarDefaults(user.id)
 
-  const [sidebarGroups, preferenceDefaults, pendingAnnouncements, pathAnchor] =
-    await Promise.all([
-      getSidebarGroups(user.id),
-      getPreferenceDefaults(),
-      getPendingAnnouncements(user.id),
-      user.permissions.settingsUpdate ? getDataDirAnchor() : null,
-    ])
+  const [
+    sidebarGroups,
+    preferenceDefaults,
+    pendingAnnouncements,
+    pathAnchor,
+    userSettings,
+  ] = await Promise.all([
+    getSidebarGroups(user.id),
+    getPreferenceDefaults(),
+    getPendingAnnouncements(user.id),
+    user.permissions.settingsUpdate ? getDataDirAnchor() : null,
+    getUserSettings(user.id),
+  ])
 
   const pathMismatch =
     pathAnchor !== null && pathAnchor !== DATA_DIR ? pathAnchor : null
 
-  const preferences = resolveUserPreferences(
-    await getUserSettings(user.id),
-    preferenceDefaults,
-  )
+  const preferences = resolveUserPreferences(userSettings, preferenceDefaults)
 
   return (
     <UserPreferencesProvider
