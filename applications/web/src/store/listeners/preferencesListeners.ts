@@ -1,3 +1,4 @@
+import { EpubPreferences } from "@readium/navigator"
 import { isAnyOf } from "@reduxjs/toolkit"
 
 import { withActiveFrame } from "@/components/reader/frameUtils"
@@ -81,7 +82,7 @@ startAppListening({
     )
 
     await withActiveFrame(async () => {
-      await nav.submitPreferences(readiumPreferences)
+      await nav.submitPreferences(new EpubPreferences(readiumPreferences))
     })
   },
 })

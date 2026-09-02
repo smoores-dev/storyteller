@@ -1,4 +1,8 @@
-import { EpubNavigator, type FrameManager } from "@readium/navigator"
+import {
+  EpubNavigator,
+  EpubPreferences,
+  type FrameManager,
+} from "@readium/navigator"
 import { Locator } from "@readium/shared"
 import { useCallback, useEffect, useRef, useState } from "react"
 
@@ -135,7 +139,7 @@ export const useNavigator = ({
                     frameDocument.head.appendChild(style)
                   }
                   void navigatorRef.current?.submitPreferences(
-                    epubPreferencesRef.current,
+                    new EpubPreferences(epubPreferencesRef.current),
                   )
                   dispatch(
                     readingSessionSlice.actions.setActiveFrame(
@@ -268,7 +272,25 @@ export const useNavigator = ({
 
     if (!isLoadingRef.current) return
 
-    void loadNavigator(translatedLocator)
+    // failsafe
+    if (document.visibilityState === "visible") {
+      void loadNavigator(translatedLocator)
+      return
+    }
+
+    const controller = new AbortController()
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (document.visibilityState !== "visible") return
+        controller.abort()
+        void loadNavigator(translatedLocator)
+      },
+      { signal: controller.signal },
+    )
+    return () => {
+      controller.abort()
+    }
   }, [
     initialPositionLoading,
     isLoadingRef,

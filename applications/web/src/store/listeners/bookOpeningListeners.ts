@@ -42,6 +42,7 @@ import {
 import { createCacheBustingFetch } from "@/utils/cacheBustingFetch"
 import type { UUID } from "@/uuid"
 
+import { findNearestGuide } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"
 
 async function registerMaps(
@@ -327,8 +328,10 @@ function generateTracksForAudiobook(
       album: bookTitle,
       duration: item.duration ?? 0,
       type: item.type ?? "application/octet-stream",
-      start: item.properties?.otherProperties["start"] ?? 0,
-      end: item.properties?.otherProperties["end"] ?? item.duration ?? 0,
+      start: Number(item.properties?.otherProperties["start"] ?? 0),
+      end: Number(
+        item.properties?.otherProperties["end"] ?? item.duration ?? 0,
+      ),
     } satisfies AudioTrack
   })
 }
@@ -569,12 +572,8 @@ startAppListening({
             return
           }
 
-          const guide = link.alternates?.items.length
-            ? await publication.guideForLink(link).catch((error: unknown) => {
-                console.warn("Failed to load guide for saved position", error)
-                return null
-              })
-            : null
+          const nearest = await findNearestGuide(publication, link)
+          const guide = nearest?.guide ?? null
 
           listenerApi.dispatch(
             syncPosition({
@@ -599,7 +598,12 @@ startAppListening({
 
           registerGuide(guide)
 
-          const clip = getClip(guide, correctLocator)
+          const clip =
+            nearest?.link.href === link.href
+              ? getClip(guide, correctLocator)
+              : guide.guided
+                  ?.flatMap((item) => item.children ?? [])
+                  .find((child) => child.clip?.audioResource)?.clip ?? null
 
           if (!clip) {
             console.error("No clip found, starting at beginning")
@@ -632,7 +636,7 @@ startAppListening({
           await initializeAudioPlayer({
             tracks,
             startTrackIndex: clipIndex,
-            startPosition: clip.start,
+            startPosition: clip.start ?? 0,
             playbackSpeed,
             volume,
           })

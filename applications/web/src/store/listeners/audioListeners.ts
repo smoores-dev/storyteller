@@ -63,8 +63,11 @@ startAppListening({
     )
 
     if (trackIndex !== -1) {
+      const wasPlaying = readerPlayer().getState().playing
       await readerPlayer().skip(trackIndex, clip.start)
-      await readerPlayer().play()
+      if (wasPlaying || action.payload.resumePlayback) {
+        await readerPlayer().play()
+      }
     }
   },
 })

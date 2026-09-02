@@ -1,4 +1,8 @@
-import { type EpubPreferences, type TextAlignment } from "@readium/navigator"
+import {
+  type EpubPreferences,
+  type IEpubPreferences,
+  type TextAlignment,
+} from "@readium/navigator"
 import {
   type PayloadAction,
   createAction,
@@ -606,7 +610,7 @@ const getFontFamily = (
 
 export const readiumIfyPreferences = (
   preferences: ReadingPreferences,
-): EpubPreferences => {
+): IEpubPreferences => {
   const theme = getTheme(preferences)
   return {
     backgroundColor: `hsl(${theme.backgroundColor})`,
@@ -632,7 +636,6 @@ export const readiumIfyPreferences = (
     optimalLineLength: preferences.lineLength,
     hyphens: true,
     fontFamily: getFontFamily(preferences, preferences.fontFamily),
-    merging: (other) => ({ ...other }),
   }
 }
 
