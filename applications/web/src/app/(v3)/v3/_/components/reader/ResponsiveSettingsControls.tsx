@@ -4,38 +4,17 @@ import { Drawer } from "vaul-base"
 import { type BookWithRelations } from "@/database/books"
 import { useAppSelector } from "@/store/appState"
 import { selectVolume } from "@/store/slices/audioPlayerSlice"
-import {
-  selectCurrentBook,
-  selectReadingMode,
-} from "@/store/slices/readingSessionSlice"
-import { type UUID } from "@/uuid"
+import { selectReadingMode } from "@/store/slices/readingSessionSlice"
 
 import { useScreenSize } from "./hooks/useScreenSize"
 import { FullscreenToggle } from "./preferenceItems/FullscreenToggle"
 import { PlaybackSpeedControl } from "./preferenceItems/PlaybackSpeedControl"
 import { ReadaloudSyncingToggle } from "./preferenceItems/ReadaloudSyncingToggle"
-import { ReadingSettingsControl } from "./preferenceItems/ReadingSettingsControl"
+import { ReaderSettingsMenu } from "./preferenceItems/ReaderSettingsMenu"
 import { SleepTimerItem } from "./preferenceItems/SleepTimerControl"
 import { TableOfContentsControl } from "./preferenceItems/TableOfContentsControl"
+import { type DrawerContentType } from "./preferenceItems/ToolbarIcon"
 import { VolumeControl } from "./preferenceItems/VolumeControl"
-
-type DrawerContentType =
-  | {
-      type: "reading-settings"
-      scope: "global" | UUID
-    }
-  | {
-      type: "sleep-timer"
-    }
-  | {
-      type: "playback-speed"
-    }
-  | {
-      type: "table-of-contents"
-    }
-  | {
-      type: "volume"
-    }
 
 type Props = {
   book: BookWithRelations
@@ -54,7 +33,6 @@ export const ResponsiveSettingsControls = ({
   targetDocument = window.document,
 }: Props) => {
   const mode = useAppSelector(selectReadingMode)
-  const currentBook = useAppSelector(selectCurrentBook)
 
   const { isMobile } = useScreenSize()
 
@@ -98,10 +76,7 @@ export const ResponsiveSettingsControls = ({
         {shouldShowReadaloudSyncingToggle && <ReadaloudSyncingToggle />}
 
         {shouldShowReadingSettingsControl && (
-          <ReadingSettingsControl
-            {...iconMode}
-            scope={currentBook?.uuid ?? "global"}
-          />
+          <ReaderSettingsMenu {...iconMode} bookUuid={book.uuid} />
         )}
         {shouldShowSleepTimerControl && <SleepTimerItem {...iconMode} />}
         {shouldShowPlaybackSpeedControl && (
@@ -135,8 +110,11 @@ export const ResponsiveSettingsControls = ({
             </Drawer.Title>
             <div className="overflow-x-clip overflow-y-scroll px-4 py-4">
               {drawerContent?.content.type === "reading-settings" && (
-                <ReadingSettingsControl.DrawerContent
-                  scope={drawerContent.content.scope}
+                <ReaderSettingsMenu.DrawerContent
+                  bookUuid={drawerContent.content.bookUuid}
+                  onClose={() => {
+                    setDrawerContent(null)
+                  }}
                 />
               )}
               {drawerContent?.content.type === "sleep-timer" && (
