@@ -56,7 +56,7 @@ import {
 } from "@/store/slices/audioPlayerSlice"
 import {
   preferencesSlice,
-  removeThemeFromDocument,
+  removeReaderTheme,
   selectPreference,
 } from "@/store/slices/preferencesSlice"
 import {
@@ -141,7 +141,7 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
     dispatch(readingSessionSlice.actions.setSyncing(false))
 
     if (context === "pip" && isOnReadPage) return
-    removeThemeFromDocument(document)
+    removeReaderTheme(document)
   }, [context, isOnReadPage, dispatch])
 
   const isVisible = useDocumentVisibility()

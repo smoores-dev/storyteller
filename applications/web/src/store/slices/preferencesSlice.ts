@@ -1,16 +1,14 @@
-import {
-  type EpubPreferences,
-  type IEpubPreferences,
-  type TextAlignment,
-} from "@readium/navigator"
+import { type IEpubPreferences, type TextAlignment } from "@readium/navigator"
 import {
   type PayloadAction,
-  createAction,
   createSelector,
   createSlice,
 } from "@reduxjs/toolkit"
 
+import { bookCoverSwatches } from "@v3/_/components/books/coverSwatches"
+
 import { isSafari } from "@/components/reader/helpers"
+import { type BookWithRelations } from "@/database/books"
 import { type RootState } from "@/store/appState"
 import { type UUID } from "@/uuid"
 
@@ -28,12 +26,37 @@ export type FontFamily =
 export type SpacingMode = "default" | "tight" | "balanced" | "loose"
 export type LayoutMode = "paginated" | "scrollable"
 export type ReadingTheme =
-  | "auto"
   | "light"
-  | "sepia"
   | "paper"
+  | "sepia"
+  | "cover-light"
   | "dark"
-  | "cattpuccin"
+  | "catppuccin"
+  | "cover-dark"
+
+export type ReadingThemeScheme = "light" | "dark"
+
+export const READER_THEMES: {
+  id: ReadingTheme
+  label: string
+  scheme: ReadingThemeScheme
+}[] = [
+  { id: "light", label: "Light", scheme: "light" },
+  { id: "paper", label: "Paper", scheme: "light" },
+  { id: "sepia", label: "Sepia", scheme: "light" },
+  { id: "cover-light", label: "Cover", scheme: "light" },
+  { id: "dark", label: "Dark", scheme: "dark" },
+  { id: "catppuccin", label: "Catppuccin", scheme: "dark" },
+  { id: "cover-dark", label: "Cover", scheme: "dark" },
+]
+
+export type HighlightColor =
+  | "yellow"
+  | "red"
+  | "green"
+  | "blue"
+  | "magenta"
+  | "custom"
 
 export type EdgePosition = {
   horizontalEdge: "left" | "right"
@@ -58,7 +81,7 @@ export type ReadingPreferences = {
   lineLength: number
   paragraphIndent: number
   hyphens: boolean
-  highlightColor: "yellow" | "red" | "green" | "blue" | "magenta" | "custom"
+  highlightColor: HighlightColor
   detailView: {
     mode: "audio" | "text"
     scope: "book" | "chapter"
@@ -115,7 +138,7 @@ export const defaultPreferences: ReadingPreferences = {
   currentlyListeningBookId: null,
   fontSize: 100,
   fontFamily: "publisher",
-  theme: "auto",
+  theme: "light",
   align: "justify" as TextAlignment,
   spacing: "default",
   layout: "paginated",
@@ -131,7 +154,7 @@ export const defaultPreferences: ReadingPreferences = {
     mode: "audio",
     scope: "chapter",
   },
-  customHighlightColor: "rgba(255, 255, 255, 0.3)",
+  customHighlightColor: "oklch(0.9 0.08 200 / 0.9)",
   syncOffset: 0.0,
   neverShowMiniPlayer: false,
   minimizedMiniPlayer: false,
@@ -325,8 +348,6 @@ export const preferencesSlice = createSlice({
   },
 })
 
-export const syncAutoTheme = createAction("preferences/syncAutoTheme")
-
 export const preferencesReducer = preferencesSlice.reducer
 
 export const selectGlobalPreferences = (state: RootState) =>
@@ -380,11 +401,6 @@ export const selectPreference = <K extends keyof ReadingPreferences>(
   )
 }
 
-export const selectEpubPreferences = createSelector(
-  selectBookPreferences,
-  (preferences) => readiumIfyPreferences(preferences),
-)
-
 export const selectDetailView = createSelector(
   selectReadingMode,
   selectBookPreferences,
@@ -400,188 +416,6 @@ export const selectDetailView = createSelector(
     return detailView
   },
 )
-
-export const themes = {
-  dark: {
-    backgroundColor: "0 0% 5.9%",
-    textColor: "0 0% 91%",
-    uiBackground: "0 0% 5.9%",
-    uiSurface: "0 0% 10.2%",
-    uiSurfaceHover: "0 0% 14.9%",
-    uiBorder: "0 0% 20%",
-    uiText: "0 0% 91%",
-    uiTextSecondary: "0 0% 63.9%",
-    uiTextMuted: "0 0% 45.1%",
-    uiAccent: "24.6 95% 53.1%",
-    uiAccentHover: "20.5 90.2% 48.2%",
-    uiSelectionBackgroundColor: "20.5 90.2% 48.2%",
-    uiSelectionTextColor: "0 0% 100%",
-    hightlightColor: {
-      yellow: "rgba(255, 255, 0, 0.8)",
-      red: "rgba(255, 0, 0, 0.8)",
-      green: "rgba(0, 255, 0, 0.8)",
-      blue: "rgba(0, 0, 255, 0.8)",
-      magenta: "rgba(255, 0, 255, 0.8)",
-    },
-  },
-  light: {
-    backgroundColor: "0 0% 100%",
-    textColor: "0 0% 0%",
-    uiBackground: "0 0% 100%",
-    uiSurface: "0 0% 100%",
-    uiSurfaceHover: "0 0% 96.1%",
-    uiBorder: "0 0% 89.8%",
-    uiText: "0 0% 0%",
-    uiTextSecondary: "0 0% 32.2%",
-    uiTextMuted: "0 0% 45.1%",
-    uiAccent: "24.6 95% 53.1%",
-    uiAccentHover: "20.5 90.2% 48.2%",
-    uiSelectionBackgroundColor: "20.5 90.2% 48.2%",
-    uiSelectionTextColor: "0 0% 0%",
-    hightlightColor: {
-      yellow: "rgba(255, 255, 0, 0.3)",
-      red: "rgba(255, 0, 0, 0.3)",
-      green: "rgba(0, 255, 0, 0.3)",
-      blue: "rgba(0, 0, 255, 0.3)",
-      magenta: "rgba(255, 0, 255, 0.3)",
-    },
-  },
-  sepia: {
-    backgroundColor: "42 31.3% 93.7%",
-    textColor: "0 0% 17.6%",
-    uiBackground: "42 31.3% 93.7%",
-    uiSurface: "42 35.7% 89%",
-    uiSurfaceHover: "40 37.5% 84.3%",
-    uiBorder: "38.2 33.8% 74.5%",
-    uiText: "0 0% 17.6%",
-    uiTextSecondary: "0 0% 36.5%",
-    uiTextMuted: "0 0% 55.3%",
-    uiAccent: "26 90.5% 37.1%",
-    uiAccentHover: "22.7 82.5% 31.4%",
-    uiSelectionBackgroundColor: "42 31.3% 93.7%",
-    uiSelectionTextColor: "0 0% 17.6%",
-    hightlightColor: {
-      yellow: "rgba(255, 255, 0, 0.3)",
-      red: "rgba(255, 0, 0, 0.3)",
-      green: "rgba(0, 255, 0, 0.3)",
-      blue: "rgba(0, 0, 255, 0.3)",
-      magenta: "rgba(255, 0, 255, 0.3)",
-    },
-  },
-  paper: {
-    backgroundColor: "40 23.1% 97.5%",
-    textColor: "0 0% 10.2%",
-    uiBackground: "40 23.1% 97.5%",
-    uiSurface: "48 20% 95.1%",
-    uiSurfaceHover: "46.7 22% 92%",
-    uiBorder: "45 16.2% 85.5%",
-    uiText: "0 0% 10.2%",
-    uiTextSecondary: "0 0% 29%",
-    uiTextMuted: "0 0% 47.8%",
-    uiAccent: "17.5 88.3% 40.4%",
-    uiAccentHover: "15 79.1% 33.7%",
-    uiSelectionBackgroundColor: "240 21.3% 12%",
-    uiSelectionTextColor: "40 23.1% 97.5%",
-    hightlightColor: {
-      yellow: "rgba(255, 255, 0, 0.3)",
-      red: "rgba(255, 0, 0, 0.3)",
-      green: "rgba(0, 255, 0, 0.3)",
-      blue: "rgba(0, 0, 255, 0.3)",
-      magenta: "rgba(255, 0, 255, 0.3)",
-    },
-  },
-  auto: {
-    backgroundColor: "0 0% 100%",
-    textColor: "0 0% 0%",
-    uiBackground: "0 0% 100%",
-    uiSurface: "0 0% 100%",
-    uiSurfaceHover: "0 0% 96.1%",
-    uiBorder: "0 0% 89.8%",
-    uiText: "0 0% 0%",
-    uiTextSecondary: "0 0% 32.2%",
-    uiTextMuted: "0 0% 45.1%",
-    uiAccent: "24.6 95% 53.1%",
-    uiAccentHover: "20.5 90.2% 48.2%",
-    uiSelectionBackgroundColor: "20.5 90.2% 48.2%",
-    uiSelectionTextColor: "0 0% 100%",
-    hightlightColor: {
-      yellow: "rgba(255, 255, 0, 0.3)",
-      red: "rgba(255, 0, 0, 0.3)",
-      green: "rgba(0, 255, 0, 0.3)",
-      blue: "rgba(0, 0, 255, 0.3)",
-      magenta: "rgba(255, 0, 255, 0.3)",
-    },
-  },
-  cattpuccin: {
-    backgroundColor: "240 21.3% 12%",
-    textColor: "227.4 68.3% 87.6%",
-    uiBackground: "240 21.3% 12%",
-    uiSurface: "240deg 21% 15%",
-    uiSurfaceHover: "237deg 16% 23%",
-    uiBorder: "230.3 12.4% 49.2%",
-    uiText: "227.4 68.3% 87.6%",
-    uiTextSecondary: "228 39.2% 80%",
-    uiSelectionBackgroundColor: "227.4 68.3% 87.6%",
-    uiSelectionTextColor: "240 21.3% 12%",
-    uiTextMuted: "227.4 26.8% 72.2%",
-    uiAccent: "266.5 82.7% 79.6%",
-    uiAccentHover: "266.5 82.7% 79.6%",
-    hightlightColor: {
-      yellow: "rgb(238, 212, 159)",
-      red: "rgb(238, 153, 160)",
-      green: "rgb(166, 218, 149)",
-      blue: "rgb(125, 196, 228)",
-      magenta: "rgb(245, 189, 230)",
-    },
-  },
-} satisfies Record<
-  ReadingTheme,
-  Pick<EpubPreferences, "backgroundColor" | "textColor"> & {
-    uiBackground: string
-    uiSurface: string
-    uiSurfaceHover: string
-    uiBorder: string
-    uiText: string
-    uiTextSecondary: string
-    uiSelectionBackgroundColor: string
-    uiSelectionTextColor: string
-    uiTextMuted: string
-    uiAccent: string
-    uiAccentHover: string
-    hightlightColor: {
-      yellow: string
-      red: string
-      green: string
-      blue: string
-      magenta: string
-    }
-  }
->
-
-const getResolvedColorScheme = (): "light" | "dark" => {
-  if (typeof document === "undefined") return "light"
-
-  const scheme = document.documentElement.classList.contains("dark")
-    ? "dark"
-    : "light"
-  return { scheme }
-  if (scheme) return "dark"
-  if (scheme === "light") return "light"
-
-  // fallback to media query when mantine attribute is not set
-  if (typeof window !== "undefined") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light"
-  }
-
-  return "light"
-}
-
-export const getTheme = (preferences: ReadingPreferences) => {
-  if (preferences.theme !== "auto") return themes[preferences.theme]
-  return getResolvedColorScheme() === "dark" ? themes.dark : themes.light
-}
 
 export const getLetterSpacing = (preferences: ReadingPreferences): number => {
   return preferences.spacing === "default"
@@ -611,14 +445,16 @@ const getFontFamily = (
 
 export const readiumIfyPreferences = (
   preferences: ReadingPreferences,
+  tokens: ReaderTokens,
 ): IEpubPreferences => {
-  const theme = getTheme(preferences)
   return {
-    backgroundColor: `hsl(${theme.backgroundColor})`,
-    textColor: `hsl(${theme.textColor})`,
+    backgroundColor: tokens.bg,
+    textColor: tokens.text,
+    linkColor: tokens.accent,
+    selectionBackgroundColor: tokens.selectionBg,
+    selectionTextColor: tokens.selectionText,
     textAlign: preferences.align,
     fontSize: preferences.fontSize / 100,
-    linkColor: `hsl(${theme.uiAccent})`,
     /**
      * the amount of time i could have saves if i knew to set this setting!!!!!
      * for some reason we need this otherwise safari is not able to find the correct page if fontsize is not 100%
@@ -642,157 +478,201 @@ export const readiumIfyPreferences = (
   }
 }
 
-export const applyThemeToDocument = (
-  preferences: ReadingPreferences,
-  document = typeof window !== "undefined" ? window.document : null,
-) => {
-  if (!document) return
-
-  const uiTheme = getTheme(preferences)
-  const root = document.head
-
-  const styleProperties = [
-    ["--reader-ui-bg", uiTheme.uiBackground],
-    ["--reader-ui-surface", uiTheme.uiSurface],
-    ["--reader-ui-surface-hover", uiTheme.uiSurfaceHover],
-    ["--reader-ui-border", uiTheme.uiBorder],
-    ["--reader-ui-text", uiTheme.uiText],
-    ["--reader-ui-text-secondary", uiTheme.uiTextSecondary],
-    ["--reader-ui-text-muted", uiTheme.uiTextMuted],
-    ["--reader-ui-accent", uiTheme.uiAccent],
-    ["--reader-ui-accent-hover", uiTheme.uiAccentHover],
-    ["--reader-highlight-color-yellow", uiTheme.hightlightColor.yellow],
-    ["--reader-highlight-color-red", uiTheme.hightlightColor.red],
-    ["--reader-highlight-color-green", uiTheme.hightlightColor.green],
-    ["--reader-highlight-color-blue", uiTheme.hightlightColor.blue],
-    ["--reader-highlight-color-magenta", uiTheme.hightlightColor.magenta],
-    ["--reader-highlight-color-custom", preferences.customHighlightColor],
-    ["--reader-selection-color", uiTheme.uiSelectionBackgroundColor],
-    ["--reader-selection-text-color", uiTheme.uiSelectionTextColor],
-    [
-      "--reader-highlight-color",
-      preferences.highlightColor === "custom"
-        ? preferences.customHighlightColor
-        : uiTheme.hightlightColor[preferences.highlightColor],
-    ],
-    ...(preferences.fontFamily !== "publisher"
-      ? [["--reader-font-family", preferences.fontFamily]]
-      : []),
-  ]
-    .map((style) => style.join(": "))
-    .join(";")
-
-  const styles = [
-    `:root {${styleProperties}}`,
-
-    `::selection {
-      background-color: hsl(${uiTheme.uiSelectionBackgroundColor});
-      color: hsl(${uiTheme.uiSelectionTextColor});
-    }`,
-
-    // v necessary on eg safari iOS, otherwise weird blank bars
-    `body { background-color: hsl(${uiTheme.backgroundColor}); }`,
-  ]
-
-  if (preferences.fontFamily === "Literata") {
-    styles.push(`@font-face {
-    font-family: "Literata";
-    font-weight: ${preferences.fontWeight};
-    font-optical-sizing: auto;
-    src: url("/fonts/Literata.ttf") format("truetype"), url("/fonts/Literata-Italic.ttf") format("truetype");
-}`)
-  }
-  if (preferences.fontFamily === "OpenDyslexic") {
-    styles.push(`@font-face {
-    font-family: "OpenDyslexic";
-    font-weight: ${preferences.fontWeight};
-    font-optical-sizing: auto;
-    src: url("/fonts/OpenDyslexic-Regular.woff2") format("woff2"),
-        url("/fonts/OpenDyslexic-Bold.woff2") format("woff2"),
-        url("/fonts/OpenDyslexic-Italic.woff2") format("woff2"),
-        url("/fonts/OpenDyslexic-Bold-Italic.woff2") format("woff2");
-}`)
-  }
-
-  if (preferences.fontFamily === "custom" && preferences.customFontFamily.url) {
-    let link1 = document.getElementById(
-      "reader-font-preconnect-1",
-    ) as HTMLLinkElement | null
-    if (!link1) {
-      link1 = document.createElement("link")
-      root.appendChild(link1)
-    }
-
-    if (link1.href !== "https://fonts.googleapis.com") {
-      link1.id = "reader-font-preconnect-1"
-      link1.rel = "preconnect"
-      link1.href = "https://fonts.googleapis.com"
-    }
-
-    let link2 = document.getElementById(
-      "reader-font-preconnect-2",
-    ) as HTMLLinkElement | null
-    if (!link2) {
-      link2 = document.createElement("link")
-      root.appendChild(link2)
-    }
-    if (link2.href !== "https://fonts.gstatic.com") {
-      link2.rel = "preconnect"
-      link2.href = "https://fonts.gstatic.com"
-      link2.crossOrigin = "anonymous"
-    }
-
-    let link3 = document.getElementById(
-      "reader-google-font-link",
-    ) as HTMLLinkElement | null
-    if (!link3) {
-      link3 = document.createElement("link")
-      root.appendChild(link3)
-    }
-    if (link3.href !== preferences.customFontFamily.url) {
-      link3.id = "reader-google-font-link"
-      link3.rel = "stylesheet"
-      link3.href = preferences.customFontFamily.url
-    }
-  }
-
-  const readerStylesElement =
-    document.getElementById("reader-styles") || document.createElement("style")
-  readerStylesElement.id = "reader-styles"
-
-  const themeColorMetaElement =
-    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]') ||
-    document.createElement("meta")
-  themeColorMetaElement.name = "theme-color"
-  themeColorMetaElement.content = `hsl(${uiTheme.backgroundColor})`
-
-  const stylesString = styles.join("\n")
-
-  if (readerStylesElement.textContent === stylesString) return
-
-  readerStylesElement.textContent = stylesString
-  root.appendChild(readerStylesElement)
-  root.appendChild(themeColorMetaElement)
+export type ReaderTokens = {
+  scheme: ReadingThemeScheme
+  bg: string
+  text: string
+  accent: string
+  selectionBg: string
+  selectionText: string
+  highlight: string
 }
 
-export const removeThemeFromDocument = (
-  document = typeof window !== "undefined" ? window.document : null,
-) => {
-  if (!document) return
+const FALLBACK_TOKENS: ReaderTokens = {
+  scheme: "light",
+  bg: "#ffffff",
+  text: "#000000",
+  accent: "#e8651a",
+  selectionBg: "#e8651a",
+  selectionText: "#ffffff",
+  highlight: "#f3e08a",
+}
 
-  const readerStylesElement = document.getElementById("reader-styles")
-  if (readerStylesElement) {
-    readerStylesElement.remove()
+export const readerCoverColor = (book: BookWithRelations | null) => {
+  if (!book) return null
+  const swatches = bookCoverSwatches(book)
+  return swatches.hasColors ? swatches.primary.css : null
+}
+
+export const readReaderTokens = (
+  target = typeof window !== "undefined" ? window.document : null,
+): ReaderTokens => {
+  const view = target?.defaultView
+  if (!view) return FALLBACK_TOKENS
+
+  const styles = view.getComputedStyle(target.documentElement)
+  const read = (name: string) =>
+    styles.getPropertyValue(`--reader-${name}`).trim()
+
+  return {
+    scheme: read("scheme") === "dark" ? "dark" : "light",
+    bg: read("bg") || FALLBACK_TOKENS.bg,
+    text: read("text") || FALLBACK_TOKENS.text,
+    accent: read("accent") || FALLBACK_TOKENS.accent,
+    selectionBg: read("selection-bg") || FALLBACK_TOKENS.selectionBg,
+    selectionText: read("selection-text") || FALLBACK_TOKENS.selectionText,
+    highlight: read("highlight") || FALLBACK_TOKENS.highlight,
   }
-  const themeColorMetaElement = document.querySelector<HTMLMetaElement>(
-    'meta[name="theme-color"]',
+}
+
+export const applyReaderTheme = (
+  preferences: ReadingPreferences,
+  book: BookWithRelations | null,
+  target = typeof window !== "undefined" ? window.document : null,
+) => {
+  if (!target) return
+
+  const root = target.documentElement
+  root.dataset["readerTheme"] = preferences.theme
+  root.dataset["readerHighlight"] = preferences.highlightColor
+  root.style.setProperty(
+    "--reader-highlight-custom",
+    preferences.customHighlightColor,
   )
-  if (themeColorMetaElement) {
-    themeColorMetaElement.remove()
+
+  const coverColor = readerCoverColor(book)
+  if (coverColor) root.style.setProperty("--cover-1", coverColor)
+  else root.style.removeProperty("--cover-1")
+
+  const meta =
+    target.querySelector<HTMLMetaElement>('meta[name="theme-color"]') ??
+    target.head.appendChild(target.createElement("meta"))
+  meta.name = "theme-color"
+  meta.content = readReaderTokens(target).bg
+}
+
+export const removeReaderTheme = (
+  target = typeof window !== "undefined" ? window.document : null,
+) => {
+  if (!target) return
+
+  const root = target.documentElement
+  delete root.dataset["readerTheme"]
+  delete root.dataset["readerHighlight"]
+  root.style.removeProperty("--cover-1")
+  root.style.removeProperty("--reader-highlight-custom")
+  target.querySelector('meta[name="theme-color"]')?.remove()
+  target.getElementById("reader-styles")?.remove()
+}
+
+const fontFaces = (preferences: ReadingPreferences) => {
+  if (preferences.fontFamily === "Literata") {
+    return [
+      `@font-face { font-family: "Literata"; font-style: normal; font-weight: 200 900; font-display: swap; src: url("/fonts/Literata.woff2") format("woff2"); }`,
+      `@font-face { font-family: "Literata"; font-style: italic; font-weight: 200 900; font-display: swap; src: url("/fonts/Literata-Italic.woff2") format("woff2"); }`,
+    ]
   }
+
+  if (preferences.fontFamily === "OpenDyslexic") {
+    return [
+      `@font-face { font-family: "OpenDyslexic"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/OpenDyslexic-Regular.woff2") format("woff2"); }`,
+      `@font-face { font-family: "OpenDyslexic"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/OpenDyslexic-Bold.woff2") format("woff2"); }`,
+      `@font-face { font-family: "OpenDyslexic"; font-style: italic; font-weight: 400; font-display: swap; src: url("/fonts/OpenDyslexic-Italic.woff2") format("woff2"); }`,
+      `@font-face { font-family: "OpenDyslexic"; font-style: italic; font-weight: 700; font-display: swap; src: url("/fonts/OpenDyslexic-Bold-Italic.woff2") format("woff2"); }`,
+    ]
+  }
+
+  return []
+}
+
+const ensureLink = (
+  target: Document,
+  id: string,
+  apply: (link: HTMLLinkElement) => void,
+) => {
+  const existing = target.getElementById(id) as HTMLLinkElement | null
+  if (existing) {
+    apply(existing)
+    return
+  }
+
+  const link = target.createElement("link")
+  link.id = id
+  apply(link)
+  target.head.appendChild(link)
+}
+
+export const applyFrameTheme = (
+  preferences: ReadingPreferences,
+  tokens: ReaderTokens,
+  frameDocument: Document | null | undefined,
+) => {
+  if (!frameDocument) return
+
+  frameDocument.documentElement.dataset["readerScheme"] = tokens.scheme
+
+  if (preferences.fontFamily === "custom" && preferences.customFontFamily.url) {
+    ensureLink(frameDocument, "reader-font-preconnect-1", (link) => {
+      link.rel = "preconnect"
+      link.href = "https://fonts.googleapis.com"
+    })
+    ensureLink(frameDocument, "reader-font-preconnect-2", (link) => {
+      link.rel = "preconnect"
+      link.href = "https://fonts.gstatic.com"
+      link.crossOrigin = "anonymous"
+    })
+    ensureLink(frameDocument, "reader-google-font-link", (link) => {
+      link.rel = "stylesheet"
+      if (link.href !== preferences.customFontFamily.url) {
+        link.href = preferences.customFontFamily.url
+      }
+    })
+  }
+
+  const css = [
+    `::selection { background-color: ${tokens.selectionBg}; color: ${tokens.selectionText}; }`,
+    `body { background-color: ${tokens.bg}; }`,
+    ...fontFaces(preferences),
+  ].join("\n")
+
+  const existing = frameDocument.getElementById(
+    "reader-styles",
+  ) as HTMLStyleElement | null
+  if (existing) {
+    if (existing.textContent !== css) existing.textContent = css
+    return
+  }
+
+  const style = frameDocument.createElement("style")
+  style.id = "reader-styles"
+  style.textContent = css
+  frameDocument.head.appendChild(style)
 }
 
 const STORAGE_KEY = "reader-preferences"
+
+const LEGACY_THEMES: Record<string, ReadingTheme> = {
+  cattpuccin: "catppuccin",
+}
+
+const normalizeStoredPreferences = (
+  stored: Partial<ReadingPreferences>,
+): Partial<ReadingPreferences> => {
+  const theme = stored.theme as string | undefined
+  if (!theme) return stored
+
+  if (theme === "auto") {
+    const dark =
+      typeof document !== "undefined" &&
+      document.documentElement.classList.contains("dark")
+    return { ...stored, theme: dark ? "dark" : "light" }
+  }
+
+  const migrated = LEGACY_THEMES[theme]
+  if (migrated) return { ...stored, theme: migrated }
+
+  return stored
+}
 
 export const storePreferencesInStorage = (preferences: {
   global: ReadingPreferences
@@ -818,7 +698,9 @@ export const loadGlobalPreferencesFromStorage =
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (!stored) return null
-      return JSON.parse(stored) as Partial<ReadingPreferences>
+      return normalizeStoredPreferences(
+        JSON.parse(stored) as Partial<ReadingPreferences>,
+      )
     } catch (error) {
       console.error("failed to load preferences from localStorage:", error)
       return null
@@ -831,7 +713,9 @@ export const loadPerBookPreferencesFromStorage = (
   if (typeof window === "undefined") return null
   const stored = localStorage.getItem(`${STORAGE_KEY}-${bookId}`)
   if (!stored) return null
-  return JSON.parse(stored) as Partial<ReadingPreferences>
+  return normalizeStoredPreferences(
+    JSON.parse(stored) as Partial<ReadingPreferences>,
+  )
 }
 
 /**

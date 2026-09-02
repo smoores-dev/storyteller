@@ -22,6 +22,7 @@ import {
   registerGuide,
   registerResource,
 } from "@/store/readerRegistry"
+import { readReaderTokens } from "@/store/slices/preferencesSlice"
 
 export function findSegmentForTime(
   segments: Array<{ startTime: number; endTime: number; textHref: string }>,
@@ -188,11 +189,7 @@ export const highlightFragment = (
     clearHighlight(activeFrame)
   }
 
-  const frameWindow = activeFrame.iframe.contentWindow
-  const highlightColor = frameWindow
-    ?.getComputedStyle(frameWindow.document.documentElement)
-    .getPropertyValue("--reader-highlight-color")
-    .trim()
+  const tokens = readReaderTokens()
 
   activeFrame.msg.send("decorate", {
     group: "highlight",
@@ -201,8 +198,10 @@ export const highlightFragment = (
       id: "highlight",
       locator: locator,
       style: {
-        tint: highlightColor || undefined,
-        enforceContrast: false,
+        type: "template",
+        layout: "boxes",
+        width: "wrap",
+        element: `<div style="background-color: ${tokens.highlight}; mix-blend-mode: ${tokens.scheme === "dark" ? "lighten" : "darken"}; border-radius: 0.25em; box-sizing: content-box; padding-block: 0.16em; padding-inline: 0.18em; margin-block: -0.16em; margin-inline: -0.18em"></div>`,
       },
     },
   } as DecoratorRequest)

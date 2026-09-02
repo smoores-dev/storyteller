@@ -6,12 +6,13 @@ import { readerPlayer } from "@/services/AudioPlayerService"
 import { closeMiniPlayer } from "@/store/actions"
 import { getNavigator } from "@/store/readerRegistry"
 import {
-  applyThemeToDocument,
+  applyFrameTheme,
+  applyReaderTheme,
   preferencesSlice,
+  readReaderTokens,
+  readiumIfyPreferences,
   selectBookPreferences,
-  selectEpubPreferences,
   storePreferencesInStorage,
-  syncAutoTheme,
 } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
@@ -44,48 +45,47 @@ startAppListening({
   matcher: isAnyOf(
     preferencesSlice.actions.updatePreference,
     preferencesSlice.actions.resetPreference,
-    syncAutoTheme,
+    preferencesSlice.actions.initBookPreferences,
+    readingSessionSlice.actions.startBook,
     readingSessionSlice.actions.setActiveFrame,
   ),
   effect: async (_action, listenerApi) => {
-    const target = selectCurrentBook(listenerApi.getState())?.uuid
-    if (!target) return
+    const book = selectCurrentBook(listenerApi.getState())
+    if (!book) return
 
-    const preferences = selectBookPreferences(listenerApi.getState(), target)
+    const preferences = selectBookPreferences(listenerApi.getState(), book.uuid)
 
     if (
       window.location.pathname.includes("/read") ||
       window.location.pathname.includes("/book")
     ) {
-      applyThemeToDocument(preferences)
+      applyReaderTheme(preferences, book)
     }
 
-    // apply theme to iframe, returns null if frame unavailable
-    const applied = withActiveFrame((frame) => {
-      applyThemeToDocument(preferences, frame.iframe.contentWindow.document)
-      return true
-    })
-
-    // don't continue if no active frame
-    if (!applied) return
-
     if (window.documentPictureInPicture?.window) {
-      applyThemeToDocument(
+      applyReaderTheme(
         preferences,
+        book,
         window.documentPictureInPicture.window.document,
       )
     }
 
+    const tokens = readReaderTokens()
+
+    const applied = withActiveFrame((frame) => {
+      applyFrameTheme(preferences, tokens, frame.iframe.contentWindow.document)
+      return true
+    })
+
+    if (!applied) return
+
     const nav = getNavigator()
     if (!nav) return
 
-    const readiumPreferences = selectEpubPreferences(
-      listenerApi.getState(),
-      target,
-    )
-
     await withActiveFrame(async () => {
-      await nav.submitPreferences(new EpubPreferences(readiumPreferences))
+      await nav.submitPreferences(
+        new EpubPreferences(readiumIfyPreferences(preferences, tokens)),
+      )
     })
   },
 })

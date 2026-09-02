@@ -18,9 +18,9 @@ import { readerPlayer } from "@/services/AudioPlayerService"
 import { nextPagePressed, previousPagePressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
-  applyThemeToDocument,
+  applyReaderTheme,
   getInitialHydratedPreferences,
-  removeThemeFromDocument,
+  removeReaderTheme,
   selectPreference,
 } from "@/store/slices/preferencesSlice"
 import {
@@ -66,7 +66,7 @@ const ReaderComponent = ({
   if (!isThemeApplied.current) {
     const preferences = getInitialHydratedPreferences(book.uuid)
 
-    applyThemeToDocument(preferences, document)
+    applyReaderTheme(preferences, book, document)
     isThemeApplied.current = true
   }
 
@@ -76,7 +76,7 @@ const ReaderComponent = ({
         dispatch(readingSessionSlice.actions.closeBook())
       }
 
-      removeThemeFromDocument(document)
+      removeReaderTheme(document)
       isThemeApplied.current = false
     }
   }, [dispatch, actualMode])
