@@ -10,6 +10,7 @@ import { BookInfo } from "@v3/_/components/reader/preferenceItems/BookInfo"
 import { HoldButton } from "@v3/_/components/reader/preferenceItems/HoldButton"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useMediaQuery } from "@v3/_/hooks/use-media-query"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type BookWithRelations } from "@/database/books"
@@ -70,6 +71,7 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
     selectDetailView(state, book.uuid),
   )
   const shortcuts = useReaderShortcuts()
+  const t = useTranslation("Reader.toolbar")
   const rtl = !publicationLoading && isRtlPublication()
   const reducedMotion = useReducedMotion()
   const isMd = useMediaQuery("(min-width: 768px)")
@@ -112,6 +114,8 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
     (isMd ? FOOTER_HEIGHT_MD : FOOTER_HEIGHT) +
     (footerDisplayWidth === "full" ? 0 : FOOTER_GAP) -
     PROGRESS_BAR_HEIGHT
+
+  const playLabelKey = isLoading ? "buffering" : playing ? "pause" : "play"
 
   const turnLeft = () => {
     dispatch(rtl ? nextPagePressed() : previousPagePressed())
@@ -159,8 +163,8 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
             <TooltipButton
               variant="real-ghost"
               size="icon-lg"
-              tooltip={rtl ? "Next page" : "Previous page"}
-              aria-label={rtl ? "Next page" : "Previous page"}
+              tooltip={t.plain(rtl ? "nextPage" : "previousPage")}
+              aria-label={t.plain(rtl ? "nextPage" : "previousPage")}
               shortcut={[rtl ? shortcuts.nextPage : shortcuts.previousPage]}
               className={TRANSPORT_BUTTON_CLASS}
               onClick={turnLeft}
@@ -170,8 +174,8 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
             <TooltipButton
               variant="real-ghost"
               size="icon-lg"
-              tooltip={rtl ? "Previous page" : "Next page"}
-              aria-label={rtl ? "Previous page" : "Next page"}
+              tooltip={t.plain(rtl ? "previousPage" : "nextPage")}
+              aria-label={t.plain(rtl ? "previousPage" : "nextPage")}
               shortcut={[rtl ? shortcuts.previousPage : shortcuts.nextPage]}
               className={TRANSPORT_BUTTON_CLASS}
               onClick={turnRight}
@@ -182,12 +186,10 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
         ) : (
           <div className="flex items-center gap-1">
             <HoldButton
-              tooltip={
-                mode === "audiobook"
-                  ? "Skip backward 15 seconds"
-                  : "Previous fragment"
-              }
-              holdTooltip="Skip to previous chapter"
+              tooltip={t.plain(
+                mode === "audiobook" ? "skipBackward" : "previousFragment",
+              )}
+              holdTooltip={t.plain("previousChapter")}
               shortcut={[shortcuts.previousFragment]}
               onHold={() => {
                 dispatch(
@@ -217,8 +219,8 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
             <TooltipButton
               variant="default"
               size="icon-lg"
-              tooltip={isLoading ? "Buffering" : playing ? "Pause" : "Play"}
-              aria-label={isLoading ? "Buffering" : playing ? "Pause" : "Play"}
+              tooltip={t.plain(playLabelKey)}
+              aria-label={t.plain(playLabelKey)}
               shortcut={[shortcuts.togglePlay]}
               className="bg-reader-accent text-reader-bg hover:bg-reader-accent-hover focus-visible:ring-reader-accent/40 size-10 rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-95"
               onClick={() => {
@@ -235,12 +237,10 @@ export const ReaderFooter = ({ book, className, isVisible }: Props) => {
             </TooltipButton>
 
             <HoldButton
-              tooltip={
-                mode === "audiobook"
-                  ? "Skip forward 15 seconds"
-                  : "Next fragment"
-              }
-              holdTooltip="Skip to next chapter"
+              tooltip={t.plain(
+                mode === "audiobook" ? "skipForward" : "nextFragment",
+              )}
+              holdTooltip={t.plain("nextChapter")}
               shortcut={[shortcuts.nextFragment]}
               onHold={() => {
                 dispatch(

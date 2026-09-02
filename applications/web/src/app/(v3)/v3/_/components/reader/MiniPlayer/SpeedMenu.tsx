@@ -8,6 +8,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { type BookWithRelations } from "@/database/books"
 import { readerPlayer } from "@/services/AudioPlayerService"
@@ -26,6 +27,7 @@ export function SpeedMenu({
 }) {
   const dispatch = useAppDispatch()
   const rate = useAppSelector(selectPlaybackRate)
+  const t = useTranslation("Reader.playbackSpeed")
   const speeds = SPEEDS.includes(rate)
     ? SPEEDS
     : [...SPEEDS, rate].sort((a, b) => a - b)
@@ -37,7 +39,7 @@ export function SpeedMenu({
           <Button
             variant="ghost"
             size="sm"
-            aria-label="Playback speed"
+            aria-label={t.plain("title")}
             className="tabular-nums"
           />
         }

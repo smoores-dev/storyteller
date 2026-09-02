@@ -9,6 +9,8 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
+import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
@@ -17,6 +19,7 @@ import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectPlaybackRate } from "@/store/slices/audioPlayerSlice"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
 import { selectCurrentBook } from "@/store/slices/readingSessionSlice"
+
 
 import { ReaderSlider } from "./ReaderSlider"
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
@@ -32,6 +35,8 @@ const SpeedControl = () => {
   const dispatch = useAppDispatch()
   const [draft, setDraft] = useState<number | null>(null)
   const shown = draft ?? playbackSpeed
+
+  const t = useTranslation("Reader.playbackSpeed")
 
   const setSpeed = (value: number) => {
     if (!currentBook) return
@@ -75,17 +80,19 @@ const SpeedControl = () => {
       </div>
 
       <div className="flex w-full items-end gap-2">
-        <Button
+        <TooltipButton
           variant="ghost"
           size="sm"
-          aria-label="Slower"
-          className="text-reader-text hover:bg-reader-surface-hover relative mb-1.5 rounded-full p-1.5"
+          tooltip={t("slower")}
+          aria-label={t("slower")}
+          shortcut={[","]}
+          className="text-reader-text hover:bg-reader-surface-hover relative mb-3 rounded-full p-1.5"
           onClick={() => {
             setSpeed(Math.round((playbackSpeed - 0.1) * 10) / 10)
           }}
         >
           <icon.Minus size="lg" />
-        </Button>
+        </TooltipButton>
         <div className="w-full grow">
           <ReaderSlider
             value={shown}
@@ -109,17 +116,19 @@ const SpeedControl = () => {
             ]}
           />
         </div>
-        <Button
+        <TooltipButton
           variant="ghost"
           size="sm"
-          aria-label="Faster"
-          className="text-reader-text hover:bg-reader-surface-hover relative mb-1.5 rounded-full p-1.5"
+          tooltip={t("faster")}
+          aria-label={t("faster")}
+          shortcut={["."]}
+          className="text-reader-text hover:bg-reader-surface-hover relative mb-3 rounded-full p-1.5"
           onClick={() => {
             setSpeed(Math.round((playbackSpeed + 0.1) * 10) / 10)
           }}
         >
           <icon.Plus size="lg" />
-        </Button>
+        </TooltipButton>
       </div>
     </div>
   )
@@ -135,6 +144,8 @@ export const PlaybackSpeedControl = (props: ToolProps) => {
     </span>
   )
 
+  const t = useTranslation("Reader.playbackSpeed")
+
   if (props.mode === "raw") {
     return <SpeedControl />
   }
@@ -142,10 +153,10 @@ export const PlaybackSpeedControl = (props: ToolProps) => {
   if (props.mode === "drawer") {
     return (
       <ToolbarIcon
-        label="Playback speed"
+        label={t("title")}
         icon={speedIcon}
         onClick={() => {
-          props.openDrawer({ type: "playback-speed" }, "Playback speed")
+          props.openDrawer({ type: "playback-speed" }, t("title"))
         }}
       />
     )
@@ -160,7 +171,7 @@ export const PlaybackSpeedControl = (props: ToolProps) => {
       }}
     >
       <DropdownMenuTrigger
-        render={<ToolbarIcon label="Playback speed" icon={speedIcon} />}
+        render={<ToolbarIcon label={t("title")} icon={speedIcon} />}
       />
       <DropdownMenuContent
         align="end"

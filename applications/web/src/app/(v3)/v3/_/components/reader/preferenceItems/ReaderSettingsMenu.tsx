@@ -14,12 +14,14 @@ import {
   FilterableMenuSurface,
   FilterableMenuTrigger,
 } from "@v3/_/components/ui/filterable-menu"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
 import { useAppDispatch } from "@/store/appState"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
 import { type UUID } from "@/uuid"
+
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import {
@@ -30,17 +32,16 @@ import {
 } from "./readerSettingsRows"
 import { SECTIONS } from "./readerSettingsSections"
 
-const LABEL = "Reader settings"
-
 function ApplyToAllBooksItem({ bookUuid }: { bookUuid: UUID }) {
   const dispatch = useAppDispatch()
   const [applied, setApplied] = useState(false)
+  const t = useTranslation("Reader.readerSettings")
   return (
     <FilterableMenuItem
       closeOnClick={false}
-      textValue="Apply to all books"
+      textValue={t.plain("applyToAllBooks")}
       icon={<icon.Books />}
-      title="Every book will use the settings of this book"
+      title={t.plain("applyToAllBooksHint")}
       onSelect={() => {
         dispatch(
           preferencesSlice.actions.applyBookPreferencesToAllBooks({
@@ -50,7 +51,7 @@ function ApplyToAllBooksItem({ bookUuid }: { bookUuid: UUID }) {
         setApplied(true)
       }}
     >
-      <span className="min-w-0 flex-1 truncate">Apply to all books</span>
+      <span className="min-w-0 flex-1 truncate">{t("applyToAllBooks")}</span>
       {applied && <icon.Check className="text-reader-accent" />}
     </FilterableMenuItem>
   )
@@ -58,15 +59,18 @@ function ApplyToAllBooksItem({ bookUuid }: { bookUuid: UUID }) {
 
 function ReaderSettingsItems({ bookUuid }: { bookUuid: UUID }) {
   const api = usePreferenceApi(bookUuid)
+  const t = useTranslation("Reader.readerSettings")
   return (
     <>
       {SECTIONS.map((section) => (
         <FilterableMenuSub key={section.key}>
           <FilterableMenuSubTrigger
             icon={section.icon}
-            textValue={section.label}
+            textValue={t.plain(section.labelKey)}
           >
-            <span className="min-w-0 flex-1 truncate">{section.label}</span>
+            <span className="min-w-0 flex-1 truncate">
+              {t(section.labelKey)}
+            </span>
             <OverrideMark show={section.keys.some(api.overridden)} />
           </FilterableMenuSubTrigger>
           <FilterableMenuSubContent
@@ -112,6 +116,8 @@ function ReaderSettingsDrawerContent({
 
 export const ReaderSettingsMenu = (props: ToolProps & { bookUuid: UUID }) => {
   const { isOpen, openMenu, closeMenu } = useMenuToggle()
+  const t = useTranslation("Reader.toolbar")
+  const label = t.plain("readerSettings")
 
   if (props.mode === "raw") {
     return <ReaderSettingsDrawerContent bookUuid={props.bookUuid} />
@@ -120,12 +126,12 @@ export const ReaderSettingsMenu = (props: ToolProps & { bookUuid: UUID }) => {
   if (props.mode === "drawer") {
     return (
       <ToolbarIcon
-        label={LABEL}
+        label={label}
         icon={<icon.Aa size="lg" />}
         onClick={() => {
           props.openDrawer(
             { type: "reading-settings", bookUuid: props.bookUuid },
-            LABEL,
+            label,
           )
         }}
       />
@@ -141,7 +147,7 @@ export const ReaderSettingsMenu = (props: ToolProps & { bookUuid: UUID }) => {
       }}
     >
       <FilterableMenuTrigger
-        render={<ToolbarIcon label={LABEL} icon={<icon.Aa size="lg" />} />}
+        render={<ToolbarIcon label={label} icon={<icon.Aa size="lg" />} />}
       />
       <FilterableMenuContent
         searchable={false}

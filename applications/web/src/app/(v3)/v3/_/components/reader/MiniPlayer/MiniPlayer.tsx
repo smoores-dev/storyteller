@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 import { Cover } from "@v3/_/components/books/Cover"
+import { useCoverScope } from "@v3/_/components/books/CoverScope"
 import { usePiPWindow } from "@v3/_/components/reader/PipProvider"
 import PiPWindow from "@v3/_/components/reader/PipWindow"
 import {
@@ -15,6 +16,7 @@ import {
 import { formatTime } from "@v3/_/components/reader/preferenceItems/formatTime"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { V3Link } from "@v3/_/components/v3-link"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type BookWithRelations } from "@/database/books"
@@ -30,7 +32,6 @@ import {
   selectIsPlaying,
 } from "@/store/slices/audioPlayerSlice"
 import {
-  type MiniPlayerCorner,
   preferencesSlice,
   selectPreference,
 } from "@/store/slices/preferencesSlice"
@@ -140,19 +141,22 @@ function FloatingMiniPlayer({ book }: { book: BookWithRelations }) {
       }),
     )
 
+  const coverScope = useCoverScope(book)
+  const t = useTranslation("Reader.miniPlayer")
+
   return (
     <FloatingPlayer
       corner={corner}
       expanded={!collapsed}
-      onCornerChange={(value: MiniPlayerCorner) =>
-        dispatch(
-          preferencesSlice.actions.updatePreference({
-            key: "miniPlayerCorner",
-            value,
-            target: "global",
-          }),
-        )
-      }
+      // onCornerChange={(value: MiniPlayerCorner) =>
+      //   dispatch(
+      //     preferencesSlice.actions.updatePreference({
+      //       key: "miniPlayerCorner",
+      //       value,
+      //       target: "global",
+      //     }),
+      //   )
+      // }
       style={{ borderRadius: collapsed ? CIRCLE_SIZE / 2 : 16 }}
       className={cn(
         "bg-popover text-popover-foreground border-border overflow-hidden border shadow-lg",
@@ -167,11 +171,14 @@ function FloatingMiniPlayer({ book }: { book: BookWithRelations }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
+          style={{
+            ...coverScope.style,
+          }}
         >
           {collapsed ? (
             <button
               type="button"
-              aria-label="Open the player"
+              aria-label={t.plain("open")}
               onPointerDown={(event) => {
                 pressPoint.current = { x: event.clientX, y: event.clientY }
                 dragControls.start(event)
@@ -232,6 +239,7 @@ function ExpandedCard({
   const dispatch = useAppDispatch()
   const track = useAppSelector(selectCurrentTrack)
   const mode = useAppSelector(selectReadingMode)
+  const t = useTranslation("Reader.miniPlayer")
   const startDrag = (event: React.PointerEvent) => {
     if ((event.target as Element).closest("button,a,[role=menuitem]")) return
     dragControls.start(event)
@@ -245,8 +253,8 @@ function ExpandedCard({
       >
         <TooltipButton
           variant="ghost"
-          tooltip="Collapse"
-          aria-label="Collapse the player"
+          tooltip={t.plain("collapse")}
+          aria-label={t.plain("collapseAria")}
           onClick={onCollapse}
         >
           <icon.ChevronDown />
@@ -257,8 +265,8 @@ function ExpandedCard({
         <SpeedMenu book={book} />
         <TooltipButton
           variant="ghost"
-          tooltip="Back to the book"
-          aria-label="Back to the book"
+          tooltip={t.plain("backToBook")}
+          aria-label={t.plain("backToBook")}
           nativeButton={false}
           render={<V3Link href={`/books/${book.uuid}/read?mode=${mode}`} />}
         >
@@ -266,8 +274,8 @@ function ExpandedCard({
         </TooltipButton>
         <TooltipButton
           variant="ghost"
-          tooltip="Stop listening"
-          aria-label="Stop listening"
+          tooltip={t.plain("stopListening")}
+          aria-label={t.plain("stopListening")}
           onClick={() => dispatch(closeMiniPlayer())}
         >
           <icon.Close />
@@ -301,6 +309,7 @@ function ExpandedCard({
 
 function SeekBar() {
   const dispatch = useAppDispatch()
+  const t = useTranslation("Reader.miniPlayer")
   const currentTime = useAppSelector(selectCurrentTime)
   const duration = useAppSelector(selectDuration)
   const [scrub, setScrub] = useState<number | null>(null)
@@ -321,7 +330,7 @@ function SeekBar() {
       <div
         role="slider"
         tabIndex={0}
-        aria-label="Position in this track"
+        aria-label={t.plain("positionInTrack")}
         aria-valuemin={0}
         aria-valuemax={Math.round(duration)}
         aria-valuenow={Math.round(shown)}

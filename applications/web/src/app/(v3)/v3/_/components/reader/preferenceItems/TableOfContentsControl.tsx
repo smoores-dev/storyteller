@@ -7,6 +7,7 @@ import {
   FilterableMenuItem,
   FilterableMenuTrigger,
 } from "@v3/_/components/ui/filterable-menu"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
@@ -21,12 +22,13 @@ const TocList = () => {
   const tocItems = getTocItems()
   const currentChapterLocator = useAppSelector(selectCurrentToCLocator)
   const dispatch = useAppDispatch()
+  const t = useTranslation("Reader.toolbar")
 
   if (!tocItems || tocItems.length === 0) {
     return (
       <div className="py-8 text-center">
         <span className="text-reader-text-muted text-sm">
-          No table of contents available
+          {t("noTableOfContents")}
         </span>
       </div>
     )
@@ -44,7 +46,7 @@ const TocList = () => {
             textValue={item.title}
             disabled={!item.locator}
             className={cn(
-              "hover:bg-reader-surface-hover data-highlighted:bg-reader-accent/30 w-full rounded-sm p-2 text-left transition-colors",
+              "hover:bg-reader-surface-hover data-highlighted:bg-reader-accent/30 text-left",
               isCurrent && "bg-reader-accent/10",
             )}
             onSelect={() => {
@@ -80,6 +82,7 @@ export const TableOfContentsControl = (props: ToolProps) => {
   const currentChapterLocator = useAppSelector(selectCurrentToCLocator)
 
   const { isOpen, setOpen, toggleMenu } = useMenuToggle()
+  const t = useTranslation("Reader.toolbar")
 
   useEffect(() => {
     if (!isOpen || !currentChapterLocator?.id) return
@@ -102,10 +105,10 @@ export const TableOfContentsControl = (props: ToolProps) => {
   if (props.mode === "drawer") {
     return (
       <ToolbarIcon
-        label="Table of contents"
+        label={t("tableOfContents")}
         icon={<icon.List size="lg" />}
         onClick={() => {
-          props.openDrawer({ type: "table-of-contents" }, "Table of contents")
+          props.openDrawer({ type: "table-of-contents" }, t("tableOfContents"))
         }}
       />
     )
@@ -116,7 +119,7 @@ export const TableOfContentsControl = (props: ToolProps) => {
       <FilterableMenuTrigger
         render={
           <ToolbarIcon
-            label="Table of contents"
+            label={t("tableOfContents")}
             icon={<icon.List size="lg" />}
             onClick={toggleMenu}
           />

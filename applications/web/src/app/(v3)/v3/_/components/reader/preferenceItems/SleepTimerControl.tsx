@@ -9,12 +9,14 @@ import {
 import { useEffect, useState } from "react"
 
 import { useMenuToggle } from "@v3/_/components/reader/hooks/useMenuToggle"
-import { Button } from "@v3/_/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@v3/_/components/ui/dropdown-menu"
+  FilterableMenu,
+  FilterableMenuContent,
+  FilterableMenuItem,
+  FilterableMenuTrigger,
+} from "@v3/_/components/ui/filterable-menu"
+import { useTranslation } from "@v3/_/hooks/use-translation"
+import { useFormatDuration } from "@v3/_/lib/formatters"
 import { cn } from "@v3/_/lib/utils"
 
 import { env } from "@/env"
@@ -24,6 +26,7 @@ import {
   readingSessionSlice,
   selectSleepTimer,
 } from "@/store/slices/readingSessionSlice"
+
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 
@@ -86,12 +89,11 @@ const SleepTimerControl = () => {
 
   return (
     <div className="flex w-full flex-col overflow-x-clip overflow-y-auto">
-      <SleepTimerButton minutes={0} text="Off" active={activeMinutes === 0} />
+      <SleepTimerButton minutes={0} active={activeMinutes === 0} />
       {PRESET_MINUTES.map((minutes) => (
         <SleepTimerButton
           key={minutes}
           minutes={minutes}
-          text={`${minutes} min`}
           active={activeMinutes === minutes}
         />
       ))}
@@ -99,7 +101,7 @@ const SleepTimerControl = () => {
         <>
           <SleepTimerButton
             minutes={5}
-            text="5 sec"
+            label="5 sec"
             onClick={() => {
               dispatch(
                 readingSessionSlice.actions.sleepTimerSet({
@@ -110,7 +112,7 @@ const SleepTimerControl = () => {
           />
           <SleepTimerButton
             minutes={30}
-            text="30 sec"
+            label="30 sec"
             onClick={() => {
               dispatch(
                 readingSessionSlice.actions.sleepTimerSet({
@@ -129,6 +131,7 @@ export function SleepTimerItem(props: ToolProps) {
   const formattedSleepTimer = useFormattedSleepTimer()
 
   const { isOpen, setOpen, toggleMenu } = useMenuToggle()
+  const t = useTranslation("Reader.toolbar")
 
   const triggerIcon = formattedSleepTimer ? (
     <span className="text-xs tabular-nums">{formattedSleepTimer}</span>
@@ -143,30 +146,33 @@ export function SleepTimerItem(props: ToolProps) {
   if (props.mode === "drawer") {
     return (
       <ToolbarIcon
-        label="Sleep timer"
+        label={t("sleepTimer")}
         icon={triggerIcon}
         onClick={() => {
-          props.openDrawer({ type: "sleep-timer" }, "Sleep timer")
+          props.openDrawer({ type: "sleep-timer" }, t("sleepTimer"))
         }}
       />
     )
   }
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setOpen}>
-      <DropdownMenuTrigger
+    <FilterableMenu open={isOpen} onOpenChange={setOpen}>
+      <FilterableMenuTrigger
         render={
           <ToolbarIcon
-            label="Sleep timer"
+            label={t("sleepTimer")}
             icon={triggerIcon}
             onClick={toggleMenu}
           />
         }
       />
-      <DropdownMenuContent className="bg-reader-surface text-reader-text border-reader-border min-w-36">
+      <FilterableMenuContent
+        searchable={false}
+        className="bg-reader-surface text-reader-text border-reader-border min-w-36"
+      >
         <SleepTimerControl />
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </FilterableMenuContent>
+    </FilterableMenu>
   )
 }
 
@@ -174,26 +180,28 @@ SleepTimerItem.DrawerContent = SleepTimerControl
 
 const SleepTimerButton = ({
   minutes,
-  text,
+  label,
   active = false,
   onClick,
 }: {
   minutes: number
-  text?: string
+  label?: string
   active?: boolean
   onClick?: () => void
 }) => {
   const dispatch = useAppDispatch()
 
+  const t = useTranslation("Reader.toolbar")
+  const formatDuration = useFormatDuration()
+
   return (
-    <Button
-      variant="ghost"
+    <FilterableMenuItem
       aria-pressed={active}
       className={cn(
         "text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover w-full justify-start gap-2 rounded-sm",
         active && "text-reader-accent",
       )}
-      onClick={() => {
+      onSelect={() => {
         if (onClick) {
           onClick()
           return
@@ -205,10 +213,13 @@ const SleepTimerButton = ({
         )
       }}
     >
-      <span className="text-sm">{text ?? `${minutes} min`}</span>
+      <span className="text-sm">
+        {label ??
+          (minutes === 0 ? t("sleepTimerOff") : formatDuration(minutes * 60))}
+      </span>
       {active && (
         <icon.Check size="sm" className="text-reader-accent ml-auto" />
       )}
-    </Button>
+    </FilterableMenuItem>
   )
 }

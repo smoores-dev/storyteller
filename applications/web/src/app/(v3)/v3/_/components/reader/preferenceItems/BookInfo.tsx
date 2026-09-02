@@ -1,6 +1,7 @@
 import { Tile } from "@v3/_/components/books/Cover"
 import { useFormattedProgress } from "@v3/_/components/reader/hooks/useFormattedProgress"
 import { V3Link } from "@v3/_/components/v3-link"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type BookWithRelations } from "@/database/books"
@@ -30,6 +31,7 @@ export const BookInfo = ({
   const currentTextLocator = useAppSelector(selectCurrentLocator)
   const { title, detail, ready } = useFormattedProgress({ book })
   const dispatch = useAppDispatch()
+  const t = useTranslation("Reader.progress")
 
   const percent = Math.round(
     (currentTextLocator?.locations.totalProgression ?? 0) * 100,
@@ -47,11 +49,11 @@ export const BookInfo = ({
     <>
       <button
         type="button"
-        aria-label={
+        aria-label={t.plain(
           detailView.scope === "book"
-            ? "Show chapter progress"
-            : "Show book progress"
-        }
+            ? "showChapterProgress"
+            : "showBookProgress",
+        )}
         className="focus-visible:ring-reader-accent/40 shrink-0 rounded-[4px] border-none bg-transparent p-0 transition-transform duration-150 ease-out outline-none hover:scale-105 focus-visible:ring-2 active:scale-95"
         onClick={() => {
           dispatch(

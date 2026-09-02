@@ -2,7 +2,8 @@ import { type Locator } from "@readium/shared"
 import { useEffect, useMemo, useState } from "react"
 
 import { getPositionsForTocItem } from "@v3/_/components/reader/BookService"
-import { formatTimeHuman } from "@v3/_/components/reader/preferenceItems/formatTime"
+import { useTranslation } from "@v3/_/hooks/use-translation"
+import { useFormatDuration } from "@v3/_/lib/formatters"
 
 import { type BookWithRelations } from "@/database/books"
 import { useAppSelector } from "@/store/appState"
@@ -47,6 +48,8 @@ export const useFormattedProgress = ({
 }: {
   book: BookWithRelations
 }): FormattedProgress => {
+  const t = useTranslation("Reader.progress")
+  const formatDuration = useFormatDuration()
   const detailView = useAppSelector((state) =>
     selectDetailView(state, book.uuid),
   )
@@ -74,7 +77,12 @@ export const useFormattedProgress = ({
     return playlist
       .map((track, idx) => {
         const mark = {
-          title: track.title || `Track ${idx + 1}`,
+          title:
+            track.title ||
+            t.plain("trackOfTotal", {
+              index: idx + 1,
+              total: playlist.length,
+            }),
           position: runningTotal,
           href: track.url,
           locator: track.tocItem?.locator ?? null,
@@ -83,7 +91,7 @@ export const useFormattedProgress = ({
         return mark
       })
       .sort((a, b) => a.position - b.position)
-  }, [playlist, playbackSpeed, detailView.mode, detailView.scope])
+  }, [playlist, playbackSpeed, detailView.mode, detailView.scope, t])
 
   const textBookMarks = useMemo(() => {
     if (detailView.mode === "audio" || detailView.scope !== "book") {
@@ -146,12 +154,12 @@ export const useFormattedProgress = ({
     }
 
     return chapterPositions.map((position, idx) => ({
-      title: `Page ${position.locations.position ?? idx + 1}`,
+      title: t.plain("page", { page: position.locations.position ?? idx + 1 }),
       position: idx,
       href: position.href,
       locator: position,
     }))
-  }, [chapterPositions, detailView.mode, detailView.scope])
+  }, [chapterPositions, detailView.mode, detailView.scope, t])
 
   if (detailView.mode === "audio") {
     if (detailView.scope === "book") {
@@ -178,7 +186,9 @@ export const useFormattedProgress = ({
         title: book.title,
         detail:
           totalDuration > 0
-            ? `${formatTimeHuman(totalDuration - progressDuration)} left`
+            ? t.plain("timeLeft", {
+                time: formatDuration(totalDuration - progressDuration),
+              })
             : null,
         total: totalDuration,
         marks: audioBookMarks,
@@ -191,13 +201,19 @@ export const useFormattedProgress = ({
     const progress = currentTime / playbackSpeed
     const fallbackTitle =
       playlist.length > 0 && trackIndex >= 0
-        ? `Track ${trackIndex + 1} of ${playlist.length}`
+        ? t.plain("trackOfTotal", {
+            index: trackIndex + 1,
+            total: playlist.length,
+          })
         : null
 
     return {
       ready: currentTrack !== null && total > 0,
       title: currentTrack?.title ?? fallbackTitle,
-      detail: total > 0 ? `${formatTimeHuman(total - progress)} left` : null,
+      detail:
+        total > 0
+          ? t.plain("timeLeft", { time: formatDuration(total - progress) })
+          : null,
       total,
       progress,
       marks: null,
@@ -216,7 +232,10 @@ export const useFormattedProgress = ({
     return {
       ready: totalPages > 0 && currentTextLocator !== null,
       title: currentChapter?.title ?? book.title,
-      detail: totalPages > 0 ? `Page ${currentPage} of ${totalPages}` : null,
+      detail:
+        totalPages > 0
+          ? t.plain("pageOfTotal", { page: currentPage, total: totalPages })
+          : null,
       total: totalPages,
       progress: currentPage,
       marks: textBookMarks,
@@ -238,7 +257,10 @@ export const useFormattedProgress = ({
     title: currentChapter?.title ?? book.title,
     detail:
       chapterLength > 0 && currentPositionIdx >= 0
-        ? `Page ${currentPositionIdx + 1} of ${chapterLength}`
+        ? t.plain("pageOfTotal", {
+            page: currentPositionIdx + 1,
+            total: chapterLength,
+          })
         : null,
     total: chapterLength,
     progress: chapterProgression,

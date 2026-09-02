@@ -1,3 +1,4 @@
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
@@ -7,6 +8,7 @@ import {
   selectIsSyncing,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
+
 
 import { ToolbarIcon } from "./ToolbarIcon"
 
@@ -19,11 +21,12 @@ export const ReadaloudSyncingToggle = ({
   const syncing = useAppSelector(selectIsSyncing)
 
   const mode = useAppSelector(selectReadingMode)
+  const t = useTranslation("Reader.toolbar")
   if (mode !== "readaloud") return null
 
   return (
     <ToolbarIcon
-      label={syncing ? "Read along: on" : "Read along: off"}
+      label={t.plain(syncing ? "readAlongOn" : "readAlongOff")}
       icon={
         <icon.Readaloud
           size="lg"

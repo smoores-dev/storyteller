@@ -10,6 +10,7 @@ import { Button } from "@v3/_/components/ui/button"
 import { Spinner } from "@v3/_/components/ui/spinner"
 import { useDocumentVisibility } from "@v3/_/hooks/use-document-visibility"
 import { usePrevious } from "@v3/_/hooks/use-previous"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import type { BookWithRelations } from "@/database/books"
@@ -47,13 +48,6 @@ import { ReaderFooter } from "./readerParts/ReaderFooter"
 import { ReaderHeader } from "./readerParts/ReaderHeader"
 import { useWakeLock } from "./useWakeLock"
 
-const ERROR_TITLES = {
-  book_not_found: "Book not found",
-  resource_not_found: "Part of this book is missing",
-  service_unavailable: "The server is not reachable",
-  internal_error: "The book could not be opened",
-} as const
-
 const EDGE_BUTTON_CLASS =
   "group hover:text-reader-text-muted focus-visible:text-reader-text absolute inset-y-0 flex w-[10%] items-center justify-center border-none bg-transparent text-transparent transition-colors duration-200 outline-none md:w-[5%]"
 
@@ -72,6 +66,7 @@ const ReaderComponent = ({
 
   const actualMode = useAppSelector(selectReadingMode)
   const reducedMotion = useReducedMotion()
+  const t = useTranslation("Reader")
 
   const isThemeApplied = useRef(false)
   if (!isThemeApplied.current) {
@@ -177,7 +172,13 @@ const ReaderComponent = ({
   const memoizedContainerRef = useMemo(() => {
     if (actualMode === "audiobook") {
       return (
-        <div className="relative mx-auto flex h-full items-center justify-center [&>iframe]:relative [&>iframe]:h-full [&>iframe]:w-full">
+        <motion.div
+          drag
+          className="relative mx-auto flex h-full items-center justify-center [&>iframe]:relative [&>iframe]:h-full [&>iframe]:w-full"
+          dragElastic={0.12}
+          dragMomentum={true}
+          dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
+        >
           <Tile
             image={
               book.audiobook?.cover ??
@@ -190,7 +191,7 @@ const ReaderComponent = ({
             fit="cover"
             className="my-8 size-[200px] shadow-lg"
           />
-        </div>
+        </motion.div>
       )
     }
 
@@ -316,7 +317,9 @@ const ReaderComponent = ({
             <>
               <button
                 type="button"
-                aria-label={rtl ? "Previous page" : "Next page"}
+                aria-label={t.plain(
+                  rtl ? "toolbar.previousPage" : "toolbar.nextPage",
+                )}
                 className={cn(EDGE_BUTTON_CLASS, "right-0")}
                 onClick={() => {
                   dispatch(rtl ? previousPagePressed() : nextPagePressed())
@@ -329,7 +332,9 @@ const ReaderComponent = ({
               </button>
               <button
                 type="button"
-                aria-label={rtl ? "Next page" : "Previous page"}
+                aria-label={t.plain(
+                  rtl ? "toolbar.nextPage" : "toolbar.previousPage",
+                )}
                 className={cn(EDGE_BUTTON_CLASS, "left-0")}
                 onClick={() => {
                   dispatch(rtl ? nextPagePressed() : previousPagePressed())
@@ -366,7 +371,7 @@ const ReaderComponent = ({
             <div className="text-reader-text mx-8 flex max-w-md flex-col items-center gap-3 text-center">
               <icon.AlertCircle className="text-reader-accent size-8" />
               <h2 className="font-heading text-xl font-semibold">
-                {ERROR_TITLES[readerError]}
+                {t(`error.${readerError}`)}
               </h2>
               {readerErrorMessage && (
                 <p className="text-reader-text-secondary text-sm">
@@ -387,7 +392,7 @@ const ReaderComponent = ({
                     )
                   }}
                 >
-                  Try again
+                  {t("error.tryAgain")}
                 </Button>
                 <Button
                   className="bg-reader-accent text-reader-bg hover:bg-reader-accent-hover"
@@ -396,7 +401,7 @@ const ReaderComponent = ({
                     window.history.back()
                   }}
                 >
-                  Go back
+                  {t("error.goBack")}
                 </Button>
               </div>
             </div>

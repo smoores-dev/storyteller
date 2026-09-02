@@ -2,6 +2,7 @@
 
 import { Cover } from "@v3/_/components/books/Cover"
 import { Button } from "@v3/_/components/ui/button"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { type BookWithRelations } from "@/database/books"
 import * as icon from "@/icons"
@@ -25,6 +26,7 @@ export function PipPlayer({
   const track = useAppSelector(selectCurrentTrack)
   const currentTime = useAppSelector(selectCurrentTime)
   const duration = useAppSelector(selectDuration)
+  const t = useTranslation("Reader.miniPlayer")
 
   return (
     <div className="bg-background text-foreground fixed inset-0 flex flex-col">
@@ -48,7 +50,7 @@ export function PipPlayer({
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Back to the app"
+          aria-label={t.plain("backToApp")}
           onClick={() => {
             window.focus()
             pipWindow.close()

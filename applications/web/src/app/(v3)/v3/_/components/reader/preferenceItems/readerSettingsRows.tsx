@@ -12,6 +12,7 @@ import {
 } from "@v3/_/components/ui/filterable-menu"
 import { ResetButton } from "@v3/_/components/ui/reset-button"
 import { Switch } from "@v3/_/components/ui/switch"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
@@ -23,6 +24,7 @@ import {
   selectBookPreferences,
 } from "@/store/slices/preferencesSlice"
 import { type UUID } from "@/uuid"
+
 
 import { ReaderSlider } from "./ReaderSlider"
 
@@ -98,10 +100,11 @@ export const readerMenuLabelClassName = "text-reader-text-secondary"
 export const readerMenuSeparatorClassName = "bg-reader-border"
 
 export function OverrideMark({ show }: { show: boolean }) {
+  const t = useTranslation("Reader.readerSettings")
   if (!show) return null
   return (
     <span
-      title="Set for this book only"
+      title={t.plain("setForThisBookOnly")}
       className="bg-reader-accent size-1.5 shrink-0 rounded-full"
     />
   )
@@ -118,6 +121,7 @@ export function SectionGroup({
   keys: readonly (keyof ReadingPreferences)[]
   children: ReactNode
 }) {
+  const t = useTranslation("Reader.readerSettings")
   const anyChanged = keys.some(api.overridden)
   return (
     <FilterableMenuGroup>
@@ -125,7 +129,7 @@ export function SectionGroup({
         className={readerMenuLabelClassName}
         action={
           <ResetButton
-            tooltip="Follow the settings for all books"
+            tooltip={t.plain("followAllBooks")}
             disabled={!anyChanged}
             className="text-reader-text-muted hover:text-reader-text"
             onReset={() => {

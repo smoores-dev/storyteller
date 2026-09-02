@@ -6,6 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@v3/_/components/ui/tooltip"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type BookWithRelations } from "@/database/books"
@@ -39,6 +40,7 @@ const SeekSlider = ({
 }) => {
   const [draft, setDraft] = useState<number | null>(null)
   const shown = draft ?? value
+  const t = useTranslation("Reader.progress")
 
   return (
     <SliderPrimitive.Root
@@ -68,7 +70,7 @@ const SeekSlider = ({
             <TooltipTrigger
               render={
                 <SliderPrimitive.Thumb
-                  aria-label="Playback position"
+                  aria-label={t.plain("playbackPosition")}
                   className="bg-reader-accent border-reader-bg focus-visible:ring-reader-accent/40 block size-3 rounded-full border-2 opacity-0 shadow-sm transition-opacity outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 data-dragging:opacity-100"
                 />
               }
@@ -163,6 +165,7 @@ export const ProgressBar = ({
   const { total, marks, progress, ready } = useFormattedProgress({ book })
   const playbackSpeed = useAppSelector(selectPlaybackRate)
   const dispatch = useAppDispatch()
+  const t = useTranslation("Reader.progress")
 
   const restrictToMarks =
     detailView.scope === "book" || detailView.mode === "text"
@@ -184,7 +187,7 @@ export const ProgressBar = ({
         format={(value) => {
           if (detailView.mode === "audio") return formatTime(value)
           if (detailView.scope === "chapter") return null
-          return `Page ${value}`
+          return t.plain("page", { page: value })
         }}
         onSelect={(mark) => {
           if (detailView.mode === "text") {

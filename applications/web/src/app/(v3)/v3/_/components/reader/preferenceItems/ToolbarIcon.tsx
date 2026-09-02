@@ -60,7 +60,7 @@ export const ToolbarIcon = ({
       aria-label={label}
       aria-pressed={pressed}
       className={cn(
-        "text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover focus-visible:border-reader-accent/40 focus-visible:ring-reader-accent/40 aria-expanded:bg-reader-surface-hover aria-expanded:text-reader-accent aria-pressed:bg-reader-surface-hover aria-pressed:text-reader-accent flex items-center justify-center",
+        "text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover focus-visible:border-reader-accent/40 focus-visible:ring-reader-accent/40 aria-expanded:bg-reader-surface-hover aria-expanded:text-reader-accent aria-pressed:bg-reader-surface-hover aria-pressed:text-reader-accent flex items-center justify-center rounded-full",
         className,
       )}
     >

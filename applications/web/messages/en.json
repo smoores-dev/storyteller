@@ -2042,5 +2042,161 @@
       "failed": "{title} failed to process",
       "aBook": "A book"
     }
+  },
+  "Reader": {
+    "toolbar": {
+      "tableOfContents": "Table of contents",
+      "noTableOfContents": "No table of contents available",
+      "sleepTimer": "Sleep timer",
+      "sleepTimerOff": "Off",
+      "readerSettings": "Reader settings",
+      "backToBook": "Back to book",
+      "readAlongOn": "Read along: on",
+      "readAlongOff": "Read along: off",
+      "play": "Play",
+      "pause": "Pause",
+      "buffering": "Buffering",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "previousFragment": "Previous fragment",
+      "nextFragment": "Next fragment",
+      "skipBackward": "Skip backward 15 seconds",
+      "skipForward": "Skip forward 15 seconds",
+      "previousChapter": "Skip to previous chapter",
+      "nextChapter": "Skip to next chapter"
+    },
+    "readerSettings": {
+      "title": "Reader settings",
+      "applyToAllBooks": "Apply to all books",
+      "applyToAllBooksHint": "Every book will use the settings of this book",
+      "setForThisBookOnly": "Set for this book only",
+      "followAllBooks": "Follow the settings for all books",
+      "theme": {
+        "title": "Theme",
+        "schemeLight": "Light",
+        "schemeDark": "Dark",
+        "light": "Light",
+        "paper": "Paper",
+        "sepia": "Sepia",
+        "dark": "Dark",
+        "catppuccin": "Catppuccin",
+        "cover-light": "Cover",
+        "cover-dark": "Cover"
+      },
+      "text": {
+        "title": "Text",
+        "font": "Font",
+        "publisher": "Publisher's font",
+        "serif": "Serif",
+        "sans-serif": "Sans-serif",
+        "monospace": "Monospace",
+        "Literata": "Literata",
+        "OpenDyslexic": "OpenDyslexic",
+        "fontCustom": "Custom",
+        "fontCustomNamed": "Custom ({name})",
+        "fontNamePlaceholder": "Font name",
+        "fontUrlPlaceholder": "Stylesheet URL",
+        "fontUrlHint": "A stylesheet that defines the font, such as a Google Fonts link",
+        "fontSize": "Size",
+        "fontWeight": "Weight",
+        "letterSpacing": "Letter spacing",
+        "default": "Default",
+        "tight": "Tight",
+        "balanced": "Balanced",
+        "loose": "Loose",
+        "alignment": "Alignment",
+        "alignmentLeft": "Left",
+        "alignmentJustified": "Justified",
+        "hyphens": "Hyphenate words",
+        "lineHeight": "Line height",
+        "paragraphSpacing": "Paragraph spacing"
+      },
+      "layout": {
+        "title": "Layout",
+        "paginated": "Paginated",
+        "scrolling": "Scrolling",
+        "columns": "Columns",
+        "columnsAuto": "Auto",
+        "columnsOne": "1",
+        "columnsTwo": "2",
+        "lineLength": "Line length",
+        "lineLengthCharacters": "{count, number} characters",
+        "footerWidth": "Footer width",
+        "footerWidthWide": "Wide",
+        "footerWidthNarrow": "Narrow",
+        "footerWidthFitToText": "Fit to text"
+      },
+      "highlights": {
+        "title": "Highlights",
+        "yellow": "Yellow",
+        "red": "Red",
+        "green": "Green",
+        "blue": "Blue",
+        "magenta": "Magenta",
+        "cover": "Cover",
+        "custom": "Custom",
+        "customUse": "Use",
+        "customUsePlaceholder": "Any CSS color",
+        "syncOffset": "Sync offset"
+      },
+      "behavior": {
+        "title": "Behavior",
+        "skipAudioWhenTurningPages": "Skip audio when turning pages",
+        "openFloating": "Open a floating miniplayer when switching tabs",
+        "openFloatingHint": "Chromium based browsers only. The floating window lets you control playback and turn pages while Storyteller is in the background.",
+        "scrolling": "Scrolling",
+        "scrollingSmooth": "Smooth",
+        "scrollingInstant": "Instant",
+        "scrollEngine": "Scroll engine",
+        "scrollEngineCustom": "Custom",
+        "scrollEngineNative": "Native",
+        "scrollEngineCustomHint": "Usually smoother and lets you set the speed",
+        "scrollEngineNativeHint": "Try this if scrolling misbehaves",
+        "scrollSpeed": "Scroll speed"
+      }
+    },
+    "progress": {
+      "pageOfTotal": "Page {page} of {total}",
+      "page": "Page {page}",
+      "trackOfTotal": "Track {index} of {total}",
+      "timeLeft": "{time} left",
+      "showChapterProgress": "Show chapter progress",
+      "showBookProgress": "Show book progress",
+      "playbackPosition": "Playback position"
+    },
+    "error": {
+      "book_not_found": "Book not found",
+      "resource_not_found": "Part of this book is missing",
+      "service_unavailable": "The server is not reachable",
+      "internal_error": "The book could not be opened",
+      "tryAgain": "Try again",
+      "goBack": "Go back"
+    },
+    "miniPlayer": {
+      "open": "Open the player",
+      "collapse": "Collapse",
+      "collapseAria": "Collapse the player",
+      "backToBook": "Back to the book",
+      "stopListening": "Stop listening",
+      "positionInTrack": "Position in this track",
+      "backToApp": "Back to the app",
+      "playbackError": "Playback error",
+      "previousChapter": "Previous chapter",
+      "nextChapter": "Next chapter",
+      "back15": "Back 15 seconds",
+      "forward15": "Forward 15 seconds"
+    },
+    "playbackSpeed": {
+      "title": "Playback speed",
+      "slower": "Slower",
+      "faster": "Faster"
+    },
+    "volume": {
+      "title": "Volume"
+    },
+    "fullscreen": {
+      "title": "Enable fullscreen",
+      "exitFullscreen": "Exit fullscreen"
+    }
   }
 }

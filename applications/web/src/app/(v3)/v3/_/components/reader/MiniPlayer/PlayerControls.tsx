@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
@@ -27,13 +28,16 @@ export function PlayerControls({ tooltips = true }: { tooltips?: boolean }) {
   const loading = useAppSelector(selectIsLoading)
   const playing = useAppSelector(selectIsPlaying)
   const error = useAppSelector(selectError)
-  const playLabel = loading
-    ? "Buffering"
-    : error
-      ? "Playback error"
-      : playing
-        ? "Pause"
-        : "Play"
+  const t = useTranslation("Reader")
+  const playLabel = t.plain(
+    loading
+      ? "toolbar.buffering"
+      : error
+        ? "miniPlayer.playbackError"
+        : playing
+          ? "toolbar.pause"
+          : "toolbar.play",
+  )
 
   return (
     <>
@@ -70,6 +74,7 @@ function SkipButton({
   tooltips: boolean
 }) {
   const dispatch = useAppDispatch()
+  const t = useTranslation("Reader.miniPlayer")
   const [holding, setHolding] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const held = useRef(false)
@@ -90,15 +95,15 @@ function SkipButton({
   return (
     <TransportButton
       tooltips={tooltips}
-      label={
+      label={t.plain(
         holding
           ? direction === "previous"
-            ? "Previous chapter"
-            : "Next chapter"
+            ? "previousChapter"
+            : "nextChapter"
           : direction === "previous"
-            ? "Back 15 seconds"
-            : "Forward 15 seconds"
-      }
+            ? "back15"
+            : "forward15",
+      )}
       variant="ghost"
       size="icon"
       className="relative overflow-hidden rounded-full"

@@ -8,6 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
+import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
@@ -15,6 +16,7 @@ import { readerPlayer } from "@/services/AudioPlayerService"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectVolume } from "@/store/slices/audioPlayerSlice"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
+
 
 import { ReaderSlider } from "./ReaderSlider"
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
@@ -60,6 +62,8 @@ const VolumeSlider = () => {
 export const VolumeControl = (props: ToolProps) => {
   const { isOpen, openMenu, closeMenu } = useMenuToggle()
   const volume = useAppSelector(selectVolume)
+  const t = useTranslation("Reader.volume")
+  const label = t.plain("title")
 
   const volumeIcon = volume === 0 ? <icon.VolumeOff /> : <icon.Volume />
 
@@ -70,10 +74,10 @@ export const VolumeControl = (props: ToolProps) => {
   if (props.mode === "drawer") {
     return (
       <ToolbarIcon
-        label="Volume"
+        label={label}
         icon={volumeIcon}
         onClick={() => {
-          props.openDrawer({ type: "volume" }, "Volume")
+          props.openDrawer({ type: "volume" }, label)
         }}
       />
     )
@@ -88,7 +92,7 @@ export const VolumeControl = (props: ToolProps) => {
       }}
     >
       <DropdownMenuTrigger
-        render={<ToolbarIcon label="Volume" icon={volumeIcon} />}
+        render={<ToolbarIcon label={label} icon={volumeIcon} />}
       />
       <DropdownMenuContent
         align="end"

@@ -871,12 +871,12 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 [data-reader-theme="cover-light"] {
   --reader-scheme: light;
   color-scheme: light;
-  --reader-bg: oklch(from var(--cover-1) 0.975 min(calc(c * 0.35), 0.03) h);
+  --reader-bg: oklch(from var(--cover-1) 0.995 min(calc(c * 0.15), 0.03) h);
   --reader-surface: oklch(
-    from var(--cover-1) 0.955 min(calc(c * 0.45), 0.045) h
+    from var(--cover-1) 0.975 min(calc(c * 0.25), 0.045) h
   );
   --reader-surface-hover: oklch(
-    from var(--cover-1) 0.92 min(calc(c * 0.55), 0.06) h
+    from var(--cover-1) 0.92 min(calc(c * 0.35), 0.06) h
   );
   --reader-border: oklch(from var(--cover-1) 0.86 min(calc(c * 0.6), 0.08) h);
   --reader-text: oklch(from var(--cover-1) 0.22 min(calc(c * 0.5), 0.05) h);

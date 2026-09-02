@@ -551,7 +551,9 @@ export const applyReaderTheme = (
   book: BookWithRelations | null,
   target = typeof window !== "undefined" ? window.document : null,
 ) => {
-  if (!target) return
+  if (!target) {
+    return
+  }
 
   const root = target.documentElement
   root.dataset["readerTheme"] = preferences.theme
@@ -562,8 +564,11 @@ export const applyReaderTheme = (
   )
 
   const coverColor = readerCoverColor(book)
-  if (coverColor) root.style.setProperty("--cover-1", coverColor)
-  else root.style.removeProperty("--cover-1")
+  if (coverColor) {
+    root.style.setProperty("--cover-1", coverColor)
+  } else {
+    root.style.removeProperty("--cover-1")
+  }
 
   const meta =
     target.querySelector<HTMLMetaElement>('meta[name="theme-color"]') ??
@@ -575,7 +580,9 @@ export const applyReaderTheme = (
 export const removeReaderTheme = (
   target = typeof window !== "undefined" ? window.document : null,
 ) => {
-  if (!target) return
+  if (!target) {
+    return
+  }
 
   const root = target.documentElement
   delete root.dataset["readerTheme"]

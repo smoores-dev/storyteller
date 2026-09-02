@@ -9,6 +9,7 @@ import {
   FilterableMenuLabel,
 } from "@v3/_/components/ui/filterable-menu"
 import { Input } from "@v3/_/components/ui/input"
+import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
@@ -31,9 +32,13 @@ import {
 
 export type SectionContentProps = { api: PreferenceApi; inline: boolean }
 
+export type SettingsSectionLabelKey = Parameters<
+  ReturnType<typeof useTranslation<"Reader.readerSettings">>["plain"]
+>[0]
+
 export type SettingsSection = {
   key: string
-  label: string
+  labelKey: SettingsSectionLabelKey
   icon: ReactNode
   keys: readonly (keyof ReadingPreferences)[]
   Content: (props: SectionContentProps) => ReactNode
@@ -50,16 +55,16 @@ const THEME_KEYS = ["theme"] as const
 function ThemeItems({
   api,
   scheme,
-  label,
 }: {
   api: PreferenceApi
   scheme: "light" | "dark"
-  label: string
 }) {
+  const t = useTranslation("Reader.readerSettings.theme")
+
   return (
     <FilterableMenuGroup>
       <FilterableMenuLabel className={readerMenuLabelClassName}>
-        {label}
+        {t(scheme === "light" ? "schemeLight" : "schemeDark")}
       </FilterableMenuLabel>
       <ChoiceItems
         api={api}
@@ -67,7 +72,7 @@ function ThemeItems({
         options={READER_THEMES.filter((theme) => theme.scheme === scheme).map(
           (theme) => ({
             value: theme.id,
-            label: theme.label,
+            label: t.plain(theme.id),
             icon: (
               <span
                 data-reader-theme={theme.id}
@@ -86,25 +91,28 @@ function ThemeItems({
   )
 }
 
-export const themeSection: SettingsSection = {
+export const themeSection = {
   key: "theme",
-  label: "Theme",
+  labelKey: "theme.title",
   icon: <icon.Palette />,
   keys: THEME_KEYS,
-  Content: ({ api }) => (
-    <SectionGroup api={api} label="Theme" keys={THEME_KEYS}>
-      <ThemeItems api={api} scheme="light" label="Light" />
-      <ThemeItems api={api} scheme="dark" label="Dark" />
-    </SectionGroup>
-  ),
-}
+  Content: function ThemeSection({ api }) {
+    const t = useTranslation("Reader.readerSettings.theme")
+
+    return (
+      <SectionGroup api={api} label={t.plain("title")} keys={THEME_KEYS}>
+        <ThemeItems api={api} scheme="light" />
+        <ThemeItems api={api} scheme="dark" />
+      </SectionGroup>
+    )
+  },
+} satisfies SettingsSection
 
 const TEXT_KEYS = [
   "fontFamily",
   "customFontFamily",
   "fontSize",
   "fontWeight",
-  "spacing",
   "align",
   "hyphens",
 ] as const
@@ -119,7 +127,20 @@ const fontClassName: Record<ReadingPreferences["fontFamily"], string> = {
   custom: "",
 }
 
+function fontLabel(
+  t: ReturnType<typeof useTranslation<"Reader.readerSettings.text">>,
+  api: PreferenceApi,
+  value: ReadingPreferences["fontFamily"],
+) {
+  if (value !== "custom") return t.plain(value)
+  const { name } = api.values.customFontFamily
+  return name ? t.plain("fontCustomNamed", { name }) : t.plain("fontCustom")
+}
+
 function CustomFontFields({ api }: { api: PreferenceApi }) {
+  const t = useTranslation("Reader.readerSettings.text")
+  const c = useCommon()
+
   return (
     <form
       className="border-reader-border flex flex-col gap-1.5 border-t p-2"
@@ -136,7 +157,7 @@ function CustomFontFields({ api }: { api: PreferenceApi }) {
       <Input
         name="name"
         required
-        placeholder="Font name"
+        placeholder={t.plain("fontNamePlaceholder")}
         className={readerInputClassName}
         defaultValue={api.values.customFontFamily.name}
       />
@@ -144,13 +165,13 @@ function CustomFontFields({ api }: { api: PreferenceApi }) {
         name="url"
         required
         type="url"
-        placeholder="Stylesheet URL"
+        placeholder={t.plain("fontUrlPlaceholder")}
         className={readerInputClassName}
         defaultValue={api.values.customFontFamily.url}
       />
       <div className="flex items-center justify-between gap-2">
         <span className="text-reader-text-muted text-[10px]">
-          A stylesheet that defines the font, such as a Google Fonts link
+          {t("fontUrlHint")}
         </span>
         <Button
           type="submit"
@@ -158,102 +179,123 @@ function CustomFontFields({ api }: { api: PreferenceApi }) {
           variant="outline"
           className={readerButtonClassName}
         >
-          Save
+          {c("actions.save")}
         </Button>
       </div>
     </form>
   )
 }
 
-export const textSection: SettingsSection = {
-  key: "text",
-  label: "Text",
+export const textSection = {
+  key: "text" as const,
+  labelKey: "text.title",
   icon: <icon.Aa />,
   keys: TEXT_KEYS,
-  Content: ({ api, inline }) => (
-    <SectionGroup api={api} label="Text" keys={TEXT_KEYS}>
-      <NestedSelect
-        label="Font"
-        icon={<icon.Aa />}
-        value={
-          fontFamilies.find((family) => family.value === api.values.fontFamily)
-            ?.label ?? ""
-        }
-        changed={
-          api.overridden("fontFamily") || api.overridden("customFontFamily")
-        }
-        inline={inline}
-      >
-        <ChoiceItems
+  Content: function TextSection({ api, inline }) {
+    const t = useTranslation("Reader.readerSettings.text")
+
+    return (
+      <SectionGroup api={api} label={t("title")} keys={TEXT_KEYS}>
+        <NestedSelect
+          label={t("font")}
+          icon={<icon.Aa />}
+          value={fontLabel(t, api, api.values.fontFamily)}
+          changed={
+            api.overridden("fontFamily") || api.overridden("customFontFamily")
+          }
+          inline={inline}
+        >
+          <ChoiceItems
+            api={api}
+            prefKey="fontFamily"
+            options={fontFamilies.map((family) => ({
+              value: family.value,
+              label: fontLabel(t, api, family.value),
+              className: fontClassName[family.value],
+            }))}
+          />
+          {api.values.fontFamily === "custom" && <CustomFontFields api={api} />}
+        </NestedSelect>
+        <SliderRow
           api={api}
-          prefKey="fontFamily"
-          options={fontFamilies.map((family) => ({
-            value: family.value,
-            label:
-              family.value === "custom" && api.values.customFontFamily.name
-                ? `Custom (${api.values.customFontFamily.name})`
-                : family.label,
-            className: fontClassName[family.value],
-          }))}
+          prefKey="fontSize"
+          label={t("fontSize")}
+          min={50}
+          max={200}
+          step={10}
+          format={(value) => `${value}%`}
         />
-        {api.values.fontFamily === "custom" && <CustomFontFields api={api} />}
-      </NestedSelect>
-      <SliderRow
-        api={api}
-        prefKey="fontSize"
-        label="Size"
-        min={50}
-        max={200}
-        step={10}
-        format={(value) => `${value}%`}
-      />
-      <SliderRow
-        api={api}
-        prefKey="fontWeight"
-        label="Weight"
-        min={200}
-        max={900}
-        step={100}
-      />
-      <NestedSelect
-        label="Letter spacing"
-        icon={<icon.TextWrap />}
-        value={
-          spacingModes.find((mode) => mode.value === api.values.spacing)
-            ?.label ?? ""
-        }
-        changed={api.overridden("spacing")}
-        inline={inline}
-      >
-        <ChoiceItems
+        <SliderRow
           api={api}
-          prefKey="spacing"
-          options={spacingModes.map((mode) => ({
-            value: mode.value,
-            label: mode.label,
-          }))}
+          prefKey="fontWeight"
+          label={t("fontWeight")}
+          min={200}
+          max={900}
+          step={100}
         />
-      </NestedSelect>
-      <NestedSelect
-        label="Alignment"
-        icon={<icon.AlignLeft />}
-        value={api.values.align === TextAlignment.left ? "Left" : "Justified"}
-        changed={api.overridden("align")}
-        inline={inline}
-      >
-        <ChoiceItems
+        <NestedSelect
+          label={t("letterSpacing")}
+          icon={<icon.TextWrap />}
+          value={t.plain(api.values.spacing)}
+          changed={api.overridden("spacing")}
+          inline={inline}
+        >
+          <ChoiceItems
+            api={api}
+            prefKey="spacing"
+            options={spacingModes.map((mode) => ({
+              value: mode.value,
+              label: t.plain(mode.value),
+            }))}
+          />
+        </NestedSelect>
+        <NestedSelect
+          label={t("alignment")}
+          icon={<icon.AlignLeft />}
+          value={t.plain(
+            api.values.align === TextAlignment.left
+              ? "alignmentLeft"
+              : "alignmentJustified",
+          )}
+          changed={api.overridden("align")}
+          inline={inline}
+        >
+          <ChoiceItems
+            api={api}
+            prefKey="align"
+            options={[
+              {
+                value: TextAlignment.justify,
+                label: t.plain("alignmentJustified"),
+              },
+              { value: TextAlignment.left, label: t.plain("alignmentLeft") },
+            ]}
+          />
+        </NestedSelect>
+        <ToggleItem api={api} prefKey="hyphens" label={t("hyphens")} />
+
+        <SliderRow
           api={api}
-          prefKey="align"
-          options={[
-            { value: TextAlignment.justify, label: "Justified" },
-            { value: TextAlignment.left, label: "Left" },
-          ]}
+          prefKey="lineHeight"
+          label={t("lineHeight")}
+          min={1}
+          max={3}
+          step={0.1}
+          format={(value) => value.toFixed(1)}
         />
-      </NestedSelect>
-      <ToggleItem api={api} prefKey="hyphens" label="Hyphenate words" />
-    </SectionGroup>
-  ),
-}
+        <SliderRow
+          api={api}
+          prefKey="paragraphSpacing"
+          label={t("paragraphSpacing")}
+          min={0}
+          max={2}
+          step={0.1}
+          format={(value) => value.toFixed(1)}
+        />
+      </SectionGroup>
+    )
+  },
+} satisfies SettingsSection
 
 const LAYOUT_KEYS = [
   "layout",
@@ -262,107 +304,89 @@ const LAYOUT_KEYS = [
   "footerDisplayWidth",
 ] as const
 
-const footerWidthLabels: Record<
-  ReadingPreferences["footerDisplayWidth"],
-  string
-> = {
-  full: "Full width",
-  minimal: "Minimal",
-  text: "Fit to text",
-}
+const footerWidthLabelKeys = {
+  full: "footerWidthWide",
+  minimal: "footerWidthNarrow",
+  text: "footerWidthFitToText",
+} as const satisfies Record<ReadingPreferences["footerDisplayWidth"], string>
 
-export const layoutSection: SettingsSection = {
-  key: "layout",
-  label: "Layout",
+export const layoutSection = {
+  key: "layout" as const,
+  labelKey: "layout.title",
   icon: <icon.LayoutGrid />,
   keys: LAYOUT_KEYS,
-  Content: ({ api, inline }) => (
-    <SectionGroup api={api} label="Layout" keys={LAYOUT_KEYS}>
-      <ChoiceItems
-        api={api}
-        prefKey="layout"
-        options={[
-          { value: "paginated", label: "Paginated", icon: <icon.Columns /> },
-          { value: "scrollable", label: "Scrolling", icon: <icon.ArrowDown /> },
-        ]}
-      />
-      <NestedSelect
-        label="Columns"
-        icon={<icon.Columns3 />}
-        value={api.values.columns ? String(api.values.columns) : "Auto"}
-        changed={api.overridden("columns")}
-        inline={inline}
-      >
+  Content: function LayoutSection({ api, inline }) {
+    const t = useTranslation("Reader.readerSettings.layout")
+
+    return (
+      <SectionGroup api={api} label={t("title")} keys={LAYOUT_KEYS}>
         <ChoiceItems
           api={api}
-          prefKey="columns"
+          prefKey="layout"
           options={[
-            { value: 0, label: "Auto" },
-            { value: 1, label: "One" },
-            { value: 2, label: "Two" },
+            {
+              value: "paginated",
+              label: t.plain("paginated"),
+              icon: <icon.Columns />,
+            },
+            {
+              value: "scrollable",
+              label: t.plain("scrolling"),
+              icon: <icon.ArrowDown />,
+            },
           ]}
         />
-      </NestedSelect>
-      <SliderRow
-        api={api}
-        prefKey="lineLength"
-        label="Line length"
-        min={20}
-        max={100}
-        step={1}
-        format={(value) => `${value} characters`}
-      />
-      <NestedSelect
-        label="Footer width"
-        icon={<icon.ArrowAutofitWidth />}
-        value={footerWidthLabels[api.values.footerDisplayWidth]}
-        changed={api.overridden("footerDisplayWidth")}
-        inline={inline}
-      >
-        <ChoiceItems
+        <NestedSelect
+          label={t("columns")}
+          icon={<icon.Columns3 />}
+          value={
+            api.values.columns
+              ? String(api.values.columns)
+              : t.plain("columnsAuto")
+          }
+          changed={api.overridden("columns")}
+          inline={inline}
+        >
+          <ChoiceItems
+            api={api}
+            prefKey="columns"
+            options={[
+              { value: 0, label: t.plain("columnsAuto") },
+              { value: 1, label: t.plain("columnsOne") },
+              { value: 2, label: t.plain("columnsTwo") },
+            ]}
+          />
+        </NestedSelect>
+        <SliderRow
           api={api}
-          prefKey="footerDisplayWidth"
-          options={[
-            { value: "full", label: footerWidthLabels.full },
-            { value: "minimal", label: footerWidthLabels.minimal },
-            { value: "text", label: footerWidthLabels.text },
-          ]}
+          prefKey="lineLength"
+          label={t("lineLength")}
+          min={20}
+          max={100}
+          step={1}
+          format={(value) => t.plain("lineLengthCharacters", { count: value })}
         />
-      </NestedSelect>
-    </SectionGroup>
-  ),
-}
-
-const SPACING_KEYS = ["lineHeight", "paragraphSpacing"] as const
-
-export const spacingSection: SettingsSection = {
-  key: "spacing",
-  label: "Spacing",
-  icon: <icon.TextWrap />,
-  keys: SPACING_KEYS,
-  Content: ({ api }) => (
-    <SectionGroup api={api} label="Spacing" keys={SPACING_KEYS}>
-      <SliderRow
-        api={api}
-        prefKey="lineHeight"
-        label="Line height"
-        min={1}
-        max={3}
-        step={0.1}
-        format={(value) => value.toFixed(1)}
-      />
-      <SliderRow
-        api={api}
-        prefKey="paragraphSpacing"
-        label="Paragraph spacing"
-        min={0}
-        max={2}
-        step={0.1}
-        format={(value) => value.toFixed(1)}
-      />
-    </SectionGroup>
-  ),
-}
+        <NestedSelect
+          label={t("footerWidth")}
+          icon={<icon.ArrowAutofitWidth />}
+          value={t.plain(footerWidthLabelKeys[api.values.footerDisplayWidth])}
+          changed={api.overridden("footerDisplayWidth")}
+          inline={inline}
+        >
+          <ChoiceItems
+            api={api}
+            prefKey="footerDisplayWidth"
+            options={[
+              { value: "full", label: t.plain("footerWidthWide") },
+              { value: "minimal", label: t.plain("footerWidthNarrow") },
+              { value: "text", label: t.plain("footerWidthFitToText") },
+            ]}
+          />
+        </NestedSelect>
+      </SectionGroup>
+    )
+  },
+} satisfies SettingsSection
 
 const HIGHLIGHT_KEYS = [
   "highlightColor",
@@ -372,6 +396,9 @@ const HIGHLIGHT_KEYS = [
 
 function CustomHighlightColorFields({ api }: { api: PreferenceApi }) {
   const [draft, setDraft] = useState(api.values.customHighlightColor)
+
+  const t = useTranslation("Reader.readerSettings.highlights")
+
   return (
     <form
       className="border-reader-border flex items-center gap-1.5 border-t p-2"
@@ -391,7 +418,7 @@ function CustomHighlightColorFields({ api }: { api: PreferenceApi }) {
       <Input
         name="color"
         required
-        placeholder="Any CSS color"
+        placeholder={t.plain("customUsePlaceholder")}
         className={cn(readerInputClassName, "font-mono")}
         value={draft}
         onChange={(event) => {
@@ -404,53 +431,57 @@ function CustomHighlightColorFields({ api }: { api: PreferenceApi }) {
         variant="outline"
         className={readerButtonClassName}
       >
-        Use
+        {t("customUse")}
       </Button>
     </form>
   )
 }
 
-export const highlightsSection: SettingsSection = {
-  key: "highlights",
-  label: "Highlights",
+export const highlightsSection = {
+  key: "highlights" as const,
+  labelKey: "highlights.title",
   icon: <icon.Highlight />,
   keys: HIGHLIGHT_KEYS,
-  Content: ({ api }) => (
-    <SectionGroup api={api} label="Highlights" keys={HIGHLIGHT_KEYS}>
-      <ChoiceItems
-        api={api}
-        prefKey="highlightColor"
-        options={highlightColors.map((color) => ({
-          value: color.value,
-          label: color.label,
-          icon: (
-            <span
-              className={cn(
-                "border-reader-border size-3.5 shrink-0 rounded-full border",
-                color.value !== "custom" && color.className,
-              )}
-              style={
-                color.value === "custom"
-                  ? { backgroundColor: api.values.customHighlightColor }
-                  : undefined
-              }
-            />
-          ),
-        }))}
-      />
-      <CustomHighlightColorFields api={api} />
-      <SliderRow
-        api={api}
-        prefKey="syncOffset"
-        label="Sync offset"
-        min={-1}
-        max={1}
-        step={0.1}
-        format={(value) => `${value > 0 ? "+" : ""}${value.toFixed(1)} s`}
-      />
-    </SectionGroup>
-  ),
-}
+  Content: function HighlightsSection({ api }) {
+    const t = useTranslation("Reader.readerSettings.highlights")
+
+    return (
+      <SectionGroup api={api} label={t("title")} keys={HIGHLIGHT_KEYS}>
+        <ChoiceItems
+          api={api}
+          prefKey="highlightColor"
+          options={highlightColors.map((color) => ({
+            value: color.value,
+            label: t.plain(color.value),
+            icon: (
+              <span
+                className={cn(
+                  "border-reader-border size-3.5 shrink-0 rounded-full border",
+                  color.value !== "custom" && color.className,
+                )}
+                style={
+                  color.value === "custom"
+                    ? { backgroundColor: api.values.customHighlightColor }
+                    : undefined
+                }
+              />
+            ),
+          }))}
+        />
+        <CustomHighlightColorFields api={api} />
+        <SliderRow
+          api={api}
+          prefKey="syncOffset"
+          label={t("syncOffset")}
+          min={-1}
+          max={1}
+          step={0.1}
+          format={(value) => `${value > 0 ? "+" : ""}${value.toFixed(1)} s`}
+        />
+      </SectionGroup>
+    )
+  },
+} satisfies SettingsSection
 
 const BEHAVIOUR_KEYS = [
   "skipOnTurnPage",
@@ -460,99 +491,104 @@ const BEHAVIOUR_KEYS = [
   "smoothScrollSpeed",
 ] as const
 
-export const behaviourSection: SettingsSection = {
-  key: "behaviour",
-  label: "Behaviour",
+export const behaviourSection = {
+  key: "behaviour" as const,
+  labelKey: "behavior.title",
   icon: <icon.Settings2 />,
   keys: BEHAVIOUR_KEYS,
-  Content: ({ api, inline }) => (
-    <SectionGroup api={api} label="Behaviour" keys={BEHAVIOUR_KEYS}>
-      <ToggleItem
-        api={api}
-        prefKey="skipOnTurnPage"
-        label="Skip audio when turning the page"
-        icon={<icon.PlayerSkipForward10 />}
-      />
-      <ToggleItem
-        api={api}
-        prefKey="openPipOnTabOut"
-        label="Open a floating player when you switch tabs"
-        icon={<icon.Maximize />}
-        title="Chromium based browsers only. The floating window lets you control playback and turn pages while Storyteller is in the background."
-      />
-      {api.values.layout === "scrollable" && (
-        <>
-          <NestedSelect
-            label="Scrolling"
-            icon={<icon.ArrowDown />}
-            value={
-              api.values.scrollBehavior === "smooth" ? "Smooth" : "Instant"
-            }
-            changed={api.overridden("scrollBehavior")}
-            inline={inline}
-          >
-            <ChoiceItems
-              api={api}
-              prefKey="scrollBehavior"
-              options={[
-                { value: "smooth", label: "Smooth" },
-                { value: "instant", label: "Instant" },
-              ]}
-            />
-          </NestedSelect>
-          {api.values.scrollBehavior === "smooth" && (
+  Content: function BehaviorSection({ api, inline }) {
+    const t = useTranslation("Reader.readerSettings.behavior")
+
+    return (
+      <SectionGroup api={api} label={t("title")} keys={BEHAVIOUR_KEYS}>
+        <ToggleItem
+          api={api}
+          prefKey="skipOnTurnPage"
+          label={t("skipAudioWhenTurningPages")}
+          icon={<icon.PlayerSkipForward10 />}
+        />
+        <ToggleItem
+          api={api}
+          prefKey="openPipOnTabOut"
+          label={t("openFloating")}
+          icon={<icon.Maximize />}
+          title={t.plain("openFloatingHint")}
+        />
+        {api.values.layout === "scrollable" && (
+          <>
             <NestedSelect
-              label="Scroll engine"
-              icon={<icon.Settings2 />}
-              value={
-                api.values.smoothScrollImplementation === "custom"
-                  ? "Custom"
-                  : "Native"
-              }
-              changed={api.overridden("smoothScrollImplementation")}
+              label={t("scrolling")}
+              icon={<icon.ArrowDown />}
+              value={t.plain(
+                api.values.scrollBehavior === "smooth"
+                  ? "scrollingSmooth"
+                  : "scrollingInstant",
+              )}
+              changed={api.overridden("scrollBehavior")}
               inline={inline}
             >
               <ChoiceItems
                 api={api}
-                prefKey="smoothScrollImplementation"
+                prefKey="scrollBehavior"
                 options={[
-                  {
-                    value: "custom",
-                    label: "Custom",
-                    title: "Usually smoother and lets you set the speed",
-                  },
-                  {
-                    value: "native",
-                    label: "Native",
-                    title: "Try this if scrolling misbehaves",
-                  },
+                  { value: "smooth", label: t.plain("scrollingSmooth") },
+                  { value: "instant", label: t.plain("scrollingInstant") },
                 ]}
               />
             </NestedSelect>
-          )}
-          {api.values.scrollBehavior === "smooth" &&
-            api.values.smoothScrollImplementation === "custom" && (
-              <SliderRow
-                api={api}
-                prefKey="smoothScrollSpeed"
-                label="Scroll speed"
-                min={0.1}
-                max={2}
-                step={0.1}
-                format={(value) => `${value.toFixed(1)}x`}
-              />
+            {api.values.scrollBehavior === "smooth" && (
+              <NestedSelect
+                label={t("scrollEngine")}
+                icon={<icon.Settings2 />}
+                value={t.plain(
+                  api.values.smoothScrollImplementation === "custom"
+                    ? "scrollEngineCustom"
+                    : "scrollEngineNative",
+                )}
+                changed={api.overridden("smoothScrollImplementation")}
+                inline={inline}
+              >
+                <ChoiceItems
+                  api={api}
+                  prefKey="smoothScrollImplementation"
+                  options={[
+                    {
+                      value: "custom",
+                      label: t.plain("scrollEngineCustom"),
+                      title: t.plain("scrollEngineCustomHint"),
+                    },
+                    {
+                      value: "native",
+                      label: t.plain("scrollEngineNative"),
+                      title: t.plain("scrollEngineNativeHint"),
+                    },
+                  ]}
+                />
+              </NestedSelect>
             )}
-        </>
-      )}
-    </SectionGroup>
-  ),
-}
+            {api.values.scrollBehavior === "smooth" &&
+              api.values.smoothScrollImplementation === "custom" && (
+                <SliderRow
+                  api={api}
+                  prefKey="smoothScrollSpeed"
+                  label={t("scrollSpeed")}
+                  min={0.1}
+                  max={2}
+                  step={0.1}
+                  format={(value) => `${value.toFixed(1)}x`}
+                />
+              )}
+          </>
+        )}
+      </SectionGroup>
+    )
+  },
+} satisfies SettingsSection
 
-export const SECTIONS: SettingsSection[] = [
+export const SECTIONS = [
   themeSection,
   textSection,
   layoutSection,
-  spacingSection,
   highlightsSection,
   behaviourSection,
-]
+] as const satisfies SettingsSection[]

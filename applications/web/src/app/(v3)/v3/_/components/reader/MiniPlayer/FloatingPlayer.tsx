@@ -2,8 +2,6 @@
 
 import {
   type DragControls,
-  type PanInfo,
-  animate,
   motion,
   useDragControls,
   useMotionValue,
@@ -17,19 +15,16 @@ import { type MiniPlayerCorner } from "@/store/slices/preferencesSlice"
 
 const SNAP_SPRING = { type: "spring", stiffness: 520, damping: 42 } as const
 const INSTANT = { duration: 0 } as const
-const FLING_LOOKAHEAD_SECONDS = 0.15
 
 export function FloatingPlayer({
   corner,
   expanded,
-  onCornerChange,
   className,
   style,
   children,
 }: {
   corner: MiniPlayerCorner
   expanded: boolean
-  onCornerChange: (corner: MiniPlayerCorner) => void
   className?: string
   style?: React.CSSProperties
   children: (dragControls: DragControls) => React.ReactNode
@@ -52,34 +47,6 @@ export function FloatingPlayer({
     y.jump(0)
   }, [corner, x, y])
 
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
-    const bounds = boundsRef.current?.getBoundingClientRect()
-    const player = playerRef.current?.getBoundingClientRect()
-    if (!bounds || !player) return
-
-    const centerX =
-      player.left + player.width / 2 + info.velocity.x * FLING_LOOKAHEAD_SECONDS
-    const centerY =
-      player.top + player.height / 2 + info.velocity.y * FLING_LOOKAHEAD_SECONDS
-    const nextVertical =
-      centerY < bounds.top + bounds.height / 2 ? "top" : "bottom"
-    const nextHorizontal =
-      centerX < bounds.left + bounds.width / 2 ? "left" : "right"
-    const next: MiniPlayerCorner = `${nextVertical}-${nextHorizontal}`
-
-    const targetLeft =
-      nextHorizontal === "left" ? bounds.left : bounds.right - player.width
-    const targetTop =
-      nextVertical === "top" ? bounds.top : bounds.bottom - player.height
-
-    void Promise.all([
-      animate(x, x.get() + (targetLeft - player.left), transition),
-      animate(y, y.get() + (targetTop - player.top), transition),
-    ]).then(() => {
-      if (next !== corner) onCornerChange(next)
-    })
-  }
-
   return (
     <div ref={boundsRef} className="pointer-events-none fixed inset-4 z-[60]">
       <motion.div
@@ -89,8 +56,14 @@ export function FloatingPlayer({
         dragControls={dragControls}
         dragConstraints={boundsRef}
         dragElastic={0.12}
-        dragMomentum={false}
-        onDragEnd={handleDragEnd}
+        dragMomentum={true}
+        // prevent selection of text
+        onMouseDown={(e) => {
+          e.stopPropagation()
+          e.preventDefault()
+        }}
+        whileDrag={{ scale: 1.05, transition: { duration: 0.05 } }}
+        // onDragEnd={handleDragEnd}
         layout
         layoutDependency={expanded}
         transition={transition}
