@@ -48,6 +48,13 @@ const WORKER_STOP_GRACE_MS = 30_000
 
 export type ControlMessage = { type: "abort" }
 
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("onnxruntime-node")
+} catch (err) {
+  logger.error({ msg: "Failed to import onnx-runtime", err })
+}
+
 /**
  * Next.js app directory seems to have a bug where, in production,
  * a single module can be imported multiple times (breaking the module
