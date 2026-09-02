@@ -4,7 +4,6 @@ import {
   FootnoteNode,
   Mark,
   Node,
-  NoterefNode,
   Root,
   TextNode,
   descendants,
@@ -54,14 +53,12 @@ class Parser {
       pos + 1,
     )
 
-    if (tagName === "a") {
-      const node = new NoterefNode(tagName, attrs, blockChildren, marks)
-      const href = node.attrs["href"]
+    if (tagName === "a" && attrs["epub:type"] === "noteref") {
+      const href = attrs["href"]
       const fragment = href?.split("#")[1]
       if (fragment) {
         this.footnoteIds.add(fragment)
       }
-      return node
     }
 
     if (
@@ -103,14 +100,26 @@ class Parser {
   }
 }
 
-export function findFootnotePairs(root: Root | Node) {
+export function findFootnotePairs(root: Root) {
   const noterefs = new Map<string, number>()
   const pairs = new Map<number, number>()
 
   descendants(root, (node, pos) => {
-    if (node instanceof NoterefNode) {
-      const id = node.attrs["href"]?.split("#")[1]
+    const mark = node.marks.find((mark) => mark.tagName === "a")
+    if (mark) {
+      const id = mark.attrs["href"]?.split("#")[1]
       if (id) {
+        const $pos = root.resolve(pos)
+
+        let d = $pos.depth
+        while (d > 0) {
+          const node = $pos.node(d)
+          if (node instanceof FootnoteNode) {
+            return false
+          }
+          d--
+        }
+
         noterefs.set(id, pos)
       }
       return false

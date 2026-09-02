@@ -1,14 +1,7 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
-import {
-  FootnoteNode,
-  Mark,
-  Node,
-  NoterefNode,
-  Root,
-  TextNode,
-} from "../model.ts"
+import { FootnoteNode, Mark, Node, Root, TextNode } from "../model.ts"
 import {
   addMark,
   inlineFootnotes,
@@ -205,14 +198,12 @@ void describe("inlineFootnotes/replaceFootnotes", () => {
       new Node("h1", {}, [new TextNode("Chapter 1.")]),
       new Node("p", {}, [
         new TextNode("Hello, world!"),
-        new NoterefNode(
-          "a",
-          {
+        new TextNode("1", [
+          new Mark("a", {
             "epub:type": "noteref",
             href: "#footnote",
-          },
-          [new TextNode("1")],
-        ),
+          }),
+        ]),
       ]),
       new Node("p", {}, [new TextNode("Goodbye, world!")]),
       new FootnoteNode("aside", { "epub:type": "footnote", id: "footnote" }, [
@@ -254,25 +245,22 @@ void describe("inlineFootnotes/replaceFootnotes", () => {
       new Node("h1", {}, [new TextNode("Chapter 1.")]),
       new Node("p", {}, [
         new TextNode("Hello, world!"),
-        new NoterefNode(
-          "a",
-          {
+
+        new TextNode("1", [
+          new Mark("a", {
             "epub:type": "noteref",
             href: "#footnote1",
-          },
-          [new TextNode("1")],
-        ),
+          }),
+        ]),
       ]),
       new Node("p", {}, [
         new TextNode("Goodbye, world!"),
-        new NoterefNode(
-          "a",
-          {
+        new TextNode("2", [
+          new Mark("a", {
             "epub:type": "noteref",
             href: "#footnote2",
-          },
-          [new TextNode("2")],
-        ),
+          }),
+        ]),
       ]),
       new Node("div", { "epub:type": "footnotes" }, [
         new FootnoteNode("div", { "epub:type": "footnote", id: "footnote1" }, [
