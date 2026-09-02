@@ -7,6 +7,7 @@ import {
   type GuidedNavigationDocument,
   Locator,
   LocatorLocations,
+  ReadingProgression,
 } from "@readium/shared"
 
 import { getPublication } from "@/store/readerRegistry"
@@ -18,6 +19,13 @@ export function isVerticalPublication(publication = getPublication()) {
   if (!publication) return false
   const scriptMode = getScriptMode(publication.metadata)
   return scriptMode === "cjk-vertical" || scriptMode === "mongolian-vertical"
+}
+
+export function isRtlPublication(publication = getPublication()) {
+  if (!publication) return false
+  return (
+    publication.metadata.effectiveReadingProgression === ReadingProgression.rtl
+  )
 }
 
 export function isScrollingLayout(layout: LayoutMode) {
