@@ -1,7 +1,8 @@
+import { type Hotkey } from "@tanstack/react-hotkeys"
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
-import { cn } from "@/cn"
+import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { cn } from "@v3/_/lib/utils"
 
 export const HoldButton = ({
   onClick,
@@ -9,6 +10,7 @@ export const HoldButton = ({
   children,
   tooltip,
   holdTooltip,
+  shortcut,
   className,
   disabled = false,
   ...buttonProps
@@ -18,22 +20,25 @@ export const HoldButton = ({
   children: React.ReactNode
   tooltip: string
   holdTooltip: string
+  shortcut?: Hotkey[]
   className?: string
   disabled?: boolean
 } & Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
-  "onClick" | "disabled" | "className" | "variant" | "size"
+  "onClick" | "disabled" | "className"
 >) => {
   const { isHolding, progress, startHold, endHold } = useHoldButton(onHold)
 
   const tooltipContent = isHolding ? holdTooltip : tooltip
   return (
     <TooltipButton
+      variant="real-ghost"
+      size="icon-lg"
       tooltip={tooltipContent}
       aria-label={tooltipContent}
-      position="top"
+      {...(shortcut && !isHolding ? { shortcut } : {})}
       {...buttonProps}
-      className={cn(className, "relative p-1")}
+      className={cn("relative overflow-hidden", className)}
       disabled={disabled}
       onClick={onClick}
       onMouseDown={startHold}
@@ -44,17 +49,15 @@ export const HoldButton = ({
     >
       {children}
 
-      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
-        <div
-          className="absolute right-0 bottom-0 left-0 bg-blue-500/30 transition-all duration-75 ease-linear"
-          style={{ height: `${progress}%` }}
-        />
-      </div>
+      <div
+        aria-hidden
+        className="bg-reader-accent/30 pointer-events-none absolute right-0 bottom-0 left-0 transition-[height] duration-75 ease-linear"
+        style={{ height: `${progress}%` }}
+      />
     </TooltipButton>
   )
 }
 
-// hook for hold button functionality with timeout and visual feedback
 const useHoldButton = (
   onHold: () => void,
   holdDuration: number = 1500,
@@ -68,20 +71,16 @@ const useHoldButton = (
   const startTimeRef = useRef<number>(0)
 
   const startHold = useCallback(() => {
-    // wait 200ms before actually starting the hold process
     startDelayRef.current = setTimeout(() => {
       setIsHolding(true)
       setProgress(0)
       startTimeRef.current = Date.now()
 
-      // progress update interval
       progressIntervalRef.current = setInterval(() => {
         const elapsed = Date.now() - startTimeRef.current
-        const newProgress = Math.min((elapsed / holdDuration) * 100, 100)
-        setProgress(newProgress)
+        setProgress(Math.min((elapsed / holdDuration) * 100, 100))
       }, 50)
 
-      // hold completion timeout
       holdTimeoutRef.current = setTimeout(() => {
         onHold()
         setIsHolding(false)

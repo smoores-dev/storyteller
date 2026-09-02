@@ -11,12 +11,11 @@ export const FullscreenToggle = ({
 }) => {
   return (
     <ToolbarIcon
-      label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+      label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
       icon={
         isFullscreen ? <icon.Minimize size="lg" /> : <icon.Maximize size="lg" />
       }
       onClick={onToggleFullscreen}
-      className="text-reader-text hover:bg-reader-surface-hover hover:text-reader-accent-hover"
     />
   )
 }

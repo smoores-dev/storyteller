@@ -1,9 +1,9 @@
-import Link from "next/link"
+import { Tile } from "@v3/_/components/books/Cover"
+import { useFormattedProgress } from "@v3/_/components/reader/hooks/useFormattedProgress"
+import { V3Link } from "@v3/_/components/v3-link"
+import { cn } from "@v3/_/lib/utils"
 
-import { cn } from "@/cn"
-import { useFormattedProgress } from "@/components/reader/hooks/useFormattedProgress"
 import { type BookWithRelations } from "@/database/books"
-import { getCoverUrl } from "@/store/api"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   preferencesSlice,
@@ -19,78 +19,56 @@ import { ScrollingTitle } from "./ScrollingTitle"
 export const BookInfo = ({
   book,
   context,
-  imageDimensions,
 }: {
   book: BookWithRelations
   context: "mini-player" | "reader-footer" | "reader-header"
-  imageDimensions?: {
-    audio?: {
-      height: number
-      width: number
-    }
-    text?: {
-      height: number
-      width: number
-    }
-  }
 }) => {
   const detailView = useAppSelector((state) =>
     selectDetailView(state, book.uuid),
   )
+  const mode = useAppSelector(selectReadingMode)
   const currentTextLocator = useAppSelector(selectCurrentLocator)
-  const { formattedProgress, title } = useFormattedProgress({ book })
-  const totalPercentageProgress = Math.round(
+  const { title, detail, ready } = useFormattedProgress({ book })
+  const dispatch = useAppDispatch()
+
+  const percent = Math.round(
     (currentTextLocator?.locations.totalProgression ?? 0) * 100,
   )
-  const dispatch = useAppDispatch()
-  const mode = useAppSelector(selectReadingMode)
+  const audioImage = book.audiobook?.cover
+  const textImage = book.ebook?.cover ?? book.readaloud?.cover
+  const useAudioImage = detailView.mode === "audio" && audioImage
+  const image = useAudioImage ? audioImage : textImage
+  const type = useAudioImage ? "audiobook" : "ebook"
+  const parts = [detail, percent > 0 ? `${percent}%` : null].filter(
+    (part) => part !== null,
+  )
 
   return (
     <>
       <button
         type="button"
-        className="w-10 min-w-10 border-none bg-transparent p-0 hover:bg-transparent"
-        onClick={() =>
+        aria-label={
+          detailView.scope === "book"
+            ? "Show chapter progress"
+            : "Show book progress"
+        }
+        className="focus-visible:ring-reader-accent/40 shrink-0 rounded-[4px] border-none bg-transparent p-0 transition-transform duration-150 ease-out outline-none hover:scale-105 focus-visible:ring-2 active:scale-95"
+        onClick={() => {
           dispatch(
             preferencesSlice.actions.toggleBookDetailView({
               target: book.uuid,
               mode,
             }),
           )
-        }
+        }}
       >
-        {/* just raw img bc i could not get the normal image to show up nicely */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          aria-hidden
-          loading="lazy"
-          className={cn(
-            "mx-auto aspect-square h-10 w-10 rounded-[4px]",
-            detailView.mode === "audio" ? "h-10 w-10" : "h-10 w-7",
-          )}
-          style={{
-            height:
-              detailView.mode === "audio"
-                ? imageDimensions?.audio?.height ?? 40
-                : imageDimensions?.text?.height ?? 40,
-            width:
-              detailView.mode === "audio"
-                ? imageDimensions?.audio?.width ?? 40
-                : imageDimensions?.text?.width ?? 28,
-          }}
-          src={getCoverUrl(book.uuid, {
-            height:
-              detailView.mode === "audio"
-                ? imageDimensions?.audio?.height ?? 40
-                : imageDimensions?.text?.height ?? 40,
-            width:
-              detailView.mode === "audio"
-                ? imageDimensions?.audio?.width ?? 40
-                : imageDimensions?.text?.width ?? 28,
-            audio: detailView.mode === "audio",
-            updatedAt: book.updatedAt,
-          })}
+        <Tile
+          image={image}
+          size={80}
+          alt={book.title}
+          type={type}
+          fit="cover"
+          className={cn("h-10", type === "audiobook" ? "w-10" : "w-7")}
         />
       </button>
       <div
@@ -100,32 +78,26 @@ export const BookInfo = ({
         )}
       >
         <ScrollingTitle
-          className="text-reader-text font-heading font-medium"
+          className="text-reader-text font-heading text-sm font-medium"
           scrollSpeed={30}
           scrollInterval={10_000}
         >
-          <span style={{ fontSize: "var(--mantine-font-size-sm)" }}>
-            {detailView.scope === "book" ? (
-              <Link
-                href={`/books/${book.uuid}`}
-                className="hover:text-reader-accent hover:underline"
-              >
-                {title}
-              </Link>
-            ) : (
-              title
-            )}
-          </span>
+          {detailView.scope === "book" ? (
+            <V3Link
+              href={`/books/${book.uuid}`}
+              className="hover:text-reader-accent hover:underline"
+            >
+              {title ?? book.title}
+            </V3Link>
+          ) : (
+            title ?? book.title
+          )}
         </ScrollingTitle>
-        <div className="flex items-center gap-1">
-          <span className="text-reader-text-muted text-xs">
-            {formattedProgress}
-          </span>
-          <span className="text-reader-text-muted/50 text-xs">•</span>
-          <span className="text-reader-text-muted text-xs">
-            {totalPercentageProgress > 0 ? `${totalPercentageProgress}%` : ""}
-          </span>
-        </div>
+        {ready && parts.length > 0 && (
+          <p className="text-reader-text-muted m-0 text-xs tabular-nums">
+            {parts.join(" • ")}
+          </p>
+        )}
       </div>
     </>
   )

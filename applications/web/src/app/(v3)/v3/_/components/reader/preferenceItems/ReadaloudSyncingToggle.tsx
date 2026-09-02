@@ -1,7 +1,6 @@
-import classNames from "classnames"
+import { cn } from "@v3/_/lib/utils"
 
-import { cn } from "@/cn"
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
+import * as icon from "@/icons"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   readingSessionSlice,
@@ -24,12 +23,14 @@ export const ReadaloudSyncingToggle = ({
 
   return (
     <ToolbarIcon
-      label={`Readaloud syncing: ${syncing ? "On" : "Off"}`}
+      label={syncing ? "Read along: on" : "Read along: off"}
       icon={
-        <IconReadaloud
-          width={24}
-          height={24}
-          className={classNames(syncing && "text-reader-accent")}
+        <icon.Readaloud
+          size="lg"
+          className={cn(
+            "transition-opacity duration-150",
+            syncing ? "text-reader-accent" : "opacity-40",
+          )}
         />
       }
       onClick={() => {
@@ -37,7 +38,7 @@ export const ReadaloudSyncingToggle = ({
       }}
       className={cn(
         !syncing &&
-          "before:bg-reader-text relative before:absolute before:top-1/2 before:left-1/2 before:z-555 before:block before:h-5 before:w-0.5 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-45 before:rounded-none before:content-['']",
+          "before:bg-reader-text-muted relative before:absolute before:top-1/2 before:left-1/2 before:h-5 before:w-0.5 before:-translate-x-1/2 before:-translate-y-1/2 before:rotate-45 before:rounded-full before:content-['']",
         className,
       )}
     />

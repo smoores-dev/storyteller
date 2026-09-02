@@ -2,9 +2,6 @@ import { useCallback, useState } from "react"
 
 import { useRegisterNavigatorClickhandler } from "./useNavigatorEvents"
 
-/**
- * registers a navigator click handler to close the menu when the user clicks outside the menu
- */
 export const useMenuToggle = () => {
   const [isOpen, setOpen] = useState(false)
 
@@ -13,24 +10,21 @@ export const useMenuToggle = () => {
 
     setOpen(false)
     return true
-  }, [isOpen, setOpen])
+  }, [isOpen])
 
   const openMenu = useCallback(() => {
     setOpen(true)
-  }, [setOpen])
+  }, [])
 
   const toggleMenu = useCallback(() => {
-    if (isOpen) {
-      closeMenu()
-    } else {
-      openMenu()
-    }
-  }, [closeMenu, openMenu, isOpen])
+    setOpen((prev) => !prev)
+  }, [])
 
   useRegisterNavigatorClickhandler(closeMenu, 50)
 
   return {
     isOpen,
+    setOpen,
     openMenu,
     closeMenu,
     toggleMenu,

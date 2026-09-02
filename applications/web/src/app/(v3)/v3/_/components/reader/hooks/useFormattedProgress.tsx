@@ -1,8 +1,9 @@
 import { type Locator } from "@readium/shared"
 import { useEffect, useMemo, useState } from "react"
 
-import { getPositionsForTocItem } from "@/components/reader/BookService"
-import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
+import { getPositionsForTocItem } from "@v3/_/components/reader/BookService"
+import { formatTimeHuman } from "@v3/_/components/reader/preferenceItems/formatTime"
+
 import { type BookWithRelations } from "@/database/books"
 import { useAppSelector } from "@/store/appState"
 import {
@@ -15,15 +16,39 @@ import {
   selectCurrentTrack,
   selectPlaylist,
 } from "@/store/slices/audioPlayerSlice"
-import { selectPreference } from "@/store/slices/preferencesSlice"
+import {
+  selectDetailView,
+  selectPreference,
+} from "@/store/slices/preferencesSlice"
 import {
   selectCurrentLocator,
   selectCurrentToCLocator,
 } from "@/store/slices/readingSessionSlice"
 
-export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
+export type ProgressMark = {
+  title: string
+  position: number
+  href: string
+  locator: Locator | null
+}
+
+export type FormattedProgress = {
+  ready: boolean
+  title: string | null
+  detail: string | null
+  total: number
+  progress: number
+  marks: ProgressMark[] | null
+  min: number
+}
+
+export const useFormattedProgress = ({
+  book,
+}: {
+  book: BookWithRelations
+}): FormattedProgress => {
   const detailView = useAppSelector((state) =>
-    selectPreference(state, "detailView"),
+    selectDetailView(state, book.uuid),
   )
   const playbackSpeed = useAppSelector((state) =>
     selectPreference(state, "playbackSpeed"),
@@ -65,34 +90,28 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
       return null
     }
 
-    return (
-      tocItems?.reduce(
-        (acc, item) => {
-          const position = item.locator?.locations.position ?? 0
-          const existing = acc.find((mark) => mark.position === position)
+    if (!tocItems) {
+      return null
+    }
 
-          if (existing) {
-            return acc
-          }
-
-          acc.push({
-            title: item.title ?? "Unknown Chapter",
-            position,
-            href: item.locator?.href ?? "",
-            locator: item.locator ?? null,
-          })
-
+    return tocItems
+      .reduce<ProgressMark[]>((acc, item) => {
+        const position = item.locator?.locations.position ?? 0
+        if (acc.some((mark) => mark.position === position)) {
           return acc
-        },
-        [] as Array<{
-          title: string
-          position: number
-          href: string
-          locator: Locator | null
-        }>,
-      ) ?? null
-    )?.sort((a, b) => a.position - b.position)
-  }, [tocItems, detailView.mode, detailView.scope])
+        }
+
+        acc.push({
+          title: item.title ?? book.title,
+          position,
+          href: item.locator?.href ?? "",
+          locator: item.locator ?? null,
+        })
+
+        return acc
+      }, [])
+      .sort((a, b) => a.position - b.position)
+  }, [tocItems, detailView.mode, detailView.scope, book.title])
 
   const [chapterPositions, setChapterPositions] = useState<Locator[]>([])
 
@@ -127,7 +146,7 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
     }
 
     return chapterPositions.map((position, idx) => ({
-      title: `pg. ${position.locations.position}`,
+      title: `Page ${position.locations.position ?? idx + 1}`,
       position: idx,
       href: position.href,
       locator: position,
@@ -135,7 +154,6 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
   }, [chapterPositions, detailView.mode, detailView.scope])
 
   if (detailView.mode === "audio") {
-    // audio - total
     if (detailView.scope === "book") {
       let totalDuration = 0
       let progressDuration = 0
@@ -156,8 +174,12 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
       }
 
       return {
+        ready: playlist.length > 0 && totalDuration > 0,
         title: book.title,
-        formattedProgress: `${formatTimeHuman(totalDuration - progressDuration)} left`,
+        detail:
+          totalDuration > 0
+            ? `${formatTimeHuman(totalDuration - progressDuration)} left`
+            : null,
         total: totalDuration,
         marks: audioBookMarks,
         progress: progressDuration,
@@ -165,17 +187,17 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
       }
     }
 
-    // audio - track
     const total = (currentTrack?.duration ?? 0) / playbackSpeed
     const progress = currentTime / playbackSpeed
+    const fallbackTitle =
+      playlist.length > 0 && trackIndex >= 0
+        ? `Track ${trackIndex + 1} of ${playlist.length}`
+        : null
 
     return {
-      title:
-        currentTrack?.title ??
-        (playlist.length > 0 && trackIndex
-          ? `Track ${trackIndex + 1} of ${playlist.length}`
-          : "Unknown Track"),
-      formattedProgress: `${formatTimeHuman(total - progress)} left`,
+      ready: currentTrack !== null && total > 0,
+      title: currentTrack?.title ?? fallbackTitle,
+      detail: total > 0 ? `${formatTimeHuman(total - progress)} left` : null,
       total,
       progress,
       marks: null,
@@ -183,42 +205,41 @@ export const useFormattedProgress = ({ book }: { book: BookWithRelations }) => {
     }
   }
 
-  // text - book
   if (detailView.scope === "book") {
     const totalPages = positions?.length ?? 0
-    const progression = Math.ceil(
-      (currentTextLocator?.locations.totalProgression ?? 1) * totalPages,
-    )
+    const currentPage =
+      currentTextLocator?.locations.position ??
+      Math.ceil(
+        (currentTextLocator?.locations.totalProgression ?? 0) * totalPages,
+      )
 
     return {
-      title: book.title,
-      formattedProgress: `pg. ${progression}  ${totalPages ? `/ ${totalPages}` : ""}`,
+      ready: totalPages > 0 && currentTextLocator !== null,
+      title: currentChapter?.title ?? book.title,
+      detail: totalPages > 0 ? `Page ${currentPage} of ${totalPages}` : null,
       total: totalPages,
-      progress: progression,
+      progress: currentPage,
       marks: textBookMarks,
       min: 0,
     }
   }
 
-  // text - chapter
   const chapterLength = chapterPositions.length
-
   const currentPositionIdx = chapterPositions.findIndex(
     (position) =>
       position.locations.position === currentTextLocator?.locations.position,
   )
-  const currentPosition =
-    chapterPositions[currentPositionIdx]?.locations.position
-
-  const currentPage = currentPositionIdx + 1
-
   const chapterProgression = currentTextLocator?.locations.progression
     ? currentTextLocator.locations.progression * chapterLength
-    : currentPositionIdx
+    : Math.max(currentPositionIdx, 0)
 
   return {
-    title: currentChapter?.title ?? "Unknown Chapter",
-    formattedProgress: `pg. ${currentPosition ?? ""}  (${currentPage} of ${chapterLength})`,
+    ready: chapterLength > 0,
+    title: currentChapter?.title ?? book.title,
+    detail:
+      chapterLength > 0 && currentPositionIdx >= 0
+        ? `Page ${currentPositionIdx + 1} of ${chapterLength}`
+        : null,
     total: chapterLength,
     progress: chapterProgression,
     marks: textChapterMarks,
