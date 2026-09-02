@@ -410,7 +410,7 @@ async function generateTracksForReadaloud(
         album: bookTitle,
         artwork: new URL(
           getCoverUrl(bookUuid, {
-            audio: true,
+            audio: false,
             height: 64,
             width: 64,
             updatedAt: updatedAt,

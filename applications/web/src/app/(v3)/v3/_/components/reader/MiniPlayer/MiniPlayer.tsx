@@ -259,6 +259,7 @@ function ExpandedCard({
           variant="ghost"
           tooltip="Back to the book"
           aria-label="Back to the book"
+          nativeButton={false}
           render={<V3Link href={`/books/${book.uuid}/read?mode=${mode}`} />}
         >
           <icon.ArrowUpRight />
@@ -277,12 +278,7 @@ function ExpandedCard({
           onPointerDown={startDrag}
           className="cursor-grab active:cursor-grabbing"
         >
-          <Cover
-            book={book}
-            width={56}
-            interactive={false}
-            displayMode="audiobook"
-          />
+          <Cover book={book} width={56} interactive={false} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-heading truncate text-sm font-semibold">

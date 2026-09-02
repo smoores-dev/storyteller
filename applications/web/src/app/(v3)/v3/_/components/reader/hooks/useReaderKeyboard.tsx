@@ -18,12 +18,14 @@ import {
 } from "@/store/slices/readingSessionSlice"
 import { type UUID } from "@/uuid"
 
-export function getReaderShortcuts(rtl = false) {
+export function getReaderShortcuts(rtl = false, textOnly = false) {
+  const back = rtl ? "ArrowRight" : "ArrowLeft"
+  const forward = rtl ? "ArrowLeft" : "ArrowRight"
   return {
-    previousFragment: (rtl ? "ArrowRight" : "ArrowLeft") as Hotkey,
-    nextFragment: (rtl ? "ArrowLeft" : "ArrowRight") as Hotkey,
-    previousPage: (rtl ? "Shift+ArrowRight" : "Shift+ArrowLeft") as Hotkey,
-    nextPage: (rtl ? "Shift+ArrowLeft" : "Shift+ArrowRight") as Hotkey,
+    previousFragment: back as Hotkey,
+    nextFragment: forward as Hotkey,
+    previousPage: (textOnly ? back : `Shift+${back}`) as Hotkey,
+    nextPage: (textOnly ? forward : `Shift+${forward}`) as Hotkey,
     togglePlay: "Space" as Hotkey,
     faster: "." as Hotkey,
     slower: "," as Hotkey,
@@ -34,7 +36,11 @@ export function getReaderShortcuts(rtl = false) {
 
 export function useReaderShortcuts() {
   const publicationLoading = useAppSelector(selectIsLoadingPublication)
-  return getReaderShortcuts(!publicationLoading && isRtlPublication())
+  const mode = useAppSelector(selectReadingMode)
+  return getReaderShortcuts(
+    !publicationLoading && isRtlPublication(),
+    mode === "epub",
+  )
 }
 
 export const useReaderKeyboard = ({
@@ -59,23 +65,33 @@ export const useReaderKeyboard = ({
     )
   }
 
+  const fragmentHotkeys =
+    mode === "epub"
+      ? []
+      : [
+          {
+            hotkey: shortcuts.previousFragment,
+            callback: () => {
+              dispatch(
+                skipPartButtonPressed({
+                  direction: "previous",
+                  context: "reader",
+                }),
+              )
+            },
+          },
+          {
+            hotkey: shortcuts.nextFragment,
+            callback: () => {
+              dispatch(
+                skipPartButtonPressed({ direction: "next", context: "reader" }),
+              )
+            },
+          },
+        ]
+
   useHotkeys([
-    {
-      hotkey: shortcuts.previousFragment,
-      callback: () => {
-        dispatch(
-          skipPartButtonPressed({ direction: "previous", context: "reader" }),
-        )
-      },
-    },
-    {
-      hotkey: shortcuts.nextFragment,
-      callback: () => {
-        dispatch(
-          skipPartButtonPressed({ direction: "next", context: "reader" }),
-        )
-      },
-    },
+    ...fragmentHotkeys,
     {
       hotkey: shortcuts.previousPage,
       callback: () => {

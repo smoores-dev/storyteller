@@ -230,6 +230,15 @@ export const useNavigator = ({
 
         await navigatorRef.current.load()
 
+        if (initialLocator && isVerticalPublication(publication)) {
+          const nav = navigatorRef.current
+          await new Promise<void>((resolve) => {
+            nav.go(initialLocator, false, () => {
+              resolve()
+            })
+          })
+        }
+
         // update timestamp tracking and reset force refresh
         const currentTimestamp =
           book.ebook?.updatedAt ||

@@ -347,10 +347,7 @@ startAppListening({
 
     const isReadaloud =
       selectReadingMode(listenerApi.getState()) === "readaloud"
-    if (!isReadaloud) {
-      console.error("Not syncing")
-      return
-    }
+    if (!isReadaloud) return
 
     const resourceHref = getHrefFromActiveFrame(_action.payload ?? undefined)
     if (!resourceHref) {
@@ -377,10 +374,7 @@ startAppListening({
       return
     }
     const firstGuide = guide?.[0]
-    if (!firstGuide) {
-      console.error("No guide found")
-      return
-    }
+    if (!firstGuide) return
 
     withActiveFrame((activeFrame) => {
       for (const clip of firstGuide.guided?.[0]?.children ?? []) {
