@@ -188,6 +188,12 @@ export const highlightFragment = (
     clearHighlight(activeFrame)
   }
 
+  const frameWindow = activeFrame.iframe.contentWindow
+  const highlightColor = frameWindow
+    ?.getComputedStyle(frameWindow.document.documentElement)
+    .getPropertyValue("--reader-highlight-color")
+    .trim()
+
   activeFrame.msg.send("decorate", {
     group: "highlight",
     action: "add",
@@ -195,10 +201,29 @@ export const highlightFragment = (
       id: "highlight",
       locator: locator,
       style: {
-        tint: `var(--reader-highlight-color)`,
+        tint: highlightColor || undefined,
+        enforceContrast: false,
       },
     },
   } as DecoratorRequest)
+}
+
+export async function findNearestGuide(publication: Publication, link: Link) {
+  const items = publication.readingOrder.items
+  const index = items.findIndex((item) => item.href === link.href)
+  if (index === -1) return null
+
+  const candidates = [
+    link,
+    ...items.slice(index + 1),
+    ...items.slice(0, index).reverse(),
+  ]
+  for (const candidate of candidates) {
+    if (!candidate.alternates?.items.length) continue
+    const guide = await publication.guideForLink(candidate).catch(() => null)
+    if (guide?.guided?.length) return { link: candidate, guide }
+  }
+  return null
 }
 
 export const getHrefFromActiveFrame = (frame?: FrameManager) => {
@@ -365,7 +390,7 @@ export async function handleFragmentSkip(
 export function handleChapterSkip(
   direction: "next" | "previous",
   currentTocItem: TocItem | null,
-  requestTextNavigation: (locator: Locator) => void,
+  requestTextNavigation: (locator: Locator, resumePlayback: boolean) => void,
 ) {
   const publication = getPublication()
 
@@ -387,6 +412,7 @@ export function handleChapterSkip(
 
   if (!nextTocItem || !nextTocItem.locator) return
 
+  const wasPlaying = AudioPlayer.getState().playing
   AudioPlayer.pause()
-  requestTextNavigation(nextTocItem.locator)
+  requestTextNavigation(nextTocItem.locator, wasPlaying)
 }

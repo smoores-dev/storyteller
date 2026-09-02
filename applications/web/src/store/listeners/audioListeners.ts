@@ -64,8 +64,11 @@ startAppListening({
     )
 
     if (trackIndex !== -1) {
+      const wasPlaying = AudioPlayer.getState().playing
       await AudioPlayer.skip(trackIndex, clip.start)
-      await AudioPlayer.play()
+      if (wasPlaying || action.payload.resumePlayback) {
+        await AudioPlayer.play()
+      }
     }
   },
 })

@@ -12,6 +12,7 @@ import {
   findFirstVisibleLocator,
   isLocatorWithinViewport,
   isScrollingLayout,
+  isVerticalPublication,
   scrollToLocator,
 } from "@/components/reader/helpers"
 import { getReaderKeyboardHotkeys } from "@/components/reader/hooks/useReaderKeyboard"
@@ -135,6 +136,8 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
 
 const matchPageTurned = isAnyOf(nextPagePressed, previousPagePressed)
 
+let resumeOnNextAudioPage = false
+
 // page turn - use readium navigator to find next page
 // (calculating next page locator manually is complex, so we let readium handle it by manually calling the navigator)
 startAppListening({
@@ -150,44 +153,46 @@ startAppListening({
     if (!currentBook) return
 
     const isSyncing = selectIsSyncing(listenerApi.getState())
-    const scrolling = isScrollingLayout(
-      selectPreference(listenerApi.getState(), "layout"),
-    )
+    const layout = selectPreference(listenerApi.getState(), "layout")
+    const scrolling = isScrollingLayout(layout)
     const currentTocItem = selectCurrentToCLocator(listenerApi.getState())
     const mode = selectReadingMode(listenerApi.getState())
     const skipOnTurnPage = selectPreference(
       listenerApi.getState(),
       "skipOnTurnPage",
     )
-
-    if (scrolling && mode === "readaloud" && currentTocItem) {
+    const direction = action.type === nextPagePressed.type ? "next" : "previous"
+    if (
+      layout === "scrollable" &&
+      !isVerticalPublication() &&
+      mode === "readaloud" &&
+      currentTocItem
+    ) {
       handleChapterSkip(
-        action.type === nextPagePressed.type ? "next" : "previous",
+        direction,
         currentTocItem,
-        (locator) => {
-          listenerApi.dispatch(userRequestedTextNavigation({ locator }))
+        (locator, resumePlayback) => {
+          listenerApi.dispatch(
+            userRequestedTextNavigation({ locator, resumePlayback }),
+          )
         },
       )
       return
     }
 
     const method =
-      action.type === nextPagePressed.type
-        ? nav.goForward.bind(nav)
-        : nav.goBackward.bind(nav)
+      direction === "next" ? nav.goForward.bind(nav) : nav.goBackward.bind(nav)
 
     const progressions = nav.viewport.progressions.get(nav.currentLocator.href)
 
     const isAtEndOfChapter =
-      nextPagePressed.type === action.type
-        ? progressions?.end === 1
-        : progressions?.start === 0
+      direction === "next" ? progressions?.end === 1 : progressions?.start === 0
 
-    const shouldPause = (scrolling || isAtEndOfChapter) && isSyncing
+    const movesAudio = mode === "readaloud" && isSyncing && skipOnTurnPage
 
     const wasPlaying = AudioPlayer.getState().playing
 
-    if (shouldPause && wasPlaying) {
+    if (movesAudio && wasPlaying && (scrolling || isAtEndOfChapter)) {
       // pause if we are skipping chapters, or we scrolling
       AudioPlayer.pause()
     }
@@ -206,22 +211,14 @@ startAppListening({
           return
         }
 
-        if (!isSyncing) {
+        if (!movesAudio) {
           listenerApi.dispatch(
             syncPosition({
               locator: nav.currentLocator,
               timestamp: Date.now(),
               bookUuid: currentBook.uuid,
-              // if not syncing and readaloud, it means we have syncing toggled off, so we don't want to update the position
-              // otherwise this is in epub mode, so we do want to update the position
-              noServer: mode === "readaloud",
             }),
           )
-          resolve()
-          return
-        }
-
-        if (!skipOnTurnPage) {
           resolve()
           return
         }
@@ -239,7 +236,17 @@ startAppListening({
           nav.currentLocator.href,
         )
         if (!guides || !guides[0]) {
-          console.warn("No guides found")
+          if (wasPlaying) {
+            AudioPlayer.pause()
+            resumeOnNextAudioPage = true
+          }
+          listenerApi.dispatch(
+            syncPosition({
+              locator: nav.currentLocator,
+              timestamp: Date.now(),
+              bookUuid: currentBook.uuid,
+            }),
+          )
           resolve()
           return
         }
@@ -268,16 +275,14 @@ startAppListening({
             bookUuid: currentBook.uuid,
             locator: locator,
             timestamp: Date.now(),
+            resumePlayback: wasPlaying || resumeOnNextAudioPage,
           }),
         )
+        resumeOnNextAudioPage = false
 
         resolve()
       })
     })
-
-    if (isSyncing && wasPlaying) {
-      await AudioPlayer.play()
-    }
   },
 })
 
@@ -325,6 +330,7 @@ startAppListening({
           bookUuid: currentBook.uuid,
           locator: fullLocator,
           timestamp: Date.now(),
+          resumePlayback: action.payload.resumePlayback,
         }),
       )
     }

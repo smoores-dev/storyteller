@@ -12,7 +12,12 @@ export const bookDoubleTapped = createAction(
 
 export const bookLocatorChanged = createAction(
   "bookLocatorChanged",
-  (payload: { bookUuid: UUID; locator: Locator; timestamp: number }) => ({
+  (payload: {
+    bookUuid: UUID
+    locator: Locator
+    timestamp: number
+    resumePlayback?: boolean
+  }) => ({
     payload,
   }),
 )
@@ -124,7 +129,7 @@ export const textNavigatedFromAudio = createAction(
 
 export const userRequestedTextNavigation = createAction(
   "userRequestedTextNavigation",
-  (payload: { locator: Locator }) => ({
+  (payload: { locator: Locator; resumePlayback?: boolean }) => ({
     payload,
   }),
 )
