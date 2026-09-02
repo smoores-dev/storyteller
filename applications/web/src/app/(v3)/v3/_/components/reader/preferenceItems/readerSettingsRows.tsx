@@ -19,16 +19,12 @@ import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   type PreferencePayload,
   type ReadingPreferences,
-  defaultPreferences,
   preferencesSlice,
   selectBookPreferences,
-  selectGlobalPreferences,
 } from "@/store/slices/preferencesSlice"
 import { type UUID } from "@/uuid"
 
 import { ReaderSlider } from "./ReaderSlider"
-
-export type SettingsScope = "book" | "global"
 
 export type NumericPreferenceKey = {
   [K in keyof ReadingPreferences]: ReadingPreferences[K] extends number
@@ -43,11 +39,7 @@ export type BooleanPreferenceKey = {
 }[keyof ReadingPreferences]
 
 export type PreferenceApi = {
-  scope: SettingsScope
   values: ReadingPreferences
-  /** differs from the layer below, which is what the reset buttons key off */
-  changed: (key: keyof ReadingPreferences) => boolean
-  /** the current book overrides this key, whichever scope is being edited */
   overridden: (key: keyof ReadingPreferences) => boolean
   set: <K extends keyof ReadingPreferences>(
     key: K,
@@ -56,40 +48,30 @@ export type PreferenceApi = {
   reset: (key: keyof ReadingPreferences) => void
 }
 
-export function usePreferenceApi(
-  bookUuid: UUID,
-  scope: SettingsScope,
-): PreferenceApi {
+export function usePreferenceApi(bookUuid: UUID): PreferenceApi {
   const dispatch = useAppDispatch()
-  const target = scope === "global" ? "global" : bookUuid
   const values = useAppSelector((state) =>
-    scope === "global"
-      ? selectGlobalPreferences(state)
-      : selectBookPreferences(state, bookUuid),
+    selectBookPreferences(state, bookUuid),
   )
   const overrides = useAppSelector(
     (state) => state.preferences.perBook[bookUuid],
   )
   return {
-    scope,
     values,
-    changed: (key) =>
-      scope === "book"
-        ? overrides?.[key] !== undefined
-        : JSON.stringify(values[key]) !==
-          JSON.stringify(defaultPreferences[key]),
     overridden: (key) => overrides?.[key] !== undefined,
     set: (key, value) => {
       dispatch(
         preferencesSlice.actions.updatePreference({
           key,
           value,
-          target,
+          target: bookUuid,
         } as PreferencePayload),
       )
     },
     reset: (key) => {
-      dispatch(preferencesSlice.actions.resetPreference({ key, target }))
+      dispatch(
+        preferencesSlice.actions.resetPreference({ key, target: bookUuid }),
+      )
     },
   }
 }
@@ -136,18 +118,14 @@ export function SectionGroup({
   keys: readonly (keyof ReadingPreferences)[]
   children: ReactNode
 }) {
-  const anyChanged = keys.some(api.changed)
+  const anyChanged = keys.some(api.overridden)
   return (
     <FilterableMenuGroup>
       <FilterableMenuLabel
         className={readerMenuLabelClassName}
         action={
           <ResetButton
-            tooltip={
-              api.scope === "book"
-                ? "Follow the settings for all books"
-                : "Reset to defaults"
-            }
+            tooltip="Follow the settings for all books"
             disabled={!anyChanged}
             className="text-reader-text-muted hover:text-reader-text"
             onReset={() => {

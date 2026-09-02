@@ -56,6 +56,7 @@ export type HighlightColor =
   | "green"
   | "blue"
   | "magenta"
+  | "cover"
   | "custom"
 
 export type MiniPlayerCorner =
@@ -280,6 +281,17 @@ export const preferencesSlice = createSlice({
       delete state.perBook[target][key]
     },
 
+    applyBookPreferencesToAllBooks: (
+      state,
+      action: PayloadAction<{ bookId: UUID }>,
+    ) => {
+      state.global = {
+        ...state.global,
+        ...state.perBook[action.payload.bookId],
+      }
+      state.perBook = {}
+    },
+
     // reset to defaults
     resetPreferences: (state) => {
       state.global = defaultPreferences
@@ -477,8 +489,8 @@ export const readiumIfyPreferences = (
     scroll: preferences.layout === "scrollable",
     scrollPaddingBottom: 100,
     scrollPaddingTop: 100,
-    scrollPaddingLeft: 100,
-    scrollPaddingRight: 100,
+    scrollPaddingLeft: 10,
+    scrollPaddingRight: 10,
     maximalLineLength: preferences.lineLength + 10,
     minimalLineLength: preferences.lineLength - 10,
     optimalLineLength: preferences.lineLength,
@@ -697,6 +709,16 @@ export const storePreferencesInStorage = (preferences: {
       JSON.stringify(preferences.perBook[bookId as UUID]),
     )
   }
+}
+
+export const clearPerBookPreferencesInStorage = () => {
+  if (typeof window === "undefined") return
+
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith(`${STORAGE_KEY}-`))
+    .forEach((key) => {
+      localStorage.removeItem(key)
+    })
 }
 
 // this should be called once when the store is created

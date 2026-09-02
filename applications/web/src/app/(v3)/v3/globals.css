@@ -63,12 +63,14 @@
   --color-reader-highlight-green: var(--reader-highlight-green);
   --color-reader-highlight-blue: var(--reader-highlight-blue);
   --color-reader-highlight-magenta: var(--reader-highlight-magenta);
+  --color-reader-highlight-cover: var(--reader-highlight-cover);
   --color-reader-highlight-custom: var(--reader-highlight-custom);
   --color-reader-highlight-color-yellow: var(--reader-highlight-yellow);
   --color-reader-highlight-color-red: var(--reader-highlight-red);
   --color-reader-highlight-color-green: var(--reader-highlight-green);
   --color-reader-highlight-color-blue: var(--reader-highlight-blue);
   --color-reader-highlight-color-magenta: var(--reader-highlight-magenta);
+  --color-reader-highlight-color-cover: var(--reader-highlight-cover);
   --color-reader-highlight-color-custom: var(--reader-highlight-custom);
 
   --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif,
@@ -707,6 +709,11 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
   inherits: true;
   initial-value: #f3e08a;
 }
+@property --reader-highlight-cover {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f3e08a;
+}
 
 /* outside the reader route the reader tokens are just the app tokens, so the
    mini player needs no theming of its own */
@@ -923,6 +930,36 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
   --reader-highlight-magenta: oklch(0.47 0.11 330);
 }
 
+/* the cover highlight follows the cover hue at a lightness that suits the scheme */
+:root,
+[data-reader-theme="light"],
+[data-reader-theme="paper"],
+[data-reader-theme="sepia"],
+[data-reader-theme="cover-light"] {
+  --reader-highlight-cover: oklch(
+    from var(--cover-1, var(--reader-cover-fallback)) 0.88
+      min(calc(c * 0.85), 0.13) h
+  );
+}
+.dark,
+[data-reader-theme="dark"],
+[data-reader-theme="catppuccin"],
+[data-reader-theme="cover-dark"] {
+  --reader-highlight-cover: oklch(
+    from var(--cover-1, var(--reader-cover-fallback)) 0.5 min(c, 0.12) h
+  );
+}
+.dark [data-reader-theme="light"],
+.dark[data-reader-theme="light"],
+.dark[data-reader-theme="paper"],
+.dark[data-reader-theme="sepia"],
+.dark[data-reader-theme="cover-light"] {
+  --reader-highlight-cover: oklch(
+    from var(--cover-1, var(--reader-cover-fallback)) 0.88
+      min(calc(c * 0.85), 0.13) h
+  );
+}
+
 [data-reader-highlight="yellow"] {
   --reader-highlight: var(--reader-highlight-yellow);
 }
@@ -937,6 +974,9 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 }
 [data-reader-highlight="magenta"] {
   --reader-highlight: var(--reader-highlight-magenta);
+}
+[data-reader-highlight="cover"] {
+  --reader-highlight: var(--reader-highlight-cover);
 }
 [data-reader-highlight="custom"] {
   --reader-highlight: var(--reader-highlight-custom);

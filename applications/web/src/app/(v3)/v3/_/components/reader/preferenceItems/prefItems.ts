@@ -36,6 +36,12 @@ export const highlightColors = [
     className: "bg-reader-highlight-magenta",
   },
   {
+    value: "cover",
+    label: "Cover",
+    icon: "📚",
+    className: "bg-reader-highlight-cover",
+  },
+  {
     value: "custom",
     label: "Custom",
     icon: "🎨",

@@ -8,6 +8,7 @@ import { getNavigator } from "@/store/readerRegistry"
 import {
   applyFrameTheme,
   applyReaderTheme,
+  clearPerBookPreferencesInStorage,
   preferencesSlice,
   readReaderTokens,
   readiumIfyPreferences,
@@ -27,13 +28,19 @@ startAppListening({
     preferencesSlice.actions.resetPreference,
     preferencesSlice.actions.incrementPlaybackRate,
     preferencesSlice.actions.toggleBookDetailView,
+    preferencesSlice.actions.applyBookPreferencesToAllBooks,
   ),
-  effect: (_action, listenerApi) => {
+  effect: (action, listenerApi) => {
     if (typeof window === "undefined") return
 
     const preferences = listenerApi.getState().preferences
 
     try {
+      if (
+        preferencesSlice.actions.applyBookPreferencesToAllBooks.match(action)
+      ) {
+        clearPerBookPreferencesInStorage()
+      }
       storePreferencesInStorage(preferences)
     } catch (error) {
       console.error("failed to save preferences to localStorage:", error)

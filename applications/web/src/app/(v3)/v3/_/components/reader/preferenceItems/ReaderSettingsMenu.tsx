@@ -6,9 +6,7 @@ import { useMenuToggle } from "@v3/_/components/reader/hooks/useMenuToggle"
 import {
   FilterableMenu,
   FilterableMenuContent,
-  FilterableMenuGroup,
   FilterableMenuItem,
-  FilterableMenuLabel,
   FilterableMenuSeparator,
   FilterableMenuSub,
   FilterableMenuSubContent,
@@ -19,14 +17,14 @@ import {
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
+import { useAppDispatch } from "@/store/appState"
+import { preferencesSlice } from "@/store/slices/preferencesSlice"
 import { type UUID } from "@/uuid"
 
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import {
   OverrideMark,
-  type SettingsScope,
   readerMenuClassName,
-  readerMenuLabelClassName,
   readerMenuSeparatorClassName,
   usePreferenceApi,
 } from "./readerSettingsRows"
@@ -34,51 +32,34 @@ import { SECTIONS } from "./readerSettingsSections"
 
 const LABEL = "Reader settings"
 
-function ScopeItems({
-  scope,
-  onChange,
-}: {
-  scope: SettingsScope
-  onChange: (scope: SettingsScope) => void
-}) {
+function ApplyToAllBooksItem({ bookUuid }: { bookUuid: UUID }) {
+  const dispatch = useAppDispatch()
+  const [applied, setApplied] = useState(false)
   return (
-    <FilterableMenuGroup>
-      <FilterableMenuLabel className={readerMenuLabelClassName}>
-        Apply to
-      </FilterableMenuLabel>
-      <FilterableMenuItem
-        closeOnClick={false}
-        textValue="This book"
-        icon={<icon.Book />}
-        onSelect={() => {
-          onChange("book")
-        }}
-      >
-        <span className="min-w-0 flex-1 truncate">This book</span>
-        {scope === "book" && <icon.Check className="text-reader-accent" />}
-      </FilterableMenuItem>
-      <FilterableMenuItem
-        closeOnClick={false}
-        textValue="All books"
-        icon={<icon.Books />}
-        onSelect={() => {
-          onChange("global")
-        }}
-      >
-        <span className="min-w-0 flex-1 truncate">All books</span>
-        {scope === "global" && <icon.Check className="text-reader-accent" />}
-      </FilterableMenuItem>
-    </FilterableMenuGroup>
+    <FilterableMenuItem
+      closeOnClick={false}
+      textValue="Apply to all books"
+      icon={<icon.Books />}
+      title="Every book will use the settings of this book"
+      onSelect={() => {
+        dispatch(
+          preferencesSlice.actions.applyBookPreferencesToAllBooks({
+            bookId: bookUuid,
+          }),
+        )
+        setApplied(true)
+      }}
+    >
+      <span className="min-w-0 flex-1 truncate">Apply to all books</span>
+      {applied && <icon.Check className="text-reader-accent" />}
+    </FilterableMenuItem>
   )
 }
 
 function ReaderSettingsItems({ bookUuid }: { bookUuid: UUID }) {
-  const [scope, setScope] = useState<SettingsScope>("book")
-  const api = usePreferenceApi(bookUuid, scope)
+  const api = usePreferenceApi(bookUuid)
   return (
     <>
-      <ScopeItems scope={scope} onChange={setScope} />
-      <FilterableMenuSeparator className={readerMenuSeparatorClassName} />
       {SECTIONS.map((section) => (
         <FilterableMenuSub key={section.key}>
           <FilterableMenuSubTrigger
@@ -96,6 +77,8 @@ function ReaderSettingsItems({ bookUuid }: { bookUuid: UUID }) {
           </FilterableMenuSubContent>
         </FilterableMenuSub>
       ))}
+      <FilterableMenuSeparator className={readerMenuSeparatorClassName} />
+      <ApplyToAllBooksItem bookUuid={bookUuid} />
     </>
   )
 }
@@ -107,8 +90,7 @@ function ReaderSettingsDrawerContent({
   bookUuid: UUID
   onClose?: () => void
 }) {
-  const [scope, setScope] = useState<SettingsScope>("book")
-  const api = usePreferenceApi(bookUuid, scope)
+  const api = usePreferenceApi(bookUuid)
   return (
     <FilterableMenuSurface
       searchable={false}
@@ -117,13 +99,13 @@ function ReaderSettingsDrawerContent({
         onClose?.()
       }}
     >
-      <ScopeItems scope={scope} onChange={setScope} />
       {SECTIONS.map((section) => (
         <Fragment key={section.key}>
-          <FilterableMenuSeparator className={readerMenuSeparatorClassName} />
           <section.Content api={api} inline />
+          <FilterableMenuSeparator className={readerMenuSeparatorClassName} />
         </Fragment>
       ))}
+      <ApplyToAllBooksItem bookUuid={bookUuid} />
     </FilterableMenuSurface>
   )
 }
