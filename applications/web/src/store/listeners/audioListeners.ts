@@ -193,24 +193,16 @@ startAppListening({
         )
       ).filter((fragment) => fragment != null)
 
-      if (fragments.length === 0) {
-        console.error(
-          "No fragments found for audio track:",
+      const fragment = fragments[0]
+      if (!fragment) {
+        console.warn(
+          "No guide fragment for audio position",
           currentTrack.relativeUrl,
+          position,
         )
         return
       }
-
-      // TODO: properly handle multiple texts per audio track
-      if (fragments.length > 1) {
-        console.error(
-          "Multiple fragments found for audio track:",
-          currentTrack.relativeUrl,
-        )
-      }
-
-      const fragment = fragments[0]
-      if (!fragment || !fragment.locator) return
+      if (!fragment.locator) return
 
       const isSyncing = selectIsSyncing(listenerApi.getState())
 

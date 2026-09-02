@@ -1,4 +1,3 @@
-import { getHotkeyHandler } from "@mantine/hooks"
 import { type FrameComms, type FrameManager } from "@readium/navigator"
 import { type Locator, LocatorLocations } from "@readium/shared"
 import { type ListenerEffectAPI, isAnyOf } from "@reduxjs/toolkit"
@@ -12,10 +11,8 @@ import {
   findFirstVisibleLocator,
   isLocatorWithinViewport,
   isScrollingLayout,
-  isVerticalPublication,
   scrollToLocator,
 } from "@/components/reader/helpers"
-import { getReaderKeyboardHotkeys } from "@/components/reader/hooks/useReaderKeyboard"
 import { isSameLocator } from "@/components/reader/locators"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import {
@@ -37,7 +34,6 @@ import { selectPreference } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectCurrentBook,
-  selectCurrentToCLocator,
   selectCurrentlyHighlightedFragment,
   selectDoubleClickTimeout,
   selectIsSyncing,
@@ -47,7 +43,6 @@ import {
 import {
   getGuidesForText,
   getHrefFromActiveFrame,
-  handleChapterSkip,
   highlightFragment,
 } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"
@@ -155,30 +150,12 @@ startAppListening({
     const isSyncing = selectIsSyncing(listenerApi.getState())
     const layout = selectPreference(listenerApi.getState(), "layout")
     const scrolling = isScrollingLayout(layout)
-    const currentTocItem = selectCurrentToCLocator(listenerApi.getState())
     const mode = selectReadingMode(listenerApi.getState())
     const skipOnTurnPage = selectPreference(
       listenerApi.getState(),
       "skipOnTurnPage",
     )
     const direction = action.type === nextPagePressed.type ? "next" : "previous"
-    if (
-      layout === "scrollable" &&
-      !isVerticalPublication() &&
-      mode === "readaloud" &&
-      currentTocItem
-    ) {
-      handleChapterSkip(
-        direction,
-        currentTocItem,
-        (locator, resumePlayback) => {
-          listenerApi.dispatch(
-            userRequestedTextNavigation({ locator, resumePlayback }),
-          )
-        },
-      )
-      return
-    }
 
     const method =
       direction === "next" ? nav.goForward.bind(nav) : nav.goBackward.bind(nav)
@@ -523,29 +500,36 @@ startAppListening({
   },
 })
 
-// stopgap until we move to better frame management
-// setup keyboard listeners
+const forwardedFrameDocuments = new WeakSet<Document>()
+
+function forwardKeyEvent(event: KeyboardEvent) {
+  const forwarded = new KeyboardEvent(event.type, {
+    key: event.key,
+    code: event.code,
+    location: event.location,
+    ctrlKey: event.ctrlKey,
+    shiftKey: event.shiftKey,
+    altKey: event.altKey,
+    metaKey: event.metaKey,
+    repeat: event.repeat,
+    bubbles: true,
+    cancelable: true,
+  })
+  if (!document.documentElement.dispatchEvent(forwarded)) {
+    event.preventDefault()
+  }
+}
+
 startAppListening({
-  matcher: isAnyOf(readingSessionSlice.actions.setActiveFrame),
-  effect: (_, listenerApi) => {
-    listenerApi.unsubscribe()
+  actionCreator: readingSessionSlice.actions.setActiveFrame,
+  effect: (action) => {
+    withActiveFrame((activeFrame) => {
+      const frameDocument = activeFrame.iframe.contentWindow.document
+      if (forwardedFrameDocuments.has(frameDocument)) return
+      forwardedFrameDocuments.add(frameDocument)
 
-    try {
-      const mode = selectReadingMode(listenerApi.getState())
-      const bookId = selectCurrentBook(listenerApi.getState())?.uuid
-      if (!bookId) return
-
-      const handler = getHotkeyHandler(
-        getReaderKeyboardHotkeys(listenerApi.dispatch, mode, bookId),
-      )
-
-      withActiveFrame((activeFrame) => {
-        const document = activeFrame.iframe.contentWindow.document
-        document.removeEventListener("keydown", handler)
-        document.addEventListener("keydown", handler)
-      })
-    } finally {
-      listenerApi.subscribe()
-    }
+      frameDocument.addEventListener("keydown", forwardKeyEvent)
+      frameDocument.addEventListener("keyup", forwardKeyEvent)
+    }, action.payload ?? undefined)
   },
 })
