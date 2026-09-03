@@ -181,7 +181,10 @@ export class EmissionsReader {
         Math.max(framesFrom, from) - from,
         Math.min(to, framesTo) - from,
       )
-      frames.push(...emissions)
+
+      for (const e of emissions) {
+        frames.push(e)
+      }
     }
 
     return frames
