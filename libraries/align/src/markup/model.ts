@@ -72,7 +72,7 @@ export class Root {
     }
   }
 
-  replace(at: number, withNode: Node) {
+  replace(at: number, withNode: Node | TextNode) {
     const children: (Node | TextNode)[] = []
     let pos = this.border
     for (const child of this.children) {
@@ -198,7 +198,7 @@ export class Node {
     )
   }
 
-  replace(at: number, withNode: Node) {
+  replace(at: number, withNode: Node | TextNode) {
     const children: (Node | TextNode)[] = []
     let pos = this.border
     for (const child of this.children) {
@@ -252,8 +252,6 @@ export class Node {
     }
   }
 }
-
-export class NoterefNode extends Node {}
 
 export class FootnoteNode extends Node {}
 

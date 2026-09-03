@@ -3,14 +3,7 @@ import { describe, it } from "node:test"
 
 import { Epub } from "@storyteller-platform/epub"
 
-import {
-  FootnoteNode,
-  Mark,
-  Node,
-  NoterefNode,
-  Root,
-  TextNode,
-} from "../model.ts"
+import { FootnoteNode, Mark, Node, Root, TextNode } from "../model.ts"
 import { parseDom } from "../parseDom.ts"
 
 void describe("parseDom", () => {
@@ -104,11 +97,13 @@ void describe("parseDom", () => {
       new Root([
         new Node("p", { id: "p1" }, [
           new TextNode("Hello, world!"),
-          new NoterefNode(
-            "a",
-            { id: "note1", "epub:type": "noteref", href: "#note1-content" },
-            [new TextNode("1")],
-          ),
+          new TextNode("1", [
+            new Mark("a", {
+              id: "note1",
+              "epub:type": "noteref",
+              href: "#note1-content",
+            }),
+          ]),
         ]),
         new Node("aside", {}, [
           new FootnoteNode(
@@ -153,11 +148,13 @@ void describe("parseDom", () => {
       new Root([
         new Node("p", { id: "p1" }, [
           new TextNode("Hello, world!"),
-          new NoterefNode(
-            "a",
-            { id: "note1", "epub:type": "noteref", href: "#note1-content" },
-            [new TextNode("1")],
-          ),
+          new TextNode("1", [
+            new Mark("a", {
+              id: "note1",
+              "epub:type": "noteref",
+              href: "#note1-content",
+            }),
+          ]),
         ]),
         new Node("aside", {}, [
           new FootnoteNode(

@@ -158,6 +158,10 @@ export function detectDroppedLabels(
   endOffset: number,
   minLength = 8,
 ) {
+  if (endOffset < startOffset || endOffset - startOffset <= minLength) {
+    return false
+  }
+
   const endFrame = alignments[endOffset]?.endFrame
   if (endFrame === undefined) {
     throw new Error(`endOffset ${endOffset} out of bounds`)
@@ -165,10 +169,6 @@ export function detectDroppedLabels(
   const startFrame = alignments[startOffset]?.startFrame
   if (startFrame === undefined) {
     throw new Error(`startOffset ${startOffset} out of bounds`)
-  }
-
-  if (endOffset < startOffset || endOffset - startOffset <= minLength) {
-    return false
   }
 
   const framesPerChar = (endFrame - startFrame) / (endOffset - startOffset)
