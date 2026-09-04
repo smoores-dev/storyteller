@@ -66,6 +66,10 @@ __tests__
 !/libraries/nodekit
 /libraries/nodekit/node_modules
 
+!/libraries/media-types
+/libraries/media-types/node_modules
+/libraries/media-types/dist
+
 
 /docker
 
