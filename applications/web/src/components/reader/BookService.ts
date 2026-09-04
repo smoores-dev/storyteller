@@ -16,6 +16,8 @@ import {
   type Publication,
 } from "@readium/shared"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import type { ReadiumServiceError } from "@/services/readiumService"
 import {
   getPositions,
@@ -366,7 +368,7 @@ export async function getLocatorForFragment(
       console.error("NO HTML CONTENT", href)
       return new Locator({
         href,
-        type: "application/xhtml+xml",
+        type: MediaType.XHTML.mime,
       })
     }
 
@@ -378,7 +380,7 @@ export async function getLocatorForFragment(
       console.error("NO MATCH", fragment, htmlContent)
       return new Locator({
         href,
-        type: "application/xhtml+xml",
+        type: MediaType.XHTML.mime,
       })
     }
 
@@ -397,7 +399,7 @@ export async function getLocatorForFragment(
       console.error("NO CHAPTER INDEX OR POSITIONS", href, positions)
       return new Locator({
         href,
-        type: "application/xhtml+xml",
+        type: MediaType.XHTML.mime,
       })
     }
 
@@ -410,7 +412,7 @@ export async function getLocatorForFragment(
       console.error("NO CHAPTER POSITION", chapterPositionIndex, positions)
       return new Locator({
         href,
-        type: "application/xhtml+xml",
+        type: MediaType.XHTML.mime,
       })
     }
 
@@ -427,7 +429,7 @@ export async function getLocatorForFragment(
       )
       return new Locator({
         href,
-        type: "application/xhtml+xml",
+        type: MediaType.XHTML.mime,
       })
     }
 
@@ -445,7 +447,7 @@ export async function getLocatorForFragment(
 
     const locator = {
       href,
-      type: "application/xhtml+xml",
+      type: MediaType.XHTML.mime,
       locations: new LocatorLocations({
         fragments: [fragment],
         progression,
@@ -462,7 +464,7 @@ export async function getLocatorForFragment(
     console.error("Error creating locator:", error)
     return new Locator({
       href,
-      type: "application/xhtml+xml",
+      type: MediaType.XHTML.mime,
     })
   }
 }

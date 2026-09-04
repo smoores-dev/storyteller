@@ -10,6 +10,8 @@ import {
 } from "@mantine/core"
 import { useState } from "react"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { MetadataFieldOverridesEditor } from "@/components/settings/MetadataFieldOverridesEditor"
 import { type BookWithRelations } from "@/database/books"
 import {
@@ -36,41 +38,12 @@ const IMPORT_MODE_OPTIONS: { value: ImportMode; label: string }[] = [
   { value: "hardlink", label: "Hard link to library" },
 ]
 
-// TODO: put in shared place
-// from src/audio.ts
-const MP3_FILE_EXTENSIONS = [".mp3"]
-const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
-const AAC_FILE_EXTENSIONS = [".aac"]
-const OGG_FILE_EXTENSIONS = [".ogg", ".oga", ".mogg"]
-const OPUS_FILE_EXTENSIONS = [".opus"]
-const WAVE_FILE_EXTENSIONS = [".wav"]
-const AIFF_FILE_EXTENSIONS = [".aiff"]
-const FLAC_FILE_EXTENSIONS = [".flac"]
-const ALAC_FILE_EXTENSIONS = [".alac"]
-const WEBM_FILE_EXTENSIONS = [".weba"]
-
-const AUDIO_FILE_EXTENSIONS = [
-  ...MP3_FILE_EXTENSIONS,
-  ...AAC_FILE_EXTENSIONS,
-  ...MPEG4_FILE_EXTENSIONS,
-  ...OPUS_FILE_EXTENSIONS,
-  ...OGG_FILE_EXTENSIONS,
-  ...WAVE_FILE_EXTENSIONS,
-  ...AIFF_FILE_EXTENSIONS,
-  ...FLAC_FILE_EXTENSIONS,
-  ...ALAC_FILE_EXTENSIONS,
-  ...WEBM_FILE_EXTENSIONS,
-]
-
 function isEbookFilter(entry: { name: string; isDirectory: boolean }) {
-  return !entry.isDirectory && entry.name.toLowerCase().endsWith(".epub")
+  return !entry.isDirectory && MediaType.fromPath(entry.name)?.kind === "ebook"
 }
 
 function isAudioFileFilter(entry: { name: string; isDirectory: boolean }) {
-  return (
-    !entry.isDirectory &&
-    AUDIO_FILE_EXTENSIONS.some((ext) => entry.name.toLowerCase().endsWith(ext))
-  )
+  return !entry.isDirectory && MediaType.fromPath(entry.name)?.kind === "audio"
 }
 
 function siblingDir(book: BookWithRelations, format: Format): string {

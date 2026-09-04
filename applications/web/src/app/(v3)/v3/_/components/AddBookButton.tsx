@@ -10,6 +10,7 @@ import { useBookInSidePanel } from "@/app/(v3)/v3/_/hooks/use-open-book"
 import * as icon from "@/icons"
 import { isTauriApp } from "@/isTauriApp"
 import { useCreateBookMutation } from "@/store/api"
+import { bookDialogExtensions } from "@/uploadFileTypes"
 import { type UUID } from "@/uuid"
 
 import { ImportBookDialog } from "./books/ImportBookDialog"
@@ -23,25 +24,7 @@ import {
 } from "./ui/filterable-menu"
 import { TooltipButton } from "./ui/tooltip-button"
 
-const BOOK_FILTERS = [
-  {
-    name: "Books",
-    extensions: [
-      "epub",
-      "mp3",
-      "m4a",
-      "m4b",
-      "aac",
-      "mp4",
-      "opus",
-      "ogg",
-      "oga",
-      "wav",
-      "flac",
-      "zip",
-    ],
-  },
-]
+const BOOK_FILTERS = [{ name: "Books", extensions: bookDialogExtensions }]
 
 export function AddBookButton(props: ButtonProps) {
   const t = useTranslation("BooksPage")

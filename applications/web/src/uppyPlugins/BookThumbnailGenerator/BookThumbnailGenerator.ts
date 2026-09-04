@@ -8,6 +8,8 @@ import { type Body, type Meta, type UppyFile } from "@uppy/utils/lib/UppyFile"
 import dataURItoBlob from "@uppy/utils/lib/dataURItoBlob"
 import isObjectURL from "@uppy/utils/lib/isObjectURL"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { locale } from "./locale"
 
 declare module "@uppy/core" {
@@ -110,7 +112,7 @@ export interface BookThumbnailGeneratorOptions extends UIPluginOptions {
 const defaultOptions = {
   thumbnailWidth: null,
   thumbnailHeight: null,
-  thumbnailType: "image/jpeg",
+  thumbnailType: MediaType.JPEG.mime,
   waitForThumbnailsBeforeUpload: false,
   lazy: false,
   thumbnailFactories: {} as Record<string, ThumbnailFactory>,

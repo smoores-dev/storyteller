@@ -4,7 +4,6 @@ import { basename, extname, join } from "node:path"
 import { enumerate } from "itertools"
 import { type Logger } from "pino"
 
-import { isAudioFile } from "@storyteller-platform/audiobook"
 import {
   type TimingAggregator,
   createAggregator,
@@ -16,6 +15,7 @@ import {
   type Wav2Vec2Device,
   type Wav2Vec2Model,
 } from "@storyteller-platform/ghost-story/constants"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { writeEmissionsFile } from "./fs.ts"
 
@@ -42,7 +42,9 @@ export async function emit(
   await mkdir(output, { recursive: true })
 
   const allFiles = await readdir(input, { recursive: true })
-  const filenames = allFiles.toSorted().filter((f) => isAudioFile(f))
+  const filenames = allFiles
+    .toSorted()
+    .filter((f) => MediaType.fromPath(f)?.kind === "audio")
 
   if (!filenames.length) {
     throw new Error(

@@ -12,7 +12,6 @@ import { enumerate, max } from "itertools"
 import memoize from "memoize"
 import { type Logger } from "pino"
 
-import { lookupAudioMime } from "@storyteller-platform/audiobook"
 import { Epub, type ManifestItem } from "@storyteller-platform/epub"
 import {
   type Timing,
@@ -20,6 +19,7 @@ import {
   createTiming,
 } from "@storyteller-platform/ghost-story"
 import { type Mapping } from "@storyteller-platform/mapping"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { type EmissionsReader } from "../../emit/fs.ts"
 import { parseDom } from "../../markup/parseDom.ts"
@@ -212,7 +212,7 @@ export class Aligner {
 
         const audio = await readFile(audiofile)
 
-        const mediaType = lookupAudioMime(base) ?? undefined
+        const mediaType = MediaType.fromPath(base)?.mime
         await this.epub.addManifestItem(
           {
             id,

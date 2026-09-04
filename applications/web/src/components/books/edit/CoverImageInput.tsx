@@ -2,6 +2,12 @@ import { Button, FileButton, Image, Tabs, Text } from "@mantine/core"
 import { type UseFormReturnType } from "@mantine/form"
 import { useMemo } from "react"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
+const COVER_ACCEPT = [MediaType.JPEG, MediaType.PNG]
+  .map((type) => type.mime)
+  .join(",")
+
 function CoverInput({
   inputProps,
   coverUrl,
@@ -16,7 +22,7 @@ function CoverInput({
   height: number
 }) {
   return (
-    <FileButton accept="image/jpeg,image/png" {...inputProps}>
+    <FileButton accept={COVER_ACCEPT} {...inputProps}>
       {(props) => (
         <Button
           {...props}

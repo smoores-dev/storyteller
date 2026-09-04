@@ -14,42 +14,19 @@ import { pipeline } from "node:stream/promises"
 import { ZipFile } from "yazl"
 
 import { scratchPath } from "@storyteller-platform/fs"
+import { type Kind, MediaType } from "@storyteller-platform/media-types"
 import { dirname, join, sep } from "@storyteller-platform/path"
 
 import { openZip } from "../zip.ts"
 
 import type { EpubListEntry, EpubStorageAdapter } from "./interface.ts"
 
-const MP3_FILE_EXTENSIONS = [".mp3"] as const
-const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"] as const
-const AAC_FILE_EXTENSIONS = [".aac"] as const
-const OGG_FILE_EXTENSIONS = [".ogg", ".oga", ".mogg"] as const
-const OPUS_FILE_EXTENSIONS = [".opus"] as const
-const WAVE_FILE_EXTENSIONS = [".wav"] as const
-const AIFF_FILE_EXTENSIONS = [".aiff"] as const
-const FLAC_FILE_EXTENSIONS = [".flac"] as const
-const ALAC_FILE_EXTENSIONS = [".alac"] as const
-const WEBM_FILE_EXTENSIONS = [".weba"] as const
-
-const AUDIO_FILE_EXTENSIONS = [
-  ...MP3_FILE_EXTENSIONS,
-  ...AAC_FILE_EXTENSIONS,
-  ...MPEG4_FILE_EXTENSIONS,
-  ...OPUS_FILE_EXTENSIONS,
-  ...OGG_FILE_EXTENSIONS,
-  ...WAVE_FILE_EXTENSIONS,
-  ...AIFF_FILE_EXTENSIONS,
-  ...FLAC_FILE_EXTENSIONS,
-  ...ALAC_FILE_EXTENSIONS,
-  ...WEBM_FILE_EXTENSIONS,
-] as const
-
-function isAudioFile(filenameOrExt: string): boolean {
-  // Rips from older tools arrive with uppercase extensions (".MP3"); the
-  // extension's casing says nothing about the contents.
-  const lowered = filenameOrExt.toLowerCase()
-  return AUDIO_FILE_EXTENSIONS.some((ext) => lowered.endsWith(ext))
-}
+const PRECOMPRESSED_KINDS = new Set<Kind | undefined>([
+  "audio",
+  "image",
+  "archive",
+  "package",
+])
 
 function mintRootPath(): string {
   return scratchPath(`storyteller-platform-epub-${randomUUID()}`)
@@ -214,14 +191,16 @@ export class TmpFsAdapter implements EpubStorageAdapter {
 
     zipfile.outputStream.pipe(writeStream)
 
-    zipfile.addBuffer(Buffer.from("application/epub+zip"), "mimetype", {
+    zipfile.addBuffer(Buffer.from(MediaType.EPUB.mime), "mimetype", {
       compress: false,
     })
 
     for await (const entry of this.list()) {
       if (entry.relativePath === "mimetype") continue
       zipfile.addFile(entry.absolutePath, entry.relativePath, {
-        compress: !isAudioFile(entry.absolutePath),
+        compress: !PRECOMPRESSED_KINDS.has(
+          MediaType.fromPath(entry.absolutePath)?.kind,
+        ),
       })
     }
 

@@ -39,6 +39,9 @@
     },
     {
       "path": "libraries/nodekit"
+    },
+    {
+      "path": "libraries/media-types"
     }
   ]
 }

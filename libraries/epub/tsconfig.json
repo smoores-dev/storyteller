@@ -23,6 +23,9 @@
     },
     {
       "path": "../path"
+    },
+    {
+      "path": "../media-types"
     }
   ]
 }

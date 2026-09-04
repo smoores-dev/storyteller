@@ -73,6 +73,7 @@
     }
   },
   "dependencies": {
+    "@storyteller-platform/media-types": "workspace:^",
     "fast-xml-parser": "^4.0.1"
   },
   "publishConfig": {

@@ -3,8 +3,9 @@
 import { useRef } from "react"
 import { v4 as uuidv4 } from "uuid"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { UploadDialog } from "@v3/_/components/files/UploadDialog"
-import { isAudioLikeFile, isEpubFile } from "@v3/_/components/files/file-kinds"
 import { type UppyFileType } from "@v3/_/components/files/useTusUpload"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
@@ -44,7 +45,7 @@ export function UploadBookDialog({
   async function handleFinalize() {
     await fetch("/api/v2/books/upload/finalize", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": MediaType.JSON.mime },
       body: JSON.stringify({
         bookUuid: bookUuidRef.current,
         ...(collection && { collectionUuid: collection }),
@@ -79,7 +80,7 @@ export function UploadBookDialog({
           label: t.plain("zoneEbook"),
           hint: t.plain("zoneEbookHint"),
           accept: epubAccept,
-          filter: isEpubFile,
+          filter: (name) => MediaType.fromPath(name)?.kind === "ebook",
         },
         {
           key: "audio",
@@ -87,7 +88,10 @@ export function UploadBookDialog({
           hint: t.plain("zoneAudioHint"),
           accept: audioAccept,
           multiple: true,
-          filter: isAudioLikeFile,
+          filter: (name) => {
+            const kind = MediaType.fromPath(name)?.kind
+            return kind === "audio" || kind === "archive"
+          },
         },
       ]}
       buildMeta={buildMeta}

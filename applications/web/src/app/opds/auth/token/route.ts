@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { createUserToken } from "@/auth/auth"
 import { logger } from "@/logging"
 
@@ -11,7 +13,7 @@ export async function POST(request: Request) {
     let username: string | null = null
     let grant_type: string | null = null
     try {
-      if (request.headers.get("Content-Type") === "application/json") {
+      if (request.headers.get("Content-Type") === MediaType.JSON.mime) {
         const body = (await request.json()) as {
           username: string
           password: string
@@ -77,7 +79,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(tokenResponse, {
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": MediaType.JSON.mime,
         "Cache-Control": "no-store",
       },
     })

@@ -11,9 +11,9 @@ import {
 import { LocalizedString } from "@readium/shared"
 import { ZipFile } from "yazl"
 
-import { isAudioFile } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { EmissionsReader } from "../../emit/fs.ts"
 import {
@@ -58,7 +58,7 @@ export async function ctcAlign(
 
   const audiobookFiles = await readdir(audiobookDir).then((filenames) =>
     filenames
-      .filter((f) => isAudioFile(f))
+      .filter((f) => MediaType.fromPath(f)?.kind === "audio")
       .toSorted()
       .map((f) => autoJoin(audiobookDir, f)),
   )

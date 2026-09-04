@@ -1,5 +1,7 @@
 import { addSeconds, isBefore } from "date-fns"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { createSessionTokenForUserId } from "@/auth/auth"
 import {
   consumeDeviceAuthorization,
@@ -25,7 +27,7 @@ function jsonError(error: string, status: number, error_description?: string) {
 export async function POST(request: Request) {
   let deviceCode: string | null = null
 
-  if (request.headers.get("Content-Type")?.includes("application/json")) {
+  if (request.headers.get("Content-Type")?.includes(MediaType.JSON.mime)) {
     const body = (await request.json()) as { device_code?: string }
     deviceCode = body.device_code ?? null
   } else {

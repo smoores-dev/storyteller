@@ -1,8 +1,6 @@
 import { mkdir, open, readdir, rm, writeFile } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 
-import { extension, lookup } from "mime-types"
-
 import {
   Audiobook,
   type AudiobookInputs,
@@ -13,8 +11,9 @@ import {
   MemoryAdapter,
 } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
+import { MediaType } from "@storyteller-platform/media-types"
 
-import { COVER_IMAGE_FILE_EXTENSIONS, isAudioFile } from "@/audio"
+import { isAudioFile } from "@/audio"
 import { type Book, touchBook } from "@/database/books"
 
 import { getAudioCoverItem } from "./metadata"
@@ -24,6 +23,10 @@ export type CoverData = {
   filename: string
   mimeType: string
   data: Uint8Array
+}
+
+function isCoverImage(nameOrPath: string): boolean {
+  return MediaType.fromPath(nameOrPath)?.cover === true
 }
 
 export type CoverKind = "ebook" | "audiobook"
@@ -45,7 +48,9 @@ async function readCoverFromEpub(epub: EpubReader): Promise<CoverData | null> {
   return {
     filename: basename(coverImageItem.href),
     mimeType:
-      coverImageItem.mediaType ?? (lookup(coverImageItem.href) || "image/jpeg"),
+      coverImageItem.mediaType ??
+      MediaType.fromPath(coverImageItem.href)?.mime ??
+      MediaType.JPEG.mime,
     data: new Uint8Array(data),
   }
 }
@@ -67,7 +72,7 @@ async function readAudioCoverFromReadaloud(
   const data = await epub.readItemContents(coverImageItem.id)
   return {
     filename: basename(coverImageItem.href),
-    mimeType: coverImageItem.mediaType ?? "image/jpeg",
+    mimeType: coverImageItem.mediaType ?? MediaType.JPEG.mime,
     data: new Uint8Array(data),
   }
 }
@@ -105,7 +110,9 @@ async function readAudioCoverFromReadaloudAudio(
     if (!coverArt) return null
 
     return {
-      filename: coverArt.name || `Cover.${extension(coverArt.mimeType)}`,
+      filename:
+        coverArt.name ||
+        `Cover${MediaType.fromMime(coverArt.mimeType)?.extension ?? ".jpg"}`,
       mimeType: coverArt.mimeType,
       data: new Uint8Array(coverArt.data),
     }
@@ -150,17 +157,11 @@ export async function extractCoverFileFromAudioDir(
     const ext = extname(entry)
     const name = basename(entry, ext)
 
-    if (
-      name.toLowerCase() === "cover" &&
-      COVER_IMAGE_FILE_EXTENSIONS.includes(ext)
-    ) {
+    if (name.toLowerCase() === "cover" && isCoverImage(entry)) {
       cover = join(audioDir, entry)
     }
 
-    if (
-      name.toLowerCase() === "audio cover" &&
-      COVER_IMAGE_FILE_EXTENSIONS.includes(ext)
-    ) {
+    if (name.toLowerCase() === "audio cover" && isCoverImage(entry)) {
       audioCover = join(audioDir, entry)
     }
 
@@ -179,7 +180,7 @@ export async function extractCoverFileFromAudioDir(
 
   return {
     filename: basename(filepath),
-    mimeType: lookup(filepath) || "image/jpeg",
+    mimeType: MediaType.fromPath(filepath)?.mime ?? MediaType.JPEG.mime,
     data: new Uint8Array(data),
   }
 }
@@ -190,7 +191,7 @@ async function readCoverFromAudiobook(
   const coverArt = await audiobook.getCoverArt()
   if (!coverArt) return null
   return {
-    filename: `Cover.${extension(coverArt.mimeType)}`,
+    filename: `Cover${MediaType.fromMime(coverArt.mimeType)?.extension ?? ".jpg"}`,
     mimeType: coverArt.mimeType,
     data: new Uint8Array(coverArt.data),
   }
@@ -225,9 +226,7 @@ export async function getExtractedCover(book: Book, kind: CoverKind) {
 
   try {
     const entries = await readdir(coverDir)
-    const coverEntry = entries.find((entry) =>
-      COVER_IMAGE_FILE_EXTENSIONS.includes(extname(entry)),
-    )
+    const coverEntry = entries.find((entry) => isCoverImage(entry))
     if (!coverEntry) return null
 
     const file = await open(join(coverDir, coverEntry))
@@ -237,7 +236,7 @@ export async function getExtractedCover(book: Book, kind: CoverKind) {
 
     return {
       filename: basename(coverEntry),
-      mimeType: lookup(coverEntry) || "image/jpeg",
+      mimeType: MediaType.fromPath(coverEntry)?.mime ?? MediaType.JPEG.mime,
       stats,
       data,
     }

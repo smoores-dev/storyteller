@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { describe, it } from "node:test"
 
 import { streamFile } from "@storyteller-platform/fs"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import {
   Epub,
@@ -281,7 +282,7 @@ void describe("Epub", () => {
     const newItem = {
       id: "testitem",
       href: "testitem.xhtml",
-      mediaType: "application/xhtml+xml",
+      mediaType: MediaType.XHTML.mime,
       fallback: undefined,
       mediaOverlay: undefined,
       properties: undefined,

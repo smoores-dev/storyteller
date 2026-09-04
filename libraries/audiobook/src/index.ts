@@ -3,29 +3,24 @@ import { createWriteStream, rmSync } from "node:fs"
 import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises"
 import { pipeline } from "node:stream/promises"
 
-import { lookup } from "mime-types"
 import { open } from "yauzl-promise"
 import { ZipFile } from "yazl"
 
 import { scratchPath } from "@storyteller-platform/fs"
+import { MediaType } from "@storyteller-platform/media-types"
 import { basename, dirname, extname, join } from "@storyteller-platform/path"
 
 import { AudiobookEntry } from "./entry.ts"
 import { type AttachedPic } from "./ffmpeg.ts"
-import { AUDIO_FILE_EXTENSIONS } from "./mime.ts"
 import { type AudiobookChapter, type AudiobookResource } from "./resources.ts"
 
+export { canCopyCodec, outputContainer } from "./containers.ts"
 export {
-  AAC_FILE_EXTENSIONS,
-  AIFF_FILE_EXTENSIONS,
-  MP3_FILE_EXTENSIONS,
-  MPEG4_FILE_EXTENSIONS,
-  OGG_FILE_EXTENSIONS,
-  OPUS_FILE_EXTENSIONS,
-  isAudioFile,
-  isZipArchive,
-  lookupAudioMime,
-} from "./mime.ts"
+  AUDIO_ENCODERS,
+  type AudioEncoder,
+  audioTypeForCodec,
+  imageTypeForCodec,
+} from "./codecs.ts"
 
 export type { AudiobookChapter }
 
@@ -55,9 +50,9 @@ export class Audiobook {
     this.inputs = inputs
 
     const [first] = this.inputs
-    this.isZip =
-      typeof first === "string" &&
-      (extname(first) === ".zip" || extname(first) === ".audiobook")
+    const kind =
+      typeof first === "string" ? MediaType.fromPath(first)?.kind : undefined
+    this.isZip = kind === "archive" || kind === "package"
   }
 
   static async from(...inputs: AudiobookInputs) {
@@ -100,11 +95,7 @@ export class Audiobook {
       }
 
       return entries
-        .filter((entry) =>
-          AUDIO_FILE_EXTENSIONS.includes(
-            extname(entry) as (typeof AUDIO_FILE_EXTENSIONS)[number],
-          ),
-        )
+        .filter((entry) => MediaType.fromPath(entry)?.kind === "audio")
         .sort()
         .map((entry) => new AudiobookEntry(join(extractPath, entry)))
     } else {
@@ -388,7 +379,7 @@ export async function getAttachedImageFromPath(
 ): Promise<AttachedPic> {
   const data = await readFile(path)
   const name = basename(path)
-  const mimeType = lookup(path) || ""
+  const mimeType = MediaType.fromPath(path)?.mime ?? ""
   return {
     data: new Uint8Array(data),
     name,

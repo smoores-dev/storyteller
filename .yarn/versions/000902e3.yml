@@ -1,9 +1,13 @@
 releases:
-  "@storyteller-platform/web": major
-  "@storyteller-platform/tauri": major
-  "@storyteller-platform/docs": major
   "@storyteller-platform/align": patch
+  "@storyteller-platform/audiobook": patch
+  "@storyteller-platform/epub": patch
+  "@storyteller-platform/ghost-story": patch
+  "@storyteller-platform/opds": patch
+  "@storyteller-platform/tauri": major
+  "@storyteller-platform/web": major
 
 declined:
-  - "@storyteller-platform/epub"
+  - "@storyteller-platform/docs"
   - "@storyteller-platform/mobile"
+  - "@storyteller-platform/media-types"

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { hasPermission, withHasPermission } from "@/auth/auth"
 import { subscribeToBookEvents } from "@/events"
 import { subscribeToJobEvents } from "@/jobEvents"
@@ -14,7 +16,7 @@ const HEARTBEAT_INTERVAL_MS = 10_000
  *       is `{ channel, event }`, where channel is "book" or "job".
  */
 export const GET = withHasPermission(["bookList", "bookProcess"])((request) => {
-  if (request.headers.get("Accept") !== "text/event-stream") {
+  if (request.headers.get("Accept") !== MediaType.EVENT_STREAM.mime) {
     return new NextResponse(null, { status: 405 })
   }
 
@@ -77,7 +79,7 @@ export const GET = withHasPermission(["bookList", "bookProcess"])((request) => {
 
   return new Response(readable, {
     headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
+      "Content-Type": `${MediaType.EVENT_STREAM.mime}; charset=utf-8`,
       Connection: "keep-alive",
       "Cache-Control": "no-cache, no-transform",
       "Content-Encoding": "none",

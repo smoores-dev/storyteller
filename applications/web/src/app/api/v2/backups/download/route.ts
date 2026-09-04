@@ -5,6 +5,8 @@ import { Readable } from "node:stream"
 import contentDisposition from "content-disposition"
 import { NextResponse } from "next/server"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { withHasPermission } from "@/auth/auth"
 import { snapshotToTempFile } from "@/backups"
 
@@ -31,7 +33,7 @@ export const GET = withHasPermission("settingsUpdate")(async () => {
 
   return new Response(Readable.toWeb(readStream) as ReadableStream, {
     headers: {
-      "Content-Type": "application/vnd.sqlite3",
+      "Content-Type": MediaType.SQLITE.mime,
       "Content-Length": String(size),
       "Content-Disposition": contentDisposition(
         `storyteller-${new Date().toISOString().slice(0, 10)}.db`,

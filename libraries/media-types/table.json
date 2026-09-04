@@ -1,0 +1,553 @@
+{
+  "version": 1,
+  "kinds": [
+    "audio",
+    "image",
+    "ebook",
+    "archive",
+    "package",
+    "manifest",
+    "font",
+    "data"
+  ],
+  "mediaTypes": [
+    {
+      "mime": "audio/mpeg",
+      "name": "MPEG_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".mp3"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "audio/mp4",
+      "name": "MP4_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".mp4",
+        ".m4a",
+        ".m4b"
+      ],
+      "aliases": [
+        "video/mp4",
+        "application/mp4"
+      ],
+      "cover": false
+    },
+    {
+      "mime": "audio/aac",
+      "name": "AAC_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".aac"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "audio/ogg",
+      "name": "OGG_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".ogg",
+        ".oga",
+        ".mogg"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "audio/opus",
+      "name": "OPUS_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".opus"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "audio/wav",
+      "name": "WAV_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".wav"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "audio/aiff",
+      "name": "AIFF_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".aiff"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "audio/flac",
+      "name": "FLAC_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".flac"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "audio/x-alac",
+      "name": "ALAC_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".alac"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "audio/webm",
+      "name": "WEBM_AUDIO",
+      "kind": "audio",
+      "extensions": [
+        ".weba"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "image/jpeg",
+      "name": "JPEG",
+      "kind": "image",
+      "extensions": [
+        ".jpeg",
+        ".jpg"
+      ],
+      "aliases": [],
+      "cover": true
+    },
+    {
+      "mime": "image/png",
+      "name": "PNG",
+      "kind": "image",
+      "extensions": [
+        ".png"
+      ],
+      "aliases": [],
+      "cover": true
+    },
+    {
+      "mime": "image/webp",
+      "name": "WEBP",
+      "kind": "image",
+      "extensions": [
+        ".webp"
+      ],
+      "aliases": [],
+      "cover": true
+    },
+    {
+      "mime": "image/avif",
+      "name": "AVIF",
+      "kind": "image",
+      "extensions": [
+        ".avif"
+      ],
+      "aliases": [],
+      "cover": true
+    },
+    {
+      "mime": "image/svg+xml",
+      "name": "SVG",
+      "kind": "image",
+      "extensions": [
+        ".svg"
+      ],
+      "aliases": [],
+      "cover": true
+    },
+    {
+      "mime": "image/gif",
+      "name": "GIF",
+      "kind": "image",
+      "extensions": [
+        ".gif"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "image/tiff",
+      "name": "TIFF",
+      "kind": "image",
+      "extensions": [
+        ".tiff",
+        ".tif"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "image/bmp",
+      "name": "BMP",
+      "kind": "image",
+      "extensions": [
+        ".bmp"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "image/heif",
+      "name": "HEIF",
+      "kind": "image",
+      "extensions": [
+        ".heif"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "image/heic",
+      "name": "HEIC",
+      "kind": "image",
+      "extensions": [
+        ".heic"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "image/jp2",
+      "name": "JP2",
+      "kind": "image",
+      "extensions": [
+        ".jp2"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/epub+zip",
+      "name": "EPUB",
+      "kind": "ebook",
+      "extensions": [
+        ".epub"
+      ],
+      "aliases": [
+        "image/epub",
+        "application/epub"
+      ],
+      "cover": false
+    },
+    {
+      "mime": "application/zip",
+      "name": "ZIP",
+      "kind": "archive",
+      "extensions": [
+        ".zip"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/audiobook+zip",
+      "name": "AUDIOBOOK_PACKAGE",
+      "kind": "package",
+      "extensions": [
+        ".audiobook"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/webpub+zip",
+      "name": "WEBPUB_PACKAGE",
+      "kind": "package",
+      "extensions": [
+        ".webpub"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/guided-navigation+zip",
+      "name": "GUIDED_NAVIGATION_PACKAGE",
+      "kind": "package",
+      "extensions": [
+        ".gnp"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/audiobook+json",
+      "name": "AUDIOBOOK_MANIFEST",
+      "kind": "manifest",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/webpub+json",
+      "name": "WEBPUB_MANIFEST",
+      "kind": "manifest",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/guided-navigation+json",
+      "name": "GUIDED_NAVIGATION",
+      "kind": "manifest",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/opds+json",
+      "name": "OPDS",
+      "kind": "manifest",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/opds-publication+json",
+      "name": "OPDS_PUBLICATION",
+      "kind": "manifest",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/opds-authentication+json",
+      "name": "OPDS_AUTHENTICATION",
+      "kind": "manifest",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/atom+xml",
+      "name": "ATOM",
+      "kind": "manifest",
+      "extensions": [
+        ".atom"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "font/ttf",
+      "name": "TTF",
+      "kind": "font",
+      "extensions": [
+        ".ttf"
+      ],
+      "aliases": [
+        "application/font-sfnt",
+        "application/x-font-truetype",
+        "application/x-font-ttf",
+        "font/sfnt"
+      ],
+      "cover": false
+    },
+    {
+      "mime": "font/otf",
+      "name": "OTF",
+      "kind": "font",
+      "extensions": [
+        ".otf"
+      ],
+      "aliases": [
+        "application/vnd.ms-opentype",
+        "application/x-font-opentype",
+        "application/x-font-otf"
+      ],
+      "cover": false
+    },
+    {
+      "mime": "font/woff",
+      "name": "WOFF",
+      "kind": "font",
+      "extensions": [
+        ".woff"
+      ],
+      "aliases": [
+        "application/font-woff",
+        "application/x-font-woff"
+      ],
+      "cover": false
+    },
+    {
+      "mime": "font/woff2",
+      "name": "WOFF2",
+      "kind": "font",
+      "extensions": [
+        ".woff2"
+      ],
+      "aliases": [
+        "application/font-woff2"
+      ],
+      "cover": false
+    },
+    {
+      "mime": "font/collection",
+      "name": "FONT_COLLECTION",
+      "kind": "font",
+      "extensions": [
+        ".ttc",
+        ".otc"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/smil+xml",
+      "name": "SMIL",
+      "kind": "data",
+      "extensions": [
+        ".smil"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/xhtml+xml",
+      "name": "XHTML",
+      "kind": "data",
+      "extensions": [
+        ".xhtml"
+      ],
+      "aliases": [
+        "application/vnd.adobe-page-template+xml"
+      ],
+      "cover": false
+    },
+    {
+      "mime": "application/json",
+      "name": "JSON",
+      "kind": "data",
+      "extensions": [
+        ".json"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/vnd.sqlite3",
+      "name": "SQLITE",
+      "kind": "data",
+      "extensions": [
+        ".sqlite",
+        ".db"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "text/event-stream",
+      "name": "EVENT_STREAM",
+      "kind": "data",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/octet-stream",
+      "name": "OCTET_STREAM",
+      "kind": "data",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "text/html",
+      "name": "HTML",
+      "kind": "data",
+      "extensions": [
+        ".html"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "text/css",
+      "name": "CSS",
+      "kind": "data",
+      "extensions": [
+        ".css"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "text/javascript",
+      "name": "JAVASCRIPT",
+      "kind": "data",
+      "extensions": [
+        ".js",
+        ".mjs"
+      ],
+      "aliases": [
+        "application/javascript",
+        "application/x-javascript"
+      ],
+      "cover": false
+    },
+    {
+      "mime": "text/plain",
+      "name": "PLAIN_TEXT",
+      "kind": "data",
+      "extensions": [
+        ".txt"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/oebps-package+xml",
+      "name": "OPF",
+      "kind": "data",
+      "extensions": [
+        ".opf"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/x-dtbncx+xml",
+      "name": "NCX",
+      "kind": "data",
+      "extensions": [
+        ".ncx"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/pls+xml",
+      "name": "PLS",
+      "kind": "data",
+      "extensions": [
+        ".pls"
+      ],
+      "aliases": [],
+      "cover": false
+    },
+    {
+      "mime": "application/opensearchdescription+xml",
+      "name": "OPENSEARCH_DESCRIPTION",
+      "kind": "data",
+      "extensions": [
+        ".osdd"
+      ],
+      "aliases": [],
+      "cover": false
+    }
+  ]
+}

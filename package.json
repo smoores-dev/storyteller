@@ -31,6 +31,7 @@
     "test:align": "yarn workspace @storyteller-platform/align test",
     "test:audiobook": "yarn workspace @storyteller-platform/audiobook test",
     "test:epub": "yarn workspace @storyteller-platform/epub test",
+    "test:media-types": "yarn workspace @storyteller-platform/media-types test",
     "test:mobile": "yarn workspace @storyteller-platform/mobile test",
     "test:nodekit": "yarn workspace @storyteller-platform/nodekit test",
     "test:web": "yarn workspace @storyteller-platform/web test:all",

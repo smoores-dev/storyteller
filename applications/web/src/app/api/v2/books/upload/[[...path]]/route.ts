@@ -4,15 +4,17 @@ import { basename, extname, join } from "node:path"
 
 import { FileStore } from "@tus/file-store"
 import { Server } from "@tus/server"
-import { lookup } from "mime-types"
 import { type NextRequest } from "next/server"
+
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { move } from "@/assets/fs"
 import { scan } from "@/assets/library/scanner/scan"
 import { type Candidate } from "@/assets/library/scanner/types"
-import { isAudioFile, isZipArchive, lookupAudioMime } from "@/audio"
+import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import { UPLOADS_DIR } from "@/directories"
+import { isEpubFile } from "@/epub"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
@@ -22,14 +24,11 @@ function parseCount(raw: string | null | undefined): number | null {
   return raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : null
 }
 
-function isEpubFilename(name: string) {
-  return extname(name).toLowerCase() === ".epub"
-}
-
+// what the scanner can actually import out of the upload folder
 async function importableEntries(dir: string): Promise<string[]> {
   const entries = await readdir(dir).catch(() => [] as string[])
   return entries.filter(
-    (name) => isEpubFilename(name) || isAudioFile(name) || isZipArchive(name),
+    (name) => isEpubFile(name) || isAudioFile(name) || isZipArchive(name),
   )
 }
 
@@ -73,21 +72,19 @@ const server = new Server({
       }
 
       const filetype =
-        upload.metadata["filetype"] ??
-        lookupAudioMime(filename) ??
-        lookup(filename)
+        upload.metadata["filetype"] ?? MediaType.fromPath(filename)?.mime
 
       const collectionUuid = upload.metadata["collection"] as UUID | undefined
 
       const isEpub =
-        filetype !== false &&
-        (filetype.startsWith("application/epub") || filetype === "image/epub")
+        filetype !== undefined &&
+        MediaType.fromMime(filetype) === MediaType.EPUB
 
       const isAudiobook = isAudioFile(filename) || isZipArchive(filename)
       if (!isEpub && !isAudiobook) {
         return {
           status_code: 405,
-          body: `Invalid upload type. Expected application/epub+zip, audio/*, or video/mp4, received "${upload.metadata["filetype"]}" from browser and "${lookupAudioMime(filename) ?? lookup(filename)}" from extension`,
+          body: `Invalid upload type. Expected application/epub+zip, audio/*, or video/mp4, received "${upload.metadata["filetype"]}" from browser and "${MediaType.fromPath(filename)?.mime}" from extension`,
         }
       }
 
@@ -119,7 +116,7 @@ const server = new Server({
         const audioEntries = entries.filter(
           (name) => isAudioFile(name) || isZipArchive(name),
         )
-        const epubEntries = entries.filter(isEpubFilename)
+        const epubEntries = entries.filter((name) => isEpubFile(name))
 
         const collections = collectionUuid
           ? { collections: [collectionUuid] }

@@ -1,20 +1,13 @@
 import { NextResponse } from "next/server"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { withHasPermission } from "@/auth/auth"
 import { ingestImage, probeImage } from "@/images"
 
 export const dynamic = "force-dynamic"
 
 const MAX_UPLOAD_BYTES = 32 * 1024 * 1024
-
-const ALLOWED_MIME_TYPES = [
-  "image/avif",
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "image/tiff",
-  "image/webp",
-]
 
 function parseFilename(contentDisposition: string | null) {
   if (!contentDisposition) return undefined
@@ -78,7 +71,7 @@ export const POST = withHasPermission(["bookUpdate", "settingsUpdate"])(async (
     )
   }
 
-  if (!ALLOWED_MIME_TYPES.includes(probed.mimeType)) {
+  if (!MediaType.fromMime(probed.mimeType)?.cover) {
     return NextResponse.json(
       { message: `${probed.mimeType} images are not supported` },
       { status: 415 },

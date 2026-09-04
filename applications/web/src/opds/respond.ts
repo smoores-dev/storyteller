@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-import { type Feed, toAtomXml } from "@storyteller-platform/opds"
+import { type Feed, OPDS_JSON, toAtomXml } from "@storyteller-platform/opds"
 
 import { withHasPermission } from "@/auth/auth"
 import type { OpdsFormat } from "@/database/settingsTypes"
@@ -21,7 +21,7 @@ export const parseVersion = (raw: string | undefined): OpdsVersion =>
 export const respond = (version: OpdsVersion, feed: Feed): Response => {
   if (version === "v2") {
     return new NextResponse(JSON.stringify(feed.serialize()), {
-      headers: { "Content-Type": "application/opds+json", ...CORS },
+      headers: { "Content-Type": OPDS_JSON, ...CORS },
     })
   }
   const kind = feed.publications ? "acquisition" : "navigation"

@@ -12,17 +12,14 @@ import {
   Metadata,
 } from "@readium/shared"
 
-import { Audiobook } from "@storyteller-platform/audiobook"
+import { Audiobook, outputContainer } from "@storyteller-platform/audiobook"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { getMetadataFromAudiobook } from "@/assets/metadata"
 import {
-  AAC_FILE_EXTENSIONS,
-  MP3_FILE_EXTENSIONS,
-  MPEG4_FILE_EXTENSIONS,
-  OGG_FILE_EXTENSIONS,
-  OPUS_FILE_EXTENSIONS,
   getTrackChapters,
   getTrackInfo,
+  isAudioFile,
   lookupAudioMime,
 } from "@/audio"
 import { getSetting } from "@/database/settings"
@@ -47,25 +44,6 @@ export interface ManifestOptions {
   baseUrl?: string
 }
 
-const SUPPORTED_AUDIO_EXTENSIONS = [
-  ".mp3",
-  ".m4a",
-  ".m4b",
-  ".aac",
-  ".mp4",
-  ".ogg",
-  ".flac",
-  ".wav",
-]
-
-/**
- * check if file extension is a supported audio format
- */
-export function isAudioFile(filename: string): boolean {
-  const ext = extname(filename).toLowerCase()
-  return SUPPORTED_AUDIO_EXTENSIONS.includes(ext)
-}
-
 /**
  * get audio file information including metadata
  */
@@ -74,7 +52,7 @@ export async function getAudioFileInfo(
 ): Promise<AudioFileInfo> {
   const stats = await stat(filepath)
   const filename = basename(filepath)
-  const mimeType = lookupAudioMime(filepath) || "audio/mpeg"
+  const mimeType = lookupAudioMime(filepath) || MediaType.MPEG_AUDIO.mime
 
   return {
     filename,
@@ -114,7 +92,8 @@ export async function getDirectoryAudioFiles(
  */
 export function getChapterFilename(idx: number, codec: string | null) {
   const baseFilename = `${idx.toString().padStart(5, "0")}-${"1".padStart(5, "0")}`
-  const outputExtension = determineExtension(codec, `hello.m4b`)
+  const outputExtension =
+    outputContainer(codec, MediaType.MP4_AUDIO)?.extension ?? ".mp4"
 
   return {
     filename: `${baseFilename}${outputExtension}`,
@@ -149,7 +128,7 @@ export async function createM4bManifest(
   const links = new Links(
     chapters.map((chapter, idx) => {
       const filename = getChapterFilename(idx, codec ?? "mp3").filename
-      const mimetype = lookupAudioMime(filename) ?? "application/octet-stream"
+      const mimetype = lookupAudioMime(filename) ?? MediaType.OCTET_STREAM.mime
       return new Link({
         rels: new Set(["chapter"]),
         href: filename,
@@ -191,7 +170,7 @@ export async function createM4bManifest(
       new Link({
         rels: new Set(["self"]),
         href: `manifest.json`,
-        type: "application/audiobook+json",
+        type: MediaType.AUDIOBOOK_MANIFEST.mime,
       }),
       new Link({
         rels: new Set(["cover"]),
@@ -201,12 +180,12 @@ export async function createM4bManifest(
           audio: true,
           updatedAt: new Date(),
         }),
-        type: "image/jpeg",
+        type: MediaType.JPEG.mime,
       }),
       new Link({
         rels: new Set(["alternate"]),
         href: `m4b`,
-        type: "audio/mpeg",
+        type: MediaType.MP4_AUDIO.mime,
       }),
     ]),
     readingOrder: links,
@@ -263,7 +242,7 @@ export async function createDirectoryManifest(
       new Link({
         rels: new Set(["self"]),
         href: `manifest.json`,
-        type: "application/audiobook+json",
+        type: MediaType.AUDIOBOOK_MANIFEST.mime,
       }),
       new Link({
         rels: new Set(["cover"]),
@@ -273,7 +252,7 @@ export async function createDirectoryManifest(
           audio: true,
           updatedAt: options.updatedAt,
         }),
-        type: "image/jpeg",
+        type: MediaType.JPEG.mime,
       }),
     ]),
     readingOrder: links,
@@ -306,37 +285,4 @@ export async function createAudiobookManifest(
 
   // fallback to directory-based manifest
   return createDirectoryManifest(audiobookPath, options)
-}
-
-export function determineExtension(
-  codec: string | null,
-  inputFilename: string,
-) {
-  if (codec === "libmp3lame") {
-    return ".mp3"
-  }
-  // iOS doesn't support Ogg containers at all, so we
-  // need to use mp4 containers for OPUS streams
-  if (codec === "aac" || codec === "libopus") {
-    return ".mp4"
-  }
-
-  const inputExtension = extname(inputFilename)
-  if (MP3_FILE_EXTENSIONS.includes(inputExtension)) {
-    return ".mp3"
-  }
-
-  // All of these containers usually contain streams
-  // that can be stored in an MP4 container, and iOS
-  // only supports MP4 and MP3 containers
-  if (
-    MPEG4_FILE_EXTENSIONS.includes(inputExtension) ||
-    OGG_FILE_EXTENSIONS.includes(inputExtension) ||
-    OPUS_FILE_EXTENSIONS.includes(inputExtension) ||
-    AAC_FILE_EXTENSIONS.includes(inputExtension)
-  ) {
-    return ".mp4"
-  }
-
-  return inputExtension
 }

@@ -2,6 +2,8 @@ import { Anchor, Center, Paper, Stack, Text, Title } from "@mantine/core"
 import { type Metadata } from "next"
 import { headers } from "next/headers"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { assertAuthenticatedUser } from "@/auth/auth"
 import {
   DEVICE_AUTH_EXPIRES_IN_SECONDS,
@@ -20,7 +22,7 @@ function DeviceQrCode({ qrCodeUrl }: { qrCodeUrl: string }) {
   return (
     <object
       data={qrCodeUrl}
-      type="image/svg+xml"
+      type={MediaType.SVG.mime}
       width={240}
       height={240}
       aria-label="QR code for device pairing"

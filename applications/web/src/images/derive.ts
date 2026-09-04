@@ -1,5 +1,6 @@
 import { encode } from "blurhash"
 
+import { MediaType } from "@storyteller-platform/media-types"
 import * as okmain from "@storyteller-platform/okmain"
 import { InputImage } from "@storyteller-platform/okmain"
 
@@ -7,9 +8,6 @@ import { type StoredCoverColor } from "@/database/coverColors"
 import { env } from "@/env"
 
 let _sharp: typeof import("sharp") | undefined
-
-export const AVIF = "image/avif"
-export const WEBP = "image/webp"
 
 export async function getSharp() {
   if (_sharp) {
@@ -21,18 +19,6 @@ export async function getSharp() {
     _sharp.concurrency(Math.floor(Math.max(_sharp.concurrency() / divisor, 1)))
   }
   return _sharp
-}
-
-const FORMAT_MIME_TYPES: Record<string, string> = {
-  avif: AVIF,
-  gif: "image/gif",
-  heif: "image/heif",
-  jpeg: "image/jpeg",
-  jp2: "image/jp2",
-  png: "image/png",
-  svg: "image/svg+xml",
-  tiff: "image/tiff",
-  webp: WEBP,
 }
 
 export type ProbedImage = {
@@ -48,7 +34,7 @@ export async function probeImage(
     const sharp = await getSharp()
     const metadata = await sharp(data).metadata()
 
-    const mimeType = FORMAT_MIME_TYPES[metadata.format]
+    const mimeType = MediaType.fromExtension(metadata.format)?.mime
     if (!mimeType) return null
 
     const { width, height } = metadata
@@ -80,13 +66,13 @@ export async function resizeToFit(
 
   const quality = 75
 
-  if (sourceMimeType === AVIF) {
+  if (sourceMimeType === MediaType.AVIF.mime) {
     transformer.avif({ quality: Math.max(quality - 20, 1), effort: 1 })
-    return { data: await transformer.toBuffer(), mimeType: AVIF }
+    return { data: await transformer.toBuffer(), mimeType: MediaType.AVIF.mime }
   }
 
   transformer.webp({ quality })
-  return { data: await transformer.toBuffer(), mimeType: WEBP }
+  return { data: await transformer.toBuffer(), mimeType: MediaType.WEBP.mime }
 }
 
 export async function generateBlurhash(

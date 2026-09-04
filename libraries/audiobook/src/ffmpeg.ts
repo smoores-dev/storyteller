@@ -5,7 +5,10 @@ import { cp, rm, writeFile } from "node:fs/promises"
 import { promisify } from "node:util"
 
 import { scratchPath } from "@storyteller-platform/fs"
+import { MediaType } from "@storyteller-platform/media-types"
 import { extname } from "@storyteller-platform/path"
+
+import { imageTypeForCodec } from "./codecs.ts"
 
 const execPromise = promisify(exec)
 const execFilePromise = promisify(execFile)
@@ -199,24 +202,6 @@ export type AttachedPic = AttachedPicMeta & {
   data: Uint8Array
 }
 
-function lookup(codecName: "mjpeg" | "jpeg" | "png" | "bmp" | "gif") {
-  switch (codecName) {
-    case "mjpeg":
-    case "jpeg": {
-      return "image/jpeg"
-    }
-    case "bmp": {
-      return "image/bmp"
-    }
-    case "png": {
-      return "image/png"
-    }
-    case "gif": {
-      return "image/gif"
-    }
-  }
-}
-
 export async function getTrackMetadata(path: string) {
   const stdout = await execCmd(
     `ffprobe -i ${quotePath(path)} -v quiet -show_format -show_chapters -show_streams -output_format json`,
@@ -236,7 +221,9 @@ export async function getTrackMetadata(path: string) {
   const attachedPicMeta: AttachedPicMeta | undefined = attachedPicStream
     ? {
         name: attachedPicStream.tags?.title,
-        mimeType: lookup(attachedPicStream.codec_name),
+        mimeType:
+          imageTypeForCodec(attachedPicStream.codec_name)?.mime ??
+          MediaType.OCTET_STREAM.mime,
         kind: "coverFront",
         description: attachedPicStream.tags?.comment,
       }

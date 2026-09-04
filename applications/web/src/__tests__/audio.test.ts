@@ -32,27 +32,27 @@ void describe("getTrackInfo", () => {
 
 void describe("isAudioFile", () => {
   void it("recognizes mp3, mp4, and opus formats", () => {
-    assert.ok(isAudioFile(".mp3"))
-    assert.ok(isAudioFile(".m4a"))
-    assert.ok(isAudioFile(".m4b"))
-    assert.ok(isAudioFile(".mp4"))
-    assert.ok(isAudioFile(".aac"))
-    assert.ok(isAudioFile(".ogg"))
-    assert.ok(isAudioFile(".oga"))
-    assert.ok(isAudioFile(".opus"))
+    assert.ok(isAudioFile("track.mp3"))
+    assert.ok(isAudioFile("track.m4a"))
+    assert.ok(isAudioFile("track.m4b"))
+    assert.ok(isAudioFile("track.mp4"))
+    assert.ok(isAudioFile("track.aac"))
+    assert.ok(isAudioFile("track.ogg"))
+    assert.ok(isAudioFile("track.oga"))
+    assert.ok(isAudioFile("track.opus"))
   })
 
   void it("recognizes file formats we don't use", () => {
-    assert.ok(isAudioFile(".flac"))
-    assert.ok(isAudioFile(".wav"))
+    assert.ok(isAudioFile("track.flac"))
+    assert.ok(isAudioFile("track.wav"))
   })
 
   void it("does not recognize other formats", () => {
-    assert.ok(!isAudioFile(".json"))
-    assert.ok(!isAudioFile(".epub"))
-    assert.ok(!isAudioFile(".html"))
-    assert.ok(!isAudioFile(".zip"))
-    assert.ok(!isAudioFile(".txt"))
+    assert.ok(!isAudioFile("track.json"))
+    assert.ok(!isAudioFile("track.epub"))
+    assert.ok(!isAudioFile("track.html"))
+    assert.ok(!isAudioFile("track.zip"))
+    assert.ok(!isAudioFile("track.txt"))
   })
 
   void it("works with full file names", () => {
@@ -71,7 +71,7 @@ void describe("isAudioFile", () => {
     assert.ok(isAudioFile("Track 01.MP3"))
     assert.ok(isAudioFile("Track 01.Mp3"))
     assert.ok(isAudioFile("book.M4B"))
-    assert.ok(isAudioFile(".FLAC"))
+    assert.ok(isAudioFile("track.FLAC"))
     assert.ok(!isAudioFile("README.TXT"))
   })
 })

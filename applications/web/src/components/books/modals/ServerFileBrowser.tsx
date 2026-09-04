@@ -22,7 +22,6 @@ import {
 } from "@tabler/icons-react"
 import cx from "classnames"
 import { matchSorter } from "match-sorter"
-import { lookup } from "mime-types"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import { getSuggestedImportPathAction } from "@/actions/getSuggestedImportPathAction"
@@ -32,6 +31,7 @@ import {
   listDirectoryAction,
 } from "@/actions/listDirectoryAction"
 import { formatBytes } from "@/strings"
+import { matchesAccept } from "@/uploadFileTypes"
 
 function dirname(path: string) {
   const segments = path.split("/")
@@ -97,23 +97,6 @@ function useListDirectory(
   return { entries, actionIsPending }
 }
 
-function matchesAcceptFilter(entryName: string, fileTypes: string[]): boolean {
-  return fileTypes.some((type) => {
-    if (type.startsWith(".")) {
-      return entryName.endsWith(type)
-    }
-
-    const contentType = lookup(entryName)
-    if (!contentType) return false
-
-    if (type.endsWith("/*")) {
-      return contentType.startsWith(type.slice(0, type.length - 1))
-    }
-
-    return contentType === type
-  })
-}
-
 type ServerFileBrowserBaseProps = {
   accept?: string
   fileFilter?: (entry: { name: string; isDirectory: boolean }) => boolean
@@ -163,19 +146,17 @@ export function ServerFileBrowser(props: ServerFileBrowserProps) {
     setCurrentSearchDirectory,
   )
 
-  const fileTypes = useMemo(() => (accept ? accept.split(",") : []), [accept])
-
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {
       if (entry.isDirectory) return true
       if (directoriesOnly) return false
 
       if (fileFilter) return fileFilter(entry)
-      if (fileTypes.length === 0) return true
+      if (!accept) return true
 
-      return matchesAcceptFilter(entry.name, fileTypes)
+      return matchesAccept(entry.name, accept)
     })
-  }, [rawEntries, directoriesOnly, fileFilter, fileTypes])
+  }, [rawEntries, directoriesOnly, fileFilter, accept])
 
   const entries = useMemo(() => {
     return matchSorter(
