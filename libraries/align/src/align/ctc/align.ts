@@ -75,6 +75,7 @@ export async function ctcAlign(
     options.textRef,
     options.primaryLocale,
     options.logger,
+    options.signal,
   )
 
   const timing = await aligner.alignBook(options.onProgress)

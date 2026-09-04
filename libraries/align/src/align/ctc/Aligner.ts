@@ -64,6 +64,7 @@ export interface AlignOptions {
   primaryLocale?: Intl.Locale | null | undefined
   logger?: Logger | null | undefined
   onProgress?: ((progress: number) => void) | null | undefined
+  signal?: AbortSignal | null | undefined
 }
 
 export class Aligner {
@@ -98,6 +99,7 @@ export class Aligner {
     textRef: "id-fragment" | "text-fragment" | null | undefined,
     private languageOverride?: Intl.Locale | null,
     private logger?: Logger | null,
+    private abortSignal?: AbortSignal | null,
   ) {
     this.audiofileFrames = new Map()
     this.audiofileEmissionTimings = new Map()
@@ -196,6 +198,8 @@ export class Aligner {
 
     await Promise.all(
       audiofiles.map(async (audiofile) => {
+        this.abortSignal?.throwIfAborted()
+
         const { name, base } = autoParse(audiofile)
 
         const id = `audio_${name}`
@@ -779,6 +783,7 @@ export class Aligner {
     const manifest = await this.epub.getManifest()
 
     for (let index = 0; index < spine.length; index++) {
+      this.abortSignal?.throwIfAborted()
       onProgress?.(index / spine.length)
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -900,6 +905,7 @@ export class Aligner {
       chunkIndex,
       { firstSentence, sentences: chunkSentences },
     ] of enumerate(chunks)) {
+      this.abortSignal?.throwIfAborted()
       let pos = 0
       const slugifiedChapterRanges: [number, number][] = []
       for (const sent of chunkSentences) {

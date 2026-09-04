@@ -18,6 +18,7 @@ module.exports = {
     "whisper-builds",
     "tsbuild",
     "next-env.d.ts",
+    "messages/**/*.d.json.ts",
   ],
   overrides: [
     {

@@ -131,8 +131,6 @@ export const POST = withHasPermission<Params>("bookProcess")(async (
   const body = (await request.json().catch(() => ({}))) as {
     config?: Partial<RunConfig>
   }
-  console.log("restart", restart)
-  console.log("body.config", body.config)
 
   void enqueueBookAlign(bookUuid, restart, body.config)
 

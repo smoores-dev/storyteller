@@ -84,6 +84,7 @@ import { type TranscodedAudioFile } from "@/schemas/v2/transcodedAudio"
 import { type ShelfFilter } from "@/shelves"
 import { type SortField } from "@/sort"
 import { type UUID } from "@/uuid"
+import { type StageName } from "@/work/jobStats"
 import { type RunConfig } from "@/work/runConfig"
 
 import { subscribeToEventStream } from "./eventStream"
@@ -2282,7 +2283,11 @@ export const api = createApi({
       },
     }),
     getAlignmentEstimate: build.query<
-      { estimateSeconds: number | null; sampleSize: number },
+      {
+        estimateSeconds: number | null
+        stageSeconds: Partial<Record<StageName, number>>
+        sampleSize: number
+      },
       {
         bookUuid: UUID
         engine: string

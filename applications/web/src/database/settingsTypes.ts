@@ -308,12 +308,9 @@ export const SettingsSchema = z.object({
   // Audio settings
   codec: z.string().nullable(),
   bitrate: z.string().nullable(),
-  maxTrackLength: z.coerce.number().nullable(),
+  maxTrackLength: z.coerce.number<number>().nullable(),
   aligner: AlignerSchema.nullable(),
-  alignmentGranularity: z
-    .enum(ALIGNMENT_GRANULARITY_OPTIONS)
-    .nullable()
-    .default("sentence"),
+  alignmentGranularity: z.enum(ALIGNMENT_GRANULARITY_OPTIONS).nullable(),
   ctcEngine: Wav2VecEngineSchema.nullable(),
   ctcDevice: Wav2Vec2DeviceSchema.nullable(),
   // ctcServerUrl: z.string().nullable(),

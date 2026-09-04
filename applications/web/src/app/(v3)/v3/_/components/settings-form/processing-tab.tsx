@@ -50,6 +50,7 @@ import {
 } from "@v3/_/components/ui/tabs"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
+import { type ProcessRestart } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
 import {
   ConfirmDialog,
   useConfirmAction,
@@ -57,7 +58,7 @@ import {
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import { cn } from "@/cn"
 import {
-  AlignmentGranularity,
+  type AlignmentGranularity,
   type ReadaloudLocationType,
 } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -70,7 +71,6 @@ import {
   useSettingsForm,
 } from "./SettingsFormProvider"
 import { SettingsSection } from "./shared"
-import { ProcessRestart } from "../books/BookDetails/useProcessingRun"
 
 export function ProcessingTab() {
   return (

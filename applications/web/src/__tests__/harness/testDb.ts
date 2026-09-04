@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS: Settings = {
   ctcDevice: null,
   // ctcServerUrl: null,
   // ctcServerApiKey: null,
+  alignmentGranularity: "sentence",
   transcriptionEngine: null,
   whisperModel: null,
   whisperThreads: 4,

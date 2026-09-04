@@ -1144,6 +1144,7 @@ export function SettingsForm({
     bitrate: settings.bitrate ?? "",
     aligner: settings.aligner ?? "whisper",
     ctcEngine: settings.ctcEngine ?? "wav2vec-local",
+    alignmentGranularity: settings.alignmentGranularity ?? "sentence",
     ctcDevice: settings.ctcDevice ?? null,
     // ctcServerUrl: settings.ctcServerUrl ?? "",
     // ctcServerApiKey: settings.ctcServerApiKey ?? "",

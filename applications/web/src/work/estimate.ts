@@ -15,6 +15,7 @@ export interface EstimateTarget {
 
 export interface EstimateResult {
   estimateSeconds: number | null
+  stageSeconds: Partial<Record<StageName, number>>
   sampleSize: number
 }
 
@@ -33,7 +34,7 @@ export function estimateAlignment(
   history: HistoryRow[],
 ): EstimateResult {
   if (!target.audioDurationSeconds) {
-    return { estimateSeconds: null, sampleSize: 0 }
+    return { estimateSeconds: null, stageSeconds: {}, sampleSize: 0 }
   }
 
   const matching = history.filter((row) => {
@@ -47,10 +48,11 @@ export function estimateAlignment(
   })
 
   if (matching.length === 0) {
-    return { estimateSeconds: null, sampleSize: 0 }
+    return { estimateSeconds: null, stageSeconds: {}, sampleSize: 0 }
   }
 
   const requiredStages = stagesForRestart(target.restart)
+  const stageSeconds: Partial<Record<StageName, number>> = {}
   let totalEstimateMs = 0
 
   for (const stage of requiredStages) {
@@ -62,7 +64,7 @@ export function estimateAlignment(
     )
 
     if (samples.length === 0) {
-      return { estimateSeconds: null, sampleSize: 0 }
+      return { estimateSeconds: null, stageSeconds: {}, sampleSize: 0 }
     }
 
     const avgMsPerAudioSecond =
@@ -71,11 +73,14 @@ export function estimateAlignment(
         return sum + row.stats.stages[stage]! / row.stats.audioDurationSeconds!
       }, 0) / samples.length
 
-    totalEstimateMs += avgMsPerAudioSecond * target.audioDurationSeconds
+    const stageMs = avgMsPerAudioSecond * target.audioDurationSeconds
+    stageSeconds[stage] = Math.round(stageMs / 1000)
+    totalEstimateMs += stageMs
   }
 
   return {
     estimateSeconds: Math.round(totalEstimateMs / 1000),
+    stageSeconds,
     sampleSize: matching.length,
   }
 }

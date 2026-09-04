@@ -181,6 +181,7 @@ export interface AlignOptions {
   primaryLocale?: Intl.Locale | null | undefined
   logger?: Logger | null | undefined
   onProgress?: ((progress: number) => void) | null | undefined
+  signal?: AbortSignal | null | undefined
 }
 
 export async function align(
@@ -265,6 +266,7 @@ export async function align(
     options.textRef,
     options.primaryLocale,
     options.logger,
+    options.signal,
   )
 
   const timing = await aligner.alignBook(options.onProgress)
@@ -375,6 +377,7 @@ export class Aligner {
     textRef: "id-fragment" | "text-fragment" | null | undefined,
     private languageOverride?: Intl.Locale | null,
     private logger?: Logger | null,
+    private abortSignal?: AbortSignal | null,
   ) {
     this.transcription = concatTranscriptions(transcriptions, audiofiles)
 
@@ -846,6 +849,7 @@ export class Aligner {
     const mappedTimeline = mapTranscriptionTimeline(this.transcription, mapping)
 
     for (let index = 0; index < spine.length; index++) {
+      this.abortSignal?.throwIfAborted()
       onProgress?.(index / spine.length)
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

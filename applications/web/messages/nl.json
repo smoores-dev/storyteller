@@ -1903,11 +1903,11 @@
     "toastSavedAndStarted": "Als standaard opgeslagen en verwerken gestart",
     "toastFailed": "Verwerken starten mislukt",
     "estimatedTime": "Geschatte tijd: {duration}",
-    "noEstimateHistory": "Niet genoeg geschiedenis om te schatten",
+    "noEstimateHistory": "Niet genoeg geschiedenis om in te schatten",
     "stage": {
       "SPLIT_TRACKS": "Audio voorbereiden",
-      "TRANSCRIBE_CHAPTERS": "Tracks analyseren",
-      "SYNC_CHAPTERS": "Hoofdstukken synchroniseren"
+      "TRANSCRIBE_CHAPTERS": "Analyseren",
+      "SYNC_CHAPTERS": "Synchroniseren"
     },
     "viewReport": "Synchronisatierapport bekijken"
   },

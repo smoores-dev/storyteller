@@ -38,10 +38,14 @@ import { Spinner } from "@v3/_/components/ui/spinner"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { type Settings } from "@/apiModels"
-import { SettingsFormProvider } from "@/app/(v3)/v3/_/components/settings-form/SettingsFormProvider"
+import {
+  type SettingsFormForm,
+  SettingsFormProvider,
+} from "@/app/(v3)/v3/_/components/settings-form/SettingsFormProvider"
 import { ProcessingSettingsFields } from "@/app/(v3)/v3/_/components/settings-form/processing-tab"
 import { useFormatDuration } from "@/app/(v3)/v3/_/lib/formatters"
 import { type BookWithRelations } from "@/database/books"
+import { SettingsSchema } from "@/database/settingsTypes"
 import * as icon from "@/icons"
 import {
   useGetAlignmentEstimateQuery,
@@ -49,11 +53,7 @@ import {
   useProcessBookMutation,
   useUpdateSettingsMutation,
 } from "@/store/api"
-import {
-  RUN_CONFIG_SETTING_KEYS,
-  type RunConfig,
-  RunConfigSchema,
-} from "@/work/runConfig"
+import { RUN_CONFIG_SETTING_KEYS, type RunConfig } from "@/work/runConfig"
 
 import { type ProcessRestart } from "./useProcessingRun"
 
@@ -109,13 +109,13 @@ function RunConfigForm({
   onClose,
 }: {
   book: BookWithRelations
-  settings: RunConfig
+  settings: Settings
   restart: ProcessRestart
   onClose: () => void
 }) {
-  const form = useForm<RunConfig>({
+  const form = useForm({
     defaultValues: settings,
-    resolver: zodResolver(RunConfigSchema.omit({ language: true })),
+    resolver: zodResolver(SettingsSchema),
   })
   const [language, setLanguage] = useState(book.language ?? "auto")
   const [processBook, { isLoading: isProcessing }] = useProcessBookMutation()
@@ -181,7 +181,10 @@ function RunConfigForm({
     label: lang,
   }))
   return (
-    <SettingsFormProvider form={form} lockedSettings={new Set()}>
+    <SettingsFormProvider
+      form={form as SettingsFormForm}
+      lockedSettings={new Set()}
+    >
       <form
         onSubmit={form.handleSubmit((values) => start(values, false))}
         className="relative flex min-h-0 flex-1 flex-col"

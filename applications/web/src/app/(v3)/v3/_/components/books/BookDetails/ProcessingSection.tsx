@@ -31,6 +31,7 @@ import {
   useGetBookAlignmentReportQuery,
   useGetJobsQuery,
 } from "@/store/api"
+import { type StageName } from "@/work/jobStats"
 
 import { FilePathRow } from "./FilePathRow"
 import { CollapsibleSection } from "./sections/CollapsibleSection"
@@ -39,6 +40,12 @@ import {
   type ProcessingPosition,
   useProcessingRun,
 } from "./useProcessingRun"
+
+const STAGE_ORDER: StageName[] = [
+  "SPLIT_TRACKS",
+  "TRANSCRIBE_CHAPTERS",
+  "SYNC_CHAPTERS",
+]
 
 function ProcessingDropdown({
   positions,
@@ -111,21 +118,41 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
 
   const activeJob = activeJobs?.[0]
 
+  const activeEngine =
+    activeJob?.config?.aligner === "ctc"
+      ? activeJob.config.ctcEngine
+      : activeJob?.config?.transcriptionEngine
+
   const { data: estimateData } = useGetAlignmentEstimateQuery(
     {
       bookUuid: book.uuid,
-      engine: activeJob?.config?.transcriptionEngine ?? "",
-      whisperModel: activeJob?.config?.whisperModel ?? null,
-      restart:
-        (activeJob as { restart?: string | false } | undefined)?.restart ||
-        false,
+      engine: activeEngine ?? "",
+      whisperModel:
+        activeJob?.config?.aligner === "ctc"
+          ? null
+          : activeJob?.config?.whisperModel ?? null,
+      restart: activeJob?.restart || false,
     },
-    {
-      skip:
-        readaloudStatus !== "PROCESSING" ||
-        !activeJob?.config?.transcriptionEngine,
-    },
+    { skip: readaloudStatus !== "PROCESSING" || !activeEngine },
   )
+
+  const remainingSeconds = (() => {
+    if (!estimateData || estimateData.estimateSeconds == null) return null
+    const currentStage = book.readaloud?.currentStage
+    const currentIndex = currentStage ? STAGE_ORDER.indexOf(currentStage) : -1
+    if (currentIndex === -1) return estimateData.estimateSeconds
+
+    let total = 0
+    for (const [i, stage] of STAGE_ORDER.entries()) {
+      const seconds = estimateData.stageSeconds[stage]
+      if (seconds == null || i < currentIndex) continue
+      total +=
+        i === currentIndex
+          ? seconds * (1 - (book.readaloud?.stageProgress ?? 0))
+          : seconds
+    }
+    return total
+  })()
 
   const alignedInDuration = (() => {
     const stats = latestFinishedJob?.[0]?.stats as
@@ -214,10 +241,10 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
             />
           </div>
 
-          {estimateData?.estimateSeconds != null && (
+          {remainingSeconds != null && (
             <span className="text-tinted text-xs">
               {t("estimatedRemaining", {
-                duration: formatDuration(estimateData.estimateSeconds, {
+                duration: formatDuration(remainingSeconds, {
                   approximate: true,
                 }),
               })}
