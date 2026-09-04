@@ -4,8 +4,8 @@ import localFont from "next/font/local"
 import Script from "next/script"
 
 import StoreProvider from "@/components/StoreProvider"
-import { ReaderAudioProvider } from "@/components/reader/ReaderAudioProvider"
 import { PiPProvider } from "@/components/reader/PipProvider"
+import { ReaderAudioProvider } from "@/components/reader/ReaderAudioProvider"
 import { env } from "@/env"
 import { theme } from "@/theme/theme"
 

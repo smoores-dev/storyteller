@@ -11,7 +11,7 @@ function Slider({
   secondThumb = false,
   children,
   marks,
-  restrictToMarks = false,
+  restrictToMarks: _restrictToMarks = false,
   ...props
 }: SliderPrimitive.Root.Props & {
   className?: string

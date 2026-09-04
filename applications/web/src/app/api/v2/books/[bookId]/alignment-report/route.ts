@@ -1,8 +1,5 @@
 import { buildReportView } from "@/alignmentReportView"
-import {
-  getInternalAudioDirectory,
-  getProcessedAudioFilepath,
-} from "@/assets/paths"
+import { getProcessedAudioFilepath } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
   type AlignmentOverrides,
