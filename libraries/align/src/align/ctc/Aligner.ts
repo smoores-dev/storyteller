@@ -1129,7 +1129,11 @@ export class Aligner {
       if (
         !this.report.audioFiles.some(({ filepath }) => filepath === audiofile)
       ) {
-        this.report.unalignedAudioFiles.push({ filepath: audiofile })
+        this.report.unalignedAudioFiles.push({
+          filepath: audiofile,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          duration: this.audioFileDurations[audiofile]!,
+        })
       }
     }
 
