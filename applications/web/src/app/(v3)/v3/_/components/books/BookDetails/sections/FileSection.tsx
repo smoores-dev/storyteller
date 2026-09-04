@@ -18,6 +18,7 @@ import { useBookForm } from "@/app/(v3)/v3/_/components/books/BookDetails/BookFo
 import { EditAssetDirDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/EditAssetDirDialog"
 import { EditIdentifiersDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/EditIdentifiersDialog"
 import { ReplaceFileDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/ReplaceFileDialog"
+import { ShowOpfDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/ShowOpfDialog"
 import { UploadFileDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/UploadFileDialog"
 import { openTauriFileDialog } from "@/app/(v3)/v3/_/components/files/ServerFileBrowser"
 import { ConfirmDialog } from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
@@ -171,6 +172,7 @@ function FormatFileRow({
   const c = useCommon()
 
   const [editingIdentifiers, setEditingIdentifiers] = useState(false)
+  const [showingOpf, setShowingOpf] = useState(false)
 
   const siblingValues = useMemo(() => {
     const map = new Map<IdentifierKind, string>()
@@ -198,9 +200,9 @@ function FormatFileRow({
   const filepath = fmt.filepath ?? ""
 
   const FORMAT_LABELS: Record<Format, string> = {
-    ebook: t("fileInformation.ebook"),
-    audiobook: t("fileInformation.audiobook"),
-    readaloud: t("fileInformation.readaloud"),
+    ebook: t.plain("fileInformation.ebook"),
+    audiobook: t.plain("fileInformation.audiobook"),
+    readaloud: t.plain("fileInformation.readaloud"),
   }
 
   const pageCount =
@@ -260,6 +262,25 @@ function FormatFileRow({
 
               {canEdit && (
                 <>
+                  {format !== "audiobook" && !!filepath && !fmt.missing && (
+                    <TooltipButton
+                      variant="ghost"
+                      size="icon-sm"
+                      tooltip="Show OPF"
+                      className={cn(
+                        "text-muted-foreground font-thin opacity-0 transition-opacity",
+                        "group-hover/file:opacity-100",
+                        isEditing && "opacity-100",
+                      )}
+                      aria-label={`Show ${FORMAT_LABELS[format]} OPF`}
+                      onClick={() => {
+                        setShowingOpf(true)
+                      }}
+                    >
+                      <icon.Bug className="h-3.5 w-3.5 stroke-[1.5]" />
+                    </TooltipButton>
+                  )}
+
                   {isTauri ? (
                     <TooltipButton
                       variant="ghost"
@@ -405,6 +426,18 @@ function FormatFileRow({
           </div>
         )}
       </div>
+
+      {showingOpf && format !== "audiobook" && (
+        <ShowOpfDialog
+          bookUuid={book.uuid}
+          format={format}
+          formatLabel={FORMAT_LABELS[format]}
+          open
+          onOpenChange={(next) => {
+            if (!next) setShowingOpf(false)
+          }}
+        />
+      )}
 
       {editingIdentifiers && (
         <EditIdentifiersDialog

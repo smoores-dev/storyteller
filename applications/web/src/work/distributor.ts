@@ -21,6 +21,7 @@ import {
   updateBook,
 } from "@/database/books"
 import {
+  ACTIVE_JOB_STATUSES,
   type Job,
   createJob,
   getActiveJobForBook,
@@ -28,7 +29,7 @@ import {
   getJobs,
   getNextJobPosition,
   nowTimestamp,
-  reorderQueuedJobs,
+  reorderActiveJobs,
   updateJob,
 } from "@/database/jobs"
 import { getSettings } from "@/database/settings"
@@ -53,6 +54,8 @@ const WORKER_STOP_GRACE_MS = 30_000
 
 export type ControlMessage = { type: "abort" }
 
+type AbortIntent = "cancel" | "pause" | "requeue"
+
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("onnxruntime-node")
@@ -73,7 +76,7 @@ declare global {
   // variables declared with const/let cannot be added to the global scope
   /* eslint-disable no-var */
   var jobControllers: Map<UUID, AbortController> | undefined
-  var jobAbortIntents: Map<UUID, "cancel" | "pause"> | undefined
+  var jobAbortIntents: Map<UUID, AbortIntent> | undefined
   var alignmentPiscina: Piscina | undefined
   /* eslint-enable no-var */
 }
@@ -86,7 +89,7 @@ if (globalThis.jobControllers) {
   globalThis.jobControllers = controllers
 }
 
-let abortIntents: Map<UUID, "cancel" | "pause">
+let abortIntents: Map<UUID, AbortIntent>
 if (globalThis.jobAbortIntents) {
   abortIntents = globalThis.jobAbortIntents
 } else {
@@ -355,22 +358,31 @@ async function runJob(job: Job, resumed: boolean): Promise<void> {
       const intent = abortIntents.get(job.uuid) ?? "cancel"
       const current = await getBookOrThrow(bookUuid)
       const stage = current.readaloud?.currentStage ?? "SPLIT_TRACKS"
+      const requeued = intent === "requeue"
+      const position = requeued
+        ? (await getJob(job.uuid))?.position ?? job.position
+        : null
 
       logger.info(`Processing for job ${job.uuid} ${intent}d by user`)
 
       await updateBook(bookUuid, null, {
         readaloud: {
-          status: "STOPPED",
+          status: requeued ? "QUEUED" : "STOPPED",
           currentStage: stage,
-          queuePosition: null,
+          queuePosition: position,
           restartPending: null,
         },
       })
 
       await updateJob(job.uuid, {
-        status: intent === "pause" ? "PAUSED" : "CANCELED",
+        status:
+          intent === "pause"
+            ? "PAUSED"
+            : requeued
+              ? "QUEUED"
+              : "CANCELED",
         stage,
-        finishedAt: intent === "pause" ? null : nowTimestamp(),
+        finishedAt: intent === "cancel" ? nowTimestamp() : null,
       })
       return
     }
@@ -463,7 +475,26 @@ export async function resumeJob(jobUuid: UUID): Promise<void> {
 }
 
 export async function reorderJobs(orderedUuids: UUID[]): Promise<void> {
-  await reorderQueuedJobs(orderedUuids)
+  const active = await getJobs({ statuses: ACTIVE_JOB_STATUSES })
+  await reorderActiveJobs(orderedUuids)
+
+  const running = active.find((job) => job.status === "RUNNING")
+  if (!running) {
+    void pump()
+    return
+  }
+
+  const queued = new Set(
+    active.filter((job) => job.status === "QUEUED").map((job) => job.uuid),
+  )
+  const ahead = orderedUuids.slice(0, orderedUuids.indexOf(running.uuid))
+  if (!ahead.some((uuid) => queued.has(uuid))) return
+
+  const controller = controllers.get(running.uuid)
+  if (!controller) return
+
+  abortIntents.set(running.uuid, "requeue")
+  controller.abort()
 }
 
 export async function cancelProcessing(bookUuid: UUID): Promise<void> {

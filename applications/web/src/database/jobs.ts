@@ -1,4 +1,4 @@
-import { type Selectable, sql } from "kysely"
+import { type Selectable } from "kysely"
 
 import { JobEvents } from "@/jobEvents"
 import { type AlignmentGrade } from "@/shelves"
@@ -182,12 +182,7 @@ export async function getDisplayJobs(filter?: {
   } else if (filter?.sort === "finishedAt") {
     query = query.orderBy("job.finishedAt", order)
   } else {
-    query = query
-      .orderBy(
-        sql<number>`case job.status when 'RUNNING' then 0 when 'PAUSED' then 1 else 2 end`,
-      )
-      .orderBy("job.position", "asc")
-      .orderBy("job.createdAt", "asc")
+    query = query.orderBy("job.position", "asc").orderBy("job.createdAt", "asc")
   }
 
   const rows = await query
@@ -246,14 +241,14 @@ export async function getNextJobPosition(): Promise<number> {
   return (row?.position ?? -1) + 1
 }
 
-export async function reorderQueuedJobs(orderedUuids: UUID[]): Promise<void> {
+export async function reorderActiveJobs(orderedUuids: UUID[]): Promise<void> {
   await db.transaction().execute(async (tr) => {
     for (const [index, uuid] of orderedUuids.entries()) {
       await tr
         .updateTable("job")
         .set({ position: index })
         .where("uuid", "=", uuid)
-        .where("status", "=", "QUEUED")
+        .where("status", "in", ACTIVE_JOB_STATUSES)
         .execute()
     }
   })

@@ -388,11 +388,14 @@ export default async function processBook({
             const reportJson = await readFile(reportFilepath, {
               encoding: "utf-8",
             })
+
             await createAlignmentReport({
               jobUuid,
               bookUuid,
               report: JSON.parse(reportJson) as AnyReport,
             })
+
+            // also create a directory manifest
           } catch (err) {
             logger.warn({
               msg: "Failed to persist alignment report",

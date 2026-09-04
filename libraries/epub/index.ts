@@ -791,7 +791,7 @@ export class Epub {
     return this.rootfile
   }
 
-  private async getPackageDocument() {
+  async getPackageDocumentSource(): Promise<string> {
     const rootfile = await this.getRootfile()
     const packageDocumentString = await this.adapter.read(rootfile, "utf-8")
 
@@ -800,8 +800,12 @@ export class Epub {
         `Failed to parse EPUB: could not find package document at ${rootfile}`,
       )
 
+    return packageDocumentString
+  }
+
+  private async getPackageDocument() {
     const packageDocument = Epub.xmlParser.parse(
-      packageDocumentString,
+      await this.getPackageDocumentSource(),
     ) as ParsedXml
 
     return normalizeOpfNamespacePrefixes(packageDocument)
@@ -3650,6 +3654,25 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       throw error
     }
     return epub
+  }
+
+  async readPackageDocumentSource(
+    source: string | Uint8Array,
+    options: AdapterOptions<A> = {} as AdapterOptions<A>,
+  ): Promise<string> {
+    const adapter = await this.adapterClass.init(source, options)
+    const epub = new Epub(
+      this.adapterClass,
+      adapter,
+      typeof source === "string" ? source : undefined,
+      true,
+    )
+
+    try {
+      return await epub.getPackageDocumentSource()
+    } finally {
+      epub.discardAndClose()
+    }
   }
 
   /**

@@ -922,7 +922,7 @@ function ProcessingJobs() {
   if (!jobs || jobs.length === 0) {
     return null
   }
-  const current = jobs[0]
+  const current = jobs.find((job) => job.status === "RUNNING") ?? jobs[0]
   if (!current) {
     return null
   }

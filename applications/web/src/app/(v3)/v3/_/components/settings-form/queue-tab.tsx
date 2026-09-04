@@ -1,12 +1,23 @@
 "use client"
 
+import { type UniqueIdentifier } from "@dnd-kit/abstract"
+import {
+  Accessibility,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  defaultPreset,
+} from "@dnd-kit/dom"
+import { move } from "@dnd-kit/helpers"
+import { DragDropProvider } from "@dnd-kit/react"
+import { isSortable, useSortable } from "@dnd-kit/react/sortable"
 import {
   parseAsInteger,
   parseAsString,
   parseAsStringEnum,
   useQueryState,
 } from "nuqs"
-import { useEffect, useEffectEvent, useState } from "react"
+import { useEffect, useEffectEvent, useRef, useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
 import { Input } from "@v3/_/components/ui/input"
@@ -44,6 +55,7 @@ import {
   useFormatDuration,
   useFormatRelativeTime,
 } from "@/app/(v3)/v3/_/lib/formatters"
+import { cn } from "@/app/(v3)/v3/_/lib/utils"
 import { type PublicJob } from "@/database/jobs"
 import * as icon from "@/icons"
 import {
@@ -58,6 +70,8 @@ import {
 import { type UUID } from "@/uuid"
 
 const PAGE_SIZE = 10
+
+type AnnounceKind = "lifted" | "moved" | "dropped" | "canceled"
 
 const SORT_OPTIONS = {
   recent: { sort: "finishedAt", order: "desc" },
@@ -77,17 +91,73 @@ export function QueueTab() {
   const [reorderJobs] = useReorderJobsMutation()
 
   const list = activeJobs ?? []
-  const queued = list.filter((j) => j.status === "QUEUED")
+  const serverOrder = list.map((job) => job.uuid)
 
-  function move(job: PublicJob, direction: -1 | 1) {
-    const index = queued.findIndex((j) => j.uuid === job.uuid)
-    const target = index + direction
-    if (index < 0 || target < 0 || target >= queued.length) return
-    const next = [...queued]
-    const [removed] = next.splice(index, 1)
-    if (!removed) return
-    next.splice(target, 0, removed)
-    void reorderJobs({ order: next.map((j) => j.uuid) })
+  const [order, setOrder] = useState(serverOrder)
+  const isDragging = useRef(false)
+  const pendingOrder = useRef<string | null>(null)
+
+  const orderKey = serverOrder.join()
+
+  const syncOrder = useEffectEvent(() => {
+    if (isDragging.current) return
+
+    const pending = pendingOrder.current
+    const sameJobs =
+      pending !== null &&
+      [...pending.split(",")].sort().join() === [...serverOrder].sort().join()
+
+    if (pending !== null && pending !== orderKey && sameJobs) return
+
+    pendingOrder.current = null
+    setOrder(serverOrder)
+  })
+
+  useEffect(() => {
+    syncOrder()
+  }, [orderKey])
+
+  const byUuid = new Map(list.map((job) => [job.uuid, job]))
+  const jobs = order.flatMap((uuid) => byUuid.get(uuid) ?? [])
+
+  const announce = useEffectEvent(
+    (kind: AnnounceKind, id: UniqueIdentifier, index: number) =>
+      t(`announce.${kind}`, {
+        title: byUuid.get(String(id) as UUID)?.bookTitle ?? t("untitled"),
+        position: index + 1,
+        total: jobs.length,
+      }),
+  )
+
+  const [plugins] = useState(() => [
+    ...defaultPreset.plugins.filter((plugin) => plugin !== Accessibility),
+    Accessibility.configure({
+      screenReaderInstructions: { draggable: t("announce.instructions") },
+      announcements: {
+        dragstart: ({ operation: { source } }: DragStartEvent) =>
+          source && isSortable(source)
+            ? announce("lifted", source.id, source.index)
+            : undefined,
+        dragover: ({ operation: { source } }: DragOverEvent) =>
+          source && isSortable(source)
+            ? announce("moved", source.id, source.index)
+            : undefined,
+        dragend: ({ operation: { source }, canceled }: DragEndEvent) =>
+          source && isSortable(source)
+            ? announce(
+                canceled ? "canceled" : "dropped",
+                source.id,
+                canceled ? source.initialIndex : source.index,
+              )
+            : undefined,
+      },
+    }),
+  ])
+
+  const actions = {
+    pauseJob: (uuid: UUID) => void pauseJob({ uuid }),
+    resumeJob: (uuid: UUID) => void resumeJob({ uuid }),
+    cancelJob: (uuid: UUID) => void cancelJob({ uuid }),
   }
 
   return (
@@ -99,29 +169,43 @@ export function QueueTab() {
             <p className="text-muted-foreground text-sm">
               {t("subtitle", { count: list.length })}
             </p>
+            {list.length > 1 && (
+              <p className="text-muted-foreground mt-1 text-sm">
+                {t("reorderHint")}
+              </p>
+            )}
           </div>
         )}
 
         {list.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("empty")}</p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {list.map((job) => {
-              const queuedIndex = queued.findIndex((j) => j.uuid === job.uuid)
-              return (
-                <JobItem
+          <DragDropProvider
+            plugins={plugins}
+            onDragStart={() => {
+              isDragging.current = true
+            }}
+            onDragEnd={(event) => {
+              isDragging.current = false
+              if (event.canceled) return
+
+              const next = move(order, event)
+              pendingOrder.current = next.join()
+              setOrder(next)
+              void reorderJobs({ order: next })
+            }}
+          >
+            <div className="flex flex-col gap-2">
+              {jobs.map((job, index) => (
+                <SortableJobItem
                   key={job.uuid}
                   job={job}
-                  isFirst={queuedIndex <= 0}
-                  isLast={queuedIndex >= queued.length - 1}
-                  move={move}
-                  pauseJob={(uuid) => void pauseJob({ uuid })}
-                  resumeJob={(uuid) => void resumeJob({ uuid })}
-                  cancelJob={(uuid) => void cancelJob({ uuid })}
+                  index={index}
+                  {...actions}
                 />
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          </DragDropProvider>
         )}
       </div>
 
@@ -301,23 +385,47 @@ function useEstimatedRemaining(job: PublicJob) {
   return remaining
 }
 
+type JobActions = {
+  pauseJob?: (uuid: UUID) => void
+  resumeJob?: (uuid: UUID) => void
+  cancelJob?: (uuid: UUID) => void
+}
+
+function SortableJobItem({
+  job,
+  index,
+  ...actions
+}: { job: PublicJob; index: number } & JobActions) {
+  const { ref, handleRef, isDragging } = useSortable({
+    id: job.uuid,
+    index,
+  })
+
+  return (
+    <JobItem
+      job={job}
+      dragRef={ref}
+      handleRef={handleRef}
+      isDragging={isDragging}
+      {...actions}
+    />
+  )
+}
+
 function JobItem({
   job,
-  isFirst,
-  isLast,
-  move,
+  dragRef,
+  handleRef,
+  isDragging,
   pauseJob,
   resumeJob,
   cancelJob,
 }: {
   job: PublicJob
-  isFirst?: boolean
-  isLast?: boolean
-  move?: (job: PublicJob, direction: -1 | 1) => void
-  pauseJob?: (uuid: UUID) => void
-  resumeJob?: (uuid: UUID) => void
-  cancelJob?: (uuid: UUID) => void
-}) {
+  dragRef?: (element: Element | null) => void
+  handleRef?: (element: Element | null) => void
+  isDragging?: boolean
+} & JobActions) {
   const t = useTranslation("Queue")
   const c = useCommon()
   const stageLabels = useStageLabels()
@@ -377,7 +485,28 @@ function JobItem({
     .join(" · ")
 
   return (
-    <Item variant="outline" className="items-start">
+    <Item
+      ref={dragRef}
+      variant="outline"
+      className={cn(
+        "items-start",
+        isDragging && "opacity-60 shadow-md",
+        job.status === "RUNNING" && "border-primary/40",
+      )}
+    >
+      {handleRef && (
+        <button
+          ref={handleRef}
+          type="button"
+          aria-label={t("actions.reorder", {
+            title: job.bookTitle ?? t("untitled"),
+          })}
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-7 shrink-0 cursor-grab touch-none items-center justify-center self-center rounded outline-none focus-visible:ring-2 active:cursor-grabbing"
+        >
+          <icon.GripVertical className="size-4" />
+        </button>
+      )}
+
       <ItemMedia variant="image" className="self-center">
         {job.bookUuid ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -436,39 +565,6 @@ function JobItem({
       </ItemContent>
 
       <ItemActions>
-        {move && (
-          <>
-            <TooltipButton
-              variant="ghost"
-              size="icon"
-              className="size-7"
-              aria-label={t("actions.moveUp")}
-              tooltip={t("actions.moveUp")}
-              delay={500}
-              disabled={isFirst}
-              onClick={() => {
-                move(job, -1)
-              }}
-            >
-              <icon.ChevronUp className="size-4" />
-            </TooltipButton>
-            <TooltipButton
-              variant="ghost"
-              size="icon"
-              className="size-7"
-              aria-label={t("actions.moveDown")}
-              tooltip={t("actions.moveDown")}
-              delay={500}
-              disabled={isLast}
-              onClick={() => {
-                move(job, 1)
-              }}
-            >
-              <icon.ChevronDown className="size-4" />
-            </TooltipButton>
-          </>
-        )}
-
         {job.status === "PAUSED" && resumeJob ? (
           <TooltipButton
             variant="ghost"

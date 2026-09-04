@@ -609,6 +609,18 @@ export function useBookActionItems({
     })
   }
 
+  if (canUpdate && mode === "single" && bookUuids[0]) {
+    const bookUuid = bookUuids[0]
+    entries.push({
+      key: "debugBundle",
+      label: "Download debug bundle",
+      icon: <icon.Bug className="size-4" />,
+      onSelect: () => {
+        window.location.href = `/api/v2/books/${bookUuid}/debug/bundle`
+      },
+    })
+  }
+
   if (canDelete) {
     entries.push({
       key: "delete",

@@ -1884,6 +1884,16 @@ export const api = createApi({
       ],
     }),
 
+    getBookOpf: build.query<
+      string,
+      { bookUuid: UUID; format: "ebook" | "readaloud" }
+    >({
+      query: ({ bookUuid, format }) => ({
+        url: `/books/${bookUuid}/debug/opf?format=${format}`,
+        responseHandler: "text",
+      }),
+    }),
+
     getInfiniteChangelog: build.infiniteQuery<
       ChangelogEntry[],
       string,
@@ -2518,6 +2528,7 @@ export const {
   useMergeIdentifierTypesMutation,
   useListBookIdentifiersQuery,
   useUpdateBookIdentifiersMutation,
+  useGetBookOpfQuery,
 } = api
 
 export function getDownloadUrl(

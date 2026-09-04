@@ -40,6 +40,7 @@ import {
   type ProcessingPosition,
   useProcessingRun,
 } from "./useProcessingRun"
+import { DetailRow } from "./sections/DetailsSection"
 
 const STAGE_ORDER: StageName[] = [
   "SPLIT_TRACKS",
@@ -294,30 +295,31 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
 
       {dialog}
 
-      {book.alignedAt && (
-        <FilePathRow
-          label={t("lastAligned")}
-          filepath={formatDate(book.alignedAt)}
-        />
-      )}
+      <div className="grid grid-cols-2 items-start gap-x-4 gap-y-2">
+        {book.alignedAt && (
+          <DetailRow label={t("lastAligned")}>
+            <time dateTime={book.alignedAt} title={formatDate(book.alignedAt)}>
+              {formatDate(book.alignedAt, { timeStyle: undefined })}
+            </time>
+          </DetailRow>
+        )}
 
-      {alignedInDuration && (
-        <FilePathRow label={t("alignedIn")} filepath={alignedInDuration} />
-      )}
+        {alignedInDuration && (
+          <DetailRow label={t("alignedIn")}>{alignedInDuration}</DetailRow>
+        )}
 
-      {book.alignedWith && (
-        <FilePathRow
-          label={t("transcriptionEngine")}
-          filepath={book.alignedWith}
-        />
-      )}
+        {book.alignedWith && (
+          <DetailRow label={t("transcriptionEngine")}>
+            {book.alignedWith}
+          </DetailRow>
+        )}
 
-      {book.alignedByStorytellerVersion && (
-        <FilePathRow
-          label={t("storytellerVersion")}
-          filepath={book.alignedByStorytellerVersion}
-        />
-      )}
+        {book.alignedByStorytellerVersion && (
+          <DetailRow label={t("storytellerVersion")}>
+            {book.alignedByStorytellerVersion}
+          </DetailRow>
+        )}
+      </div>
     </CollapsibleSection>
   )
 }

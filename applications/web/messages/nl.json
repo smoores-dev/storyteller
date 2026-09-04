@@ -730,7 +730,6 @@
                 "description": "Synchroniseert de tekst van het boek direct naast de audio. Dit is nauwkeuriger, geeft betere <em>timestamps</em> en werkt goed in vele talen. Wellicht trager."
               }
             },
-
             "alignmentGranularity": "Synchronisatieniveau",
             "alignmentGranularityDescription": "Synchronisatie op woordniveau kan niet altijd nauwkeurig worden gereproduceerd in alle <em>clients</em>, en is alleen beschikbaar via CTC synchronisatie.",
             "alignmentGranularityWord": "Woord+Zin (experimenteel)",
@@ -1958,8 +1957,7 @@
       "remaining": "{duration} resterend"
     },
     "actions": {
-      "moveUp": "Omhoog",
-      "moveDown": "Omlaag",
+      "reorder": "{title} verplaatsen",
       "resume": "Taak hervatten",
       "pause": "Taak pauzeren",
       "cancel": "Taak annuleren",
@@ -1983,6 +1981,14 @@
       "notifyReadyBody": "{title} is klaar met synchroniseren.",
       "failed": "{title} kon niet worden verwerkt",
       "aBook": "Een boek"
+    },
+    "reorderHint": "Sleep een boek boven het boek dat nu verwerkt wordt om het als volgende te starten. Het lopende boek gaat terug naar de wachtrij en gaat later verder waar het gebleven was.",
+    "announce": {
+      "instructions": "Druk op de spatiebalk om een boek op te pakken. Gebruik de pijltjestoetsen om het door de wachtrij te verplaatsen en druk daarna weer op de spatiebalk om het op de nieuwe plek neer te zetten. Druk op escape om te annuleren. Een boek boven het lopende boek zetten start het als volgende.",
+      "lifted": "{title} opgepakt. Positie {position, number} van {total, number}.",
+      "moved": "{title} staat nu op positie {position, number} van {total, number}.",
+      "dropped": "{title} neergezet op positie {position, number} van {total, number}.",
+      "canceled": "Verplaatsen geannuleerd. {title} staat weer op positie {position, number} van {total, number}."
     }
   },
   "Reader": {

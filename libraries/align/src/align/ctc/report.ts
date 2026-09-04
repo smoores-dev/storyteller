@@ -93,6 +93,7 @@ export interface AudioFileReport {
 
 export interface UnalignedAudioFileReport {
   filepath: string
+  duration: number
 }
 
 export interface Report {
