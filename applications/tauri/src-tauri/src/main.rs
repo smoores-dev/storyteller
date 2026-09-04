@@ -2,7 +2,7 @@
 
 use std::{
     fs,
-    io::{Read, Write},
+    io::{BufRead, BufReader, Read, Write},
     net::{TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
@@ -11,6 +11,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, anyhow};
+use chrono::{DateTime, Local, Utc};
 use tauri::{Emitter, Manager, RunEvent, path::BaseDirectory};
 
 enum BootChoice {
@@ -1025,7 +1026,8 @@ fn spawn_server(
     }
     let path_var = std::env::join_paths(path_entries)?;
 
-    let log = fs::File::create(log_path)?;
+    let (reader, writer) = std::io::pipe()?;
+    let mut capture = LogCapture::new(log_path, data_dir.join("logs"))?;
 
     let mut cmd = Command::new(&node);
     // scrub ambient server config (a terminal launch inherits the shell env,
@@ -1071,8 +1073,8 @@ fn spawn_server(
                 .join("align"),
         )
         .stdin(Stdio::null())
-        .stdout(Stdio::from(log.try_clone()?))
-        .stderr(Stdio::from(log));
+        .stdout(writer.try_clone()?)
+        .stderr(writer);
 
     #[cfg(windows)]
     {
@@ -1082,8 +1084,127 @@ fn spawn_server(
     }
 
     let child = cmd.spawn().context("failed to spawn server")?;
+    drop(cmd);
     *app.state::<ServerState>().child.lock().unwrap() = Some(child);
+
+    let app = app.clone();
+    std::thread::spawn(move || {
+        for line in BufReader::new(reader).lines().map_while(Result::ok) {
+            capture.line(&line);
+        }
+        capture.exit(&app);
+    });
     Ok(())
+}
+
+struct LogCapture {
+    server_log: fs::File,
+    log_dir: PathBuf,
+    daily: Option<(String, fs::File)>,
+}
+
+impl LogCapture {
+    fn new(server_log_path: &Path, log_dir: PathBuf) -> Result<Self> {
+        Ok(Self {
+            server_log: fs::File::create(server_log_path)?,
+            log_dir,
+            daily: None,
+        })
+    }
+
+    fn line(&mut self, line: &str) {
+        let today = Utc::now().format("%Y-%m-%d").to_string();
+        if self.daily.as_ref().is_none_or(|(date, _)| *date != today) {
+            let _ = fs::create_dir_all(&self.log_dir);
+            self.daily = fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(self.log_dir.join(format!("storyteller-{today}.log")))
+                .ok()
+                .map(|file| (today, file));
+        }
+        if let Some((_, file)) = &mut self.daily {
+            let _ = writeln!(file, "{line}");
+        }
+        let pretty = parse_pino_line(line)
+            .map(|record| pretty_record(&record))
+            .unwrap_or_else(|| line.to_string());
+        let _ = writeln!(self.server_log, "{pretty}");
+    }
+
+    fn exit(&mut self, app: &tauri::AppHandle) {
+        let (level, msg) = server_exit(app);
+        let record = serde_json::json!({
+            "level": level,
+            "time": Utc::now().timestamp_millis(),
+            "msg": msg,
+            "src": "launcher",
+        });
+        self.line(&record.to_string());
+    }
+}
+
+fn server_exit(app: &tauri::AppHandle) -> (u64, String) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if *app.state::<ServerState>().shutting_down.lock().unwrap() {
+            return (30, "server stopped".to_string());
+        }
+        if let Some(status) = server_exit_status(app) {
+            return (60, format!("server exited unexpectedly ({status})"));
+        }
+        if Instant::now() >= deadline {
+            return (
+                40,
+                "server output ended but the process is still running".to_string(),
+            );
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
+fn parse_pino_line(line: &str) -> Option<serde_json::Value> {
+    if !line.starts_with('{') {
+        return None;
+    }
+    let value: serde_json::Value = serde_json::from_str(line).ok()?;
+    let looks_like_pino = value.get("level")?.is_u64() && value.get("time")?.is_i64();
+    looks_like_pino.then_some(value)
+}
+
+fn pretty_record(record: &serde_json::Value) -> String {
+    let level = match record.get("level").and_then(|v| v.as_u64()).unwrap_or(30) {
+        10 => "TRACE",
+        20 => "DEBUG",
+        30 => "INFO",
+        40 => "WARN",
+        50 => "ERROR",
+        _ => "FATAL",
+    };
+    let time = record
+        .get("time")
+        .and_then(|v| v.as_i64())
+        .and_then(DateTime::from_timestamp_millis)
+        .map(|t| t.with_timezone(&Local).format("%H:%M:%S").to_string())
+        .unwrap_or_default();
+    let ctx = record
+        .get("ctx")
+        .and_then(|v| v.as_str())
+        .map(|ctx| format!("{ctx} "))
+        .unwrap_or_default();
+    let msg = record.get("msg").and_then(|v| v.as_str()).unwrap_or("");
+    let mut out = format!("[{time}] {level:<5} {ctx}{msg}");
+    if let Some(detail) = record
+        .get("err")
+        .and_then(|err| err.get("stack").or_else(|| err.get("message")))
+        .and_then(|v| v.as_str())
+    {
+        for line in detail.lines() {
+            out.push_str("\n    ");
+            out.push_str(line);
+        }
+    }
+    out
 }
 
 fn exe_name(name: &str) -> String {

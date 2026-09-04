@@ -41,6 +41,7 @@ local.envrc
 /.helix/
 
 logs/
+!applications/web/src/app/api/v2/logs/
 /.build/
 /.swiftpm/
 /storyteller-debug.apk

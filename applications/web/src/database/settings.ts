@@ -267,6 +267,7 @@ export async function getSettings(): Promise<Settings> {
     smtpRejectUnauthorized: dbDesttings.smtpRejectUnauthorized ?? true,
     backupCronExpression: dbDesttings.backupCronExpression ?? null,
     backupRetentionCount: dbDesttings.backupRetentionCount ?? null,
+    logRetentionDays: dbDesttings.logRetentionDays ?? null,
   }
 
   return { ...result, ...configSettings }

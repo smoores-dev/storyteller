@@ -3,7 +3,7 @@ import { writeFile } from "node:fs/promises"
 import { NextResponse } from "next/server"
 
 import { withHasPermission } from "@/auth/auth"
-import { getLogFilePath } from "@/logging"
+import { getLogFilePath } from "@/logFiles"
 
 export const dynamic = "force-dynamic"
 

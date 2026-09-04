@@ -911,7 +911,22 @@
         "scrollToBottom": "Scroll naar beneden",
         "clearLogs": "Logs wissen",
         "clearLogsConfirm": "Dit verwijdert het huidige logbestand permanent. Nieuwe logs worden gewoon opnieuw geschreven.",
-        "logsCleared": "Logs gewist"
+        "logsCleared": "Logs gewist",
+        "copyLogs": "Getoonde regels kopiëren",
+        "copied": "{count, number} regels gekopieerd",
+        "copyFailed": "Kopiëren naar het klembord is mislukt",
+        "downloadLogs": "Logbestand van deze dag downloaden",
+        "lightPane": "Logs op een lichte achtergrond tonen",
+        "darkPane": "Logs op een donkere achtergrond tonen",
+        "today": "Vandaag",
+        "selectDate": "Logdag",
+        "retention": "Logs bewaren voor",
+        "days": "dagen",
+        "retentionDescription": "Logbestanden ouder dan deze termijn worden verwijderd.",
+        "diskUsage": "{size} op schijf",
+        "save": "Opslaan",
+        "retentionSaved": "Logbewaartermijn opgeslagen",
+        "retentionSaveFailed": "Logbewaartermijn opslaan is mislukt"
       },
       "backups": {
         "title": "Gegevens & back-ups",

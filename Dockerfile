@@ -69,7 +69,7 @@ FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BAS
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 \
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 apache2-utils \
     && rm -rf /var/lib/apt/lists/*
 
 RUN  (userdel -r ubuntu || true) \
@@ -145,8 +145,9 @@ ENV STORYTELLER_WHISPER_VARIANT=${WHISPER_VARIANT}
 WORKDIR /app/.next/standalone/applications/web
 
 COPY --from=builder /app/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY --from=builder /app/scripts/run-server.sh /usr/local/bin/run-server.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/run-server.sh
 
 ENTRYPOINT ["entrypoint.sh"]
 
-CMD ["node", "--enable-source-maps", "server.js"]
+CMD ["run-server.sh"]
