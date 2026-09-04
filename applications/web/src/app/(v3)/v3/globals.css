@@ -58,6 +58,8 @@
   --color-reader-selection: var(--reader-selection-bg);
   --color-reader-selection-text: var(--reader-selection-text);
   --color-reader-highlight: var(--reader-highlight);
+  --color-reader-highlight-mid: var(--reader-highlight-mid);
+  --color-reader-highlight-strong: var(--reader-highlight-strong);
   --color-reader-highlight-yellow: var(--reader-highlight-yellow);
   --color-reader-highlight-red: var(--reader-highlight-red);
   --color-reader-highlight-green: var(--reader-highlight-green);
@@ -714,6 +716,16 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
   inherits: true;
   initial-value: #f3e08a;
 }
+@property --reader-highlight-mid {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b28b1f;
+}
+@property --reader-highlight-strong {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #6d5510;
+}
 
 /* outside the reader route the reader tokens are just the app tokens, so the
    mini player needs no theming of its own */
@@ -871,15 +883,13 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 [data-reader-theme="cover-light"] {
   --reader-scheme: light;
   color-scheme: light;
-  --reader-bg: oklch(from var(--cover-1) 0.995 min(calc(c * 0.15), 0.03) h);
-  --reader-surface: oklch(
-    from var(--cover-1) 0.975 min(calc(c * 0.25), 0.045) h
-  );
+  --reader-bg: oklch(from var(--cover-1) 0.995 min(calc(c * 0.1), 0.01) h);
+  --reader-surface: oklch(from var(--cover-1) 0.975 min(calc(c * 0.1), 0.03) h);
   --reader-surface-hover: oklch(
     from var(--cover-1) 0.92 min(calc(c * 0.35), 0.06) h
   );
   --reader-border: oklch(from var(--cover-1) 0.86 min(calc(c * 0.6), 0.08) h);
-  --reader-text: oklch(from var(--cover-1) 0.22 min(calc(c * 0.5), 0.05) h);
+  --reader-text: oklch(from var(--cover-1) 0.22 min(calc(c * 0.5), 0.04) h);
   --reader-text-secondary: oklch(
     from var(--cover-1) 0.4 min(calc(c * 0.6), 0.08) h
   );
@@ -903,13 +913,15 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 [data-reader-theme="cover-dark"] {
   --reader-scheme: dark;
   color-scheme: dark;
-  --reader-bg: oklch(from var(--cover-1) 0.17 min(calc(c * 0.5), 0.03) h);
-  --reader-surface: oklch(from var(--cover-1) 0.21 min(calc(c * 0.6), 0.04) h);
+  --reader-bg: oklch(from var(--cover-1) 0.17 min(calc(c * 0.05), 0.02) h);
+  --reader-surface: oklch(from var(--cover-1) 0.21 min(calc(c * 0.1), 0.02) h);
   --reader-surface-hover: oklch(
     from var(--cover-1) 0.26 min(calc(c * 0.7), 0.05) h
   );
   --reader-border: oklch(from var(--cover-1) 0.32 min(calc(c * 0.7), 0.06) h);
-  --reader-text: oklch(from var(--cover-1) 0.92 min(calc(c * 0.3), 0.03) h);
+  --reader-text: oklch(
+    from var(--cover-1) 0.92 clamp(0.02, calc(c * 0.3), 0.1) h
+  );
   --reader-text-secondary: oklch(
     from var(--cover-1) 0.75 min(calc(c * 0.5), 0.06) h
   );
@@ -940,6 +952,12 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
     from var(--cover-1, var(--reader-cover-fallback)) 0.88
       min(calc(c * 0.85), 0.13) h
   );
+  --reader-highlight-mid: oklch(
+    from var(--reader-highlight) 0.6 calc(c * 1.5) h
+  );
+  --reader-highlight-strong: oklch(
+    from var(--reader-highlight) 0.42 calc(c * 1.6) h
+  );
 }
 .dark,
 [data-reader-theme="dark"],
@@ -947,6 +965,12 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 [data-reader-theme="cover-dark"] {
   --reader-highlight-cover: oklch(
     from var(--cover-1, var(--reader-cover-fallback)) 0.5 min(c, 0.12) h
+  );
+  --reader-highlight-mid: oklch(
+    from var(--reader-highlight) 0.68 calc(c * 1.2) h
+  );
+  --reader-highlight-strong: oklch(
+    from var(--reader-highlight) 0.8 calc(c * 1.1) h
   );
 }
 .dark [data-reader-theme="light"],
@@ -957,6 +981,12 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
   --reader-highlight-cover: oklch(
     from var(--cover-1, var(--reader-cover-fallback)) 0.88
       min(calc(c * 0.85), 0.13) h
+  );
+  --reader-highlight-mid: oklch(
+    from var(--reader-highlight) 0.6 calc(c * 1.5) h
+  );
+  --reader-highlight-strong: oklch(
+    from var(--reader-highlight) 0.42 calc(c * 1.6) h
   );
 }
 

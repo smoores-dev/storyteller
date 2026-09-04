@@ -22,7 +22,15 @@ import {
   registerGuide,
   registerResource,
 } from "@/store/readerRegistry"
-import { readReaderTokens } from "@/store/slices/preferencesSlice"
+import {
+  type ReadingPreferences,
+  highlightTint,
+  readReaderTokens,
+} from "@/store/slices/preferencesSlice"
+
+const HIGHLIGHT_GROUP = "highlight"
+
+const HIGHLIGHT_TEXT_GROUP = "highlight-text"
 
 export function findSegmentForTime(
   segments: Array<{ startTime: number; endTime: number; textHref: string }>,
@@ -171,9 +179,11 @@ export async function getGuidesForText(
 }
 
 export const clearHighlight = (activeFrame: FrameManager) => {
-  if (activeFrame.msg) {
+  if (!activeFrame.msg) return
+
+  for (const group of [HIGHLIGHT_GROUP, HIGHLIGHT_TEXT_GROUP]) {
     activeFrame.msg.send("decorate", {
-      group: "highlight",
+      group,
       action: "clear",
     })
   }
@@ -182,29 +192,45 @@ export const clearHighlight = (activeFrame: FrameManager) => {
 export const highlightFragment = (
   activeFrame: FrameManager & { msg: FrameComms },
   locator: Locator,
+  preferences: ReadingPreferences,
   clear: boolean = true,
-  _source?: string,
 ) => {
   if (clear) {
     clearHighlight(activeFrame)
   }
 
   const tokens = readReaderTokens()
+  const style = preferences.highlightStyle
 
   activeFrame.msg.send("decorate", {
-    group: "highlight",
+    group: HIGHLIGHT_GROUP,
     action: "add",
     decoration: {
       id: "highlight",
-      locator: locator,
+      locator,
       style: {
-        type: "template",
-        layout: "boxes",
-        width: "wrap",
-        element: `<div style="background-color: ${tokens.highlight}; mix-blend-mode: ${tokens.scheme === "dark" ? "lighten" : "darken"}; border-radius: 0.25em; box-sizing: content-box; padding-block: 0.16em; padding-inline: 0.18em; margin-block: -0.16em; margin-inline: -0.18em"></div>`,
+        type: style,
+        tint: highlightTint(tokens, style),
+        enforceContrast: false,
       },
     },
   } as DecoratorRequest)
+
+  if (style !== "textColor") {
+    activeFrame.msg.send("decorate", {
+      group: HIGHLIGHT_TEXT_GROUP,
+      action: "add",
+      decoration: {
+        id: "highlight-text",
+        locator,
+        style: {
+          type: "textColor",
+          tint: tokens.text,
+          enforceContrast: false,
+        },
+      },
+    } as DecoratorRequest)
+  }
 }
 
 export async function findNearestGuide(publication: Publication, link: Link) {

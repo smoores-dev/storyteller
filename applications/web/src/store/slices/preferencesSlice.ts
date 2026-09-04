@@ -59,6 +59,12 @@ export type HighlightColor =
   | "cover"
   | "custom"
 
+export type HighlightStyle =
+  | "highlight"
+  | "highlightUnderline"
+  | "underline"
+  | "textColor"
+
 export type MiniPlayerCorner =
   | "top-left"
   | "top-right"
@@ -89,6 +95,8 @@ export type ReadingPreferences = {
   paragraphIndent: number
   hyphens: boolean
   highlightColor: HighlightColor
+  highlightStyle: HighlightStyle
+  dimWhilePlaying: boolean
   detailView: {
     mode: "audio" | "text"
     scope: "book" | "chapter"
@@ -146,19 +154,21 @@ type PreferencesState = {
 export const defaultPreferences: ReadingPreferences = {
   currentlyListeningBookId: null,
   fontSize: 100,
-  fontFamily: "publisher",
-  theme: "light",
+  fontFamily: "Literata",
+  theme: "cover-light",
   align: "justify" as TextAlignment,
   spacing: "default",
   layout: "paginated",
   columns: 0, // 0 means auto
   playbackSpeed: 1.0,
-  lineHeight: 1.3,
+  lineHeight: 1.4,
   paragraphSpacing: 0,
-  lineLength: 65,
+  lineLength: 45,
   paragraphIndent: 0,
   hyphens: true,
-  highlightColor: "yellow",
+  highlightColor: "cover",
+  highlightStyle: "textColor",
+  dimWhilePlaying: true,
   detailView: {
     mode: "audio",
     scope: "chapter",
@@ -181,7 +191,7 @@ export const defaultPreferences: ReadingPreferences = {
   smoothScrollSpeed: 1.0,
 
   // display
-  footerDisplayWidth: "text",
+  footerDisplayWidth: "full",
 
   // behavior
   skipOnTurnPage: true,
@@ -507,6 +517,8 @@ export type ReaderTokens = {
   selectionBg: string
   selectionText: string
   highlight: string
+  highlightMid: string
+  highlightStrong: string
 }
 
 const FALLBACK_TOKENS: ReaderTokens = {
@@ -517,6 +529,8 @@ const FALLBACK_TOKENS: ReaderTokens = {
   selectionBg: "#e8651a",
   selectionText: "#ffffff",
   highlight: "#f3e08a",
+  highlightMid: "#b28b1f",
+  highlightStrong: "#6d5510",
 }
 
 export const readerCoverColor = (book: BookWithRelations | null) => {
@@ -543,6 +557,20 @@ export const readReaderTokens = (
     selectionBg: read("selection-bg") || FALLBACK_TOKENS.selectionBg,
     selectionText: read("selection-text") || FALLBACK_TOKENS.selectionText,
     highlight: read("highlight") || FALLBACK_TOKENS.highlight,
+    highlightMid: read("highlight-mid") || FALLBACK_TOKENS.highlightMid,
+    highlightStrong:
+      read("highlight-strong") || FALLBACK_TOKENS.highlightStrong,
+  }
+}
+
+export const highlightTint = (tokens: ReaderTokens, style: HighlightStyle) => {
+  switch (style) {
+    case "highlight":
+      return tokens.highlight
+    case "highlightUnderline":
+      return tokens.highlightMid
+    default:
+      return tokens.highlightStrong
   }
 }
 
@@ -630,6 +658,21 @@ const ensureLink = (
   target.head.appendChild(link)
 }
 
+const FRAME_DIM_ATTRIBUTE = "data-reader-dim"
+
+export const applyFrameDim = (
+  frameDocument: Document | null | undefined,
+  dim: boolean,
+) => {
+  if (!frameDocument) return
+
+  if (dim) {
+    frameDocument.documentElement.setAttribute(FRAME_DIM_ATTRIBUTE, "")
+  } else {
+    frameDocument.documentElement.removeAttribute(FRAME_DIM_ATTRIBUTE)
+  }
+}
+
 export const applyFrameTheme = (
   preferences: ReadingPreferences,
   tokens: ReaderTokens,
@@ -660,6 +703,7 @@ export const applyFrameTheme = (
   const css = [
     `::selection { background-color: ${tokens.selectionBg}; color: ${tokens.selectionText}; }`,
     `body { background-color: ${tokens.bg}; }`,
+    `:root[${FRAME_DIM_ATTRIBUTE}][${FRAME_DIM_ATTRIBUTE}] { color: color-mix(in oklab, ${tokens.text} 40%, ${tokens.bg}) !important; }`,
     ...fontFaces(preferences),
   ].join("\n")
 

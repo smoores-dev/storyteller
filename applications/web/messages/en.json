@@ -2128,6 +2128,11 @@
       },
       "highlights": {
         "title": "Highlights",
+        "style": "Style",
+        "styleHighlight": "Background",
+        "styleHighlightUnderline": "Background + underline",
+        "styleUnderline": "Underline",
+        "styleTextColor": "Text color",
         "yellow": "Yellow",
         "red": "Red",
         "green": "Green",
@@ -2137,6 +2142,8 @@
         "custom": "Custom",
         "customUse": "Use",
         "customUsePlaceholder": "Any CSS color",
+        "dim": "Dim the rest while playing",
+        "dimHint": "Fades everything except the sentence being read.",
         "syncOffset": "Sync offset"
       },
       "behavior": {

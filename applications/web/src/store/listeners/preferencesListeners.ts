@@ -18,9 +18,19 @@ import {
 import {
   readingSessionSlice,
   selectCurrentBook,
+  selectCurrentLocator,
+  selectCurrentlyHighlightedFragment,
 } from "@/store/slices/readingSessionSlice"
 
+import { highlightFragment } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"
+
+const HIGHLIGHT_APPEARANCE_KEYS = new Set([
+  "highlightStyle",
+  "highlightColor",
+  "customHighlightColor",
+  "theme",
+])
 
 startAppListening({
   matcher: isAnyOf(
@@ -56,7 +66,7 @@ startAppListening({
     readingSessionSlice.actions.startBook,
     readingSessionSlice.actions.setActiveFrame,
   ),
-  effect: async (_action, listenerApi) => {
+  effect: async (action, listenerApi) => {
     const book = selectCurrentBook(listenerApi.getState())
     if (!book) return
 
@@ -85,6 +95,22 @@ startAppListening({
     })
 
     if (!applied) return
+
+    const appearanceChanged =
+      (preferencesSlice.actions.updatePreference.match(action) ||
+        preferencesSlice.actions.resetPreference.match(action)) &&
+      HIGHLIGHT_APPEARANCE_KEYS.has(action.payload.key)
+
+    const highlighted = selectCurrentlyHighlightedFragment(
+      listenerApi.getState(),
+    )
+    const locator = selectCurrentLocator(listenerApi.getState())
+
+    if (appearanceChanged && highlighted && locator) {
+      withActiveFrame((frame) => {
+        highlightFragment(frame, locator, preferences)
+      })
+    }
 
     const nav = getNavigator()
     if (!nav) return

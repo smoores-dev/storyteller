@@ -11,7 +11,7 @@
     }
   },
   "Layout": {
-    "description": "Een eenvoudig hulpmiddel voor het synchroniseren van audiobooks en ebooks",
+    "description": "Een eenvoudig hulpmiddel voor het synchroniseren van luisterboeken en ebooks",
     "title": "Storyteller"
   },
   "LoginPage": {
@@ -511,7 +511,7 @@
     "presets": "Snel toevoegen",
     "preset": {
       "highlyRated": "Hoog beoordeeld (4+)",
-      "audiobooksOnly": "Alleen audioboeken",
+      "luisterboekenOnly": "Alleen luisterboeken",
       "ebooksOnly": "Alleen e-books",
       "hasReadaloud": "Heeft readaloud",
       "hasReview": "Heeft recensie",
@@ -889,7 +889,7 @@
             "pageSize": "Paginagrootte",
             "pageSizeDescription": "Het aantal boeken per pagina in de OPDS <em>feed</em>. Standaard is 25.",
             "format": "Voorkeurs-ebook",
-            "formatDescription": "Welk ebookformaat wordt aangeboden in de OPDS <em>feed</em>. Readalouds kunnen groot zijn en e-reader ondersteuning is slecht, dus misschien wil je alleen het gewone ebook aanbieden om te downloaded. Een audioboek wordt altijd aangeboden indien beschikbaar.",
+            "formatDescription": "Welk ebookformaat wordt aangeboden in de OPDS <em>feed</em>. Readalouds kunnen groot zijn en e-reader ondersteuning is slecht, dus misschien wil je alleen het gewone ebook aanbieden om te downloaded. Een luisterboek wordt altijd aangeboden indien beschikbaar.",
             "formatReadaloud": "Readaloud, of ebook indien niet beschikbaar",
             "formatEbook": "Ebook, of readaloud indien niet beschikbaar",
             "formatBoth": "Zowel readaloud als ebook",
@@ -1149,11 +1149,11 @@
             "title": "Rasterweergave",
             "description": "Hoe boeken in het bibliotheekraster worden getoond.",
             "coverLabel": "Coverweergave",
-            "coverHint": "Beide toont de e-book- en audioboekcover wanneer een boek die heeft.",
+            "coverHint": "Beide toont de e-book- en luisterboekcover wanneer een boek die heeft.",
             "coverOptions": {
               "auto": "Beide covers",
               "ebook": "Alleen e-book",
-              "audiobook": "Alleen audioboek"
+              "audiobook": "Alleen luisterboek"
             },
             "alignmentLabel": "Dubbelcoverstijl",
             "alignmentHint": "Bepaalt of de twee covers scheef of recht worden getoond.",
@@ -1203,7 +1203,7 @@
             "view": {
               "hint": "De hoek waarin het 3D-boek begint. Klik op een boek om die te veranderen.",
               "ebookLabel": "E-book",
-              "audiobookLabel": "Audioboek",
+              "audiobookLabel": "Luisterboek",
               "cycle": "Beginpositie wijzigen",
               "options": {
                 "cover": "Cover",
@@ -1340,11 +1340,12 @@
     "cover": {
       "edit": "Cover bewerken",
       "uploadEbook": "Ebook-cover uploaden",
-      "uploadAudiobook": "Audioboek-cover uploaden",
+      "uploadAudiobook": "Luisterboek-cover uploaden",
       "setDefaultPosition": "Als standaardpositie instellen",
       "savedDefaultPosition": "Standaardpositie opgeslagen",
       "resize": "Sleep om de omslag te vergroten, dubbelklik om te herstellen",
-      "oddShapeWarning": "Die afbeelding is {width}x{height} en wijkt verder af van een normale omslagvorm dan we kunnen tonen. Hij wordt overal bijgesneden of met balken getoond."
+      "oddShapeWarning": "Deze afbeelding is {width}x{height} en wijkt verder af van een normale omslagvorm dan we kunnen tonen. Hij wordt overal bijgesneden of met balken getoond.",
+      "viewFullScreen": "Geef weer in volledig scherm"
     },
     "narratedBy": "verteld door",
     "writtenBy": "door",
@@ -1386,7 +1387,7 @@
       "download": "Downloaden",
       "downloadReadaloud": "Download <em>Readaloud</em>",
       "downloadEbook": "Download Ebook",
-      "downloadAudiobook": "Download Audiobook"
+      "downloadAudiobook": "Download Luisterboek"
     },
     "series": {
       "notInAnySeries": "Geen deel van een serie",
@@ -1413,7 +1414,7 @@
       "upload": "Upload bestand",
       "readaloud": "<em>Readaloud</em> bestand",
       "ebook": "Ebook bestand",
-      "audiobook": "Audiobook bestand",
+      "audiobook": "Luisterboek bestand",
       "title": "Bestanden",
       "assetFolder": "<em>Asset</em> map"
     },
@@ -1489,7 +1490,7 @@
     },
     "metadata": {
       "metadataFieldOverrides": "Metadata gedrag",
-      "metadataFieldOverridesDescription": "Bepaalt hoe <em><em>Storyteller</em></em> metadata uit boekbestanden verwerkt tijdens scans. Het standaardgedrag (alleen lege velden invullen) is geschikt voor de meeste gebruikers. Als je je boeken ook met andere tools beheert (bijv. <em>Calibre</em>, <em>Audiobookshelf</em>) en wilt dat die wijzigingen in <em>Storyteller</em> worden overgenomen, kies dan voor altijd overschrijven.",
+      "metadataFieldOverridesDescription": "Bepaalt hoe <em><em>Storyteller</em></em> metadata uit boekbestanden verwerkt tijdens scans. Het standaardgedrag (alleen lege velden invullen) is geschikt voor de meeste gebruikers. Als je je boeken ook met andere tools beheert (bijv. <em>Calibre</em>, <em>Luisterboekenhelf</em>) en wilt dat die wijzigingen in <em>Storyteller</em> worden overgenomen, kies dan voor altijd overschrijven.",
       "fieldTitle": "Titel",
       "fieldSubtitle": "Ondertitel",
       "fieldDescription": "Omschrijving",
@@ -1697,7 +1698,7 @@
   "Common": {
     "Nouns": {
       "ebook": "{count, plural, one {Ebook} other {Ebooks}}",
-      "audiobook": "{count, plural, one {Audioboek} other {Audioboeken}}",
+      "audiobook": "{count, plural, one {Luisterboek} other {Luisterboeken}}",
       "readaloud": "{count, plural, one {Readaloud} other {Readalouds}}",
       "book": "{count, plural, one {Boek} other {Boeken}}",
       "chapter": "{count, plural, one {Hoofdstuk} other {Hoofdstukken}}",
@@ -1827,10 +1828,10 @@
       "options": {
         "format": {
           "ebook": "Heeft ebook",
-          "audiobook": "Heeft audioboek",
+          "audiobook": "Heeft luisterboek",
           "readaloud": "Heeft readaloud",
           "ebook-only": "Alleen ebook",
-          "audiobook-only": "Alleen audioboek",
+          "audiobook-only": "Alleen luisterboek",
           "readaloud-only": "Alleen readaloud",
           "missing-readaloud": "Readaloud ontbreekt",
           "missing-files": "Ontbrekende bestanden",
@@ -2048,6 +2049,11 @@
       },
       "highlights": {
         "title": "Markeringen",
+        "style": "Stijl",
+        "styleHighlight": "Achtergrond",
+        "styleHighlightUnderline": "Achtergrond + onderstreping",
+        "styleUnderline": "Onderstreping",
+        "styleTextColor": "Tekstkleur",
         "yellow": "Geel",
         "red": "Rood",
         "green": "Groen",
@@ -2057,6 +2063,8 @@
         "custom": "Aangepast",
         "customUse": "Gebruiken",
         "customUsePlaceholder": "Elke CSS-kleur",
+        "dim": "Rest dimmen tijdens afspelen",
+        "dimHint": "Vervaagt alles behalve de zin die wordt voorgelezen.",
         "syncOffset": "Tijdsverschuiving"
       },
       "behavior": {

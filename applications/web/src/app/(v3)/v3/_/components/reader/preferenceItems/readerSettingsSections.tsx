@@ -18,7 +18,12 @@ import {
   type ReadingPreferences,
 } from "@/store/slices/preferencesSlice"
 
-import { fontFamilies, highlightColors, spacingModes } from "./prefItems"
+import {
+  fontFamilies,
+  highlightColors,
+  highlightStyles,
+  spacingModes,
+} from "./prefItems"
 import {
   ChoiceItems,
   NestedSelect,
@@ -389,8 +394,10 @@ export const layoutSection = {
 } satisfies SettingsSection
 
 const HIGHLIGHT_KEYS = [
+  "highlightStyle",
   "highlightColor",
   "customHighlightColor",
+  "dimWhilePlaying",
   "syncOffset",
 ] as const
 
@@ -442,11 +449,39 @@ export const highlightsSection = {
   labelKey: "highlights.title",
   icon: <icon.Highlight />,
   keys: HIGHLIGHT_KEYS,
-  Content: function HighlightsSection({ api }) {
+  Content: function HighlightsSection({ api, inline }) {
     const t = useTranslation("Reader.readerSettings.highlights")
 
     return (
       <SectionGroup api={api} label={t("title")} keys={HIGHLIGHT_KEYS}>
+        <NestedSelect
+          label={t("style")}
+          icon={<icon.Highlight />}
+          value={t.plain(
+            highlightStyles.find(
+              (style) => style.value === api.values.highlightStyle,
+            )?.labelKey ?? "styleHighlight",
+          )}
+          changed={api.overridden("highlightStyle")}
+          inline={inline}
+        >
+          <ChoiceItems
+            api={api}
+            prefKey="highlightStyle"
+            options={highlightStyles.map((style) => ({
+              value: style.value,
+              label: t.plain(style.labelKey),
+              icon: (
+                <span
+                  className={cn(
+                    "size-3.5 shrink-0 rounded-[3px]",
+                    style.className,
+                  )}
+                />
+              ),
+            }))}
+          />
+        </NestedSelect>
         <ChoiceItems
           api={api}
           prefKey="highlightColor"
@@ -469,6 +504,13 @@ export const highlightsSection = {
           }))}
         />
         <CustomHighlightColorFields api={api} />
+        <ToggleItem
+          api={api}
+          prefKey="dimWhilePlaying"
+          label={t("dim")}
+          icon={<icon.EyeOff />}
+          title={t.plain("dimHint")}
+        />
         <SliderRow
           api={api}
           prefKey="syncOffset"

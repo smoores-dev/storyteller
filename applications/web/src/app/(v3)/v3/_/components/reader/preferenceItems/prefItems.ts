@@ -1,8 +1,36 @@
 import {
   type FontFamily,
   type HighlightColor,
+  type HighlightStyle,
   type SpacingMode,
 } from "@/store/slices/preferencesSlice"
+
+export const highlightStyles = [
+  {
+    value: "highlight",
+    labelKey: "styleHighlight",
+    className: "bg-reader-highlight",
+  },
+  {
+    value: "highlightUnderline",
+    labelKey: "styleHighlightUnderline",
+    className: "bg-reader-highlight/40 border-reader-highlight-mid border-b-2",
+  },
+  {
+    value: "underline",
+    labelKey: "styleUnderline",
+    className: "border-reader-highlight-strong border-b-2",
+  },
+  {
+    value: "textColor",
+    labelKey: "styleTextColor",
+    className: "bg-reader-highlight-strong",
+  },
+] as const satisfies {
+  value: HighlightStyle
+  labelKey: string
+  className: string
+}[]
 
 export const highlightColors = [
   {

@@ -39,6 +39,14 @@ import {
 
 const VERTICAL_OVERFLOW_STYLE_ID = "reader-vertical-overflow"
 
+const VERTICAL_END_ATTRIBUTE = "data-reader-vertical-end"
+
+const VERTICAL_EDGE_PADDING = 40
+
+const VERTICAL_FRAME_STYLES = `body { overflow: visible !important; }
+:root:not([style*="readium-scroll-on"]) body { padding-block: ${VERTICAL_EDGE_PADDING}px !important; }
+[${VERTICAL_END_ATTRIBUTE}]::after { content: ""; display: block; block-size: ${VERTICAL_EDGE_PADDING}px; }`
+
 type UseNavigatorOptions = {
   book: BookWithRelations
   containerRef: React.RefObject<HTMLDivElement | null>
@@ -141,8 +149,12 @@ export const useNavigator = ({
                   ) {
                     const style = frameDocument.createElement("style")
                     style.id = VERTICAL_OVERFLOW_STYLE_ID
-                    style.textContent = "body { overflow: visible !important; }"
+                    style.textContent = VERTICAL_FRAME_STYLES
                     frameDocument.head.appendChild(style)
+                    frameDocument.body.lastElementChild?.setAttribute(
+                      VERTICAL_END_ATTRIBUTE,
+                      "",
+                    )
                   }
                   void navigatorRef.current?.submitPreferences(
                     new EpubPreferences(epubPreferences()),

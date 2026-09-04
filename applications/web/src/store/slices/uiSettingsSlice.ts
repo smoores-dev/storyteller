@@ -47,9 +47,7 @@ export type UISettings = {
   detailSectionOrder: string[] | null
   hiddenDetailSections: string[]
   detailCoverWidth: number | null
-
   processingToastLocation: "bottom-right" | "sidebar"
-
   theme: "light" | "dark" | "system"
 }
 

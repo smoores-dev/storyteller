@@ -30,7 +30,12 @@ import {
   getPositions,
   getPublication,
 } from "@/store/readerRegistry"
-import { selectPreference } from "@/store/slices/preferencesSlice"
+import { selectIsPlaying } from "@/store/slices/audioPlayerSlice"
+import {
+  applyFrameDim,
+  selectBookPreferences,
+  selectPreference,
+} from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectCurrentBook,
@@ -485,11 +490,32 @@ startAppListening({
       highlightFragment(
         activeFrame as FrameManager & { msg: FrameComms },
         locator,
-        true,
+        selectBookPreferences(listenerApi.getState(), null),
       )
       listenerApi.dispatch(
         readingSessionSlice.actions.updateCurrentlyHighlightedFragment(locator),
       )
+    })
+  },
+})
+
+const dimActive = (state: RootState) => {
+  if (!selectCurrentBook(state)) return false
+  if (!selectIsPlaying(state)) return false
+  if (!selectIsSyncing(state)) return false
+
+  return selectBookPreferences(state, null).dimWhilePlaying
+}
+
+startAppListening({
+  predicate: (action, currentState, previousState) =>
+    readingSessionSlice.actions.setActiveFrame.match(action) ||
+    dimActive(currentState) !== dimActive(previousState),
+  effect: (_action, listenerApi) => {
+    const dim = dimActive(listenerApi.getState())
+
+    withActiveFrame((frame) => {
+      applyFrameDim(frame.iframe.contentDocument, dim)
     })
   },
 })
