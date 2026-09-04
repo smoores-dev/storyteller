@@ -290,6 +290,8 @@ export function isEncryptedSettingKey(
   return (ENCRYPTED_SETTING_KEYS as readonly string[]).includes(name)
 }
 
+export const DEFAULT_LOG_RETENTION_DAYS = 14
+
 // Main settings schema
 export const SettingsSchema = z.object({
   // SMTP settings
@@ -356,6 +358,7 @@ export const SettingsSchema = z.object({
   scanCronExpression: z.string().nullable(),
   backupCronExpression: z.string().nullable().optional(),
   backupRetentionCount: z.number().nullable().optional(),
+  logRetentionDays: z.number().int().min(1).nullable().optional(),
   dataDirAnchor: z.string().nullable().optional(),
   metadataFieldOverrides: MetadataFieldOverridesSchema,
   // EPUB 2 import settings

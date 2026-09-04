@@ -32,6 +32,9 @@ export async function register() {
   const { startProcessing, pump } = await import("./work/distributor")
   const { getReadiumService } = await import("./services/readiumService")
   const { env } = await import("./env")
+  const { startLogRetention } = await import("./logRetention")
+
+  startLogRetention()
 
   logger.debug("Debug logging enabled")
 

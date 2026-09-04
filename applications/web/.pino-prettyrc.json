@@ -1,0 +1,5 @@
+{
+  "ignore": "pid,hostname,ctx",
+  "messageFormat": "{if ctx}{ctx} {end}{msg}",
+  "translateTime": "SYS:standard"
+}

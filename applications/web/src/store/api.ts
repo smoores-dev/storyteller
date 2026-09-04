@@ -2144,7 +2144,13 @@ export const api = createApi({
 
     // logs
     getLogs: build.query<
-      { lines: unknown[]; availableDates: string[] },
+      {
+        lines: unknown[]
+        date: string
+        today: string
+        availableDates: string[]
+        totalBytes: number
+      },
       { lines?: number; search?: string; level?: string; date?: string }
     >({
       query: ({ lines, search, level, date }) => {

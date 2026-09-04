@@ -169,7 +169,8 @@
 
 @custom-variant cover (&:where([data-cover], [data-cover] *));
 
-:root {
+:root,
+.light {
   --background: oklch(0.992 0.005 67.78);
   --foreground: oklch(0.215 0.014 52);
   --card: oklch(0.9876 0.0085 67.73);

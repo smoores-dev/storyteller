@@ -18,6 +18,7 @@ export type LogDisplayPrefs = {
   hideTime: boolean
   lineCount: number
   levelFilter: string
+  theme: "light" | "dark" | null
 }
 
 export type UISettings = {
@@ -61,6 +62,7 @@ const defaultLogDisplay: LogDisplayPrefs = {
   hideTime: false,
   lineCount: 500,
   levelFilter: "all",
+  theme: null,
 }
 
 const defaultListDisplayFields: DisplayField[] = [

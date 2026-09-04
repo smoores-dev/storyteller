@@ -21,6 +21,7 @@ import {
   importRuleIssues,
 } from "@/database/settingsTypes"
 import { ASSETS_DIR, UPLOADS_DIR } from "@/directories"
+import { runLogRetention } from "@/logRetention"
 import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
@@ -111,6 +112,10 @@ export const PUT = withHasPermission("settingsUpdate")(async (request) => {
   }
 
   await getWatcher().reload()
+
+  if (settings.logRetentionDays !== undefined) {
+    void runLogRetention()
+  }
 
   return NextResponse.json(await settingsPayload())
 })
