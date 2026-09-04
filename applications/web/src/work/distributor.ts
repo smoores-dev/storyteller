@@ -41,7 +41,12 @@ import { type RunConfig, buildRunConfig } from "./runConfig"
 import { STAGE_ORDER } from "./stages"
 import type processBook from "./worker"
 
-export type RestartMode = false | "full" | "transcription" | "sync"
+export type RestartMode =
+  | false
+  | "full"
+  | "transcode"
+  | "transcription"
+  | "sync"
 
 const MAX_CONCURRENT = 1
 const WORKER_STOP_GRACE_MS = 30_000
@@ -157,7 +162,9 @@ export async function enqueueBookAlign(
   return job
 }
 
-async function claimNextJob(): Promise<Job | undefined> {
+async function claimNextJob(): Promise<
+  { job: Job; resumed: boolean } | undefined
+> {
   await pumpMutex.lock()
   try {
     if (controllers.size >= MAX_CONCURRENT) return undefined
@@ -167,28 +174,30 @@ async function claimNextJob(): Promise<Job | undefined> {
 
     const abortController = new AbortController()
     controllers.set(next.uuid, abortController)
-    return await updateJob(next.uuid, {
+    const job = await updateJob(next.uuid, {
       status: "RUNNING",
       startedAt: nowTimestamp(),
       error: null,
     })
+    return { job, resumed: next.startedAt !== null }
   } finally {
     pumpMutex.unlock()
   }
 }
 
 export async function pump(): Promise<void> {
-  const job = await claimNextJob()
-  if (!job) return
+  const claimed = await claimNextJob()
+  if (!claimed) return
 
-  void runJob(job).finally(() => {
+  const { job, resumed } = claimed
+  void runJob(job, resumed).finally(() => {
     controllers.delete(job.uuid)
     abortIntents.delete(job.uuid)
     void pump()
   })
 }
 
-async function runJob(job: Job): Promise<void> {
+async function runJob(job: Job, resumed: boolean): Promise<void> {
   if (!job.bookUuid) {
     logger.error(`Job ${job.uuid} is not a runnable book_align job`)
     await updateJob(job.uuid, { status: "ERROR", error: "invalid job" })
@@ -288,7 +297,7 @@ async function runJob(job: Job): Promise<void> {
       {
         jobUuid: job.uuid,
         bookUuid,
-        restart: job.restart ?? false,
+        restart: resumed ? false : job.restart ?? false,
         config: job.config,
         port: port1,
       } satisfies Parameters<typeof processBook>[0],
@@ -473,7 +482,8 @@ function clampRestart(
   restart: RestartMode,
   book: BookWithRelations,
 ): RestartMode {
-  if (restart === false || restart === "full") return restart
+  if (restart === false || restart === "full" || restart === "transcode")
+    return restart
 
   const bookStage = book.readaloud?.currentStage ?? "SPLIT_TRACKS"
   const targetStage: Readaloud["currentStage"] =
@@ -488,7 +498,7 @@ function getStartStage(
   restart: RestartMode,
   book: BookWithRelations,
 ): Readaloud["currentStage"] {
-  if (restart === "full") return "SPLIT_TRACKS"
+  if (restart === "full" || restart === "transcode") return "SPLIT_TRACKS"
   if (restart === "transcription") return "TRANSCRIBE_CHAPTERS"
   if (restart === "sync") return "SYNC_CHAPTERS"
   return book.readaloud?.currentStage ?? "SPLIT_TRACKS"

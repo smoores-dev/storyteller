@@ -278,6 +278,10 @@ export const ENCRYPTED_SETTING_KEYS = [
   // "ctcServerApiKey",
 ] as const
 
+export const ALIGNMENT_GRANULARITY_OPTIONS = ["word", "sentence"] as const
+export type AlignmentGranularity =
+  (typeof ALIGNMENT_GRANULARITY_OPTIONS)[number]
+
 export type EncryptedSettingKey = (typeof ENCRYPTED_SETTING_KEYS)[number]
 
 export function isEncryptedSettingKey(
@@ -306,7 +310,11 @@ export const SettingsSchema = z.object({
   bitrate: z.string().nullable(),
   maxTrackLength: z.coerce.number().nullable(),
   aligner: AlignerSchema.nullable(),
-  ctcEngine: Wav2VecEngineSchema.nullish(),
+  alignmentGranularity: z
+    .enum(ALIGNMENT_GRANULARITY_OPTIONS)
+    .nullable()
+    .default("sentence"),
+  ctcEngine: Wav2VecEngineSchema.nullable(),
   ctcDevice: Wav2Vec2DeviceSchema.nullable(),
   // ctcServerUrl: z.string().nullable(),
   // ctcServerApiKey: z.string().nullable(),

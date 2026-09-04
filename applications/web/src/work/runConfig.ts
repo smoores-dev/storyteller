@@ -12,6 +12,7 @@ export const RUN_CONFIG_SETTING_KEYS = [
   "aligner",
   "ctcEngine",
   "ctcDevice",
+  "alignmentGranularity",
   // "ctcServerUrl",
   // "ctcServerApiKey",
   // transcription

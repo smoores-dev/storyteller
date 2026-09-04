@@ -398,7 +398,7 @@
     "deleteTitle": "{count} boek(en) verwijderen?",
     "deleteDescription": "Bestanden in je assets-map worden verwijderd. Dit kan niet ongedaan worden.",
     "clearCacheTitle": "Cache wissen voor {count} boek(en)?",
-    "clearCacheDescription": "Verwijdert verwerkte audio, transcripties en uitlijningsgegevens uit de cache. Bronbestanden blijven behouden.",
+    "clearCacheDescription": "Verwijdert verwerkte audio, transcripties en synchronisatie-gegevens uit de cache. Bronbestanden blijven behouden.",
     "processTitle": "Verwerken starten voor {count} boek(en)?",
     "processDescription": "Start de verwerkingspijplijn voor de geselecteerde boeken.",
     "upgradeTitle": "EPUB upgraden voor {count} boek(en)?",
@@ -688,11 +688,11 @@
             "locationTypeCustomFolder": "In een specifieke folder",
             "locationTypeInternal": "In de interne Storyteller-folder",
             "cleanCacheAfterReadaloud": "Cache opruimen na synchronisatie",
-            "cleanCacheAfterReadaloudDescription": "Verwijder automatisch verwerkte audio, transcripties en uitlijningsgegevens nadat een readaloud succesvol is aangemaakt. Bespaart schijfruimte, maar betekent dat een volledige herstart nodig is als je later opnieuw wilt synchroniseren.",
+            "cleanCacheAfterReadaloudDescription": "Verwijder automatisch verwerkte audio, transcripties en synchronisatie-gegevens nadat een readaloud succesvol is aangemaakt. Bespaart schijfruimte, maar betekent dat een volledige herstart nodig is als je later opnieuw wilt synchroniseren.",
             "clearCacheNow": "Cache wissen voor alle boeken",
-            "clearCacheNowDescription": "Verwijder nu alle verwerkte audio, transcripties en uitlijningsgegevens in de bibliotheek. Originele bestanden blijven ongemoeid.",
+            "clearCacheNowDescription": "Verwijder nu alle verwerkte audio, transcripties en synchronisatie-gegevens in de bibliotheek. Originele bestanden blijven ongemoeid.",
             "clearCacheConfirmTitle": "Cache wissen voor alle boeken",
-            "clearCacheConfirmDescription": "Verwerkte audio, transcripties en uitlijningsgegevens verwijderen voor elk boek in de bibliotheek? Dit maakt schijfruimte vrij, maar betekent dat een volledige herstart nodig is om boeken later opnieuw te synchroniseren. Originele bestanden blijven ongemoeid.",
+            "clearCacheConfirmDescription": "Verwerkte audio, transcripties en synchronisatie-gegevens verwijderen voor elk boek in de bibliotheek? Dit maakt schijfruimte vrij, maar betekent dat een volledige herstart nodig is om boeken later opnieuw te synchroniseren. Originele bestanden blijven ongemoeid.",
             "clearCacheConfirm": "Cache wissen",
             "clearCacheSuccess": "Verwerkte cache gewist",
             "clearCacheError": "Cache wissen mislukt"
@@ -717,19 +717,24 @@
             "mp3BitrateDefault": "Standaard"
           },
           "alignment": {
-            "title": "Uitlijning",
-            "description": "Kies hoe Storyteller de tekst van het boek uitlijnt op de voorgelezen audio.",
-            "aligner": "Uitlijner",
+            "title": "Synchronisatie",
+            "description": "Kies hoe Storyteller de tekst van het boek synchroniseert met de audio.",
+            "aligner": "Synchronisatie-<em>engine</em>",
             "aligners": {
               "whisper": {
                 "label": "Whisper-transcriptie",
-                "description": "Transcribeert de voorlezing met Whisper en legt die transcriptie daarna naast de tekst van het boek."
+                "description": "Transcribeert de audio met Whisper en synchroniseert die transcriptie daarna met de tekst van het boek."
               },
               "ctc": {
-                "label": "CTC forced alignment (aanbevolen)",
-                "description": "Legt de tekst van het boek direct naast de audio. Dit is nauwkeuriger, geeft betere woordtijden en werkt goed in veel talen."
+                "label": "CTC forced synchronisatie (experimenteel)",
+                "description": "Synchroniseert de tekst van het boek direct naast de audio. Dit is nauwkeuriger, geeft betere <em>timestamps</em> en werkt goed in vele talen. Wellicht trager."
               }
             },
+
+            "alignmentGranularity": "Synchronisatieniveau",
+            "alignmentGranularityDescription": "Synchronisatie op woordniveau kan niet altijd nauwkeurig worden gereproduceerd in alle <em>clients</em>, en is alleen beschikbaar via CTC synchronisatie.",
+            "alignmentGranularityWord": "Woord+Zin (experimenteel)",
+            "alignmentGranularitySentence": "Zin",
             "engine": "Transcriptie-engine",
             "tabLocal": "Op deze server",
             "tabRemote": "Op een andere server",
@@ -792,7 +797,7 @@
             },
             "ctcEngine": "Waar het draait",
             "ctcDevice": "Apparaat",
-            "ctcDeviceDescription": "Auto kiest de beste optie voor de Storyteller-build die je draait, en Storyteller valt daarop terug als je build het gekozen apparaat niet kan gebruiken. Kies CPU als de uitlijning crasht.",
+            "ctcDeviceDescription": "Auto kiest de beste optie voor de Storyteller-build die je draait, en Storyteller valt daarop terug als je build het gekozen apparaat niet kan gebruiken. Kies CPU als de synchronisatie crasht.",
             "ctcDevices": {
               "auto": "Auto",
               "cpu": "CPU",
@@ -1431,7 +1436,7 @@
       "lastAligned": "Laatst gesynchroniseerd",
       "alignedIn": "Gesynchroniseerd in",
       "estimatedRemaining": "{duration} resterend",
-      "transcriptionEngine": "Uitlijnings-engine",
+      "transcriptionEngine": "Synchronisatie-engine",
       "storytellerVersion": "<em>Storyteller</em> versie"
     },
     "identifiers": {
@@ -1588,9 +1593,9 @@
     "importBooksDescription": "Kies EPUB- of audiobestanden op de server om als nieuwe boeken te importeren."
   },
   "AlignmentReport": {
-    "title": "Uitlijnrapport",
+    "title": "Synchronisatie-rapport",
     "loading": "Rapport laden…",
-    "notAvailable": "Voor dit boek is geen uitlijnrapport beschikbaar.",
+    "notAvailable": "Voor dit boek is geen synchronisatie-rapport beschikbaar.",
     "untitled": "Zonder titel",
     "back": "Terug",
     "close": "Sluiten",
@@ -1600,13 +1605,13 @@
     "lastGraded": "Laatst beoordeeld op {date}",
     "ignored": "Genegeerd",
     "verdict": {
-      "excellent": "Uitstekend uitgelijnd",
-      "strong": "Sterk uitgelijnd",
-      "good": "Goed uitgelijnd",
-      "fair": "Redelijk uitgelijnd",
-      "rough": "Ruw uitgelijnd",
-      "patchy": "Rommelig uitgelijnd",
-      "failed": "Uitlijnen mislukt",
+      "excellent": "Uitstekend gesynchroniseerd",
+      "strong": "Sterk gesynchroniseerd",
+      "good": "Goed gesynchroniseerd",
+      "fair": "Redelijk gesynchroniseerd",
+      "rough": "Ruw gesynchroniseerd",
+      "patchy": "Rommelig gesynchroniseerd",
+      "failed": "Synchronisatie mislukt",
       "score": "Gewogen score {score} over {sentences, number} zinnen.",
       "noScore": "Niets uit het ebook kwam overeen met de opname.",
       "notFound": "{count, plural, one {# hoofdstuk in het boek is niet gevonden.} other {# hoofdstukken in het boek zijn niet gevonden.}}",
@@ -1681,8 +1686,8 @@
       "notOnDisk": "niet op schijf"
     },
     "marks": {
-      "score": "% zinnen uitgelijnd",
-      "unalignedChapters": "Niet-uitgelijnde hoofdstukken"
+      "score": "% zinnen gesynchroniseerd",
+      "unalignedChapters": "Niet-gesynchroniseerde hoofdstukken"
     }
   },
   "Player": {
@@ -1779,8 +1784,8 @@
         "alignmentMutedChapters": "Gedempte hoofdstukken",
         "alignmentMissingChapters": "Ontbrekende hoofdstukken",
         "alignedAt": "Laatst gesynchroniseerd",
-        "alignedWith": "Uitlijnings-engine",
-        "alignedByStorytellerVersion": "Aligner-versie",
+        "alignedWith": "Synchronisatie-engine",
+        "alignedByStorytellerVersion": "Synchronisatie-versie",
         "lastRead": "Laatst gelezen",
         "readingPosition": "Voortgang",
         "seriesPosition": "Reekspositie",
@@ -1881,6 +1886,7 @@
     "resync": "Opnieuw synchroniseren (alle bestanden behouden)",
     "fromSync": "Vanaf synchronisatiestap (analyse behouden)",
     "fromTranscription": "Vanaf analysestap (audio behouden)",
+    "fromTranscode": "Audio opnieuw transcoderen (analyse behouden)",
     "fullRestart": "Volledig opnieuw (alle cache verwijderen)",
     "reprocess": "Opnieuw verwerken",
     "deleteCache": "Cachebestanden verwijderen",

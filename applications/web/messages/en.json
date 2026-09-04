@@ -774,7 +774,7 @@
           },
           "alignment": {
             "title": "Alignment",
-            "description": "Choose how Storyteller lines up the book text with the audiobook narration.",
+            "description": "Choose how Storyteller alignes the book text with the audiobook narration.",
             "aligner": "Aligner",
             "aligners": {
               "whisper": {
@@ -786,6 +786,10 @@
                 "description": "Aligns the book text straight to the audio. It is more accurate, gives better word timings and works well across languages."
               }
             },
+            "alignmentGranularity": "Alignment granularity",
+            "alignmentGranularityDescription": "Word level alignment may not be accurately reproduces in all clients at the moment, and is only available with the CTC aligner.",
+            "alignmentGranularityWord": "Word+Sentence (experimental)",
+            "alignmentGranularitySentence": "Sentence",
             "engine": "Transcription engine",
             "tabLocal": "On this server",
             "tabRemote": "On another server",
@@ -1960,6 +1964,7 @@
     "resync": "Re-sync (keep all files)",
     "fromSync": "From sync step (keep the track analysis)",
     "fromTranscription": "From the analysis step (keep audio)",
+    "fromTranscode": "Re-transcode audio (keep the track analysis)",
     "fullRestart": "Full restart (delete all cache)",
     "reprocess": "Reprocess",
     "deleteCache": "Delete cache files",

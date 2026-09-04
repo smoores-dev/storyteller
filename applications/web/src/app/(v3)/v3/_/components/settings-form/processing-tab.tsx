@@ -56,7 +56,10 @@ import {
 } from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import { cn } from "@/cn"
-import { type ReadaloudLocationType } from "@/database/settingsTypes"
+import {
+  AlignmentGranularity,
+  type ReadaloudLocationType,
+} from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
 import { useClearBooksCacheMutation } from "@/store/api"
@@ -67,6 +70,7 @@ import {
   useSettingsForm,
 } from "./SettingsFormProvider"
 import { SettingsSection } from "./shared"
+import { ProcessRestart } from "../books/BookDetails/useProcessingRun"
 
 export function ProcessingTab() {
   return (
@@ -108,17 +112,18 @@ function SettingsCard({
     <Card>
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger className="w-full cursor-pointer text-left">
-          <CardHeader className="flex-row items-start justify-between gap-2">
-            <div className="grid gap-1.5">
-              <CardTitle>{title}</CardTitle>
-              <CardDescription>{description}</CardDescription>
-            </div>
-            <icon.ChevronDown
-              className={cn(
-                "text-muted-foreground mt-0.5 size-4 shrink-0 stroke-[1.5] transition-transform",
-                open && "rotate-180",
-              )}
-            />
+          <CardHeader className="w-full">
+            <CardTitle className="flex w-full items-start justify-between">
+              {title}
+              <icon.ChevronDown
+                className={cn(
+                  "text-muted-foreground mt-0.5 size-4 shrink-0 stroke-[1.5] transition-transform",
+                  open && "rotate-180",
+                )}
+              />
+            </CardTitle>
+
+            <CardDescription>{description}</CardDescription>
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -151,8 +156,10 @@ const engineSettingsComponents = {
 
 export function ProcessingSettingsFields({
   collapsible = false,
+  restart,
 }: {
   collapsible?: boolean
+  restart?: ProcessRestart
 } = {}) {
   const { form } = useSettingsForm()
   const tt = useTranslation("SettingsPage.tabs.processing.sections.alignment")
@@ -204,6 +211,10 @@ export function ProcessingSettingsFields({
     })),
   ]
 
+  const keepsAnalysis = restart === "sync" || restart === "transcode"
+  const showTranscription = !keepsAnalysis
+  const showAudio = !restart || restart === "full" || restart === "transcode"
+
   return (
     <div className="space-y-6">
       <SettingsSection tab="processing" section="alignment">
@@ -213,150 +224,124 @@ export function ProcessingSettingsFields({
           title={tt("title")}
           description={tt("description")}
         >
-          <SettingsFormField
-            name="aligner"
-            label={tt("aligner")}
-            render={(field, _fieldState, isLocked) => (
-              <RadioGroup
-                value={field.value ?? "whisper"}
-                onValueChange={(value) => {
-                  if (typeof value === "string") field.onChange(value)
-                }}
-                disabled={isLocked}
-              >
-                {alignerOptions.map((option) => {
-                  const selected = (field.value ?? "whisper") === option.value
-                  return (
-                    <div
-                      key={option.value}
-                      className={cn(
-                        "overflow-hidden rounded-md border",
-                        selected && "border-primary",
-                      )}
-                    >
-                      <FieldLabel
-                        htmlFor={`aligner-${option.value}`}
-                        className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
+          {showTranscription && (
+            <SettingsFormField
+              name="aligner"
+              label={tt("aligner")}
+              render={(field, _fieldState, isLocked) => (
+                <RadioGroup
+                  value={field.value ?? "whisper"}
+                  onValueChange={(value) => {
+                    if (typeof value === "string") field.onChange(value)
+                  }}
+                  disabled={isLocked}
+                >
+                  {alignerOptions.map((option) => {
+                    const selected = (field.value ?? "whisper") === option.value
+                    return (
+                      <div
+                        key={option.value}
+                        className={cn(
+                          "overflow-hidden rounded-md border",
+                          selected && "border-primary",
+                        )}
                       >
-                        <Field orientation="horizontal">
-                          <FieldContent>
-                            <FieldTitle>{option.label}</FieldTitle>
-                            <FieldDescription>
-                              {option.description}
-                            </FieldDescription>
-                          </FieldContent>
-                          <RadioGroupItem
-                            value={option.value}
-                            id={`aligner-${option.value}`}
-                          />
-                        </Field>
-                      </FieldLabel>
-                    </div>
-                  )
-                })}
-              </RadioGroup>
-            )}
-          />
+                        <FieldLabel
+                          htmlFor={`aligner-${option.value}`}
+                          className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
+                        >
+                          <Field orientation="horizontal">
+                            <FieldContent>
+                              <FieldTitle>{option.label}</FieldTitle>
+                              <FieldDescription>
+                                {option.description}
+                              </FieldDescription>
+                            </FieldContent>
+                            <RadioGroupItem
+                              value={option.value}
+                              id={`aligner-${option.value}`}
+                            />
+                          </Field>
+                        </FieldLabel>
+                      </div>
+                    )
+                  })}
+                </RadioGroup>
+              )}
+            />
+          )}
 
-          <AlignerSettings />
+          <AlignerSettings restart={restart} />
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection tab="processing" section="audio">
-        <SettingsCard
-          collapsible={collapsible}
-          defaultOpen={!collapsible}
-          title={ta("title")}
-          description={ta("description")}
-        >
-          <SettingsFormField
-            name="maxTrackLength"
-            label={ta("maxTrackLength")}
-            description={ta("maxTrackLengthDescription")}
-            render={(field, fieldState, isLocked) => (
-              <Select
-                disabled={isLocked}
-                aria-invalid={fieldState.invalid}
-                data-disabled={isLocked}
-                items={trackLengths.map(({ value, label }) => ({
-                  value: String(value),
-                  label,
-                }))}
-                value={String(field.value)}
-                onValueChange={(value) => {
-                  if (value) {
-                    field.onChange(parseFloat(value))
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {trackLengths.find(({ value }) => value === field.value)
-                      ?.label ?? ta("maxTrackLength2")}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {trackLengths.map(({ value, label }) => (
-                    <SelectItem key={value} value={String(value)}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-
-          <SettingsFormField
-            name="codec"
-            label={ta("codec")}
-            render={(field, fieldState, isLocked) => (
-              <Select
-                disabled={isLocked}
-                aria-invalid={fieldState.invalid}
-                data-disabled={isLocked}
-                value={field.value ?? "default"}
-                items={codecOptions.map(({ value, label }) => ({
-                  value,
-                  label,
-                }))}
-                onValueChange={(value) => {
-                  field.onChange(value === "default" ? null : value)
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {codecOptions.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-
-          {codec === "libopus" && (
+      {showAudio && (
+        <SettingsSection tab="processing" section="audio">
+          <SettingsCard
+            collapsible={collapsible}
+            defaultOpen={!collapsible}
+            title={ta("title")}
+            description={ta("description")}
+          >
             <SettingsFormField
-              name="bitrate"
-              label={ta("bitrate")}
+              name="maxTrackLength"
+              label={ta("maxTrackLength")}
+              description={ta("maxTrackLengthDescription")}
               render={(field, fieldState, isLocked) => (
                 <Select
-                  items={opusBitrateOptions}
                   disabled={isLocked}
                   aria-invalid={fieldState.invalid}
                   data-disabled={isLocked}
-                  value={field.value ?? ""}
+                  items={trackLengths.map(({ value, label }) => ({
+                    value: String(value),
+                    label,
+                  }))}
+                  value={String(field.value)}
                   onValueChange={(value) => {
-                    field.onChange(value || null)
+                    if (value) {
+                      field.onChange(parseFloat(value))
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {trackLengths.find(({ value }) => value === field.value)
+                        ?.label ?? ta("maxTrackLength2")}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trackLengths.map(({ value, label }) => (
+                      <SelectItem key={value} value={String(value)}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+
+            <SettingsFormField
+              name="codec"
+              label={ta("codec")}
+              render={(field, fieldState, isLocked) => (
+                <Select
+                  disabled={isLocked}
+                  aria-invalid={fieldState.invalid}
+                  data-disabled={isLocked}
+                  value={field.value ?? "default"}
+                  items={codecOptions.map(({ value, label }) => ({
+                    value,
+                    label,
+                  }))}
+                  onValueChange={(value) => {
+                    field.onChange(value === "default" ? null : value)
                   }}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {opusBitrateOptions.map(({ value, label }) => (
+                    {codecOptions.map(({ value, label }) => (
                       <SelectItem key={value} value={value}>
                         {label}
                       </SelectItem>
@@ -365,91 +350,168 @@ export function ProcessingSettingsFields({
                 </Select>
               )}
             />
-          )}
 
-          {codec === "libmp3lame" && (
-            <SettingsFormField
-              name="bitrate"
-              label={ta("bitrate")}
-              render={(field, fieldState, isLocked) => (
-                <Select
-                  disabled={isLocked}
-                  aria-invalid={fieldState.invalid}
-                  data-disabled={isLocked}
-                  value={field.value ?? ""}
-                  onValueChange={(value) => {
-                    field.onChange(value || null)
-                  }}
-                  items={mp3BitrateOptions}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mp3BitrateOptions.map(({ value, label }) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          )}
-        </SettingsCard>
-      </SettingsSection>
-
-      <SettingsSection tab="processing" section="parallelization">
-        <SettingsCard
-          collapsible={collapsible}
-          defaultOpen={!collapsible}
-          title={tp("title")}
-          description={tp("description")}
-        >
-          <SettingsFormField
-            name="parallelTranscodes"
-            label={tp("parallelTranscodes")}
-            description={tp("parallelTranscodesDescription")}
-            render={(field, fieldState, isLocked) => (
-              <Input
-                id="parallelTranscodes"
-                type="number"
-                min={1}
-                disabled={isLocked}
-                {...field}
-                onChange={(e) => {
-                  field.onChange(parseInt(e.target.value) || 1)
-                }}
-                aria-invalid={fieldState.invalid}
+            {codec === "libopus" && (
+              <SettingsFormField
+                name="bitrate"
+                label={ta("bitrate")}
+                render={(field, fieldState, isLocked) => (
+                  <Select
+                    items={opusBitrateOptions}
+                    disabled={isLocked}
+                    aria-invalid={fieldState.invalid}
+                    data-disabled={isLocked}
+                    value={field.value ?? ""}
+                    onValueChange={(value) => {
+                      field.onChange(value || null)
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {opusBitrateOptions.map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
             )}
-          />
 
-          <SettingsFormField
-            name="parallelTranscribes"
-            label={tp("parallelTranscribes")}
-            description={tp("parallelTranscribesDescription")}
-            render={(field, fieldState, isLocked) => (
-              <Input
-                id="parallelTranscribes"
-                type="number"
-                min={1}
-                disabled={isLocked}
-                {...field}
-                onChange={(e) => {
-                  field.onChange(parseInt(e.target.value) || 1)
-                }}
-                aria-invalid={fieldState.invalid}
+            {codec === "libmp3lame" && (
+              <SettingsFormField
+                name="bitrate"
+                label={ta("bitrate")}
+                render={(field, fieldState, isLocked) => (
+                  <Select
+                    disabled={isLocked}
+                    aria-invalid={fieldState.invalid}
+                    data-disabled={isLocked}
+                    value={field.value ?? ""}
+                    onValueChange={(value) => {
+                      field.onChange(value || null)
+                    }}
+                    items={mp3BitrateOptions}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mp3BitrateOptions.map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
             )}
-          />
-        </SettingsCard>
-      </SettingsSection>
+          </SettingsCard>
+        </SettingsSection>
+      )}
+
+      {(showAudio || showTranscription) && (
+        <SettingsSection tab="processing" section="parallelization">
+          <SettingsCard
+            collapsible={collapsible}
+            defaultOpen={!collapsible}
+            title={tp("title")}
+            description={tp("description")}
+          >
+            {showAudio && (
+              <SettingsFormField
+                name="parallelTranscodes"
+                label={tp("parallelTranscodes")}
+                description={tp("parallelTranscodesDescription")}
+                render={(field, fieldState, isLocked) => (
+                  <Input
+                    id="parallelTranscodes"
+                    type="number"
+                    min={1}
+                    disabled={isLocked}
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(parseInt(e.target.value) || 1)
+                    }}
+                    aria-invalid={fieldState.invalid}
+                  />
+                )}
+              />
+            )}
+            {showTranscription && (
+              <SettingsFormField
+                name="parallelTranscribes"
+                label={tp("parallelTranscribes")}
+                description={tp("parallelTranscribesDescription")}
+                render={(field, fieldState, isLocked) => (
+                  <Input
+                    id="parallelTranscribes"
+                    type="number"
+                    min={1}
+                    disabled={isLocked}
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(parseInt(e.target.value) || 1)
+                    }}
+                    aria-invalid={fieldState.invalid}
+                  />
+                )}
+              />
+            )}
+          </SettingsCard>
+        </SettingsSection>
+      )}
     </div>
   )
 }
 
-function WhisperAlignerSettings() {
+function AlignmentGranularitySettings({ disabled }: { disabled?: boolean }) {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+
+  const alignmentGranularityOptions = [
+    { value: "sentence", label: t("alignmentGranularitySentence") },
+    { value: "word", label: t("alignmentGranularityWord") },
+  ] satisfies { value: AlignmentGranularity; label: string }[]
+
+  return (
+    <>
+      <SettingsFormField
+        name="alignmentGranularity"
+        label={t("alignmentGranularity")}
+        description={t("alignmentGranularityDescription")}
+        render={(field, fieldState) => (
+          <Select
+            items={alignmentGranularityOptions}
+            value={field.value ?? "sentence"}
+            onValueChange={(value) => {
+              field.onChange(value)
+            }}
+            disabled={disabled}
+            aria-invalid={fieldState.invalid}
+            data-disabled={disabled}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {alignmentGranularityOptions.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+    </>
+  )
+}
+
+function WhisperAlignerSettings({ restart: _ }: { restart?: ProcessRestart }) {
   const { form } = useSettingsForm()
   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
 
@@ -598,8 +660,15 @@ function WhisperAlignerSettings() {
   )
 }
 
-function CtcAlignerSettings() {
-  return <Wav2VecLocalSettings />
+function CtcAlignerSettings({ restart }: { restart?: ProcessRestart }) {
+  return (
+    <>
+      <AlignmentGranularitySettings />
+      {restart !== "sync" && restart !== "transcode" && (
+        <Wav2VecLocalSettings />
+      )}
+    </>
+  )
 }
 
 // function Wav2VecEnginePicker() {
@@ -815,6 +884,7 @@ function WhisperSettings() {
 
   return (
     <>
+      <AlignmentGranularitySettings disabled={true} />
       <SettingsFormField
         name="whisperModel"
         label={t("whisperModel")}

@@ -1,5 +1,6 @@
 "use client"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
@@ -48,9 +49,13 @@ import {
   useProcessBookMutation,
   useUpdateSettingsMutation,
 } from "@/store/api"
-import { RUN_CONFIG_SETTING_KEYS, type RunConfig } from "@/work/runConfig"
+import {
+  RUN_CONFIG_SETTING_KEYS,
+  type RunConfig,
+  RunConfigSchema,
+} from "@/work/runConfig"
 
-type ProcessRestart = false | "sync" | "transcription" | "full"
+import { type ProcessRestart } from "./useProcessingRun"
 
 export function ProcessRunDialog({
   book,
@@ -104,11 +109,14 @@ function RunConfigForm({
   onClose,
 }: {
   book: BookWithRelations
-  settings: Settings
+  settings: RunConfig
   restart: ProcessRestart
   onClose: () => void
 }) {
-  const form = useForm<Settings>({ defaultValues: settings })
+  const form = useForm<RunConfig>({
+    defaultValues: settings,
+    resolver: zodResolver(RunConfigSchema.omit({ language: true })),
+  })
   const [language, setLanguage] = useState(book.language ?? "auto")
   const [processBook, { isLoading: isProcessing }] = useProcessBookMutation()
   const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation()
@@ -203,7 +211,7 @@ function RunConfigForm({
               </Select>
             </Field>
 
-            <ProcessingSettingsFields collapsible />
+            <ProcessingSettingsFields collapsible restart={restart} />
           </div>
         </div>
 

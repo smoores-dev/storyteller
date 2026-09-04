@@ -21,7 +21,11 @@ import {
 } from "@storyteller-platform/ghost-story"
 
 import { getExtractedCover } from "@/assets/covers"
-import { deleteProcessed, deleteTranscriptions } from "@/assets/fs"
+import {
+  deleteProcessed,
+  deleteProcessedAudio,
+  deleteTranscriptions,
+} from "@/assets/fs"
 import { writeMetadataToEpub } from "@/assets/metadata"
 import {
   getAlignmentReportFilepath,
@@ -125,6 +129,17 @@ export default async function processBook({
         stageProgress: 0,
       },
     })
+  } else if (restart === "transcode") {
+    await processTiming.timeAsync("delete_transcoded_audio", () =>
+      deleteProcessedAudio(book),
+    )
+    book = await updateBook(null, {
+      readaloud: {
+        status: "PROCESSING",
+        currentStage: "SPLIT_TRACKS",
+        stageProgress: 0,
+      },
+    })
   } else if (restart === "transcription") {
     await processTiming.timeAsync("delete_transcriptions", () =>
       deleteTranscriptions(book),
@@ -175,7 +190,9 @@ export default async function processBook({
       ? getEmissionsFilepath(book)
       : getTranscriptionsFilepath(book)
   const alignerInputCount = await readdir(alignerInputDir).then(
-    (filenames) => filenames.filter((f) => f.endsWith(".json")).length,
+    (filenames) =>
+      filenames.filter((f) => f.endsWith(".json") || f.endsWith(".emissions"))
+        .length,
     () => 0,
   )
 
@@ -215,9 +232,7 @@ export default async function processBook({
       signal.throwIfAborted()
 
       if (stage === "SPLIT_TRACKS") {
-        // clean stale files from previous runs to prevent mismatches
-        // shame not to reuse stuff, but too easy to produce bugs if we do
-        await deleteProcessed(book)
+        await deleteProcessedAudio(book)
 
         const settings = await getEffectiveSettings()
         logger.info("Pre-processing...")
@@ -324,6 +339,7 @@ export default async function processBook({
                 onProgress(p * 0.15)
               },
               logger,
+              granularity: settings.alignmentGranularity ?? "sentence",
             })
 
             signal.throwIfAborted()
@@ -335,13 +351,15 @@ export default async function processBook({
                 getEmissionsFilepath(book),
                 getProcessedAudioFilepath(book),
                 {
-                  granularity: "sentence",
+                  granularity: settings.alignmentGranularity ?? "sentence",
                   reportsPath: reportFilepath,
                   logger,
+
                   onProgress: (p) => {
                     onProgress(0.15 + p * 0.85)
                   },
                   primaryLocale: locale,
+                  signal,
                 },
               )
             } else {
@@ -358,6 +376,7 @@ export default async function processBook({
                     onProgress(0.15 + p * 0.85)
                   },
                   primaryLocale: locale,
+                  signal,
                 },
               )
             }

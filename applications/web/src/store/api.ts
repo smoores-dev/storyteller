@@ -657,7 +657,7 @@ export const api = createApi({
       void,
       {
         uuid: UUID
-        restart?: "full" | "transcription" | "sync" | false
+        restart?: "full" | "transcode" | "transcription" | "sync" | false
         dismissGpuWarning?: boolean
         config?: Partial<RunConfig>
       }

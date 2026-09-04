@@ -27,6 +27,8 @@ import {
   type Wav2VecEngine,
 } from "@storyteller-platform/ghost-story/constants"
 
+import { pruneStaleOutputs, readTrackSource } from "../process/trackSource.ts"
+
 import { writeEmissionsFile } from "./fs.ts"
 
 export interface EmitOptions {
@@ -53,12 +55,6 @@ export async function emit(
 
   await mkdir(output, { recursive: true })
 
-  const existingFiles = await readdir(output)
-  for (const existing of existingFiles) {
-    if (!existing.endsWith(".tmp")) continue
-    await rm(join(output, existing), { force: true })
-  }
-
   const allFiles = await readdir(input, { recursive: true })
   const filenames = allFiles.toSorted().filter((f) => isAudioFile(f))
 
@@ -67,6 +63,8 @@ export async function emit(
       `Failed to transcribe audio: found no audio files in ${input}`,
     )
   }
+
+  await pruneStaleOutputs(output, filenames)
 
   const engine = options.engine ?? "wav2vec-local"
   // const serverUrl = options.serverUrl ?? ""
@@ -79,13 +77,6 @@ export async function emit(
   function aborted() {
     return signal.aborted
   }
-
-  const identity = JSON.stringify({ engine, model: WAV2VEC2_MODEL })
-  // const identity = JSON.stringify(
-  //   engine === "wav2vec-server"
-  //     ? { engine, serverUrl }
-  //     : { engine, model: WAV2VEC2_MODEL },
-  // )
 
   const timing = createAggregator()
   timing.setMetadata("engine", engine)
@@ -100,6 +91,11 @@ export async function emit(
     const emissionName = basename(filename, extname(filename))
     const emissionFilepath = join(output, `${emissionName}.emissions`)
     const identityFilepath = join(output, `${emissionName}.identity`)
+    const identity = JSON.stringify({
+      engine,
+      model: WAV2VEC2_MODEL,
+      track: await readTrackSource(filepath),
+    })
 
     const emissionSize = await stat(emissionFilepath).then(
       (stats) => stats.size,
@@ -119,7 +115,7 @@ export async function emit(
       }
 
       options.logger?.warn(
-        `Existing emissions for ${filepath} came from a different engine or model, regenerating`,
+        `Existing emissions for ${filepath} came from a different engine, model or audio track, regenerating`,
       )
     }
 

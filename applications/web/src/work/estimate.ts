@@ -22,6 +22,7 @@ type HistoryRow = { config: RunConfig; restart: RestartMode; stats: JobStats }
 
 function stagesForRestart(restart: RestartMode): StageName[] {
   if (restart === "sync") return ["SYNC_CHAPTERS"]
+  if (restart === "transcode") return ["SPLIT_TRACKS", "SYNC_CHAPTERS"]
   if (restart === "transcription")
     return ["TRANSCRIBE_CHAPTERS", "SYNC_CHAPTERS"]
   return ["SPLIT_TRACKS", "TRANSCRIBE_CHAPTERS", "SYNC_CHAPTERS"]

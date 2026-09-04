@@ -193,6 +193,7 @@ function settingsFormValues(settings: Settings) {
     ...settings,
     serverIconSha256: settings.serverIconSha256 ?? null,
     aligner: settings.aligner ?? "whisper",
+    alignmentGranularity: settings.alignmentGranularity ?? "sentence",
     // TODO: change, if we ever want to use a different CTC engine
     ctcEngine: "wav2vec-local" as const,
     ctcDevice: settings.ctcDevice ?? null,

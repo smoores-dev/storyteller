@@ -1,11 +1,13 @@
 import assert from "node:assert"
 import { randomUUID } from "node:crypto"
-import { mkdir, readdir } from "node:fs/promises"
+import { mkdir, readFile, readdir } from "node:fs/promises"
 import { availableParallelism } from "node:os"
 import { join } from "node:path"
 import { describe, it } from "node:test"
 
 import { AsyncSemaphore } from "@esfx/async-semaphore"
+
+import { isAudioFile } from "@storyteller-platform/audiobook"
 
 import { createLogger } from "../../common/logging.ts"
 import { processFile } from "../processAudiobook.ts"
@@ -30,7 +32,7 @@ void describe("processFile", () => {
       lock: new AsyncSemaphore(availableParallelism() - 1),
       logger: createTestLogger(),
     })
-    const outFiles = await readdir(outDir)
+    const outFiles = (await readdir(outDir)).filter((f) => isAudioFile(f))
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp4",
       "00000-00002.mp4",
@@ -44,6 +46,14 @@ void describe("processFile", () => {
       "00000-00010.mp4",
       "00000-00011.mp4",
     ])
+
+    const source = JSON.parse(
+      await readFile(join(outDir, "00000-00001.source.json"), "utf-8"),
+    ) as { source: string; sourceSize: number; start: number; end: number }
+    assert.strictEqual(source.source, "MobyDickOrTheWhalePart1_librivox.m4b")
+    assert.strictEqual(source.start, 0)
+    assert.ok(source.end > 0)
+    assert.ok(source.sourceSize > 0)
   })
 
   void it("can process mp3 files", async () => {
@@ -59,7 +69,7 @@ void describe("processFile", () => {
       lock: new AsyncSemaphore(availableParallelism() - 1),
       logger: createTestLogger(),
     })
-    const outFiles = await readdir(outDir)
+    const outFiles = (await readdir(outDir)).filter((f) => isAudioFile(f))
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp3",
       "00000-00002.mp3",
@@ -88,7 +98,7 @@ void describe("processFile", () => {
       lock: new AsyncSemaphore(availableParallelism() - 1),
       logger: createTestLogger(),
     })
-    const outFiles = await readdir(outDir)
+    const outFiles = (await readdir(outDir)).filter((f) => isAudioFile(f))
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp4",
       "00000-00002.mp4",
@@ -112,7 +122,7 @@ void describe("processFile", () => {
       lock: new AsyncSemaphore(availableParallelism() - 1),
       logger: createTestLogger(),
     })
-    const outFiles = await readdir(outDir)
+    const outFiles = (await readdir(outDir)).filter((f) => isAudioFile(f))
     assert.deepStrictEqual(outFiles, ["00000-00001.flac"])
   })
 
@@ -126,7 +136,7 @@ void describe("processFile", () => {
       lock: new AsyncSemaphore(availableParallelism() - 1),
       logger: createTestLogger(),
     })
-    const outFiles = await readdir(outDir)
+    const outFiles = (await readdir(outDir)).filter((f) => isAudioFile(f))
     assert.deepStrictEqual(outFiles, ["00000-00001.mp4"])
   })
 
@@ -138,7 +148,7 @@ void describe("processFile", () => {
       lock: new AsyncSemaphore(availableParallelism() - 1),
       logger: createTestLogger(),
     })
-    const outFiles = await readdir(outDir)
+    const outFiles = (await readdir(outDir)).filter((f) => isAudioFile(f))
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp3",
       "00000-00002.mp3",
@@ -155,7 +165,7 @@ void describe("processFile", () => {
       lock: new AsyncSemaphore(availableParallelism() - 1),
       logger: createTestLogger(),
     })
-    const outFiles = await readdir(outDir)
+    const outFiles = (await readdir(outDir)).filter((f) => isAudioFile(f))
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp3",
       "00000-00002.mp3",
@@ -191,7 +201,7 @@ void describe("processFile", () => {
       lock: new AsyncSemaphore(availableParallelism() - 1),
       logger: createTestLogger(),
     })
-    const outFiles = await readdir(outDir)
+    const outFiles = (await readdir(outDir)).filter((f) => isAudioFile(f))
     assert.deepStrictEqual(outFiles, [
       "00000-00001.mp4",
       "00000-00002.mp4",

@@ -17,7 +17,12 @@ import { STAGE_ORDER } from "@/work/stages"
 
 import { ProcessRunDialog } from "./ProcessRunDialog"
 
-export type ProcessRestart = false | "sync" | "transcription" | "full"
+export type ProcessRestart =
+  | false
+  | "sync"
+  | "transcription"
+  | "transcode"
+  | "full"
 
 type PositionLabelKey =
   | "startProcessing"
@@ -25,9 +30,16 @@ type PositionLabelKey =
   | "resync"
   | "fromSync"
   | "fromTranscription"
+  | "fromTranscode"
   | "fullRestart"
 
-type PositionKey = "start" | "continue" | "sync" | "transcription" | "full"
+type PositionKey =
+  | "start"
+  | "continue"
+  | "sync"
+  | "transcription"
+  | "transcode"
+  | "full"
 
 export type ProcessingPosition = {
   key: PositionKey
@@ -70,6 +82,8 @@ function positionAllowsBook(
       return stage >= 2
     case "transcription":
       return stage >= 1
+    case "transcode":
+      return stage >= 1
     case "full":
       return true
   }
@@ -99,6 +113,11 @@ const POSITION_META: Record<
     icon: <icon.Reload className="mr-2 size-4" />,
     restart: "transcription",
   },
+  transcode: {
+    labelKey: "fromTranscode",
+    icon: <icon.Reload className="mr-2 size-4" />,
+    restart: "transcode",
+  },
   full: {
     labelKey: "fullRestart",
     icon: <icon.Reload className="mr-2 size-4" />,
@@ -121,6 +140,7 @@ export function buildProcessingPositions(
           : []),
         "sync",
         "transcription",
+        "transcode",
         "full",
       ]
 
