@@ -49,7 +49,8 @@ export const GET = withHasPermission("bookProcess")(async (request) => {
 
 /**
  * @summary Reorder the queue
- * @desc Body `{ order: jobUuid[] }`. Only queued jobs move; a running job keeps its slot.
+ * @desc Body `{ order: jobUuid[] }` covering every active job. Moving a queued job ahead of
+ *       the running one sends the running job back to the queue so the new head starts next.
  */
 export const PATCH = withHasPermission("bookProcess")(async (request) => {
   const body = (await request.json().catch(() => ({}))) as {
