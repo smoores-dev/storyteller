@@ -46,6 +46,7 @@ import {
 import { ProgressVisualization } from "./ProgressVisualization"
 import { jobToView, overallProgress } from "./shared"
 import { useStageLabels } from "./useStageLabels"
+import { useSidebarMaybe } from "../ui/sidebar"
 
 export function ProcessingToast() {
   const processingToastLocation = useAppSelector(selectProcessingToastLocation)
@@ -121,8 +122,18 @@ function ProcessingToastInner() {
           ? t("toast.queued")
           : t("toast.processing")
 
+  const { state } = useSidebarMaybe() ?? {}
+  const isOpen = state === "expanded"
   return (
-    <div className="fixed right-4 bottom-4 z-50 w-[320px]">
+    <div
+      className={cn(
+        "fixed bottom-4 left-0 z-50 w-[320px]",
+        isOpen
+          ? `translate-x-[calc(var(--sidebar-width)+var(--spacing)*4)]`
+          : "translate-x-18",
+        "transition-transform duration-150",
+      )}
+    >
       <Item
         variant="outline"
         size="xs"
