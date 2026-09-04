@@ -595,8 +595,6 @@ function SidebarNavGroup({
                       "small-caps",
                       "group-data-[collapsible=icon]:opacity-0",
                       "group-data-[collapsible=icon]:w-0",
-
-                      "tracking-[0.08em]",
                     )}
                   >
                     {group.name}
@@ -604,7 +602,7 @@ function SidebarNavGroup({
                   <span
                     aria-hidden
                     className={cn(
-                      "bg-muted-foreground/60 group-data-[collapsible=icon]:bg-muted-foreground h-px min-w-3 flex-1 group-data-[collapsible=icon]:ml-0.75 group-data-[collapsible=icon]:max-w-6 group-data-[collapsible=icon]:min-w-6",
+                      "bg-muted-foreground/60 group-data-[collapsible=icon]:bg-muted-foreground/40 h-px min-w-3 flex-1 group-data-[collapsible=icon]:ml-0.75 group-data-[collapsible=icon]:max-w-6 group-data-[collapsible=icon]:min-w-6",
                       totalCount == null &&
                         "mr-3 group-data-[collapsible=icon]:mr-0",
                     )}
