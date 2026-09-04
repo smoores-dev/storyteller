@@ -63,26 +63,44 @@ export function ProcessingIndicator({
           strokeWidth={strokeWidth}
         />
 
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={progress === 0 ? 0 : offset}
-          strokeLinecap="round"
-          className={cn(
-            "transition-[stroke-dashoffset] duration-700 ease-out",
-            progress === 0 && "origin-center animate-spin",
-            progress === 0 ? "stroke-amber-500" : "stroke-primary",
-          )}
-          style={
-            progress === 0
-              ? { strokeDashoffset: circumference * 0.75 }
-              : undefined
-          }
-        />
+        {progress === 0 ? (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${circumference * 0.1} ${circumference * 0.1}`}
+            strokeDashoffset={3}
+            strokeLinecap="round"
+            className={cn(
+              "transition-[stroke-dashoffset] duration-700 ease-out",
+              // progress === 0 && "origin-center animate-spin",
+              "stroke-cover-accent",
+            )}
+          />
+        ) : (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={progress === 0 ? 0 : offset}
+            strokeLinecap="round"
+            className={cn(
+              "transition-[stroke-dashoffset] duration-700 ease-out",
+              // progress === 0 && "origin-center animate-spin",
+              "stroke-cover-accent",
+            )}
+            style={
+              progress === 0
+                ? { strokeDashoffset: circumference * 0.75 }
+                : undefined
+            }
+          />
+        )}
       </svg>
     </div>
   )

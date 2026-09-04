@@ -346,9 +346,10 @@ export const BookCard = memo(function BookCard({
   const isSynced =
     hasReadaloud && book.readaloud?.status === "ALIGNED" && showReadaloudBadge
   const isProcessing =
-    (book.readaloud?.status === "PROCESSING" ||
-      book.readaloud?.status === "QUEUED") &&
-    showProcessingBadge
+    book.readaloud?.status === "PROCESSING" && showProcessingBadge
+
+  const isQueued = book.readaloud?.status === "QUEUED" && showProcessingBadge
+
   const isMissing = showMissingBadge && hasMissingMedia(book)
   const { gridCoverDisplay } = useUserPreferences()
   const fillCover = gridCoverDisplay !== "auto"
@@ -379,10 +380,11 @@ export const BookCard = memo(function BookCard({
             />
           )}
 
-          {isProcessing && (
+          {(isProcessing || isQueued) && (
             <ProcessingIndicator
               book={book}
               size={22}
+              status={isQueued ? "queued" : "processing"}
               className="absolute right-1.5 bottom-1.5 z-10"
             />
           )}
@@ -425,7 +427,7 @@ export const BookCard = memo(function BookCard({
           </div>
         )}
 
-        {isMissing && (
+        {!isQueued && !isProcessing && isMissing && (
           <MissingBadge
             book={book}
             className="absolute right-1.5 bottom-1.5 z-20 size-5!"
