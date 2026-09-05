@@ -358,7 +358,11 @@ export function SettingsForm({
           icon: icon.History,
         },
         { value: "logs", label: t("tabs.logs.title"), icon: icon.FileText },
-        { value: "queue", label: "Queue", icon: icon.ListNumbers },
+        {
+          value: "queue",
+          label: t("tabs.queue.title"),
+          icon: icon.ListNumbers,
+        },
         {
           value: "backups",
           label: t("tabs.backups.title"),

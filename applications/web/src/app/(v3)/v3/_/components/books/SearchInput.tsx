@@ -12,6 +12,7 @@ export function SearchInput({
   placeholder,
   className,
   shortcut,
+  children,
   ...props
 }: {
   value: string
@@ -45,6 +46,7 @@ export function SearchInput({
         {...props}
       />
       {!value && shortcut && <KeyboardShortcut shortcut={shortcut} />}
+      {children}
       {value && (
         <Button
           variant="ghost"

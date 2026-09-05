@@ -7,6 +7,7 @@ import {
   updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"
+import { getJob } from "@/database/jobs";
 import { createDirectoryManifest } from "@/utils/audioManifest"
 import type { UUID } from "@/uuid"
 
@@ -57,6 +58,9 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
       ? (JSON.parse(report.overrides) as AlignmentOverrides)
       : report.overrides
     : null
+
+
+  const job = await getJob(report.jobUuid)
 
   const transcodedAudioDir = getProcessedAudioFilepath(book)
   const audiobookManifest = await createDirectoryManifest(transcodedAudioDir, {

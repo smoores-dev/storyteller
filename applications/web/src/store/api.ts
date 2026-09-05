@@ -37,7 +37,7 @@ import {
 } from "@/database/identifiers"
 import { type Image } from "@/database/images"
 import { type ImportRuleWithCollections } from "@/database/importRules"
-import { type PublicJob } from "@/database/jobs"
+import { type DisplayJob } from "@/database/jobs"
 import {
   type FacetSection,
   type FacetValue,
@@ -80,6 +80,7 @@ import {
 import { type UserBookRating } from "@/database/userRatings"
 import { type UserPermissionSet } from "@/database/users"
 import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
+import { type JobStatus } from "@/jobEvents"
 import { type TranscodedAudioFile } from "@/schemas/v2/transcodedAudio"
 import { type ShelfFilter } from "@/shelves"
 import { type SortField } from "@/sort"
@@ -2256,11 +2257,12 @@ export const api = createApi({
 
     // processing jobs queue
     getJobs: build.query<
-      PublicJob[],
+      DisplayJob[],
       {
         type?: "active" | "finished" | "all"
         bookUuid?: UUID
         search?: string
+        statuses?: JobStatus[]
         sort?: "finishedAt" | "title" | "status"
         order?: "asc" | "desc"
         limit?: number
@@ -2271,6 +2273,7 @@ export const api = createApi({
         const params = new URLSearchParams()
         if (arg?.type) params.set("type", arg.type)
         if (arg?.bookUuid) params.set("bookUuid", arg.bookUuid)
+        if (arg?.statuses) params.set("statuses", arg.statuses.join(","))
         if (arg?.search) params.set("search", arg.search)
         if (arg?.sort) params.set("sort", arg.sort)
         if (arg?.order) params.set("order", arg.order)
@@ -2280,18 +2283,57 @@ export const api = createApi({
       },
       providesTags: ["Jobs"],
       onCacheEntryAdded: async (
-        _arg,
+        arg,
         /* eslint-disable-next-line @typescript-eslint/unbound-method */
-        { dispatch, cacheDataLoaded, cacheEntryRemoved },
+        { cacheDataLoaded, cacheEntryRemoved, updateCachedData },
       ) => {
         try {
           await cacheDataLoaded
         } catch {
           /* empty */
         }
+        const isActive = arg && arg.type === "active"
 
-        const unsubscribe = subscribeToEventStream("job", () => {
-          dispatch(api.util.invalidateTags(["Jobs"]))
+        const unsubscribe = subscribeToEventStream("job", (event) => {
+          updateCachedData((draft) => {
+            if (event.type === "jobCreated") {
+              draft.push(event.payload)
+              if (isActive) {
+                draft.sort((a, b) => {
+                  return b.position - a.position
+                })
+              }
+
+              return
+            }
+
+            if (event.type === "jobDeleted") {
+              const deletedIndex = draft.findIndex(
+                (job) => job.uuid === event.jobUuid,
+              )
+              draft.splice(deletedIndex, 1)
+              if (isActive) {
+                draft.sort((a, b) => {
+                  return b.position - a.position
+                })
+              }
+              return
+            }
+
+            draft.forEach((draftBook) => {
+              if (draftBook.uuid !== event.jobUuid) {
+                return
+              }
+
+              Object.assign(draftBook, event.payload)
+            })
+
+            if (isActive) {
+              draft.sort((a, b) => {
+                return b.position - a.position
+              })
+            }
+          })
         })
 
         await cacheEntryRemoved

@@ -1,6 +1,12 @@
 import { type Selectable } from "kysely"
 
-import { JobEvents } from "@/jobEvents"
+import {
+  ACTIVE_JOB_STATUSES,
+  type JobEvent,
+  JobEvents,
+  type JobSort,
+  type JobStatus,
+} from "@/jobEvents"
 import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
 import type { RestartMode } from "@/work/distributor"
@@ -17,44 +23,22 @@ import { type DB } from "./schema"
 
 export type JobType = "book_align"
 
-export const JOB_STATUSES = [
-  "QUEUED",
-  "RUNNING",
-  "PAUSED",
-  "DONE",
-  "ERROR",
-  "CANCELED",
-] as const
-
-export type JobStatus = (typeof JOB_STATUSES)[number]
-
-export const ACTIVE_JOB_STATUSES = [
-  "QUEUED",
-  "RUNNING",
-  "PAUSED",
-] as const satisfies JobStatus[]
-export const TERMINAL_JOB_STATUSES = [
-  "DONE",
-  "ERROR",
-  "CANCELED",
-] as const satisfies JobStatus[]
-
 type JobRow = Selectable<DB["job"]>
 
 export type Job = JobRow
 
-export type PublicJob = Omit<Job, "config"> & {
+export type DisplayJob = Omit<Job, "config"> & {
   config: RunConfigSummary | null
   bookTitle: string | null
   alignmentGrade: AlignmentGrade | null
   alignmentScore: number | null
 }
 
-export function toPublicJob(
+export function toDisplayJob(
   job: Job,
   bookTitle: string | null = null,
   alignment?: { grade: AlignmentGrade | null; score: number | null },
-): PublicJob {
+): DisplayJob {
   return {
     ...job,
     config: summarizeRunConfig(job.config),
@@ -83,11 +67,11 @@ export type JobUpdate = Partial<{
   stats: JobStats
 }>
 
-function emit(type: "jobUpdated" | "jobCreated" | "jobDeleted", jobUuid: UUID) {
-  JobEvents.emit("message", { type, jobUuid })
+function emit(event: JobEvent) {
+  JobEvents.emit("message", event)
 }
 
-export async function createJob(job: NewJob): Promise<Job> {
+export async function createJob(job: NewJob): Promise<DisplayJob> {
   const row = await db
     .insertInto("job")
     .values({
@@ -98,11 +82,15 @@ export async function createJob(job: NewJob): Promise<Job> {
       position: job.position,
       status: "QUEUED",
     })
-    .returningAll()
+    .returning("uuid")
     .executeTakeFirstOrThrow()
 
-  emit("jobCreated", row.uuid)
-  return row
+  const createdJob = await getDisplayJob(row.uuid)
+  if (!createdJob) {
+    throw new Error("Job not found")
+  }
+  emit({ type: "jobCreated", jobUuid: row.uuid, payload: createdJob })
+  return createdJob
 }
 
 export async function getJob(uuid: UUID): Promise<Job | null> {
@@ -131,18 +119,8 @@ export async function getJobs(filter?: {
   return rows
 }
 
-export type JobSort = "finishedAt" | "title" | "status"
-
-export async function getDisplayJobs(filter?: {
-  statuses?: readonly JobStatus[]
-  bookUuid?: UUID
-  search?: string
-  sort?: JobSort
-  order?: "asc" | "desc"
-  limit?: number
-  offset?: number
-}): Promise<PublicJob[]> {
-  let query = db
+function getDisplayJobBase() {
+  return db
     .selectFrom("job")
     .leftJoin("book", "book.uuid", "job.bookUuid")
     .selectAll("job")
@@ -163,6 +141,28 @@ export async function getDisplayJobs(filter?: {
         .limit(1)
         .as("alignmentScore"),
     ])
+}
+
+export async function getDisplayJob(uuid: UUID): Promise<DisplayJob | null> {
+  const row = await getDisplayJobBase()
+    .where("job.uuid", "=", uuid)
+    .executeTakeFirst()
+  if (!row) {
+    return null
+  }
+  return toDisplayJob(row)
+}
+
+export async function getDisplayJobs(filter?: {
+  statuses?: readonly JobStatus[]
+  bookUuid?: UUID
+  search?: string
+  sort?: JobSort
+  order?: "asc" | "desc"
+  limit?: number
+  offset?: number
+}): Promise<DisplayJob[]> {
+  let query = getDisplayJobBase()
 
   if (filter?.statuses?.length) {
     query = query.where("job.status", "in", filter.statuses)
@@ -193,23 +193,35 @@ export async function getDisplayJobs(filter?: {
     .execute()
 
   return rows.map(({ bookTitle, alignmentGrade, alignmentScore, ...row }) =>
-    toPublicJob(row, bookTitle ?? null, {
+    toDisplayJob(row, bookTitle ?? null, {
       grade: alignmentGrade ?? null,
       score: alignmentScore ?? null,
     }),
   )
 }
 
-export async function getActiveJobForBook(bookUuid: UUID): Promise<Job | null> {
+export async function getActiveJobForBook(
+  bookUuid: UUID,
+): Promise<DisplayJob | null> {
   const row = await db
     .selectFrom("job")
-    .selectAll()
+    .select("uuid")
     .where("bookUuid", "=", bookUuid)
     .where("status", "in", ACTIVE_JOB_STATUSES)
     .orderBy("createdAt", "desc")
     .limit(1)
     .executeTakeFirst()
-  return row ?? null
+
+  if (!row) {
+    return null
+  }
+
+  const job = await getDisplayJob(row.uuid)
+  if (!job) {
+    return null
+  }
+
+  return job
 }
 
 export async function updateJob(uuid: UUID, patch: JobUpdate): Promise<Job> {
@@ -225,7 +237,7 @@ export async function updateJob(uuid: UUID, patch: JobUpdate): Promise<Job> {
     .returningAll()
     .executeTakeFirstOrThrow()
 
-  emit("jobUpdated", row.uuid)
+  emit({ type: "jobUpdated", jobUuid: row.uuid, payload: row })
 
   return row
 }
@@ -252,7 +264,9 @@ export async function reorderActiveJobs(orderedUuids: UUID[]): Promise<void> {
         .execute()
     }
   })
-  for (const uuid of orderedUuids) emit("jobUpdated", uuid)
+  for (const [index, uuid] of orderedUuids.entries()) {
+    emit({ type: "jobUpdated", jobUuid: uuid, payload: { position: index } })
+  }
 }
 
 export async function getFinishedJobStats(

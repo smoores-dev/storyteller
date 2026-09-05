@@ -79,7 +79,8 @@ import {
 } from "./nav/sidebar-items"
 import { toSidebarGroupInputs } from "./nav/sidebar-payload"
 import { useFinishedNotifications } from "./processing/ProcessingToast"
-import { jobToView, overallProgress } from "./processing/shared"
+import { StaticProgressBar } from "./processing/ProgressVisualization"
+import { jobToView } from "./processing/shared"
 import {
   DISMISSED_VERSION_KEY,
   formatChangelogDescription,
@@ -926,34 +927,49 @@ function ProcessingJobs() {
   }
 
   const view = jobToView(current)
-  const pct = Math.round(overallProgress(view) * 100)
   return (
     <SidebarMenuItem className="relative">
       <SidebarMenuButton
-        onClick={() => {
-          dispatch(
-            uiSettingsSlice.actions.setProcessingToastLocation("bottom-right"),
-          )
-        }}
         className="line-clamp-1 inline-flex items-center gap-2"
-      >
-        <icon.Loader
-          className={cn(
-            "text-primary size-3.5 shrink-0",
-            current.status !== "PAUSED" && "animate-spin",
-          )}
-        />
-        <span>{jobs[0]?.bookTitle}</span>
-      </SidebarMenuButton>
+        render={
+          <V3Link href="/settings?tab=queue">
+            <icon.Loader
+              className={cn(
+                "text-primary size-3.5 shrink-0",
+                current.status !== "PAUSED" ? "animate-spin" : "opacity-50",
+              )}
+            />
+            <span>{jobs[0]?.bookTitle}</span>
+          </V3Link>
+        }
+      />
 
       {jobs.length > 1 && (
-        <SidebarMenuBadge>+{jobs.length - 1}</SidebarMenuBadge>
+        <SidebarMenuBadge className="mr-4">+{jobs.length - 1}</SidebarMenuBadge>
       )}
-      <div
-        className="bg-muted absolute right-3.5 bottom-0 left-3.5 h-0.5"
-        style={{ width: `${pct}%` }}
-      >
-        <div className="bg-primary h-full" />
+      <SidebarMenuAction
+        showOnHover
+        render={
+          <TooltipButton
+            variant="ghost"
+            className="peer-hover/menu-button:text-sidebar-foreground! hover:text-sidebar-primary!"
+            onClick={() => {
+              dispatch(
+                uiSettingsSlice.actions.setProcessingToastLocation(
+                  "bottom-right",
+                ),
+              )
+            }}
+            tooltip="Pop out"
+            aria-label="Ponp out"
+          >
+            <icon.Outbound className="mb-2 ml-1 size-3.5" />
+          </TooltipButton>
+        }
+      />
+
+      <div className="absolute right-1.5 bottom-0 left-3.5 opacity-100">
+        <StaticProgressBar view={view} className="h-0.5" />
       </div>
     </SidebarMenuItem>
   )

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 
 import { withHasPermission } from "@/auth/auth"
+import { getDisplayJobs } from "@/database/jobs"
 import {
   ACTIVE_JOB_STATUSES,
   type JobSort,
+  type JobStatus,
   TERMINAL_JOB_STATUSES,
-  getDisplayJobs,
-} from "@/database/jobs"
+} from "@/jobEvents"
 import type { UUID } from "@/uuid"
 import { reorderJobs } from "@/work/distributor"
 
@@ -24,6 +25,7 @@ export const GET = withHasPermission("bookProcess")(async (request) => {
   const offset = params.get("offset")
   const search = params.get("search")
   const sort = params.get("sort")
+  const statuses = params.get("statuses")?.split(",")
   const order = params.get("order")
   const bookUuid = params.get("bookUuid")
   const jobs = await getDisplayJobs({
@@ -39,6 +41,9 @@ export const GET = withHasPermission("bookProcess")(async (request) => {
       : {}),
     ...(bookUuid ? { bookUuid: bookUuid as UUID } : {}),
     ...(search ? { search } : {}),
+    ...(statuses
+      ? { statuses: statuses.map((status) => status as JobStatus) }
+      : {}),
     ...(sort ? { sort: sort as JobSort } : {}),
     ...(order === "asc" || order === "desc" ? { order } : {}),
     ...(limit ? { limit: parseInt(limit) } : {}),

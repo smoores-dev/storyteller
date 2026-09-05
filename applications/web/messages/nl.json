@@ -1049,6 +1049,74 @@
             "description": "Beheer je gebruikers."
           }
         }
+      },
+
+      "queue": {
+        "title": "Verwerkingswachtrij",
+        "subtitle": "{count, number} boeken worden verwerkt of wachten.",
+        "empty": "Er wordt op dit moment niets verwerkt.",
+        "finishedTitle": "Voltooide taken",
+        "searchPlaceholder": "Zoeken op titel",
+        "noFinished": "Geen voltooide taken.",
+        "previous": "Vorige",
+        "next": "Volgende",
+        "untitled": "Zonder titel",
+        "sort": {
+          "recent": "Onlangs voltooid",
+          "oldest": "Oudste eerst",
+          "title": "Titel A–Z",
+          "status": "Status"
+        },
+        "status": {
+          "all": "Alle",
+          "RUNNING": "Bezig",
+          "QUEUED": "In wachtrij",
+          "PAUSED": "Gepauzeerd",
+          "ERROR": "Mislukt",
+          "DONE": "Klaar",
+          "CANCELED": "Geannuleerd"
+        },
+        "detail": {
+          "waiting": "Wachten",
+          "paused": "Gepauzeerd",
+          "finished": "Voltooid {time}",
+          "runTime": "Duurde {duration}",
+          "remaining": "{duration} resterend"
+        },
+        "actions": {
+          "reorder": "{title} verplaatsen",
+          "resume": "Taak hervatten",
+          "pause": "Taak pauzeren",
+          "cancel": "Taak annuleren",
+          "alignmentReport": "Synchronisatierapport"
+        },
+        "toast": {
+          "processing": "Verwerken",
+          "paused": "Gepauzeerd",
+          "queued": "In wachtrij",
+          "manageQueue": "Wachtrij beheren",
+          "pause": "Pauzeren",
+          "resume": "Hervatten",
+          "moreActions": "Meer acties",
+          "expand": "Uitklappen",
+          "minimize": "Inklappen",
+          "dismiss": "Sluiten",
+          "queuedSuffix": "+{count} in wachtrij",
+          "ready": "{title} is klaar",
+          "open": "Openen",
+          "notifyReadyTitle": "Boek klaar",
+          "notifyReadyBody": "{title} is klaar met synchroniseren.",
+          "failed": "{title} kon niet worden verwerkt",
+          "aBook": "Een boek"
+        },
+        "reorderHint": "Sleep een boek boven het boek dat nu verwerkt wordt om het als volgende te starten. Het lopende boek gaat terug naar de wachtrij en gaat later verder waar het gebleven was.",
+        "announce": {
+          "instructions": "Druk op de spatiebalk om een boek op te pakken. Gebruik de pijltjestoetsen om het door de wachtrij te verplaatsen en druk daarna weer op de spatiebalk om het op de nieuwe plek neer te zetten. Druk op escape om te annuleren. Een boek boven het lopende boek zetten start het als volgende.",
+          "lifted": "{title} opgepakt. Positie {position, number} van {total, number}.",
+          "moved": "{title} staat nu op positie {position, number} van {total, number}.",
+          "dropped": "{title} neergezet op positie {position, number} van {total, number}.",
+          "canceled": "Verplaatsen geannuleerd. {title} staat weer op positie {position, number} van {total, number}."
+        }
       }
     }
   },
@@ -1924,72 +1992,6 @@
       "SYNC_CHAPTERS": "Synchroniseren"
     },
     "viewReport": "Synchronisatierapport bekijken"
-  },
-  "Queue": {
-    "title": "Verwerkingswachtrij",
-    "subtitle": "{count, number} boeken worden verwerkt of wachten.",
-    "empty": "Er wordt op dit moment niets verwerkt.",
-    "finishedTitle": "Voltooide taken",
-    "searchPlaceholder": "Zoeken op titel",
-    "noFinished": "Geen voltooide taken.",
-    "previous": "Vorige",
-    "next": "Volgende",
-    "untitled": "Zonder titel",
-    "sort": {
-      "recent": "Onlangs voltooid",
-      "oldest": "Oudste eerst",
-      "title": "Titel A–Z",
-      "status": "Status"
-    },
-    "status": {
-      "RUNNING": "bezig",
-      "QUEUED": "in wachtrij",
-      "PAUSED": "gepauzeerd",
-      "ERROR": "fout",
-      "DONE": "klaar",
-      "CANCELED": "geannuleerd"
-    },
-    "detail": {
-      "waiting": "Wachten",
-      "paused": "Gepauzeerd",
-      "finished": "Voltooid {time}",
-      "runTime": "Duurde {duration}",
-      "remaining": "{duration} resterend"
-    },
-    "actions": {
-      "reorder": "{title} verplaatsen",
-      "resume": "Taak hervatten",
-      "pause": "Taak pauzeren",
-      "cancel": "Taak annuleren",
-      "alignmentReport": "Synchronisatierapport"
-    },
-    "toast": {
-      "processing": "Verwerken",
-      "paused": "Gepauzeerd",
-      "queued": "In wachtrij",
-      "manageQueue": "Wachtrij beheren",
-      "pause": "Pauzeren",
-      "resume": "Hervatten",
-      "moreActions": "Meer acties",
-      "expand": "Uitklappen",
-      "minimize": "Inklappen",
-      "dismiss": "Sluiten",
-      "queuedSuffix": "+{count} in wachtrij",
-      "ready": "{title} is klaar",
-      "open": "Openen",
-      "notifyReadyTitle": "Boek klaar",
-      "notifyReadyBody": "{title} is klaar met synchroniseren.",
-      "failed": "{title} kon niet worden verwerkt",
-      "aBook": "Een boek"
-    },
-    "reorderHint": "Sleep een boek boven het boek dat nu verwerkt wordt om het als volgende te starten. Het lopende boek gaat terug naar de wachtrij en gaat later verder waar het gebleven was.",
-    "announce": {
-      "instructions": "Druk op de spatiebalk om een boek op te pakken. Gebruik de pijltjestoetsen om het door de wachtrij te verplaatsen en druk daarna weer op de spatiebalk om het op de nieuwe plek neer te zetten. Druk op escape om te annuleren. Een boek boven het lopende boek zetten start het als volgende.",
-      "lifted": "{title} opgepakt. Positie {position, number} van {total, number}.",
-      "moved": "{title} staat nu op positie {position, number} van {total, number}.",
-      "dropped": "{title} neergezet op positie {position, number} van {total, number}.",
-      "canceled": "Verplaatsen geannuleerd. {title} staat weer op positie {position, number} van {total, number}."
-    }
   },
   "Reader": {
     "toolbar": {

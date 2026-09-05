@@ -27,7 +27,7 @@ import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { Cover } from "@/app/(v3)/v3/_/components/books/Cover"
-import { type PublicJob } from "@/database/jobs"
+import { type DisplayJob } from "@/database/jobs"
 import * as icon from "@/icons"
 import {
   getCoverUrl,
@@ -43,10 +43,11 @@ import {
   uiSettingsSlice,
 } from "@/store/slices/uiSettingsSlice"
 
+import { useSidebarMaybe } from "../ui/sidebar"
+
 import { ProgressVisualization } from "./ProgressVisualization"
 import { jobToView, overallProgress } from "./shared"
 import { useStageLabels } from "./useStageLabels"
-import { useSidebarMaybe } from "../ui/sidebar"
 
 export function ProcessingToast() {
   const processingToastLocation = useAppSelector(selectProcessingToastLocation)
@@ -70,7 +71,7 @@ function ProcessingToastInner() {
   const [minimized, setMinimized] = useState(false)
 
   const dispatch = useAppDispatch()
-  const t = useTranslation("Queue")
+  const t = useTranslation("SettingsPage.tabs.queue")
   const c = useCommon()
   const stageLabels = useStageLabels()
   const basePath = useVersionBasePath()
@@ -107,6 +108,9 @@ function ProcessingToastInner() {
         }
       : skipToken,
   )
+
+  const { state } = useSidebarMaybe() ?? {}
+
   if (!current) return null
 
   const view = jobToView(current)
@@ -122,7 +126,6 @@ function ProcessingToastInner() {
           ? t("toast.queued")
           : t("toast.processing")
 
-  const { state } = useSidebarMaybe() ?? {}
   const isOpen = state === "expanded"
   return (
     <div
@@ -285,7 +288,7 @@ function ProcessingToastInner() {
 }
 
 export function useFinishedNotifications(
-  finishedJobs: PublicJob[] | undefined,
+  finishedJobs: DisplayJob[] | undefined,
   basePath: string,
   router: ReturnType<typeof useRouter>,
 ) {

@@ -21,7 +21,7 @@ import {
   updateBook,
 } from "@/database/books"
 import {
-  ACTIVE_JOB_STATUSES,
+  type DisplayJob,
   type Job,
   createJob,
   getActiveJobForBook,
@@ -34,6 +34,7 @@ import {
 } from "@/database/jobs"
 import { getSettings } from "@/database/settings"
 import { env } from "@/env"
+import { ACTIVE_JOB_STATUSES } from "@/jobEvents"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 
@@ -128,7 +129,7 @@ export async function enqueueBookAlign(
   bookUuid: UUID,
   restart: RestartMode,
   overrides?: Partial<RunConfig>,
-): Promise<Job> {
+): Promise<DisplayJob> {
   const existing = await getActiveJobForBook(bookUuid)
   if (existing) {
     return existing
@@ -376,11 +377,7 @@ async function runJob(job: Job, resumed: boolean): Promise<void> {
 
       await updateJob(job.uuid, {
         status:
-          intent === "pause"
-            ? "PAUSED"
-            : requeued
-              ? "QUEUED"
-              : "CANCELED",
+          intent === "pause" ? "PAUSED" : requeued ? "QUEUED" : "CANCELED",
         stage,
         finishedAt: intent === "cancel" ? nowTimestamp() : null,
       })

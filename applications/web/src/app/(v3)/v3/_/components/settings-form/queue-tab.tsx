@@ -12,6 +12,7 @@ import { move } from "@dnd-kit/helpers"
 import { DragDropProvider } from "@dnd-kit/react"
 import { isSortable, useSortable } from "@dnd-kit/react/sortable"
 import {
+  parseAsArrayOf,
   parseAsInteger,
   parseAsString,
   parseAsStringEnum,
@@ -20,22 +21,14 @@ import {
 import { useEffect, useEffectEvent, useRef, useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
-import { Input } from "@v3/_/components/ui/input"
 import {
   Item,
   ItemActions,
   ItemContent,
-  ItemDescription,
+  ItemFooter,
   ItemMedia,
   ItemTitle,
 } from "@v3/_/components/ui/item"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v3/_/components/ui/select"
 
 import { GradePill } from "@/app/(v3)/v3/_/components/books/grade-pill"
 import { StaticProgressBar } from "@/app/(v3)/v3/_/components/processing/ProgressVisualization"
@@ -56,8 +49,9 @@ import {
   useFormatRelativeTime,
 } from "@/app/(v3)/v3/_/lib/formatters"
 import { cn } from "@/app/(v3)/v3/_/lib/utils"
-import { type PublicJob } from "@/database/jobs"
+import { type DisplayJob } from "@/database/jobs"
 import * as icon from "@/icons"
+import { JOB_STATUSES, type JobStatus } from "@/jobEvents"
 import {
   getCoverUrl,
   useCancelJobMutation,
@@ -69,21 +63,35 @@ import {
 } from "@/store/api"
 import { type UUID } from "@/uuid"
 
-const PAGE_SIZE = 10
+import { createSortParser } from "../../hooks/use-book-filters"
+import { SearchInput } from "../books/SearchInput"
+import { ButtonGroupSeparator } from "../ui/button-group"
+import {
+  FilterableMenu,
+  FilterableMenuContent,
+  FilterableMenuItem,
+  FilterableMenuTrigger,
+} from "../ui/filterable-menu"
+import { Spinner } from "../ui/spinner"
+
+const PAGE_SIZE = 25
 
 type AnnounceKind = "lifted" | "moved" | "dropped" | "canceled"
 
 const SORT_OPTIONS = {
-  recent: { sort: "finishedAt", order: "desc" },
-  oldest: { sort: "finishedAt", order: "asc" },
-  title: { sort: "title", order: "asc" },
-  status: { sort: "status", order: "asc" },
+  finishedAt: {
+    field: "finishedAt",
+    defaultDirection: "desc",
+    icon: icon.Clock,
+  },
+  title: { field: "title", defaultDirection: "asc", icon: icon.Heading },
+  status: { field: "status", defaultDirection: "asc", icon: icon.Tag },
 } as const
 
 type SortKey = keyof typeof SORT_OPTIONS
 
 export function QueueTab() {
-  const t = useTranslation("Queue")
+  const t = useTranslation("SettingsPage.tabs.queue")
   const { data: activeJobs } = useGetJobsQuery({ type: "active" })
   const [cancelJob] = useCancelJobMutation()
   const [pauseJob] = usePauseJobMutation()
@@ -154,26 +162,54 @@ export function QueueTab() {
     }),
   ])
 
+  const pauseAll = () => {
+    list.forEach((job) => {
+      if (job.status === "RUNNING") {
+        void pauseJob({ uuid: job.uuid })
+      }
+    })
+  }
+  const resumeAll = () => {
+    list.forEach((job) => {
+      if (job.status === "PAUSED") {
+        void resumeJob({ uuid: job.uuid })
+      }
+    })
+  }
+
   const actions = {
     pauseJob: (uuid: UUID) => void pauseJob({ uuid }),
     resumeJob: (uuid: UUID) => void resumeJob({ uuid }),
     cancelJob: (uuid: UUID) => void cancelJob({ uuid }),
   }
 
+  const someAreActive = list.some((job) => job.status === "RUNNING")
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-3">
         {list.length > 0 && (
           <div>
-            <h2 className="font-heading text-lg font-medium">{t("title")}</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium">{t("title")}</h2>
+              <TooltipButton
+                variant="outline"
+                size="icon"
+                tooltip={someAreActive ? t("pauseAll") : t("resumeAll")}
+                aria-label={someAreActive ? t("pauseAll") : t("resumeAll")}
+                onClick={someAreActive ? pauseAll : resumeAll}
+              >
+                {someAreActive ? <icon.PlayerPause /> : <icon.PlayerPlay />}
+              </TooltipButton>
+            </div>
             <p className="text-muted-foreground text-sm">
               {t("subtitle", { count: list.length })}
             </p>
-            {list.length > 1 && (
+            {/* {list.length > 1 && (
               <p className="text-muted-foreground mt-1 text-sm">
                 {t("reorderHint")}
               </p>
-            )}
+            )} */}
           </div>
         )}
 
@@ -215,18 +251,25 @@ export function QueueTab() {
 }
 
 function FinishedJobs() {
-  const t = useTranslation("Queue")
+  const t = useTranslation("SettingsPage.tabs.queue")
   const [debouncedSearch, setDebouncedSearch] = useQueryState(
     "search",
     parseAsString.withDefault(""),
   )
   const [search, setSearch] = useState("")
-  const [sortKey, setSortKey] = useQueryState(
+  const [sort, setSort] = useQueryState(
     "sort",
-    parseAsStringEnum(Object.keys(SORT_OPTIONS) as SortKey[]).withDefault(
-      "recent",
-    ),
+    createSortParser<SortKey>().withDefault({
+      field: "finishedAt",
+      direction: "desc",
+    }),
   )
+
+  const [statuses, setStatuses] = useQueryState(
+    "status",
+    parseAsArrayOf(parseAsStringEnum(Object.keys(JOB_STATUSES) as JobStatus[])),
+  )
+
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(0))
 
   const setDebouncedSearchEvent = useEffectEvent((search: string) => {
@@ -243,13 +286,13 @@ function FinishedJobs() {
     }
   }, [search])
 
-  const { sort, order } = SORT_OPTIONS[sortKey]
-  const { data: finishedJobs } = useGetJobsQuery(
+  const { data: finishedJobs, isFetching } = useGetJobsQuery(
     {
       type: "finished",
       search: debouncedSearch || undefined,
-      sort,
-      order,
+      sort: sort.field,
+      order: sort.direction,
+      statuses: statuses ?? undefined,
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
     },
@@ -260,20 +303,180 @@ function FinishedJobs() {
   const hasNext = jobs.length === PAGE_SIZE
   const hasPrev = page > 0
 
+  const filters = [
+    { label: t("status.all"), value: "all" as const },
+    ...JOB_STATUSES.map((status) => ({
+      label: t.plain(`status.${status}`),
+      value: status,
+    })),
+  ]
+
+  const handleStatusSelect = (status: JobStatus | "all") => {
+    if (status === "all") {
+      void setStatuses(null)
+      return
+    }
+
+    void setStatuses((old) => {
+      if (!old) {
+        return [status]
+      }
+
+      if (old.includes(status)) {
+        const newStatuses = old.filter((s) => s !== status)
+        if (newStatuses.length === 0) {
+          return null
+        }
+        return newStatuses
+      }
+
+      return [...old, status]
+    })
+  }
+
+  const activeSort = SORT_OPTIONS[sort.field]
+
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-lg font-medium">{t("finishedTitle")}</h2>
 
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder={t("searchPlaceholder")}
+      <div className="flex flex-wrap items-center gap-2">
+        <SearchInput
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value)
+          onChange={(value) => {
+            setSearch(value)
+            void setPage(null)
           }}
-          className="h-9 flex-1"
-        />
-        <Select
+          placeholder={t.plain("searchPlaceholder")}
+          className="h-8 w-full flex-1"
+        >
+          {isFetching && <Spinner className="text-muted-foreground size-4" />}
+        </SearchInput>
+
+        <div className="flex flex-wrap items-center gap-1">
+          <FilterableMenu>
+            <FilterableMenuTrigger
+              render={
+                <TooltipButton
+                  size="default"
+                  tooltip={t("filtersTitle")}
+                  className="rounded-full px-2"
+                  variant="outline"
+                  aria-label={t("filtersTitle")}
+                >
+                  <icon.Filter />
+                  {statuses?.length && statuses.length > 0 && (
+                    <span className="text-xs">{statuses.length}</span>
+                  )}
+                </TooltipButton>
+              }
+            />
+            <FilterableMenuContent>
+              {filters.map((filter) => {
+                const active =
+                  filter.value === "all"
+                    ? !statuses
+                    : statuses
+                      ? statuses.includes(filter.value)
+                      : false
+                return (
+                  <FilterableMenuItem
+                    key={filter.value}
+                    onSelect={() => {
+                      handleStatusSelect(filter.value)
+                      void setPage(0)
+                    }}
+                    textValue={filter.value}
+                    closeOnClick={false}
+                  >
+                    {filter.value === "all" ? (
+                      t.plain("status.all")
+                    ) : (
+                      <StatusBadge status={filter.value} />
+                    )}
+                    {active && <icon.Check className="size-4" />}
+                  </FilterableMenuItem>
+                )
+              })}
+            </FilterableMenuContent>
+          </FilterableMenu>
+
+          <FilterableMenu>
+            <div className="flex items-center gap-0 rounded-full">
+              <FilterableMenuTrigger
+                render={
+                  <TooltipButton
+                    size="icon"
+                    variant="outline"
+                    className="rounded-l-full rounded-r-none border-r-0"
+                    tooltip={t("sortTitle")}
+                    aria-label={t("sortTitle")}
+                  >
+                    <activeSort.icon className="size-4" />
+                  </TooltipButton>
+                }
+              />
+              <ButtonGroupSeparator />
+
+              <TooltipButton
+                size="icon"
+                variant="outline"
+                tooltip={t(`sort.${sort.direction}`)}
+                data-slot="sort-button"
+                className="rounded-l-none rounded-r-full border-l-0"
+                aria-label={t(`sort.${sort.direction}`)}
+                onClick={() => {
+                  void setSort({
+                    field: sort.field,
+                    direction: sort.direction === "desc" ? "asc" : "desc",
+                  })
+                }}
+              >
+                {sort.direction === "desc" ? (
+                  <icon.ArrowDown className="size-4" />
+                ) : (
+                  <icon.ArrowUp className="size-4" />
+                )}
+              </TooltipButton>
+            </div>
+            <FilterableMenuContent>
+              {(Object.keys(SORT_OPTIONS) as SortKey[]).map((key) => {
+                const active = key === sort.field
+                return (
+                  <FilterableMenuItem
+                    key={key}
+                    textValue={key}
+                    closeOnClick={false}
+                    onSelect={() => {
+                      if (!active) {
+                        void setSort({
+                          field: key,
+                          direction: SORT_OPTIONS[key].defaultDirection,
+                        })
+                      } else {
+                        void setSort({
+                          field: sort.field,
+                          direction: sort.direction === "desc" ? "asc" : "desc",
+                        })
+                      }
+                      void setPage(0)
+                    }}
+                  >
+                    <span className="grow">{t(`sort.${key}`)}</span>
+                    {active &&
+                      (sort.direction === "asc" ? (
+                        <icon.ArrowUp />
+                      ) : (
+                        <icon.ArrowDown />
+                      ))}
+                  </FilterableMenuItem>
+                )
+              })}
+            </FilterableMenuContent>
+          </FilterableMenu>
+        </div>
+
+        {/* <Select
           value={sortKey}
           onValueChange={(value) => {
             void setSortKey(value as SortKey)
@@ -294,7 +497,7 @@ function FinishedJobs() {
               </SelectItem>
             ))}
           </SelectContent>
-        </Select>
+        </Select> */}
       </div>
 
       {jobs.length === 0 ? (
@@ -346,8 +549,8 @@ const statusStyles: Record<string, string> = {
   CANCELED: "bg-orange-500/10 text-orange-600",
 }
 
-function StatusBadge({ status }: { status: PublicJob["status"] }) {
-  const t = useTranslation("Queue")
+function StatusBadge({ status }: { status: DisplayJob["status"] }) {
+  const t = useTranslation("SettingsPage.tabs.queue")
   return (
     <span
       className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${statusStyles[status] ?? "bg-muted text-muted-foreground"}`}
@@ -357,7 +560,7 @@ function StatusBadge({ status }: { status: PublicJob["status"] }) {
   )
 }
 
-function useEstimatedRemaining(job: PublicJob) {
+function useEstimatedRemaining(job: DisplayJob) {
   const isRunning = job.status === "RUNNING"
   const bookUuid = job.bookUuid ?? ("" as UUID)
   const isCtc = job.config?.aligner === "ctc"
@@ -395,7 +598,7 @@ function SortableJobItem({
   job,
   index,
   ...actions
-}: { job: PublicJob; index: number } & JobActions) {
+}: { job: DisplayJob; index: number } & JobActions) {
   const { ref, handleRef, isDragging } = useSortable({
     id: job.uuid,
     index,
@@ -421,12 +624,12 @@ function JobItem({
   resumeJob,
   cancelJob,
 }: {
-  job: PublicJob
+  job: DisplayJob
   dragRef?: (element: Element | null) => void
   handleRef?: (element: Element | null) => void
   isDragging?: boolean
 } & JobActions) {
-  const t = useTranslation("Queue")
+  const t = useTranslation("SettingsPage.tabs.queue")
   const c = useCommon()
   const stageLabels = useStageLabels()
   const relativeTime = useFormatRelativeTime()
@@ -489,6 +692,7 @@ function JobItem({
       ref={dragRef}
       variant="outline"
       className={cn(
+        "relative overflow-clip",
         "items-start",
         isDragging && "opacity-60 shadow-md",
         job.status === "RUNNING" && "border-primary/40",
@@ -501,7 +705,7 @@ function JobItem({
           aria-label={t("actions.reorder", {
             title: job.bookTitle ?? t("untitled"),
           })}
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-7 shrink-0 cursor-grab touch-none items-center justify-center self-center rounded outline-none focus-visible:ring-2 active:cursor-grabbing"
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-6 shrink-0 cursor-grab touch-none items-center justify-center self-center rounded outline-none focus-visible:ring-2 active:cursor-grabbing"
         >
           <icon.GripVertical className="size-4" />
         </button>
@@ -525,7 +729,7 @@ function JobItem({
         )}
       </ItemMedia>
 
-      <ItemContent>
+      <ItemContent className="w-full justify-between">
         <ItemTitle className="max-w-full">
           <V3Link
             href={`/books/${job.bookUuid}`}
@@ -548,7 +752,7 @@ function JobItem({
             </V3Link>
           )}
         </ItemTitle>
-        <ItemDescription>
+        <ItemFooter className="text-muted-foreground flex-wrap justify-start">
           {detail}
           {runTime && job.status === "DONE"
             ? ` · ${t("detail.runTime", { duration: runTime })}`
@@ -558,10 +762,7 @@ function JobItem({
             : ""}
           {configSummary ? ` · ${configSummary}` : ""}
           {job.error ? ` · ${job.error}` : ""}
-        </ItemDescription>
-        {isActive && (
-          <StaticProgressBar view={view} className="mt-1.5 max-w-xs" />
-        )}
+        </ItemFooter>
       </ItemContent>
 
       <ItemActions>
@@ -621,6 +822,12 @@ function JobItem({
           </TooltipButton>
         ) : null}
       </ItemActions>
+
+      {isActive && (
+        <div className="absolute right-0 bottom-0 left-0 w-full">
+          <StaticProgressBar view={view} className="h-1" />
+        </div>
+      )}
     </Item>
   )
 }

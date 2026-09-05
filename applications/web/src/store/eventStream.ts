@@ -186,6 +186,8 @@ export function subscribeToEventStream<K extends Channel>(
 
   return () => {
     listeners[channel].delete(listener)
-    if (listeners.book.size === 0 && listeners.job.size === 0) stop()
+    if (listeners.book.size === 0 && listeners.job.size === 0) {
+      stop()
+    }
   }
 }

@@ -150,6 +150,7 @@ import {
   IconVolume,
   IconVolumeOff,
   IconX,
+  IconOutbound,
 } from "@tabler/icons-react"
 
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
@@ -340,3 +341,4 @@ export const RewindBackward15 = /*#__PURE__*/ styled(IconRewindBackward15)
 export const RewindForward15 = /*#__PURE__*/ styled(IconRewindForward15)
 
 export const Aa = /*#__PURE__*/ styled(IconLetterCase)
+export const Outbound = /*#__PURE__*/ styled(IconOutbound)

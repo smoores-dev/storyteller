@@ -1108,6 +1108,79 @@
             "description": "Manage your users."
           }
         }
+      },
+
+      "queue": {
+        "title": "Processing Queue",
+        "pauseAll": "Pause all",
+        "resumeAll": "Resume all",
+        "subtitle": "{count, number} books currently processing or waiting.",
+        "empty": "Nothing is processing right now.",
+        "finishedTitle": "Finished jobs",
+        "searchPlaceholder": "Search by title",
+        "noFinished": "No finished jobs.",
+        "previous": "Previous",
+        "next": "Next",
+        "untitled": "Untitled",
+        "sortTitle": "Sort by",
+        "sort": {
+          "finishedAt": "Finished recently",
+          "title": "Title A–Z",
+          "status": "Status",
+          "asc": "Ascending",
+          "desc": "Descending"
+        },
+        "filtersTitle": "Filter by status",
+        "status": {
+          "all": "All",
+          "RUNNING": "Running",
+          "QUEUED": "Queued",
+          "PAUSED": "Paused",
+          "ERROR": "Error",
+          "DONE": "Done",
+          "CANCELED": "Canceled"
+        },
+        "detail": {
+          "waiting": "Waiting",
+          "paused": "Paused",
+          "finished": "Finished {time}",
+          "runTime": "Took {duration}",
+          "remaining": "{duration} left"
+        },
+        "actions": {
+          "reorder": "Reorder {title}",
+          "resume": "Resume job",
+          "pause": "Pause job",
+          "cancel": "Cancel job",
+          "alignmentReport": "Alignment report"
+        },
+        "toast": {
+          "processing": "Processing",
+          "paused": "Paused",
+          "queued": "Queued",
+          "manageQueue": "Manage queue",
+          "pause": "Pause",
+          "resume": "Resume",
+          "moreActions": "More actions",
+          "expand": "Expand",
+          "minimize": "Minimize",
+          "dismiss": "Dismiss",
+          "queuedSuffix": "+{count, number} queued",
+          "ready": "{title} is ready",
+          "open": "Open",
+          "notifyReadyTitle": "Book ready",
+          "notifyReadyBody": "{title} has finished aligning.",
+          "failed": "{title} failed to process",
+          "aBook": "A book"
+        },
+        "reorderHint": "Drag a book above the one that's running to start it next. The running book goes back to the queue and picks up where it left off.",
+        "announce": {
+          "instructions": "Press the space bar to pick up a book. Use the arrow keys to move it through the queue, then press the space bar again to drop it in its new position. Press escape to cancel. Moving a book above the one that's running starts it next.",
+          "lifted": "Picked up {title}. Position {position, number} of {total, number}.",
+          "moved": "{title} is now at position {position, number} of {total, number}.",
+          "dropped": "Dropped {title} at position {position, number} of {total, number}.",
+          "canceled": "Reordering canceled. {title} is back at position {position, number} of {total, number}."
+        }
       }
     }
   },
@@ -2003,72 +2076,6 @@
       "SYNC_CHAPTERS": "Aligning chapters"
     },
     "viewReport": "View alignment report"
-  },
-  "Queue": {
-    "title": "Processing queue",
-    "subtitle": "{count, number} books currently processing or waiting.",
-    "empty": "Nothing is processing right now.",
-    "finishedTitle": "Finished jobs",
-    "searchPlaceholder": "Search by title",
-    "noFinished": "No finished jobs.",
-    "previous": "Previous",
-    "next": "Next",
-    "untitled": "Untitled",
-    "sort": {
-      "recent": "Recently finished",
-      "oldest": "Oldest first",
-      "title": "Title A–Z",
-      "status": "Status"
-    },
-    "status": {
-      "RUNNING": "running",
-      "QUEUED": "queued",
-      "PAUSED": "paused",
-      "ERROR": "error",
-      "DONE": "done",
-      "CANCELED": "canceled"
-    },
-    "detail": {
-      "waiting": "Waiting",
-      "paused": "Paused",
-      "finished": "Finished {time}",
-      "runTime": "Took {duration}",
-      "remaining": "{duration} left"
-    },
-    "actions": {
-      "reorder": "Reorder {title}",
-      "resume": "Resume job",
-      "pause": "Pause job",
-      "cancel": "Cancel job",
-      "alignmentReport": "Alignment report"
-    },
-    "toast": {
-      "processing": "Processing",
-      "paused": "Paused",
-      "queued": "Queued",
-      "manageQueue": "Manage queue",
-      "pause": "Pause",
-      "resume": "Resume",
-      "moreActions": "More actions",
-      "expand": "Expand",
-      "minimize": "Minimize",
-      "dismiss": "Dismiss",
-      "queuedSuffix": "+{count, number} queued",
-      "ready": "{title} is ready",
-      "open": "Open",
-      "notifyReadyTitle": "Book ready",
-      "notifyReadyBody": "{title} has finished aligning.",
-      "failed": "{title} failed to process",
-      "aBook": "A book"
-    },
-    "reorderHint": "Drag a book above the one that's running to start it next. The running book goes back to the queue and picks up where it left off.",
-    "announce": {
-      "instructions": "Press the space bar to pick up a book. Use the arrow keys to move it through the queue, then press the space bar again to drop it in its new position. Press escape to cancel. Moving a book above the one that's running starts it next.",
-      "lifted": "Picked up {title}. Position {position, number} of {total, number}.",
-      "moved": "{title} is now at position {position, number} of {total, number}.",
-      "dropped": "Dropped {title} at position {position, number} of {total, number}.",
-      "canceled": "Reordering canceled. {title} is back at position {position, number} of {total, number}."
-    }
   },
   "Reader": {
     "toolbar": {

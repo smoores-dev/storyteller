@@ -344,7 +344,7 @@ export interface Job {
   stage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS" | null
   startedAt: string | null
   stats: ColumnType<import("@/work/jobStats").JobStats, string, string> | null
-  status: Generated<import("@/database/jobs").JobStatus>
+  status: Generated<import("@/jobEvents").JobStatus>
   type: import("@/database/jobs").JobType
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
