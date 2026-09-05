@@ -38,10 +38,9 @@
   },
   "dependencies": {
     "@storyteller-platform/fs": "workspace:^",
+    "@storyteller-platform/media-types": "workspace:^",
     "@storyteller-platform/path": "workspace:^",
-    "@types/mime-types": "^2",
     "@types/node": "^24.0.0",
-    "mime-types": "^3.0.1",
     "music-metadata": "^11.9.0",
     "yauzl-promise": "^4.0.0",
     "yazl": "^3.3.1"

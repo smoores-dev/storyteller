@@ -3,8 +3,8 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { describe, it } from "node:test"
 
-import { isAudioFile } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { createLogger } from "../../common/logging.ts"
 import { EmissionsReader } from "../../emit/fs.ts"
@@ -118,7 +118,7 @@ async function testAlignBook(
   // Emissions and audio files pair up by index, so both must sort identically
   const audiobookFiles = await readdir(audiobookPath).then((filenames) =>
     filenames
-      .filter((f) => isAudioFile(f))
+      .filter((f) => MediaType.fromPath(f)?.kind === "audio")
       .toSorted()
       .map((f) => join(audiobookPath, f)),
   )

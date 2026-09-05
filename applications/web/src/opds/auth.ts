@@ -1,3 +1,6 @@
+import { MediaType } from "@storyteller-platform/media-types"
+import { OPDS_AUTHENTICATION_JSON } from "@storyteller-platform/opds"
+
 import { getSettings } from "@/database/settings"
 
 export interface OPDSAuthenticationDocument {
@@ -44,12 +47,12 @@ export async function createOPDSAuthenticationDocument(): Promise<OPDSAuthentica
         ? {
             rel: "logo",
             href: `/api/v2/server/icon?s=512`,
-            type: "image/webp",
+            type: MediaType.WEBP.mime,
           }
         : {
             rel: "logo",
             href: `/Storyteller_Logo.png`,
-            type: "image/png",
+            type: MediaType.PNG.mime,
           },
     ],
     authentication: [
@@ -73,7 +76,7 @@ export async function createOPDSAuthenticationDocument(): Promise<OPDSAuthentica
           {
             rel: "authenticate",
             href: `/opds/authorize`,
-            type: "text/html",
+            type: MediaType.HTML.mime,
           },
         ],
       },
@@ -96,10 +99,10 @@ export function createOPDSAuthResponse(
   return new Response(JSON.stringify(authDocument, null, 2), {
     status: 401,
     headers: {
-      "Content-Type": "application/opds-authentication+json",
+      "Content-Type": OPDS_AUTHENTICATION_JSON,
       // many clients will not check for auth if Basic Auth is not supported
       "WWW-Authenticate": 'Basic realm="Storyteller"',
-      Link: `<${authDocument.id}>; rel="http://opds-spec.org/auth/document"; type="application/opds-authentication+json"`,
+      Link: `<${authDocument.id}>; rel="http://opds-spec.org/auth/document"; type="${OPDS_AUTHENTICATION_JSON}"`,
     },
   })
 }

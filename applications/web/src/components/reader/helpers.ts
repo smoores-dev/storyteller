@@ -9,6 +9,8 @@ import {
   LocatorLocations,
 } from "@readium/shared"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { getPublication } from "@/store/readerRegistry"
 import { type LayoutMode } from "@/store/slices/preferencesSlice"
 
@@ -159,7 +161,7 @@ export function findFirstFullyVisibleLocator(
 
   return new Locator({
     href: href ?? "#",
-    type: "application/xhtml+xml",
+    type: MediaType.XHTML.mime,
     locations: new LocatorLocations({
       fragments: [fragmentId],
       progression: progression ?? 0,
@@ -388,7 +390,7 @@ export function findFirstVisibleLocator(guide: GuidedNavigationDocument) {
 
     return {
       href: "#",
-      type: "application/xhtml+xml",
+      type: MediaType.XHTML.mime,
       locations: {
         cssSelector: `#${firstVisibleFragmentId}`,
         fragments: [firstVisibleFragmentId],

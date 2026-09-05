@@ -4,8 +4,9 @@ import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 
 import { createReadableStreamFromReadable } from "@remix-run/node"
-import { lookup } from "mime-types"
 import { type NextRequest, after } from "next/server"
+
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { getProcessedAudioFilepath } from "@/assets/paths"
 import { getTrackChapters, splitTrack } from "@/audio"
@@ -69,7 +70,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
 
         return Response.json(manifest.serialize(), {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": MediaType.JSON.mime,
             "Cache-Control": "public, max-age=3600",
           },
         })
@@ -289,7 +290,7 @@ export const streamPartialFile = async (
   }
 
   const stats = await file.stat()
-  const mimeType = lookup(filepath)
+  const mimeType = MediaType.fromPath(filepath)?.mime
   const lastModified = new Date(stats.mtime).toISOString()
   const etagBase = `${stats.mtime.valueOf()}-${stats.size}`
   const etag = `"${createHash("md5").update(etagBase).digest("hex")}"`
@@ -357,7 +358,7 @@ export const streamPartialFile = async (
   const response = new Response(readableStream, {
     status: partialResponse ? 206 : 200,
     headers: {
-      "Content-Type": mimeType || "application/octet-stream",
+      "Content-Type": mimeType ?? MediaType.OCTET_STREAM.mime,
       "Content-Length": `${end - start + 1}`,
       "Accept-Ranges": "bytes",
       "Last-Modified": new Date(stats.mtime).toString(),

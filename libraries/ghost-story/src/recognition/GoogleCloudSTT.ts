@@ -1,3 +1,5 @@
+import { MediaType } from "@storyteller-platform/media-types"
+
 import {
   type AudioFormat,
   type AudioSource,
@@ -80,7 +82,7 @@ export async function recognize(
     fetch(`https://speech.googleapis.com/v1p1beta1/speech:recognize`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": MediaType.JSON.mime,
         Authorization: `Bearer ${options.apiKey}`,
       },
       body: JSON.stringify(requestBody),

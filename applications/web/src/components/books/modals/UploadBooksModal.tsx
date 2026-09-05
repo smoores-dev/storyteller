@@ -10,9 +10,15 @@ import { parseBlob, selectCover } from "music-metadata"
 import { useEffect, useMemo, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { type Collection } from "@/database/collections"
 import { useGetMaxUploadChunkSizeQuery } from "@/store/api"
-import { audioFileTypes, epubFileTypes } from "@/uploadFileTypes"
+import {
+  audioFileTypes,
+  audioOnlyAccept,
+  epubFileTypes,
+} from "@/uploadFileTypes"
 import BookThumbnailGenerator from "@/uppyPlugins/BookThumbnailGenerator/BookThumbnailGenerator"
 
 const tusEndpoint =
@@ -82,7 +88,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
       })
       .use(BookThumbnailGenerator, {
         thumbnailFactories: {
-          "video/*,audio/*,.m4b": async (file) => {
+          [audioOnlyAccept]: async (file) => {
             const { common } = await parseBlob(file.data)
             const coverImage = selectCover(common.picture)
             if (!coverImage) return null
@@ -108,7 +114,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
           })
           .use(BookThumbnailGenerator, {
             thumbnailFactories: {
-              "video/*,audio/*,.m4b": async (file) => {
+              [audioOnlyAccept]: async (file) => {
                 const { common } = await parseBlob(file.data)
                 const coverImage = selectCover(common.picture)
                 if (!coverImage) return null
@@ -172,7 +178,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
     try {
       const response = await fetch("/api/v2/books/upload/finalize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": MediaType.JSON.mime },
         body: JSON.stringify({
           bookUuid: currentBookUuid,
           ...(collection && { collectionUuid: collection.uuid }),
@@ -207,7 +213,7 @@ export function UploadBooksModal({ isOpen, onClose, collection }: Props) {
     >
       {/* <p>Upload an EPUB file or a set of audio files for an audiobook</p>
       <FileButton
-        accept="application/epub+zip"
+        accept={MediaType.EPUB.mime}
         {...form.getInputProps("epubFile")}
       >
         {(props) => <Button {...props}>Choose file...</Button>}

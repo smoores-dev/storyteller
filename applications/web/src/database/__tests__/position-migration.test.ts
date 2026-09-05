@@ -1,6 +1,8 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { fromLegacyLocator } from "@/database/positions"
 
 void describe("getTrackInfo", () => {
@@ -11,7 +13,7 @@ void describe("getTrackInfo", () => {
         fragments: ["test"],
         totalProgression: 0.5,
       },
-      type: "application/xhtml+xml",
+      type: MediaType.XHTML.mime,
     }
     const migratedLocator = fromLegacyLocator(locator)
     assert.strictEqual(migratedLocator.href, "test")
@@ -24,7 +26,7 @@ void describe("getTrackInfo", () => {
         fragments: ["test"],
         totalProgression: 0.5,
       },
-      type: "application/xhtml+xml",
+      type: MediaType.XHTML.mime,
     }
 
     const migratedLocator = fromLegacyLocator(locator)
@@ -38,7 +40,7 @@ void describe("getTrackInfo", () => {
         fragments: ["test"],
         totalProgression: 0.5,
       },
-      type: "application/xhtml+xml",
+      type: MediaType.XHTML.mime,
     }
 
     const migratedLocator = fromLegacyLocator(locator)
@@ -52,7 +54,7 @@ void describe("getTrackInfo", () => {
         fragments: ["test"],
         totalProgression: 0.5,
       },
-      type: "application/xhtml+xml",
+      type: MediaType.XHTML.mime,
     }
 
     const migratedLocator = fromLegacyLocator(locator)

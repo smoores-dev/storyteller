@@ -13,7 +13,6 @@ import { basename, extname, join, resolve } from "node:path"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { type Logger } from "pino"
 
-import { isAudioFile } from "@storyteller-platform/audiobook"
 import {
   type TimingAggregator,
   type WhisperCppOptions,
@@ -28,6 +27,7 @@ import {
   type RecognitionEngine,
   type WhisperModel,
 } from "@storyteller-platform/ghost-story/constants"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { pruneStaleOutputs, readTrackSource } from "../process/trackSource.ts"
 
@@ -77,7 +77,9 @@ export async function transcribe(
   await mkdir(output, { recursive: true })
 
   const allFiles = await readdir(input, { recursive: true })
-  const filenames = allFiles.filter((f) => isAudioFile(f))
+  const filenames = allFiles.filter(
+    (f) => MediaType.fromPath(f)?.kind === "audio",
+  )
 
   if (!filenames.length) {
     throw new Error(

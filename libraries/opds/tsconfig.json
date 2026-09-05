@@ -25,5 +25,10 @@
     "schemas/sync.ts",
     "schemas/ajv/compile.ts",
     "schemas/ajv/standalone.cjs"
+  ],
+  "references": [
+    {
+      "path": "../media-types"
+    }
   ]
 }

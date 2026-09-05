@@ -7,6 +7,7 @@ module.exports = {
       collapsed: false,
       collapsible: false,
       items: [
+        "LLM_POLICY",
         "contributing-overview",
         "how-to-report-a-bug",
         "how-to-request-a-feature",

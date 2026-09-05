@@ -362,7 +362,7 @@ Defined in:
 > **\[dispose\]**(): `void`
 
 Defined in:
-[libraries/epub/index.ts:3578](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3578)
+[libraries/epub/index.ts:3577](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3577)
 
 ##### Returns
 
@@ -663,7 +663,7 @@ Create a new XHTML document with the given body and head.
 > **discardAndClose**(): `void`
 
 Defined in:
-[libraries/epub/index.ts:3528](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3528)
+[libraries/epub/index.ts:3527](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3527)
 
 ##### Returns
 
@@ -884,7 +884,7 @@ as a string. Descriptions may include HTML markup.
 > **getGuideEntries**(): `Promise`\<`GuideItem`[]\>
 
 Defined in:
-[libraries/epub/index.ts:3505](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3505)
+[libraries/epub/index.ts:3504](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3504)
 
 Retrieve the guide entries from the package document.
 
@@ -1812,7 +1812,7 @@ navigation document, is handed back unchanged.
 > **saveAndClose**(): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/index.ts:3543](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3543)
+[libraries/epub/index.ts:3542](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3542)
 
 Write the current contents of the Epub to a new EPUB archive on disk.
 
@@ -2751,7 +2751,7 @@ Defined in:
 > `static` **upgrade**(`path`, `options`): `Promise`\<[`Epub`](#epub)\>
 
 Defined in:
-[libraries/epub/index.ts:3571](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3571)
+[libraries/epub/index.ts:3570](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3570)
 
 Upgrade an EPUB 2 publication to EPUB 3 in place, returning a new, valid Epub 3
 instance. Equivalent to `Epub.using(TmpFsAdapter).upgrade(...)`.
@@ -2808,7 +2808,7 @@ using reader = await Epub.using(MemoryAdapter).from(buffer, { cache: false })
 ## EpubFactory\<A\>
 
 Defined in:
-[libraries/epub/index.ts:3600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3600)
+[libraries/epub/index.ts:3599](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3599)
 
 Adapter-bound factory returned by [Epub.using](#using).
 
@@ -2831,7 +2831,7 @@ runtime if the adapter is read-only or lacks `initEmpty`.
 > [`EpubFactory`](#epubfactory)\<`A`\>
 
 Defined in:
-[libraries/epub/index.ts:3601](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3601)
+[libraries/epub/index.ts:3600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3600)
 
 ##### Parameters
 
@@ -2850,7 +2850,7 @@ Defined in:
 > `readonly` **adapterClass**: `A`
 
 Defined in:
-[libraries/epub/index.ts:3601](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3601)
+[libraries/epub/index.ts:3600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3600)
 
 ### Methods
 
@@ -2860,7 +2860,7 @@ Defined in:
 > `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\>\>
 
 Defined in:
-[libraries/epub/index.ts:3662](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3662)
+[libraries/epub/index.ts:3661](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3661)
 
 Construct a new EPUB on this factory's adapter, optionally seeded with the
 provided metadata. Requires a writable adapter that implements `initEmpty`
@@ -2903,7 +2903,7 @@ when the adapter is read-only or does not implement initEmpty
 > `Disposable` & `object`\>
 
 Defined in:
-[libraries/epub/index.ts:3608](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3608)
+[libraries/epub/index.ts:3607](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3607)
 
 Open an existing EPUB through this factory's adapter
 
@@ -2942,7 +2942,7 @@ when the archive is not a valid EPUB 3
 > `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\> & `object`\>
 
 Defined in:
-[libraries/epub/index.ts:3612](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3612)
+[libraries/epub/index.ts:3611](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3611)
 
 Open an existing EPUB through this factory's adapter
 
@@ -2967,7 +2967,7 @@ when the archive is not a valid EPUB 3
 > `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\>\>
 
 Defined in:
-[libraries/epub/index.ts:3769](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3769)
+[libraries/epub/index.ts:3768](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3768)
 
 Upgrade an EPUB 2 publication to EPUB 3 in place using this factory's adapter,
 returning a new, valid Epub 3 instance.
@@ -3638,7 +3638,7 @@ Defined in:
 ## TmpFsAdapter
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:76](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L76)
+[libraries/epub/adapters/tmpfs.ts:53](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L53)
 
 Extracts an EPUB archive to a temp directory and serves all I/O off the real
 filesystem. `Epub.using(TmpFsAdapter).from(...)` returns a writable
@@ -3655,7 +3655,7 @@ filesystem. `Epub.using(TmpFsAdapter).from(...)` returns a writable
 > `readonly` `static` **capabilities**: `object`
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:78](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L78)
+[libraries/epub/adapters/tmpfs.ts:55](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L55)
 
 ##### writable
 
@@ -3666,7 +3666,7 @@ Defined in:
 > `readonly` `static` **kind**: `"extracted-dir"`
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:77](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L77)
+[libraries/epub/adapters/tmpfs.ts:54](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L54)
 
 ### Methods
 
@@ -3675,7 +3675,7 @@ Defined in:
 > **archiveLength**(`entry`): `Promise`\<`number`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:159](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L159)
+[libraries/epub/adapters/tmpfs.ts:136](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L136)
 
 Length of an entry in bytes, for the readium page-count heuristic which expects
 compressed size when available
@@ -3699,7 +3699,7 @@ compressed size when available
 > **dispose**(): `void`
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:234](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L234)
+[libraries/epub/adapters/tmpfs.ts:213](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L213)
 
 Always called on close or error
 
@@ -3716,7 +3716,7 @@ Always called on close or error
 > **duplicate**(): `Promise`\<[`TmpFsAdapter`](#tmpfsadapter)\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:186](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L186)
+[libraries/epub/adapters/tmpfs.ts:163](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L163)
 
 Required for Epub.copy
 
@@ -3733,7 +3733,7 @@ Required for Epub.copy
 > **exists**(`entry`): `Promise`\<`boolean`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:150](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L150)
+[libraries/epub/adapters/tmpfs.ts:127](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L127)
 
 Whether the archive holds an entry under exactly this name. Used to choose
 between different canditates for an href so should be exact
@@ -3757,7 +3757,7 @@ between different canditates for an href so should be exact
 > **list**(): `AsyncIterable`\<[`EpubListEntry`](#epublistentry)\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:168](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L168)
+[libraries/epub/adapters/tmpfs.ts:145](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L145)
 
 Required for Epub.saveAndClose to walk the contents
 
@@ -3776,7 +3776,7 @@ Required for Epub.saveAndClose to walk the contents
 > **read**(`entry`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:128](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L128)
+[libraries/epub/adapters/tmpfs.ts:105](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L105)
 
 ###### Parameters
 
@@ -3797,7 +3797,7 @@ Defined in:
 > **read**(`entry`, `encoding`): `Promise`\<`string`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:129](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L129)
+[libraries/epub/adapters/tmpfs.ts:106](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L106)
 
 ###### Parameters
 
@@ -3819,7 +3819,7 @@ Defined in:
 > **remove**(`entry`): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:146](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L146)
+[libraries/epub/adapters/tmpfs.ts:123](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L123)
 
 Required for removeManifestItem / setCoverImage replacement
 
@@ -3842,7 +3842,7 @@ Required for removeManifestItem / setCoverImage replacement
 > **serialize**(`targetPath`): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:197](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L197)
+[libraries/epub/adapters/tmpfs.ts:174](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L174)
 
 Required for Epub.saveAndClose
 
@@ -3867,7 +3867,7 @@ Required for Epub.saveAndClose
 > **write**(`entry`, `data`): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:134](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L134)
+[libraries/epub/adapters/tmpfs.ts:111](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L111)
 
 Required for any mutation method on Epub
 
@@ -3891,7 +3891,7 @@ Required for any mutation method on Epub
 > **write**(`entry`, `data`, `encoding`): `Promise`\<`void`\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:135](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L135)
+[libraries/epub/adapters/tmpfs.ts:112](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L112)
 
 ###### Parameters
 
@@ -3914,7 +3914,7 @@ Defined in:
 > `static` **init**(`source`): `Promise`\<[`TmpFsAdapter`](#tmpfsadapter)\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:80](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L80)
+[libraries/epub/adapters/tmpfs.ts:57](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L57)
 
 ##### Parameters
 
@@ -3931,7 +3931,7 @@ Defined in:
 > `static` **initEmpty**(): `Promise`\<[`TmpFsAdapter`](#tmpfsadapter)\>
 
 Defined in:
-[libraries/epub/adapters/tmpfs.ts:111](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L111)
+[libraries/epub/adapters/tmpfs.ts:88](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/adapters/tmpfs.ts#L88)
 
 ##### Returns
 
@@ -4134,7 +4134,7 @@ Defined in:
 ## Epub2UpgradeOptions
 
 Defined in:
-[libraries/epub/upgrade.ts:93](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L93)
+[libraries/epub/upgrade.ts:69](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L69)
 
 ### Properties
 
@@ -4143,7 +4143,7 @@ Defined in:
 > `optional` **outputPath**: `string`
 
 Defined in:
-[libraries/epub/upgrade.ts:97](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L97)
+[libraries/epub/upgrade.ts:73](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L73)
 
 The path to the output file. If provided, the input file will be copied to the
 output path.
@@ -4153,7 +4153,7 @@ output path.
 > `optional` **removeNcx**: `boolean`
 
 Defined in:
-[libraries/epub/upgrade.ts:101](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L101)
+[libraries/epub/upgrade.ts:77](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L77)
 
 Whether to remove the NCX file, as it's technically optional in EPUB 3.
 
@@ -4620,7 +4620,7 @@ false
 ## Landmark
 
 Defined in:
-[libraries/epub/upgrade.ts:87](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L87)
+[libraries/epub/upgrade.ts:63](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L63)
 
 ### Properties
 
@@ -4629,21 +4629,21 @@ Defined in:
 > **href**: `string`
 
 Defined in:
-[libraries/epub/upgrade.ts:88](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L88)
+[libraries/epub/upgrade.ts:64](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L64)
 
 #### title
 
 > **title**: `string`
 
 Defined in:
-[libraries/epub/upgrade.ts:89](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L89)
+[libraries/epub/upgrade.ts:65](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L65)
 
 #### type
 
 > **type**: `string`
 
 Defined in:
-[libraries/epub/upgrade.ts:90](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L90)
+[libraries/epub/upgrade.ts:66](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/upgrade.ts#L66)
 
 ---
 
@@ -4768,7 +4768,7 @@ A valid name for an XML element (must start with a letter)
 > `true` ? [`Epub`](#epub) : [`EpubReader`](#epubreader)
 
 Defined in:
-[libraries/epub/index.ts:3589](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3589)
+[libraries/epub/index.ts:3588](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/index.ts#L3588)
 
 Resolves to [Epub](#epub) for writable adapters, [EpubReader](#epubreader) for
 read-only ones.

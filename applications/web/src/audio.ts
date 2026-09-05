@@ -6,35 +6,30 @@ import { promisify } from "util"
 
 import memoize from "memoize"
 
+import { AUDIO_ENCODERS, canCopyCodec } from "@storyteller-platform/audiobook"
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { logger } from "./logging"
 import { quotePath } from "./shell"
 
 const execPromise = promisify(exec)
 
-export const COVER_IMAGE_FILE_EXTENSIONS = [".jpeg", ".jpg", ".png", ".svg"]
-export const MP3_FILE_EXTENSIONS = [".mp3"]
-export const MPEG4_FILE_EXTENSIONS = [".mp4", ".m4a", ".m4b"]
-export const AAC_FILE_EXTENSIONS = [".aac"]
-export const OGG_FILE_EXTENSIONS = [".ogg", ".oga", ".mogg"]
-export const OPUS_FILE_EXTENSIONS = [".opus"]
-export const WAVE_FILE_EXTENSIONS = [".wav"]
-export const AIFF_FILE_EXTENSIONS = [".aiff"]
-export const FLAC_FILE_EXTENSIONS = [".flac"]
-export const ALAC_FILE_EXTENSIONS = [".alac"]
-export const WEBM_FILE_EXTENSIONS = [".weba"]
+export function isAudioFile(nameOrPath: string): boolean {
+  return MediaType.fromPath(nameOrPath)?.kind === "audio"
+}
 
-const AUDIO_FILE_EXTENSIONS = [
-  ...MP3_FILE_EXTENSIONS,
-  ...AAC_FILE_EXTENSIONS,
-  ...MPEG4_FILE_EXTENSIONS,
-  ...OPUS_FILE_EXTENSIONS,
-  ...OGG_FILE_EXTENSIONS,
-  ...WAVE_FILE_EXTENSIONS,
-  ...AIFF_FILE_EXTENSIONS,
-  ...FLAC_FILE_EXTENSIONS,
-  ...ALAC_FILE_EXTENSIONS,
-  ...WEBM_FILE_EXTENSIONS,
-]
+export function isZipArchive(nameOrPath: string): boolean {
+  return MediaType.fromPath(nameOrPath)?.kind === "archive"
+}
+
+export function isHiddenFile(nameOrPath: string): boolean {
+  return basename(nameOrPath).startsWith(".")
+}
+
+export function lookupAudioMime(nameOrPath: string): string | null {
+  const mediaType = MediaType.fromPath(nameOrPath)
+  return mediaType?.is("audio") ? mediaType.mime : null
+}
 
 type FfmpegTrackFormat = {
   format: {
@@ -86,82 +81,6 @@ type TrackInfo = {
     encoder: string
     mediaType: string
   }
-}
-
-/**
- * Determines if a file with the given name or extension might contain audio.
- *
- * @remarks
- * Note that extension-based file type determination is only a heuristic; both
- * false negatives and false positives are possible.  False positives are
- * especially likely, since many file types can optionally contain audio.
- *
- * @param ext The extension (or complete filename) to check
- * @returns Whether the file *may* contain audio
- */
-export function isAudioFile(filenameOrExt: string): boolean {
-  // Rips from older tools arrive with uppercase extensions (".MP3"); the
-  // extension's casing says nothing about the contents.
-  const lowered = filenameOrExt.toLowerCase()
-  return AUDIO_FILE_EXTENSIONS.some((ext) => lowered.endsWith(ext))
-}
-
-/**
- * Determines if a file is hidden, and so not book content.
- *
- * @param filenameOrPath The filename (or full path) to check
- * @returns Whether the file is hidden
- */
-export function isHiddenFile(filenameOrPath: string): boolean {
-  return basename(filenameOrPath).startsWith(".")
-}
-
-export function isZipArchive(filenameOrExt: string): boolean {
-  return filenameOrExt.toLowerCase().endsWith(".zip")
-}
-
-/**
- * Determine the mime type for a given audio file. If multiple possible
- * mime types exist for an extension, will always return the audio-specific
- * type.
- *
- * @remarks
- * The mime-db used by mime-types has several overloaded extensions,
- * which means that it often returns the incorrect type for our use
- * case
- *
- * @param filenameOrExt
- * @returns The mime type
- */
-export function lookupAudioMime(filenameOrExt: string): string | null {
-  if (MP3_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/mpeg"
-  }
-  if (MPEG4_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/mp4"
-  }
-  if (AAC_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/aac"
-  }
-  if (OGG_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/ogg"
-  }
-  if (OPUS_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/opus"
-  }
-  if (WAVE_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/wav"
-  }
-  if (AIFF_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/aiff"
-  }
-  if (FLAC_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/flac"
-  }
-  if (WEBM_FILE_EXTENSIONS.some((ext) => filenameOrExt.endsWith(ext))) {
-    return "audio/webm"
-  }
-  return null
 }
 
 function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
@@ -285,31 +204,6 @@ export const getTrackChapters = memoize(async function getTrackChapters(
   return chapters.map((chapter) => parseChapterInfo(chapter))
 })
 
-function areSameType(extensionA: string, extensionB: string) {
-  if (extensionA === extensionB) {
-    return true
-  }
-  if (
-    MPEG4_FILE_EXTENSIONS.includes(extensionA) &&
-    MPEG4_FILE_EXTENSIONS.includes(extensionB)
-  ) {
-    return true
-  }
-  if (
-    MP3_FILE_EXTENSIONS.includes(extensionA) &&
-    MP3_FILE_EXTENSIONS.includes(extensionB)
-  ) {
-    return true
-  }
-  if (
-    OPUS_FILE_EXTENSIONS.includes(extensionA) &&
-    OPUS_FILE_EXTENSIONS.includes(extensionB)
-  ) {
-    return true
-  }
-  return false
-}
-
 const hasCoverArt = memoize(async function hasCoverArt(path: string) {
   try {
     const { stdout } = await execPromise(
@@ -365,18 +259,17 @@ function commonFfmpegArguments(
     args.push(
       "-c:a",
       codec,
-      ...(codec === "libopus"
+      ...(codec === AUDIO_ENCODERS.opus
         ? ["-b:a", bitrate && /^\d+[kK]$/i.test(bitrate) ? bitrate : "32K"]
         : []),
-      ...(codec === "libmp3lame" && bitrate ? ["-b:a", bitrate] : []),
+      ...(codec === AUDIO_ENCODERS.mp3 && bitrate ? ["-b:a", bitrate] : []),
     )
   } else if (
-    areSameType(sourceExtension, destExtension) ||
-    destExtension == ".mp4"
+    canCopyCodec(
+      MediaType.fromExtension(sourceExtension),
+      MediaType.fromExtension(destExtension),
+    )
   ) {
-    // Ideally this would be a check for whether the container could handle the
-    // input, but it seems like ffmpeg doesn't make that easy to figure out.
-    // Right now this only comes up when remuxing ogg to mp4, where copy works.
     args.push("-c:a", "copy")
   }
 
@@ -433,7 +326,12 @@ export async function transcodeTrack(
   const sourceExtension = extname(path)
   const destExtension = extname(destination)
 
-  if (!codec && areSameType(sourceExtension, destExtension)) {
+  const container = MediaType.fromExtension(sourceExtension)
+  if (
+    !codec &&
+    container !== null &&
+    container === MediaType.fromExtension(destExtension)
+  ) {
     await copyFile(path, destination)
     return
   }

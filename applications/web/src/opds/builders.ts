@@ -11,6 +11,7 @@ import {
 } from "@readium/shared"
 import he from "he"
 
+import { MediaType } from "@storyteller-platform/media-types"
 import {
   ATOM_ACQ,
   ATOM_NAV,
@@ -20,7 +21,9 @@ import {
   NavigationLink,
   NavigationLinks,
   OPDSPublication,
+  OPDS_AUTHENTICATION_JSON,
   OPDS_JSON,
+  OPENSEARCH_XML,
   THUMBNAIL_REL,
 } from "@storyteller-platform/opds"
 
@@ -76,7 +79,7 @@ const searchLink = (version: OpdsVersion): Link => {
   return new Link({
     href: "/opds/search.xml",
     rels: new Set(["search"]),
-    type: "application/opensearchdescription+xml",
+    type: OPENSEARCH_XML,
   })
 }
 
@@ -84,7 +87,7 @@ const authenticate = () =>
   new Properties({
     authenticate: new Link({
       href: "/opds/auth/auth.json",
-      type: "application/opds-authentication+json",
+      type: OPDS_AUTHENTICATION_JSON,
     }),
   })
 
@@ -144,7 +147,7 @@ export const bookToPublication = (
       new AcquisitionLink({
         href: `/api/v2/books/${book.uuid}/files?format=readaloud`,
         rel: "acquisition",
-        type: "application/epub+zip",
+        type: MediaType.EPUB.mime,
       }),
     )
   }
@@ -153,7 +156,7 @@ export const bookToPublication = (
       new AcquisitionLink({
         href: `/api/v2/books/${book.uuid}/files?format=ebook`,
         rel: "acquisition",
-        type: "application/epub+zip",
+        type: MediaType.EPUB.mime,
       }),
     )
   }
@@ -162,7 +165,7 @@ export const bookToPublication = (
       new AcquisitionLink({
         href: `/api/v2/books/${book.uuid}/files?format=audiobook-rpf`,
         rel: "acquisition",
-        type: "application/audiobook+zip",
+        type: MediaType.AUDIOBOOK_PACKAGE.mime,
       }),
     )
   }
@@ -178,7 +181,7 @@ export const bookToPublication = (
           updatedAt: book.updatedAt,
         }),
         rels: new Set([THUMBNAIL_REL]),
-        type: "image/jpeg",
+        type: MediaType.JPEG.mime,
         properties: authenticate(),
       }),
     )
@@ -192,7 +195,7 @@ export const bookToPublication = (
           audio: true,
         }),
         rels: new Set([THUMBNAIL_REL]),
-        type: "image/jpeg",
+        type: MediaType.JPEG.mime,
         properties: authenticate(),
       }),
     )

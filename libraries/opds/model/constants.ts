@@ -1,9 +1,13 @@
+import { MediaType } from "@storyteller-platform/media-types"
+
 export const ATOM_NAV =
-  "application/atom+xml;profile=opds-catalog;kind=navigation" as const
+  `${MediaType.ATOM.mime};profile=opds-catalog;kind=navigation` as const
 export const ATOM_ACQ =
-  "application/atom+xml;profile=opds-catalog;kind=acquisition" as const
-export const OPDS_JSON = "application/opds+json" as const
-export const OPDS_PUBLICATION_JSON = "application/opds-publication+json"
+  `${MediaType.ATOM.mime};profile=opds-catalog;kind=acquisition` as const
+export const OPDS_JSON = MediaType.OPDS.mime
+export const OPDS_PUBLICATION_JSON = MediaType.OPDS_PUBLICATION.mime
+export const OPDS_AUTHENTICATION_JSON = MediaType.OPDS_AUTHENTICATION.mime
+export const OPENSEARCH_XML = MediaType.OPENSEARCH_DESCRIPTION.mime
 
 /**
  * all valid acquisition rels as an "enum"

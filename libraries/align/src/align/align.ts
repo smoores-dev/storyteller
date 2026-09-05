@@ -25,7 +25,6 @@ import memoize from "memoize"
 import { type Logger } from "pino"
 import { ZipFile } from "yazl"
 
-import { isAudioFile, lookupAudioMime } from "@storyteller-platform/audiobook"
 import {
   Epub,
   type ManifestItem,
@@ -38,6 +37,7 @@ import {
 } from "@storyteller-platform/ghost-story"
 import { type RecognitionResult } from "@storyteller-platform/ghost-story/recognition"
 import { type Mapping } from "@storyteller-platform/mapping"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { getTrackDuration } from "../common/ffmpeg.ts"
 import { parseDom } from "../markup/parseDom.ts"
@@ -219,7 +219,7 @@ export async function align(
 
   const audiobookFiles = await readdir(audiobookDir).then((filenames) =>
     filenames
-      .filter((f) => isAudioFile(f))
+      .filter((f) => MediaType.fromPath(f)?.kind === "audio")
       .map((f) => autoJoin(audiobookDir, f)),
   )
 
@@ -547,7 +547,7 @@ export class Aligner {
 
         const audio = await readFile(audiofile)
 
-        const mediaType = lookupAudioMime(base) ?? undefined
+        const mediaType = MediaType.fromPath(base)?.mime
         await this.epub.addManifestItem(
           {
             id,
@@ -566,7 +566,7 @@ export class Aligner {
       {
         id: mediaOverlayId,
         href: `MediaOverlays/${chapterStem}.smil`,
-        mediaType: "application/smil+xml",
+        mediaType: MediaType.SMIL.mime,
       },
       createMediaOverlay(
         chapter,
@@ -763,7 +763,7 @@ export class Aligner {
     Epub.addLinkToXhtmlHead(chapterXml, {
       rel: "stylesheet",
       href: storytellerStylesheetUrl,
-      type: "text/css",
+      type: MediaType.CSS.mime,
     })
 
     this.alignedChapters.push({
@@ -1039,7 +1039,7 @@ export class Aligner {
       {
         id: "storyteller_readaloud_styles",
         href: "Styles/storyteller-readaloud.css",
-        mediaType: "text/css",
+        mediaType: MediaType.CSS.mime,
       },
       `
 .-epub-media-overlay-active {

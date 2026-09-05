@@ -1,0 +1,23 @@
+{
+  "extends": ["@tsconfig/strictest/tsconfig.json"],
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "incremental": true,
+    "module": "NodeNext",
+    "target": "esnext",
+    "moduleResolution": "NodeNext",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "lib": ["ESNext"],
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
+    "outDir": "dist",
+    "customConditions": ["@storyteller"],
+    "resolveJsonModule": true,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["./**/*.ts", "!tsup.config.ts"],
+  "exclude": ["dist", "tsup.config.ts"]
+}

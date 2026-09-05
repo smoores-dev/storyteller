@@ -3,6 +3,8 @@
 import { useRef, useState } from "react"
 import { useFormState, useWatch } from "react-hook-form"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { Badge } from "@v3/_/components/ui/badge"
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -104,6 +106,16 @@ import { type UUID } from "@/uuid"
 import { SettingsFormField, useSettingsForm } from "./SettingsFormProvider"
 import { SettingsSection } from "./shared"
 
+const ICON_ACCEPT = [
+  MediaType.PNG,
+  MediaType.JPEG,
+  MediaType.WEBP,
+  MediaType.AVIF,
+  MediaType.GIF,
+]
+  .map((type) => type.mime)
+  .join(",")
+
 export function LibraryTab() {
   return (
     <div className="space-y-6">
@@ -197,7 +209,7 @@ function ServerIconField() {
                 ref={inputRef}
                 id="serverIconSha256"
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/avif,image/gif"
+                accept={ICON_ACCEPT}
                 className="hidden"
                 onChange={(event) => {
                   const file = event.target.files?.[0]

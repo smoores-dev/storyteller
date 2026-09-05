@@ -1,5 +1,7 @@
 import { type MetadataRoute } from "next"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { getServerIcon } from "@/database/servers"
 import { getSettings } from "@/database/settings"
 
@@ -15,24 +17,24 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         {
           src: "/api/v2/server/icon?s=192",
           sizes: "192x192",
-          type: "image/webp",
+          type: MediaType.WEBP.mime,
         },
         {
           src: "/api/v2/server/icon?s=512",
           sizes: "512x512",
-          type: "image/webp",
+          type: MediaType.WEBP.mime,
         },
       ]
     : [
         {
           src: "/web-app-manifest-192x192.png",
           sizes: "192x192",
-          type: "image/png",
+          type: MediaType.PNG.mime,
         },
         {
           src: "/web-app-manifest-512x512.png",
           sizes: "512x512",
-          type: "image/png",
+          type: MediaType.PNG.mime,
         },
       ]
 

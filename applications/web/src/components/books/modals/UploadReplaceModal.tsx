@@ -16,6 +16,8 @@ import Tus from "@uppy/tus"
 import { useEffect, useMemo, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { MetadataFieldOverridesEditor } from "@/components/settings/MetadataFieldOverridesEditor"
 import { type BookWithRelations } from "@/database/books"
 import {
@@ -162,7 +164,7 @@ export function UploadReplaceModal({ isOpen, onClose, book, format }: Props) {
         `/api/v2/books/${book.uuid}/replace-asset/upload/finalize`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": MediaType.JSON.mime },
           body: JSON.stringify({ metadataFieldOverrides: overrides }),
         },
       )

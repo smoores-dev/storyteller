@@ -13,13 +13,13 @@ import { camelCase } from "change-case"
 import { enumerate } from "itertools"
 import clockvalue from "smil-clockvalue"
 
-import { lookupAudioMime } from "@storyteller-platform/audiobook"
 import {
   Epub,
   type ManifestItem,
   type ParsedXml,
   type XmlElement,
 } from "@storyteller-platform/epub"
+import { MediaType } from "@storyteller-platform/media-types"
 
 export function generateGuidedNavigationManifest(
   title: LocalizedString,
@@ -65,19 +65,19 @@ export function generateGuidedNavigationManifest(
     const audioReferences = Object.entries(referencedAudioFiles).map(
       ([audioFile, { start, end }]) => ({
         href: `${audioFile}#t=${start},${end}`,
-        type: lookupAudioMime(audioFile),
+        type: MediaType.fromPath(audioFile)?.mime ?? null,
       }),
     )
 
     readingOrder.push(
       new Link({
         href,
-        type: "application/guided-navigation+json",
+        type: MediaType.GUIDED_NAVIGATION.mime,
         properties: new Properties({
           references: [
             {
               href: textref,
-              type: "application/xhtml+xml",
+              type: MediaType.XHTML.mime,
             },
             ...audioReferences,
           ],
@@ -96,7 +96,7 @@ export function generateGuidedNavigationManifest(
     links: new Links([
       new Link({
         href: "manifest.json",
-        type: "application/webpub+json",
+        type: MediaType.WEBPUB_MANIFEST.mime,
         rels: new Set(["self"]),
       }),
     ]),
@@ -135,7 +135,7 @@ export async function generateGuidedNavigationDocuments(epub: Epub) {
         new Link({
           rels: new Set(["prev"]),
           href: `GND/${prevOverlay.id}.json`,
-          type: "application/guided-navigation+json",
+          type: MediaType.GUIDED_NAVIGATION.mime,
         }),
       )
     }
@@ -144,7 +144,7 @@ export async function generateGuidedNavigationDocuments(epub: Epub) {
       new Link({
         rels: new Set(["self"]),
         href: `GND/${overlay.id}.json`,
-        type: "application/guided-navigation+json",
+        type: MediaType.GUIDED_NAVIGATION.mime,
       }),
     )
 
@@ -154,7 +154,7 @@ export async function generateGuidedNavigationDocuments(epub: Epub) {
         new Link({
           rels: new Set(["next"]),
           href: `GND/${nextOverlay.id}.json`,
-          type: "application/guided-navigation+json",
+          type: MediaType.GUIDED_NAVIGATION.mime,
         }),
       )
     }

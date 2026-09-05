@@ -16,5 +16,10 @@
     "customConditions": ["@storyteller"],
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "package.json"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "package.json"],
+  "references": [
+    {
+      "path": "../media-types"
+    }
+  ]
 }

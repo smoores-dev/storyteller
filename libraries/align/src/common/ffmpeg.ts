@@ -6,8 +6,10 @@ import { promisify } from "node:util"
 import memoize from "memoize"
 import { type Logger } from "pino"
 
+import { AUDIO_ENCODERS, canCopyCodec } from "@storyteller-platform/audiobook"
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { type AudioEncoding } from "../process/AudioEncoding.ts"
-import { areSameType } from "../process/mime.ts"
 
 import { quotePath } from "./shell.ts"
 
@@ -317,15 +319,17 @@ function commonFfmpegArguments(options: FfmpegArgumentOptions) {
   if (codec) {
     args.push("-c:a", codec)
 
-    if (codec === "libopus") {
+    if (codec === AUDIO_ENCODERS.opus) {
       args.push("-b:a", bitrate && /^\d+[kK]$/i.test(bitrate) ? bitrate : "32K")
-    } else if (codec === "libmp3lame" && bitrate) {
+    } else if (codec === AUDIO_ENCODERS.mp3 && bitrate) {
       // MP3 is always CBR for accurate seeking; bitrate is a `-b:a` value.
       args.push("-b:a", bitrate)
     }
   } else if (
-    areSameType(sourceExtension, destExtension) ||
-    destExtension == ".mp4"
+    canCopyCodec(
+      MediaType.fromExtension(sourceExtension),
+      MediaType.fromExtension(destExtension),
+    )
   ) {
     args.push("-c:a", "copy")
   }
@@ -393,7 +397,12 @@ export async function transcodeFile(
   signal?: AbortSignal | null,
   logger?: Logger | null,
 ) {
-  if (!encoding?.codec && areSameType(input, output)) {
+  const container = MediaType.fromPath(input)
+  if (
+    !encoding?.codec &&
+    container !== null &&
+    container === MediaType.fromPath(output)
+  ) {
     logger?.info(
       `Input and output container and codec are the same, copying ${input} to output directory`,
     )

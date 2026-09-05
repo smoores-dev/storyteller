@@ -8,6 +8,7 @@ import {
   type ImportMode,
 } from "@/database/settingsTypes"
 import { useCreateBookMutation } from "@/store/api"
+import { bookAccept } from "@/uploadFileTypes"
 
 import { ServerFileBrowser } from "./ServerFileBrowser"
 
@@ -153,7 +154,7 @@ export function ImportServerBooksModal({ isOpen, collection, onClose }: Props) {
       }}
     >
       <ServerFileBrowser
-        accept=".epub,.m4b,.m4a,.zip,audio/*,video/*,application/epub+zip"
+        accept={bookAccept}
         multiple
         value={values}
         onChange={setValues}

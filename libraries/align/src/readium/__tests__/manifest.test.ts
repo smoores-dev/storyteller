@@ -6,6 +6,7 @@ import { promisify } from "node:util"
 import { Manifest } from "@readium/shared"
 
 import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { generateReadiumManifest } from "../manifest.ts"
 import { type ReadiumWebPublicationManifest } from "../manifest.types.ts"
@@ -24,7 +25,11 @@ async function createReadiumCLIManifest(
   // bug in readium cli, does not output links
   // or bug in readium shared depending on how you think about it
   parsed.links = [
-    { href: "manifest.json", rel: ["self"], type: "application/webpub+json" },
+    {
+      href: "manifest.json",
+      rel: ["self"],
+      type: MediaType.WEBPUB_MANIFEST.mime,
+    },
   ]
   const deserialized = Manifest.deserialize(parsed)
   assert.ok(deserialized, "cli manifest should deserialize")

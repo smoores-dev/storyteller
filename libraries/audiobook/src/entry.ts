@@ -1,3 +1,5 @@
+import { MediaType } from "@storyteller-platform/media-types"
+
 import {
   type AttachedPic,
   type TrackInfo,
@@ -5,7 +7,6 @@ import {
   getTrackMetadata,
   writeTrackMetadata,
 } from "./ffmpeg.ts"
-import { lookupAudioMime } from "./mime.ts"
 import { type AudiobookChapter, type AudiobookResource } from "./resources.ts"
 
 export interface Uint8ArrayEntry {
@@ -156,8 +157,9 @@ export class AudiobookEntry {
     const duration = await this.getDuration()
     const bitrate = (await this.getBitRate()) ?? null
     const title = (await this.getTrackTitle()) ?? null
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const type = lookupAudioMime(this.filename)!
+    const mediaType = MediaType.fromPath(this.filename)
+    const type = (mediaType?.is("audio") ? mediaType : MediaType.OCTET_STREAM)
+      .mime
     return {
       filename: this.filename,
       title,

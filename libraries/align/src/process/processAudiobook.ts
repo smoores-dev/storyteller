@@ -5,20 +5,16 @@ import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { type Logger } from "pino"
 
 import {
-  AAC_FILE_EXTENSIONS,
+  AUDIO_ENCODERS,
   Audiobook,
-  MP3_FILE_EXTENSIONS,
-  MPEG4_FILE_EXTENSIONS,
-  OGG_FILE_EXTENSIONS,
-  OPUS_FILE_EXTENSIONS,
-  isAudioFile,
-  isZipArchive,
+  outputContainer,
 } from "@storyteller-platform/audiobook"
 import {
   type TimingAggregator,
   createAggregator,
   createTiming,
 } from "@storyteller-platform/ghost-story"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import {
   getTrackInfo,
@@ -53,7 +49,10 @@ export async function processAudiobook(
   await mkdir(output, { recursive: true })
 
   const allFiles = await readdir(input, { recursive: true })
-  const filenames = allFiles.filter((f) => isAudioFile(f) || isZipArchive(f))
+  const filenames = allFiles.filter((f) => {
+    const kind = MediaType.fromPath(f)?.kind
+    return kind === "audio" || kind === "archive"
+  })
   options.logger?.debug(`Found ${filenames.length} files to process`)
 
   const outputFiles: string[] = []
@@ -124,11 +123,11 @@ async function resolveVbrEncoding(
   userEncoding: AudioEncoding | null | undefined,
   logger?: Logger | null,
 ): Promise<AudioEncoding | null | undefined> {
-  if (userEncoding?.codec && userEncoding.codec !== "libmp3lame") {
+  if (userEncoding?.codec && userEncoding.codec !== AUDIO_ENCODERS.mp3) {
     return userEncoding
   }
 
-  const sourceIsMp3 = extname(filepath).toLowerCase() === ".mp3"
+  const sourceIsMp3 = MediaType.fromPath(filepath) === MediaType.MPEG_AUDIO
 
   if (!userEncoding?.codec && !sourceIsMp3) {
     return userEncoding
@@ -146,7 +145,7 @@ async function resolveVbrEncoding(
   )
 
   return {
-    codec: "libmp3lame",
+    codec: AUDIO_ENCODERS.mp3,
     bitrate: `${targetBitrate / 1000}k`,
   }
 }
@@ -199,10 +198,11 @@ export async function processFile(
         ? vbrEncodings.get(range.filepath)
         : options.encoding
 
-      const outputExtension = determineExtension(
-        range.filepath,
-        effectiveEncoding?.codec,
-      )
+      const outputExtension =
+        outputContainer(
+          effectiveEncoding?.codec,
+          MediaType.fromPath(range.filepath),
+        )?.extension ?? extname(range.filepath)
       const outputFilename = `${prefix}${(index + 1).toString().padStart(5, "0")}${outputExtension}`
       const outputFilepath = join(output, outputFilename)
 
@@ -247,33 +247,4 @@ export async function processFile(
   )
 
   return { processedFiles: outputFiles, timing }
-}
-
-function determineExtension(input: string, codec?: string | null) {
-  if (codec === "libmp3lame") {
-    return ".mp3"
-  }
-  // iOS doesn't support Ogg containers at all, so we
-  // need to use mp4 containers for OPUS streams
-  if (codec === "aac" || codec === "libopus") {
-    return ".mp4"
-  }
-
-  if (MP3_FILE_EXTENSIONS.some((ext) => input.endsWith(ext))) {
-    return ".mp3"
-  }
-
-  // All of these containers usually contain streams
-  // that can be stored in an MP4 container, and iOS
-  // only supports MP4 and MP3 containers
-  if (
-    MPEG4_FILE_EXTENSIONS.some((ext) => input.endsWith(ext)) ||
-    OGG_FILE_EXTENSIONS.some((ext) => input.endsWith(ext)) ||
-    OPUS_FILE_EXTENSIONS.some((ext) => input.endsWith(ext)) ||
-    AAC_FILE_EXTENSIONS.some((ext) => input.endsWith(ext))
-  ) {
-    return ".mp4"
-  }
-
-  return extname(input)
 }

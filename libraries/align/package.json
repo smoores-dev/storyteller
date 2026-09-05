@@ -63,6 +63,7 @@
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/ghost-story": "workspace:^",
     "@storyteller-platform/mapping": "workspace:*",
+    "@storyteller-platform/media-types": "workspace:^",
     "@storyteller-platform/transliteration": "^4.0.6",
     "chalk": "^5.4.1",
     "change-case": "^5.4.4",

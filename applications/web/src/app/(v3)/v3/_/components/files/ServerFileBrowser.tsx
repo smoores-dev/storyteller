@@ -4,6 +4,8 @@ import { open } from "@tauri-apps/plugin-dialog"
 import { matchSorter } from "match-sorter"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { Badge } from "@v3/_/components/ui/badge"
 import { Button } from "@v3/_/components/ui/button"
 import { Input } from "@v3/_/components/ui/input"
@@ -18,6 +20,7 @@ import {
 import { useIsTauri } from "@/app/(v3)/v3/_/hooks/use-is-tauri"
 import * as icon from "@/icons"
 import { formatBytes } from "@/strings"
+import { matchesAccept } from "@/uploadFileTypes"
 
 function dirname(path: string) {
   const segments = path.split("/")
@@ -83,51 +86,6 @@ function useListDirectory(
   return { entries, actionIsPending }
 }
 
-const EXTENSION_MIME: Record<string, string> = {
-  epub: "application/epub+zip",
-  zip: "application/zip",
-  mp3: "audio/mpeg",
-  m4a: "audio/mp4",
-  m4b: "audio/mp4",
-  aac: "audio/aac",
-  ogg: "audio/ogg",
-  oga: "audio/ogg",
-  opus: "audio/opus",
-  flac: "audio/flac",
-  wav: "audio/wav",
-  webm: "audio/webm",
-  mp4: "video/mp4",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  gif: "image/gif",
-  webp: "image/webp",
-  avif: "image/avif",
-  svg: "image/svg+xml",
-}
-
-function lookupMime(filename: string): string | null {
-  const ext = filename.split(".").pop()?.toLowerCase()
-  return (ext && EXTENSION_MIME[ext]) || null
-}
-
-function matchesAcceptFilter(entryName: string, fileTypes: string[]): boolean {
-  return fileTypes.some((type) => {
-    if (type.startsWith(".")) {
-      return entryName.endsWith(type)
-    }
-
-    const contentType = lookupMime(entryName)
-    if (!contentType) return false
-
-    if (type.endsWith("/*")) {
-      return contentType.startsWith(type.slice(0, type.length - 1))
-    }
-
-    return contentType === type
-  })
-}
-
 type ServerFileBrowserBaseProps = {
   accept?: string
   fileFilter?: (entry: { name: string; isDirectory: boolean }) => boolean
@@ -180,19 +138,17 @@ export function ServerFileBrowserWeb(props: ServerFileBrowserProps) {
     setCurrentSearchDirectory,
   )
 
-  const fileTypes = useMemo(() => (accept ? accept.split(",") : []), [accept])
-
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {
       if (entry.isDirectory) return true
       if (directoriesOnly) return false
 
       if (fileFilter) return fileFilter(entry)
-      if (fileTypes.length === 0) return true
+      if (!accept) return true
 
-      return matchesAcceptFilter(entry.name, fileTypes)
+      return matchesAccept(entry.name, accept)
     })
-  }, [rawEntries, directoriesOnly, fileFilter, fileTypes])
+  }, [rawEntries, directoriesOnly, fileFilter, accept])
 
   const entries = useMemo(() => {
     return matchSorter(
@@ -480,55 +436,46 @@ export function ServerFileBrowserWeb(props: ServerFileBrowserProps) {
   )
 }
 
-const MIME_WILDCARD_EXTENSIONS: Record<string, string[]> = {
-  "audio/*": [
-    "mp3",
-    "aac",
-    "mp4",
-    "m4a",
-    "m4b",
-    "opus",
-    "ogg",
-    "oga",
-    "wav",
-    "flac",
-    "weba",
-  ],
-  "video/*": ["mp4", "m4v", "webm"],
-  "image/*": ["jpg", "jpeg", "png", "gif", "webp", "svg"],
-}
-
 function acceptToTauriFilters(
   accept: string | undefined,
 ): { name: string; extensions: string[] }[] | undefined {
   if (!accept) return undefined
 
-  const extensions: string[] = []
+  const extensions = new Set<string>()
 
   for (const raw of accept.split(",")) {
-    const token = raw.trim()
+    const token = raw.trim().toLowerCase()
     if (!token) continue
 
     if (token.startsWith(".")) {
-      extensions.push(token.slice(1))
+      extensions.add(token)
       continue
     }
 
-    const wildcard = MIME_WILDCARD_EXTENSIONS[token]
-    if (wildcard) {
-      extensions.push(...wildcard)
+    if (token.endsWith("/*")) {
+      const prefix = token.slice(0, -1)
+      for (const mediaType of MediaType.all) {
+        const names = [mediaType.mime, ...mediaType.aliases]
+        if (names.some((name) => name.startsWith(prefix))) {
+          for (const extension of mediaType.extensions)
+            extensions.add(extension)
+        }
+      }
       continue
     }
 
-    const ext = token.split("/")[1]?.replace(/\+.*$/, "")
-    if (ext) {
-      extensions.push(ext)
-    }
+    const extension = MediaType.fromMime(token)?.extension
+    if (extension) extensions.add(extension)
   }
 
-  if (extensions.length === 0) return undefined
+  if (extensions.size === 0) return undefined
 
-  return [{ name: "Files", extensions }]
+  return [
+    {
+      name: "Files",
+      extensions: [...extensions].map((extension) => extension.slice(1)),
+    },
+  ]
 }
 
 export function ServerFileBrowserTauri(

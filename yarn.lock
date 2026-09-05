@@ -15609,6 +15609,7 @@ __metadata:
     "@storyteller-platform/fs": "workspace:^"
     "@storyteller-platform/ghost-story": "workspace:^"
     "@storyteller-platform/mapping": "workspace:*"
+    "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/transliteration": "npm:^4.0.6"
     "@storyteller-platform/tsup": "workspace:*"
     "@tsconfig/strictest": "npm:^2.0.5"
@@ -15650,16 +15651,15 @@ __metadata:
   dependencies:
     "@storyteller-platform/eslint": "workspace:*"
     "@storyteller-platform/fs": "workspace:^"
+    "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/path": "workspace:^"
     "@storyteller-platform/tsup": "workspace:^"
     "@tsconfig/strictest": "npm:^2.0.5"
-    "@types/mime-types": "npm:^2"
     "@types/node": "npm:^24.0.0"
     "@types/yauzl-promise": "npm:^4"
     "@types/yazl": "npm:^3"
     eslint: "npm:^8.0.0"
     markdown-toc: "npm:^1.2.0"
-    mime-types: "npm:^3.0.1"
     music-metadata: "npm:^11.9.0"
     remark-toc: "npm:^9.0.0"
     tsup: "npm:^8.5.0"
@@ -15714,10 +15714,10 @@ __metadata:
     "@readium/shared": "npm:^2.2.0"
     "@storyteller-platform/eslint": "workspace:*"
     "@storyteller-platform/fs": "workspace:^"
+    "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/path": "workspace:^"
     "@storyteller-platform/tsup": "workspace:^"
     "@tsconfig/strictest": "npm:^2.0.5"
-    "@types/mime-types": "npm:^2"
     "@types/node": "npm:^24.0.0"
     "@types/yauzl-promise": "npm:^4"
     "@types/yazl": "npm:^3"
@@ -15727,7 +15727,6 @@ __metadata:
     fast-xml-parser: "npm:^4.0.1"
     markdown-toc: "npm:^1.2.0"
     mem: "npm:^8.0.0"
-    mime-types: "npm:^3.0.1"
     nanoid: "npm:^5.1.5"
     remark-toc: "npm:^9.0.0"
     tsup: "npm:^8.5.0"
@@ -15783,6 +15782,7 @@ __metadata:
     "@robingenz/zli": "npm:^0.2.0"
     "@storyteller-platform/eslint": "workspace:*"
     "@storyteller-platform/fs": "workspace:^"
+    "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/tsup": "workspace:^"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/cli-progress": "npm:^3"
@@ -15818,6 +15818,23 @@ __metadata:
     "@storyteller-platform/tsup": "workspace:^"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/node": "npm:^24.0.0"
+    eslint: "npm:^8.0.0"
+    tsup: "npm:^8.5.0"
+    tsx: "npm:^4.19.2"
+    typescript: "npm:^5.9.2"
+  languageName: unknown
+  linkType: soft
+
+"@storyteller-platform/media-types@workspace:^, @storyteller-platform/media-types@workspace:libraries/media-types":
+  version: 0.0.0-use.local
+  resolution: "@storyteller-platform/media-types@workspace:libraries/media-types"
+  dependencies:
+    "@storyteller-platform/eslint": "workspace:*"
+    "@storyteller-platform/path": "workspace:*"
+    "@storyteller-platform/tsup": "workspace:^"
+    "@tsconfig/strictest": "npm:^2.0.5"
+    "@types/node": "npm:^24.0.0"
+    esbuild: "npm:^0.27.3"
     eslint: "npm:^8.0.0"
     tsup: "npm:^8.5.0"
     tsx: "npm:^4.19.2"
@@ -16072,6 +16089,7 @@ __metadata:
   dependencies:
     "@apidevtools/json-schema-ref-parser": "npm:^11.9.3"
     "@storyteller-platform/eslint": "workspace:*"
+    "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/tsup": "workspace:^"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/node": "npm:^24.0.0"
@@ -16100,7 +16118,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/path@workspace:^, @storyteller-platform/path@workspace:libraries/path":
+"@storyteller-platform/path@workspace:*, @storyteller-platform/path@workspace:^, @storyteller-platform/path@workspace:libraries/path":
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/path@workspace:libraries/path"
   dependencies:
@@ -16191,6 +16209,7 @@ __metadata:
     "@storyteller-platform/eslint": "workspace:*"
     "@storyteller-platform/fs": "workspace:*"
     "@storyteller-platform/ghost-story": "workspace:*"
+    "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/okmain": "npm:0.2.3-rc.3"
     "@storyteller-platform/opds": "workspace:*"
     "@t3-oss/env-nextjs": "npm:^0.13.8"
@@ -16213,7 +16232,6 @@ __metadata:
     "@types/fb-watchman": "npm:^2"
     "@types/he": "npm:^1"
     "@types/jsonwebtoken": "npm:^9"
-    "@types/mime-types": "npm:^2"
     "@types/node": "npm:^24.0.0"
     "@types/nodemailer": "npm:^6"
     "@types/qrcode": "npm:^1"
@@ -16256,7 +16274,6 @@ __metadata:
     kysely-codegen: "npm:^0.18.5"
     match-sorter: "npm:^6.3.4"
     memoize: "npm:^10.0.0"
-    mime-types: "npm:^3.0.1"
     motion: "npm:^12.40.0"
     music-metadata: "npm:^11.6.0"
     next: "npm:^16.3.0-preview.5"
@@ -18389,13 +18406,6 @@ __metadata:
   version: 2.0.13
   resolution: "@types/mdx@npm:2.0.13"
   checksum: 10c0/5edf1099505ac568da55f9ae8a93e7e314e8cbc13d3445d0be61b75941226b005e1390d9b95caecf5dcb00c9d1bab2f1f60f6ff9876dc091a48b547495007720
-  languageName: node
-  linkType: hard
-
-"@types/mime-types@npm:^2":
-  version: 2.1.4
-  resolution: "@types/mime-types@npm:2.1.4"
-  checksum: 10c0/a10d57881d14a053556b3d09292de467968d965b0a06d06732c748da39b3aa569270b5b9f32529fd0e9ac1e5f3b91abb894f5b1996373254a65cb87903c86622
   languageName: node
   linkType: hard
 

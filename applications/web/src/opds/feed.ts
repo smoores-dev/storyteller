@@ -1,6 +1,9 @@
 import he from "he"
 import { Entry, Feed } from "opds-ts/v1.2"
 
+import { MediaType } from "@storyteller-platform/media-types"
+import { ATOM_ACQ, ATOM_NAV, OPENSEARCH_XML } from "@storyteller-platform/opds"
+
 import { type BookWithRelations, booksQuery } from "@/database/books"
 import {
   type CollectionWithRelations,
@@ -36,22 +39,22 @@ export async function createRootCatalog(options: OPDSOptions) {
       new Entry("books", "All Books").addLink({
         href: `${opdsBase}/books`,
         rel: "subsection",
-        type: "application/atom+xml;profile=opds-catalog;kind=navigation",
+        type: ATOM_NAV,
       }),
       new Entry("collections", "Collections").addLink({
         href: `${opdsBase}/collections`,
         rel: "subsection",
-        type: "application/atom+xml;profile=opds-catalog;kind=navigation",
+        type: ATOM_NAV,
       }),
       new Entry("series", "Series").addLink({
         href: `${opdsBase}/series`,
         rel: "subsection",
-        type: "application/atom+xml;profile=opds-catalog;kind=navigation",
+        type: ATOM_NAV,
       }),
       new Entry("tags", "Tags").addLink({
         href: `${opdsBase}/tags`,
         rel: "subsection",
-        type: "application/atom+xml;profile=opds-catalog;kind=navigation",
+        type: ATOM_NAV,
       }),
     ])
     .addEntries(
@@ -64,7 +67,7 @@ export async function createRootCatalog(options: OPDSOptions) {
           .addLink({
             href: `${opdsBase}/collections/${collection.uuid}/books`,
             rel: "subsection",
-            type: "application/atom+xml;profile=opds-catalog;kind=navigation",
+            type: ATOM_NAV,
           }),
       ),
     )
@@ -122,7 +125,7 @@ export function createBooksFeed(
           updatedAt: book.updatedAt,
         }),
         rel: "http://opds-spec.org/image/thumbnail",
-        type: "image/jpeg",
+        type: MediaType.JPEG.mime,
         properties: {
           authenticate: true,
         },
@@ -136,7 +139,7 @@ export function createBooksFeed(
           audio: true,
         }),
         rel: "http://opds-spec.org/image/thumbnail",
-        type: "image/jpeg",
+        type: MediaType.JPEG.mime,
         properties: {
           authenticate: true,
         },
@@ -147,7 +150,7 @@ export function createBooksFeed(
     if (hasReadaloud) {
       entry.addAcquisition(
         `/api/v2/books/${book.uuid}/files?format=readaloud`,
-        "application/epub+zip",
+        MediaType.EPUB.mime,
       )
     }
 
@@ -155,14 +158,14 @@ export function createBooksFeed(
     if (hasEbook) {
       entry.addAcquisition(
         `/api/v2/books/${book.uuid}/files?format=ebook`,
-        "application/epub+zip",
+        MediaType.EPUB.mime,
       )
     }
 
     if (hasAudiobook) {
       entry.addAcquisition(
         `/api/v2/books/${book.uuid}/files?format=audiobook-rpf`,
-        "application/audiobook+zip",
+        MediaType.AUDIOBOOK_PACKAGE.mime,
       )
     }
 
@@ -196,14 +199,14 @@ export function createBooksFeed(
       feed.addLink({
         href: `${url.pathname}?${url.searchParams.toString()}`,
         rel: "previous",
-        type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
+        type: ATOM_ACQ,
       })
 
       url.searchParams.set("page", "1")
       feed.addLink({
         href: `${url.pathname}?${url.searchParams.toString()}`,
         rel: "first",
-        type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
+        type: ATOM_ACQ,
       })
     }
 
@@ -212,14 +215,14 @@ export function createBooksFeed(
       feed.addLink({
         href: `${url.pathname}?${url.searchParams.toString()}`,
         rel: "next",
-        type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
+        type: ATOM_ACQ,
       })
 
       url.searchParams.set("page", String(totalPages))
       feed.addLink({
         href: `${url.pathname}?${url.searchParams.toString()}`,
         rel: "last",
-        type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
+        type: ATOM_ACQ,
       })
     }
   }
@@ -227,7 +230,7 @@ export function createBooksFeed(
   feed.addLink({
     href: "/opds/search.xml",
     rel: "search",
-    type: "application/opensearchdescription+xml",
+    type: OPENSEARCH_XML,
   })
 
   return feed
@@ -286,7 +289,7 @@ export async function createCollectionNavFeed(options: OPDSOptions) {
         new Entry(`collection:${collection.uuid}`, collection.name).addLink({
           href: `/opds/collections/${collection.uuid}/books`,
           rel: "subsection",
-          type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
+          type: ATOM_ACQ,
         }),
       ),
     )
@@ -359,7 +362,7 @@ export async function createSeriesNavFeed(options: OPDSOptions) {
       new Entry(`series:${series.uuid}`, series.name).addLink({
         href: `/opds/series/${series.uuid}/books`,
         rel: "subsection",
-        type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
+        type: ATOM_ACQ,
       }),
     ),
   )
@@ -422,7 +425,7 @@ export async function createTagsNavFeed(options: OPDSOptions) {
       new Entry(`tag:${tag.uuid}`, tag.name).addLink({
         href: `/opds/tags/${tag.uuid}/books`,
         rel: "subsection",
-        type: "application/atom+xml;profile=opds-catalog;kind=acquisition",
+        type: ATOM_ACQ,
       }),
     ),
   )
@@ -504,6 +507,6 @@ export function addSearchToFeed(feed: Feed) {
   feed.addLink({
     href: "/opds/search.xml",
     rel: "search",
-    type: "application/opensearchdescription+xml",
+    type: OPENSEARCH_XML,
   })
 }

@@ -1,3 +1,8 @@
+## LLM Policy
+
+- [ ] I have read and understood
+      [Storyteller's LLM policy](https://storyteller-platform.dev/contributing/LLM_POLICY)
+
 ## Summary
 
 {Summarize the bug encountered concisely}

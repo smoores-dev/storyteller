@@ -3,9 +3,9 @@ import { cp, mkdir } from "node:fs/promises"
 import { Mutex } from "async-mutex"
 import { XMLBuilder, XMLParser } from "fast-xml-parser"
 import memoize from "mem"
-import { lookup } from "mime-types"
 import { nanoid } from "nanoid"
 
+import { MediaType } from "@storyteller-platform/media-types"
 import { dirname } from "@storyteller-platform/path"
 
 import type {
@@ -777,7 +777,7 @@ export class Epub {
       Epub.getXmlChildren(rootfiles),
       (node) =>
         !Epub.isXmlTextNode(node) &&
-        node[":@"]?.["@_media-type"] === "application/oebps-package+xml",
+        node[":@"]?.["@_media-type"] === MediaType.OPF.mime,
     )
 
     const fullPath = rootfile?.[":@"]?.["@_full-path"]
@@ -1622,7 +1622,7 @@ export class Epub {
     if (coverImageItem) {
       await this.removeManifestItem(coverImageItem.id)
     }
-    const mediaType = lookup(href)
+    const mediaType = MediaType.fromPath(href)?.mime
     if (!mediaType)
       throw new Error(`Invalid file extension for cover image: ${href}`)
 
@@ -3427,8 +3427,7 @@ export class Epub {
     const ncxItem = spineTocId
       ? manifest[spineTocId]
       : Object.values(manifest).find(
-          (item) =>
-            item.mediaType?.toLowerCase() === "application/x-dtbncx+xml",
+          (item) => MediaType.fromMime(item.mediaType ?? "") === MediaType.NCX,
         )
 
     if (!ncxItem) return []
@@ -3719,7 +3718,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
     const container = encoder.encode(`<?xml version="1.0"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
   <rootfiles>
-    <rootfile media-type="application/oebps-package+xml" full-path="OEBPS/content.opf"/>
+    <rootfile media-type="${MediaType.OPF.mime}" full-path="OEBPS/content.opf"/>
   </rootfiles>
 </container>
 `)
@@ -3864,7 +3863,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
         {
           id: "nav",
           href: navHref,
-          mediaType: "application/xhtml+xml",
+          mediaType: MediaType.XHTML.mime,
           properties: ["nav"],
         },
         navContent,
@@ -3876,7 +3875,8 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       // with <!DOCTYPE html>
       const manifest = await epub.getManifest()
       for (const item of Object.values(manifest)) {
-        if (item.mediaType?.toLowerCase() !== "application/xhtml+xml") continue
+        if (MediaType.fromMime(item.mediaType ?? "") !== MediaType.XHTML)
+          continue
 
         const contents = await epub.readXhtmlItemContents(item.id)
         await epub.writeXhtmlItemContents(item.id, contents)

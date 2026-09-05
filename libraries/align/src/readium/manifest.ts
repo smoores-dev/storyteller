@@ -21,6 +21,7 @@ import type {
   EpubReader,
   NavigationList,
 } from "@storyteller-platform/epub"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import {
   type ReadiumWebPublicationManifest,
@@ -228,7 +229,7 @@ export async function generateReadiumManifest(
         alternates: new Links([
           new Link({
             href: `GND/${mediaOverlayItem.id}.json`,
-            type: "application/guided-navigation+json",
+            type: MediaType.GUIDED_NAVIGATION.mime,
           }),
         ]),
       })
@@ -245,7 +246,7 @@ export async function generateReadiumManifest(
         rels.add("cover")
       }
 
-      if (item.mediaType === "application/xhtml+xml") {
+      if (item.mediaType === MediaType.XHTML.mime) {
         rels.add("contents")
       }
 
@@ -323,7 +324,7 @@ export async function generateReadiumManifest(
     links: new Links([
       new Link({
         href: "manifest.json",
-        type: "application/webpub+json",
+        type: MediaType.WEBPUB_MANIFEST.mime,
         rels: new Set(["self"]),
       }),
     ]),
@@ -352,7 +353,7 @@ async function inferPageCount(
           : "Aborted while inferring page count",
       )
     }
-    if (item.mediaType !== "application/xhtml+xml") continue
+    if (item.mediaType !== MediaType.XHTML.mime) continue
     try {
       // matches weird readium strat https://github.com/readium/architecture/issues/123
       const length = await epub.getItemArchiveLength(item.id)

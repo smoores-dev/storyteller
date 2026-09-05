@@ -1,5 +1,7 @@
 import { nanoid } from "nanoid"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import {
   type ElementName,
   Epub,
@@ -56,33 +58,7 @@ const GUIDE_TO_EPUBTYPE: Record<string, string> = {
   "other.warning": "warning",
 }
 
-const XHTML_MEDIA_TYPES = new Set([
-  "application/xhtml+xml",
-  "application/vnd.adobe-page-template+xml",
-  "text/html",
-])
-
-const OEB_FONTS = new Set([
-  "application/vnd.ms-opentype",
-  "application/x-font-ttf",
-  "application/x-font-otf",
-  "application/x-font-truetype",
-  "application/font-sfnt",
-  "application/font-woff",
-  "application/font-woff2",
-  "font/woff",
-  "font/woff2",
-  "font/otf",
-  "font/ttf",
-  "font/sfnt",
-])
-
-const FONT_MIME_BY_EXT: Record<string, string> = {
-  ".ttf": "application/font-sfnt",
-  ".otf": "application/font-sfnt",
-  ".woff": "application/font-woff",
-  ".woff2": "font/woff2",
-}
+const XHTML_MEDIA_TYPES = new Set<MediaType>([MediaType.XHTML, MediaType.HTML])
 
 export interface Landmark {
   href: string
@@ -472,8 +448,8 @@ export async function collectManifestProperties(epub: Epub): Promise<void> {
   const manifest = await epub.getManifest()
 
   for (const item of Object.values(manifest)) {
-    const mediaType = item.mediaType?.toLowerCase() ?? ""
-    if (!XHTML_MEDIA_TYPES.has(mediaType)) continue
+    const mediaType = MediaType.fromMime(item.mediaType ?? "")
+    if (!mediaType || !XHTML_MEDIA_TYPES.has(mediaType)) continue
 
     let xml: ParsedXml
     try {
@@ -504,20 +480,14 @@ export function fixFontMimeTypes(pkg: PackageElement): void {
   if (!manifest) return
 
   for (const item of findAllByName("item", manifest.manifest)) {
-    const mt = (item[":@"]?.["@_media-type"] ?? "").toLowerCase()
-    if (!OEB_FONTS.has(mt)) continue
+    const declared = item[":@"]?.["@_media-type"] ?? ""
+    if (!MediaType.fromMime(declared)?.is("font")) continue
 
-    const href = item[":@"]?.["@_href"] ?? ""
-    const dotIdx = href.lastIndexOf(".")
-    if (dotIdx === -1) continue
+    const corrected = MediaType.fromPath(item[":@"]?.["@_href"] ?? "")
+    if (!corrected?.is("font") || corrected.mime === declared) continue
 
-    const ext = href.slice(dotIdx).toLowerCase()
-    const corrected = FONT_MIME_BY_EXT[ext]
-
-    if (corrected && corrected !== mt) {
-      item[":@"] ??= {}
-      item[":@"]["@_media-type"] = corrected
-    }
+    item[":@"] ??= {}
+    item[":@"]["@_media-type"] = corrected.mime
   }
 }
 
@@ -636,7 +606,7 @@ export async function removeNcx(epub: Epub): Promise<void> {
   const manifest = await epub.getManifest()
 
   const ncxItem = Object.values(manifest).find(
-    (item) => item.mediaType?.toLowerCase() === "application/x-dtbncx+xml",
+    (item) => MediaType.fromMime(item.mediaType ?? "") === MediaType.NCX,
   )
 
   if (ncxItem) {

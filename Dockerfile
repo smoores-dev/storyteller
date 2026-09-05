@@ -26,6 +26,7 @@ COPY libraries/audiobook/package.json ./libraries/audiobook/package.json
 COPY libraries/ghost-story/package.json ./libraries/ghost-story/package.json
 COPY libraries/opds/package.json ./libraries/opds/package.json
 COPY libraries/nodekit/package.json ./libraries/nodekit/package.json
+COPY libraries/media-types/package.json ./libraries/media-types/package.json
 COPY config/tsup/package.json ./config/tsup/package.json
 COPY config/eslint/package.json ./config/eslint/package.json
 

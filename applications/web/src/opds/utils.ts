@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 
+import { ATOM_ACQ, ATOM_NAV } from "@storyteller-platform/opds"
+
 import { getSettings } from "@/database/settings"
 
 export async function getOPDSConfig() {
@@ -18,7 +20,7 @@ export function createOPDSResponse(
 ) {
   return new NextResponse(xml, {
     headers: {
-      "Content-Type": `application/atom+xml;profile=opds-catalog;kind=${kind}`,
+      "Content-Type": kind === "navigation" ? ATOM_NAV : ATOM_ACQ,
       "Cache-Control": "public, max-age=300",
     },
   })

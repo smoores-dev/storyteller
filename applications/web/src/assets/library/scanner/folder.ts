@@ -15,7 +15,7 @@ import {
   type ImportMode,
   renderEpubSuffix,
 } from "@/database/settingsTypes"
-import { isEpubVersionError } from "@/epub"
+import { isEpubFile, isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
 
 import { type ScanCtx } from "./ctx"
@@ -69,23 +69,22 @@ async function classifyFolder(
     )
     if (isInIgnorePath) continue
 
-    const ext = extname(name)
-
-    if (ext === ".epub") {
+    if (isEpubFile(name)) {
       if (name.endsWith(`${epub2BackupSuffix}.epub`)) continue
 
       // if there is a file in this folder with the same name but with the epub3 backup suffix, add it to the epubPaths
       // ignore this one
       const backedUp = entries.find(
         (entry) =>
-          entry.name === `${name.replace(ext, "")}${epub3BackupSuffix}.epub`,
+          entry.name ===
+          `${name.replace(extname(name), "")}${epub3BackupSuffix}.epub`,
       )
       if (backedUp) {
         continue
       }
 
       epubPaths.push(fullPath)
-    } else if (isAudioFile(ext)) {
+    } else if (isAudioFile(name)) {
       hasAudio = true
     }
   }
@@ -366,8 +365,7 @@ export async function walkFolders(
     if (isInsideInternalDirectory(entry.parentPath)) continue
     if (isHiddenFile(entry.name)) continue
 
-    const ext = extname(entry.name)
-    if (ext !== ".epub" && !isAudioFile(ext)) continue
+    if (!isEpubFile(entry.name) && !isAudioFile(entry.name)) continue
 
     const parent = await canonicalizePath(entry.parentPath)
     folders.add(parent)

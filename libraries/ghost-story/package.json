@@ -51,6 +51,7 @@
     "@huggingface/transformers": "^4.2.0",
     "@robingenz/zli": "^0.2.0",
     "@storyteller-platform/fs": "workspace:^",
+    "@storyteller-platform/media-types": "workspace:^",
     "chalk": "^5.4.1",
     "cli-progress": "^3.12.0",
     "ffmpeg-stream": "^1.0.1",

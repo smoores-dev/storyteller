@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import QRCode from "qrcode"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import {
   getDeviceAuthorizationByDeviceCode,
   isExpiredDeviceAuthorization,
@@ -45,7 +47,7 @@ export async function GET(
 
   return new NextResponse(svg, {
     headers: {
-      "Content-Type": "image/svg+xml",
+      "Content-Type": MediaType.SVG.mime,
       "Cache-Control": "no-store",
     },
   })

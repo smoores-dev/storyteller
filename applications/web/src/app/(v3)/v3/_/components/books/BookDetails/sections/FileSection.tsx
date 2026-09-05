@@ -45,28 +45,14 @@ import {
   useRemoveBookAssetMutation,
   useReplaceBookAssetMutation,
 } from "@/store/api"
+import { audioDialogExtensions, epubDialogExtensions } from "@/uploadFileTypes"
 import { formatFileSize } from "@/utils/formatFileSize"
 
 import { CollapsibleSection } from "./CollapsibleSection"
 
-const EBOOK_FILTERS = [{ name: "Ebooks", extensions: ["epub"] }]
+const EBOOK_FILTERS = [{ name: "Ebooks", extensions: epubDialogExtensions }]
 const AUDIO_FILTERS = [
-  {
-    name: "Audio files",
-    extensions: [
-      "mp3",
-      "aac",
-      "mp4",
-      "m4a",
-      "m4b",
-      "opus",
-      "ogg",
-      "oga",
-      "wav",
-      "flac",
-      "zip",
-    ],
-  },
+  { name: "Audio files", extensions: audioDialogExtensions },
 ]
 
 type Format = "ebook" | "audiobook" | "readaloud"

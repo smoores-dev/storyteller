@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { UploadDialog } from "@v3/_/components/files/UploadDialog"
 import { type UppyFileType } from "@v3/_/components/files/useTusUpload"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
@@ -56,7 +58,7 @@ export function UploadFileDialog({
   async function handleFinalize() {
     await fetch(`/api/v2/books/${book.uuid}/replace-asset/upload/finalize`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": MediaType.JSON.mime },
       body: JSON.stringify({
         metadataFieldOverrides: defaultMetadataFieldOverrides(metadataMode),
       }),

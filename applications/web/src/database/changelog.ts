@@ -1,5 +1,7 @@
 import { Agent } from "undici"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { logger } from "@/logging"
 
 import { db } from "./connection"
@@ -50,7 +52,7 @@ async function fetchReleasesPage(
   const url = `${GITLAB_RELEASES_URL}?per_page=${perPage}&page=${page}&include_html_description=true`
 
   const response = await fetch(url, {
-    headers: { Accept: "application/json" },
+    headers: { Accept: MediaType.JSON.mime },
     signal: AbortSignal.timeout(10000),
     dispatcher: timeoutAgent,
   } as RequestInit)

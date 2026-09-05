@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import { ImportFromServerDialog } from "@v3/_/components/files/ImportFromServerDialog"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
@@ -16,32 +18,12 @@ import { useReplaceBookAssetMutation } from "@/store/api"
 
 type Format = "ebook" | "audiobook" | "readaloud"
 
-const AUDIO_FILE_EXTENSIONS = [
-  ".mp3",
-  ".aac",
-  ".mp4",
-  ".m4a",
-  ".m4b",
-  ".opus",
-  ".ogg",
-  ".oga",
-  ".mogg",
-  ".wav",
-  ".aiff",
-  ".flac",
-  ".alac",
-  ".weba",
-]
-
 function isEbookFilter(entry: { name: string; isDirectory: boolean }) {
-  return !entry.isDirectory && entry.name.toLowerCase().endsWith(".epub")
+  return !entry.isDirectory && MediaType.fromPath(entry.name)?.kind === "ebook"
 }
 
 function isAudioFileFilter(entry: { name: string; isDirectory: boolean }) {
-  return (
-    !entry.isDirectory &&
-    AUDIO_FILE_EXTENSIONS.some((ext) => entry.name.toLowerCase().endsWith(ext))
-  )
+  return !entry.isDirectory && MediaType.fromPath(entry.name)?.kind === "audio"
 }
 
 function siblingDir(book: BookWithRelations, format: Format): string {

@@ -5,7 +5,6 @@ import { dirname, extname, join } from "node:path"
 
 import { createReadableStreamFromReadable } from "@remix-run/node"
 import contentDisposition from "content-disposition"
-import { lookup } from "mime-types"
 import { after } from "next/server"
 import { ZipFile } from "yazl"
 
@@ -15,6 +14,7 @@ import {
 } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
+import { MediaType } from "@storyteller-platform/media-types"
 
 import { getExtractedCover } from "@/assets/covers"
 import { computeFileHash } from "@/assets/fs"
@@ -34,6 +34,21 @@ type Params = Promise<{
 }>
 
 type Format = "readaloud" | "audiobook" | "audiobook-rpf" | "ebook"
+
+function explicitlyAccepts(
+  header: string | null,
+  mediaType: MediaType,
+): boolean {
+  if (!header) return false
+  return header.split(",").some((part) => {
+    const [essence = "", ...parameters] = part.split(";")
+    const q = parameters
+      .map((parameter) => parameter.trim().split("="))
+      .find(([key]) => key?.trim().toLowerCase() === "q")?.[1]
+    if (q !== undefined && !(Number.parseFloat(q) > 0)) return false
+    return MediaType.fromMime(essence) === mediaType
+  })
+}
 
 function determineFormat(book: BookWithRelations, format: Format | null) {
   if (format === "audiobook-rpf") {
@@ -137,7 +152,7 @@ async function getFilepath(
         {
           rel: "self",
           href: "manifest.json",
-          type: "application/audiobook+json",
+          type: MediaType.AUDIOBOOK_MANIFEST.mime,
         },
       ],
       readingOrder: (await audiobook.getResources()).map(
@@ -209,10 +224,13 @@ export const GET = withHasPermission<Params>("bookRead", {
       { status: 404 },
     )
   }
-  const contentType = request.headers.get("Accept")
   const rpf =
-    contentType?.includes("application/audiobook+zip") ||
-    optionalFormat === "audiobook-rpf"
+    explicitlyAccepts(
+      request.headers.get("Accept"),
+      MediaType.AUDIOBOOK_PACKAGE,
+    ) || optionalFormat === "audiobook-rpf"
+
+  const packageExtension = MediaType.AUDIOBOOK_PACKAGE.extension ?? ""
 
   const normalizedTitle = book.title
     .normalize("NFD")
@@ -319,14 +337,14 @@ export const GET = withHasPermission<Params>("bookRead", {
     status: partialResponse ? 206 : 200,
     headers: {
       "Content-Disposition": contentDisposition(
-        `${book.title}${rpf ? ".audiobook" : extname(filepath)}`,
+        `${book.title}${rpf ? packageExtension : extname(filepath)}`,
         {
-          fallback: `${normalizedTitle}${rpf ? ".audiobook" : extname(filepath)}`,
+          fallback: `${normalizedTitle}${rpf ? packageExtension : extname(filepath)}`,
         },
       ),
       "Content-Type": rpf
-        ? "application/audiobook+zip"
-        : (lookup(filepath) as string),
+        ? MediaType.AUDIOBOOK_PACKAGE.mime
+        : (MediaType.fromPath(filepath) ?? MediaType.OCTET_STREAM).mime,
       "Content-Length": `${end - start + 1}`,
       "Accept-Ranges": "bytes",
       "Last-Modified": new Date(stats.mtime).toISOString(),

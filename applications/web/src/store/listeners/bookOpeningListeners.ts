@@ -6,6 +6,8 @@ import {
   Publication,
 } from "@readium/shared"
 
+import { MediaType } from "@storyteller-platform/media-types"
+
 import {
   type TocItem,
   getApiUrlFromResourceHref,
@@ -72,7 +74,7 @@ async function registerMaps(
             guide.children?.map((child) => {
               return {
                 ...child.clip,
-                type: item.type ?? "application/octet-stream",
+                type: item.type ?? MediaType.OCTET_STREAM.mime,
               }
             }),
           )
@@ -201,7 +203,7 @@ async function registerMaps(
 
     const type =
       textToAudioMap.get(segments[0]?.textHref ?? "")?.clips.get(audioHref)
-        ?.type ?? "application/octet-stream"
+        ?.type ?? MediaType.OCTET_STREAM.mime
 
     audioToTextMap.set(audioHref, {
       duration,
@@ -327,7 +329,7 @@ function generateTracksForAudiobook(
       ).toString(),
       album: bookTitle,
       duration: item.duration ?? 0,
-      type: item.type ?? "application/octet-stream",
+      type: item.type ?? MediaType.OCTET_STREAM.mime,
       start: Number(item.properties?.otherProperties["start"] ?? 0),
       end: Number(
         item.properties?.otherProperties["end"] ?? item.duration ?? 0,
