@@ -33,14 +33,13 @@ import {
 } from "@/store/api"
 import { type StageName } from "@/work/jobStats"
 
-import { FilePathRow } from "./FilePathRow"
 import { CollapsibleSection } from "./sections/CollapsibleSection"
+import { DetailRow } from "./sections/DetailsSection"
 import {
   type ProcessRestart,
   type ProcessingPosition,
   useProcessingRun,
 } from "./useProcessingRun"
-import { DetailRow } from "./sections/DetailsSection"
 
 const STAGE_ORDER: StageName[] = [
   "SPLIT_TRACKS",

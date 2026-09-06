@@ -11,6 +11,10 @@ import { ReaderAudioProvider } from "@v3/_/components/reader/ReaderAudioProvider
 import { TauriTitlebarSync } from "@v3/_/components/tauri-titlebar-sync"
 import { ThemeProvider } from "@v3/_/components/theme-provider"
 import { Toaster } from "@v3/_/components/ui/sonner"
+import {
+  BASE_TOOLTIP_DELAY,
+  TooltipProvider,
+} from "@v3/_/components/ui/tooltip"
 import { VersionProvider } from "@v3/_/components/version-context"
 import { DocumentTitleProvider } from "@v3/_/hooks/use-document-title"
 
@@ -23,7 +27,6 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 
 import "./globals.css"
-import { BASE_TOOLTIP_DELAY, TooltipProvider } from "./_/components/ui/tooltip"
 
 const literata = localFont({
   src: [

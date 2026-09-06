@@ -66,7 +66,7 @@ const SeekSlider = ({
               draft === null && "transition-[width] duration-200 ease-linear",
             )}
           />
-          <Tooltip delay={0}>
+          <Tooltip>
             <TooltipTrigger
               render={
                 <SliderPrimitive.Thumb
@@ -122,7 +122,7 @@ const MarkTrack = ({
       {segments.map((segment) => {
         const label = format(segment.mark.position)
         return (
-          <Tooltip key={segment.idx} delay={0}>
+          <Tooltip key={segment.idx}>
             <TooltipTrigger
               render={
                 <button

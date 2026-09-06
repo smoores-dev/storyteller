@@ -92,6 +92,7 @@ import {
   IconMinimize,
   IconMinus,
   IconMoon,
+  IconOutbound,
   IconPalette,
   IconPencil,
   IconPhoto,
@@ -150,7 +151,6 @@ import {
   IconVolume,
   IconVolumeOff,
   IconX,
-  IconOutbound,
 } from "@tabler/icons-react"
 
 import { IconReadaloud } from "@/components/icons/IconReadaloud"

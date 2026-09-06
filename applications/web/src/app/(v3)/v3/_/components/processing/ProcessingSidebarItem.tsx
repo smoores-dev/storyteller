@@ -40,7 +40,7 @@ export function ProcessingSidebarItem() {
 
   return (
     <SidebarMenuItem>
-      <Tooltip delay={500}>
+      <Tooltip>
         <TooltipTrigger
           render={
             <SidebarMenuButton
