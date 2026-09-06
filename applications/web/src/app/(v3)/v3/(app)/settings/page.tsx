@@ -1,5 +1,5 @@
 import { type Metadata } from "next"
-import { getMessages, getTranslations } from "next-intl/server"
+import { getMessages } from "next-intl/server"
 
 import { SettingsForm } from "@v3/_/components/settings-form/settings-form"
 import {
@@ -17,12 +17,7 @@ import {
 import { getConfigLockedKeys, getSettings } from "@/database/settings"
 import { getCurrentVersion } from "@/versions"
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("SettingsPage")
-  return {
-    title: t("title"),
-  }
-}
+export const metadata: Metadata = { title: null }
 
 function extractKeywords(obj: Record<string, unknown>): string[] {
   const keywords: string[] = []

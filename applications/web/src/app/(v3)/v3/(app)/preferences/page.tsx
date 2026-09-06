@@ -1,6 +1,6 @@
 import { type Metadata } from "next"
 import { forbidden } from "next/navigation"
-import { getMessages, getTranslations } from "next-intl/server"
+import { getMessages } from "next-intl/server"
 
 import { PreferencesForm } from "@v3/_/components/preferences-form/preferences-form"
 import {
@@ -19,12 +19,7 @@ import { getUserSettings } from "@/database/userSettings"
 import { getAccounts } from "@/database/users"
 import { env } from "@/env"
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("PreferencesPage")
-  return {
-    title: t("title"),
-  }
-}
+export const metadata: Metadata = { title: null }
 
 function extractKeywords(obj: Record<string, unknown>): string[] {
   const keywords: string[] = []

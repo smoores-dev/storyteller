@@ -12,6 +12,7 @@ import { TauriTitlebarSync } from "@v3/_/components/tauri-titlebar-sync"
 import { ThemeProvider } from "@v3/_/components/theme-provider"
 import { Toaster } from "@v3/_/components/ui/sonner"
 import { VersionProvider } from "@v3/_/components/version-context"
+import { DocumentTitleProvider } from "@v3/_/hooks/use-document-title"
 
 import StoreProvider from "@/components/StoreProvider"
 import { getSetting } from "@/database/settings"
@@ -22,6 +23,7 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 
 import "./globals.css"
+import { BASE_TOOLTIP_DELAY, TooltipProvider } from "./_/components/ui/tooltip"
 
 const literata = localFont({
   src: [
@@ -87,7 +89,13 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [reqHeaders, cookieStore] = await Promise.all([headers(), cookies()])
+  const [reqHeaders, cookieStore, t, libraryName] = await Promise.all([
+    headers(),
+    cookies(),
+    getTranslations("Layout"),
+    getSetting("libraryName"),
+  ])
+  const titleTemplate = `%s • ${libraryName || t("title")}`
   const isRewritten = reqHeaders.get("x-v3-rewritten") === "1"
   const basePath = isRewritten ? "" : "/v3"
 
@@ -129,11 +137,15 @@ export default async function RootLayout({
                     enableSystem
                     themes={["light", "dark", "system"]}
                   >
-                    <NuqsAdapter>
-                      {children}
-                      <Toaster />
-                      <TauriTitlebarSync />
-                    </NuqsAdapter>
+                    <TooltipProvider delay={BASE_TOOLTIP_DELAY}>
+                      <NuqsAdapter>
+                        <DocumentTitleProvider template={titleTemplate}>
+                          {children}
+                        </DocumentTitleProvider>
+                        <Toaster />
+                        <TauriTitlebarSync />
+                      </NuqsAdapter>
+                    </TooltipProvider>
                   </ThemeProvider>
                 </PiPProvider>
               </StoreProvider>

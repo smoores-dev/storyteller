@@ -1,3 +1,4 @@
+import { FloatingDock } from "@v3/_/components/floating/FloatingDock"
 import { MiniPlayer } from "@v3/_/components/reader/MiniPlayer/MiniPlayer"
 import { UserPreferencesProvider } from "@v3/_/components/user-preferences-provider"
 
@@ -26,7 +27,9 @@ export default async function ReaderLayout({
       preferenceDefaults={preferenceDefaults}
     >
       {children}
-      <MiniPlayer />
+      <FloatingDock>
+        <MiniPlayer />
+      </FloatingDock>
     </UserPreferencesProvider>
   )
 }

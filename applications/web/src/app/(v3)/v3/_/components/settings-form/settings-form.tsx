@@ -29,6 +29,7 @@ import {
 } from "@v3/_/components/ui/page-layout"
 import { Spinner } from "@v3/_/components/ui/spinner"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { DocumentTitle } from "@v3/_/hooks/use-document-title"
 import { useIsMobile } from "@v3/_/hooks/use-mobile"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { applyServerErrors } from "@v3/_/lib/form-errors"
@@ -456,6 +457,7 @@ export function SettingsForm({
 
   const tabContent = (
     <>
+      <DocumentTitle parts={[activeTabDef?.label, title]} />
       {activeTab === "library" && <LibraryTab />}
       {activeTab === "processing" && <ProcessingTab />}
       {activeTab === "auth" && <AuthTab />}

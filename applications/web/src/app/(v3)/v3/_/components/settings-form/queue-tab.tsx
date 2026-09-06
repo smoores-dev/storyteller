@@ -18,7 +18,7 @@ import {
   parseAsStringEnum,
   useQueryState,
 } from "nuqs"
-import { useEffect, useEffectEvent, useRef, useState } from "react"
+import { useEffect, useEffectEvent, useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -30,15 +30,26 @@ import {
   ItemTitle,
 } from "@v3/_/components/ui/item"
 
+import { SearchInput } from "@/app/(v3)/v3/_/components/books/SearchInput"
 import { GradePill } from "@/app/(v3)/v3/_/components/books/grade-pill"
 import { StaticProgressBar } from "@/app/(v3)/v3/_/components/processing/ProgressVisualization"
 import {
   jobToView,
   overallProgress,
 } from "@/app/(v3)/v3/_/components/processing/shared"
+import { useEstimatedRemaining } from "@/app/(v3)/v3/_/components/processing/useEstimatedRemaining"
 import { useStageLabels } from "@/app/(v3)/v3/_/components/processing/useStageLabels"
+import { ButtonGroupSeparator } from "@/app/(v3)/v3/_/components/ui/button-group"
+import {
+  FilterableMenu,
+  FilterableMenuContent,
+  FilterableMenuItem,
+  FilterableMenuTrigger,
+} from "@/app/(v3)/v3/_/components/ui/filterable-menu"
+import { Spinner } from "@/app/(v3)/v3/_/components/ui/spinner"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
+import { createSortParser } from "@/app/(v3)/v3/_/hooks/use-book-filters"
 import {
   useCommon,
   useTranslation,
@@ -55,24 +66,12 @@ import { JOB_STATUSES, type JobStatus } from "@/jobEvents"
 import {
   getCoverUrl,
   useCancelJobMutation,
-  useGetAlignmentEstimateQuery,
   useGetJobsQuery,
   usePauseJobMutation,
   useReorderJobsMutation,
   useResumeJobMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
-
-import { createSortParser } from "../../hooks/use-book-filters"
-import { SearchInput } from "../books/SearchInput"
-import { ButtonGroupSeparator } from "../ui/button-group"
-import {
-  FilterableMenu,
-  FilterableMenuContent,
-  FilterableMenuItem,
-  FilterableMenuTrigger,
-} from "../ui/filterable-menu"
-import { Spinner } from "../ui/spinner"
 
 const PAGE_SIZE = 25
 
@@ -98,35 +97,9 @@ export function QueueTab() {
   const [resumeJob] = useResumeJobMutation()
   const [reorderJobs] = useReorderJobsMutation()
 
-  const list = activeJobs ?? []
-  const serverOrder = list.map((job) => job.uuid)
-
-  const [order, setOrder] = useState(serverOrder)
-  const isDragging = useRef(false)
-  const pendingOrder = useRef<string | null>(null)
-
-  const orderKey = serverOrder.join()
-
-  const syncOrder = useEffectEvent(() => {
-    if (isDragging.current) return
-
-    const pending = pendingOrder.current
-    const sameJobs =
-      pending !== null &&
-      [...pending.split(",")].sort().join() === [...serverOrder].sort().join()
-
-    if (pending !== null && pending !== orderKey && sameJobs) return
-
-    pendingOrder.current = null
-    setOrder(serverOrder)
-  })
-
-  useEffect(() => {
-    syncOrder()
-  }, [orderKey])
-
-  const byUuid = new Map(list.map((job) => [job.uuid, job]))
-  const jobs = order.flatMap((uuid) => byUuid.get(uuid) ?? [])
+  const jobs = activeJobs ?? []
+  const order = jobs.map((job) => job.uuid)
+  const byUuid = new Map(jobs.map((job) => [job.uuid, job]))
 
   const announce = useEffectEvent(
     (kind: AnnounceKind, id: UniqueIdentifier, index: number) =>
@@ -163,14 +136,14 @@ export function QueueTab() {
   ])
 
   const pauseAll = () => {
-    list.forEach((job) => {
+    jobs.forEach((job) => {
       if (job.status === "RUNNING") {
         void pauseJob({ uuid: job.uuid })
       }
     })
   }
   const resumeAll = () => {
-    list.forEach((job) => {
+    jobs.forEach((job) => {
       if (job.status === "PAUSED") {
         void resumeJob({ uuid: job.uuid })
       }
@@ -183,12 +156,12 @@ export function QueueTab() {
     cancelJob: (uuid: UUID) => void cancelJob({ uuid }),
   }
 
-  const someAreActive = list.some((job) => job.status === "RUNNING")
+  const someAreActive = jobs.some((job) => job.status === "RUNNING")
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-3">
-        {list.length > 0 && (
+        {jobs.length > 0 && (
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium">{t("title")}</h2>
@@ -203,9 +176,9 @@ export function QueueTab() {
               </TooltipButton>
             </div>
             <p className="text-muted-foreground text-sm">
-              {t("subtitle", { count: list.length })}
+              {t("subtitle", { count: jobs.length })}
             </p>
-            {/* {list.length > 1 && (
+            {/* {jobs.length > 1 && (
               <p className="text-muted-foreground mt-1 text-sm">
                 {t("reorderHint")}
               </p>
@@ -213,22 +186,14 @@ export function QueueTab() {
           </div>
         )}
 
-        {list.length === 0 ? (
+        {jobs.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("empty")}</p>
         ) : (
           <DragDropProvider
             plugins={plugins}
-            onDragStart={() => {
-              isDragging.current = true
-            }}
             onDragEnd={(event) => {
-              isDragging.current = false
               if (event.canceled) return
-
-              const next = move(order, event)
-              pendingOrder.current = next.join()
-              setOrder(next)
-              void reorderJobs({ order: next })
+              void reorderJobs({ order: move(order, event) })
             }}
           >
             <div className="flex flex-col gap-2">
@@ -303,9 +268,14 @@ function FinishedJobs() {
   const hasNext = jobs.length === PAGE_SIZE
   const hasPrev = page > 0
 
+  const finishedJobsStatuses = JOB_STATUSES.filter(
+    (status) =>
+      status !== "RUNNING" && status !== "PAUSED" && status !== "QUEUED",
+  )
+
   const filters = [
     { label: t("status.all"), value: "all" as const },
-    ...JOB_STATUSES.map((status) => ({
+    ...finishedJobsStatuses.map((status) => ({
       label: t.plain(`status.${status}`),
       value: status,
     })),
@@ -560,34 +530,6 @@ function StatusBadge({ status }: { status: DisplayJob["status"] }) {
   )
 }
 
-function useEstimatedRemaining(job: DisplayJob) {
-  const isRunning = job.status === "RUNNING"
-  const bookUuid = job.bookUuid ?? ("" as UUID)
-  const isCtc = job.config?.aligner === "ctc"
-  const engine =
-    (isCtc ? job.config?.ctcEngine : job.config?.transcriptionEngine) ?? ""
-  const model = isCtc ? null : job.config?.whisperModel ?? null
-
-  const { data } = useGetAlignmentEstimateQuery(
-    {
-      bookUuid,
-      engine,
-      whisperModel: model,
-      restart: (job as { restart?: string | false }).restart || false,
-    },
-    { skip: !isRunning || !job.bookUuid || !engine },
-  )
-
-  if (!isRunning || !data?.estimateSeconds || !job.startedAt) return null
-
-  const elapsedSeconds = Math.floor(
-    (Date.now() - new Date(job.startedAt).getTime()) / 1000,
-  )
-  const remaining = Math.max(0, data.estimateSeconds - elapsedSeconds)
-
-  return remaining
-}
-
 type JobActions = {
   pauseJob?: (uuid: UUID) => void
   resumeJob?: (uuid: UUID) => void
@@ -730,10 +672,10 @@ function JobItem({
       </ItemMedia>
 
       <ItemContent className="w-full justify-between">
-        <ItemTitle className="max-w-full">
+        <ItemTitle className="w-full">
           <V3Link
             href={`/books/${job.bookUuid}`}
-            className="hover:text-primary truncate hover:underline"
+            className="hover:text-primary grow truncate hover:underline"
           >
             {job.bookTitle ?? t("untitled")}
           </V3Link>
@@ -769,8 +711,9 @@ function JobItem({
         {job.status === "PAUSED" && resumeJob ? (
           <TooltipButton
             variant="ghost"
-            size="icon"
-            className="size-7"
+            // size="icon"
+            // className="size-5"
+            className="size-5"
             aria-label={t("actions.resume")}
             tooltip={t("actions.resume")}
             onClick={() => {
@@ -782,8 +725,7 @@ function JobItem({
         ) : pauseJob ? (
           <TooltipButton
             variant="ghost"
-            size="icon"
-            className="size-7"
+            className="size-5"
             aria-label={t("actions.pause")}
             tooltip={t("actions.pause")}
             onClick={() => {
@@ -797,8 +739,7 @@ function JobItem({
         {cancelJob ? (
           <TooltipButton
             variant="ghost-destructive"
-            size="icon"
-            className="size-7"
+            className="size-5"
             aria-label={c("actions.cancel")}
             tooltip={t("actions.cancel")}
             onClick={() => {
@@ -812,8 +753,7 @@ function JobItem({
         {job.status === "DONE" && job.bookUuid ? (
           <TooltipButton
             variant="ghost"
-            size="icon"
-            className="size-7"
+            className="size-5"
             aria-label={t("actions.alignmentReport")}
             tooltip={t("actions.alignmentReport")}
             render={<V3Link href={`/books/${job.bookUuid}?report=true`} />}

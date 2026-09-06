@@ -28,6 +28,7 @@ import {
   PageSidebar,
 } from "@v3/_/components/ui/page-layout"
 import { Spinner } from "@v3/_/components/ui/spinner"
+import { DocumentTitle } from "@v3/_/hooks/use-document-title"
 import { useIsMobile } from "@v3/_/hooks/use-mobile"
 import { applyServerErrors } from "@v3/_/lib/form-errors"
 
@@ -226,6 +227,7 @@ export function PreferencesForm({
       locked={preferenceDefaultsLocked}
       defaults={preferenceDefaults}
     >
+      <DocumentTitle parts={[activeTabDef?.label, t("title")]} />
       {activeTab === "profile" && (
         <ProfileTab
           user={user}

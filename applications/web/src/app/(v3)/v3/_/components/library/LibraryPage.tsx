@@ -24,6 +24,7 @@ import {
 import { Dialog, DialogContent } from "@v3/_/components/ui/dialog"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { type BookFiltersController } from "@v3/_/hooks/use-book-filters"
+import { DocumentTitle } from "@v3/_/hooks/use-document-title"
 import { useIsMobile } from "@v3/_/hooks/use-mobile"
 import { useBookInSidePanel } from "@v3/_/hooks/use-open-book"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
@@ -203,6 +204,10 @@ export function LibraryPage({
 
   const selectedFacet = allItems.find((i) => i.key === selectedItem)
   const selectedItemName = selectedFacet?.name
+  const documentTitle =
+    selectedItem && selectedItem !== ALL_KEY && selectedItem !== NONE_KEY
+      ? (selectedItemName ?? title)
+      : title
 
   const handleItemClick = useCallback(
     (key: string) => {
@@ -335,6 +340,7 @@ export function LibraryPage({
 
   return (
     <>
+      <DocumentTitle parts={[documentTitle]} />
       <BookListPage
         forceDisplayMode={forceDisplayMode}
         source={source}

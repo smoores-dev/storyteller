@@ -51,7 +51,6 @@ import { usePermission } from "@/hooks/usePermission"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
 import {
-  useGetJobsQuery,
   useGetLatestChangelogQuery,
   useListCollectionsQuery,
   useListSidebarGroupsQuery,
@@ -78,9 +77,7 @@ import {
   SHELF_ICON,
 } from "./nav/sidebar-items"
 import { toSidebarGroupInputs } from "./nav/sidebar-payload"
-import { useFinishedNotifications } from "./processing/ProcessingToast"
-import { StaticProgressBar } from "./processing/ProgressVisualization"
-import { jobToView } from "./processing/shared"
+import { ProcessingSidebarItem } from "./processing/ProcessingSidebarItem"
 import {
   DISMISSED_VERSION_KEY,
   formatChangelogDescription,
@@ -267,7 +264,7 @@ export function AppSidebar({
     {
       custom: (
         <SidebarMenuItem>
-          <Tooltip delay={500}>
+          <Tooltip>
             <TooltipTrigger
               render={
                 <SidebarMenuButton
@@ -317,7 +314,7 @@ export function AppSidebar({
     ...(processingToastLocation === "sidebar" && canProcess
       ? [
           {
-            custom: <ProcessingJobs />,
+            custom: <ProcessingSidebarItem />,
             key: "processingJobs",
           },
         ]
@@ -745,11 +742,7 @@ function SidebarNavItem({
       }}
       onPointerLeave={onPrefetchLeave}
     >
-      <Tooltip
-        open={tooltipOpen || isAltHeld}
-        delay={500}
-        onOpenChange={setTooltipOpen}
-      >
+      <Tooltip open={tooltipOpen || isAltHeld} onOpenChange={setTooltipOpen}>
         <TooltipTrigger
           render={
             <SidebarMenuButton
@@ -904,73 +897,4 @@ function resolveItem(
   }
 
   return null
-}
-
-function ProcessingJobs() {
-  const { data: jobs } = useGetJobsQuery(
-    { type: "active" },
-    { pollingInterval: 30_000, skipPollingIfUnfocused: true },
-  )
-  const { data: finishedJobs } = useGetJobsQuery({ type: "finished", limit: 5 })
-  const basePath = useVersionBasePath()
-  const router = useRouter()
-
-  const dispatch = useAppDispatch()
-  useFinishedNotifications(finishedJobs, basePath, router)
-
-  if (!jobs || jobs.length === 0) {
-    return null
-  }
-  const current = jobs.find((job) => job.status === "RUNNING") ?? jobs[0]
-  if (!current) {
-    return null
-  }
-
-  const view = jobToView(current)
-  return (
-    <SidebarMenuItem className="relative">
-      <SidebarMenuButton
-        className="line-clamp-1 inline-flex items-center gap-2"
-        render={
-          <V3Link href="/settings?tab=queue">
-            <icon.Loader
-              className={cn(
-                "text-primary size-3.5 shrink-0",
-                current.status !== "PAUSED" ? "animate-spin" : "opacity-50",
-              )}
-            />
-            <span>{jobs[0]?.bookTitle}</span>
-          </V3Link>
-        }
-      />
-
-      {jobs.length > 1 && (
-        <SidebarMenuBadge className="mr-4">+{jobs.length - 1}</SidebarMenuBadge>
-      )}
-      <SidebarMenuAction
-        showOnHover
-        render={
-          <TooltipButton
-            variant="ghost"
-            className="peer-hover/menu-button:text-sidebar-foreground! hover:text-sidebar-primary!"
-            onClick={() => {
-              dispatch(
-                uiSettingsSlice.actions.setProcessingToastLocation(
-                  "bottom-right",
-                ),
-              )
-            }}
-            tooltip="Pop out"
-            aria-label="Ponp out"
-          >
-            <icon.Outbound className="mb-2 ml-1 size-3.5" />
-          </TooltipButton>
-        }
-      />
-
-      <div className="absolute right-1.5 bottom-0 left-3.5 opacity-100">
-        <StaticProgressBar view={view} className="h-0.5" />
-      </div>
-    </SidebarMenuItem>
-  )
 }
