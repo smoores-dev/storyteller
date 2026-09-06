@@ -3,7 +3,7 @@ import { type AcceptedKeys } from "@/app/(v3)/v3/_/lib/mapping"
 import { type DatePreset, type FieldDef, type FieldType } from "./types"
 
 export const ALIGNMENT_GRADES = [
-  "A+",
+  "S",
   "A",
   "A-",
   "B",
@@ -11,6 +11,8 @@ export const ALIGNMENT_GRADES = [
   "C",
   "D",
   "F",
+  // "D",
+  // "F",
 ] as const
 
 export const RECENCY_DATE_PRESETS: DatePreset[] = [

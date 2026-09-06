@@ -26,6 +26,7 @@ import * as icon from "@/icons"
 import type { UUID } from "@/uuid"
 
 import { FlagBadge, type IgnoreEditor, shortHref } from "./shared"
+import { TooltipButton } from "../../ui/tooltip-button"
 
 export function chapterClip(
   bookUuid: UUID,
@@ -71,33 +72,35 @@ function ChapterFigures({ item }: { item: ReportChapterItem }) {
   const total = item.chapterSentenceCount
   const coverage =
     total > 0 ? Math.round((item.alignedSentenceCount / total) * 100) : 100
+
+  const missing = item.chapterSentenceCount - item.alignedSentenceCount
+
   return (
     <>
       <span className="flex w-16 items-center gap-1.5 tabular-nums">
-        {item.score.toFixed(1)}
-        <Meter value={item.score} />
+        {item.confidence.toFixed(1)}%{/* <Meter value={item.confidence} /> */}
       </span>
       <span className="flex w-24 items-center gap-1.5 tabular-nums">
         <span>
           {item.alignedSentenceCount}/{total}
         </span>
-        {item.missing > 0 ? (
+        {missing > 0 && (
           <span className="text-poor text-[10px]">−{item.missing}</span>
-        ) : (
-          <Meter value={coverage} className="w-4" />
         )}
       </span>
       <span className="text-muted-foreground flex w-14 items-center justify-end gap-1 tabular-nums">
         {item.audioSeconds > 0 ? formatTimeHuman(item.audioSeconds) : "—"}
       </span>
       <span className="flex min-w-16 flex-wrap justify-end gap-1">
-        {item.ignored && <FlagBadge tone="info">{t("ignored")}</FlagBadge>}
-        {item.status === "no-audio" && (
+        {item.judgment === "excluded" && (
+          <FlagBadge tone="info">{t("ignored")}</FlagBadge>
+        )}
+        {/* {item.status === "no-audio" && (
           <FlagBadge tone="poor">{t("status.no-audio")}</FlagBadge>
         )}
         {item.durationSuspicious && (
           <FlagBadge tone="moderate">{t("table.rangeSuspicious")}</FlagBadge>
-        )}
+        )} */}
       </span>
     </>
   )
@@ -119,7 +122,7 @@ function UnalignedFigures({
       </span>
       <span className="text-muted-foreground w-14 text-right">—</span>
       <span className="flex min-w-16 flex-wrap justify-end gap-1">
-        {item.ignored && <FlagBadge tone="info">{t("ignored")}</FlagBadge>}
+        {item.excluded && <FlagBadge tone="info">{t("ignored")}</FlagBadge>}
         <FlagBadge tone={item.reason === "not-found" ? "poor" : "info"}>
           {t(`reason.${item.reason}`)}
         </FlagBadge>
@@ -138,31 +141,45 @@ function RowMenu({
 }) {
   const t = useTranslation("AlignmentReport")
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={t("actions.menu")}
-            onClick={(event) => {
-              event.stopPropagation()
-            }}
-          >
-            <icon.Dots className="size-4" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={() => {
-            ignore([item.href], !item.ignored)
-          }}
-        >
-          {item.ignored ? t("actions.unignore") : t("actions.ignore")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex flex-wrap items-center gap-1">
+      <TooltipButton className="bg-positive rounded-full">
+        <icon.Check />
+      </TooltipButton>
+      <TooltipButton
+        tooltip={t("actions.ignore")}
+        className="bg-poor rounded-full"
+        onClick={() => {
+          ignore([item.href], true)
+        }}
+      >
+        <icon.Close />
+      </TooltipButton>
+    </div>
+    // <DropdownMenu>
+    //   <DropdownMenuTrigger
+    //     render={
+    //       <Button
+    //         variant="ghost"
+    //         size="icon-sm"
+    //         aria-label={t("actions.menu")}
+    //         onClick={(event) => {
+    //           event.stopPropagation()
+    //         }}
+    //       >
+    //         <icon.Dots className="size-4" />
+    //       </Button>
+    //     }
+    //   />
+    //   <DropdownMenuContent align="end">
+    //     <DropdownMenuItem
+    //       onClick={() => {
+    //         ignore([item.href], !item.excluded)
+    //       }}
+    //     >
+    //       {item. ? t("actions.unignore") : t("actions.ignore")}
+    //     </DropdownMenuItem>
+    //   </DropdownMenuContent>
+    // </DropdownMenu>
   )
 }
 
@@ -191,7 +208,7 @@ function SpineRow({
         "border-t",
         item.needsLook && "border-l-moderate-border/80 border-l-2",
         item.kind === "unaligned" && "opacity-70",
-        item.ignored && "opacity-45",
+        item.judgment === "excluded" && "opacity-45",
         checked && "bg-primary/5",
       )}
     >
@@ -299,8 +316,8 @@ export function SpineTable({
       sortByScore
         ? items.toSorted(
             (a, b) =>
-              (a.kind === "chapter" ? a.score : -1) -
-              (b.kind === "chapter" ? b.score : -1),
+              (a.kind === "chapter" ? a.confidence : -1) -
+              (b.kind === "chapter" ? b.confidence : -1),
           )
         : items,
     [items, sortByScore],
@@ -404,12 +421,12 @@ function ChapterDetail({
         <MatchCard
           label={t("detail.firstMatch")}
           ebook={item.firstMatch}
-          transcript={item.transcriptionContext}
+          // transcript={item.transcriptionContext}
         />
         <MatchCard
           label={t("detail.lastMatch")}
           ebook={item.lastMatch}
-          transcript={item.endTranscriptionContext}
+          // transcript={item.endTranscriptionContext}
         />
       </div>
       {item.audio.length === 0 ? (
@@ -426,7 +443,7 @@ function ChapterDetail({
               <PlayButton clip={chapterClip(bookUuid, item.label, audio)} />
               <span className="font-mono">{audio.name}</span>
               <span className="text-muted-foreground font-mono tabular-nums">
-                {formatTimeHuman(audio.seconds)}
+                {formatTimeHuman(audio.duration)}
               </span>
               {audio.sharedWith.map((shared) => (
                 <span key={shared.href} className="text-muted-foreground">

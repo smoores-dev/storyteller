@@ -40,7 +40,7 @@ export function AlignmentReportContent({
 
   return (
     <div className="relative flex min-h-full flex-col">
-      {data ? (
+      {data && compact ? (
         <ReportHeader
           view={data}
           compact={compact}
@@ -102,27 +102,25 @@ function ReportBody({ view }: { view: BookAlignmentReportView }) {
   )
 
   const needsLookCount = view.items.filter((item) => item.needsLook).length
-  const items = useMemo(
-    () =>
-      needsLookOnly
-        ? view.items.filter((item) => item.needsLook)
-        : view.items.slice(),
-    [view.items, needsLookOnly],
-  )
-  const looseFiles = useMemo(
-    () => view.audioFiles.filter((file) => !file.placed),
-    [view.audioFiles],
-  )
+  const items = needsLookOnly
+    ? view.items.filter((item) => item.needsLook)
+    : view.items.slice()
+
+  const looseFiles = Object.entries(view.audioFiles)
+    .map(
+      ([name, files]) => [name, files.filter((file) => !file.placed)] as const,
+    )
+    .filter(([_, x]) => x.length > 0)
 
   return (
     <div className="flex flex-col gap-7 p-4">
       <Masthead view={view} />
-      <BulkBar
+      {/* <BulkBar
         view={view}
         selected={selected}
         ignore={ignore}
         onClear={clear}
-      />
+      /> */}
       <SpineTable
         bookUuid={view.bookUuid}
         items={items}
@@ -166,13 +164,13 @@ function BulkBar({
 
   for (const item of view.items) {
     if (!selected.has(item.href)) continue
-    if (!item.ignored) allIgnored = false
+    if (item.judgment !== "excluded") allIgnored = false
     if (item.kind !== "chapter") continue
     for (const audio of item.audio) {
       clips.push(chapterClip(view.bookUuid, item.label, audio))
     }
   }
-  for (const file of view.audioFiles) {
+  for (const file of Object.values(view.audioFiles)) {
     if (!selected.has(file.filepath)) continue
     if (!file.ignored) allIgnored = false
     clips.push({
@@ -385,22 +383,22 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
   const lead = t(VERDICT_KEYS[summary.band] ?? "verdict.failed")
 
   const parts: string[] = [
-    summary.score === null
+    summary.confidence === null
       ? t.plain("verdict.noScore")
       : t.plain("verdict.score", {
-          score: summary.score.toFixed(1),
+          score: summary.confidence.toFixed(1),
           sentences: summary.sentencesTotal,
         }),
   ]
-  if (summary.notFoundBody > 0) {
-    parts.push(t.plain("verdict.notFound", { count: summary.notFoundBody }))
-  }
-  if (summary.looseAudio > 0) {
-    parts.push(t.plain("verdict.looseAudio", { count: summary.looseAudio }))
-  }
-  if (summary.ignored > 0) {
-    parts.push(t.plain("verdict.ignored", { count: summary.ignored }))
-  }
+  // if (summary.notFoundBody > 0) {
+  //   parts.push(t.plain("verdict.notFound", { count: summary.notFoundBody }))
+  // }
+  // if (summary.looseAudio > 0) {
+  //   parts.push(t.plain("verdict.looseAudio", { count: summary.looseAudio }))
+  // }
+  // if (summary.ignored > 0) {
+  //   parts.push(t.plain("verdict.ignored", { count: summary.ignored }))
+  // }
 
   const sentencePct =
     summary.sentencesTotal > 0
@@ -419,67 +417,69 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
     )
   }
 
-  const boxes: {
-    key: string
-    label: React.ReactNode
-    value: string
-    sub?: React.ReactNode
-    extra?: React.ReactNode
-    tone: MarkTone
-    percent: number | null
-  }[] = [
-    {
-      key: "score",
-      label: t("stats.score"),
-      value: summary.score === null ? "—" : summary.score.toFixed(1),
-      sub: t("stats.scoreSub"),
-      tone: scoreTone(summary.score),
-      percent:
-        summary.score === null ? null : Math.round((summary.score / 100) * 100),
-    },
-    {
-      key: "sentences",
-      label: t("stats.sentences"),
-      value: sentencePct === null ? "—" : `${sentencePct}%`,
-      sub:
-        summary.sentencesTotal > 0
-          ? `${summary.sentencesAligned.toLocaleString()} / ${summary.sentencesTotal.toLocaleString()}`
-          : "—",
-      tone: scoreTone(sentencePct),
-      percent:
-        sentencePct === null ? null : Math.round((sentencePct / 100) * 100),
-    },
-    {
-      key: "audio",
-      label: t("stats.audio"),
-      value: formatTimeHuman(summary.audioPlacedSeconds),
-      sub: t("stats.audioOf", {
-        total: formatTimeHuman(summary.audioTotalSeconds),
-      }),
-      extra:
-        summary.looseAudio > 0
-          ? t("stats.filesLoose", { count: summary.looseAudio })
-          : t("stats.allPlaced"),
-      tone: summary.looseAudio > 0 ? "moderate" : "muted",
-      percent:
-        summary.audioTotalSeconds > 0
-          ? Math.round(
-              (summary.audioPlacedSeconds / summary.audioTotalSeconds) * 100,
-            )
-          : null,
-    },
-    // {
-    //   key: "needsLook",
-    //   label: t("stats.needsLook"),
-    //   value: `${summary.needsLook}`,
-    //   sub: needsLookParts.join(", "),
-    //   tone: summary.needsLook > 0 ? "moderate" : "muted",
-    //   percent: null,
-    // },
-  ]
+  // const boxes: {
+  //   key: string
+  //   label: React.ReactNode
+  //   value: string
+  //   sub?: React.ReactNode
+  //   extra?: React.ReactNode
+  //   tone: MarkTone
+  //   percent: number | null
+  // }[] = [
+  //   {
+  //     key: "score",
+  //     label: t("stats.score"),
+  //     value: summary.confidence === null ? "—" : summary.confidence.toFixed(1),
+  //     sub: t("stats.scoreSub"),
+  //     tone: scoreTone(summary.confidence),
+  //     percent:
+  //       summary.confidence === null
+  //         ? null
+  //         : Math.round((summary.confidence / 100) * 100),
+  //   },
+  //   {
+  //     key: "sentences",
+  //     label: t("stats.sentences"),
+  //     value: sentencePct === null ? "—" : `${sentencePct}%`,
+  //     sub:
+  //       summary.sentencesTotal > 0
+  //         ? `${summary.sentencesAligned.toLocaleString()} / ${summary.sentencesTotal.toLocaleString()}`
+  //         : "—",
+  //     tone: scoreTone(sentencePct),
+  //     percent:
+  //       sentencePct === null ? null : Math.round((sentencePct / 100) * 100),
+  //   },
+  //   {
+  //     key: "audio",
+  //     label: t("stats.audio"),
+  //     value: formatTimeHuman(summary.audioPlacedSeconds),
+  //     sub: t("stats.audioOf", {
+  //       total: formatTimeHuman(summary.audioTotalSeconds),
+  //     }),
+  //     extra:
+  //       summary.looseAudio > 0
+  //         ? t("stats.filesLoose", { count: summary.looseAudio })
+  //         : t("stats.allPlaced"),
+  //     tone: summary.looseAudio > 0 ? "moderate" : "muted",
+  //     percent:
+  //       summary.audioTotalSeconds > 0
+  //         ? Math.round(
+  //             (summary.audioPlacedSeconds / summary.audioTotalSeconds) * 100,
+  //           )
+  //         : null,
+  //   },
+  //   // {
+  //   //   key: "needsLook",
+  //   //   label: t("stats.needsLook"),
+  //   //   value: `${summary.needsLook}`,
+  //   //   sub: needsLookParts.join(", "),
+  //   //   tone: summary.needsLook > 0 ? "moderate" : "muted",
+  //   //   percent: null,
+  //   // },
+  // ]
 
   return (
-    <section className="bg-card overflow-hidden rounded-lg border">
+    <section className="bg-card mx-auto max-w-2xl overflow-hidden rounded-lg border">
       <div
         className={cn(
           "relative flex flex-wrap items-center gap-6 bg-gradient-to-br to-transparent p-6",
@@ -496,18 +496,29 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
             {summary.grade}
           </span>
         </div>
-        <div className="min-w-[16rem] flex-1">
+        <div className="flex h-full min-w-[16rem] grow flex-col justify-between gap-1">
           <h2 className="text-2xl leading-tight font-normal">{lead}</h2>
-          <p className="text-muted-foreground dark:text-foreground mt-1.5 max-w-prose text-sm leading-relaxed">
+          {/* <p className="text-muted-foreground dark:text-foreground mt-1.5 max-w-prose text-sm leading-relaxed">
             {parts.join(" ")}
-          </p>
-          <p className="text-muted-foreground dark:text-foreground/80 mt-2.5 font-mono text-[11px]">
+          </p> */}
+          <div className="flex flex-wrap items-center gap-1">
+            <span>{sentencePct}% aligned</span>
+            <span>
+              {(
+                (summary.audioPlacedSeconds / summary.audioTotalSeconds) *
+                100
+              ).toFixed(1)}
+              % audio placed
+            </span>
+          </div>
+
+          {/* <p className="text-muted-foreground dark:text-foreground/80 mt-2.5 text-[11px]">
             {t("lastGraded", { date: formatDate(view.createdAt) })}
-          </p>
+          </p> */}
         </div>
       </div>
 
-      <div className="bg-border grid grid-cols-3 gap-px border-t">
+      {/* <div className="bg-border grid grid-cols-3 gap-px border-t">
         {boxes.map((box) => (
           <div key={box.key} className="bg-card relative p-3.5">
             <div
@@ -544,7 +555,7 @@ function Masthead({ view }: { view: BookAlignmentReportView }) {
             )}
           </div>
         ))}
-      </div>
+      </div> */}
     </section>
   )
 }

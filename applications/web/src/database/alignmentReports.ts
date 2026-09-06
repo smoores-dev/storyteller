@@ -85,10 +85,6 @@ export type AlignmentReport = Omit<
   report: AnyReport | null
 }
 
-function parseAlignmentReport(row: AlignmentReportRow): AlignmentReport {
-  return { ...row }
-}
-
 export async function createAlignmentReport(input: {
   jobUuid: UUID | null
   bookUuid: UUID | null
@@ -126,7 +122,7 @@ export async function createAlignmentReport(input: {
     return inserted
   })
 
-  return parseAlignmentReport(row)
+  return row
 }
 
 export async function getAlignmentReportForBook(
@@ -178,7 +174,7 @@ export async function updateAlignmentOverrides(
     .returningAll()
     .executeTakeFirstOrThrow()
 
-  return parseAlignmentReport(row)
+  return row
 }
 
 export async function getAlignmentFacets(): Promise<AlignmentFacets> {

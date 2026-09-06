@@ -96,6 +96,8 @@ export function ShowOpfDialog({
 }
 
 function Code({ code, theme }: { code: string; theme: "dark" | "light" }) {
+  const [linebreaks, setLinebreaks] = useState<string[]>([])
+
   useEffect(() => {
     if (theme === "dark") {
       void import("@speed-highlight/core/themes/github-dark.css")

@@ -10,11 +10,11 @@ import { type UUID } from "@/uuid"
 import {
   type AlignmentReportSummarySchemaV2,
   type AlignmentReportViewSchemaV2,
-  type ReportChapterAudioSchemaV2,
+  type ReportAudioChunkSchemaV2,
   type ReportChapterItemSchemaV2,
   type ReportRangeToneSchemaV2,
   type ReportSpineItemSchemaV2,
-  type ReportStripFileSchemaV2,
+  // type ReportStripFileSchemaV2,
   type ReportUnalignedItemSchemaV2,
   type SentenceContextSchemaV2,
 } from "./schemas/v2/alignmentReport"
@@ -23,7 +23,7 @@ export type MatchContext = z.infer<typeof SentenceContextSchemaV2>
 
 export type ReportRangeTone = z.infer<typeof ReportRangeToneSchemaV2>
 
-export type ReportChapterAudio = z.infer<typeof ReportChapterAudioSchemaV2>
+export type ReportChapterAudio = z.infer<typeof ReportAudioChunkSchemaV2>
 
 export type ReportChapterItem = z.infer<typeof ReportChapterItemSchemaV2>
 
@@ -31,7 +31,7 @@ export type ReportUnalignedItem = z.infer<typeof ReportUnalignedItemSchemaV2>
 
 export type ReportSpineItem = z.infer<typeof ReportSpineItemSchemaV2>
 
-export type ReportStripFile = z.infer<typeof ReportStripFileSchemaV2>
+// export type ReportStripFile = z.infer<typeof ReportStripFileSchemaV2>
 
 export type AlignmentReportSummary = z.infer<
   typeof AlignmentReportSummarySchemaV2

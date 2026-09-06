@@ -1,4 +1,4 @@
-import { buildReportView } from "@/alignmentReportView"
+import { buildReportView } from "@/alignmentReportViewNew"
 import { getProcessedAudioFilepath } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import {
@@ -7,7 +7,7 @@ import {
   updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"
-import { getJob } from "@/database/jobs";
+import { getJob } from "@/database/jobs"
 import { createDirectoryManifest } from "@/utils/audioManifest"
 import type { UUID } from "@/uuid"
 
@@ -59,19 +59,19 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
       : report.overrides
     : null
 
+  // const job = await getJob(report.jobUuid)
 
-  const job = await getJob(report.jobUuid)
+  // const transcodedAudioDir = getProcessedAudioFilepath(book)
+  // const audiobookManifest = await createDirectoryManifest(transcodedAudioDir, {
+  //   bookId: book.uuid,
+  //   updatedAt: new Date(book.updatedAt),
+  //   title: book.title,
+  //   subtitle: book.subtitle ?? undefined,
+  //   description: book.description ?? undefined,
+  //   language: book.language ?? undefined,
+  // })
 
-  const transcodedAudioDir = getProcessedAudioFilepath(book)
-  const audiobookManifest = await createDirectoryManifest(transcodedAudioDir, {
-    bookId: book.uuid,
-    updatedAt: new Date(book.updatedAt),
-    title: book.title,
-    subtitle: book.subtitle ?? undefined,
-    description: book.description ?? undefined,
-    language: book.language ?? undefined,
-  })
-
+  console.log(book.ebook?.manifest)
   const view = buildReportView({
     report: report.report,
     bookUuid,
@@ -81,8 +81,8 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     createdAt: report.createdAt,
     overrides,
     ebookManifest: (book.ebook?.manifest as ManifestLike | null) ?? null,
-    audiobookManifest:
-      (audiobookManifest.serialize() as ManifestLike | null) ?? null,
+    // audiobookManifest:
+    //   (audiobookManifest.serialize() as ManifestLike | null) ?? null,
   })
 
   return Response.json(view)
