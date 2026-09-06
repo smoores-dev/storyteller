@@ -36,7 +36,7 @@ INSERT INTO
   settings (name, value)
 SELECT
   'ctcDevice',
-  'null'
+  'webgpu'
 WHERE
   NOT EXISTS (
     SELECT
@@ -45,4 +45,19 @@ WHERE
       settings
     WHERE
       name = 'ctcDevice'
+  );
+
+INSERT INTO
+  settings (name, value)
+SELECT
+  'alignmentGranularity',
+  'sentence'
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      settings
+    WHERE
+      name = 'alignmentGranularity'
   );
