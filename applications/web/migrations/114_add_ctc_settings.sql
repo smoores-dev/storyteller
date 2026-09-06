@@ -36,7 +36,7 @@ INSERT INTO
   settings (name, value)
 SELECT
   'ctcDevice',
-  'webgpu'
+  '"webgpu"'
 WHERE
   NOT EXISTS (
     SELECT
