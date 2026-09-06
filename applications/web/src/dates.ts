@@ -25,6 +25,13 @@ export function toIsoDateString(value: unknown): string | null {
   return parsed.toISOString()
 }
 
+export function toIsoDateTimeString(value: unknown): string | null {
+  const iso =
+    toIsoDateString(value) ??
+    (typeof value === "string" ? toIsoDateString(new Date(value)) : null)
+  return iso?.replace(/\.\d{3}Z$/, "Z") ?? null
+}
+
 export function toDateInputValue(value: unknown): string {
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? "" : value.toISOString().slice(0, 10)

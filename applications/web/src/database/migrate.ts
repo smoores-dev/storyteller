@@ -95,6 +95,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "115_alignment_overrides_ignored.sql": (
     await import("./migrations/115_alignment_overrides_ignored.sql")
   ).default,
+  "116_normalize_aligned_at.sql": (
+    await import("./migrations/116_normalize_aligned_at.sql")
+  ).default,
 }
 
 async function isFirstStartup() {
