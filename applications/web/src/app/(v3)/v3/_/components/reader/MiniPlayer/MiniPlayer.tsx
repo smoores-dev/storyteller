@@ -1,12 +1,25 @@
 "use client"
 
 import { skipToken } from "@reduxjs/toolkit/query"
-import { type DragControls, motion } from "motion/react"
+import { motion } from "motion/react"
 import { usePathname } from "next/navigation"
-import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 
 import { Cover } from "@v3/_/components/books/Cover"
 import { useCoverScope } from "@v3/_/components/books/CoverScope"
+import {
+  CARD_CIRCLE_SIZE,
+  CARD_RADIUS,
+  CARD_RING_THICKNESS,
+  FloatingCard,
+  FloatingCardBody,
+  FloatingCardButton,
+  FloatingCardContent,
+  FloatingCardFooter,
+  FloatingCardHeader,
+  FloatingCardMedia,
+  FloatingCardTitle,
+} from "@v3/_/components/floating/FloatingCard"
 import { usePiPWindow } from "@v3/_/components/reader/PipProvider"
 import PiPWindow from "@v3/_/components/reader/PipWindow"
 import {
@@ -41,15 +54,13 @@ import {
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
 
-import { FloatingPlayer } from "./FloatingPlayer"
 import { PipPlayer } from "./PipPlayer"
 import { PlayerControls } from "./PlayerControls"
 import { ProgressRing } from "./ProgressRing"
 import { SpeedMenu } from "./SpeedMenu"
 
-const CIRCLE_SIZE = 64
-const RING_THICKNESS = 4
-const CLICK_SLOP_PX = 4
+const CIRCLE_SIZE = CARD_CIRCLE_SIZE
+const RING_THICKNESS = CARD_RING_THICKNESS
 
 const subscribeToNothing = () => () => {}
 
@@ -121,16 +132,12 @@ export function MiniPlayer() {
 
 function FloatingMiniPlayer({ book }: { book: BookWithRelations }) {
   const dispatch = useAppDispatch()
-  const corner = useAppSelector((state) =>
-    selectPreference(state, "miniPlayerCorner"),
-  )
   const collapsed = useAppSelector((state) =>
     selectPreference(state, "minimizedMiniPlayer"),
   )
   const currentTime = useAppSelector(selectCurrentTime)
   const duration = useAppSelector(selectDuration)
   const playing = useAppSelector(selectIsPlaying)
-  const pressPoint = useRef({ x: 0, y: 0 })
 
   const setCollapsed = (value: boolean) =>
     dispatch(
@@ -145,112 +152,65 @@ function FloatingMiniPlayer({ book }: { book: BookWithRelations }) {
   const t = useTranslation("Reader.miniPlayer")
 
   return (
-    <FloatingPlayer
-      corner={corner}
-      expanded={!collapsed}
-      // onCornerChange={(value: MiniPlayerCorner) =>
-      //   dispatch(
-      //     preferencesSlice.actions.updatePreference({
-      //       key: "miniPlayerCorner",
-      //       value,
-      //       target: "global",
-      //     }),
-      //   )
-      // }
-      style={{ borderRadius: collapsed ? CIRCLE_SIZE / 2 : 16 }}
-      className={cn(
-        "bg-popover text-popover-foreground border-border overflow-hidden border shadow-lg",
-        !collapsed && "w-[min(24rem,calc(100vw-2rem))]",
-      )}
+    <FloatingCard
+      style={{ borderRadius: collapsed ? CIRCLE_SIZE / 2 : CARD_RADIUS }}
+      className={cn(!collapsed && "w-[min(24rem,calc(100vw-2rem))]")}
     >
-      {(dragControls) => (
-        <motion.div
-          key={collapsed ? "circle" : "card"}
-          layout="position"
-          layoutDependency={collapsed}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
-          style={{
-            ...coverScope.style,
-          }}
-        >
-          {collapsed ? (
-            <button
-              type="button"
-              aria-label={t.plain("open")}
-              onPointerDown={(event) => {
-                pressPoint.current = { x: event.clientX, y: event.clientY }
-                dragControls.start(event)
-              }}
-              onClick={(event) => {
-                if (
-                  Math.hypot(
-                    event.clientX - pressPoint.current.x,
-                    event.clientY - pressPoint.current.y,
-                  ) > CLICK_SLOP_PX
-                ) {
-                  return
-                }
-                setCollapsed(false)
-              }}
-              className="block cursor-grab active:cursor-grabbing"
+      <motion.div
+        key={collapsed ? "circle" : "card"}
+        layout="position"
+        layoutDependency={collapsed}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        style={coverScope.style}
+      >
+        {collapsed ? (
+          <FloatingCardButton
+            aria-label={t.plain("open")}
+            onClick={() => setCollapsed(false)}
+          >
+            <ProgressRing
+              value={duration > 0 ? currentTime / duration : 0}
+              size={CIRCLE_SIZE}
+              thickness={RING_THICKNESS}
             >
-              <ProgressRing
-                value={duration > 0 ? currentTime / duration : 0}
-                size={CIRCLE_SIZE}
-                thickness={RING_THICKNESS}
-              >
-                <Cover
-                  book={book}
-                  width={CIRCLE_SIZE - RING_THICKNESS * 2}
-                  fill
-                  interactive={false}
-                  displayMode="audiobook"
-                  className={cn(
-                    "size-full transition-[opacity,filter] duration-300",
-                    !playing && "opacity-60 grayscale",
-                  )}
-                />
-              </ProgressRing>
-            </button>
-          ) : (
-            <ExpandedCard
-              book={book}
-              dragControls={dragControls}
-              onCollapse={() => setCollapsed(true)}
-            />
-          )}
-        </motion.div>
-      )}
-    </FloatingPlayer>
+              <Cover
+                book={book}
+                width={CIRCLE_SIZE - RING_THICKNESS * 2}
+                fill
+                interactive={false}
+                displayMode="audiobook"
+                className={cn(
+                  "size-full transition-[opacity,filter] duration-300",
+                  !playing && "opacity-60 grayscale",
+                )}
+              />
+            </ProgressRing>
+          </FloatingCardButton>
+        ) : (
+          <ExpandedCard book={book} onCollapse={() => setCollapsed(true)} />
+        )}
+      </motion.div>
+    </FloatingCard>
   )
 }
 
 function ExpandedCard({
   book,
-  dragControls,
   onCollapse,
 }: {
   book: BookWithRelations
-  dragControls: DragControls
   onCollapse: () => void
 }) {
   const dispatch = useAppDispatch()
   const track = useAppSelector(selectCurrentTrack)
   const mode = useAppSelector(selectReadingMode)
   const t = useTranslation("Reader.miniPlayer")
-  const startDrag = (event: React.PointerEvent) => {
-    if ((event.target as Element).closest("button,a,[role=menuitem]")) return
-    dragControls.start(event)
-  }
 
   return (
     <div className="flex flex-col">
-      <div
-        onPointerDown={startDrag}
-        className="flex cursor-grab items-center gap-1 px-2 pt-2 active:cursor-grabbing"
-      >
+      <FloatingCardHeader>
         <TooltipButton
           variant="ghost"
           tooltip={t.plain("collapse")}
@@ -259,9 +219,9 @@ function ExpandedCard({
         >
           <icon.ChevronDown />
         </TooltipButton>
-        <span className="text-muted-foreground min-w-0 flex-1 truncate text-xs">
-          {track?.title}
-        </span>
+        <FloatingCardTitle>
+          <span className="truncate">{track?.title}</span>
+        </FloatingCardTitle>
         <SpeedMenu book={book} />
         <TooltipButton
           variant="ghost"
@@ -280,29 +240,26 @@ function ExpandedCard({
         >
           <icon.Close />
         </TooltipButton>
-      </div>
-      <div className="flex items-center gap-3 px-3 py-2">
-        <div
-          onPointerDown={startDrag}
-          className="cursor-grab active:cursor-grabbing"
-        >
+      </FloatingCardHeader>
+      <FloatingCardBody>
+        <FloatingCardMedia>
           <Cover book={book} width={56} interactive={false} />
-        </div>
-        <div className="min-w-0 flex-1">
+        </FloatingCardMedia>
+        <FloatingCardContent>
           <p className="font-heading truncate text-sm font-semibold">
             {book.title}
           </p>
           <p className="text-muted-foreground truncate text-xs">
             {book.authors.map((author) => author.name).join(", ")}
           </p>
-        </div>
+        </FloatingCardContent>
         <div className="flex items-center">
           <PlayerControls />
         </div>
-      </div>
-      <div className="px-3 pb-3">
+      </FloatingCardBody>
+      <FloatingCardFooter>
         <SeekBar />
-      </div>
+      </FloatingCardFooter>
     </div>
   )
 }
