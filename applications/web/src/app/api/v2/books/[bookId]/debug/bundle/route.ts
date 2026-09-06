@@ -69,6 +69,13 @@ export const GET = withHasPermission<Params>("bookUpdate")(async (
 
   const zipfile = new ZipFile()
 
+  // this needs to be first. if we add an epub first, Archive Util on Macos
+  // will think the whole thing is an epub.
+  zipfile.addBuffer(
+    Buffer.from(JSON.stringify({ bookId, title: book.title }, null, 2)),
+    "bundle.json",
+  )
+
   if (book.ebook?.filepath) {
     await addFile(zipfile, book.ebook.filepath, "ebook.epub")
   }
