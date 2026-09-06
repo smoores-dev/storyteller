@@ -1109,7 +1109,6 @@
           }
         }
       },
-
       "queue": {
         "title": "Processing Queue",
         "pauseAll": "Pause all",
@@ -1951,7 +1950,9 @@
     "openBook": "Book",
     "createdByJob": "Created {relativeTime}",
     "lastGraded": "Last graded {date}",
-    "ignored": "Ignored",
+    "job": {
+      "took": "took {duration}"
+    },
     "verdict": {
       "excellent": "Excellent alignment",
       "strong": "Strong alignment",
@@ -1959,37 +1960,42 @@
       "fair": "Fair alignment",
       "rough": "Rough alignment",
       "patchy": "Patchy alignment",
-      "failed": "Alignment failed",
-      "score": "Weighted score {score} across {sentences, number} sentences.",
-      "noScore": "Nothing in the ebook matched the narration.",
-      "notFound": "{count, plural, one {# chapter inside the book was not found.} other {# chapters inside the book were not found.}}",
-      "looseAudio": "{count, plural, one {# audio file was not placed.} other {# audio files were not placed.}}",
-      "ignored": "{count, plural, one {# chapter is ignored.} other {# chapters are ignored.}}"
+      "weak": "Weak alignment",
+      "failed": "Alignment failed"
+    },
+    "judgment": {
+      "approved": "Approved",
+      "excluded": "Excluded"
     },
     "stats": {
-      "score": "Score",
-      "scoreSub": "weighted by sentences",
-      "sentences": "Sentences",
+      "sentences": "Sentences aligned",
+      "sentencesSub": "{aligned, number} of {total, number}",
       "audio": "Audio placed",
-      "audioOf": "of {total}",
-      "filesLoose": "{count, plural, one {# file loose} other {# files loose}}",
-      "allPlaced": "all placed",
-      "needsLook": "Needs a look",
-      "needsNoAudio": "{count, number} no audio",
-      "needsNotFound": "{count, number} not found"
+      "audioSub": "{placed} of {total}",
+      "confidence": "Confidence"
     },
-    "table": {
-      "needsLookOnly": "Needs a look only",
-      "selectAll": "Select all rows",
-      "rangeSuspicious": "range?",
-      "columns": {
-        "chapter": "Chapter",
-        "score": "Score",
-        "sentences": "Sentences",
-        "audio": "Audio",
-        "length": "Length",
-        "status": "Status"
-      }
+    "reel": {
+      "title": "{count, plural, one {# audio file} other {# audio files}} · {duration}",
+      "hint": "Click a file to play from there",
+      "notOnDisk": "not on disk",
+      "legend": {
+        "placed": "placed",
+        "unplaced": "not placed",
+        "excluded": "excluded",
+        "selected": "selected chapter"
+      },
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "minimap": "Overview. Drag the window to scroll, drag its edges to zoom."
+    },
+    "list": {
+      "title": "Chapters",
+      "selectAll": "Select all",
+      "selectNone": "Select none",
+      "empty": "This report has no chapters.",
+      "sortBySpine": "Sort by position in the book",
+      "sentences": "{aligned, number}/{total, number}",
+      "sortByMatched": "Sort by sentences matched"
     },
     "bulk": {
       "selected": "{count, plural, one {# selected} other {# selected}}",
@@ -1997,9 +2003,13 @@
       "clear": "Clear selection"
     },
     "actions": {
-      "menu": "Row options",
-      "ignore": "Ignore",
-      "unignore": "Un-ignore"
+      "approve": "Approve",
+      "exclude": "Exclude",
+      "clearJudgment": "Clear",
+      "excludeAudio": "Also exclude its audio",
+      "restoreAudio": "Restore its audio",
+      "excludeFile": "Exclude this audio file",
+      "includeFile": "Include this audio file"
     },
     "reason": {
       "not-found": "not found",
@@ -2007,35 +2017,43 @@
       "is-nav": "navigation",
       "no-text": "no text"
     },
-    "hint": {
-      "front-matter": "front matter",
-      "part-title": "part title",
-      "promo": "promo",
-      "after-last-match": "after the last match",
-      "before-first-match": "before the first match"
-    },
-    "status": {
-      "missing": "sentences missing",
-      "no-audio": "no audio",
-      "range": "audio looks short"
-    },
     "detail": {
+      "empty": "Pick a chapter to see its matches and audio.",
+      "spine": "Spine {index, number}",
+      "confidence": "Confidence",
+      "missing": "{count, plural, =0 {sentences, none missing} one {sentences, # missing} other {sentences, # missing}}",
+      "files": "{count, plural, one {audio, # file} other {audio, # files}}",
+      "perSentence": "per sentence",
       "firstMatch": "First match",
       "lastMatch": "Last match",
       "noAudioFiles": "No audio was placed in this chapter.",
       "sharedBefore": "also {label}",
-      "sharedAfter": "then {label}"
+      "sharedAfter": "then {label}",
+      "sentenceCount": "{count, plural, one {# sentence} other {# sentences}}",
+      "prev": "Previous",
+      "next": "Next",
+      "jumpFirst": "Jump to the first match",
+      "jumpLast": "Jump to the last match",
+      "loadingText": "Loading chapter text…",
+      "textUnavailable": "The chapter text could not be loaded.",
+      "textHint": "Dimmed text was not matched to the narration.",
+      "textUnmarkedHint": "The matched range could not be located in this text."
+    },
+    "marks": {
+      "sentences": "Sentences aligned",
+      "audio": "Audio placed"
     },
     "loose": {
       "title": "Audio not placed",
+      "count": "{count, plural, one {# stretch} other {# stretches}} · {duration}",
       "between": "{before} → {after}",
       "beforeFirst": "before {label}",
       "afterLast": "after {label}",
-      "notOnDisk": "not on disk"
-    },
-    "marks": {
-      "score": "% Sentences aligned",
-      "unalignedChapters": "Unaligned chapters"
+      "fromExcluded": "from {label}, excluded",
+      "notOnDisk": "not on disk",
+      "showShort": "{count, plural, one {# gap} other {# gaps}} under {seconds, number} s hidden · show",
+      "hideShort": "Hide {count, plural, one {# gap} other {# gaps}} under {seconds, number} s",
+      "onlyShort": "Only gaps under {seconds, number} s remain."
     }
   },
   "Player": {

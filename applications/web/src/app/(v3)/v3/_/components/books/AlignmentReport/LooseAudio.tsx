@@ -1,136 +1,202 @@
 "use client"
 
-import { PlayButton } from "@v3/_/components/audio"
+import { useMemo, useState } from "react"
+
+import { PlayButton, formatClock } from "@v3/_/components/audio"
+import { Badge } from "@v3/_/components/ui/badge"
 import { Button } from "@v3/_/components/ui/button"
-import { Checkbox } from "@v3/_/components/ui/checkbox"
+import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import { type ReportStripFile } from "@/alignmentReportView"
-import { formatTime } from "@/components/reader/preferenceItems/formatTime"
+import { type ReportAudioChunk } from "@/alignmentReportView"
 import * as icon from "@/icons"
-import { useGetTranscodedAudioQuery } from "@/store/api"
-import type { UUID } from "@/uuid"
+import { type UUID } from "@/uuid"
 
-import { FlagBadge, type IgnoreEditor } from "./shared"
-import { AudioChunk } from "@/schemas/v2/alignmentReport"
+import { TONE_BADGE, fileClip, hrefStem } from "./shared"
+import { type AudioFile } from "./useAudioFiles"
+import { type OverrideEditor } from "./useOverrideEditor"
+
+const SHORT_SECONDS = 5
+
+type LooseRow = {
+  file: AudioFile
+  chunk: ReportAudioChunk
+  before: string | null
+  after: string | null
+}
+
+function looseRows(files: AudioFile[]): LooseRow[] {
+  const flat = files.flatMap((file) =>
+    file.chunks.map((chunk) => ({ file, chunk })),
+  )
+  const rows: LooseRow[] = []
+  for (const [index, entry] of flat.entries()) {
+    if (entry.chunk.placed) continue
+    let before: string | null = null
+    let after: string | null = null
+    for (let at = index - 1; at >= 0; at--) {
+      const label = flat[at]?.chunk.label
+      if (label) {
+        before = label
+        break
+      }
+    }
+    for (let at = index + 1; at < flat.length; at++) {
+      const label = flat[at]?.chunk.label
+      if (label) {
+        after = label
+        break
+      }
+    }
+    rows.push({ ...entry, before, after })
+  }
+  return rows.sort((a, b) => b.chunk.duration - a.chunk.duration)
+}
 
 export function LooseAudio({
   bookUuid,
   files,
-  selected,
-  onSelect,
-  ignore,
+  editor,
+  narrow,
 }: {
   bookUuid: UUID
-  files: [string, AudioChunk[]][]
-  selected: ReadonlySet<string>
-  onSelect: (key: string, order: readonly string[], extend: boolean) => void
-  ignore: IgnoreEditor
+  files: AudioFile[]
+  editor: OverrideEditor
+  narrow: boolean
 }) {
   const t = useTranslation("AlignmentReport")
-  const { data: transcoded } = useGetTranscodedAudioQuery({ uuid: bookUuid })
+  const [showShort, setShowShort] = useState(false)
+  const rows = useMemo(() => looseRows(files), [files])
 
-  if (files.length === 0) {
-    return null
-  }
+  if (rows.length === 0) return null
 
-  // const order = files.map((file) => file.filepath)
+  const totalSeconds = rows.reduce((sum, row) => sum + row.chunk.duration, 0)
+  const long = rows.filter((row) => row.chunk.duration >= SHORT_SECONDS)
+  const shortCount = rows.length - long.length
+  const visible = showShort ? rows : long
 
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="flex items-center gap-1.5 text-lg font-normal">
-        <icon.Headphones className="size-4" />
-        {t("loose.title")}{" "}
-        <span className="text-muted-foreground font-mono text-xs">
-          ({files.length})
+      <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+        <h2 className="font-heading text-sm font-medium">{t("loose.title")}</h2>
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {t("loose.count", {
+            count: rows.length,
+            duration: formatClock(totalSeconds),
+          })}
         </span>
-      </h2>
-      <div className="divide-border divide-y overflow-hidden rounded-lg border">
-        {files.map(([name, chunks]) => {
-          const disk = transcoded?.find((entry) => entry.name === name)
-
-          return (
-            <div key={name}>
-              {chunks.map((chunk) => {
-                return (
-                  <div key={chunk.filepath}>
-                    <span>
-                      {chunk.name} from {chunk.start} to {chunk.end} (of{" "}
-                      {chunk.totalDuration})
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )
-
-          // const seconds = file.duration ?? disk?.duration ?? null
-          // const missing = disk?.present === false
-          // const between =
-          //   file.between.before !== null && file.between.after !== null
-          //     ? t("loose.between", {
-          //         before: file.between.before,
-          //         after: file.between.after,
-          //       })
-          //     : file.between.after !== null
-          //       ? t("loose.beforeFirst", { label: file.between.after })
-          //       : file.between.before !== null
-          //         ? t("loose.afterLast", { label: file.between.before })
-          //         : null
-
-          // return (
-          //   <div
-          //     key={file.filepath}
-          //     className={cn(
-          //       "flex items-center gap-2 px-2 py-1.5",
-          //       file.ignored && "opacity-50",
-          //     )}
-          //   >
-          //     <div
-          //       onClick={(event) => {
-          //         onSelect(file.filepath, order, event.shiftKey)
-          //       }}
-          //     >
-          //       <Checkbox
-          //         checked={selected.has(file.filepath)}
-          //         aria-label={file.name}
-          //         onCheckedChange={() => undefined}
-          //       />
-          //     </div>
-          //     <PlayButton
-          //       clip={{
-          //         bookUuid,
-          //         path: file.filepath,
-          //         name: file.filepath,
-          //         label: file.name,
-          //       }}
-          //     />
-          //     <span className="truncate font-mono text-xs">{file.name}</span>
-          //     {between !== null && (
-          //       <span className="text-muted-foreground truncate text-xs">
-          //         {between}
-          //       </span>
-          //     )}
-          //     <span className="text-muted-foreground ml-auto shrink-0 font-mono text-[11px] tabular-nums">
-          //       {seconds !== null ? formatTime(seconds, true) : "—"}
-          //     </span>
-          //     {missing && (
-          //       <FlagBadge tone="poor">{t("loose.notOnDisk")}</FlagBadge>
-          //     )}
-          //     <Button
-          //       variant={file.ignored ? "secondary" : "ghost"}
-          //       size="sm"
-          //       onClick={() => {
-          //         ignore([file.filepath], !file.ignored)
-          //       }}
-          //     >
-          //       {file.ignored ? t("actions.unignore") : t("actions.ignore")}
-          //     </Button>
-          //   </div>
-          // )
-        })}
+        {shortCount > 0 && (
+          <Button
+            variant="link"
+            size="xs"
+            className="text-muted-foreground ml-auto h-auto px-0"
+            onClick={() => {
+              setShowShort((value) => !value)
+            }}
+          >
+            {showShort
+              ? t("loose.hideShort", {
+                  count: shortCount,
+                  seconds: SHORT_SECONDS,
+                })
+              : t("loose.showShort", {
+                  count: shortCount,
+                  seconds: SHORT_SECONDS,
+                })}
+          </Button>
+        )}
       </div>
+
+      {visible.length === 0 ? (
+        <p className="text-muted-foreground rounded-lg border p-3 text-xs">
+          {t("loose.onlyShort", { seconds: SHORT_SECONDS })}
+        </p>
+      ) : (
+        <div className="divide-border divide-y overflow-hidden rounded-lg border">
+          {visible.map(({ file, chunk, before, after }) => {
+            const hint = chunk.label
+              ? t("loose.fromExcluded", { label: chunk.label })
+              : before && after
+                ? t("loose.between", { before, after })
+                : after
+                  ? t("loose.beforeFirst", { label: after })
+                  : before
+                    ? t("loose.afterLast", { label: before })
+                    : null
+            return (
+              <div
+                key={`${file.name}-${chunk.start}`}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1 text-xs",
+                  file.excluded && "text-muted-foreground",
+                )}
+              >
+                {file.present ? (
+                  <PlayButton
+                    clip={fileClip(bookUuid, file.name, {
+                      start: chunk.start,
+                      end: chunk.end,
+                      label: hint,
+                    })}
+                  />
+                ) : (
+                  <span className="size-7 shrink-0" />
+                )}
+                <span className="flex min-w-0 flex-col">
+                  <span className="flex items-baseline gap-1.5">
+                    <span
+                      className={cn(
+                        "shrink-0 tabular-nums",
+                        file.excluded && "line-through",
+                      )}
+                    >
+                      {hrefStem(file.name)}
+                    </span>
+                    <span className="text-muted-foreground shrink-0 tabular-nums">
+                      {formatClock(chunk.start)} → {formatClock(chunk.end)}
+                    </span>
+                  </span>
+                  {!narrow && (
+                    <span className="text-muted-foreground truncate text-[10px]">
+                      {file.present ? hint : t("loose.notOnDisk")}
+                    </span>
+                  )}
+                </span>
+                <span className="text-muted-foreground ml-auto shrink-0 tabular-nums">
+                  {formatClock(chunk.duration)}
+                </span>
+                {file.excluded && (
+                  <Badge
+                    className={cn("h-4 px-1.5 text-[10px]", TONE_BADGE.muted)}
+                  >
+                    {t("judgment.excluded")}
+                  </Badge>
+                )}
+                <TooltipButton
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={
+                    file.excluded
+                      ? t("actions.includeFile")
+                      : t("actions.excludeFile")
+                  }
+                  tooltip={
+                    file.excluded
+                      ? t("actions.includeFile")
+                      : t("actions.excludeFile")
+                  }
+                  onClick={() => {
+                    editor({ audio: { [file.name]: !file.excluded } })
+                  }}
+                >
+                  {file.excluded ? <icon.Volume /> : <icon.VolumeOff />}
+                </TooltipButton>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </section>
   )
 }

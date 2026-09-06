@@ -2452,6 +2452,15 @@ export const api = createApi({
         { type: "BookAlignmentReport", id: uuid },
       ],
     }),
+    getBookChapterText: build.query<string, { uuid: UUID; href: string }>({
+      query: ({ uuid, href }) => ({
+        url: `/books/${uuid}/read/${href
+          .split("/")
+          .map(encodeURIComponent)
+          .join("/")}`,
+        responseHandler: "text",
+      }),
+    }),
     getTranscodedAudio: build.query<TranscodedAudioFile[], { uuid: UUID }>({
       query: ({ uuid }) => `/books/${uuid}/transcoded-audio`,
       providesTags: (_result, _error, { uuid }) => [
@@ -2534,6 +2543,7 @@ export const {
   useGetJobsQuery,
   useGetAlignmentEstimateQuery,
   useGetBookAlignmentReportQuery,
+  useGetBookChapterTextQuery,
   useGetTranscodedAudioQuery,
   useUpdateBookAlignmentOverridesMutation,
   useCancelJobMutation,

@@ -1,5 +1,8 @@
-import { buildReportView } from "@/alignmentReportViewNew"
-import { getProcessedAudioFilepath } from "@/assets/paths"
+import {
+  type ManifestLike,
+  type ReportJob,
+  buildReportView,
+} from "@/alignmentReportView"
 import { withHasPermission } from "@/auth/auth"
 import {
   type AlignmentOverrides,
@@ -7,17 +10,38 @@ import {
   updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"
-import { getJob } from "@/database/jobs"
-import { createDirectoryManifest } from "@/utils/audioManifest"
+import { type Job, getJob } from "@/database/jobs"
 import type { UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
 
 type Params = Promise<{ bookId: string }>
 
-type ManifestLike = {
-  readingOrder?: { href?: string; title?: string; duration?: number }[]
-  toc?: { href?: string; title?: string }[]
+function reportJob(job: Job | null): ReportJob | null {
+  if (!job) return null
+  const runSeconds = job.stats?.totalWallMs
+    ? job.stats.totalWallMs / 1000
+    : job.startedAt && job.finishedAt
+      ? (new Date(job.finishedAt).getTime() -
+          new Date(job.startedAt).getTime()) /
+        1000
+      : null
+  return {
+    uuid: job.uuid,
+    status: job.status,
+    startedAt: job.startedAt,
+    finishedAt: job.finishedAt,
+    runSeconds,
+    config: job.config
+      ? {
+          aligner: job.config.aligner,
+          ctcEngine: job.config.ctcEngine,
+          transcriptionEngine: job.config.transcriptionEngine,
+          whisperModel: job.config.whisperModel,
+          language: job.config.language,
+        }
+      : null,
+  }
 }
 
 /**
@@ -38,6 +62,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     getAlignmentReportForBook(bookUuid),
     getBook(bookUuid, request.auth.user.id),
   ])
+  const job = report?.jobUuid ? await getJob(report.jobUuid) : null
 
   if (!report?.report) {
     return Response.json(
@@ -59,30 +84,16 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
       : report.overrides
     : null
 
-  // const job = await getJob(report.jobUuid)
-
-  // const transcodedAudioDir = getProcessedAudioFilepath(book)
-  // const audiobookManifest = await createDirectoryManifest(transcodedAudioDir, {
-  //   bookId: book.uuid,
-  //   updatedAt: new Date(book.updatedAt),
-  //   title: book.title,
-  //   subtitle: book.subtitle ?? undefined,
-  //   description: book.description ?? undefined,
-  //   language: book.language ?? undefined,
-  // })
-
-  console.log(book.ebook?.manifest)
   const view = buildReportView({
     report: report.report,
     bookUuid,
     bookTitle: book.title,
     reportUuid: report.uuid,
     jobUuid: report.jobUuid,
+    job: reportJob(job),
     createdAt: report.createdAt,
     overrides,
     ebookManifest: (book.ebook?.manifest as ManifestLike | null) ?? null,
-    // audiobookManifest:
-    //   (audiobookManifest.serialize() as ManifestLike | null) ?? null,
   })
 
   return Response.json(view)

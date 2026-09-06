@@ -34,7 +34,7 @@ export function ClipChip({
         play(clip)
       }}
       className={cn(
-        "focus-visible:ring-ring/30 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[0.625rem] whitespace-nowrap transition-colors outline-none focus-visible:ring-2 motion-reduce:transition-none",
+        "focus-visible:ring-ring/30 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[0.625rem] whitespace-nowrap transition-colors outline-none focus-visible:ring-2 motion-reduce:transition-none",
         isCurrent
           ? "border-primary/40 bg-primary/10 text-primary"
           : "border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground",

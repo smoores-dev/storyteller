@@ -2,6 +2,7 @@ import assert from "node:assert"
 import { describe, it } from "node:test"
 
 import {
+  GRADE_BANDS,
   type ReportChapterItem,
   type ReportUnalignedItem,
   buildReportModel,
@@ -47,288 +48,400 @@ const chapter = (input: ChapterInput) => ({
   ],
 })
 
+const notFound = (href: string, spineIndex: number, sentences: number) => ({
+  href,
+  spineIndex,
+  score: 0,
+  chapterSentenceCount: sentences,
+  reason: "not-found" as const,
+  start: `${href} starts here`,
+  end: `${href} ends here`,
+})
+
+const audioFile = (filepath: string, duration: number, aligned: number) => ({
+  filepath,
+  duration,
+  alignedDuration: aligned,
+  matchedRanges: [],
+})
+
 const makeReport = (input: {
-  chapters: ReturnType<typeof chapter>[]
-  unalignedChapters?: unknown[]
-  audioFiles?: unknown[]
-  unalignedAudioFiles?: unknown[]
+  chapters: AnyReport["chapters"]
+  unalignedChapters?: AnyReport["unalignedChapters"]
+  audioFiles?: AnyReport["audioFiles"]
+  unalignedAudioFiles?: AnyReport["unalignedAudioFiles"]
 }) =>
   ({
     chapters: input.chapters,
     unalignedChapters: input.unalignedChapters ?? [],
     audioFiles: input.audioFiles ?? [],
     unalignedAudioFiles: input.unalignedAudioFiles ?? [],
-  }) as unknown as AnyReport
+  }) as AnyReport
 
-const chapters = (model: ReturnType<typeof buildReportModel>) =>
-  model.items.filter(
-    (item): item is ReportChapterItem => item.kind === "chapter",
-  )
+const chapterItems = (items: ReturnType<typeof buildReportModel>["items"]) =>
+  items.filter((item): item is ReportChapterItem => item.kind === "chapter")
 
-const unaligned = (model: ReturnType<typeof buildReportModel>) =>
-  model.items.filter(
-    (item): item is ReportUnalignedItem => item.kind === "unaligned",
-  )
+const unalignedItems = (items: ReturnType<typeof buildReportModel>["items"]) =>
+  items.filter((item): item is ReportUnalignedItem => item.kind === "unaligned")
 
 void describe("gradeForScore", () => {
   void it("maps every band edge to its grade", () => {
-    assert.deepStrictEqual(gradeForScore(100), { grade: "A", band: 0 })
-    assert.deepStrictEqual(gradeForScore(95), { grade: "A", band: 0 })
-    assert.deepStrictEqual(gradeForScore(94.9), { grade: "A-", band: 1 })
-    assert.deepStrictEqual(gradeForScore(90), { grade: "A-", band: 1 })
-    assert.deepStrictEqual(gradeForScore(89.9), { grade: "B", band: 2 })
-    assert.deepStrictEqual(gradeForScore(85), { grade: "B", band: 2 })
-    assert.deepStrictEqual(gradeForScore(84.9), { grade: "B-", band: 3 })
-    assert.deepStrictEqual(gradeForScore(80), { grade: "B-", band: 3 })
-    assert.deepStrictEqual(gradeForScore(79.9), { grade: "C", band: 4 })
-    assert.deepStrictEqual(gradeForScore(75), { grade: "C", band: 4 })
-    assert.deepStrictEqual(gradeForScore(74.9), { grade: "D", band: 5 })
-    assert.deepStrictEqual(gradeForScore(70), { grade: "D", band: 5 })
-    assert.deepStrictEqual(gradeForScore(69.9), { grade: "F", band: 6 })
-    assert.deepStrictEqual(gradeForScore(0), { grade: "F", band: 6 })
+    for (const [band, entry] of GRADE_BANDS.entries()) {
+      const at = Number.isFinite(entry.min) ? entry.min : 0
+      assert.deepStrictEqual(gradeForScore(at), { grade: entry.grade, band })
+    }
+    assert.deepStrictEqual(gradeForScore(94.9), { grade: "A", band: 1 })
   })
 
   void it("fails a report with no score at all", () => {
-    assert.deepStrictEqual(gradeForScore(null), { grade: "F", band: 6 })
+    assert.deepStrictEqual(gradeForScore(null), {
+      grade: "F",
+      band: GRADE_BANDS.length - 1,
+    })
   })
 })
 
-void describe("the weighted score", () => {
-  const bodyChapters = () => [
-    chapter({
-      href: "ch1.xhtml",
-      spineIndex: 1,
-      score: 95.6,
-      chapterSentenceCount: 100,
-    }),
-    chapter({
-      href: "ch9.xhtml",
-      spineIndex: 9,
-      score: 86,
-      chapterSentenceCount: 100,
-    }),
-  ]
-
-  const twoChapters = () => makeReport({ chapters: bodyChapters() })
-
-  void it("weighs each chapter by its sentence count", () => {
-    const { summary } = buildReportModel({ report: twoChapters() })
-
-    assert.strictEqual(summary.score, 90.8)
-    assert.strictEqual(summary.grade, "A-")
-    assert.strictEqual(summary.band, 1)
+void describe("the score", () => {
+  const report = makeReport({
+    chapters: [
+      chapter({
+        href: "a.xhtml",
+        spineIndex: 1,
+        score: 90,
+        chapterSentenceCount: 100,
+        alignedSentenceCount: 80,
+        audioFiles: [{ filepath: "/audio/1.mp3", start: 0, end: 500 }],
+      }),
+    ],
+    audioFiles: [audioFile("/audio/1.mp3", 1000, 500)],
   })
 
-  void it("counts a not-found body chapter as a zero", () => {
-    const report = makeReport({
-      chapters: bodyChapters(),
-      unalignedChapters: [
-        {
-          href: "ch5.xhtml",
-          spineIndex: 5,
-          reason: "not-found",
-          score: 0,
-          chapterSentenceCount: 40,
-          start: "The gate stood open.",
-          end: "",
-        },
-      ],
-    })
-
-    const { summary, items } = buildReportModel({ report })
-
-    assert.strictEqual(summary.notFoundBody, 1)
-    assert.strictEqual(summary.score, 75.7)
+  void it("weighs sentences seventy percent and audio thirty", () => {
+    const { summary } = buildReportModel({ report })
+    assert.strictEqual(summary.sentencesAligned, 80)
+    assert.strictEqual(summary.sentencesTotal, 100)
+    assert.strictEqual(summary.audioPlacedSeconds, 500)
+    assert.strictEqual(summary.audioTotalSeconds, 1000)
+    assert.strictEqual(summary.score, 0.8 * 70 + 0.5 * 30)
     assert.strictEqual(summary.grade, "C")
-    assert.strictEqual(
-      items.find((item) => item.href === "ch5.xhtml")?.needsLook,
-      true,
-    )
   })
 
-  void it("ignores a not-found chapter outside the matched spine range", () => {
-    const model = buildReportModel({
-      report: makeReport({
-        chapters: bodyChapters(),
-        unalignedChapters: [
-          {
-            href: "discover-more.xhtml",
-            spineIndex: 12,
-            reason: "not-found",
-            score: 0,
-            chapterSentenceCount: 40,
-            start: "Discover your next read.",
-            end: "",
-          },
-        ],
-      }),
-    })
-
-    assert.strictEqual(model.summary.score, 90.8)
-    assert.strictEqual(model.summary.notFoundBody, 0)
-    const item = unaligned(model)[0]
-    assert.ok(item)
-    assert.strictEqual(item.inBody, false)
-    assert.strictEqual(item.needsLook, false)
-    assert.strictEqual(item.hint, "promo")
-  })
-
-  void it("has no score when every chapter is ignored", () => {
-    const overrides: AlignmentOverrides = {
-      chapters: {
-        "ch1.xhtml": { ignored: true },
-        "ch9.xhtml": { ignored: true },
-      },
-    }
-
-    const { summary } = buildReportModel({ report: twoChapters(), overrides })
-
-    assert.strictEqual(summary.score, null)
-    assert.strictEqual(summary.grade, "F")
-    assert.strictEqual(summary.band, 6)
-    assert.strictEqual(summary.ignored, 2)
-  })
-})
-
-void describe("ignoring", () => {
-  const report = () =>
-    makeReport({
-      chapters: [
-        chapter({
-          href: "ch1.xhtml",
-          spineIndex: 1,
-          score: 96,
-          chapterSentenceCount: 100,
-        }),
-        chapter({
-          href: "ch2.xhtml",
-          spineIndex: 2,
-          score: 20,
-          chapterSentenceCount: 100,
-          alignedSentenceCount: 10,
-          audioFiles: [],
-        }),
-      ],
-      unalignedAudioFiles: [{ filepath: "/audio/00099.mp3" }],
-    })
-
-  void it("drops an ignored chapter from the score and its warnings", () => {
-    const before = buildReportModel({ report: report() })
-    assert.strictEqual(before.summary.score, 58)
-    assert.strictEqual(before.summary.needsLook, 1)
-    assert.strictEqual(before.summary.noAudio, 1)
-
-    const after = buildReportModel({
-      report: report(),
-      overrides: { chapters: { "ch2.xhtml": { ignored: true } } },
-    })
-
-    assert.strictEqual(after.summary.score, 96)
-    assert.strictEqual(after.summary.needsLook, 0)
-    assert.strictEqual(after.summary.noAudio, 0)
-    assert.strictEqual(chapters(after)[1]?.needsLook, false)
-    assert.strictEqual(chapters(after)[1]?.ignored, true)
-  })
-
-  void it("drops an ignored audio file from the loose count", () => {
-    const before = buildReportModel({ report: report() })
-    assert.strictEqual(before.summary.looseAudio, 1)
-
-    const after = buildReportModel({
-      report: report(),
-      overrides: { audioFiles: { "/audio/00099.mp3": { ignored: true } } },
-    })
-
-    assert.strictEqual(after.summary.looseAudio, 0)
-  })
-})
-
-void describe("chapter status", () => {
-  void it("flags a chapter whose audio is far too short for its text", () => {
-    const { items } = buildReportModel({
+  void it("falls back to sentences alone when no audio is known", () => {
+    const { summary } = buildReportModel({
       report: makeReport({
         chapters: [
           chapter({
-            href: "ch1.xhtml",
+            href: "a.xhtml",
             spineIndex: 1,
-            score: 96,
-            chapterSentenceCount: 30,
-            audioFiles: [{ filepath: "/audio/00001.mp3", start: 0, end: 10 }],
-          }),
-        ],
-      }),
-    })
-
-    const item = items[0]
-    assert.ok(item?.kind === "chapter")
-    assert.strictEqual(item.audioSeconds, 10)
-    assert.strictEqual(item.durationSuspicious, true)
-    assert.strictEqual(item.status, "range")
-    assert.strictEqual(item.needsLook, true)
-  })
-
-  void it("leaves a chapter with enough audio alone", () => {
-    const { items } = buildReportModel({
-      report: makeReport({
-        chapters: [
-          chapter({
-            href: "ch1.xhtml",
-            spineIndex: 1,
-            score: 96,
-            chapterSentenceCount: 30,
-            audioFiles: [{ filepath: "/audio/00001.mp3", start: 0, end: 20 }],
-          }),
-        ],
-      }),
-    })
-
-    const item = items[0]
-    assert.ok(item?.kind === "chapter")
-    assert.strictEqual(item.durationSuspicious, false)
-    assert.strictEqual(item.status, "ok")
-    assert.strictEqual(item.needsLook, false)
-  })
-
-  void it("calls a chapter with no audio no-audio", () => {
-    const { items, summary } = buildReportModel({
-      report: makeReport({
-        chapters: [
-          chapter({
-            href: "ch1.xhtml",
-            spineIndex: 1,
-            score: 96,
-            chapterSentenceCount: 30,
+            score: 90,
+            chapterSentenceCount: 100,
+            alignedSentenceCount: 90,
             audioFiles: [],
           }),
         ],
       }),
     })
-
-    const item = items[0]
-    assert.ok(item?.kind === "chapter")
-    assert.strictEqual(item.status, "no-audio")
+    assert.strictEqual(summary.audioTotalSeconds, 0)
+    assert.strictEqual(summary.score, 90)
     assert.strictEqual(summary.noAudio, 1)
   })
 
-  void it("calls a chapter that lost a chunk of sentences missing", () => {
-    const { items } = buildReportModel({
+  void it("reports the aligner confidence separately, weighted by sentences", () => {
+    const { summary } = buildReportModel({
       report: makeReport({
         chapters: [
           chapter({
-            href: "ch1.xhtml",
+            href: "a.xhtml",
             spineIndex: 1,
-            score: 88,
+            score: 80,
             chapterSentenceCount: 100,
-            alignedSentenceCount: 80,
+          }),
+          chapter({
+            href: "b.xhtml",
+            spineIndex: 2,
+            score: 100,
+            chapterSentenceCount: 300,
           }),
         ],
       }),
     })
+    assert.strictEqual(summary.confidence, 95)
+  })
 
-    const item = items[0]
-    assert.ok(item?.kind === "chapter")
-    assert.strictEqual(item.missing, 20)
-    assert.strictEqual(item.status, "missing")
+  void it("has no score when nothing counts", () => {
+    const { summary } = buildReportModel({
+      report,
+      overrides: { chapters: { "a.xhtml": { judgment: "excluded" } } },
+    })
+    assert.strictEqual(summary.sentencesTotal, 0)
+    assert.strictEqual(summary.audioPlacedSeconds, 0)
+    assert.strictEqual(summary.score, 0)
+    assert.strictEqual(summary.grade, "F")
+    assert.strictEqual(summary.confidence, null)
+  })
+})
+
+void describe("judgments", () => {
+  const report = makeReport({
+    chapters: [
+      chapter({
+        href: "a.xhtml",
+        spineIndex: 1,
+        score: 60,
+        chapterSentenceCount: 100,
+        alignedSentenceCount: 60,
+        audioFiles: [{ filepath: "/audio/1.mp3", start: 0, end: 600 }],
+      }),
+      chapter({
+        href: "b.xhtml",
+        spineIndex: 2,
+        score: 100,
+        chapterSentenceCount: 100,
+        audioFiles: [{ filepath: "/audio/2.mp3", start: 0, end: 600 }],
+      }),
+    ],
+    audioFiles: [
+      audioFile("/audio/1.mp3", 600, 600),
+      audioFile("/audio/2.mp3", 600, 600),
+    ],
+  })
+
+  void it("approving makes the denominator match the numerator", () => {
+    const { summary, items } = buildReportModel({
+      report,
+      overrides: { chapters: { "a.xhtml": { judgment: "approved" } } },
+    })
+    assert.strictEqual(summary.sentencesAligned, 160)
+    assert.strictEqual(summary.sentencesTotal, 160)
+    assert.strictEqual(summary.confidence, 100)
+    assert.strictEqual(summary.approved, 1)
+    assert.strictEqual(chapterItems(items)[0]?.judgment, "approved")
+  })
+
+  void it("approving leaves the audio as it was", () => {
+    const { summary, audioFiles } = buildReportModel({
+      report,
+      overrides: { chapters: { "a.xhtml": { judgment: "approved" } } },
+    })
+    assert.strictEqual(summary.audioPlacedSeconds, 1200)
+    assert.strictEqual(audioFiles[0]?.placedSeconds, 600)
+  })
+
+  void it("excluding drops the chapter and unplaces its audio", () => {
+    const { summary, audioFiles } = buildReportModel({
+      report,
+      overrides: { chapters: { "a.xhtml": { judgment: "excluded" } } },
+    })
+    assert.strictEqual(summary.sentencesAligned, 100)
+    assert.strictEqual(summary.sentencesTotal, 100)
+    assert.strictEqual(summary.excluded, 1)
+    assert.strictEqual(summary.audioPlacedSeconds, 600)
+    assert.strictEqual(summary.audioTotalSeconds, 1200)
+    assert.strictEqual(summary.looseAudio, 1)
+    const first = audioFiles[0]
+    assert.strictEqual(first?.placedSeconds, 0)
+    assert.deepStrictEqual(
+      first.chunks.map((chunk) => [chunk.placed, chunk.href]),
+      [[false, "a.xhtml"]],
+    )
+  })
+
+  void it("excluding an audio file drops it from the audio totals", () => {
+    const { summary, audioFiles } = buildReportModel({
+      report,
+      overrides: { audioFiles: { "1.mp3": { excluded: true } } },
+    })
+    assert.strictEqual(summary.audioPlacedSeconds, 600)
+    assert.strictEqual(summary.audioTotalSeconds, 600)
+    assert.strictEqual(audioFiles[0]?.excluded, true)
+    assert.strictEqual(summary.sentencesTotal, 200)
+  })
+
+  void it("reads the legacy ignored flag as excluded", () => {
+    const overrides: AlignmentOverrides = {
+      chapters: { "a.xhtml": { ignored: true } },
+      audioFiles: { "2.mp3": { ignored: true } },
+    }
+    const { items, audioFiles } = buildReportModel({ report, overrides })
+    assert.strictEqual(chapterItems(items)[0]?.judgment, "excluded")
+    assert.strictEqual(audioFiles[1]?.excluded, true)
+  })
+
+  void it("counts every not-found chapter as zero until it is judged", () => {
+    const withMissing = makeReport({
+      chapters: report.chapters,
+      unalignedChapters: [notFound("notes.xhtml", 9, 50)],
+    })
+    const plain = buildReportModel({ report: withMissing })
+    assert.strictEqual(plain.summary.sentencesTotal, 250)
+    assert.strictEqual(plain.summary.sentencesAligned, 160)
+
+    const judged = buildReportModel({
+      report: withMissing,
+      overrides: {
+        unalignedChapters: { "notes.xhtml": { judgment: "excluded" } },
+      },
+    })
+    assert.strictEqual(judged.summary.sentencesTotal, 200)
+    assert.strictEqual(unalignedItems(judged.items)[0]?.judgment, "excluded")
+  })
+})
+
+void describe("the audio timeline", () => {
+  const report = makeReport({
+    chapters: [
+      chapter({
+        href: "a.xhtml",
+        spineIndex: 1,
+        score: 90,
+        chapterSentenceCount: 10,
+        audioFiles: [{ filepath: "/audio/00002.mp3", start: 5, end: 100 }],
+      }),
+      chapter({
+        href: "b.xhtml",
+        spineIndex: 2,
+        score: 90,
+        chapterSentenceCount: 10,
+        audioFiles: [
+          { filepath: "/audio/00002.mp3", start: 98, end: 150 },
+          { filepath: "/audio/00010.mp3", start: 0, end: 40 },
+        ],
+      }),
+    ],
+    audioFiles: [
+      audioFile("/audio/00002.mp3", 200, 145),
+      audioFile("/audio/00010.mp3", 40, 40),
+    ],
+    unalignedAudioFiles: [{ filepath: "/audio/00001.mp3", duration: 30 }],
+  })
+
+  void it("lists files in numeric name order", () => {
+    const { audioFiles } = buildReportModel({ report })
+    assert.deepStrictEqual(
+      audioFiles.map((file) => file.name),
+      ["00001.mp3", "00002.mp3", "00010.mp3"],
+    )
+  })
+
+  void it("fills leading, middle and trailing gaps with unplaced chunks", () => {
+    const { audioFiles } = buildReportModel({ report })
+    const second = audioFiles[1]
+    assert.deepStrictEqual(
+      second?.chunks.map((chunk) => [
+        chunk.start,
+        chunk.end,
+        chunk.placed,
+        chunk.href,
+      ]),
+      [
+        [0, 5, false, null],
+        [5, 100, true, "a.xhtml"],
+        [100, 150, true, "b.xhtml"],
+        [150, 200, false, null],
+      ],
+    )
+    assert.strictEqual(second.placedSeconds, 145)
+  })
+
+  void it("marks a wholly unplaced file as one loose chunk", () => {
+    const { audioFiles, summary } = buildReportModel({ report })
+    const first = audioFiles[0]
+    assert.strictEqual(first?.duration, 30)
+    assert.deepStrictEqual(
+      first.chunks.map((chunk) => [chunk.placed, chunk.duration]),
+      [[false, 30]],
+    )
+    assert.strictEqual(summary.looseAudio, 2)
+    assert.strictEqual(summary.looseSeconds, 85)
+  })
+
+  void it("tells a chapter which files it shares", () => {
+    const { items } = buildReportModel({ report })
+    const [a, b] = chapterItems(items)
+    assert.deepStrictEqual(a?.audio[0]?.sharedWith, [
+      { href: "b.xhtml", label: "b", role: "after" },
+    ])
+    assert.deepStrictEqual(b?.audio[0]?.sharedWith, [
+      { href: "a.xhtml", label: "a", role: "before" },
+    ])
+    assert.deepStrictEqual(b.audio[1]?.sharedWith, [])
+  })
+})
+
+void describe("labels", () => {
+  void it("prefers the manifest title, including nested entries", () => {
+    const { items } = buildReportModel({
+      report: makeReport({
+        chapters: [
+          chapter({
+            href: "chapter001.xhtml",
+            spineIndex: 3,
+            score: 90,
+            chapterSentenceCount: 10,
+          }),
+        ],
+        unalignedChapters: [notFound("part001.xhtml", 2, 2)],
+      }),
+      ebookManifest: {
+        toc: [
+          {
+            href: "OEBPS/part001.xhtml",
+            title: "Part I",
+            children: [
+              { href: "OEBPS/chapter001.xhtml", title: "Chapter 1: Hello" },
+            ],
+          },
+        ],
+      },
+    })
+    assert.deepStrictEqual(
+      items.map((item) => [item.label, item.title]),
+      [
+        ["Part I", "Part I"],
+        ["Chapter 1: Hello", "Chapter 1: Hello"],
+      ],
+    )
+  })
+
+  void it("resolves the read href and sentence ids for a chapter", () => {
+    const { items } = buildReportModel({
+      report: makeReport({
+        chapters: [
+          chapter({
+            href: "chapter001.xhtml",
+            spineIndex: 3,
+            score: 90,
+            chapterSentenceCount: 10,
+          }),
+        ],
+      }),
+      ebookManifest: {
+        readingOrder: [{ href: "OEBPS/chapter001.xhtml#top" }],
+      },
+    })
+    const [item] = chapterItems(items)
+    assert.strictEqual(item?.readHref, "OEBPS/chapter001.xhtml")
+    assert.strictEqual(item.firstMatchedSentenceId, 0)
+    assert.strictEqual(item.lastMatchedSentenceId, 9)
+  })
+
+  void it("falls back to the href stem", () => {
+    const { items } = buildReportModel({
+      report: makeReport({
+        chapters: [
+          chapter({
+            href: "text/ch01.xhtml",
+            spineIndex: 1,
+            score: 90,
+            chapterSentenceCount: 10,
+          }),
+        ],
+      }),
+    })
+    assert.deepStrictEqual(
+      items.map((item) => [item.label, item.title]),
+      [["ch01", null]],
+    )
   })
 })
 
@@ -338,201 +451,101 @@ void describe("item ordering", () => {
       report: makeReport({
         chapters: [
           chapter({
-            href: "ch5.xhtml",
+            href: "b.xhtml",
             spineIndex: 5,
-            score: 96,
-            chapterSentenceCount: 50,
+            score: 90,
+            chapterSentenceCount: 10,
           }),
           chapter({
-            href: "ch2.xhtml",
+            href: "a.xhtml",
             spineIndex: 2,
-            score: 96,
-            chapterSentenceCount: 50,
+            score: 90,
+            chapterSentenceCount: 10,
           }),
         ],
         unalignedChapters: [
-          { href: "cover.xhtml", reason: "no-text" },
-          { href: "toc.xhtml", reason: "is-nav" },
-          { href: "ch3.xhtml", spineIndex: 3, reason: "too-short" },
+          { href: "nav.xhtml", reason: "is-nav" },
+          notFound("mid.xhtml", 3, 4),
         ],
       }),
     })
-
     assert.deepStrictEqual(
       items.map((item) => item.href),
-      ["cover.xhtml", "toc.xhtml", "ch2.xhtml", "ch3.xhtml", "ch5.xhtml"],
+      ["nav.xhtml", "a.xhtml", "mid.xhtml", "b.xhtml"],
     )
-    assert.strictEqual(items[0]?.spineIndex, null)
-  })
-})
-
-void describe("the audio strip", () => {
-  const report = () =>
-    makeReport({
-      chapters: [
-        chapter({
-          href: "ch1.xhtml",
-          spineIndex: 1,
-          score: 96,
-          chapterSentenceCount: 50,
-          audioFiles: [{ filepath: "/audio/00001.mp3", start: 0, end: 500 }],
-        }),
-        chapter({
-          href: "ch2.xhtml",
-          spineIndex: 2,
-          score: 86,
-          chapterSentenceCount: 50,
-          audioFiles: [
-            { filepath: "/audio/00001.mp3", start: 500, end: 900 },
-            { filepath: "/audio/00003.mp3", start: 0, end: 200 },
-          ],
-        }),
-      ],
-      audioFiles: [
-        {
-          filepath: "/audio/00001.mp3",
-          matchedRanges: [{ start: 0, end: 900 }],
-          duration: 900,
-          alignedDuration: 900,
-        },
-        {
-          filepath: "/audio/00003.mp3",
-          matchedRanges: [{ start: 0, end: 200 }],
-          duration: 400,
-          alignedDuration: 200,
-        },
-      ],
-      unalignedAudioFiles: [{ filepath: "/audio/00002.mp3", duration: 300 }],
-    })
-
-  void it("lists every file in filename order with its ranges", () => {
-    const { audioFiles } = buildReportModel({ report: report() })
-
-    assert.deepStrictEqual(
-      audioFiles.map((file) => file.name),
-      ["00001.mp3", "00002.mp3", "00003.mp3"],
-    )
-    assert.deepStrictEqual(
-      audioFiles[0]?.ranges.map((range) => [range.label, range.tone]),
-      [
-        ["ch1", "good"],
-        ["ch2", "moderate"],
-      ],
-    )
-    assert.strictEqual(audioFiles[0].placed, true)
-  })
-
-  void it("names the neighbours of an unplaced file", () => {
-    const { audioFiles, summary } = buildReportModel({ report: report() })
-
-    const loose = audioFiles[1]
-    assert.ok(loose)
-    assert.strictEqual(loose.placed, false)
-    assert.strictEqual(loose.duration, 300)
-    assert.deepStrictEqual(loose.between, { before: "ch2", after: "ch2" })
-    assert.strictEqual(summary.looseAudio, 1)
-  })
-
-  void it("totals placed and known audio", () => {
-    const { summary } = buildReportModel({ report: report() })
-
-    assert.strictEqual(summary.audioPlacedSeconds, 1100)
-    assert.strictEqual(summary.audioTotalSeconds, 1600)
-  })
-
-  void it("tells a chapter which files it shares", () => {
-    const { items } = buildReportModel({ report: report() })
-
-    const second = items[1]
-    assert.ok(second?.kind === "chapter")
-    assert.deepStrictEqual(
-      second.audio.map((audio) => [audio.name, audio.sharedWith.length]),
-      [
-        ["00001.mp3", 1],
-        ["00003.mp3", 0],
-      ],
-    )
-    assert.deepStrictEqual(second.audio[0]?.sharedWith[0], {
-      href: "ch1.xhtml",
-      label: "ch1",
-      role: "before",
-    })
-  })
-})
-
-void describe("labels", () => {
-  void it("prefers the manifest title over the href stem", () => {
-    const model = buildReportModel({
-      report: makeReport({
-        chapters: [
-          chapter({
-            href: "OEBPS/ch1.xhtml",
-            spineIndex: 1,
-            score: 96,
-            chapterSentenceCount: 50,
-          }),
-        ],
-        unalignedChapters: [{ href: "OEBPS/ch2.xhtml", reason: "too-short" }],
-      }),
-      ebookManifest: {
-        toc: [{ href: "ch1.xhtml", title: "One Fine Day" }],
-      },
-    })
-
-    assert.strictEqual(chapters(model)[0]?.label, "One Fine Day")
-    assert.strictEqual(unaligned(model)[0]?.label, "ch2")
   })
 })
 
 void describe("chunked CTC chapters", () => {
-  const chunked = () => {
-    const first = chapter({
-      href: "ch1.xhtml",
-      spineIndex: 1,
-      score: 100,
-      chapterSentenceCount: 10,
-      alignedSentenceCount: 8,
-      audioFiles: [{ filepath: "/audio/00001.mp3", start: 0, end: 60 }],
-    })
-    const second = chapter({
-      href: "ch1.xhtml",
-      spineIndex: 1,
-      score: 80,
-      chapterSentenceCount: 30,
-      alignedSentenceCount: 29,
-      audioFiles: [
-        { filepath: "/audio/00001.mp3", start: 60, end: 90 },
-        { filepath: "/audio/00002.mp3", start: 0, end: 30 },
-      ],
-    })
-    return makeReport({ chapters: [first, second] })
-  }
+  const report = makeReport({
+    chapters: [
+      {
+        ...chapter({
+          href: "long.xhtml",
+          spineIndex: 4,
+          score: 100,
+          chapterSentenceCount: 100,
+          audioFiles: [{ filepath: "/audio/1.mp3", start: 0, end: 100 }],
+        }),
+        chunk: 0,
+      },
+      {
+        ...chapter({
+          href: "long.xhtml",
+          spineIndex: 4,
+          score: 60,
+          chapterSentenceCount: 300,
+          alignedSentenceCount: 200,
+          audioFiles: [{ filepath: "/audio/1.mp3", start: 100, end: 400 }],
+        }),
+        chunk: 1,
+      },
+    ],
+    audioFiles: [audioFile("/audio/1.mp3", 400, 400)],
+  })
 
   void it("collapses chunk rows into one chapter with a weighted score", () => {
-    const { items, summary } = buildReportModel({ report: chunked() })
-
-    assert.strictEqual(summary.chapters, 1)
-    const item = items[0]
-    assert.ok(item?.kind === "chapter")
-    assert.strictEqual(item.chapterSentenceCount, 40)
-    assert.strictEqual(item.alignedSentenceCount, 37)
-    assert.strictEqual(item.missing, 3)
-    assert.strictEqual(item.score, 85)
+    const { items } = buildReportModel({ report })
+    const [item] = chapterItems(items)
+    assert.strictEqual(items.length, 1)
+    assert.strictEqual(item?.confidence, 70)
+    assert.strictEqual(item.chapterSentenceCount, 400)
+    assert.strictEqual(item.alignedSentenceCount, 300)
   })
 
   void it("merges the audio spans of the collapsed chunks", () => {
-    const { items } = buildReportModel({ report: chunked() })
-
-    const item = items[0]
-    assert.ok(item?.kind === "chapter")
+    const { items, audioFiles } = buildReportModel({ report })
+    const [item] = chapterItems(items)
     assert.deepStrictEqual(
-      item.audio.map(({ name, start, end }) => ({ name, start, end })),
-      [
-        { name: "00001.mp3", start: 0, end: 90 },
-        { name: "00002.mp3", start: 0, end: 30 },
-      ],
+      item?.audio.map((audio) => [audio.start, audio.end]),
+      [[0, 400]],
     )
-    assert.strictEqual(item.lastMatch.matchedSentence, "ch1.xhtml last")
+    assert.strictEqual(audioFiles[0]?.chunks.length, 1)
+  })
+
+  void it("lists a chapter whose chunks were all missed once", () => {
+    const missed = makeReport({
+      chapters: [],
+      unalignedChapters: [
+        notFound("notes.xhtml", 9, 40),
+        notFound("notes.xhtml", 9, 60),
+      ],
+    })
+    const { items } = buildReportModel({ report: missed })
+    assert.strictEqual(items.length, 1)
+    assert.strictEqual(unalignedItems(items)[0]?.chapterSentenceCount, 100)
+  })
+
+  void it("folds a missed chunk into its found chapter", () => {
+    const mixed = makeReport({
+      chapters: report.chapters,
+      unalignedChapters: [notFound("long.xhtml", 4, 50)],
+      audioFiles: report.audioFiles,
+    })
+    const { items } = buildReportModel({ report: mixed })
+    assert.strictEqual(items.length, 1)
+    assert.strictEqual(chapterItems(items)[0]?.chapterSentenceCount, 450)
+    assert.strictEqual(chapterItems(items)[0]?.alignedSentenceCount, 300)
   })
 })
 
@@ -542,32 +555,36 @@ void describe("summarizeReport", () => {
       makeReport({
         chapters: [
           chapter({
-            href: "ch1.xhtml",
+            href: "a.xhtml",
             spineIndex: 1,
-            score: 96,
+            score: 90,
             chapterSentenceCount: 100,
             alignedSentenceCount: 90,
+            audioFiles: [{ filepath: "/audio/1.mp3", start: 0, end: 600 }],
           }),
           chapter({
-            href: "ch2.xhtml",
+            href: "b.xhtml",
             spineIndex: 2,
-            score: 40,
-            chapterSentenceCount: 100,
+            score: 0,
+            chapterSentenceCount: 50,
             alignedSentenceCount: 0,
             audioFiles: [],
           }),
         ],
-        unalignedAudioFiles: [{ filepath: "/audio/00099.mp3" }],
+        unalignedChapters: [
+          notFound("c.xhtml", 3, 20),
+          notFound("d.xhtml", 4, 20),
+        ],
+        audioFiles: [audioFile("/audio/1.mp3", 600, 600)],
+        unalignedAudioFiles: [{ filepath: "/audio/2.mp3", duration: 60 }],
       }),
+      { unalignedChapters: { "d.xhtml": { judgment: "excluded" } } },
     )
-
-    assert.strictEqual(summary.grade, "F")
-    assert.strictEqual(summary.band, 6)
-    assert.strictEqual(summary.score, 68)
     assert.strictEqual(summary.chapters, 2)
-    assert.strictEqual(summary.missingSentences, 110)
+    assert.strictEqual(summary.missingSentences, 80)
     assert.strictEqual(summary.mutedChapters, 1)
-    assert.strictEqual(summary.failedChapters, 1)
+    assert.strictEqual(summary.failedChapters, 2)
     assert.strictEqual(summary.unalignedAudio, 1)
+    assert.strictEqual(summary.grade, gradeForScore(summary.score).grade)
   })
 })

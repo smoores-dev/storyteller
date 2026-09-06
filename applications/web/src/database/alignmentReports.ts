@@ -2,7 +2,11 @@ import { type Selectable, sql } from "kysely"
 
 import { type CtcReport, type Report } from "@storyteller-platform/align"
 
-import { type AlignmentFacets, buildReportModel } from "@/alignmentReportView"
+import {
+  type AlignmentFacets,
+  type Judgment,
+  buildReportModel,
+} from "@/alignmentReportView"
 import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
 
@@ -29,14 +33,20 @@ export interface AlignmentSummary {
   unalignedAudio: number
 }
 
-export interface AlignmentIgnoreOverride {
+export interface AlignmentChapterOverride {
+  judgment?: Judgment | null
+  ignored?: boolean
+}
+
+export interface AlignmentAudioOverride {
+  excluded?: boolean
   ignored?: boolean
 }
 
 export interface AlignmentOverrides {
-  chapters?: Record<string, AlignmentIgnoreOverride>
-  unalignedChapters?: Record<string, AlignmentIgnoreOverride>
-  audioFiles?: Record<string, AlignmentIgnoreOverride>
+  chapters?: Record<string, AlignmentChapterOverride>
+  unalignedChapters?: Record<string, AlignmentChapterOverride>
+  audioFiles?: Record<string, AlignmentAudioOverride>
 }
 
 export function summarizeReport(
@@ -50,13 +60,15 @@ export function summarizeReport(
 ): AlignmentSummary {
   const { summary, items } = buildReportModel({ report, overrides })
 
-  let missingSentences = 0
-  let noMatch = 0
+  let failedChapters = 0
   for (const item of items) {
-    if (item.kind !== "chapter" || item.ignored) continue
-    missingSentences += item.missing
+    if (item.judgment === "excluded") continue
+    if (item.kind === "unaligned") {
+      if (item.reason === "not-found") failedChapters += 1
+      continue
+    }
     if (item.chapterSentenceCount > 0 && item.alignedSentenceCount === 0) {
-      noMatch += 1
+      failedChapters += 1
     }
   }
 
@@ -65,9 +77,9 @@ export function summarizeReport(
     band: summary.band,
     score: summary.score,
     chapters: summary.chapters,
-    missingSentences,
+    missingSentences: summary.sentencesTotal - summary.sentencesAligned,
     mutedChapters: summary.noAudio,
-    failedChapters: summary.notFoundBody + noMatch,
+    failedChapters,
     unalignedAudio: summary.looseAudio,
   }
 }

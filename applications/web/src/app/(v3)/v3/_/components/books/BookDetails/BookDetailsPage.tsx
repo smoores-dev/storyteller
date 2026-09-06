@@ -250,7 +250,7 @@ function BookDetailsContentInner({
             {showReport ? (
               <DynamicAlignmentReport
                 uuid={book.uuid}
-                compact
+                compact={compact}
                 embedded
                 onBack={() => void setReportMode(false)}
               />

@@ -112,7 +112,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
       </div>
 
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="text-muted-foreground shrink-0 font-mono text-[0.625rem] tabular-nums">
+        <span className="text-muted-foreground shrink-0 text-[0.625rem] tabular-nums">
           {formatClock(currentTime)}
         </span>
         <div
@@ -149,7 +149,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
             />
           </div>
         </div>
-        <span className="text-muted-foreground shrink-0 font-mono text-[0.625rem] tabular-nums">
+        <span className="text-muted-foreground shrink-0 text-[0.625rem] tabular-nums">
           {total === null ? "--:--" : formatClock(total)}
         </span>
       </div>

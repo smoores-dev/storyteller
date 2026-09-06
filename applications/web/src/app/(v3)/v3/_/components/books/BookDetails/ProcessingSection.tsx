@@ -47,23 +47,25 @@ const STAGE_ORDER: StageName[] = [
   "SYNC_CHAPTERS",
 ]
 
-function ProcessingDropdown({
+export function ProcessingDropdown({
   positions,
   onSelect,
   triggerLabel,
   triggerIcon,
+  size = "sm",
 }: {
   positions: ProcessingPosition[]
   onSelect: (restart: ProcessRestart, modifiers: { shiftKey: boolean }) => void
   triggerLabel: string
   triggerIcon?: ReactNode
+  size?: "sm" | "xs"
 }) {
   const tp = useTranslation("Processing")
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size={size}>
             {triggerIcon}
             {triggerLabel}
           </Button>
@@ -357,16 +359,22 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
   const marks: { label: string; value: string }[] = summary
     ? [
         {
-          label: tr("marks.score"),
-          value: summary.score != null ? `${summary.score}%` : "—",
+          label: tr("marks.sentences"),
+          value:
+            summary.sentencesTotal > 0
+              ? `${Math.round((summary.sentencesAligned / summary.sentencesTotal) * 100)}%`
+              : "—",
+        },
+        {
+          label: tr("marks.audio"),
+          value:
+            summary.audioTotalSeconds > 0
+              ? `${Math.round((summary.audioPlacedSeconds / summary.audioTotalSeconds) * 100)}%`
+              : "—",
         },
         {
           label: tNouns("chapter", { count: summary.chapters }),
           value: `${summary.chapters}`,
-        },
-        {
-          label: tr("marks.unalignedChapters"),
-          value: `${summary.notFoundBody}`,
         },
       ]
     : []
