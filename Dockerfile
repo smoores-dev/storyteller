@@ -28,6 +28,8 @@ COPY libraries/media-types/package.json ./libraries/media-types/package.json
 COPY config/tsup/package.json ./config/tsup/package.json
 COPY config/eslint/package.json ./config/eslint/package.json
 
+# prevent onnxruntime from installing shit, almost always hangs
+ENV ONNXRUNTIME_NODE_INSTALL=skip
 # --inline-builds streams native build-script output so a hang during the
 # link step names the offending package instead of freezing silently
 RUN yarn install --inline-builds
