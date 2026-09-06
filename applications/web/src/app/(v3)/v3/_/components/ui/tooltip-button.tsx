@@ -25,7 +25,7 @@ export function TooltipButton({
   tooltipAlign,
   tooltipClassName,
   shortcut,
-  delay,
+  delay = 250,
   ...buttonProps
 }: TooltipButtonProps) {
   return (
