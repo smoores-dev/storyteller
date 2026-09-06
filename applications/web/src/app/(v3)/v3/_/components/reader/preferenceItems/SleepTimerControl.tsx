@@ -27,7 +27,6 @@ import {
   selectSleepTimer,
 } from "@/store/slices/readingSessionSlice"
 
-
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 
 const PRESET_MINUTES = [5, 10, 15, 30, 45, 60, 90, 120]

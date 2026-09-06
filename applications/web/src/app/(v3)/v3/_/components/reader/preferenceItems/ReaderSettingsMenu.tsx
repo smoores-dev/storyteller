@@ -22,7 +22,6 @@ import { useAppDispatch } from "@/store/appState"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
 import { type UUID } from "@/uuid"
 
-
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import {
   OverrideMark,

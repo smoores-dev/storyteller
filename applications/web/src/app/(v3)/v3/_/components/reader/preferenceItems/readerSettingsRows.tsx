@@ -25,7 +25,6 @@ import {
 } from "@/store/slices/preferencesSlice"
 import { type UUID } from "@/uuid"
 
-
 import { ReaderSlider } from "./ReaderSlider"
 
 export type NumericPreferenceKey = {

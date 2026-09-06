@@ -102,7 +102,7 @@ export function PlayerDock({ className }: { className?: string } = {}) {
         {playing ? <icon.PlayerPause /> : <icon.PlayerPlay />}
       </Button>
 
-      <div className="@max-2xl/dock:max-w-32 flex min-w-0 shrink flex-col max-w-72">
+      <div className="flex max-w-72 min-w-0 shrink flex-col @max-2xl/dock:max-w-32">
         <span className="truncate text-xs font-medium">{clip.label}</span>
         {clip.sublabel !== undefined && (
           <span className="text-muted-foreground truncate text-[0.625rem]">

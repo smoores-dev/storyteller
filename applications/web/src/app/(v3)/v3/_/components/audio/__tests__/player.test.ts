@@ -91,7 +91,12 @@ function metadata(duration: number) {
 void describe("clipSrc", () => {
   void it("builds a plain url with no range", () => {
     assert.strictEqual(
-      clipSrc({ bookUuid: "abc", path: "00001.mp4", name: "00001.mp4", label: "x" }),
+      clipSrc({
+        bookUuid: "abc",
+        path: "00001.mp4",
+        name: "00001.mp4",
+        label: "x",
+      }),
       "/api/v2/books/abc/listen/00001.mp4",
     )
   })
@@ -112,14 +117,25 @@ void describe("clipSrc", () => {
 
   void it("adds a start only fragment", () => {
     assert.strictEqual(
-      clipSrc({ bookUuid: "abc", path: "a b.mp3", name: "a b.mp3", start: 3, label: "x" }),
+      clipSrc({
+        bookUuid: "abc",
+        path: "a b.mp3",
+        name: "a b.mp3",
+        start: 3,
+        label: "x",
+      }),
       "/api/v2/books/abc/listen/a%20b.mp3#t=3",
     )
   })
 
   void it("keeps path separators unencoded", () => {
     assert.strictEqual(
-      clipSrc({ bookUuid: "abc", path: "disc 1/00001.mp4", name: "disc 1/00001.mp4", label: "x" }),
+      clipSrc({
+        bookUuid: "abc",
+        path: "disc 1/00001.mp4",
+        name: "disc 1/00001.mp4",
+        label: "x",
+      }),
       "/api/v2/books/abc/listen/disc%201/00001.mp4",
     )
   })

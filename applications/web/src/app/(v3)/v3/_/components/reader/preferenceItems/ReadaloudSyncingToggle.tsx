@@ -9,7 +9,6 @@ import {
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
 
-
 import { ToolbarIcon } from "./ToolbarIcon"
 
 export const ReadaloudSyncingToggle = ({

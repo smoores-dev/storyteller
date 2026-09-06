@@ -20,7 +20,6 @@ import { selectPlaybackRate } from "@/store/slices/audioPlayerSlice"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
 import { selectCurrentBook } from "@/store/slices/readingSessionSlice"
 
-
 import { ReaderSlider } from "./ReaderSlider"
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import { readerMenuClassName, stopMenuNavigation } from "./readerSettingsRows"

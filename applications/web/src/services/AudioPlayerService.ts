@@ -150,7 +150,11 @@ export class AudioPlayer {
         duration > 0 ? (currentTime / duration) * 100 : 0
 
       const end = this.getActiveTrack()?.end
-      if (end != null && currentTime >= end - 0.05 && !this.audioElement.paused) {
+      if (
+        end != null &&
+        currentTime >= end - 0.05 &&
+        !this.audioElement.paused
+      ) {
         if (this.state.trackIndex < this.playlist.length - 1) {
           void this.skipToNext().then(() => this.play())
         } else {
@@ -425,8 +429,7 @@ export class AudioPlayer {
   seekTo(time: number) {
     if (!this.audioElement) return
     const duration = this.audioElement.duration
-    const ceiling =
-      Number.isFinite(duration) && duration > 0 ? duration : 1e11
+    const ceiling = Number.isFinite(duration) && duration > 0 ? duration : 1e11
     const normalized = Math.min(Math.max(0, time), ceiling)
     this.audioElement.currentTime = normalized
     this.lastTimeUpdate = Date.now()

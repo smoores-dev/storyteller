@@ -18,9 +18,7 @@ type FloatingDockContextValue = {
   layoutKey: string
 }
 
-const FloatingDockContext = createContext<FloatingDockContextValue | null>(
-  null,
-)
+const FloatingDockContext = createContext<FloatingDockContextValue | null>(null)
 
 export function useFloatingDock() {
   const context = useContext(FloatingDockContext)

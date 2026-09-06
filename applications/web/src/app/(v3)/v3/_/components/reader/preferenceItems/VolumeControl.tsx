@@ -17,7 +17,6 @@ import { useAppDispatch, useAppSelector } from "@/store/appState"
 import { selectVolume } from "@/store/slices/audioPlayerSlice"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"
 
-
 import { ReaderSlider } from "./ReaderSlider"
 import { type ToolProps, ToolbarIcon } from "./ToolbarIcon"
 import { readerMenuClassName, stopMenuNavigation } from "./readerSettingsRows"

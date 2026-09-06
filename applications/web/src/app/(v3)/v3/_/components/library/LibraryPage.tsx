@@ -206,7 +206,7 @@ export function LibraryPage({
   const selectedItemName = selectedFacet?.name
   const documentTitle =
     selectedItem && selectedItem !== ALL_KEY && selectedItem !== NONE_KEY
-      ? (selectedItemName ?? title)
+      ? selectedItemName ?? title
       : title
 
   const handleItemClick = useCallback(

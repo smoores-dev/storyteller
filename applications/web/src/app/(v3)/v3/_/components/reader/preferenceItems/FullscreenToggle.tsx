@@ -3,7 +3,6 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import * as icon from "@/icons"
 
-
 import { ToolbarIcon } from "./ToolbarIcon"
 
 export const FullscreenToggle = ({
