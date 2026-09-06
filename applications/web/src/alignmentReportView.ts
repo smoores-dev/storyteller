@@ -54,13 +54,13 @@ export interface AlignmentFacets {
 }
 
 export const GRADE_BANDS = [
-  { min: 95, grade: "S" },
-  { min: 90, grade: "A" },
-  { min: 85, grade: "A-" },
-  { min: 80, grade: "B" },
-  { min: 75, grade: "B-" },
-  { min: 70, grade: "C" },
-  { min: 60, grade: "D" },
+  { min: 98, grade: "S" },
+  { min: 96, grade: "A" },
+  { min: 93, grade: "A-" },
+  { min: 90, grade: "B" },
+  { min: 85, grade: "B-" },
+  { min: 80, grade: "C" },
+  { min: 75, grade: "D" },
   { min: Number.NEGATIVE_INFINITY, grade: "F" },
 ] as const satisfies readonly { min: number; grade: AlignmentGrade }[]
 
@@ -70,15 +70,33 @@ export const SENTENCE_WEIGHT = 0.7
 
 const GAP_SECONDS = 1
 
-export function gradeForScore(score: number | null): {
+export function gradeForScore(
+  sentenceScore: number | null,
+  audioScore: number | null,
+): {
   grade: AlignmentGrade
   band: number
+  score: number
 } {
-  if (score === null) return { grade: "F", band: FAILING_BAND }
-  const band = GRADE_BANDS.findIndex(({ min }) => score >= min)
-  const entry = GRADE_BANDS[band]
-  if (!entry) return { grade: "F", band: FAILING_BAND }
-  return { grade: entry.grade, band }
+  if (sentenceScore === null || audioScore === null) {
+    return { grade: "F", band: FAILING_BAND, score: 0 }
+  }
+
+  const score =
+    sentenceScore * SENTENCE_WEIGHT + audioScore * (1 - SENTENCE_WEIGHT)
+
+  if (sentenceScore >= 98 && audioScore >= 98) {
+    return { grade: "S", band: 0, score }
+  }
+
+  const gradesWithoutS = GRADE_BANDS.slice(1)
+
+  const band = gradesWithoutS.findIndex(({ min }) => score >= min)
+  const entry = gradesWithoutS[band]
+  if (!entry) {
+    return { grade: "F", band: FAILING_BAND, score: 0 }
+  }
+  return { grade: entry.grade, band, score }
 }
 
 type TocEntry = { href?: string; title?: string; children?: TocEntry[] }
@@ -497,26 +515,15 @@ export function buildReportModel({
   }
 
   const sentenceRatio =
-    sentencesTotal > 0 ? sentencesAligned / sentencesTotal : null
+    sentencesTotal > 0 ? round((sentencesAligned / sentencesTotal) * 100) : null
   const audioRatio =
-    audioTotalSeconds > 0 ? audioPlacedSeconds / audioTotalSeconds : null
-  const score =
-    sentenceRatio !== null && audioRatio !== null
-      ? round(
-          (sentenceRatio * SENTENCE_WEIGHT +
-            audioRatio * (1 - SENTENCE_WEIGHT)) *
-            100,
-        )
-      : sentenceRatio !== null
-        ? round(sentenceRatio * 100)
-        : audioRatio !== null
-          ? round(audioRatio * 100)
-          : null
+    audioTotalSeconds > 0
+      ? round((audioPlacedSeconds / audioTotalSeconds) * 100)
+      : null
 
   return {
     summary: {
-      ...gradeForScore(score),
-      score,
+      ...gradeForScore(sentenceRatio, audioRatio),
       confidence:
         confidenceWeight > 0
           ? round(weightedConfidence / confidenceWeight)
