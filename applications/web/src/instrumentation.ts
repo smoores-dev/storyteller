@@ -74,13 +74,14 @@ export async function register() {
     logger.error(err)
   }
 
-  try {
-    if (env.STORYTELLER_SYNC_CHANGELOG) {
-      await syncChangelog()
-    }
-  } catch (err) {
-    logger.error("Failed to sync changelog from GitLab")
-    logger.error(err)
+  if (env.STORYTELLER_SYNC_CHANGELOG) {
+    // i guess no real reason why we need to wait for this to complete
+    void syncChangelog().catch((err: unknown) => {
+      logger.error({
+        msg: "Failed to sync changelog from GitLab. This may be due to an issue with Gitlab. Storyteller will automatically retry fetching the changelog later.",
+        err,
+      })
+    })
   }
 
   const cron = await import("node-cron")
@@ -102,9 +103,9 @@ export async function register() {
       // logger.info(`Adding ${book.title} to the queue`)
       // void startProcessing(book.uuid, book.readaloud?.restartPending || false)
     }
-    if (queue.length) {
-      void pump()
-    }
+    // if (queue.length) {
+    //   void pump()
+    // }
   } catch (err) {
     logger.error("Failed to restart processing queue")
     logger.error(err)
