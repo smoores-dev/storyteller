@@ -231,19 +231,7 @@ export const uiSettingsSlice = createSlice({
       state,
       action: PayloadAction<Record<string, number>>,
     ) => {
-      state.tableColumnWidths = {
-        ...state.tableColumnWidths,
-        ...action.payload,
-      }
-      saveToCookie(state)
-    },
-
-    resetTableColumnWidth: (state, action: PayloadAction<string>) => {
-      state.tableColumnWidths = Object.fromEntries(
-        Object.entries(state.tableColumnWidths).filter(
-          ([key]) => key !== action.payload,
-        ),
-      )
+      state.tableColumnWidths = action.payload
       saveToCookie(state)
     },
 

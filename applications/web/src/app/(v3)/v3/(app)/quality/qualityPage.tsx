@@ -36,7 +36,7 @@ export default function QualityPage() {
       forceDisplayMode={FORCE_DISPLAY_MODE}
       emptyMessage={t("BookReports.emptyState")}
       noneLabel={t("BookReports.none")}
-      contentClassName="p-6 [&_.font-heading]:text-[0.8125rem]!"
+      contentClassName="p-6 pt-0 [&_.font-heading]:text-[0.8125rem]!"
     />
   )
 }

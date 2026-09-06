@@ -6,6 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  --radius-cover: calc(var(--radius) - 6px);
+
   --color-st-orange-50: var(--st-orange-0);
   --color-st-orange-100: var(--st-orange-1);
   --color-st-orange-200: var(--st-orange-2);
@@ -137,7 +139,6 @@
   --radius-4xl: calc(var(--radius) + 2px);
 
   --radius-card: calc(var(--radius) + 2px);
-  --radius-cover: calc(var(--radius) - 6px);
 
   --color-positive: var(--positive);
   --color-positive-bg: var(--positive-bg);

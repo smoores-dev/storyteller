@@ -149,9 +149,9 @@ export const columnWidths: Record<DisplayField, number> = {
   title: 100,
   userRating: 50,
   alignmentScore: 50,
-  alignmentGrade: 40,
-  alignmentMissingSentences: 60,
-  alignmentMutedChapters: 60,
+  alignmentGrade: 60,
+  alignmentMissingSentences: 80,
+  alignmentMutedChapters: 80,
 }
 
 export function getColumnWidth(field: DisplayField, label: string) {

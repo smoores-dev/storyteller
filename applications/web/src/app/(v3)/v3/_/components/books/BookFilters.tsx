@@ -1,11 +1,12 @@
 import { useHotkeys } from "@tanstack/react-hotkeys"
-import { type ReactNode, useMemo, useRef, useState } from "react"
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { type BookFiltersController } from "@v3/_/hooks/use-book-filters"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
+import { findScrollParent } from "@/app/(v3)/v3/_/components/books/ActionMenu/useBookActionMenu"
 import { ShelfFilterEditor } from "@/app/(v3)/v3/_/components/shelves/ShelfFilterEditor"
 import * as icon from "@/icons"
 import { type ShelfFilterNode } from "@/shelves"
@@ -128,8 +129,27 @@ export function BookFilters({
     [isAdvanced, userFilter],
   )
 
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = rootRef.current
+    const scrollParent = findScrollParent(el)
+    if (!el || !scrollParent) return
+    const observer = new ResizeObserver(() => {
+      scrollParent.style.setProperty(
+        "--book-filters-height",
+        `${el.offsetHeight}px`,
+      )
+    })
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+      scrollParent.style.removeProperty("--book-filters-height")
+    }
+  }, [])
+
   return (
     <div
+      ref={rootRef}
       // DONT MAKE FLEX CONTAINER THE SEARCH INPUT WILL NOT BE THE CORRECT HEIGHT IT WILL HAUNT YOU
       // TODO: do something more interesting on scroll
       className={cn(

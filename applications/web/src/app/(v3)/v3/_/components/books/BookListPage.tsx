@@ -222,7 +222,12 @@ function BookListPageInner({
     ...(isBooksSource && source.collectionContext
       ? { collectionContext: source.collectionContext }
       : {}),
-    defaultSort,
+    defaultSort: forceDisplayMode
+      ? {
+          field: forceDisplayMode.sortMode,
+          direction: forceDisplayMode.sortDirection,
+        }
+      : defaultSort,
   })
 
   const {
@@ -872,14 +877,8 @@ function BookListPageInner({
                 }
                 listDisplayFieldsOverride={listDisplayFields}
                 displayContext={displayContext}
-                sortField={
-                  forceDisplayMode ? forceDisplayMode.sortMode : sort.field
-                }
-                sortDirection={
-                  forceDisplayMode
-                    ? forceDisplayMode.sortDirection
-                    : sort.direction
-                }
+                sortField={sort.field}
+                sortDirection={sort.direction}
                 forceLayout={forceDisplayMode?.layout}
                 onSortChange={handleColumnSort}
               />

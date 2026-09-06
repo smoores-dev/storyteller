@@ -3,16 +3,32 @@
 import { Popover } from "@base-ui/react/popover"
 import {
   type Cell,
+  type Column,
   type ColumnDef,
-  type ColumnSizingState,
+  FlexRender,
   type Header,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
+  type SortingState,
+  columnOrderingFeature,
+  columnResizingFeature,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  functionalUpdate,
+  metaHelper,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
 } from "@tanstack/react-table"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { Reorder, useDragControls } from "motion/react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
+import { shallowEqual } from "react-redux"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -95,24 +111,81 @@ type BookTableProps = {
 const MIN_COLUMN_WIDTH = 48
 const MIN_TITLE_WIDTH = 160
 const MAX_AUTOFIT_WIDTH = 480
-const DEFAULT_TITLE_TRACK = "minmax(240px, 30%)"
+const KEYBOARD_RESIZE_STEP = 8
+const HEADER_ICON_SIZE = 12
+const HEADER_LABEL_GAP = 4
+const HEADER_CHEVRON_GAP = 2
 
-function defaultColumnWidth(field: DisplayField): number {
-  return Math.max(MIN_COLUMN_WIDTH, columnWidths[field] + 40)
+type BookColumnKind = "select" | "title" | "data" | "spacer" | "actions"
+
+type BookColumnMeta = {
+  kind: BookColumnKind
+  track?: string
 }
 
-function orderColumns(
-  fields: DisplayField[],
-  storedOrder: string[] | null,
-): DisplayField[] {
-  const dataFields: DisplayField[] = fields.filter((f) => f !== "title")
-  if (!storedOrder) return dataFields
-  const ordered = storedOrder.filter((id) =>
-    dataFields.includes(id as DisplayField),
-  ) as DisplayField[]
-  const rest = dataFields.filter((f) => !ordered.includes(f))
-  return [...ordered, ...rest]
+const features = tableFeatures({
+  columnOrderingFeature,
+  columnVisibilityFeature,
+  columnSizingFeature,
+  columnResizingFeature,
+  rowSortingFeature,
+  columnMeta: metaHelper<BookColumnMeta>(),
+})
+
+type BookColumn = Column<typeof features, BookWithRelations>
+type BookHeader = Header<typeof features, BookWithRelations>
+type BookCell = Cell<typeof features, BookWithRelations>
+
+const DATA_FIELDS = (Object.keys(columnWidths) as DisplayField[]).filter(
+  (field) => field !== "title",
+)
+
+const BOOK_COLUMNS: ColumnDef<typeof features, BookWithRelations>[] = [
+  {
+    id: "select",
+    enableResizing: false,
+    meta: { kind: "select", track: "30px" },
+  },
+  {
+    id: "title",
+    accessorFn: (row) => row,
+    size: 280,
+    minSize: MIN_TITLE_WIDTH,
+    sortDescFirst: false,
+    enableHiding: false,
+    meta: { kind: "title", track: "minmax(240px, 30%)" },
+  },
+  ...DATA_FIELDS.map((field): ColumnDef<typeof features, BookWithRelations> => {
+    const def = field === "seriesPosition" ? undefined : getFieldDef(field)
+    return {
+      id: field,
+      accessorFn: (row) => row,
+      size: Math.max(MIN_COLUMN_WIDTH, columnWidths[field] + 40),
+      enableSorting: !!def?.sortable,
+      sortDescFirst: (def?.defaultSort ?? "desc") === "desc",
+      meta: { kind: "data" },
+      cell: ({ row }) => <ColumnValue book={row.original} field={field} />,
+    }
+  }),
+  {
+    id: "spacer",
+    enableResizing: false,
+    enableHiding: false,
+    meta: { kind: "spacer", track: "minmax(0, 1fr)" },
+  },
+  {
+    id: "actions",
+    enableResizing: false,
+    enableHiding: false,
+    meta: { kind: "actions", track: "56px" },
+  },
+]
+
+const DEFAULT_COLUMN: Partial<ColumnDef<typeof features, BookWithRelations>> = {
+  minSize: MIN_COLUMN_WIDTH,
 }
+
+const getBookRowId = (book: BookWithRelations) => book.uuid
 
 export function BookTable({
   books,
@@ -150,50 +223,75 @@ export function BookTable({
   const storedOrder = useAppSelector(selectTableColumnOrder)
   const storedWidths = useAppSelector(selectTableColumnWidths)
 
-  const dataColumns = useMemo(
-    () => orderColumns(columns, storedOrder),
-    [columns, storedOrder],
+  const columnOrder = useMemo(
+    () => ["select", "title", ...(storedOrder ?? []), ...columns],
+    [storedOrder, columns],
   )
 
-  const columnDefs = useMemo<ColumnDef<BookWithRelations>[]>(
+  const columnVisibility = useMemo(
+    () => ({
+      select: !!menu.toggleSelection,
+      ...Object.fromEntries(
+        DATA_FIELDS.map((field) => [field, columns.includes(field)]),
+      ),
+    }),
+    [menu.toggleSelection, columns],
+  )
+
+  const sorting = useMemo<SortingState>(
     () =>
-      dataColumns.map((field) => ({
-        id: field,
-        accessorFn: (row) => row,
-        size: storedWidths[field] ?? defaultColumnWidth(field),
-        minSize: MIN_COLUMN_WIDTH,
-        header: c.plain(`fields.short.${field}` as never),
-        cell: ({ row }) => <ColumnValue book={row.original} field={field} />,
-      })),
-    [dataColumns, storedWidths, c],
+      sortField ? [{ id: sortField, desc: sortDirection === "desc" }] : [],
+    [sortField, sortDirection],
   )
 
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
-
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data: books,
-    columns: columnDefs,
-    state: { columnSizing },
-    onColumnSizingChange: setColumnSizing,
+    columns: BOOK_COLUMNS,
+    defaultColumn: DEFAULT_COLUMN,
+    getRowId: getBookRowId,
     columnResizeMode: "onChange",
-    getCoreRowModel: getCoreRowModel(),
-    getRowId: (row) => row.uuid,
+    manualSorting: true,
+    enableSortingRemoval: false,
+    enableMultiSort: false,
+    initialState: { columnSizing: storedWidths },
+    state: { columnOrder, columnVisibility, sorting },
+    onSortingChange: (updater) => {
+      const next = functionalUpdate(updater, sorting)[0]
+      if (next) {
+        onSortChange?.(next.id as SortField, next.desc ? "desc" : "asc")
+      }
+    },
   })
 
-  const isResizing = table.getState().columnSizingInfo.isResizingColumn
-  const wasResizing = useRef<string | false>(false)
+  const { columnSizing, columnResizing } = table.state
+  const isResizing = columnResizing.isResizingColumn
+
   useEffect(() => {
-    if (wasResizing.current && !isResizing) {
-      dispatch(uiSettingsSlice.actions.setTableColumnWidths(columnSizing))
-    }
-    wasResizing.current = isResizing
-  }, [isResizing, columnSizing, dispatch])
+    if (isResizing) return
+    if (shallowEqual(columnSizing, storedWidths)) return
+    dispatch(uiSettingsSlice.actions.setTableColumnWidths(columnSizing))
+  }, [isResizing, columnSizing, storedWidths, dispatch])
+
+  const visibleColumns = table.getVisibleLeafColumns()
+  const dataColumnIds = visibleColumns
+    .filter((column) => column.columnDef.meta?.kind === "data")
+    .map((column) => column.id)
+
+  const gridTemplateColumns = visibleColumns
+    .map((column) => {
+      const track = column.columnDef.meta?.track
+      if (track && columnSizing[column.id] === undefined) return track
+      const min = column.columnDef.minSize ?? MIN_COLUMN_WIDTH
+      return `minmax(${min}px, ${column.getSize()}px)`
+    })
+    .join(" ")
 
   const [announcement, setAnnouncement] = useState("")
 
-  const orderBeforeDrag = useRef<DisplayField[] | null>(null)
+  const orderBeforeDrag = useRef<string[] | null>(null)
   const handleReorderStart = () => {
-    orderBeforeDrag.current = dataColumns
+    orderBeforeDrag.current = dataColumnIds
   }
   const handleReorderAbort = () => {
     if (orderBeforeDrag.current) {
@@ -203,40 +301,27 @@ export function BookTable({
     }
   }
 
-  const moveColumn = (field: DisplayField, delta: -1 | 1) => {
-    const index = dataColumns.indexOf(field)
+  const moveColumn = (field: string, delta: -1 | 1) => {
+    const index = dataColumnIds.indexOf(field)
     const target = index + delta
-    if (index < 0 || target < 0 || target >= dataColumns.length) return
-    const next = [...dataColumns]
+    if (index < 0 || target < 0 || target >= dataColumnIds.length) return
+    const next = [...dataColumnIds]
     next.splice(index, 1)
     next.splice(target, 0, field)
     dispatch(uiSettingsSlice.actions.setTableColumnOrder(next))
     setAnnouncement(
-      `${c.plain(`fields.short.${field}` as never)} moved to position ${target + 1} of ${dataColumns.length}`,
+      `${c.plain(`fields.short.${field}` as never)} moved to position ${target + 1} of ${dataColumnIds.length}`,
     )
   }
 
-  const resizeColumnBy = (field: DisplayField, delta: number) => {
-    const column = table.getColumn(field)
-    if (!column) return
-    const next = {
-      ...columnSizing,
-      [field]: Math.max(MIN_COLUMN_WIDTH, column.getSize() + delta),
-    }
-    setColumnSizing(next)
-    dispatch(uiSettingsSlice.actions.setTableColumnWidths(next))
+  const resizeColumnBy = (column: BookColumn, delta: number) => {
+    table.setColumnSizing((old) => ({
+      ...old,
+      [column.id]: Math.max(MIN_COLUMN_WIDTH, column.getSize() + delta),
+    }))
   }
 
-  const resetColumnWidth = (field: DisplayField) => {
-    setColumnSizing(
-      Object.fromEntries(
-        Object.entries(columnSizing).filter(([key]) => key !== field),
-      ),
-    )
-    dispatch(uiSettingsSlice.actions.resetTableColumnWidth(field))
-  }
-
-  const hideColumn = (field: DisplayField) => {
+  const hideColumn = (field: string) => {
     dispatch(
       uiSettingsSlice.actions.setListDisplayFields(
         columns.filter((f) => f !== field),
@@ -246,7 +331,7 @@ export function BookTable({
 
   const tableRef = useRef<HTMLTableElement | null>(null)
 
-  const autofitColumn = (field: DisplayField) => {
+  const autofitColumn = (column: BookColumn) => {
     const root = tableRef.current
     if (!root) return
     const probe = document.createElement("div")
@@ -260,96 +345,39 @@ export function BookTable({
       probe.textContent = el.textContent
       widest = Math.max(widest, probe.getBoundingClientRect().width)
     }
-    root.querySelectorAll(`[data-col="${field}"]`).forEach((el) => {
+    root.querySelectorAll(`[data-col="${column.id}"]`).forEach((el) => {
       measure(el, "text-xs tabular-nums")
     })
-    const headerEl = root.querySelector(`[data-col-header="${field}"]`)
+    const headerEl = root.querySelector(`[data-col-header="${column.id}"]`)
     if (headerEl) {
       measure(headerEl, "text-xs font-medium tracking-wider uppercase")
     }
     probe.remove()
     if (widest === 0) return
-    const next = {
-      ...columnSizing,
-      [field]: Math.min(
+    table.setColumnSizing((old) => ({
+      ...old,
+      [column.id]: Math.min(
         MAX_AUTOFIT_WIDTH,
         Math.max(MIN_COLUMN_WIDTH, Math.ceil(widest) + 16),
       ),
-    }
-    setColumnSizing(next)
-    dispatch(uiSettingsSlice.actions.setTableColumnWidths(next))
-  }
-
-  const [liveTitleWidth, setLiveTitleWidth] = useState<number | null>(null)
-  const [titleResizing, setTitleResizing] = useState(false)
-  const titleHeadRef = useRef<HTMLTableCellElement | null>(null)
-  const storedTitleWidth = storedWidths["title"]
-  const titleWidth = liveTitleWidth ?? storedTitleWidth
-
-  const startTitleResize = (e: React.PointerEvent) => {
-    const el = titleHeadRef.current
-    if (!el) return
-    e.preventDefault()
-    const startX = e.clientX
-    const startWidth = el.getBoundingClientRect().width
-    const widthAt = (ev: PointerEvent) =>
-      Math.max(MIN_TITLE_WIDTH, Math.round(startWidth + (ev.clientX - startX)))
-    setTitleResizing(true)
-    let moved = false
-    const onMove = (ev: PointerEvent) => {
-      moved = true
-      setLiveTitleWidth(widthAt(ev))
-    }
-    const onUp = (ev: PointerEvent) => {
-      window.removeEventListener("pointermove", onMove)
-      window.removeEventListener("pointerup", onUp)
-      setTitleResizing(false)
-      setLiveTitleWidth(null)
-      if (moved) {
-        dispatch(
-          uiSettingsSlice.actions.setTableColumnWidths({ title: widthAt(ev) }),
-        )
-      }
-    }
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
-  }
-
-  const resizeTitleBy = (delta: number) => {
-    const current =
-      storedTitleWidth ?? titleHeadRef.current?.getBoundingClientRect().width
-    if (current === undefined) return
-    dispatch(
-      uiSettingsSlice.actions.setTableColumnWidths({
-        title: Math.max(MIN_TITLE_WIDTH, Math.round(current + delta)),
-      }),
-    )
+    }))
   }
 
   const [headerMenu, setHeaderMenu] = useState<{
-    field: DisplayField
+    column: BookColumn
     anchor: { getBoundingClientRect: () => DOMRect }
   } | null>(null)
 
-  const openHeaderMenu = (field: DisplayField, e: React.MouseEvent) => {
+  const openHeaderMenu = (column: BookColumn, e: React.MouseEvent) => {
     e.preventDefault()
     const { clientX, clientY } = e
     setHeaderMenu({
-      field,
+      column,
       anchor: {
         getBoundingClientRect: () => new DOMRect(clientX, clientY, 0, 0),
       },
     })
   }
-
-  const gridTemplateColumns = [
-    // selection checkbox column
-    ...(menu.toggleSelection ? ["30px"] : []),
-    titleWidth !== undefined ? `${titleWidth}px` : DEFAULT_TITLE_TRACK,
-    ...table.getVisibleLeafColumns().map((col) => `${col.getSize()}px`),
-    "minmax(0, 1fr)",
-    "56px",
-  ].join(" ")
 
   const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null)
   const containerRef = useCallback((node: HTMLDivElement | null) => {
@@ -372,7 +400,6 @@ export function BookTable({
 
   useEffect(() => {
     rowVirtualizer.measure()
-    table.setState((state) => ({ ...state }))
   }, [showThumbnail])
 
   const virtualRows = rowVirtualizer.getVirtualItems()
@@ -429,138 +456,87 @@ export function BookTable({
           { "--book-table-cols": gridTemplateColumns } as React.CSSProperties
         }
       >
-        <TableHeader className="bg-background sticky top-11 z-10 -mx-6 grid px-6">
+        <TableHeader className="bg-background sticky top-(--book-filters-height,2.75rem) z-10 -mx-6 grid px-6">
           <Reorder.Group
             as="tr"
             axis="x"
             data-slot="table-row"
             className="border-border grid items-center gap-3 border-b pb-1.5"
             style={{ gridTemplateColumns: "var(--book-table-cols)" }}
-            values={table
-              .getFlatHeaders()
-              .map((header) => header.column.id as DisplayField)}
+            values={dataColumnIds}
             onReorder={(newOrder) => {
               dispatch(uiSettingsSlice.actions.setTableColumnOrder(newOrder))
             }}
           >
-            {menu.toggleSelection && (
-              <TableHead className="ml-1 flex shrink-0 items-center justify-center">
-                <button
-                  type="button"
-                  aria-label={
-                    isAllBooksSelected
-                      ? tSel.plain("selectNone")
-                      : tSel.plain("selectAll")
-                  }
-                  className="focus-visible:ring-ring/50 cursor-pointer rounded-full outline-none focus-visible:ring-2"
-                  onClick={() =>
-                    isAllBooksSelected
-                      ? menu.selection?.selectNone()
-                      : menu.selection?.selectAll(allBookUuids)
-                  }
-                >
-                  <SelectionBullet
-                    selected={isAllBooksSelected}
-                    indeterminate={selectedCount > 0 && !isAllBooksSelected}
-                  />
-                </button>
-              </TableHead>
-            )}
-            <TableHead
-              ref={titleHeadRef}
-              aria-sort={
-                sortField === "title"
-                  ? sortDirection === "asc"
-                    ? "ascending"
-                    : "descending"
-                  : undefined
-              }
-              className="text-muted-foreground relative flex h-auto items-center p-0 text-xs font-medium tracking-wider uppercase"
-            >
-              <button
-                type="button"
-                className={cn(
-                  "text-muted-foreground flex min-w-0 cursor-pointer items-center gap-0.5 truncate text-[11px] font-medium tracking-wider uppercase",
-                  sortField === "title" && "text-foreground",
-                  sortField !== "title" && "hover:text-foreground",
-                )}
-                onClick={() => {
-                  if (sortField === "title") {
-                    onSortChange?.(
-                      "title",
-                      sortDirection === "asc" ? "desc" : "asc",
-                    )
-                  } else {
-                    onSortChange?.("title", "desc")
-                  }
-                }}
-              >
-                {c.plain("fields.short.title" as never)}
-
-                {sortField === "title" &&
-                  (sortDirection === "asc" ? (
-                    <icon.ChevronUp className="size-3 shrink-0" />
-                  ) : (
-                    <icon.ChevronDown className="size-3 shrink-0" />
-                  ))}
-              </button>
-
-              <div
-                role="separator"
-                aria-orientation="vertical"
-                aria-label={`Resize ${c.plain("fields.short.title" as never)} column`}
-                aria-valuenow={
-                  titleWidth !== undefined ? Math.round(titleWidth) : undefined
-                }
-                aria-valuemin={MIN_TITLE_WIDTH}
-                tabIndex={0}
-                onPointerDown={startTitleResize}
-                onDoubleClick={() => {
-                  dispatch(
-                    uiSettingsSlice.actions.resetTableColumnWidth("title"),
+            {table.getFlatHeaders().map((header) => {
+              switch (header.column.columnDef.meta?.kind) {
+                case "select":
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className="ml-1 flex shrink-0 items-center justify-center"
+                    >
+                      <button
+                        type="button"
+                        aria-label={
+                          isAllBooksSelected
+                            ? tSel.plain("selectNone")
+                            : tSel.plain("selectAll")
+                        }
+                        className="focus-visible:ring-ring/50 cursor-pointer rounded-full outline-none focus-visible:ring-2"
+                        onClick={() =>
+                          isAllBooksSelected
+                            ? menu.selection?.selectNone()
+                            : menu.selection?.selectAll(allBookUuids)
+                        }
+                      >
+                        <SelectionBullet
+                          selected={isAllBooksSelected}
+                          indeterminate={
+                            selectedCount > 0 && !isAllBooksSelected
+                          }
+                        />
+                      </button>
+                    </TableHead>
                   )
-                }}
-                onKeyDown={(e) => {
-                  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
-                  e.preventDefault()
-                  e.stopPropagation()
-                  const step = e.shiftKey
-                    ? KEYBOARD_RESIZE_STEP * 4
-                    : KEYBOARD_RESIZE_STEP
-                  resizeTitleBy(e.key === "ArrowRight" ? step : -step)
-                }}
-                className={cn(
-                  "absolute top-0 -right-2.5 z-10 h-full w-3 cursor-col-resize outline-none",
-                  "after:bg-border hover:after:bg-primary focus-visible:after:bg-primary after:absolute after:top-0 after:left-1/2 after:h-full after:w-px",
-                  titleResizing && "after:bg-primary",
-                )}
-              />
-            </TableHead>
-
-            {table.getFlatHeaders().map((header, index) => {
-              return (
-                <BookTableHeader
-                  key={header.id}
-                  header={header}
-                  onSortChange={onSortChange}
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  resizing={!!isResizing || titleResizing}
-                  position={index + 1}
-                  count={dataColumns.length}
-                  onMove={moveColumn}
-                  onResizeBy={resizeColumnBy}
-                  onAutofit={autofitColumn}
-                  onHeaderContextMenu={openHeaderMenu}
-                  onReorderStart={handleReorderStart}
-                  onReorderAbort={handleReorderAbort}
-                />
-              )
+                case "spacer":
+                  return (
+                    <TableHead
+                      key={header.id}
+                      aria-hidden
+                      className="h-auto p-0"
+                    />
+                  )
+                case "actions":
+                  return (
+                    <TableHead key={header.id} className="h-auto p-0">
+                      <span className="sr-only">{tSel.plain("actions")}</span>
+                    </TableHead>
+                  )
+                default:
+                  return (
+                    <BookTableHeader
+                      key={header.id}
+                      header={header}
+                      label={c.plain(
+                        `fields.short.${header.column.id}` as never,
+                      )}
+                      sorted={header.column.getIsSorted()}
+                      sortable={header.column.getCanSort()}
+                      size={header.column.getSize()}
+                      resizing={!!isResizing}
+                      position={dataColumnIds.indexOf(header.column.id) + 1}
+                      count={dataColumnIds.length}
+                      onMove={moveColumn}
+                      onResizeBy={resizeColumnBy}
+                      onAutofit={autofitColumn}
+                      onHeaderContextMenu={openHeaderMenu}
+                      onReorderStart={handleReorderStart}
+                      onReorderAbort={handleReorderAbort}
+                    />
+                  )
+              }
             })}
-            <TableHead aria-hidden className="h-auto p-0" />
-            <TableHead className="h-auto p-0">
-              <span className="sr-only">{tSel.plain("actions")}</span>
-            </TableHead>
           </Reorder.Group>
         </TableHeader>
 
@@ -685,7 +661,7 @@ export function BookTable({
             <FilterableMenuItem
               icon={<icon.ArrowAutofitWidth className="size-4" />}
               onSelect={() => {
-                autofitColumn(headerMenu.field)
+                autofitColumn(headerMenu.column)
               }}
             >
               {t("columnMenu.autofit")}
@@ -693,7 +669,7 @@ export function BookTable({
             <FilterableMenuItem
               icon={<icon.ArrowBack className="size-4" />}
               onSelect={() => {
-                resetColumnWidth(headerMenu.field)
+                headerMenu.column.resetSize()
               }}
             >
               {t("columnMenu.resetWidth")}
@@ -701,9 +677,9 @@ export function BookTable({
             <FilterableMenuSeparator />
             <FilterableMenuItem
               icon={<icon.ArrowLeft className="size-4" />}
-              disabled={dataColumns.indexOf(headerMenu.field) <= 0}
+              disabled={dataColumnIds.indexOf(headerMenu.column.id) <= 0}
               onSelect={() => {
-                moveColumn(headerMenu.field, -1)
+                moveColumn(headerMenu.column.id, -1)
               }}
             >
               {t("columnMenu.moveLeft")}
@@ -711,10 +687,11 @@ export function BookTable({
             <FilterableMenuItem
               icon={<icon.ArrowRight className="size-4" />}
               disabled={
-                dataColumns.indexOf(headerMenu.field) >= dataColumns.length - 1
+                dataColumnIds.indexOf(headerMenu.column.id) >=
+                dataColumnIds.length - 1
               }
               onSelect={() => {
-                moveColumn(headerMenu.field, 1)
+                moveColumn(headerMenu.column.id, 1)
               }}
             >
               {t("columnMenu.moveRight")}
@@ -723,7 +700,7 @@ export function BookTable({
             <FilterableMenuItem
               icon={<icon.EyeOff className="size-4" />}
               onSelect={() => {
-                hideColumn(headerMenu.field)
+                hideColumn(headerMenu.column.id)
               }}
             >
               {t("columnMenu.hide")}
@@ -737,13 +714,12 @@ export function BookTable({
   )
 }
 
-const KEYBOARD_RESIZE_STEP = 8
-
 function BookTableHeader({
   header,
-  onSortChange,
-  sortField,
-  sortDirection,
+  label,
+  sorted,
+  sortable,
+  size,
   resizing,
   position,
   count,
@@ -754,17 +730,18 @@ function BookTableHeader({
   onReorderStart,
   onReorderAbort,
 }: {
-  header: Header<BookWithRelations, unknown>
-  onSortChange?: (field: SortField, direction: SortDirection) => void
-  sortField?: SortField
-  sortDirection?: SortDirection
+  header: BookHeader
+  label: string
+  sorted: false | SortDirection
+  sortable: boolean
+  size: number
   resizing: boolean
   position: number
   count: number
-  onMove: (field: DisplayField, delta: -1 | 1) => void
-  onResizeBy: (field: DisplayField, delta: number) => void
-  onAutofit: (field: DisplayField) => void
-  onHeaderContextMenu: (field: DisplayField, e: React.MouseEvent) => void
+  onMove: (field: string, delta: -1 | 1) => void
+  onResizeBy: (column: BookColumn, delta: number) => void
+  onAutofit: (column: BookColumn) => void
+  onHeaderContextMenu: (column: BookColumn, e: React.MouseEvent) => void
   onReorderStart: () => void
   onReorderAbort: () => void
 }) {
@@ -785,25 +762,136 @@ function BookTableHeader({
     }
   }, [dragActive, dragControls, onReorderAbort])
 
-  const field = header.column.id as DisplayField
-  const def = field === "seriesPosition" ? undefined : getFieldDef(field)
-  const sortable = !!onSortChange && !!def?.sortable
-  const isActive = sortField === field
-  const label = header.column.columnDef.header as string
+  const column = header.column
+  const field = column.id as DisplayField
+  const isData = column.columnDef.meta?.kind === "data"
+
+  const boxRef = useRef<HTMLSpanElement | null>(null)
+  const labelRef = useRef<HTMLSpanElement | null>(null)
+  const [labelFits, setLabelFits] = useState(true)
+
+  useLayoutEffect(() => {
+    const box = boxRef.current
+    const labelEl = labelRef.current
+    if (!box || !labelEl) return
+    const check = () => {
+      const reserved =
+        HEADER_ICON_SIZE +
+        HEADER_LABEL_GAP +
+        (sorted ? HEADER_ICON_SIZE + HEADER_CHEVRON_GAP : 0)
+      setLabelFits(labelEl.scrollWidth <= box.clientWidth - reserved)
+    }
+    check()
+    const observer = new ResizeObserver(check)
+    observer.observe(box)
+    return () => {
+      observer.disconnect()
+    }
+  }, [sorted, label])
 
   const labelContent = (
-    <>
-      <span className="truncate" data-col-header={field}>
-        {flexRender(header.column.columnDef.header, header.getContext())}
+    <span
+      ref={boxRef}
+      className={cn(
+        "flex min-w-0 grow items-center overflow-hidden",
+        isData ? "justify-end" : "justify-start",
+      )}
+    >
+      <icon.FieldIcon field={field} className="size-3 shrink-0" />
+      <span
+        ref={labelRef}
+        data-col-header={field}
+        className={cn(
+          "shrink-0 overflow-hidden whitespace-nowrap",
+          labelFits ? "ml-1" : "invisible w-0",
+        )}
+      >
+        {label}
       </span>
-      {isActive &&
-        (sortDirection === "asc" ? (
-          <icon.ChevronUp className="size-3 shrink-0" />
+      {sorted &&
+        (sorted === "asc" ? (
+          <icon.ArrowUp className="ml-0.5 size-3 shrink-0" />
         ) : (
-          <icon.ChevronDown className="size-3 shrink-0" />
+          <icon.ArrowDown className="ml-0.5 size-3 shrink-0" />
         ))}
-    </>
+    </span>
   )
+
+  const resizeHandle = (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={`Resize ${label} column`}
+      aria-valuenow={Math.round(size)}
+      aria-valuemin={column.columnDef.minSize ?? MIN_COLUMN_WIDTH}
+      tabIndex={0}
+      onPointerDown={header.getResizeHandler()}
+      onDoubleClick={() => {
+        if (isData) onAutofit(column)
+        else column.resetSize()
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
+        e.preventDefault()
+        e.stopPropagation()
+        const step = e.shiftKey
+          ? KEYBOARD_RESIZE_STEP * 4
+          : KEYBOARD_RESIZE_STEP
+        onResizeBy(column, e.key === "ArrowRight" ? step : -step)
+      }}
+      onClick={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        dragControls.cancel()
+      }}
+      className={cn(
+        "absolute top-0 -right-2.5 z-10 h-full w-3 cursor-col-resize outline-none",
+        "after:bg-border hover:after:bg-primary focus-visible:after:bg-primary after:absolute after:top-0 after:left-1/2 after:h-full after:w-px",
+        column.getIsResizing() && "after:bg-primary after:opacity-100",
+      )}
+    />
+  )
+
+  const sortButton = sortable ? (
+    <button
+      type="button"
+      title={label}
+      className={cn(
+        "text-muted-foreground hover:text-foreground flex min-w-0 grow cursor-pointer items-center text-[11px] font-medium tracking-wider uppercase",
+        isData ? "justify-end" : "justify-start",
+        sorted && "text-foreground",
+      )}
+      aria-label={`Sort by ${label}`}
+      onClick={header.column.getToggleSortingHandler()}
+    >
+      {labelContent}
+    </button>
+  ) : (
+    <span
+      title={label}
+      className="text-muted-foreground flex min-w-0 grow items-center justify-end text-xs font-medium tracking-wider uppercase"
+    >
+      {labelContent}
+    </span>
+  )
+
+  const ariaSort = sorted
+    ? sorted === "asc"
+      ? "ascending"
+      : "descending"
+    : undefined
+
+  if (!isData) {
+    return (
+      <TableHead
+        aria-sort={ariaSort}
+        className="text-muted-foreground relative flex h-auto items-center p-0 text-xs font-medium tracking-wider uppercase"
+      >
+        {sortButton}
+        {resizeHandle}
+      </TableHead>
+    )
+  }
 
   return (
     <Reorder.Item
@@ -820,13 +908,7 @@ function BookTableHeader({
       onDragEnd={() => {
         setDragActive(false)
       }}
-      aria-sort={
-        isActive
-          ? sortDirection === "asc"
-            ? "ascending"
-            : "descending"
-          : undefined
-      }
+      aria-sort={ariaSort}
       className="group relative flex w-full min-w-0 items-center justify-end gap-0.5 pr-2"
     >
       <button
@@ -845,30 +927,7 @@ function BookTableHeader({
       >
         <icon.GripVertical className="size-3 shrink-0" />
       </button>
-      {sortable ? (
-        <button
-          type="button"
-          className={cn(
-            "text-muted-foreground hover:text-foreground flex min-w-0 grow cursor-pointer items-center justify-end gap-0.5 truncate text-[11px] font-medium tracking-wider uppercase",
-            isActive && "text-foreground",
-          )}
-          aria-label={`Sort by ${label}`}
-          onClick={() => {
-            const asSort = field as SortField
-            if (isActive) {
-              onSortChange(asSort, sortDirection === "asc" ? "desc" : "asc")
-            } else {
-              onSortChange(asSort, def.defaultSort ?? "desc")
-            }
-          }}
-        >
-          {labelContent}
-        </button>
-      ) : (
-        <span className="text-muted-foreground flex min-w-0 grow items-center justify-end gap-0.5 truncate text-xs font-medium tracking-wider uppercase">
-          {labelContent}
-        </span>
-      )}
+      {sortButton}
       <button
         type="button"
         className="text-muted-foreground hover:text-foreground h-full w-3 opacity-100 transition-opacity outline-none group-hover:opacity-100 md:opacity-0"
@@ -876,46 +935,13 @@ function BookTableHeader({
         onClick={(e) => {
           e.stopPropagation()
           e.preventDefault()
-          onHeaderContextMenu(field, e)
+          onHeaderContextMenu(column, e)
         }}
       >
         <icon.DotsVertical className="size-3 shrink-0" />
       </button>
 
-      {/* resize handle on the column's right edge: dragging right widens and
-          the edge follows the pointer (slack lives in the spacer track).
-          keyboard mirrors that; double click fits the column to its content */}
-      <div
-        role="separator"
-        aria-orientation="vertical"
-        aria-label={`Resize ${label} column`}
-        aria-valuenow={Math.round(header.column.getSize())}
-        aria-valuemin={MIN_COLUMN_WIDTH}
-        tabIndex={0}
-        onPointerDown={header.getResizeHandler()}
-        onDoubleClick={() => {
-          onAutofit(field)
-        }}
-        onKeyDown={(e) => {
-          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
-          e.preventDefault()
-          e.stopPropagation()
-          const step = e.shiftKey
-            ? KEYBOARD_RESIZE_STEP * 4
-            : KEYBOARD_RESIZE_STEP
-          onResizeBy(field, e.key === "ArrowRight" ? step : -step)
-        }}
-        onClick={(e) => {
-          e.stopPropagation()
-          e.preventDefault()
-          dragControls.cancel()
-        }}
-        className={cn(
-          "absolute top-0 -right-2.5 z-10 h-full w-3 cursor-col-resize outline-none",
-          "after:bg-border hover:after:bg-primary focus-visible:after:bg-primary after:absolute after:top-0 after:left-1/2 after:h-full after:w-px",
-          header.column.getIsResizing() && "after:bg-primary after:opacity-100",
-        )}
-      />
+      {resizeHandle}
     </Reorder.Item>
   )
 }
@@ -958,7 +984,7 @@ function BookRow({
   showReadaloudBadge: boolean
   showProcessingBadge: boolean
   showMissingBadge: boolean
-  cells: Cell<BookWithRelations, unknown>[]
+  cells: BookCell[]
   onColumnClick?: (book: BookWithRelations, field: DisplayField) => void
   handle: Popover.Handle<unknown>
   handleOpenMenu: (book: BookWithRelations) => void
@@ -987,136 +1013,162 @@ function BookRow({
         onBookClick?.(book, isSelecting, isBookSelected)
       }}
     >
-      {toggleSelection && (
-        <TableCell>
-          <SelectionCheckbox
-            uuid={book.uuid}
-            checked={isBookSelected}
-            isSelecting={isSelecting}
-            onToggle={toggleSelection}
-            onSelectRange={handleSelectRange}
-            className="shrink-0"
-          />
-        </TableCell>
-      )}
-      {/* title cell */}
-      <TableCell className="line-clamp-2 flex h-full items-center gap-2 pl-1 hyphens-auto whitespace-normal">
-        {showThumbnail ? (
-          <div
-            className="relative flex h-11 w-8 shrink-0 items-center justify-center"
-            style={
-              {
-                "--radius-cover": "2px",
-              } as React.CSSProperties
-            }
-          >
-            <Cover book={book} width={32} interactive={false} />
-
-            {showReadaloudBadge && book.readaloud?.status === "ALIGNED" && (
-              <div className="bg-primary absolute -top-0.5 -right-0.5 z-30 flex size-3 shrink-0 items-center justify-center rounded-full">
-                <IconReadaloud className="size-2.5 text-white" />
-              </div>
-            )}
-
-            {showProcessingBadge &&
-              (book.readaloud?.status === "PROCESSING" ||
-                book.readaloud?.status === "QUEUED") && (
-                <ProcessingIndicator
-                  book={book}
-                  size={14}
-                  className="absolute -right-0.5 -bottom-0.5 z-30"
-                />
-              )}
-
-            {showMissingBadge && hasMissingMedia(book) && (
-              <MissingBadge
-                book={book}
-                className="absolute -right-0.5 -bottom-0.5 z-30 size-3"
-              />
-            )}
-          </div>
-        ) : showReadaloudBadge ? (
-          <IconReadaloud className="text-cover-accent size-3 shrink-0" />
-        ) : showProcessingBadge ? (
-          <ProcessingIndicator book={book} size={14} className="shrink-0" />
-        ) : null}
-
-        <V3Link
-          href={`/books/${book.uuid}`}
-          prefetch={false}
-          className={cn(showThumbnail ? "line-clamp-2" : "line-clamp-1")}
-          onClick={(e) => {
-            if (onBookClick) e.preventDefault()
-          }}
-        >
-          <span
-            className={cn(
-              "group-hover:text-tinted-strong text-sm",
-              book.uuid === selectedBookUuid && "text-tinted-strong",
-            )}
-          >
-            {book.title}
-          </span>
-        </V3Link>
-
-        {!showThumbnail && showMissingBadge && hasMissingMedia(book) && (
-          <MissingBadge book={book} inline />
-        )}
-      </TableCell>
-
-      {/* data cells */}
       {cells.map((cell) => {
-        const field = cell.column.id as DisplayField
-        const isClickable =
-          !!onColumnClick &&
-          (field === "alignmentGrade" || field === "alignmentScore") &&
-          book.alignmentSummary?.grade != null
+        switch (cell.column.columnDef.meta?.kind) {
+          case "select":
+            return (
+              <TableCell key={cell.id}>
+                {toggleSelection && (
+                  <SelectionCheckbox
+                    uuid={book.uuid}
+                    checked={isBookSelected}
+                    isSelecting={isSelecting}
+                    onToggle={toggleSelection}
+                    onSelectRange={handleSelectRange}
+                    className="shrink-0"
+                  />
+                )}
+              </TableCell>
+            )
 
-        return (
-          <TableCell
-            key={cell.id}
-            data-col={field}
-            className={cn(
-              "text-muted-foreground group-hover:text-tinted h-full min-w-0 truncate text-right text-xs hyphens-auto whitespace-normal tabular-nums",
-              isClickable && "hover:text-foreground cursor-pointer",
-            )}
-            onClick={
-              isClickable
-                ? (e) => {
-                    e.stopPropagation()
-                    onColumnClick(book, field)
-                  }
-                : undefined
-            }
-          >
-            <div className="flex h-full items-center justify-end">
-              <span
-                className={cn(showThumbnail ? "line-clamp-2" : "line-clamp-1")}
+          case "title":
+            return (
+              <TableCell
+                key={cell.id}
+                className="line-clamp-2 flex h-full items-center gap-2 pl-1 hyphens-auto whitespace-normal"
               >
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </span>
-            </div>
-          </TableCell>
-        )
+                {showThumbnail ? (
+                  <div
+                    className="relative flex h-11 w-8 shrink-0 items-center justify-center"
+                    style={
+                      {
+                        "--radius-cover": "2px",
+                      } as React.CSSProperties
+                    }
+                  >
+                    <Cover book={book} width={32} interactive={false} />
+
+                    {showReadaloudBadge &&
+                      book.readaloud?.status === "ALIGNED" && (
+                        <div className="bg-primary absolute -top-0.5 -right-0.5 z-30 flex size-3 shrink-0 items-center justify-center rounded-full">
+                          <IconReadaloud className="size-2.5 text-white" />
+                        </div>
+                      )}
+
+                    {showProcessingBadge &&
+                      (book.readaloud?.status === "PROCESSING" ||
+                        book.readaloud?.status === "QUEUED") && (
+                        <ProcessingIndicator
+                          book={book}
+                          size={14}
+                          className="absolute -right-0.5 -bottom-0.5 z-30"
+                        />
+                      )}
+
+                    {showMissingBadge && hasMissingMedia(book) && (
+                      <MissingBadge
+                        book={book}
+                        className="absolute -right-0.5 -bottom-0.5 z-30 size-3"
+                      />
+                    )}
+                  </div>
+                ) : showReadaloudBadge ? (
+                  <IconReadaloud className="text-cover-accent size-3 shrink-0" />
+                ) : showProcessingBadge ? (
+                  <ProcessingIndicator
+                    book={book}
+                    size={14}
+                    className="shrink-0"
+                  />
+                ) : null}
+
+                <V3Link
+                  href={`/books/${book.uuid}`}
+                  prefetch={false}
+                  className={cn(
+                    showThumbnail ? "line-clamp-2" : "line-clamp-1",
+                  )}
+                  onClick={(e) => {
+                    if (onBookClick) e.preventDefault()
+                  }}
+                >
+                  <span
+                    className={cn(
+                      "group-hover:text-tinted-strong text-sm",
+                      book.uuid === selectedBookUuid && "text-tinted-strong",
+                    )}
+                  >
+                    {book.title}
+                  </span>
+                </V3Link>
+
+                {!showThumbnail &&
+                  showMissingBadge &&
+                  hasMissingMedia(book) && <MissingBadge book={book} inline />}
+              </TableCell>
+            )
+
+          case "spacer":
+            return <TableCell key={cell.id} aria-hidden className="p-0" />
+
+          case "actions":
+            return (
+              <TableCell
+                key={cell.id}
+                className="flex items-center justify-end pr-2"
+              >
+                <Popover.Trigger
+                  handle={handle}
+                  aria-label="Open menu"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleOpenMenu(book)
+                  }}
+                  className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                >
+                  <icon.DotsVertical className="size-3.5" />
+                </Popover.Trigger>
+              </TableCell>
+            )
+
+          default: {
+            const field = cell.column.id as DisplayField
+            const isClickable =
+              !!onColumnClick &&
+              (field === "alignmentGrade" || field === "alignmentScore") &&
+              book.alignmentSummary?.grade != null
+
+            return (
+              <TableCell
+                key={cell.id}
+                data-col={field}
+                className={cn(
+                  "text-muted-foreground group-hover:text-tinted h-full min-w-0 truncate text-right text-xs hyphens-auto whitespace-normal tabular-nums",
+                  isClickable && "hover:text-foreground cursor-pointer",
+                )}
+                onClick={
+                  isClickable
+                    ? (e) => {
+                        e.stopPropagation()
+                        onColumnClick(book, field)
+                      }
+                    : undefined
+                }
+              >
+                <div className="flex h-full items-center justify-end">
+                  <span
+                    className={cn(
+                      showThumbnail ? "line-clamp-2" : "line-clamp-1",
+                    )}
+                  >
+                    <FlexRender cell={cell} />
+                  </span>
+                </div>
+              </TableCell>
+            )
+          }
+        }
       })}
-
-      {/* slack track */}
-      <TableCell aria-hidden className="p-0" />
-
-      {/* actions */}
-      <TableCell className="flex items-center justify-end pr-2">
-        <Popover.Trigger
-          handle={handle}
-          aria-label="Open menu"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleOpenMenu(book)
-          }}
-          className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-        >
-          <icon.DotsVertical className="size-3.5" />
-        </Popover.Trigger>
-      </TableCell>
     </TableRow>
   )
 }
