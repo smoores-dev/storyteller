@@ -49,6 +49,7 @@
     "@reflink/reflink": "^0.1.19",
     "@remix-run/node": "^2.17.0",
     "@scalar/nextjs-openapi": "^0.1.17",
+    "@speed-highlight/core": "^2.1.0",
     "@storyteller-platform/align": "workspace:*",
     "@storyteller-platform/audiobook": "workspace:^",
     "@storyteller-platform/epub": "workspace:*",

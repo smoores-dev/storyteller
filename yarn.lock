@@ -15572,6 +15572,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@speed-highlight/core@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "@speed-highlight/core@npm:2.1.0"
+  checksum: 10c0/fa25039fd9f19daf8248b27f973422740a556d21fb68a979d02135cd30bc9f3f2ec72e2f4721658c4246a8ed787376e3d100fb774d7cbe2b587c958623958822
+  languageName: node
+  linkType: hard
+
 "@standard-schema/spec@npm:1.1.0":
   version: 1.1.0
   resolution: "@standard-schema/spec@npm:1.1.0"
@@ -16203,6 +16210,7 @@ __metadata:
     "@reflink/reflink": "npm:^0.1.19"
     "@remix-run/node": "npm:^2.17.0"
     "@scalar/nextjs-openapi": "npm:^0.1.17"
+    "@speed-highlight/core": "npm:^2.1.0"
     "@storyteller-platform/align": "workspace:*"
     "@storyteller-platform/audiobook": "workspace:^"
     "@storyteller-platform/epub": "workspace:*"

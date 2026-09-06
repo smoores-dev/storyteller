@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -15,6 +15,7 @@ import {
 import * as icon from "@/icons"
 import { useGetBookOpfQuery } from "@/store/api"
 import { type UUID } from "@/uuid"
+import { useTheme } from "../../../hooks/use-theme"
 
 export function ShowOpfDialog({
   bookUuid,
@@ -31,6 +32,7 @@ export function ShowOpfDialog({
 }) {
   const { data, isFetching, error } = useGetBookOpfQuery({ bookUuid, format })
   const [copied, setCopied] = useState(false)
+  const { resolvedTheme } = useTheme()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -53,9 +55,9 @@ export function ShowOpfDialog({
               : "Could not read the package document."}
           </p>
         ) : (
-          <pre className="bg-muted/30 max-h-[60vh] overflow-auto rounded-md border p-3 font-mono text-xs break-words whitespace-pre-wrap">
-            {data}
-          </pre>
+          <Code key={resolvedTheme} theme={resolvedTheme}>
+            {data ?? ""}
+          </Code>
         )}
 
         <DialogFooter>
@@ -90,5 +92,22 @@ export function ShowOpfDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function Code({ code, theme }: { code: string; theme: "dark" | "light" }) {
+  useEffect(() => {
+    if (theme === "dark") {
+      void import("@speed-highlight/core/themes/github-dark.css")
+    } else {
+      void import("@speed-highlight/core/themes/github-light.css")
+    }
+  }, [theme])
+
+  return (
+    <pre
+      className="bg-muted/30 max-h-[60vh] overflow-auto rounded-md border p-3 font-mono text-xs break-words whitespace-pre-wrap"
+      dangerouslySetInnerHTML={{ __html: code }}
+    />
   )
 }
