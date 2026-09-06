@@ -11,6 +11,8 @@ export type ListView = "list" | "table"
 
 export type GridSpacing = "compact" | "cozy" | "spacious"
 
+export type ProcessingToastLocation = "floating" | "sidebar"
+
 export type LogDisplayPrefs = {
   wrapLines: boolean
   highlighting: boolean
@@ -48,7 +50,8 @@ export type UISettings = {
   detailSectionOrder: string[] | null
   hiddenDetailSections: string[]
   detailCoverWidth: number | null
-  processingToastLocation: "bottom-right" | "sidebar"
+  processingToastLocation: ProcessingToastLocation
+  processingToastCollapsed: boolean
   theme: "light" | "dark" | "system"
 }
 
@@ -80,7 +83,7 @@ const defaults: UISettings = {
   listView: "list",
   gridDisplayFields: null,
   gridSpacing: "cozy",
-  gridCardSize: "medium",
+  gridCardSize: "small",
   listDisplayFields: defaultListDisplayFields,
   listShowThumbnail: true,
   tableColumnOrder: null,
@@ -96,7 +99,8 @@ const defaults: UISettings = {
   detailCoverWidth: null,
   theme: "system",
   defaultSorts: {},
-  processingToastLocation: "bottom-right",
+  processingToastLocation: "floating",
+  processingToastCollapsed: false,
 }
 
 export { defaults as UI_SETTINGS_DEFAULTS }
@@ -169,6 +173,10 @@ export const uiSettingsSlice = createSlice({
 
       if (merged.listDisplayFields.length === 0) {
         merged.listDisplayFields = defaultListDisplayFields
+      }
+
+      if (legacy["processingToastLocation"] === "bottom-right") {
+        merged.processingToastLocation = "floating"
       }
 
       return merged
@@ -340,9 +348,14 @@ export const uiSettingsSlice = createSlice({
 
     setProcessingToastLocation: (
       state,
-      action: PayloadAction<"bottom-right" | "sidebar">,
+      action: PayloadAction<ProcessingToastLocation>,
     ) => {
       state.processingToastLocation = action.payload
+      saveToCookie(state)
+    },
+
+    setProcessingToastCollapsed: (state, action: PayloadAction<boolean>) => {
+      state.processingToastCollapsed = action.payload
       saveToCookie(state)
     },
   },
@@ -422,3 +435,7 @@ export const selectDefaultSorts = (state: { uiSettings: UISettings }) => {
 export const selectProcessingToastLocation = (state: {
   uiSettings: UISettings
 }) => state.uiSettings.processingToastLocation
+
+export const selectProcessingToastCollapsed = (state: {
+  uiSettings: UISettings
+}) => state.uiSettings.processingToastCollapsed
