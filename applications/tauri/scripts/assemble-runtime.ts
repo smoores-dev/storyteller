@@ -57,7 +57,12 @@ function copy(from: string, to: string, what: string) {
   console.log(`copied ${what}`)
 }
 
+const standalone = join(webRoot, ".next", "standalone")
+
+rmSync(stagingDir, { recursive: true, force: true })
+
 if (!skipBuild) {
+  rmSync(standalone, { recursive: true, force: true })
   const envFiles = [
     ".env",
     ".env.local",
@@ -79,7 +84,6 @@ if (!skipBuild) {
   }
 }
 
-const standalone = join(webRoot, ".next", "standalone")
 if (!existsSync(join(standalone, "applications", "web", "server.js"))) {
   throw new Error(
     `no standalone server at ${standalone} — run the web build first (or drop --skip-build)`,
@@ -87,7 +91,6 @@ if (!existsSync(join(standalone, "applications", "web", "server.js"))) {
 }
 
 console.log(`staging runtime tree for ${triple}`)
-rmSync(stagingDir, { recursive: true, force: true })
 mkdirSync(stagingDir, { recursive: true })
 
 const webStaging = join(stagingDir, "applications", "web")
@@ -163,7 +166,7 @@ if (!existsSync(sqlitePrebuild)) {
 
 // symlink extraction on windows
 const symlinkSourceRoots: [string, string][] = [
-  [join(webRoot, ".next", "standalone"), stagingDir],
+  [standalone, stagingDir],
   [repoRoot, stagingDir],
 ]
 function* findSymlinks(dir: string): Generator<string> {
