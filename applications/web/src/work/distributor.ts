@@ -35,6 +35,7 @@ import {
 import { getSettings } from "@/database/settings"
 import { env } from "@/env"
 import { ACTIVE_JOB_STATUSES } from "@/jobEvents"
+import { queueJobNext } from "@/jobList"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 
@@ -453,18 +454,16 @@ export async function resumeJob(jobUuid: UUID): Promise<void> {
   const job = await getJob(jobUuid)
   if (!job || job.status !== "PAUSED") return
 
-  const position = await getNextJobPosition()
-  await updateJob(jobUuid, {
-    status: "QUEUED",
-    position,
-    finishedAt: null,
-  })
+  await updateJob(jobUuid, { status: "QUEUED", finishedAt: null })
+  const active = await getJobs({ statuses: ACTIVE_JOB_STATUSES })
+  const order = queueJobNext(active, jobUuid)
+  await reorderActiveJobs(order)
   if (job.bookUuid) {
     await updateBook(job.bookUuid, null, {
       readaloud: {
         status: "QUEUED",
         currentStage: job.stage ?? "SPLIT_TRACKS",
-        queuePosition: position,
+        queuePosition: order.indexOf(jobUuid),
       },
     })
   }

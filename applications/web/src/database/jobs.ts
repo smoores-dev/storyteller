@@ -4,9 +4,9 @@ import {
   ACTIVE_JOB_STATUSES,
   type JobEvent,
   JobEvents,
-  type JobSort,
   type JobStatus,
 } from "@/jobEvents"
+import { type JobListFilter, jobListStatuses } from "@/jobList"
 import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
 import type { RestartMode } from "@/work/distributor"
@@ -150,22 +150,21 @@ export async function getDisplayJob(uuid: UUID): Promise<DisplayJob | null> {
   if (!row) {
     return null
   }
-  return toDisplayJob(row)
+  const { bookTitle, alignmentGrade, alignmentScore, ...job } = row
+  return toDisplayJob(job, bookTitle ?? null, {
+    grade: alignmentGrade ?? null,
+    score: alignmentScore ?? null,
+  })
 }
 
-export async function getDisplayJobs(filter?: {
-  statuses?: readonly JobStatus[]
-  bookUuid?: UUID
-  search?: string
-  sort?: JobSort
-  order?: "asc" | "desc"
-  limit?: number
-  offset?: number
-}): Promise<DisplayJob[]> {
+export async function getDisplayJobs(
+  filter?: JobListFilter,
+): Promise<DisplayJob[]> {
   let query = getDisplayJobBase()
 
-  if (filter?.statuses?.length) {
-    query = query.where("job.status", "in", filter.statuses)
+  const statuses = jobListStatuses(filter)
+  if (statuses) {
+    query = query.where("job.status", "in", statuses)
   }
   if (filter?.bookUuid) {
     query = query.where("job.bookUuid", "=", filter.bookUuid)
@@ -182,14 +181,15 @@ export async function getDisplayJobs(filter?: {
   } else if (filter?.sort === "finishedAt") {
     query = query.orderBy("job.finishedAt", order)
   } else {
-    query = query.orderBy("job.position", "asc").orderBy("job.createdAt", "asc")
+    query = query.orderBy("job.position", "asc")
   }
+  query = query.orderBy("job.createdAt", "asc").orderBy("job.uuid", "asc")
 
+  const limit = filter?.limit
+  const offset = filter?.offset
   const rows = await query
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    .$if(!!filter?.limit, (qb) => qb.limit(filter!.limit!))
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    .$if(!!filter?.offset, (qb) => qb.offset(filter!.offset!))
+    .$if(limit !== undefined, (qb) => qb.limit(limit ?? 0))
+    .$if(offset !== undefined, (qb) => qb.offset(offset ?? 0))
     .execute()
 
   return rows.map(({ bookTitle, alignmentGrade, alignmentScore, ...row }) =>
@@ -237,7 +237,10 @@ export async function updateJob(uuid: UUID, patch: JobUpdate): Promise<Job> {
     .returningAll()
     .executeTakeFirstOrThrow()
 
-  emit({ type: "jobUpdated", jobUuid: row.uuid, payload: row })
+  const display = await getDisplayJob(row.uuid)
+  if (display) {
+    emit({ type: "jobUpdated", jobUuid: row.uuid, payload: display })
+  }
 
   return row
 }
@@ -264,8 +267,10 @@ export async function reorderActiveJobs(orderedUuids: UUID[]): Promise<void> {
         .execute()
     }
   })
-  for (const [index, uuid] of orderedUuids.entries()) {
-    emit({ type: "jobUpdated", jobUuid: uuid, payload: { position: index } })
+  const reordered = await getDisplayJobs({ statuses: ACTIVE_JOB_STATUSES })
+  for (const job of reordered) {
+    if (!orderedUuids.includes(job.uuid)) continue
+    emit({ type: "jobUpdated", jobUuid: job.uuid, payload: job })
   }
 }
 

@@ -44,7 +44,7 @@ export type JobEventBase<type extends JobEventType, Payload = void> = {
 
 export type JobCreatedEvent = JobEventBase<"jobCreated", DisplayJob>
 
-export type JobUpdatedEvent = JobEventBase<"jobUpdated", Partial<DisplayJob>>
+export type JobUpdatedEvent = JobEventBase<"jobUpdated", DisplayJob>
 
 export type JobDeletedEvent = JobEventBase<"jobDeleted">
 
