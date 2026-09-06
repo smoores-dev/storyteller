@@ -96,8 +96,11 @@ export async function register() {
       logger.info("Restoring processing queue...")
     }
     for (const book of queue) {
-      logger.info(`Adding ${book.title} to the queue`)
-      void startProcessing(book.uuid, book.readaloud?.restartPending || false)
+      logger.warn({
+        msg: `Processing ${book.title} was not automatically restarted, you should restart it manually`,
+      })
+      // logger.info(`Adding ${book.title} to the queue`)
+      // void startProcessing(book.uuid, book.readaloud?.restartPending || false)
     }
     if (queue.length) {
       void pump()
