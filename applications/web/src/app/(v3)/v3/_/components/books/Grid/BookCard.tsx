@@ -384,7 +384,6 @@ export const BookCard = memo(function BookCard({
             <ProcessingIndicator
               book={book}
               size={22}
-              status={isQueued ? "queued" : "processing"}
               className="absolute right-1.5 bottom-1.5 z-10"
             />
           )}
