@@ -150,6 +150,7 @@ import {
   IconVolume3,
   IconVolume,
   IconVolumeOff,
+  IconTextGrammar,
   IconX,
 } from "@tabler/icons-react"
 
@@ -342,3 +343,4 @@ export const RewindForward15 = /*#__PURE__*/ styled(IconRewindForward15)
 
 export const Aa = /*#__PURE__*/ styled(IconLetterCase)
 export const Outbound = /*#__PURE__*/ styled(IconOutbound)
+export const TextGrammar = /*#__PURE__*/ styled(IconTextGrammar)

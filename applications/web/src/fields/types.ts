@@ -25,7 +25,7 @@ export type FieldScale = {
   min?: number
   max?: number
   step?: number
-  unit?: "bytes" | "seconds" | "count" | "ratio" | "year"
+  unit?: "bytes" | "seconds" | "count" | "ratio" | "year" | "percent"
 }
 
 export type FieldType = "string" | "number" | "date" | "uuid" | "array" | "enum"
@@ -98,6 +98,11 @@ export type FieldDefDuration = FieldDefBase & {
   control: "duration-range"
   scale: FieldScale
   options?: { min: number; max: number; label: string }[]
+}
+
+export type RetiredFieldDef = {
+  labelKey: string
+  replacedBy: string | null
 }
 
 export type FieldDef =

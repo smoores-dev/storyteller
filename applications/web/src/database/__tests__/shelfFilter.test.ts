@@ -20,7 +20,9 @@ import {
 } from "@/fields"
 import {
   type ShelfFilterField,
+  ShelfFilterInvalidError,
   type ShelfFilterNode,
+  collectFilterIssues,
   createAndBlock,
   createEmptyCondition,
   createNotBlock,
@@ -1252,6 +1254,129 @@ void describe("FORMAT_VALUES / compiler coverage", () => {
       assert.match(sql, /ebook|audiobook|readaloud/)
     })
   }
+})
+
+void describe("collectFilterIssues", () => {
+  void it("reports nothing for a valid nested filter", () => {
+    const issues = collectFilterIssues({
+      type: "and",
+      children: [
+        { type: "condition", field: "title", operator: "contains", value: "x" },
+        {
+          type: "not",
+          child: {
+            type: "or",
+            children: [
+              {
+                type: "condition",
+                field: "alignmentConfidence",
+                operator: "greaterOrEqual",
+                value: 90,
+              },
+            ],
+          },
+        },
+      ],
+    })
+    assert.deepStrictEqual(issues, [])
+  })
+
+  void it("reports a retired field with its replacement", () => {
+    const issues = collectFilterIssues({
+      type: "condition",
+      field: "alignmentMissingSentences",
+      operator: "greaterThan",
+      value: 4,
+    })
+    assert.deepStrictEqual(issues, [
+      {
+        kind: "retiredField",
+        field: "alignmentMissingSentences",
+        replacedBy: "alignmentSentenceCoverage",
+      },
+    ])
+  })
+
+  void it("dedupes by field and walks every block type", () => {
+    const issues = collectFilterIssues({
+      type: "and",
+      children: [
+        {
+          type: "condition",
+          field: "alignmentScore",
+          operator: "is",
+          value: 1,
+        },
+        {
+          type: "not",
+          child: {
+            type: "condition",
+            field: "alignmentScore",
+            operator: "is",
+            value: 2,
+          },
+        },
+        { type: "condition", field: "nope", operator: "is", value: 2 },
+      ],
+    })
+    assert.deepStrictEqual(
+      issues.map((issue) => issue.kind),
+      ["retiredField", "unknownField"],
+    )
+  })
+
+  void it("reports a condition that no longer validates on a live field", () => {
+    const issues = collectFilterIssues({
+      type: "condition",
+      field: "alignmentGrade",
+      operator: "greaterThan",
+      value: "A",
+    })
+    assert.strictEqual(issues.length, 1)
+    const [issue] = issues
+    assert.ok(issue && issue.kind === "invalidCondition")
+    assert.strictEqual(issue.field, "alignmentGrade")
+  })
+
+  void it("still accepts legacy field spellings", () => {
+    const issues = collectFilterIssues({
+      type: "condition",
+      field: "rating",
+      operator: "greaterOrEqual",
+      value: 4,
+    })
+    assert.deepStrictEqual(issues, [])
+  })
+})
+
+void describe("buildFilterExpression / unknown fields", () => {
+  const userId = "11111111-1111-1111-1111-111111111111" as UUID
+  const testDb = createKyselyDb(new Database(":memory:"))
+
+  void it("throws instead of matching every book", () => {
+    assert.throws(
+      () =>
+        testDb
+          .selectFrom("book")
+          .selectAll()
+          .where((eb) =>
+            buildFilterExpression(
+              eb,
+              {
+                type: "condition",
+                field: "alignmentMutedChapters" as ShelfFilterField,
+                operator: "lessThan",
+                value: 2,
+              },
+              userId,
+            ),
+          )
+          .compile(),
+      (error: unknown) =>
+        error instanceof ShelfFilterInvalidError &&
+        error.issues.some((issue) => issue.kind === "retiredField"),
+    )
+  })
 })
 
 void describe("makeBookComparator", () => {

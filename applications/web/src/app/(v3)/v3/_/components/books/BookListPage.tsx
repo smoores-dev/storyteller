@@ -120,6 +120,7 @@ type BookListPageProps = {
 
   breadcrumbs: BookListBreadcrumbs
   headerActions?: ReactNode
+  banner?: ReactNode
   sidebar?: ReactNode
   description?: string | null | undefined
   filtersClassName?: string
@@ -177,6 +178,7 @@ function BookListPageInner({
   extraSortFields,
   breadcrumbs,
   headerActions,
+  banner,
   sidebar,
   description,
   filtersClassName,
@@ -763,6 +765,7 @@ function BookListPageInner({
             </PageHeader>
 
             {descriptionText}
+            {banner}
 
             <PageContent className={"relative p-6 pt-0 md:p-0"}>
               <BookFilters
@@ -839,6 +842,7 @@ function BookListPageInner({
             </PageHeader>
 
             {descriptionText}
+            {banner}
 
             <PageContent
               className={cn(contentClassName ?? "p-6 pt-0", "relative")}

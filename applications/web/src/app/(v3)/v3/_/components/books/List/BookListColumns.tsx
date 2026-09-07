@@ -82,9 +82,9 @@ export function ColumnValue({
     }
     case "language":
       return book.language ?? "\u2014"
-    case "alignmentScore":
-      return book.alignmentSummary?.score != null
-        ? `${Math.round(book.alignmentSummary.score)}%`
+    case "alignmentConfidence":
+      return book.alignmentSummary?.confidence != null
+        ? `${Math.round(book.alignmentSummary.confidence)}%`
         : "\u2014"
     case "alignmentGrade":
       return book.alignmentSummary?.grade ? (
@@ -92,13 +92,13 @@ export function ColumnValue({
       ) : (
         "\u2014"
       )
-    case "alignmentMissingSentences":
-      return book.alignmentSummary?.missingSentences != null
-        ? `${book.alignmentSummary.missingSentences}`
+    case "alignmentSentenceCoverage":
+      return book.alignmentSummary?.sentenceCoverage != null
+        ? `${Math.round(book.alignmentSummary.sentenceCoverage)}%`
         : "\u2014"
-    case "alignmentMutedChapters":
-      return book.alignmentSummary?.mutedChapters != null
-        ? `${book.alignmentSummary.mutedChapters}`
+    case "alignmentAudioCoverage":
+      return book.alignmentSummary?.audioCoverage != null
+        ? `${Math.round(book.alignmentSummary.audioCoverage)}%`
         : "\u2014"
     case "title":
       return book.title
@@ -148,10 +148,10 @@ export const columnWidths: Record<DisplayField, number> = {
   seriesPosition: 30,
   title: 100,
   userRating: 50,
-  alignmentScore: 50,
+  alignmentConfidence: 60,
   alignmentGrade: 60,
-  alignmentMissingSentences: 80,
-  alignmentMutedChapters: 80,
+  alignmentSentenceCoverage: 60,
+  alignmentAudioCoverage: 60,
 }
 
 export function getColumnWidth(field: DisplayField, label: string) {

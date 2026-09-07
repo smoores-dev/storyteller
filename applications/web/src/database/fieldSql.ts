@@ -968,9 +968,9 @@ export const FIELD_SQL = {
   alignedAt: dateColumn("book.alignedAt"),
 
   alignmentGrade: reportString("grade"),
-  alignmentScore: reportNumber("score"),
-  alignmentMissingSentences: reportNumber("missing_sentences"),
-  alignmentMutedChapters: reportNumber("muted_chapters"),
+  alignmentConfidence: reportNumber("confidence"),
+  alignmentSentenceCoverage: reportNumber("sentence_coverage"),
+  alignmentAudioCoverage: reportNumber("audio_coverage"),
 
   pageCount: assetNumeric("pageCount"),
   duration: assetNumeric("duration"),

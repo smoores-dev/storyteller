@@ -7,7 +7,11 @@ import {
   type FacetSectionDef,
 } from "@/facet-sections"
 import { type FormatValue } from "@/fields"
-import { type ShelfFilterField, type ShelfFilterNode } from "@/shelves"
+import {
+  type ShelfFilterField,
+  type ShelfFilterIssue,
+  type ShelfFilterNode,
+} from "@/shelves"
 import { GRADE_RANK, type SortDirection, type SortField } from "@/sort"
 import { type ListBooksQueryArg } from "@/store/api"
 
@@ -21,6 +25,7 @@ export type FacetValue = {
   icon?: string | null
   color?: string | null
   kind?: string
+  filterIssues?: ShelfFilterIssue[]
 }
 
 export type LibraryEntityType =
@@ -218,7 +223,7 @@ export const librarySections = {
       (GRADE_RANK[b.name] ?? -1) - (GRADE_RANK[a.name] ?? -1),
     itemColor: (key) => GRADE_COLORS[key] ?? null,
     sort: {
-      field: "alignmentScore",
+      field: "alignmentGrade",
       direction: "desc",
     },
   },

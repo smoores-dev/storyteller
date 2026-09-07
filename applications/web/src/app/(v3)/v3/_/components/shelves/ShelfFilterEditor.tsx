@@ -8,7 +8,9 @@ import { Button } from "@v3/_/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
 import { Input } from "@v3/_/components/ui/input"
@@ -34,6 +36,8 @@ import {
   NumericInput,
 } from "@/app/(v3)/v3/_/components/books/filter-ui"
 import { RelationSelectList } from "@/app/(v3)/v3/_/components/books/relation-picker/RelationSelectList"
+import { FieldChip } from "@/app/(v3)/v3/_/components/field-chip"
+import { useFilterIssueText } from "@/app/(v3)/v3/_/components/shelves/filter-issues"
 import {
   FilterableMenu,
   FilterableMenuContent,
@@ -49,12 +53,16 @@ import { statusDisplayLabel } from "@/database/statusKinds"
 import {
   FIELDS,
   type FacetSource,
+  type Field,
   type FieldGroupKey,
   type QualifierKind,
+  RETIRED_FIELDS,
   getFieldDef,
+  isField,
+  isRetiredField,
 } from "@/fields"
-import { FieldIcon } from "@/icons"
 import * as icon from "@/icons"
+import { FieldIcon } from "@/icons"
 import {
   NUMBER_COMPARE_OPERATORS,
   RANGE_OPERATORS,
@@ -167,16 +175,17 @@ const FILTER_PRESETS: FilterPreset[] = [
       value: 300,
     },
   },
-  {
-    key: "authorIsNarrator",
-    node: {
-      type: "condition",
-      field: "creators",
-      qualifier: "aut",
-      operator: "intersects",
-      value: { ref: { qualifier: "nrt" } },
-    },
-  },
+  // not ready
+  // {
+  //   key: "authorIsNarrator",
+  //   node: {
+  //     type: "condition",
+  //     field: "creators",
+  //     qualifier: "aut",
+  //     operator: "intersects",
+  //     value: { ref: { qualifier: "nrt" } },
+  //   },
+  // },
 ]
 
 type ShelfFilterEditorProps = {
@@ -184,10 +193,18 @@ type ShelfFilterEditorProps = {
   onChange: (filter: ShelfFilterNode | null) => void
 }
 
+export function hasUnknownFields(node: ShelfFilterNode | null): boolean {
+  if (!node) return false
+  if (node.type === "condition") return !isField(node.field)
+  if (node.type === "not") return hasUnknownFields(node.child)
+  return node.children.some((child) => hasUnknownFields(child))
+}
+
 export function isFilterValid(node: ShelfFilterNode | null): boolean {
   if (!node) return false
 
   if (node.type === "condition") {
+    if (!isField(node.field)) return false
     if (!operatorRequiresValue(node.operator)) return true
 
     const isMissingValue =
@@ -220,17 +237,6 @@ export function ShelfFilterEditor({
     }
   }, [root, filter, onChange])
 
-  const handleApplyPreset = (preset: FilterPreset) => {
-    const currentRoot = normalizeRootFilter(filter)
-
-    if (currentRoot.type === "and" || currentRoot.type === "or") {
-      onChange({
-        ...currentRoot,
-        children: [...currentRoot.children, structuredClone(preset.node)],
-      })
-    }
-  }
-
   return (
     <div>
       <FilterNodeEditor
@@ -241,54 +247,14 @@ export function ShelfFilterEditor({
         }}
         isRoot
       />
-
-      <div className="mt-1">
-        <FilterPresetsDropdown onApply={handleApplyPreset} />
-      </div>
     </div>
-  )
-}
-
-function FilterPresetsDropdown({
-  onApply,
-}: {
-  onApply: (preset: FilterPreset) => void
-}) {
-  const t = useTranslation("ShelfFilterEditor")
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 w-fit gap-1 text-xs"
-          >
-            {t.plain("presets")}
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="start">
-        {FILTER_PRESETS.map((preset) => (
-          <DropdownMenuItem
-            key={preset.key}
-            onClick={() => {
-              onApply(preset)
-            }}
-          >
-            {t.plain(`preset.${preset.key}` as "preset.highlyRated")}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
 
 function AddNodeDropdown({
   onAdd,
 }: {
-  onAdd: (node: ShelfFilterNode) => void
+  onAdd: (node: ShelfFilterNode | FilterPreset) => void
 }) {
   const t = useTranslation("ShelfFilterEditor")
   const c = useCommon()
@@ -297,34 +263,53 @@ function AddNodeDropdown({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="sm" className="h-7 w-fit gap-1 text-xs">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 min-w-fit gap-1 text-xs"
+          >
             <icon.Add className="size-3" />
             {c.plain("actions.add")}
           </Button>
         }
       />
       <DropdownMenuContent align="start">
-        <DropdownMenuItem
-          onClick={() => {
-            onAdd(createAndBlock())
-          }}
-        >
-          {t.plain("andGroup")}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            onAdd(createOrBlock())
-          }}
-        >
-          {t.plain("orGroup")}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            onAdd(createNotBlock())
-          }}
-        >
-          {t.plain("not")}
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onClick={() => {
+              onAdd(createAndBlock())
+            }}
+          >
+            {t.plain("andGroup")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              onAdd(createOrBlock())
+            }}
+          >
+            {t.plain("orGroup")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              onAdd(createNotBlock())
+            }}
+          >
+            {t.plain("not")}
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{t.plain("presets")}</DropdownMenuLabel>
+          {FILTER_PRESETS.map((preset) => (
+            <DropdownMenuItem
+              key={preset.key}
+              onClick={() => {
+                onAdd(preset)
+              }}
+            >
+              {t.plain(`preset.${preset.key}` as "preset.highlyRated")}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -334,14 +319,17 @@ export type FilterPreviewProps = {
   books: BookWithRelations[]
   isLoading: boolean
   isInvalid?: boolean
+  hasUnknownFields?: boolean
 }
 
 export function FilterPreview({
   books,
   isLoading,
   isInvalid,
+  hasUnknownFields,
 }: FilterPreviewProps) {
   const t = useTranslation("ShelfFilterEditor")
+  const tIssues = useTranslation("ShelfFilterIssues")
 
   if (isLoading) {
     return (
@@ -355,7 +343,9 @@ export function FilterPreview({
   if (isInvalid) {
     return (
       <div className="text-muted-foreground py-2 text-xs">
-        {t.plain("completeFilter")}
+        {hasUnknownFields
+          ? tIssues.plain("fixConditions")
+          : t.plain("completeFilter")}
       </div>
     )
   }
@@ -558,7 +548,19 @@ function LogicalBlockEditor({
     onChange({ ...block, children: newChildren })
   }
 
-  const handleAddNode = (node: ShelfFilterNode) => {
+  const handleAdd = (node: ShelfFilterNode | FilterPreset) => {
+    const currentRoot = normalizeRootFilter(block)
+
+    if ("key" in node) {
+      if (currentRoot.type === "and" || currentRoot.type === "or") {
+        onChange({
+          ...currentRoot,
+          children: [...currentRoot.children, structuredClone(node.node)],
+        })
+      }
+      return
+    }
+
     idsRef.current = [...idsRef.current, uuidv4()]
     onChange({ ...block, children: [...block.children, node] })
   }
@@ -575,8 +577,8 @@ function LogicalBlockEditor({
   }
 
   const items = [
-    { value: "and", label: "AND" },
-    { value: "or", label: "OR" },
+    { value: "and" as const, label: t.plain("and") },
+    { value: "or" as const, label: t.plain("or") },
   ]
 
   const showDragHandles = block.children.length > 1
@@ -591,7 +593,7 @@ function LogicalBlockEditor({
           }}
           items={items}
         >
-          <SelectTrigger className="h-6 w-16 text-xs font-medium">
+          <SelectTrigger className="h-6 w-fit text-xs font-medium">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -666,7 +668,7 @@ function LogicalBlockEditor({
           variant="ghost"
           size="sm"
           onClick={() => {
-            handleAddNode({
+            handleAdd({
               type: "condition",
               field: "title",
               operator: "contains",
@@ -674,9 +676,10 @@ function LogicalBlockEditor({
           }}
         >
           <icon.Plus className="size-3" />
-          Add condition
+          {t.plain("addCondition")}
+          {/* Add condition */}
         </Button>
-        <AddNodeDropdown onAdd={handleAddNode} />
+        <AddNodeDropdown onAdd={handleAdd} />
       </div>
     </div>
   )
@@ -753,6 +756,26 @@ function ConditionEditor({
 }) {
   const t = useTranslation("ShelfFilterEditor")
   const c = useCommon()
+
+  if (!isField(condition.field)) {
+    return (
+      <RetiredConditionRow
+        field={condition.field}
+        onReplace={(field) => {
+          onChange({
+            type: "condition",
+            field,
+            operator:
+              getFieldDef(field).defaultOperator ??
+              getOperatorsForField(field)[0] ??
+              "is",
+            value: undefined,
+          })
+        }}
+        onRemove={onRemove}
+      />
+    )
+  }
 
   const def = getFieldDef(condition.field)
   const qualifierKind = def.qualifier?.kind
@@ -979,6 +1002,49 @@ function ConditionEditor({
           {t.plain("pickValue")}
         </span>
       )}
+    </div>
+  )
+}
+
+function RetiredConditionRow({
+  field,
+  onReplace,
+  onRemove,
+}: {
+  field: string
+  onReplace: (field: Field) => void
+  onRemove: () => void
+}) {
+  const { t } = useFilterIssueText()
+  const replacement = isRetiredField(field)
+    ? RETIRED_FIELDS[field].replacedBy
+    : null
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 py-1">
+      <FieldChip
+        field={field}
+        className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs"
+      />
+      <span className="text-muted-foreground min-w-0 flex-1 text-xs">
+        {t(isRetiredField(field) ? "retiredFieldShort" : "unknownFieldShort")}
+      </span>
+      <div className="flex shrink-0 items-center gap-0.5">
+        {replacement && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              onReplace(replacement)
+            }}
+          >
+            {t("useReplacement", { new: replacement })}
+          </Button>
+        )}
+        <Button variant="ghost" size="icon-sm" onClick={onRemove}>
+          <icon.Trash className="size-3" />
+        </Button>
+      </div>
     </div>
   )
 }

@@ -26,6 +26,9 @@ export interface AlignmentSummary {
   grade: AlignmentGrade
   band: number
   score: number | null
+  confidence: number | null
+  sentenceCoverage: number | null
+  audioCoverage: number | null
   chapters: number
   missingSentences: number
   mutedChapters: number
@@ -76,6 +79,9 @@ export function summarizeReport(
     grade: summary.grade,
     band: summary.band,
     score: summary.score,
+    confidence: summary.confidence,
+    sentenceCoverage: summary.sentenceCoverage,
+    audioCoverage: summary.audioCoverage,
     chapters: summary.chapters,
     missingSentences: summary.sentencesTotal - summary.sentencesAligned,
     mutedChapters: summary.noAudio,
@@ -113,6 +119,9 @@ export async function createAlignmentReport(input: {
         report: JSON.stringify(input.report),
         grade: s.grade,
         score: s.score,
+        confidence: s.confidence,
+        sentenceCoverage: s.sentenceCoverage,
+        audioCoverage: s.audioCoverage,
         chapters: s.chapters,
         missingSentences: s.missingSentences,
         mutedChapters: s.mutedChapters,
@@ -176,6 +185,9 @@ export async function updateAlignmentOverrides(
       overrides: JSON.stringify(overrides),
       grade: s.grade,
       score: s.score,
+      confidence: s.confidence,
+      sentenceCoverage: s.sentenceCoverage,
+      audioCoverage: s.audioCoverage,
       chapters: s.chapters,
       missingSentences: s.missingSentences,
       mutedChapters: s.mutedChapters,

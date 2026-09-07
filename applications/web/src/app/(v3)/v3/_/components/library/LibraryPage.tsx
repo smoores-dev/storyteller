@@ -117,6 +117,7 @@ export function LibraryPage({
           icon: facet.icon,
           color: section.itemColor?.(facet.key) ?? facet.color,
           kind: facet.kind,
+          ...(facet.filterIssues ? { filterIssues: facet.filterIssues } : {}),
         },
       ]
     })

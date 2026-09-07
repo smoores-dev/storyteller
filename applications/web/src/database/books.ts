@@ -732,8 +732,9 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
           .select([
             "alignmentReport.grade",
             "alignmentReport.score",
-            "alignmentReport.missingSentences",
-            "alignmentReport.mutedChapters",
+            "alignmentReport.confidence",
+            "alignmentReport.sentenceCoverage",
+            "alignmentReport.audioCoverage",
             "alignmentReport.failedChapters",
             "alignmentReport.unalignedAudio",
           ])

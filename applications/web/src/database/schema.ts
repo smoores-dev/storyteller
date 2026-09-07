@@ -28,8 +28,10 @@ export interface Account {
 }
 
 export interface AlignmentReport {
+  audioCoverage: number | null
   bookUuid: import("@/uuid").UUID | null
   chapters: number | null
+  confidence: number | null
   createdAt: Generated<string>
   failedChapters: number | null
   grade: import("@/shelves").AlignmentGrade
@@ -45,6 +47,7 @@ export interface AlignmentReport {
     string | null
   >
   score: number | null
+  sentenceCoverage: number | null
   unalignedAudio: number | null
   uuid: Generated<import("@/uuid").UUID>
 }

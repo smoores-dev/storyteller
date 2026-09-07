@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation"
 import { type ReactNode, useCallback, useRef } from "react"
 
-import { Button } from "@v3/_/components/ui/button"
+import { Button, buttonVariants } from "@v3/_/components/ui/button"
 import { V3Link } from "@v3/_/components/v3-link"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { BookCard } from "@/app/(v3)/v3/_/components/books/Grid/BookCard"
 import { BookCardSkeleton } from "@/app/(v3)/v3/_/components/books/Grid/BookCardSkeleton"
+import { FilterIssuesBanner } from "@/app/(v3)/v3/_/components/shelves/filter-issues"
 import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-provider"
 import { useBookInSidePanel } from "@/app/(v3)/v3/_/hooks/use-open-book"
 import { type BookWithRelations } from "@/database/books"
@@ -32,6 +33,7 @@ type ShelfRowProps = {
 
 export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
   const t = useTranslation("HomePage")
+  const tIssues = useTranslation("ShelfFilterIssues")
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const { books, isLoading, seeAllHref, displayField } = useShelfBooks(shelf)
@@ -68,6 +70,29 @@ export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
   }
 
   const displayName = shelf.name ?? t(`kinds.${shelf.kind}.name`)
+
+  if (shelf.filterIssues.length > 0) {
+    return (
+      <div className={cn("flex flex-col gap-2 px-2", className)}>
+        <div className="flex items-center justify-between px-4">
+          <h2 className="font-heading text-lg font-medium">{displayName}</h2>
+          <div className="-mr-2 flex gap-1">{actions}</div>
+        </div>
+        <FilterIssuesBanner
+          issues={shelf.filterIssues}
+          className="mx-4"
+          action={
+            <V3Link
+              href={`/shelves/${shelf.shelfUuid}`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              {tIssues("editShelf")}
+            </V3Link>
+          }
+        />
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -170,7 +195,7 @@ function useShelfBooks(shelf: HomeSectionWithDetails): UseShelfBooksResult {
         shelfUuid: shelf.shelfUuid!,
         limit: SHELF_LIMIT,
       },
-      { skip: !isCustomShelf },
+      { skip: !isCustomShelf || shelf.filterIssues.length > 0 },
     )
 
   const { data: recentlyAdded, isLoading: isLoadingRecentlyAdded } =

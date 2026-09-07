@@ -89,10 +89,10 @@ const COMPACT_DISPLAY_FIELDS: ReadonlySet<DisplayField> = new Set([
   "fileSize",
   "publicationDate",
   "userRating",
-  "alignmentScore",
+  "alignmentConfidence",
   "alignmentGrade",
-  "alignmentMissingSentences",
-  "alignmentMutedChapters",
+  "alignmentSentenceCoverage",
+  "alignmentAudioCoverage",
 ])
 
 const MAX_COMPACT_PER_ROW = 3
@@ -158,16 +158,16 @@ function sortValue(
       return book.ebook?.fileSize ?? book.audiobook?.fileSize ?? null
     case "authors":
       return book.authors.map((a) => a.name).join(", ")
-    case "alignmentScore":
-      return book.alignmentSummary?.score ?? null
+    case "alignmentConfidence":
+      return book.alignmentSummary?.confidence ?? null
     case "alignmentGrade":
       return book.alignmentSummary?.grade
         ? GRADE_RANK[book.alignmentSummary.grade] ?? null
         : null
-    case "alignmentMissingSentences":
-      return book.alignmentSummary?.missingSentences ?? null
-    case "alignmentMutedChapters":
-      return book.alignmentSummary?.mutedChapters ?? null
+    case "alignmentSentenceCoverage":
+      return book.alignmentSummary?.sentenceCoverage ?? null
+    case "alignmentAudioCoverage":
+      return book.alignmentSummary?.audioCoverage ?? null
     case "alignedAt":
       return book.alignedAt
     case "lastRead":

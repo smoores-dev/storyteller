@@ -96,7 +96,7 @@ export function gradeForScore(
   if (!entry) {
     return { grade: "F", band: FAILING_BAND, score: 0 }
   }
-  return { grade: entry.grade, band, score }
+  return { grade: entry.grade, band: band + 1, score }
 }
 
 type TocEntry = { href?: string; title?: string; children?: TocEntry[] }
@@ -528,6 +528,8 @@ export function buildReportModel({
         confidenceWeight > 0
           ? round(weightedConfidence / confidenceWeight)
           : null,
+      sentenceCoverage: sentenceRatio,
+      audioCoverage: audioRatio,
       sentencesAligned,
       sentencesTotal,
       audioPlacedSeconds,

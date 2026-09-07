@@ -5,12 +5,15 @@ import {
   FIELD_REGISTRY,
   type Field,
   type FilterEntityType,
+  RETIRED_FIELDS,
   getFieldDef,
+  isRetiredField,
   resolveFieldAlias,
 } from "@/fields"
 import {
   type ShelfFilter,
   type ShelfFilterCondition,
+  ShelfFilterInvalidError,
   type ShelfFilterNode,
   type ShelfFilterValue,
   isFieldRefValue,
@@ -50,15 +53,26 @@ export function normalizeCondition(
   let value = condition.value
   let qualifier = condition.qualifier ?? legacy.role ?? legacy.dimension
 
-  if (field === "rating") field = "userRating"
-  if (field === "ratingDimension") field = "userRating"
-  if (field === "identifierName" || field === "identifierValue") {
-    field = "identifiers"
-    if (operator !== "isEmpty") operator = "isNotEmpty"
-    value = undefined
+  switch (field) {
+    case "rating":
+    case "ratingDimension": {
+      field = "userRating"
+      break
+    }
+    case "identifierName":
+    case "identifierValue": {
+      field = "identifiers"
+      if (operator !== "isEmpty") {
+        operator = "isNotEmpty"
+      }
+      value = undefined
+      break
+    }
   }
 
-  if (!(field in FIELD_REGISTRY)) return null
+  if (!(field in FIELD_REGISTRY)) {
+    return null
+  }
 
   const resolved = resolveFieldAlias(field as Field)
   qualifier = resolved.qualifier ?? qualifier
@@ -96,8 +110,12 @@ export function extractEntityReferences(filter: ShelfFilter): Array<{
         })
       }
 
-      if (!def.entity) return
-      if (normalized.value === undefined || normalized.value === null) return
+      if (!def.entity) {
+        return
+      }
+      if (normalized.value === undefined || normalized.value === null) {
+        return
+      }
 
       const values = Array.isArray(normalized.value)
         ? normalized.value
@@ -304,7 +322,7 @@ function buildConditionExpression(
   userId?: UUID,
 ): FilterExpression {
   const normalized = normalizeCondition(condition)
-  if (!normalized) return eb.lit(true)
+  if (!normalized) throw unknownFieldError(condition.field)
 
   const impl = FIELD_SQL[normalized.field as keyof typeof FIELD_SQL]
   const ctx: FieldSqlCtx = {
@@ -358,11 +376,15 @@ function refOperand(
   operand: unknown,
   userId?: UUID,
 ): RawBuilder<number> | null {
-  if (typeof operand === "number") return sql<number>`${operand}`
-  if (!isFieldRefValue(operand)) return null
+  if (typeof operand === "number") {
+    return sql<number>`${operand}`
+  }
+  if (!isFieldRefValue(operand)) {
+    return null
+  }
 
   const targetName = operand.ref.field ?? baseField
-  if (!(targetName in FIELD_REGISTRY)) return null
+  if (!(targetName in FIELD_REGISTRY)) throw unknownFieldError(targetName)
 
   const resolved = resolveFieldAlias(targetName as Field)
   const impl = FIELD_SQL[resolved.field as keyof typeof FIELD_SQL]
@@ -442,12 +464,12 @@ export function buildSortExpression(
         : sql`(select updated_at from position where book_uuid = book.uuid limit 1)`
     case "language":
       return sql`book.language collate nocase`
-    case "alignmentScore":
-      return latestReportColumn("score")
-    case "alignmentMissingSentences":
-      return latestReportColumn("missing_sentences")
-    case "alignmentMutedChapters":
-      return latestReportColumn("muted_chapters")
+    case "alignmentConfidence":
+      return latestReportColumn("confidence")
+    case "alignmentSentenceCoverage":
+      return latestReportColumn("sentence_coverage")
+    case "alignmentAudioCoverage":
+      return latestReportColumn("audio_coverage")
     case "alignmentGrade":
       return sql`case ${latestReportColumn("grade")} ${sql.join(
         ALIGNMENT_GRADES.map(
@@ -474,4 +496,16 @@ export function buildSortExpression(
       return sql.lit(true)
     }
   }
+}
+
+function unknownFieldError(field: string) {
+  return new ShelfFilterInvalidError([
+    isRetiredField(field)
+      ? {
+          kind: "retiredField",
+          field,
+          replacedBy: RETIRED_FIELDS[field].replacedBy,
+        }
+      : { kind: "unknownField", field },
+  ])
 }

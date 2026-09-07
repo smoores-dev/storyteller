@@ -264,7 +264,8 @@ export function SpineList({
                   ROW_FILL,
                   isOpen && "bg-muted",
                   isChecked && "bg-primary/10",
-                  item.judgment === "excluded" && "text-muted-foreground",
+                  item.judgment === "excluded" &&
+                    "text-muted-foreground bg-muted",
                 )}
               >
                 <Checkbox

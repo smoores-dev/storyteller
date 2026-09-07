@@ -88,15 +88,33 @@ void describe("gradeForScore", () => {
   void it("maps every band edge to its grade", () => {
     for (const [band, entry] of GRADE_BANDS.entries()) {
       const at = Number.isFinite(entry.min) ? entry.min : 0
-      assert.deepStrictEqual(gradeForScore(at), { grade: entry.grade, band })
+      assert.deepStrictEqual(gradeForScore(at, at), {
+        grade: entry.grade,
+        band,
+        score: at,
+      })
     }
-    assert.deepStrictEqual(gradeForScore(94.9), { grade: "A", band: 1 })
+    assert.deepStrictEqual(gradeForScore(94.9, 94.9), {
+      grade: "A-",
+      band: 2,
+      score: 94.9,
+    })
+  })
+
+  void it("only awards S when both sentences and audio are near perfect", () => {
+    assert.deepStrictEqual(gradeForScore(100, 90), {
+      grade: "A",
+      band: 1,
+      score: 97,
+    })
+    assert.strictEqual(gradeForScore(98, 98).grade, "S")
   })
 
   void it("fails a report with no score at all", () => {
-    assert.deepStrictEqual(gradeForScore(null), {
+    assert.deepStrictEqual(gradeForScore(null, null), {
       grade: "F",
       band: GRADE_BANDS.length - 1,
+      score: 0,
     })
   })
 })
@@ -123,10 +141,10 @@ void describe("the score", () => {
     assert.strictEqual(summary.audioPlacedSeconds, 500)
     assert.strictEqual(summary.audioTotalSeconds, 1000)
     assert.strictEqual(summary.score, 0.8 * 70 + 0.5 * 30)
-    assert.strictEqual(summary.grade, "C")
+    assert.strictEqual(summary.grade, "F")
   })
 
-  void it("falls back to sentences alone when no audio is known", () => {
+  void it("fails when no audio is known", () => {
     const { summary } = buildReportModel({
       report: makeReport({
         chapters: [
@@ -142,7 +160,10 @@ void describe("the score", () => {
       }),
     })
     assert.strictEqual(summary.audioTotalSeconds, 0)
-    assert.strictEqual(summary.score, 90)
+    assert.strictEqual(summary.sentenceCoverage, 90)
+    assert.strictEqual(summary.audioCoverage, null)
+    assert.strictEqual(summary.score, 0)
+    assert.strictEqual(summary.grade, "F")
     assert.strictEqual(summary.noAudio, 1)
   })
 
@@ -585,6 +606,9 @@ void describe("summarizeReport", () => {
     assert.strictEqual(summary.mutedChapters, 1)
     assert.strictEqual(summary.failedChapters, 2)
     assert.strictEqual(summary.unalignedAudio, 1)
-    assert.strictEqual(summary.grade, gradeForScore(summary.score).grade)
+    assert.strictEqual(
+      summary.grade,
+      gradeForScore(summary.sentenceCoverage, summary.audioCoverage).grade,
+    )
   })
 })

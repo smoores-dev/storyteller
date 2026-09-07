@@ -136,14 +136,19 @@ void describe("updateAlignmentOverrides", () => {
     })
 
     assert.strictEqual(created.grade, "F")
-    assert.strictEqual(created.score, 58)
+    assert.strictEqual(created.score, 65)
+    assert.strictEqual(created.confidence, 58)
+    assert.strictEqual(created.sentenceCoverage, 50)
+    assert.strictEqual(created.audioCoverage, 100)
 
     const updated = await updateAlignmentOverrides(created.uuid, {
       chapters: { "ch2.xhtml": { ignored: true } },
     })
 
-    assert.strictEqual(updated.grade, "A")
-    assert.strictEqual(updated.score, 96)
+    assert.strictEqual(updated.grade, "S")
+    assert.strictEqual(updated.score, 100)
+    assert.strictEqual(updated.confidence, 96)
+    assert.strictEqual(updated.sentenceCoverage, 100)
     assert.strictEqual(updated.mutedChapters, 0)
     assert.strictEqual(updated.failedChapters, 0)
   })

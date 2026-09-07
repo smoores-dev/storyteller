@@ -1135,7 +1135,7 @@ function BookRow({
             const field = cell.column.id as DisplayField
             const isClickable =
               !!onColumnClick &&
-              (field === "alignmentGrade" || field === "alignmentScore") &&
+              (field === "alignmentGrade" || field === "alignmentConfidence") &&
               book.alignmentSummary?.grade != null
 
             return (

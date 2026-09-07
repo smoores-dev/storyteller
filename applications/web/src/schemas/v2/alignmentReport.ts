@@ -107,6 +107,12 @@ export const AlignmentReportSummarySchemaV2 = z.object({
   confidence: z.number().nullable().meta({
     description: "0-100 aligner confidence, weighted by sentence count.",
   }),
+  sentenceCoverage: z.number().nullable().meta({
+    description: "0-100 percent of counted sentences that were aligned.",
+  }),
+  audioCoverage: z.number().nullable().meta({
+    description: "0-100 percent of counted audio that was placed.",
+  }),
   sentencesAligned: z.number(),
   sentencesTotal: z.number(),
   audioPlacedSeconds: z.number(),

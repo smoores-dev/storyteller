@@ -24,7 +24,6 @@ import {
   percentTone,
 } from "./shared"
 import { type OverrideEditor } from "./useOverrideEditor"
-import { ICON_REGISTRY } from "@/icons/icon-registry"
 
 export function ChapterDetail({
   bookUuid,
@@ -138,12 +137,7 @@ export function ChapterDetail({
       </div>
 
       {item.kind === "chapter" ? (
-        <ChapterBody
-          bookUuid={bookUuid}
-          item={item}
-          editor={editor}
-          narrow={narrow}
-        />
+        <ChapterBody bookUuid={bookUuid} item={item} editor={editor} />
       ) : (
         <UnalignedBody item={item} />
       )}
@@ -155,48 +149,64 @@ function ChapterBody({
   bookUuid,
   item,
   editor,
-  narrow,
 }: {
   bookUuid: UUID
   item: ReportChapterItem
   editor: OverrideEditor
-  narrow: boolean
 }) {
   const t = useTranslation("AlignmentReport")
-  const missing = Math.max(
-    item.chapterSentenceCount - item.alignedSentenceCount,
-    0,
-  )
-  const perSentence =
-    item.chapterSentenceCount > 0
-      ? item.audioSeconds / item.chapterSentenceCount
-      : null
   const allAudioExcluded =
     item.audio.length > 0 && item.audio.every((audio) => audio.excluded)
 
   const sentencePercent =
-    (item.alignedSentenceCount / item.chapterSentenceCount) * 100
+    item.judgment === "approved"
+      ? 100
+      : (item.alignedSentenceCount / item.chapterSentenceCount) * 100
+
+  const confidence = item.judgment === "approved" ? 100 : item.confidence
   const stats = [
     {
       key: "confidence",
-      value: item.confidence.toFixed(0),
-      tone: confidenceTone(item.confidence),
+      value: (
+        <span>
+          {item.judgment === "approved" ? (
+            <span>
+              {" "}
+              <s>{item.confidence.toFixed(0)}</s> {confidence.toFixed(0)}{" "}
+            </span>
+          ) : (
+            confidence.toFixed(0)
+          )}{" "}
+        </span>
+      ),
+      tone: confidenceTone(confidence),
       // label: t("detail.confidence"),
       icon: (
         <icon.FieldIcon
-          field="alignmentScore"
-          className={TONE_TEXT[confidenceTone(item.confidence)]}
+          field="alignmentConfidence"
+          className={TONE_TEXT[confidenceTone(confidence)]}
         />
       ),
     },
     {
       key: "sentences",
-      value: `${item.alignedSentenceCount} / ${item.chapterSentenceCount}`,
+      value: (
+        <span>
+          {item.alignedSentenceCount} /{" "}
+          {item.judgment === "approved" ? (
+            <span>
+              <s>{item.chapterSentenceCount} </s> {item.alignedSentenceCount}
+            </span>
+          ) : (
+            item.chapterSentenceCount
+          )}
+        </span>
+      ),
       tone: percentTone(sentencePercent),
       // label: t("detail.missing", { count: missing }),
       icon: (
         <icon.FieldIcon
-          field="alignmentMissingSentences"
+          field="alignmentSentenceCoverage"
           className={TONE_TEXT[percentTone(sentencePercent)]}
         />
       ),
@@ -206,7 +216,7 @@ function ChapterBody({
       value: formatClock(item.audioSeconds),
       tone: item.audio.length === 0 ? ("poor" as const) : ("muted" as const),
       // label: t("detail.files", { count: item.audio.length }),
-      icon: <icon.FieldIcon field="alignmentMutedChapters" />,
+      icon: <icon.FieldIcon field="alignmentAudioCoverage" />,
     },
     // {
     //   key: "perSentence",
@@ -218,7 +228,7 @@ function ChapterBody({
 
   return (
     <>
-      <div className={cn("grid gap-3", narrow ? "grid-cols-2" : "grid-cols-4")}>
+      <div className={cn("grid gap-3", "grid-cols-3")}>
         {stats.map((stat) => (
           <div key={stat.key} className="flex items-center gap-1">
             {stat.icon}

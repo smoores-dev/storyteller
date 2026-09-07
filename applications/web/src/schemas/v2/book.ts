@@ -246,8 +246,9 @@ export const BookSchemaV2 = z.object({
     z.object({
       grade: z.enum(ALIGNMENT_GRADES),
       score: z.nullish(z.number()),
-      missingSentences: z.nullish(z.number()),
-      mutedChapters: z.nullish(z.number()),
+      confidence: z.nullish(z.number()),
+      sentenceCoverage: z.nullish(z.number()),
+      audioCoverage: z.nullish(z.number()),
       failedChapters: z.nullish(z.number()),
       unalignedAudio: z.nullish(z.number()),
     }),

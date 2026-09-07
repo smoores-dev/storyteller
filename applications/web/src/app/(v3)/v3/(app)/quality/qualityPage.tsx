@@ -12,8 +12,8 @@ import { type DisplayField } from "@/sort"
 
 const ALIGNMENT_DISPLAY_FIELDS: DisplayField[] = [
   "alignmentGrade",
-  "alignmentScore",
-  "alignmentMissingSentences",
+  "alignmentConfidence",
+  "alignmentSentenceCoverage",
   "alignedAt",
 ]
 const FORCE_DISPLAY_MODE: ForceDisplayMode = {

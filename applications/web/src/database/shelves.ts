@@ -6,7 +6,15 @@ import {
 } from "kysely"
 import { jsonArrayFrom } from "kysely/helpers/sqlite"
 
-import type { HomeSectionKind, ShelfFilter, ShelfOrderBy } from "@/shelves"
+import {
+  type HomeSectionKind,
+  SHELF_ORDER_BY_FIELDS,
+  type ShelfFilter,
+  ShelfFilterInvalidError,
+  type ShelfFilterIssue,
+  type ShelfOrderBy,
+  collectFilterIssues,
+} from "@/shelves"
 import { type SortField } from "@/sort"
 import { type UUID } from "@/uuid"
 
@@ -34,14 +42,24 @@ export type HomeSectionWithDetails = Awaited<
   ReturnType<typeof getHomeSections>
 >[number]
 
-function parseFilter(filter: string | ShelfFilter | null): ShelfFilter | null {
-  if (!filter) return null
-  if (typeof filter === "object") return filter
+function readFilter(filter: string | ShelfFilter | null): {
+  filter: ShelfFilter | null
+  filterIssues: ShelfFilterIssue[]
+} {
+  if (!filter) return { filter: null, filterIssues: [] }
 
-  try {
-    return JSON.parse(filter) as ShelfFilter
-  } catch {
-    return null
+  let parsed: unknown = filter
+  if (typeof filter === "string") {
+    try {
+      parsed = JSON.parse(filter)
+    } catch {
+      return { filter: null, filterIssues: [{ kind: "unparseable" }] }
+    }
+  }
+
+  return {
+    filter: parsed as ShelfFilter,
+    filterIssues: collectFilterIssues(parsed),
   }
 }
 
@@ -70,10 +88,7 @@ export async function getShelf(uuid: UUID, userId: UUID, tr?: Transaction<DB>) {
     ])
     .executeTakeFirstOrThrow()
 
-  return {
-    ...shelf,
-    filter: shelf.filter ? parseFilter(shelf.filter) : null,
-  }
+  return { ...shelf, ...readFilter(shelf.filter) }
 }
 
 export async function getShelves(userId: UUID) {
@@ -92,10 +107,7 @@ export async function getShelves(userId: UUID) {
     .where("shelf.userId", "=", userId)
     .execute()
 
-  return shelves.map((shelf) => ({
-    ...shelf,
-    filter: shelf.filter ? parseFilter(shelf.filter) : null,
-  }))
+  return shelves.map((shelf) => ({ ...shelf, ...readFilter(shelf.filter) }))
 }
 
 export async function createShelf(
@@ -302,7 +314,7 @@ export async function getHomeSections(userId: UUID) {
     updatedAt: hs.updatedAt,
     name: hs.shelfName,
     description: hs.shelfDescription,
-    filter: hs.shelfFilter ? parseFilter(hs.shelfFilter) : null,
+    ...readFilter(hs.shelfFilter),
   }))
 }
 
@@ -417,6 +429,9 @@ export async function getShelfBooks(
   opts?: GetShelfBooksOptions,
 ): Promise<BookWithRelations[]> {
   const shelf = await getShelf(shelfUuid, userId)
+  if (shelf.filterIssues.length > 0) {
+    throw new ShelfFilterInvalidError(shelf.filterIssues)
+  }
   const filter = shelf.filter
 
   const manualBookUuids = shelf.books.map((b) => b.bookUuid)
@@ -445,6 +460,8 @@ export async function getShelfBooks(
 
   if (opts?.filter) {
     const adHoc = opts.filter
+    const adHocIssues = collectFilterIssues(adHoc)
+    if (adHocIssues.length > 0) throw new ShelfFilterInvalidError(adHocIssues)
     query = query.where((eb) => buildFilterExpression(eb, adHoc, userId))
   }
   if (opts?.search) {
@@ -483,9 +500,13 @@ export async function getShelfBooks(
     return await query.execute()
   }
 
-  const rawOrderBy = opts?.orderBy ?? shelfOrderBy ?? "createdAt"
-  const orderBy: ShelfOrderBy =
-    (rawOrderBy as string) === "rating" ? "userRating" : rawOrderBy
+  const rawOrderBy: string = opts?.orderBy ?? shelfOrderBy ?? "createdAt"
+  const remappedOrderBy = rawOrderBy === "rating" ? "userRating" : rawOrderBy
+  const orderBy: ShelfOrderBy = (
+    SHELF_ORDER_BY_FIELDS as readonly string[]
+  ).includes(remappedOrderBy)
+    ? (remappedOrderBy as ShelfOrderBy)
+    : "createdAt"
 
   if (orderBy === "position") {
     if (hasManualBooks) {

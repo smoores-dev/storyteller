@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { z } from "zod"
 
+import { validateFilter } from "@/app/api/v2/shelves/validateFilter"
 import { withHasPermission } from "@/auth/auth"
 import {
   type ShelfUpdate,
@@ -8,11 +8,7 @@ import {
   getShelf,
   updateShelf,
 } from "@/database/shelves"
-import {
-  type ShelfFilter,
-  type ShelfOrderBy,
-  shelfFilterSchema,
-} from "@/shelves"
+import { type ShelfFilter, type ShelfOrderBy } from "@/shelves"
 import { type UUID } from "@/uuid"
 
 export const dynamic = "force-dynamic"
@@ -51,14 +47,9 @@ export const PUT = withHasPermission<Params>("bookList")(async (
 
   let filter: ShelfFilter | null = null
   if (body.filter) {
-    const validated = shelfFilterSchema.safeParse(body.filter)
-    if (!validated.success) {
-      return NextResponse.json(
-        { message: `Invalid filter: ${z.prettifyError(validated.error)}` },
-        { status: 400 },
-      )
-    }
-    filter = validated.data
+    const validated = validateFilter(body.filter)
+    if (!validated.ok) return validated.response
+    filter = validated.filter
   }
 
   const shelf = await updateShelf(

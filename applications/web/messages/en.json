@@ -485,6 +485,11 @@
     "condition": "Condition",
     "andGroup": "AND group",
     "orGroup": "OR group",
+
+    "addCondition": "Add condition",
+    "add": "Add",
+    "and": "AND",
+    "or": "OR",
     "not": "NOT",
     "allMatch": "all match",
     "anyMatch": "any match",
@@ -578,6 +583,20 @@
       "gb": "GB"
     },
     "selectValues": "Search values..."
+  },
+  "ShelfFilterIssues": {
+    "retiredField": "<field>{old}</field> is no longer available. Use <field>{new}</field> instead.",
+    "retiredFieldNoReplacement": "<field>{old}</field> is no longer available.",
+    "unknownField": "{field} is not a field this version of Storyteller knows.",
+    "invalidCondition": "The condition on <field>{field}</field> is no longer valid: {message}",
+    "unparseable": "The stored filter could not be read.",
+    "retiredFieldShort": "is no longer available.",
+    "unknownFieldShort": "is not a field this version of Storyteller knows.",
+    "shelfBroken": "This shelf's filter needs an update",
+    "openToFix": "Open the shelf to fix it.",
+    "editShelf": "Edit shelf",
+    "useReplacement": "Use <field>{new}</field>",
+    "fixConditions": "Fix the highlighted conditions to see a preview"
   },
   "ShelfEditor": {
     "editTitle": "Edit Shelf",
@@ -1719,15 +1738,13 @@
         "duration": "Duration",
         "fileSize": "File Size",
         "language": "Language",
-        "alignmentScore": "Alignment Score",
+        "alignmentConfidence": "Alignment Confidence",
         "alignmentGrade": "Alignment Grade",
-        "alignmentMissingSentences": "Missing Sentences",
-        "alignmentMutedChapters": "Muted Chapters",
-        "alignmentMissingChapters": "Missing Chapters",
-        "alignmentUnalignedFiles": "Unaligned Audio Files",
+        "alignmentSentenceCoverage": "Sentence Coverage (%)",
+        "alignmentAudioCoverage": "Audio Coverage (%)",
         "alignedAt": "Date Aligned",
-        "alignedWith": "Alignment engine",
-        "alignedByStorytellerVersion": "Aligner version",
+        "alignedWith": "Alignment Engine",
+        "alignedByStorytellerVersion": "Aligner Version",
         "lastRead": "Last Read",
         "readingPosition": "Reading Progress",
         "seriesPosition": "Series Position",
@@ -1780,12 +1797,10 @@
         "duration": "Dur.",
         "fileSize": "Size",
         "language": "Lang.",
-        "alignmentScore": "Score",
+        "alignmentConfidence": "Confidence",
         "alignmentGrade": "Grade",
-        "alignmentMissingSentences": "Missing",
-        "alignmentMutedChapters": "Muted",
-        "alignmentMissingChapters": "Missing Ch.",
-        "alignmentUnalignedFiles": "Unaligned",
+        "alignmentSentenceCoverage": "Sentences",
+        "alignmentAudioCoverage": "Audio",
         "alignedAt": "Aligned",
         "lastRead": "Read",
         "readingPosition": "Progress",
@@ -1795,6 +1810,11 @@
         "creators": "Creators",
         "alignedWith": "Engine",
         "alignedByStorytellerVersion": "Version"
+      },
+      "retired": {
+        "alignmentScore": "Alignment Score",
+        "alignmentMissingSentences": "Missing Sentences",
+        "alignmentMutedChapters": "Muted Chapters"
       }
     },
     "empty": {

@@ -529,6 +529,20 @@
     },
     "selectValues": "Zoek waarden..."
   },
+  "ShelfFilterIssues": {
+    "retiredField": "<field>{old}</field> bestaat niet meer. Gebruik in plaats daarvan <field>{new}</field>.",
+    "retiredFieldNoReplacement": "<field>{old}</field> bestaat niet meer.",
+    "unknownField": "{field} is geen veld dat deze versie van Storyteller kent.",
+    "invalidCondition": "De voorwaarde op <field>{field}</field> is niet meer geldig: {message}",
+    "unparseable": "Het opgeslagen filter kon niet worden gelezen.",
+    "retiredFieldShort": "bestaat niet meer.",
+    "unknownFieldShort": "is geen veld dat deze versie van Storyteller kent.",
+    "shelfBroken": "Het filter van deze plank moet worden bijgewerkt",
+    "openToFix": "Open de plank om het op te lossen.",
+    "editShelf": "Plank bewerken",
+    "useReplacement": "Gebruik <field>{new}</field>",
+    "fixConditions": "Los de gemarkeerde voorwaarden op om een voorbeeld te zien"
+  },
   "ShelfEditor": {
     "editTitle": "Plank bewerken",
     "createTitle": "Plank aanmaken",
@@ -1863,11 +1877,10 @@
         "duration": "Duur",
         "fileSize": "Grootte",
         "language": "Taal",
-        "alignmentScore": "Synchronisatiescore",
+        "alignmentConfidence": "Synchronisatiezekerheid",
         "alignmentGrade": "Synchronisatiecijfer",
-        "alignmentMissingSentences": "Ontbrekende zinnen",
-        "alignmentMutedChapters": "Gedempte hoofdstukken",
-        "alignmentMissingChapters": "Ontbrekende hoofdstukken",
+        "alignmentSentenceCoverage": "Zinnen gesynchroniseerd",
+        "alignmentAudioCoverage": "Audio gesynchroniseerd",
         "alignedAt": "Laatst gesynchroniseerd",
         "alignedWith": "Synchronisatie-engine",
         "alignedByStorytellerVersion": "Synchronisatie-versie",
@@ -1900,11 +1913,10 @@
         "duration": "Duur",
         "fileSize": "Grootte",
         "language": "Taal",
-        "alignmentScore": "Score",
+        "alignmentConfidence": "Zekerheid",
         "alignmentGrade": "Cijfer",
-        "alignmentMissingSentences": "Ontbrekend",
-        "alignmentMutedChapters": "Gedempt",
-        "alignmentMissingChapters": "Ontbrk. hfdst.",
+        "alignmentSentenceCoverage": "Zinnen",
+        "alignmentAudioCoverage": "Audio",
         "alignedAt": "Gesynchroniseerd",
         "lastRead": "Laatst gelezen",
         "readingPosition": "Voortgang",
@@ -1914,6 +1926,11 @@
         "creators": "Makers",
         "alignedWith": "Engine",
         "alignedByStorytellerVersion": "Versie"
+      },
+      "retired": {
+        "alignmentScore": "Synchronisatiescore",
+        "alignmentMissingSentences": "Ontbrekende zinnen",
+        "alignmentMutedChapters": "Gedempte hoofdstukken"
       },
       "options": {
         "format": {

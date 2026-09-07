@@ -207,9 +207,9 @@ export function SecondaryText({
     case "translators":
     case "creators":
       return null
-    case "alignmentScore":
-      return book.alignmentSummary?.score != null ? (
-        <span>{Math.round(book.alignmentSummary.score)}%</span>
+    case "alignmentConfidence":
+      return book.alignmentSummary?.confidence != null ? (
+        <span>{Math.round(book.alignmentSummary.confidence)}%</span>
       ) : (
         none
       )
@@ -219,15 +219,15 @@ export function SecondaryText({
       ) : (
         none
       )
-    case "alignmentMissingSentences":
-      return book.alignmentSummary?.missingSentences != null ? (
-        <span>{book.alignmentSummary.missingSentences}</span>
+    case "alignmentSentenceCoverage":
+      return book.alignmentSummary?.sentenceCoverage != null ? (
+        <span>{Math.round(book.alignmentSummary.sentenceCoverage)}%</span>
       ) : (
         none
       )
-    case "alignmentMutedChapters":
-      return book.alignmentSummary?.mutedChapters != null ? (
-        <span>{book.alignmentSummary.mutedChapters}</span>
+    case "alignmentAudioCoverage":
+      return book.alignmentSummary?.audioCoverage != null ? (
+        <span>{Math.round(book.alignmentSummary.audioCoverage)}%</span>
       ) : (
         none
       )
