@@ -34,6 +34,12 @@ export function PlayerDock({ className }: { className?: string } = {}) {
   const dockRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    return () => {
+      stop()
+    }
+  }, [])
+
+  useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey) return
       const target = event.target as HTMLElement | null
