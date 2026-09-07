@@ -60,8 +60,13 @@ export function summarizeReport(
     unalignedAudioFiles?: UnalignedAudioFileReport[]
   },
   overrides?: AlignmentOverrides | null,
+  audiobookDuration?: number | null,
 ): AlignmentSummary {
-  const { summary, items } = buildReportModel({ report, overrides })
+  const { summary, items } = buildReportModel({
+    report,
+    overrides,
+    audiobookDuration,
+  })
 
   let failedChapters = 0
   for (const item of items) {
@@ -103,12 +108,28 @@ export type AlignmentReport = Omit<
   report: AnyReport | null
 }
 
+export async function getAudiobookDuration(
+  bookUuid: UUID | null,
+): Promise<number | null> {
+  if (!bookUuid) return null
+  const row = await db
+    .selectFrom("audiobook")
+    .select("duration")
+    .where("bookUuid", "=", bookUuid)
+    .executeTakeFirst()
+  return row?.duration ?? null
+}
+
 export async function createAlignmentReport(input: {
   jobUuid: UUID | null
   bookUuid: UUID | null
   report: AnyReport
 }): Promise<AlignmentReport> {
-  const s = summarizeReport(input.report)
+  const s = summarizeReport(
+    input.report,
+    null,
+    await getAudiobookDuration(input.bookUuid),
+  )
 
   const row = await db.transaction().execute(async (tr) => {
     const inserted = await tr
@@ -177,7 +198,11 @@ export async function updateAlignmentOverrides(
     )
   }
 
-  const s = summarizeReport(existing.report, overrides)
+  const s = summarizeReport(
+    existing.report,
+    overrides,
+    await getAudiobookDuration(existing.bookUuid),
+  )
 
   const row = await db
     .updateTable("alignmentReport")

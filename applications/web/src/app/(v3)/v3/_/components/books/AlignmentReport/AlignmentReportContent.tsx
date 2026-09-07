@@ -99,9 +99,7 @@ function ReportHeader({
           </Button>
         )}
         {embedded ? (
-          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            {t("title")}
-          </span>
+          <span className="text-xs font-medium">{t("title")}</span>
         ) : (
           <h1
             className={cn(

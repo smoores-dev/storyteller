@@ -94,6 +94,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     createdAt: report.createdAt,
     overrides,
     ebookManifest: (book.ebook?.manifest as ManifestLike | null) ?? null,
+    audiobookDuration: book.audiobook?.duration ?? null,
   })
 
   return Response.json(view)

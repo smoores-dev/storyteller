@@ -280,10 +280,12 @@ export function buildReportModel({
   report,
   overrides,
   ebookManifest,
+  audiobookDuration,
 }: {
   report: ReportLike
   overrides?: AlignmentOverrides | null
   ebookManifest?: ManifestLike | null
+  audiobookDuration?: number | null
 }): {
   summary: AlignmentReportSummary
   items: ReportSpineItem[]
@@ -514,6 +516,18 @@ export function buildReportModel({
     }
   }
 
+  if (typeof audiobookDuration === "number" && audiobookDuration > 0) {
+    const excludedSeconds = audioFiles.reduce(
+      (sum, file) => sum + (file.excluded ? file.duration : 0),
+      0,
+    )
+    audioTotalSeconds = Math.max(
+      audiobookDuration - excludedSeconds,
+      audioPlacedSeconds,
+    )
+    looseSeconds = audioTotalSeconds - audioPlacedSeconds
+  }
+
   const sentenceRatio =
     sentencesTotal > 0 ? round((sentencesAligned / sentencesTotal) * 100) : null
   const audioRatio =
@@ -558,6 +572,7 @@ export function buildReportView(args: {
   createdAt: string
   overrides?: AlignmentOverrides | null
   ebookManifest: ManifestLike | null
+  audiobookDuration?: number | null
 }): BookAlignmentReportView {
   return {
     bookUuid: args.bookUuid,

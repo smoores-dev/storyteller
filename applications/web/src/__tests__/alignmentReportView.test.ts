@@ -144,6 +144,36 @@ void describe("the score", () => {
     assert.strictEqual(summary.grade, "F")
   })
 
+  void it("measures audio against the audiobook duration when known", () => {
+    const { summary } = buildReportModel({ report, audiobookDuration: 2000 })
+    assert.strictEqual(summary.audioPlacedSeconds, 500)
+    assert.strictEqual(summary.audioTotalSeconds, 2000)
+    assert.strictEqual(summary.audioCoverage, 25)
+    assert.strictEqual(summary.looseSeconds, 1500)
+  })
+
+  void it("takes excluded files out of the audiobook duration", () => {
+    const { summary } = buildReportModel({
+      report: makeReport({
+        chapters: [
+          chapter({
+            href: "a.xhtml",
+            spineIndex: 1,
+            score: 90,
+            chapterSentenceCount: 100,
+            audioFiles: [{ filepath: "/audio/1.mp3", start: 0, end: 600 }],
+          }),
+        ],
+        audioFiles: [audioFile("/audio/1.mp3", 600, 600)],
+        unalignedAudioFiles: [{ filepath: "/audio/2.mp3", duration: 400 }],
+      }),
+      overrides: { audioFiles: { "2.mp3": { excluded: true } } },
+      audiobookDuration: 1000,
+    })
+    assert.strictEqual(summary.audioTotalSeconds, 600)
+    assert.strictEqual(summary.audioCoverage, 100)
+  })
+
   void it("fails when no audio is known", () => {
     const { summary } = buildReportModel({
       report: makeReport({

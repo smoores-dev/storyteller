@@ -1960,7 +1960,7 @@
     "importBooksDescription": "Pick EPUB or audio files on the server to import as new books."
   },
   "AlignmentReport": {
-    "title": "Alignment report",
+    "title": "Alignment report (experimental)",
     "loading": "Loading report…",
     "notAvailable": "No alignment report is available for this book.",
     "untitled": "Untitled",
