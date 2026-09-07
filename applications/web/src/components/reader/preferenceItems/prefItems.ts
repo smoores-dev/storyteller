@@ -36,36 +36,36 @@ export const darkReadingThemes = readingThemes.filter(
 )
 
 export const highlightColors = [
-  {
-    value: "yellow",
-    label: "Yellow",
-    icon: "🟡",
-    className: "bg-reader-highlight-yellow",
-  },
-  {
-    value: "red",
-    label: "Red",
-    icon: "🟥",
-    className: "bg-reader-highlight-red",
-  },
-  {
-    value: "green",
-    label: "Green",
-    icon: "🟢",
-    className: "bg-reader-highlight-green",
-  },
-  {
-    value: "blue",
-    label: "Blue",
-    icon: "🟦",
-    className: "bg-reader-highlight-blue",
-  },
-  {
-    value: "magenta",
-    label: "Magenta",
-    icon: "🟪",
-    className: "bg-reader-highlight-magenta",
-  },
+  // {
+  //   value: "yellow",
+  //   label: "Yellow",
+  //   icon: "🟡",
+  //   className: "bg-reader-highlight-yellow",
+  // },
+  // {
+  //   value: "red",
+  //   label: "Red",
+  //   icon: "🟥",
+  //   className: "bg-reader-highlight-red",
+  // },
+  // {
+  //   value: "green",
+  //   label: "Green",
+  //   icon: "🟢",
+  //   className: "bg-reader-highlight-green",
+  // },
+  // {
+  //   value: "blue",
+  //   label: "Blue",
+  //   icon: "🟦",
+  //   className: "bg-reader-highlight-blue",
+  // },
+  // {
+  //   value: "magenta",
+  //   label: "Magenta",
+  //   icon: "🟪",
+  //   className: "bg-reader-highlight-magenta",
+  // },
   {
     value: "custom",
     label: "Custom",

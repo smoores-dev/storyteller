@@ -33,31 +33,31 @@ export const highlightStyles = [
 }[]
 
 export const highlightColors = [
-  {
-    value: "yellow",
-    icon: "🟡",
-    className: "bg-reader-highlight-yellow",
-  },
-  {
-    value: "red",
-    icon: "🟥",
-    className: "bg-reader-highlight-red",
-  },
-  {
-    value: "green",
-    icon: "🟢",
-    className: "bg-reader-highlight-green",
-  },
-  {
-    value: "blue",
-    icon: "🟦",
-    className: "bg-reader-highlight-blue",
-  },
-  {
-    value: "magenta",
-    icon: "🟪",
-    className: "bg-reader-highlight-magenta",
-  },
+  // {
+  //   value: "yellow",
+  //   icon: "🟡",
+  //   className: "bg-reader-highlight-yellow",
+  // },
+  // {
+  //   value: "red",
+  //   icon: "🟥",
+  //   className: "bg-reader-highlight-red",
+  // },
+  // {
+  //   value: "green",
+  //   icon: "🟢",
+  //   className: "bg-reader-highlight-green",
+  // },
+  // {
+  //   value: "blue",
+  //   icon: "🟦",
+  //   className: "bg-reader-highlight-blue",
+  // },
+  // {
+  //   value: "magenta",
+  //   icon: "🟪",
+  //   className: "bg-reader-highlight-magenta",
+  // },
   {
     value: "cover",
     icon: "📚",

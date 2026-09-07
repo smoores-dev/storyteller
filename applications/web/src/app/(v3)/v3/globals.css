@@ -992,21 +992,6 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
   );
 }
 
-[data-reader-highlight="yellow"] {
-  --reader-highlight: var(--reader-highlight-yellow);
-}
-[data-reader-highlight="red"] {
-  --reader-highlight: var(--reader-highlight-red);
-}
-[data-reader-highlight="green"] {
-  --reader-highlight: var(--reader-highlight-green);
-}
-[data-reader-highlight="blue"] {
-  --reader-highlight: var(--reader-highlight-blue);
-}
-[data-reader-highlight="magenta"] {
-  --reader-highlight: var(--reader-highlight-magenta);
-}
 [data-reader-highlight="cover"] {
   --reader-highlight: var(--reader-highlight-cover);
 }

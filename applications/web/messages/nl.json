@@ -1228,9 +1228,9 @@
           },
           "colorfulness": {
             "title": "Kleurrijkheid",
-            "description": "Hoeveel coverkleuren doorwerken in de interface.",
+            "description": "Hoe de kleuren van de cover in de interface verwerkt worden.",
             "label": "Kleurniveau",
-            "hint": "Vol gebruikt coverkleuren overal; minimaal houdt een neutraal thema aan.",
+            "hint": "'Vol' zorgt ervoor dat coverkleuren overal worden gebruikt; 'minimaal' houdt een neutraal thema aan.",
             "levels": {
               "full": "Vol",
               "minimal": "Minimaal"
@@ -1253,7 +1253,7 @@
             "title": "Rasterweergave",
             "description": "Hoe boeken in het bibliotheekraster worden getoond.",
             "coverLabel": "Coverweergave",
-            "coverHint": "Beide toont de e-book- en luisterboekcover wanneer een boek die heeft.",
+            "coverHint": "'Beide' toont de e-book- en luisterboekcover wanneer een boek die heeft.",
             "coverOptions": {
               "auto": "Beide covers",
               "ebook": "Alleen e-book",
@@ -1262,11 +1262,11 @@
             "alignmentLabel": "Dubbelcoverstijl",
             "alignmentHint": "Bepaalt of de twee covers scheef of recht worden getoond.",
             "alignmentOptions": {
-              "auto": "Scheef als niet gesynchroniseerd",
+              "auto": "Gekanteld als boeken niet zijn gesynchroniseerd",
               "straight": "Altijd recht"
             },
             "sizeLabel": "Kaartgrootte",
-            "sizeHint": "Kleiner past meer boeken per rij.",
+            "sizeHint": "Met 'kleiner' passen er meer boeken per rij.",
             "sizeOptions": {
               "smallest": "Kleinst",
               "small": "Klein",
@@ -1472,8 +1472,8 @@
       "avg": "Gem.",
       "useAverage": "gebruik gemiddelde",
       "revertManual": "Terug naar {rating}",
-      "overrideTitle": "Meerdimensionale beoordeling overschrijven?",
-      "overrideDescription": "Handmatig beoordelen vervangt je meerdimensionale beoordeling door één waarde.",
+      "overrideTitle": "Multidimensionale beoordeling overschrijven?",
+      "overrideDescription": "Handmatig beoordelen vervangt je multidimensionale beoordeling door één waarde.",
       "overrideConfirm": "Overschrijven",
       "apply": "Toepassen",
       "adjustScores": "Scores aanpassen",
@@ -1594,7 +1594,7 @@
     },
     "metadata": {
       "metadataFieldOverrides": "Metadata gedrag",
-      "metadataFieldOverridesDescription": "Bepaalt hoe <em><em>Storyteller</em></em> metadata uit boekbestanden verwerkt tijdens scans. Het standaardgedrag (alleen lege velden invullen) is geschikt voor de meeste gebruikers. Als je je boeken ook met andere tools beheert (bijv. <em>Calibre</em>, <em>Luisterboekenhelf</em>) en wilt dat die wijzigingen in <em>Storyteller</em> worden overgenomen, kies dan voor altijd overschrijven.",
+      "metadataFieldOverridesDescription": "Bepaalt hoe <em><em>Storyteller</em></em> metadata uit boekbestanden verwerkt tijdens scans. Het standaardgedrag (alleen lege velden invullen) is geschikt voor de meeste gebruikers. Als je je boeken ook met andere tools beheert (bijv. <em>Calibre</em>, <em>Audiobookshelf</em>) en wilt dat die wijzigingen in <em>Storyteller</em> worden overgenomen, kies dan voor altijd overschrijven.",
       "fieldTitle": "Titel",
       "fieldSubtitle": "Ondertitel",
       "fieldDescription": "Omschrijving",
@@ -2079,7 +2079,9 @@
         "alignmentJustified": "Uitgevuld",
         "hyphens": "Woorden afbreken",
         "lineHeight": "Regelafstand",
-        "paragraphSpacing": "Alinea-afstand"
+        "paragraphSpacing": "Alinea-afstand",
+        "lineLength": "Regellengte",
+        "lineLengthCharacters": "{count, number} tekens"
       },
       "layout": {
         "title": "Indeling",
@@ -2089,8 +2091,6 @@
         "columnsAuto": "Automatisch",
         "columnsOne": "1",
         "columnsTwo": "2",
-        "lineLength": "Regellengte",
-        "lineLengthCharacters": "{count, number} tekens",
         "footerWidth": "Breedte van de onderbalk",
         "footerWidthWide": "Breed",
         "footerWidthNarrow": "Smal",

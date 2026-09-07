@@ -51,13 +51,12 @@ export const READER_THEMES: {
 ]
 
 export type HighlightColor =
-  | "yellow"
-  | "red"
-  | "green"
-  | "blue"
-  | "magenta"
-  | "cover"
-  | "custom"
+  // | "yellow"
+  // | "red"
+  // | "green"
+  // | "blue"
+  // | "magenta"
+  "cover" | "custom"
 
 export type HighlightStyle =
   | "highlight"

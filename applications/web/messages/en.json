@@ -2147,7 +2147,7 @@
       "setForThisBookOnly": "Set for this book only",
       "followAllBooks": "Follow the settings for all books",
       "theme": {
-        "title": "Theme",
+        "title": "Color Theme",
         "schemeLight": "Light",
         "schemeDark": "Dark",
         "light": "Light",
@@ -2155,8 +2155,8 @@
         "sepia": "Sepia",
         "dark": "Dark",
         "catppuccin": "Catppuccin",
-        "cover-light": "Cover",
-        "cover-dark": "Cover"
+        "cover-light": "Dynamic Light",
+        "cover-dark": "Dynamic Dark"
       },
       "text": {
         "title": "Text",
@@ -2184,7 +2184,9 @@
         "alignmentJustified": "Justified",
         "hyphens": "Hyphenate words",
         "lineHeight": "Line height",
-        "paragraphSpacing": "Paragraph spacing"
+        "paragraphSpacing": "Paragraph spacing",
+        "lineLength": "Line length",
+        "lineLengthCharacters": "{count, number} characters"
       },
       "layout": {
         "title": "Layout",
@@ -2194,26 +2196,19 @@
         "columnsAuto": "Auto",
         "columnsOne": "1",
         "columnsTwo": "2",
-        "lineLength": "Line length",
-        "lineLengthCharacters": "{count, number} characters",
         "footerWidth": "Footer width",
         "footerWidthWide": "Wide",
         "footerWidthNarrow": "Narrow",
         "footerWidthFitToText": "Fit to text"
       },
       "highlights": {
-        "title": "Highlights",
+        "title": "Readaloud",
         "style": "Style",
         "styleHighlight": "Background",
         "styleHighlightUnderline": "Background + underline",
         "styleUnderline": "Underline",
         "styleTextColor": "Text color",
-        "yellow": "Yellow",
-        "red": "Red",
-        "green": "Green",
-        "blue": "Blue",
-        "magenta": "Magenta",
-        "cover": "Cover",
+        "cover": "Dynamic",
         "custom": "Custom",
         "customUse": "Use",
         "customUsePlaceholder": "Any CSS color",

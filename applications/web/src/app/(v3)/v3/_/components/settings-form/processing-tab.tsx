@@ -58,7 +58,7 @@ import {
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import { cn } from "@/cn"
 import {
-  type AlignmentGranularity,
+  // type AlignmentGranularity,
   type ReadaloudLocationType,
 } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -469,47 +469,47 @@ export function ProcessingSettingsFields({
   )
 }
 
-function AlignmentGranularitySettings({ disabled }: { disabled?: boolean }) {
-  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+// function AlignmentGranularitySettings({ disabled }: { disabled?: boolean }) {
+//   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
 
-  const alignmentGranularityOptions = [
-    { value: "sentence", label: t("alignmentGranularitySentence") },
-    { value: "word", label: t("alignmentGranularityWord") },
-  ] satisfies { value: AlignmentGranularity; label: string }[]
+//   const alignmentGranularityOptions = [
+//     { value: "sentence", label: t("alignmentGranularitySentence") },
+//     { value: "word", label: t("alignmentGranularityWord") },
+//   ] satisfies { value: AlignmentGranularity; label: string }[]
 
-  return (
-    <>
-      <SettingsFormField
-        name="alignmentGranularity"
-        label={t("alignmentGranularity")}
-        description={t("alignmentGranularityDescription")}
-        render={(field, fieldState) => (
-          <Select
-            items={alignmentGranularityOptions}
-            value={field.value ?? "sentence"}
-            onValueChange={(value) => {
-              field.onChange(value)
-            }}
-            disabled={disabled}
-            aria-invalid={fieldState.invalid}
-            data-disabled={disabled}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {alignmentGranularityOptions.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      />
-    </>
-  )
-}
+//   return (
+//     <>
+//       <SettingsFormField
+//         name="alignmentGranularity"
+//         label={t("alignmentGranularity")}
+//         description={t("alignmentGranularityDescription")}
+//         render={(field, fieldState) => (
+//           <Select
+//             items={alignmentGranularityOptions}
+//             value={field.value ?? "sentence"}
+//             onValueChange={(value) => {
+//               field.onChange(value)
+//             }}
+//             disabled={disabled}
+//             aria-invalid={fieldState.invalid}
+//             data-disabled={disabled}
+//           >
+//             <SelectTrigger className="w-full">
+//               <SelectValue />
+//             </SelectTrigger>
+//             <SelectContent>
+//               {alignmentGranularityOptions.map(({ value, label }) => (
+//                 <SelectItem key={value} value={value}>
+//                   {label}
+//                 </SelectItem>
+//               ))}
+//             </SelectContent>
+//           </Select>
+//         )}
+//       />
+//     </>
+//   )
+// }
 
 function WhisperAlignerSettings({ restart: _ }: { restart?: ProcessRestart }) {
   const { form } = useSettingsForm()
@@ -663,7 +663,7 @@ function WhisperAlignerSettings({ restart: _ }: { restart?: ProcessRestart }) {
 function CtcAlignerSettings({ restart }: { restart?: ProcessRestart }) {
   return (
     <>
-      <AlignmentGranularitySettings />
+      {/* <AlignmentGranularitySettings /> */}
       {restart !== "sync" && restart !== "transcode" && (
         <Wav2VecLocalSettings />
       )}
@@ -884,7 +884,7 @@ function WhisperSettings() {
 
   return (
     <>
-      <AlignmentGranularitySettings disabled={true} />
+      {/* <AlignmentGranularitySettings disabled={true} /> */}
       <SettingsFormField
         name="whisperModel"
         label={t("whisperModel")}

@@ -120,6 +120,9 @@ const TEXT_KEYS = [
   "fontWeight",
   "align",
   "hyphens",
+  "lineHeight",
+  "paragraphSpacing",
+  "lineLength",
 ] as const
 
 const fontClassName: Record<ReadingPreferences["fontFamily"], string> = {
@@ -297,17 +300,22 @@ export const textSection = {
           step={0.1}
           format={(value) => value.toFixed(1)}
         />
+
+        <SliderRow
+          api={api}
+          prefKey="lineLength"
+          label={t("lineLength")}
+          min={20}
+          max={100}
+          step={1}
+          format={(value) => t.plain("lineLengthCharacters", { count: value })}
+        />
       </SectionGroup>
     )
   },
 } satisfies SettingsSection
 
-const LAYOUT_KEYS = [
-  "layout",
-  "columns",
-  "lineLength",
-  "footerDisplayWidth",
-] as const
+const LAYOUT_KEYS = ["layout", "columns", "footerDisplayWidth"] as const
 
 const footerWidthLabelKeys = {
   full: "footerWidthWide",
@@ -362,15 +370,6 @@ export const layoutSection = {
             ]}
           />
         </NestedSelect>
-        <SliderRow
-          api={api}
-          prefKey="lineLength"
-          label={t("lineLength")}
-          min={20}
-          max={100}
-          step={1}
-          format={(value) => t.plain("lineLengthCharacters", { count: value })}
-        />
         <NestedSelect
           label={t("footerWidth")}
           icon={<icon.ArrowAutofitWidth />}
