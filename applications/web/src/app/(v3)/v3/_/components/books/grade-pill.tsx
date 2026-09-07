@@ -1,7 +1,7 @@
 import { cn } from "@v3/_/lib/utils"
 
 const GRADE_STYLES: Record<string, string> = {
-  "A+": "bg-positive-bg text-positive dark:bg-positive-900 dark:text-positive-200",
+  S: "bg-positive-bg text-positive dark:bg-positive-900 dark:text-positive-200",
   A: "bg-good-bg text-good dark:bg-good-900 dark:text-good-200",
   "A-": "bg-good-bg text-good dark:bg-good-900 dark:text-good-200",
   B: "bg-moderate-bg text-moderate dark:bg-moderate-900 dark:text-moderate-200",
@@ -12,7 +12,7 @@ const GRADE_STYLES: Record<string, string> = {
 }
 
 export const GRADE_COLORS: Record<string, string> = {
-  "A+": "var(--positive)",
+  S: "var(--positive)",
   A: "var(--good)",
   "A-": "var(--good)",
   B: "var(--moderate)",
