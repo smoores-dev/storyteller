@@ -70,9 +70,13 @@ export function summarizeReport(
 
   let failedChapters = 0
   for (const item of items) {
-    if (item.judgment === "excluded") continue
+    if (item.judgment === "excluded") {
+      continue
+    }
     if (item.kind === "unaligned") {
-      if (item.reason === "not-found") failedChapters += 1
+      if (item.reason === "not-found") {
+        failedChapters += 1
+      }
       continue
     }
     if (item.chapterSentenceCount > 0 && item.alignedSentenceCount === 0) {

@@ -102,7 +102,7 @@ export const AlignmentReportSummarySchemaV2 = z.object({
   band: z.number().meta({ description: "0 is the best band, 7 the worst." }),
   score: z.number().nullable().meta({
     description:
-      "0-100. Seventy percent sentences aligned, thirty percent audio placed. Drives the grade.",
+      "0-100. Seventy percent sentences aligned, thirty percent audio placed. Determines the grade.",
   }),
   confidence: z.number().nullable().meta({
     description: "0-100 aligner confidence, weighted by sentence count.",

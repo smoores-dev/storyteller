@@ -686,11 +686,6 @@ function JobItem({
               className="inline-flex items-center gap-1"
             >
               <GradePill grade={job.alignmentGrade} />
-              {job.alignmentScore != null && (
-                <span className="text-muted-foreground text-xs tabular-nums">
-                  {job.alignmentScore}%
-                </span>
-              )}
             </V3Link>
           )}
         </ItemTitle>
