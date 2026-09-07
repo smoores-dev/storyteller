@@ -1,6 +1,7 @@
+import { highlightHTML } from "@speed-highlight/core"
+
 import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
 
-import { highlightHTML } from "@speed-highlight/core"
 import { withHasPermission } from "@/auth/auth"
 import { getBook } from "@/database/books"
 import { type UUID } from "@/uuid"

@@ -25,6 +25,12 @@ import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { apiErrorMessage } from "@v3/_/lib/api-error"
 import { cn } from "@v3/_/lib/utils"
 
+import {
+  FilterableMenu,
+  FilterableMenuContent,
+  FilterableMenuItem,
+  FilterableMenuTrigger,
+} from "@/app/(v3)/v3/_/components/ui/filterable-menu"
 import { type BookWithRelations } from "@/database/books"
 import { type ShelfWithBooks } from "@/database/shelves"
 import * as icon from "@/icons"
@@ -44,12 +50,6 @@ import {
 } from "@/store/api"
 import { type UUID } from "@/uuid"
 
-import {
-  FilterableMenu,
-  FilterableMenuContent,
-  FilterableMenuItem,
-  FilterableMenuTrigger,
-} from "../ui/filterable-menu"
 
 import {
   FilterPreview,

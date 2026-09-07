@@ -142,6 +142,7 @@ import {
   IconTagPlus,
   IconTags,
   IconTextCaption,
+  IconTextGrammar,
   IconTextWrap,
   IconTrash,
   IconUpload,
@@ -150,7 +151,6 @@ import {
   IconVolume3,
   IconVolume,
   IconVolumeOff,
-  IconTextGrammar,
   IconX,
 } from "@tabler/icons-react"
 
