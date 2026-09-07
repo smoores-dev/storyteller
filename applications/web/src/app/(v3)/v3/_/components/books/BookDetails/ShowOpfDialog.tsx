@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -15,7 +15,8 @@ import {
 import * as icon from "@/icons"
 import { useGetBookOpfQuery } from "@/store/api"
 import { type UUID } from "@/uuid"
-import { useTheme } from "../../../hooks/use-theme"
+
+import { Code } from "./Code"
 
 export function ShowOpfDialog({
   bookUuid,
@@ -32,7 +33,6 @@ export function ShowOpfDialog({
 }) {
   const { data, isFetching, error } = useGetBookOpfQuery({ bookUuid, format })
   const [copied, setCopied] = useState(false)
-  const { resolvedTheme } = useTheme()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,9 +55,13 @@ export function ShowOpfDialog({
               : "Could not read the package document."}
           </p>
         ) : (
-          <Code key={resolvedTheme} theme={resolvedTheme}>
-            {data ?? ""}
-          </Code>
+          <Code code={data ?? ""} />
+          // <pre
+          //   className="bg-muted/30 max-h-[60vh] overflow-auto rounded-md border p-3 font-mono text-xs break-words whitespace-pre-wrap"
+          //   dangerouslySetInnerHTML={{ __html: data ?? "" }}
+          // >
+          //   {/* {data} */}
+          // </pre>
         )}
 
         <DialogFooter>
@@ -92,24 +96,5 @@ export function ShowOpfDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function Code({ code, theme }: { code: string; theme: "dark" | "light" }) {
-  const [linebreaks, setLinebreaks] = useState<string[]>([])
-
-  useEffect(() => {
-    if (theme === "dark") {
-      void import("@speed-highlight/core/themes/github-dark.css")
-    } else {
-      void import("@speed-highlight/core/themes/github-light.css")
-    }
-  }, [theme])
-
-  return (
-    <pre
-      className="bg-muted/30 max-h-[60vh] overflow-auto rounded-md border p-3 font-mono text-xs break-words whitespace-pre-wrap"
-      dangerouslySetInnerHTML={{ __html: code }}
-    />
   )
 }
