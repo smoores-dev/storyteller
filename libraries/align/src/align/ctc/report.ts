@@ -39,6 +39,7 @@ export interface ChapterReport {
   firstMatchedSentenceContext: {
     prevSentence: string | null
     matchedSentence: string
+    matchedSentenceOffset: number
     nextSentence: string | null
   }
 
@@ -46,6 +47,7 @@ export interface ChapterReport {
   lastMatchedSentenceContext: {
     prevSentence: string | null
     matchedSentence: string
+    matchedSentenceOffset: number
     nextSentence: string | null
   }
 

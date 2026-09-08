@@ -288,6 +288,7 @@ export class Aligner {
         prevSentence: chapterSentences[startSentence - 1]?.text ?? null,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         matchedSentence: chapterSentences[startSentence]!.text,
+        matchedSentenceOffset: startSentence,
         nextSentence: chapterSentences[startSentence + 1]?.text ?? null,
       },
       lastMatchedSentenceId: endSentence,
@@ -295,6 +296,7 @@ export class Aligner {
         prevSentence: chapterSentences[endSentence - 1]?.text ?? null,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         matchedSentence: chapterSentences[endSentence]!.text,
+        matchedSentenceOffset: endSentence,
         nextSentence: chapterSentences[endSentence + 1]?.text ?? null,
       },
       chapterSentenceCount: sentenceCount,
