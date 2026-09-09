@@ -69,16 +69,12 @@ export async function upsertPosition(
   const locatorString = JSON.stringify(locator)
 
   const upserted = await db.transaction().execute(async (tr) => {
-    const { statusUuid } = await tr
+    const status = await tr
       .selectFrom("bookToStatus")
       .select(["statusUuid"])
       .where("bookUuid", "=", bookUuid)
       .where("userId", "=", userId)
-      .executeTakeFirstOrThrow()
-
-    logger.debug({
-      statusUuid,
-    })
+      .executeTakeFirst()
 
     const existing = await tr
       .selectFrom("position")
@@ -150,11 +146,11 @@ export async function upsertPosition(
     /* eslint-enable @typescript-eslint/no-non-null-assertion */
 
     if (
-      statusUuid === toRead.uuid &&
+      (!status || status.statusUuid === toRead.uuid) &&
       (locator.locations?.totalProgression ?? 0) < 0.98
     ) {
       logger.debug(
-        'Status is "To read" and progression is less than 98%, setting to "Reading"',
+        'Status is empty or "To read" and progression is less than 98%, setting to "Reading"',
       )
       await tr
         .updateTable("bookToStatus")
@@ -164,11 +160,13 @@ export async function upsertPosition(
         .execute()
     }
     if (
-      (statusUuid === toRead.uuid || statusUuid === reading.uuid) &&
+      (!status ||
+        status.statusUuid === toRead.uuid ||
+        status.statusUuid === reading.uuid) &&
       (locator.locations?.totalProgression ?? 0) >= 0.98
     ) {
       logger.debug(
-        'Status is "To read" or "Reading" and progression is greater than 98%, setting to "Read"',
+        'Status is empty or "To read" or "Reading" and progression is greater than 98%, setting to "Read"',
       )
       await tr
         .updateTable("bookToStatus")
