@@ -1,9 +1,0 @@
-releases:
-  "@storyteller-platform/align": patch
-  "@storyteller-platform/docs": patch
-  "@storyteller-platform/epub": patch
-  "@storyteller-platform/ghost-story": patch
-
-declined:
-  - "@storyteller-platform/tauri"
-  - "@storyteller-platform/web"
