@@ -42,6 +42,9 @@
     },
     {
       "path": "libraries/media-types"
+    },
+    {
+      "path": "libraries/mlx-audio"
     }
   ]
 }

@@ -14,6 +14,8 @@ import { z } from "zod/v4"
 import { type RecognitionOptions } from "../api/Recognition.ts"
 import {
   BUILD_VARIANTS,
+  CTC_MODELS,
+  CTC_MODEL_PACKAGES,
   RECOGNITION_ENGINES,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
@@ -25,6 +27,7 @@ import {
   isValidModel,
   isValidVariant,
 } from "./config.ts"
+import { installModelPackage, isCtcModel } from "./ctc-install.ts"
 import {
   PlatformMismatchError,
   installBinary,
@@ -40,30 +43,31 @@ const recognitionEngineSchema = z.enum(RECOGNITION_ENGINES)
 const whisperModelSchema = z.enum(WHISPER_MODELS)
 const buildVariantSchema = z.enum(BUILD_VARIANTS)
 
-type InstallTarget = "binary" | "model" | "vad" | "all"
+type InstallTarget = "binary" | "model" | "vad" | "ctc-model" | "all"
 
 function isInstallTarget(value: string): value is InstallTarget {
-  return ["binary", "model", "vad", "all"].includes(value)
+  return ["binary", "model", "vad", "ctc-model", "all"].includes(value)
 }
 
 const installCommand = defineCommand({
   description: `Install whisper.cpp binary and models.
 
 Usage:
-  ghost-story install binary [variant]  - Install binary (auto-detects platform if variant not specified)
-  ghost-story install model <model>     - Install a whisper model
-  ghost-story install vad               - Install Silero VAD model
-  ghost-story install all               - Install binary, all models, and VAD`,
+  ghost-story install binary [variant]    - Install binary (auto-detects platform if variant not specified)
+  ghost-story install model <model>       - Install a whisper model
+  ghost-story install vad                 - Install Silero VAD model
+  ghost-story install ctc-model [variant] - Install model for CTC alignment (fp32, fp16, or mlx)
+  ghost-story install all                 - Install binary, all models, and VAD`,
   args: z.union([
     z.tuple([
       z
-        .enum(["binary", "model", "vad", "all"])
-        .describe("What to install: binary, model, vad, or all"),
+        .enum(["binary", "model", "vad", "ctc-model", "all"])
+        .describe("What to install: binary, model, vad, ctc-model, or all"),
     ]),
     z.tuple([
       z
-        .enum(["binary", "model", "vad", "all"])
-        .describe("What to install: binary, model, vad, or all"),
+        .enum(["binary", "model", "vad", "ctc-model", "all"])
+        .describe("What to install: binary, model, vad, ctc-model, or all"),
       z
         .string()
         .optional()
@@ -110,7 +114,14 @@ Usage:
         }
         return
       }
-      console.error("Use --list with 'binary' or 'model'")
+      if (target === "ctc-model") {
+        console.log("Available CTC model variants:")
+        for (const variant of CTC_MODELS) {
+          console.log(`  ${variant} (${CTC_MODEL_PACKAGES[variant].name})`)
+        }
+        return
+      }
+      console.error("Use --list with 'binary', 'model', or 'ctc-model'")
       process.exit(1)
     }
 
@@ -147,6 +158,22 @@ Usage:
           process.exit(1)
         }
         await installModel({ model: argument, force, printOutput: true })
+      }
+
+      if (target === "ctc-model") {
+        const variant = argument ?? "fp32"
+        if (!isCtcModel(variant)) {
+          console.error(`Unknown CTC model variant: ${variant}`)
+          console.error("\nAvailable variants:")
+          for (const v of CTC_MODELS) {
+            console.log(`  ${v}`)
+          }
+          process.exit(1)
+        }
+        await installModelPackage(CTC_MODEL_PACKAGES[variant], {
+          force,
+          printOutput: true,
+        })
       }
 
       if (target === "all") {

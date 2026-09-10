@@ -3,7 +3,15 @@
 import { build } from "esbuild"
 import { builtinModules } from "node:module"
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path"
-import { copyFileSync, readdirSync, writeFileSync } from "node:fs"
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { execFileSync } from "node:child_process"
 import nodeGypBuild from "node-gyp-build"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -13,6 +21,44 @@ import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 const nodePrefix = new Set(builtinModules)
 const discoveredAssets = new Map()
+
+// Asset names carry a fresh uuid on every run, so without this the directory
+// accumulates a full copy of every native library per compile.
+rmSync("bundle", { recursive: true, force: true })
+mkdirSync("bundle")
+
+/**
+ * Shared libraries that have to sit next to a `.node` file at runtime.
+ */
+function isSiblingLibrary(file) {
+  return (
+    file.endsWith(".dylib") ||
+    file.endsWith(".dll") ||
+    file.endsWith(".metallib") ||
+    /\.so(?:\.\d+)*$/.test(file)
+  )
+}
+
+/**
+ * Walks up from a file to the nearest package that ships a native addon,
+ * which is what `node-gyp-build` wants to be pointed at.
+ */
+function findAddonPackageRoot(file) {
+  let dir = dirname(file)
+  while (true) {
+    if (
+      existsSync(join(dir, "package.json")) &&
+      (existsSync(join(dir, "prebuilds")) ||
+        existsSync(join(dir, "binding.gyp")) ||
+        existsSync(join(dir, "build")))
+    ) {
+      return dir
+    }
+    const parent = dirname(dir)
+    if (parent === dir) return null
+    dir = parent
+  }
+}
 
 await build({
   entryPoints: ["src/cli/bin.ts"],
@@ -49,28 +95,88 @@ await build({
     {
       name: "node-gyp-build",
       setup(build) {
-        build.onResolve({ filter: /^node-gyp-build$/ }, () => ({
-          path: "node-gyp-build",
-          namespace: "node-gyp-build",
-        }))
+        // Every workspace addon (align's error aligner, mlx-audio's Metal
+        // binding) imports `node-gyp-build` and points it at its own package
+        // directory, which does not exist inside the executable. Resolve the
+        // prebuild for the *importing* package at bundle time instead, and
+        // let the native-addons plugin below turn it into a SEA asset.
+        build.onResolve({ filter: /^node-gyp-build$/ }, (args) => {
+          const packageRoot =
+            (args.importer && findAddonPackageRoot(args.importer)) ||
+            resolve(import.meta.dirname, "..")
+          // esbuild identifies modules by namespace + path, so the path has to
+          // be the package root or every addon would share one binding.
+          return { path: packageRoot, namespace: "node-gyp-build" }
+        })
 
-        build.onLoad(
-          { filter: /^node-gyp-build$/, namespace: "node-gyp-build" },
-          () => {
-            const prebuildPath = nodeGypBuild.path(
-              resolve(import.meta.dirname, ".."),
+        build.onLoad({ filter: /.*/, namespace: "node-gyp-build" }, (args) => {
+          const packageRoot = args.path
+          const packageName =
+            JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"))
+              .name ?? basename(packageRoot)
+
+          let prebuildPath
+          try {
+            prebuildPath = nodeGypBuild.path(packageRoot)
+          } catch (error) {
+            // e.g. mlx-audio only ships a darwin-arm64 binding. Keep the
+            // bundle building and fail at the point of use instead.
+            console.warn(
+              `no native binding for ${packageName} on ${process.platform}-${process.arch}, it will be unavailable in this build`,
             )
-
             return {
               loader: "js",
-              resolveDir: resolve(import.meta.dirname, ".."),
               contents: `
+module.exports = function requireBinding() {
+  throw new Error(${JSON.stringify(
+    `${packageName} has no native binding for ${process.platform}-${process.arch}: ${error.message}`,
+  )});
+}
+                `,
+            }
+          }
+
+          return {
+            loader: "js",
+            resolveDir: packageRoot,
+            contents: `
 const nativeModule = require(${JSON.stringify(prebuildPath)});
 
 module.exports = function requireBinding() {
   return nativeModule;
 }
               `,
+          }
+        })
+      },
+    },
+    {
+      name: "onnxruntime-node",
+      setup(build) {
+        // onnxruntime-node picks its binding with a template-literal require,
+        // which makes esbuild bundle the bindings for every platform (about
+        // 200MB). Pin it to the platform this executable is being built for.
+        build.onLoad(
+          { filter: /onnxruntime-node[\\/]dist[\\/]binding\.js$/ },
+          (args) => {
+            const source = readFileSync(args.path, "utf8")
+            const pattern =
+              /require\(`\.\.\/bin\/napi-v(\d+)\/\$\{process\.platform\}\/\$\{process\.arch\}\/onnxruntime_binding\.node`\)/
+            if (!pattern.test(source)) {
+              throw new Error(
+                `onnxruntime-node's binding loader changed shape, update ${fileURLToPath(import.meta.url)}`,
+              )
+            }
+            return {
+              loader: "js",
+              resolveDir: dirname(args.path),
+              contents: source.replace(
+                pattern,
+                (_, napiVersion) =>
+                  `require(${JSON.stringify(
+                    `../bin/napi-v${napiVersion}/${process.platform}/${process.arch}/onnxruntime_binding.node`,
+                  )})`,
+              ),
             }
           },
         )
@@ -117,11 +223,7 @@ module.exports = function requireBinding() {
           const libDir = dirname(absPath)
           try {
             for (const file of readdirSync(libDir)) {
-              if (
-                file.endsWith(".dylib") ||
-                file.endsWith(".dll") ||
-                /\.so(?:\.\d+)*$/.test(file)
-              ) {
+              if (isSiblingLibrary(file)) {
                 const libPath = join(libDir, file)
                 const libAssetName = `${file}-${randomUUID()}`
                 discoveredAssets.set(libAssetName, libPath)
@@ -234,11 +336,7 @@ module.exports = mod.exports;
             if (libvipsDir) {
               try {
                 for (const file of readdirSync(libvipsDir)) {
-                  if (
-                    file.endsWith(".dylib") ||
-                    file.endsWith(".dll") ||
-                    /\.so(?:\.\d+)*$/.test(file)
-                  ) {
+                  if (isSiblingLibrary(file)) {
                     const libPath = join(libvipsDir, file)
                     const libAssetName = `${file}-${randomUUID()}`
                     discoveredAssets.set(libAssetName, libPath)
@@ -252,11 +350,7 @@ module.exports = mod.exports;
             const sharpLibDir = dirname(sharpNodePath)
             try {
               for (const file of readdirSync(sharpLibDir)) {
-                if (
-                  file.endsWith(".dylib") ||
-                  file.endsWith(".dll") ||
-                  /\.so(?:\.\d+)*$/.test(file)
-                ) {
+                if (isSiblingLibrary(file)) {
                   const libPath = join(sharpLibDir, file)
                   const libAssetName = `${file}-${randomUUID()}`
                   discoveredAssets.set(libAssetName, libPath)

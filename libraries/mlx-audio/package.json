@@ -1,0 +1,54 @@
+{
+  "name": "@storyteller-platform/mlx-audio",
+  "version": "0.0.1",
+  "description": "MLX (Metal) audio toolkit. Wrapper around mlx-audio-swift",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "prebuilds",
+    "README.md"
+  ],
+  "scripts": {
+    "build:native": "scripts/build",
+    "build:native:debug": "scripts/build --debug",
+    "build:native:metallib": "node scripts/fetch-metallib.mjs",
+    "load-test": "PREBUILDS_ONLY=1 node scripts/load-test.mjs"
+  },
+  "dependencies": {
+    "node-gyp-build": "^4.8.4"
+  },
+  "devDependencies": {
+    "@storyteller-platform/eslint": "workspace:*",
+    "@tsconfig/strictest": "^2.0.5",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "os": [
+    "darwin"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      }
+    }
+  }
+}

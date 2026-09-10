@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 
+import { createHash } from "node:crypto"
 import {
   createReadStream,
   createWriteStream,
@@ -46,6 +47,8 @@ export interface DownloadOptions {
   url: string
   destPath: string
   expectedSize?: number
+  /** verified after the download, the file is removed when it doesn't match */
+  expectedSha256?: string
   printOutput?: boolean
   onProgress?: ((downloaded: number, total: number) => void) | undefined
   signal?: AbortSignal | null | undefined
@@ -56,6 +59,7 @@ export async function downloadFile(options: DownloadOptions): Promise<void> {
     url,
     destPath,
     expectedSize,
+    expectedSha256,
     printOutput = true,
     onProgress,
     signal,
@@ -96,6 +100,7 @@ export async function downloadFile(options: DownloadOptions): Promise<void> {
 
   const reader =
     response.body.getReader() as ReadableStreamDefaultReader<Uint8Array>
+  const hash = expectedSha256 ? createHash("sha256") : null
 
   let downloaded = 0
   let lastTime = Date.now()
@@ -120,6 +125,7 @@ export async function downloadFile(options: DownloadOptions): Promise<void> {
 
       downloaded += value.length
       fileStream.write(value)
+      hash?.update(value)
 
       onProgress?.(downloaded, totalSize)
 
@@ -153,6 +159,16 @@ export async function downloadFile(options: DownloadOptions): Promise<void> {
     fileStream.on("finish", resolve)
     fileStream.on("error", reject)
   })
+
+  if (expectedSha256) {
+    const actualSha256 = hash?.digest("hex")
+    if (actualSha256 !== expectedSha256) {
+      await rm(destPath, { force: true })
+      throw new Error(
+        `Checksum mismatch for ${destPath} (expected ${expectedSha256}, got ${actualSha256})`,
+      )
+    }
+  }
 }
 
 export class PlatformMismatchError extends Error {

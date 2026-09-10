@@ -14,18 +14,11 @@ import { path } from "@optique/run/valueparser"
 import {
   WAV2VEC2_DEVICES,
   WAV2VEC2_DTYPES,
-  WAV2VEC2_MODELS,
 } from "@storyteller-platform/ghost-story/constants"
 
 import { loggingParser } from "../common/parse.ts"
 
 export const emitParser = object({
-  model: withDefault(
-    option("--model", "-m", choice(WAV2VEC2_MODELS, { metavar: "MODEL" }), {
-      description: message`The wav2vec2 model to use`,
-    }),
-    "onnx-community/mms-300m-1130-forced-aligner-ONNX",
-  ),
   device: withDefault(
     option("--device", "-d", choice(WAV2VEC2_DEVICES, { metavar: "DEVICE" }), {
       description: message`The device to run inference on`,
@@ -34,7 +27,7 @@ export const emitParser = object({
   ),
   dtype: withDefault(
     option("--dtype", choice(WAV2VEC2_DTYPES, { metavar: "DTYPE" }), {
-      description: message`The data type to load the model with`,
+      description: message`The data type to load the model with. Use fp32 for device=cpu, and fp16 otherwise.`,
     }),
     "fp16",
   ),

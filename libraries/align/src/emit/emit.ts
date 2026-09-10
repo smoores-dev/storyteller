@@ -13,7 +13,6 @@ import {
 import {
   type Wav2Vec2DataType,
   type Wav2Vec2Device,
-  type Wav2Vec2Model,
 } from "@storyteller-platform/ghost-story/constants"
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -22,7 +21,6 @@ import { writeEmissionsFile } from "./fs.ts"
 export interface EmitOptions {
   onProgress?: ((progress: number) => void) | null | undefined
   signal?: AbortSignal | null | undefined
-  model?: Wav2Vec2Model | null | undefined
   device?: Wav2Vec2Device | null | undefined
   dtype?: Wav2Vec2DataType | null | undefined
   logger?: Logger | null | undefined
@@ -53,8 +51,6 @@ export async function emit(
   }
 
   const engine = "wav2vec2"
-  const model =
-    options.model ?? "onnx-community/mms-300m-1130-forced-aligner-ONNX"
 
   const emissions: string[] = []
 
@@ -65,7 +61,6 @@ export async function emit(
 
   const timing = createAggregator()
   timing.setMetadata("engine", engine)
-  timing.setMetadata("model", model)
 
   for (const [i, filename] of enumerate(filenames)) {
     if (aborted()) throw new Error("Aborted")
@@ -104,7 +99,6 @@ export async function emit(
       signal,
       engine,
       options: {
-        model,
         ...(options.device && { device: options.device }),
         ...(options.dtype && { dtype: options.dtype }),
         onProgress: onFileProgress,

@@ -29,8 +29,6 @@ export async function emit(
     case "wav2vec2": {
       const Wav2Vec2Emission = await import("../emission/Wav2Vec2Emission.ts")
 
-      timing.setMetadata("model", opts.options.model)
-
       const result = await Wav2Vec2Emission.emit(
         source,
         timing,
@@ -60,9 +58,6 @@ export type EmissionOptions = BaseEmissionOptions & {
 }
 const defaultEmissionOptions: Partial<EmissionOptions> = {
   engine: "wav2vec2",
-  options: {
-    model: "Xenova/wav2vec2-base-960h",
-  },
 }
 
 export interface EmissionResult {

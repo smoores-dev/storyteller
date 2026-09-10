@@ -15736,6 +15736,7 @@ __metadata:
     "@storyteller-platform/eslint": "workspace:*"
     "@storyteller-platform/fs": "workspace:^"
     "@storyteller-platform/media-types": "workspace:^"
+    "@storyteller-platform/mlx-audio": "workspace:^"
     "@storyteller-platform/tsup": "workspace:^"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/cli-progress": "npm:^3"
@@ -15757,6 +15758,9 @@ __metadata:
     typescript: "npm:~5.8.3"
     undici: "npm:7.14.0"
     zod: "catalog:"
+  dependenciesMeta:
+    "@storyteller-platform/mlx-audio":
+      optional: true
   bin:
     ghost-story: ./dist/cli/bin.js
   languageName: unknown
@@ -15790,6 +15794,18 @@ __metadata:
     eslint: "npm:^8.0.0"
     tsup: "npm:^8.5.0"
     tsx: "npm:^4.19.2"
+    typescript: "npm:^5.9.2"
+  languageName: unknown
+  linkType: soft
+
+"@storyteller-platform/mlx-audio@workspace:^, @storyteller-platform/mlx-audio@workspace:libraries/mlx-audio":
+  version: 0.0.0-use.local
+  resolution: "@storyteller-platform/mlx-audio@workspace:libraries/mlx-audio"
+  dependencies:
+    "@storyteller-platform/eslint": "workspace:*"
+    "@tsconfig/strictest": "npm:^2.0.5"
+    "@types/node": "npm:^24.0.0"
+    node-gyp-build: "npm:^4.8.4"
     typescript: "npm:^5.9.2"
   languageName: unknown
   linkType: soft

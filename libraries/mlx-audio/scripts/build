@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CONFIGURATION=release
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --debug)
+        CONFIGURATION=debug
+        shift
+        ;;
+    *)
+        break
+        ;;
+    esac
+done
+
+# SwiftPM cannot compile Metal shaders, so the shader library MLX needs at runtime
+# never comes out of `swift build`. It is fetched from the mlx-swift release that
+# Package.resolved pins and shipped next to the binding, which is where MLX looks
+# for it first.
+METALLIB="prebuilds/darwin-arm64/mlx.metallib"
+if ! node scripts/fetch-metallib.mjs; then
+    if [[ -s "${METALLIB}" ]]; then
+        echo "warning: could not refresh ${METALLIB}, keeping the copy in the tree" >&2
+    else
+        echo "error: ${METALLIB} is missing and could not be fetched" >&2
+        exit 1
+    fi
+fi
+
+swift build -c release --product StorytellerMLXAudio
+BUILT="$(swift build -c release --show-bin-path)"
+DEST="prebuilds/darwin-arm64/@storyteller-platform+mlx-audio.node"
+mkdir -p "$(dirname "${DEST}")"
+cp "${BUILT}/libStorytellerMLXAudio.dylib" "${DEST}"
+# the CLI product looks for the shader library next to itself as well
+cp "${METALLIB}" "${BUILT}/mlx.metallib"
+otool -L "${DEST}"
+codesign -f -s - "${DEST}"
+lipo -archs "${DEST}"

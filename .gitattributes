@@ -1,5 +1,6 @@
 **/__fixtures__/** filter=lfs diff=lfs merge=lfs -text
 libraries/align/prebuilds/** filter=lfs diff=lfs merge=lfs -text
+libraries/mlx-audio/prebuilds/** filter=lfs diff=lfs merge=lfs -text
 *.opus filter=lfs diff=lfs merge=lfs -text
 *.mp3 filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text

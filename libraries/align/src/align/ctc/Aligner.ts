@@ -345,12 +345,12 @@ export class Aligner {
 
     const finiteScores = alignments.filter(({ score }) => score !== -Infinity)
 
-    const unscaledScore =
-      finiteScores.reduce((acc, { score }) => acc + score, 0) /
-      finiteScores.length
-
     const score =
-      finiteScores.length > 0 ? Math.max((unscaledScore + 10) * 10, 0) : 0
+      finiteScores.length > 0
+        ? (finiteScores.reduce((acc, { score }) => acc + Math.exp(score), 0) /
+            finiteScores.length) *
+          100
+        : 0
 
     const {
       sentenceRanges,
