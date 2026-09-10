@@ -1,17 +1,18 @@
 import {
+  type AlignmentOverrides,
   type ManifestLike,
   type ReportJob,
   buildReportView,
 } from "@/alignmentReportView"
 import { withHasPermission } from "@/auth/auth"
 import {
-  type AlignmentOverrides,
   getAlignmentReportForBook,
   updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"
 import { type Job, getJob } from "@/database/jobs"
 import type { UUID } from "@/uuid"
+import { summarizeRunConfig } from "@/work/runConfig"
 
 export const dynamic = "force-dynamic"
 
@@ -32,15 +33,7 @@ function reportJob(job: Job | null): ReportJob | null {
     startedAt: job.startedAt,
     finishedAt: job.finishedAt,
     runSeconds,
-    config: job.config
-      ? {
-          aligner: job.config.aligner,
-          ctcEngine: job.config.ctcEngine,
-          transcriptionEngine: job.config.transcriptionEngine,
-          whisperModel: job.config.whisperModel,
-          language: job.config.language,
-        }
-      : null,
+    config: summarizeRunConfig(job.config),
   }
 }
 

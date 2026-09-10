@@ -23,7 +23,7 @@ export async function getSafeChapterRanges(
       `Track is longer than ${maxSeconds / 60} minutes (${duration / 60}m); using VAD to determine safe split points.`,
     )
     const ranges = await getSafeRanges(input, duration, maxSeconds, 0, signal)
-    return ranges.map((r) => ({ filepath: input, ...r }))
+    return ranges.map((r) => ({ filepath: input, title: null, ...r }))
   }
 
   const initialRanges = chapters.map((chapter, index) => {
@@ -31,6 +31,7 @@ export async function getSafeChapterRanges(
     if (!next)
       return {
         filepath: chapter.filename,
+        title: chapter.title,
         start: chapter.start ?? 0,
         end: duration,
       }
@@ -40,12 +41,18 @@ export async function getSafeChapterRanges(
 
     return {
       filepath: chapter.filename,
+      title: chapter.title,
       start: chapter.start ?? 0,
       end,
     }
   })
 
-  const ranges: { filepath: string; start: number; end: number }[] = []
+  const ranges: {
+    filepath: string
+    title: string | null
+    start: number
+    end: number
+  }[] = []
 
   for (const range of initialRanges) {
     const chapterDuration = range.end - range.start
@@ -68,7 +75,11 @@ export async function getSafeChapterRanges(
     )
 
     ranges.push(
-      ...chapterRanges.map((r) => ({ filepath: range.filepath, ...r })),
+      ...chapterRanges.map((r) => ({
+        filepath: range.filepath,
+        title: range.title,
+        ...r,
+      })),
     )
   }
 

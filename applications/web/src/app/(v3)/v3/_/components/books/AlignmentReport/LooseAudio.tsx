@@ -9,70 +9,80 @@ import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import { type ReportAudioChunk } from "@/alignmentReportView"
+import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
-import { TONE_BADGE, fileClip, hrefStem } from "./shared"
-import { type AudioFile } from "./useAudioFiles"
+import { TONE_BADGE, type Track, trackClip, trackLabel } from "./shared"
 import { type OverrideEditor } from "./useOverrideEditor"
 
 const SHORT_SECONDS = 5
+const GAP_SECONDS = 1
 
 type LooseRow = {
-  file: AudioFile
-  chunk: ReportAudioChunk
+  track: Track
+  start: number
+  end: number
   before: string | null
   after: string | null
 }
 
-function looseRows(files: AudioFile[]): LooseRow[] {
-  const flat = files.flatMap((file) =>
-    file.chunks.map((chunk) => ({ file, chunk })),
-  )
+export function looseRows(
+  tracks: Track[],
+  spans: ReportSpan[],
+  items: ViewSpineItem[],
+): LooseRow[] {
+  const labelByIndex = new Map(items.map((item) => [item.index, item.label]))
   const rows: LooseRow[] = []
-  for (const [index, entry] of flat.entries()) {
-    if (entry.chunk.placed) continue
+  for (const track of tracks) {
+    const covered = spans
+      .filter((span) => span.audio?.track === track.index)
+      .toSorted((a, b) => (a.audio?.start ?? 0) - (b.audio?.start ?? 0))
+    let cursor = 0
     let before: string | null = null
-    let after: string | null = null
-    for (let at = index - 1; at >= 0; at--) {
-      const label = flat[at]?.chunk.label
-      if (label) {
-        before = label
-        break
+    const push = (end: number, after: string | null) => {
+      if (end - cursor >= GAP_SECONDS) {
+        rows.push({ track, start: cursor, end, before, after })
       }
     }
-    for (let at = index + 1; at < flat.length; at++) {
-      const label = flat[at]?.chunk.label
-      if (label) {
-        after = label
-        break
-      }
+    for (const span of covered) {
+      if (!span.audio) continue
+      const label = labelByIndex.get(span.spine) ?? null
+      push(span.audio.start, label)
+      cursor = Math.max(cursor, span.audio.end)
+      before = label
     }
-    rows.push({ ...entry, before, after })
+    push(track.duration, null)
   }
-  return rows.sort((a, b) => b.chunk.duration - a.chunk.duration)
+  return rows.sort((a, b) => b.end - b.start - (a.end - a.start))
 }
 
 export function LooseAudio({
   bookUuid,
-  files,
+  items,
+  spans,
+  tracks,
   editor,
   narrow,
 }: {
   bookUuid: UUID
-  files: AudioFile[]
+  items: ViewSpineItem[]
+  spans: ReportSpan[]
+  tracks: Track[]
   editor: OverrideEditor
   narrow: boolean
 }) {
   const t = useTranslation("AlignmentReport")
   const [showShort, setShowShort] = useState(false)
-  const rows = useMemo(() => looseRows(files), [files])
+  const rows = useMemo(
+    () => looseRows(tracks, spans, items),
+    [tracks, spans, items],
+  )
 
   if (rows.length === 0) return null
 
-  const totalSeconds = rows.reduce((sum, row) => sum + row.chunk.duration, 0)
-  const long = rows.filter((row) => row.chunk.duration >= SHORT_SECONDS)
+  const totalSeconds = rows.reduce((sum, row) => sum + (row.end - row.start), 0)
+  const long = rows.filter((row) => row.end - row.start >= SHORT_SECONDS)
   const shortCount = rows.length - long.length
   const visible = showShort ? rows : long
 
@@ -114,32 +124,26 @@ export function LooseAudio({
         </p>
       ) : (
         <div className="divide-border divide-y overflow-hidden rounded-lg border">
-          {visible.map(({ file, chunk, before, after }) => {
-            const hint = chunk.label
-              ? t("loose.fromExcluded", { label: chunk.label })
-              : before && after
+          {visible.map(({ track, start, end, before, after }) => {
+            const hint =
+              before && after
                 ? t("loose.between", { before, after })
                 : after
                   ? t("loose.beforeFirst", { label: after })
                   : before
                     ? t("loose.afterLast", { label: before })
                     : null
+            const clip = trackClip(bookUuid, track, { start, end, label: hint })
             return (
               <div
-                key={`${file.name}-${chunk.start}`}
+                key={`${track.name}-${start}`}
                 className={cn(
                   "flex items-center gap-2 px-2 py-1 text-xs",
-                  file.excluded && "text-muted-foreground",
+                  track.excluded && "text-muted-foreground",
                 )}
               >
-                {file.present ? (
-                  <PlayButton
-                    clip={fileClip(bookUuid, file.name, {
-                      start: chunk.start,
-                      end: chunk.end,
-                      label: hint,
-                    })}
-                  />
+                {clip ? (
+                  <PlayButton clip={clip} />
                 ) : (
                   <span className="size-7 shrink-0" />
                 )}
@@ -148,25 +152,25 @@ export function LooseAudio({
                     <span
                       className={cn(
                         "shrink-0 tabular-nums",
-                        file.excluded && "line-through",
+                        track.excluded && "line-through",
                       )}
                     >
-                      {hrefStem(file.name)}
+                      {trackLabel(track)}
                     </span>
                     <span className="text-muted-foreground shrink-0 tabular-nums">
-                      {formatClock(chunk.start)} → {formatClock(chunk.end)}
+                      {formatClock(start)} → {formatClock(end)}
                     </span>
                   </span>
                   {!narrow && (
                     <span className="text-muted-foreground truncate text-[10px]">
-                      {file.present ? hint : t("loose.notOnDisk")}
+                      {clip ? hint : t("loose.notOnDisk")}
                     </span>
                   )}
                 </span>
                 <span className="text-muted-foreground ml-auto shrink-0 tabular-nums">
-                  {formatClock(chunk.duration)}
+                  {formatClock(end - start)}
                 </span>
-                {file.excluded && (
+                {track.excluded && (
                   <Badge
                     className={cn("h-4 px-1.5 text-[10px]", TONE_BADGE.muted)}
                   >
@@ -177,20 +181,20 @@ export function LooseAudio({
                   variant="ghost"
                   size="icon-xs"
                   aria-label={
-                    file.excluded
+                    track.excluded
                       ? t("actions.includeFile")
                       : t("actions.excludeFile")
                   }
                   tooltip={
-                    file.excluded
+                    track.excluded
                       ? t("actions.includeFile")
                       : t("actions.excludeFile")
                   }
                   onClick={() => {
-                    editor({ audio: { [file.name]: !file.excluded } })
+                    editor({ audio: { [track.name]: !track.excluded } })
                   }}
                 >
-                  {file.excluded ? <icon.Volume /> : <icon.VolumeOff />}
+                  {track.excluded ? <icon.Volume /> : <icon.VolumeOff />}
                 </TooltipButton>
               </div>
             )

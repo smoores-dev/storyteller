@@ -394,8 +394,6 @@ export default async function processBook({
               bookUuid,
               report: JSON.parse(reportJson) as AnyReport,
             })
-
-            // also create a directory manifest
           } catch (err) {
             logger.warn({
               msg: "Failed to persist alignment report",

@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises"
-import { basename } from "node:path"
 
+import { normalizeReport } from "@/alignmentReportView"
 import { getProcessedAudioFilepath } from "@/assets/paths"
 import { getTrackDuration, isAudioFile, isHiddenFile } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
@@ -100,22 +100,13 @@ export const GET = withHasPermission<Params>("bookRead")(async (
   const report = await getAlignmentReportForBook(bookUuid)
   if (report?.report) {
     const onDisk = new Set(names)
-    const referenced = new Set<string>()
-    for (const chapter of report.report.chapters) {
-      for (const audioFile of chapter.audioFiles) {
-        referenced.add(basename(audioFile.filepath))
-      }
-    }
-    for (const audioFile of report.report.audioFiles) {
-      referenced.add(basename(audioFile.filepath))
-    }
-    for (const audioFile of report.report.unalignedAudioFiles) {
-      referenced.add(basename(audioFile.filepath))
-    }
-
-    for (const name of [...referenced].sort((a, b) => a.localeCompare(b))) {
-      if (onDisk.has(name)) continue
-      files.push({ name, duration: null, present: false })
+    for (const track of normalizeReport(report.report).tracks) {
+      if (onDisk.has(track.name)) continue
+      files.push({
+        name: track.name,
+        duration: track.duration > 0 ? track.duration : null,
+        present: false,
+      })
     }
   }
 

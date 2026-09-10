@@ -14,13 +14,27 @@ export type {
 } from "./align/align.ts"
 export { ctcAlign } from "./align/ctc/align.ts"
 export type { AlignOptions as CtcAlignOptions } from "./align/ctc/Aligner.ts"
-export type {
-  AudioFileContext as CtcAudioFileContext,
-  AudioFileReport as CtcAudioFileReport,
-  ChapterReport as CtcChapterReport,
-  Report as CtcReport,
-  UnalignedAudioFileReport as CtcUnalignedAudioFileReport,
-  UnalignedChapterReport as CtcUnalignedChapterReport,
-  UnalignedNotFoundChapterReport as CtcUnalignedNotFoundChapterReport,
-} from "./align/ctc/report.ts"
+export {
+  REPORT_VERSION,
+  type ReportChunkDebug,
+  type ReportDebug,
+  type ReportSpan,
+  type ReportSpineItem,
+  type ReportTotals,
+  type ReportTrack,
+  type ReportTrackSource,
+  type ReportV3,
+  type SentenceContext,
+  type SpanAudio,
+  type SpanState,
+  type SpanText,
+  type SpineStatus,
+  assembleReport,
+  buildChapterSpans,
+  emptyReport,
+  emptyTotals,
+  spanSeconds,
+  spanSentences,
+} from "./align/report-v3.ts"
+export { type TrackSource, readTrackSource } from "./process/trackSource.ts"
 export { upgradeEpub } from "./upgradeEpub/upgradeEpub.ts"

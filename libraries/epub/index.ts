@@ -98,6 +98,7 @@ export type ParsedXml = Array<XmlNode>
 export type ManifestItem = {
   id: string
   href: string
+  title?: string | undefined
   mediaType?: string | undefined
   fallback?: string | undefined
   mediaOverlay?: string | undefined

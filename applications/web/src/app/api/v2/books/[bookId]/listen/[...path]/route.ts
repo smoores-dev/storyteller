@@ -1,10 +1,8 @@
-import { createHash } from "node:crypto"
 import { existsSync } from "node:fs"
-import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
-import { basename, dirname, extname, join } from "node:path"
+import { mkdir, readdir, stat } from "node:fs/promises"
+import { basename, dirname, extname, join, resolve, sep } from "node:path"
 
-import { createReadableStreamFromReadable } from "@remix-run/node"
-import { type NextRequest, after } from "next/server"
+import { after } from "next/server"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -18,7 +16,9 @@ import {
   createAudiobookManifest,
   getChapterFilename,
   getChapterIdFromFilename,
+  isChapterFilename,
 } from "@/utils/audioManifest"
+import { streamPartialFile } from "@/utils/streamPartialFile"
 import type { UUID } from "@/uuid"
 
 type Params = Promise<{
@@ -118,8 +118,13 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       }
     }
 
-    // handle file requests
     const requestedFile = pathSegments.join("/")
+
+    const root = resolve(audiobookPath)
+    const original = resolve(root, requestedFile)
+    if (!original.startsWith(root + sep)) {
+      return Response.json({ message: "File not found" }, { status: 404 })
+    }
 
     let dir: string[]
     try {
@@ -149,225 +154,104 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       }
       throw error
     }
+
+    if (await isFile(original)) {
+      return await streamPartialFile(request, original)
+    }
+
+    const processed = getProcessedAudioFilepath(book, basename(requestedFile))
+    if (await isFile(processed)) {
+      return await streamPartialFile(request, processed)
+    }
+
     const m4bFiles = dir.filter((f) => extname(f).toLowerCase() === ".m4b")
+    const m4bFile = m4bFiles[0]
 
-    if (m4bFiles.length === 1) {
-      // handle M4B file extraction
-      const m4bFile = m4bFiles[0]
-      if (!m4bFile) {
-        return Response.json({ message: "M4B file not found" }, { status: 404 })
-      }
-      const m4bPath = join(audiobookPath, m4bFile)
+    if (
+      m4bFiles.length !== 1 ||
+      !m4bFile ||
+      !isChapterFilename(requestedFile)
+    ) {
+      return Response.json({ message: "File not found" }, { status: 404 })
+    }
 
-      const [chapters, codec, bitrate] = await Promise.all([
-        getTrackChapters(m4bPath),
-        getSetting("codec"),
-        getSetting("bitrate"),
-      ])
+    const m4bPath = join(audiobookPath, m4bFile)
 
-      const targetChapterIdx = chapters.findIndex(
-        (chapter) => chapter.id === getChapterIdFromFilename(requestedFile),
-      )
-      const targetChapter = chapters[targetChapterIdx]
-      if (targetChapterIdx === -1 || !targetChapter) {
-        const processed = getProcessedAudioFilepath(
-          book,
-          basename(requestedFile),
-        )
-        if (existsSync(processed)) {
-          return await streamPartialFile(request, processed)
-        }
-        return Response.json({ message: "Chapter not found" }, { status: 404 })
-      }
+    const [chapters, codec, bitrate] = await Promise.all([
+      getTrackChapters(m4bPath),
+      getSetting("codec"),
+      getSetting("bitrate"),
+    ])
 
-      const transcodePath = getProcessedAudioFilepath(book, requestedFile)
+    const targetChapterIdx = chapters.findIndex(
+      (chapter) => chapter.id === getChapterIdFromFilename(requestedFile),
+    )
+    const targetChapter = chapters[targetChapterIdx]
+    if (targetChapterIdx === -1 || !targetChapter) {
+      return Response.json({ message: "Chapter not found" }, { status: 404 })
+    }
 
-      // already split the next track so we don't have to wait as long
-      after(async () => {
-        if (targetChapterIdx + 1 > chapters.length) {
-          return
-        }
+    const transcodePath = getProcessedAudioFilepath(book, requestedFile)
 
-        const nextChapter = chapters[targetChapterIdx + 1]
-        if (!nextChapter) {
-          return
-        }
-
-        const chapterFilename = getChapterFilename(
-          targetChapterIdx + 1,
-          codec ?? "mp3",
-        ).filename
-
-        const nextTranscodePath = getProcessedAudioFilepath(
-          book,
-          chapterFilename,
-        )
-        if (existsSync(nextTranscodePath)) {
-          return
-        }
-
-        const success = await splitTrack(
-          m4bPath,
-          nextChapter.startTime,
-          nextChapter.endTime,
-          nextTranscodePath,
-          codec ?? "mp3",
-          bitrate ?? null,
-        )
-
-        if (!success) {
-          logger.error({ msg: "Failed to split track", nextTranscodePath })
-        }
-
+    after(async () => {
+      const nextChapter = chapters[targetChapterIdx + 1]
+      if (!nextChapter) {
         return
-      })
-
-      // check if transcode directory exists
-      const transcodeDir = dirname(transcodePath)
-      if (!existsSync(transcodeDir)) {
-        // return Response.json({ message: "Transcode directory not found" }, { status: 404 })
-        await mkdir(transcodeDir, { recursive: true })
       }
 
-      // TODO: do slightly better check in case of corruption
-      if (existsSync(transcodePath)) {
-        return await streamPartialFile(request, transcodePath)
+      const chapterFilename = getChapterFilename(
+        targetChapterIdx + 1,
+        codec ?? "mp3",
+      ).filename
+
+      const nextTranscodePath = getProcessedAudioFilepath(book, chapterFilename)
+      if (existsSync(nextTranscodePath)) {
+        return
       }
 
       const success = await splitTrack(
         m4bPath,
-        targetChapter.startTime,
-        targetChapter.endTime,
-        transcodePath,
+        nextChapter.startTime,
+        nextChapter.endTime,
+        nextTranscodePath,
         codec ?? "mp3",
         bitrate ?? null,
       )
 
       if (!success) {
-        return Response.json(
-          { message: "Failed to split track" },
-          { status: 500 },
-        )
+        logger.error({ msg: "Failed to split track", nextTranscodePath })
       }
+    })
 
-      return await streamPartialFile(request, transcodePath)
-    } else {
-      // handle directory-based files
-      const sourceFile = join(audiobookPath, requestedFile)
-      const filePath = existsSync(sourceFile)
-        ? sourceFile
-        : getProcessedAudioFilepath(book, basename(requestedFile))
+    await mkdir(dirname(transcodePath), { recursive: true })
 
-      try {
-        return await streamPartialFile(request, filePath)
-      } catch {
-        return Response.json({ message: "File not found" }, { status: 404 })
-      }
+    const success = await splitTrack(
+      m4bPath,
+      targetChapter.startTime,
+      targetChapter.endTime,
+      transcodePath,
+      codec ?? "mp3",
+      bitrate ?? null,
+    )
+
+    if (!success) {
+      return Response.json(
+        { message: "Failed to split track" },
+        { status: 500 },
+      )
     }
+
+    return await streamPartialFile(request, transcodePath)
   } catch (error) {
     logger.error({ msg: "Error in audiobook listen endpoint:", err: error })
     return Response.json({ message: "Internal server error" }, { status: 500 })
   }
 })
 
-/**
- * See https://smoores.dev/post/http_range_requests/#range-requests-implementation
- */
-export const streamPartialFile = async (
-  request: NextRequest,
-  filepath: string,
-) => {
-  const ifRange = request.headers.get("If-Range")?.valueOf()
-  const range = request.headers.get("Range")?.valueOf()
-  const rangesString = range?.replace("bytes=", "")
-  const rangeStrings = rangesString?.split(",")
-
-  let file: FileHandle
+async function isFile(path: string): Promise<boolean> {
   try {
-    file = await open(filepath)
+    return (await stat(path)).isFile()
   } catch {
-    return new Response(null, { status: 404 })
+    return false
   }
-
-  const stats = await file.stat()
-  const mimeType = MediaType.fromPath(filepath)?.mime
-  const lastModified = new Date(stats.mtime).toISOString()
-  const etagBase = `${stats.mtime.valueOf()}-${stats.size}`
-  const etag = `"${createHash("md5").update(etagBase).digest("hex")}"`
-
-  let start = 0
-  let end = stats.size - 1
-
-  const partialResponse =
-    range?.startsWith("bytes=") &&
-    // We're only supporting single ranges for now
-    rangeStrings?.length === 1 &&
-    (!ifRange || ifRange === etag || ifRange === lastModified)
-
-  if (partialResponse) {
-    const firstRangeString = rangeStrings[0]
-
-    const [startString, endString] = (firstRangeString?.trim().split("-") ??
-      []) as [string, string]
-
-    try {
-      const parsedStart = parseInt(startString.trim(), 10)
-      if (!Number.isNaN(parsedStart)) {
-        start = parsedStart
-      }
-      const parsedEnd = parseInt(endString.trim(), 10)
-      if (!Number.isNaN(parsedEnd)) {
-        end = Math.min(parsedEnd, stats.size - 1)
-      }
-    } catch {
-      // If the ranges weren't valid, then leave the defaults
-    }
-  }
-
-  if (start > stats.size - 1) {
-    await file.close()
-    return new Response(null, {
-      status: 416,
-      headers: { "Content-Range": `bytes */${stats.size}` },
-    })
-  }
-
-  const nodeStream = file.createReadStream({ start, end, autoClose: true })
-
-  // attempt handle client disconnections and stream errors gracefully
-  nodeStream.on("error", async (error) => {
-    // client disconnections are expected when skipping/pausing, don't log them
-    if (error.name === "ResponseAborted") {
-      logger.debug({ msg: "response aborted", err: error })
-      await file.close()
-      return
-    }
-
-    if (
-      error.message !== "aborted" &&
-      error.name !== "ERR_STREAM_PREMATURE_CLOSE"
-    ) {
-      logger.error({ msg: "Stream error", err: error })
-    }
-  })
-
-  nodeStream.on("close", async () => {
-    await file.close()
-  })
-  const readableStream = createReadableStreamFromReadable(nodeStream)
-  const response = new Response(readableStream, {
-    status: partialResponse ? 206 : 200,
-    headers: {
-      "Content-Type": mimeType ?? MediaType.OCTET_STREAM.mime,
-      "Content-Length": `${end - start + 1}`,
-      "Accept-Ranges": "bytes",
-      "Last-Modified": new Date(stats.mtime).toString(),
-      Etag: etag,
-      ...(partialResponse && {
-        "Content-Range": `bytes ${start}-${end}/${stats.size}`,
-      }),
-    },
-  })
-
-  return response
 }

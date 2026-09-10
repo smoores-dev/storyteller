@@ -41,6 +41,10 @@
     "./readium": {
       "types": "./dist/readium/index.d.ts",
       "default": "./src/readium/index.ts"
+    },
+    "./report": {
+      "types": "./dist/align/report-v3.d.ts",
+      "default": "./src/align/report-v3.ts"
     }
   },
   "scripts": {

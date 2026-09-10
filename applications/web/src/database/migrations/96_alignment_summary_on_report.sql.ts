@@ -3,7 +3,10 @@ import { readFile } from "fs/promises"
 import { sql } from "kysely"
 
 import { getAlignmentReportFilepath } from "@/assets/paths"
-import { type Report, createAlignmentReport } from "@/database/alignmentReports"
+import {
+  type AnyReport,
+  createAlignmentReport,
+} from "@/database/alignmentReports"
 import { type Book } from "@/database/books"
 import { db } from "@/database/connection"
 import { logger } from "@/logging"
@@ -68,14 +71,14 @@ async function backfillSummaries() {
 
   let count = 0
   for (const row of rows) {
-    let report: Report | null = null
+    let report: AnyReport | null = null
     try {
       const reportText = await readFile(
         getAlignmentReportFilepath(row as Book),
         { encoding: "utf-8" },
       )
 
-      report = JSON.parse(reportText) as Report
+      report = JSON.parse(reportText) as AnyReport
     } catch (error) {
       if (error instanceof Error && error.message.includes("ENOENT")) {
         logger.warn({

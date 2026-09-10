@@ -6,28 +6,31 @@ import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import {
-  type ReportChapterItem,
-  type ReportSpineItem,
-  type ReportUnalignedItem,
-} from "@/alignmentReportView"
+import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
 import { ChapterText } from "./ChapterText"
-import { JudgmentBadge, ReasonBadge } from "./SpineList"
+import { JudgmentBadge, StatusBadge } from "./SpineList"
 import {
   TONE_TEXT,
-  chapterClip,
+  type Track,
   confidenceTone,
   hrefStem,
+  matchedPercent,
   percentTone,
+  spansOf,
+  trackClip,
+  trackLabel,
 } from "./shared"
 import { type OverrideEditor } from "./useOverrideEditor"
 
 export function ChapterDetail({
   bookUuid,
   item,
+  items,
+  spans,
+  tracks,
   editor,
   onBack,
   onPrev,
@@ -35,7 +38,10 @@ export function ChapterDetail({
   narrow,
 }: {
   bookUuid: UUID
-  item: ReportSpineItem | null
+  item: ViewSpineItem | null
+  items: ViewSpineItem[]
+  spans: ReportSpan[]
+  tracks: Track[]
   editor: OverrideEditor
   onBack?: () => void
   onPrev?: () => void
@@ -74,8 +80,7 @@ export function ChapterDetail({
           {item.label}
         </h3>
         <span className="text-muted-foreground shrink-0 text-[11px]">
-          {item.spineIndex !== null &&
-            `${t("detail.spine", { index: item.spineIndex })} · `}
+          {item.index >= 0 && `${t("detail.spine", { index: item.index })} · `}
           {hrefStem(item.href)}
         </span>
         <JudgmentBadge judgment={item.judgment} />
@@ -136,8 +141,16 @@ export function ChapterDetail({
         </div>
       </div>
 
-      {item.kind === "chapter" ? (
-        <ChapterBody bookUuid={bookUuid} item={item} editor={editor} />
+      {item.status === "aligned" ? (
+        <ChapterBody
+          bookUuid={bookUuid}
+          item={item}
+          items={items}
+          spans={spansOf(spans, item.index)}
+          allSpans={spans}
+          tracks={tracks}
+          editor={editor}
+        />
       ) : (
         <UnalignedBody item={item} />
       )}
@@ -145,46 +158,114 @@ export function ChapterDetail({
   )
 }
 
+type TrackHull = {
+  track: Track
+  start: number
+  end: number
+  stretches: number
+  interpolated: boolean
+  sharedWith: { label: string; role: "before" | "after" }[]
+}
+
+function trackHulls(
+  item: ViewSpineItem,
+  items: ViewSpineItem[],
+  spans: ReportSpan[],
+  allSpans: ReportSpan[],
+  tracks: Track[],
+): TrackHull[] {
+  const labelByIndex = new Map(items.map((entry) => [entry.index, entry.label]))
+  const hulls = new Map<number, TrackHull>()
+  for (const span of spans) {
+    if (!span.audio) continue
+    const track = tracks[span.audio.track]
+    if (!track) continue
+    const existing = hulls.get(track.index)
+    if (existing) {
+      existing.start = Math.min(existing.start, span.audio.start)
+      existing.end = Math.max(existing.end, span.audio.end)
+      existing.stretches += 1
+      existing.interpolated ||= span.state === "interpolated"
+    } else {
+      hulls.set(track.index, {
+        track,
+        start: span.audio.start,
+        end: span.audio.end,
+        stretches: 1,
+        interpolated: span.state === "interpolated",
+        sharedWith: [],
+      })
+    }
+  }
+  for (const hull of hulls.values()) {
+    const seen = new Set<number>()
+    for (const span of allSpans) {
+      if (
+        !span.audio ||
+        span.audio.track !== hull.track.index ||
+        span.spine === item.index ||
+        seen.has(span.spine)
+      ) {
+        continue
+      }
+      seen.add(span.spine)
+      hull.sharedWith.push({
+        label: labelByIndex.get(span.spine) ?? String(span.spine),
+        role: span.audio.start < hull.start ? "before" : "after",
+      })
+    }
+  }
+  return [...hulls.values()].sort((a, b) => a.track.index - b.track.index)
+}
+
 function ChapterBody({
   bookUuid,
   item,
+  items,
+  spans,
+  allSpans,
+  tracks,
   editor,
 }: {
   bookUuid: UUID
-  item: ReportChapterItem
+  item: ViewSpineItem
+  items: ViewSpineItem[]
+  spans: ReportSpan[]
+  allSpans: ReportSpan[]
+  tracks: Track[]
   editor: OverrideEditor
 }) {
   const t = useTranslation("AlignmentReport")
+  const hulls = trackHulls(item, items, spans, allSpans, tracks)
   const allAudioExcluded =
-    item.audio.length > 0 && item.audio.every((audio) => audio.excluded)
+    hulls.length > 0 && hulls.every((hull) => hull.track.excluded)
 
   const sentencePercent =
-    item.judgment === "approved"
-      ? 100
-      : (item.alignedSentenceCount / item.chapterSentenceCount) * 100
+    item.judgment === "approved" ? 100 : matchedPercent(item)
+  const score = item.judgment === "approved" ? 100 : item.score
+  const audioSeconds = item.matchedSeconds + item.interpolatedSeconds
 
-  const confidence = item.judgment === "approved" ? 100 : item.confidence
   const stats = [
     {
-      key: "confidence",
+      key: "score",
       value: (
         <span>
-          {item.judgment === "approved" ? (
+          {item.judgment === "approved" && item.score !== null ? (
             <span>
-              {" "}
-              <s>{item.confidence.toFixed(0)}</s> {confidence.toFixed(0)}{" "}
+              <s>{item.score.toFixed(0)}</s> 100
             </span>
+          ) : score === null ? (
+            "—"
           ) : (
-            confidence.toFixed(0)
-          )}{" "}
+            score.toFixed(0)
+          )}
         </span>
       ),
-      tone: confidenceTone(confidence),
-      // label: t("detail.confidence"),
+      tone: confidenceTone(score),
       icon: (
         <icon.FieldIcon
           field="alignmentConfidence"
-          className={TONE_TEXT[confidenceTone(confidence)]}
+          className={TONE_TEXT[confidenceTone(score)]}
         />
       ),
     },
@@ -192,18 +273,24 @@ function ChapterBody({
       key: "sentences",
       value: (
         <span>
-          {item.alignedSentenceCount} /{" "}
+          {item.matchedSentenceCount} /{" "}
           {item.judgment === "approved" ? (
             <span>
-              <s>{item.chapterSentenceCount} </s> {item.alignedSentenceCount}
+              <s>{item.sentenceCount}</s> {item.matchedSentenceCount}
             </span>
           ) : (
-            item.chapterSentenceCount
+            item.sentenceCount
+          )}
+          {item.interpolatedSentenceCount > 0 && (
+            <span className="text-muted-foreground ml-1 text-[11px] font-normal">
+              {t("detail.interpolated", {
+                count: item.interpolatedSentenceCount,
+              })}
+            </span>
           )}
         </span>
       ),
       tone: percentTone(sentencePercent),
-      // label: t("detail.missing", { count: missing }),
       icon: (
         <icon.FieldIcon
           field="alignmentSentenceCoverage"
@@ -213,22 +300,15 @@ function ChapterBody({
     },
     {
       key: "audio",
-      value: formatClock(item.audioSeconds),
-      tone: item.audio.length === 0 ? ("poor" as const) : ("muted" as const),
-      // label: t("detail.files", { count: item.audio.length }),
+      value: formatClock(audioSeconds),
+      tone: hulls.length === 0 ? ("poor" as const) : ("muted" as const),
       icon: <icon.FieldIcon field="alignmentAudioCoverage" />,
     },
-    // {
-    //   key: "perSentence",
-    //   value: perSentence === null ? "—" : `${perSentence.toFixed(1)} s`,
-    //   tone: "muted" as const,
-    //   label: t("detail.perSentence"),
-    // },
   ]
 
   return (
     <>
-      <div className={cn("grid gap-3", "grid-cols-3")}>
+      <div className="grid grid-cols-3 gap-3">
         {stats.map((stat) => (
           <div key={stat.key} className="flex items-center gap-1">
             {stat.icon}
@@ -244,43 +324,57 @@ function ChapterBody({
         ))}
       </div>
 
-      {item.audio.length === 0 ? (
+      {hulls.length === 0 ? (
         <p className="text-muted-foreground text-xs">
           {t("detail.noAudioFiles")}
         </p>
       ) : (
         <div className="flex flex-wrap items-center gap-1">
-          {item.audio.map((audio) => {
-            const shared = audio.sharedWith
+          {hulls.map((hull) => {
+            const shared = hull.sharedWith
               .map((entry) =>
                 entry.role === "before"
                   ? t("detail.sharedBefore", { label: entry.label })
                   : t("detail.sharedAfter", { label: entry.label }),
               )
               .join(" · ")
+            const clip = trackClip(bookUuid, hull.track, {
+              start: hull.start,
+              end: hull.end,
+              label: item.label,
+            })
+            const title = [
+              `${hull.track.name} · ${formatClock(hull.start)} → ${formatClock(hull.end)}`,
+              t("detail.stretches", { count: hull.stretches }),
+              !hull.track.present && clip ? t("detail.fromOriginal") : null,
+              shared || null,
+            ]
+              .filter((part): part is string => part !== null)
+              .join(" · ")
             return (
               <span
-                key={`${audio.name}-${audio.start}`}
-                title={`${audio.name} · ${formatClock(audio.start)} → ${formatClock(audio.end)}${shared ? ` · ${shared}` : ""}`}
+                key={hull.track.name}
+                title={title}
                 className={cn(
                   "inline-flex items-center gap-0.5 rounded-md border py-0.5 pr-0.5 pl-0.5 text-[11px]",
-                  audio.excluded && "text-muted-foreground",
+                  hull.track.excluded && "text-muted-foreground",
                 )}
               >
-                <PlayButton
-                  clip={chapterClip(bookUuid, item.label, audio)}
-                  className="size-5"
-                />
+                {clip ? (
+                  <PlayButton clip={clip} className="size-5" />
+                ) : (
+                  <span className="size-5 shrink-0" />
+                )}
                 <span
                   className={cn(
                     "tabular-nums",
-                    audio.excluded && "line-through",
+                    hull.track.excluded && "line-through",
                   )}
                 >
-                  {hrefStem(audio.name)}
+                  {trackLabel(hull.track)}
                 </span>
                 <span className="text-muted-foreground ml-1 tabular-nums">
-                  {formatClock(audio.duration)}
+                  {formatClock(hull.end - hull.start)}
                 </span>
                 {shared && (
                   <icon.Link className="text-muted-foreground ml-0.5 size-2.5" />
@@ -290,20 +384,22 @@ function ChapterBody({
                   size="icon-xs"
                   className="size-5"
                   aria-label={
-                    audio.excluded
+                    hull.track.excluded
                       ? t("actions.includeFile")
                       : t("actions.excludeFile")
                   }
                   tooltip={
-                    audio.excluded
+                    hull.track.excluded
                       ? t("actions.includeFile")
                       : t("actions.excludeFile")
                   }
                   onClick={() => {
-                    editor({ audio: { [audio.name]: !audio.excluded } })
+                    editor({
+                      audio: { [hull.track.name]: !hull.track.excluded },
+                    })
                   }}
                 >
-                  {audio.excluded ? <icon.Volume /> : <icon.VolumeOff />}
+                  {hull.track.excluded ? <icon.Volume /> : <icon.VolumeOff />}
                 </TooltipButton>
               </span>
             )
@@ -315,7 +411,7 @@ function ChapterBody({
               onClick={() => {
                 editor({
                   audio: Object.fromEntries(
-                    item.audio.map((audio) => [audio.name, !allAudioExcluded]),
+                    hulls.map((hull) => [hull.track.name, !allAudioExcluded]),
                   ),
                 })
               }}
@@ -329,20 +425,20 @@ function ChapterBody({
         </div>
       )}
 
-      <ChapterText bookUuid={bookUuid} item={item} />
+      <ChapterText bookUuid={bookUuid} item={item} spans={spans} />
     </>
   )
 }
 
-function UnalignedBody({ item }: { item: ReportUnalignedItem }) {
+function UnalignedBody({ item }: { item: ViewSpineItem }) {
   const t = useTranslation("AlignmentReport")
   return (
     <>
       <div className="flex flex-wrap items-center gap-1.5">
-        <ReasonBadge reason={item.reason} />
-        {item.chapterSentenceCount !== null && (
+        <StatusBadge status={item.status} />
+        {item.sentenceCount > 0 && (
           <span className="text-muted-foreground text-xs tabular-nums">
-            {t("detail.sentenceCount", { count: item.chapterSentenceCount })}
+            {t("detail.sentenceCount", { count: item.sentenceCount })}
           </span>
         )}
       </div>

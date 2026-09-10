@@ -235,6 +235,7 @@ export async function processFile(
                 range.filepath,
                 range.start,
                 range.end,
+                range.title,
               ),
             )
             outputFiles.push(outputFilename)

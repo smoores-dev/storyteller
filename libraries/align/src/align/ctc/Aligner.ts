@@ -7,7 +7,6 @@ import {
   relative,
 } from "node:path/posix"
 
-import { type SegmentationResult } from "@echogarden/text-segmentation"
 import { enumerate, max } from "itertools"
 import memoize from "memoize"
 import { type Logger } from "pino"
@@ -25,6 +24,7 @@ import { type EmissionsReader } from "../../emit/fs.ts"
 import { parseDom } from "../../markup/parseDom.ts"
 import { segmentChapter } from "../../markup/segmentation.ts"
 import { inlineFootnotes, liftText } from "../../markup/transform.ts"
+import { readTrackSource } from "../../process/trackSource.ts"
 import {
   type SentenceRange,
   type WordRange,
@@ -37,6 +37,18 @@ import {
   interpolateSentenceRanges,
   slotKey,
 } from "../interpolateSentenceRanges.ts"
+import {
+  type ReportChunkDebug,
+  type ReportSpan,
+  type ReportSpineItem,
+  type ReportTrack,
+  type ReportV3,
+  type SentenceContext,
+  assembleReport,
+  buildChapterSpans,
+  emptyReport,
+  roundSeconds,
+} from "../report-v3.ts"
 import { slugify } from "../slugify.ts"
 
 import { type EmissionTimings, framesToSeconds } from "./emissions.ts"
@@ -46,15 +58,30 @@ import {
   detectDroppedLabels,
 } from "./forcedAlign.ts"
 import { buildFragmentMaps, createMediaOverlay } from "./mediaOverlay.ts"
-import {
-  type AlignedChapter,
-  type Report,
-  buildAudioFileContexts,
-  updateAudioFileReports,
-} from "./report.ts"
+import { type AlignedChapter } from "./report.ts"
 import { type Match, findCtcBoundaries } from "./search.ts"
 
 const MAX_SEARCH_LENGTH = 40_000
+
+type PendingSpineItem = Pick<
+  ReportSpineItem,
+  "index" | "href" | "title" | "status" | "sentenceCount" | "preview"
+> & { chapterId: string }
+
+function hrefStem(href: string): string {
+  const path = href.split("#")[0] ?? href
+  const name = path.split("/").pop() ?? path
+  return name.replace(/\.[^.]+$/, "").toLowerCase()
+}
+
+function previewOf(sentences: { text: string }[]): string {
+  return sentences
+    .map((s) => s.text)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160)
+}
 
 export interface AlignOptions {
   reportsPath?: string | null | undefined
@@ -84,12 +111,15 @@ export class Aligner {
 
   private audioFileDurations: Record<string, number> = {}
 
-  public report: Report = {
-    chapters: [],
-    unalignedChapters: [],
-    audioFiles: [],
-    unalignedAudioFiles: [],
-  }
+  public report: ReportV3 = emptyReport("ctc")
+
+  private pendingSpine = new Map<number, PendingSpineItem>()
+
+  private chunkDebug: ReportChunkDebug[] = []
+
+  private sentenceScores = new Map<string, number>()
+
+  private titles = new Map<string, string>()
 
   constructor(
     public epub: Epub,
@@ -103,6 +133,8 @@ export class Aligner {
   ) {
     this.audiofileFrames = new Map()
     this.audiofileEmissionTimings = new Map()
+    console.log(emissionsReader.frameMap, emissionsReader.frameMap.length)
+    console.log(audiofiles, audiofiles.length)
     for (const [i, audiofile] of enumerate(audiofiles)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const [, framesStart, framesEnd] = emissionsReader.frameMap[i]!
@@ -261,50 +293,8 @@ export class Aligner {
     return mediaOverlayId
   }
 
-  private addChapterReport(
-    spineIndex: number,
-    chapter: ManifestItem,
-    chunk: number,
-    score: number,
-    chapterSentences: SegmentationResult["sentences"],
-    sentenceCount: number,
-    sentenceRanges: SentenceRange[],
-    startSentence: number,
-    endSentence: number,
-    alignedEmissionsStart: number,
-    alignedEmissionsEnd: number,
-  ) {
-    const audioFiles = buildAudioFileContexts(sentenceRanges)
-
-    this.report.chapters.push({
-      href: chapter.href,
-      spineIndex,
-      chunk,
-      score,
-      transcriptionOffset: alignedEmissionsStart,
-      endTranscriptionOffset: alignedEmissionsEnd,
-      firstMatchedSentenceId: startSentence,
-      firstMatchedSentenceContext: {
-        prevSentence: chapterSentences[startSentence - 1]?.text ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        matchedSentence: chapterSentences[startSentence]!.text,
-        matchedSentenceOffset: startSentence,
-        nextSentence: chapterSentences[startSentence + 1]?.text ?? null,
-      },
-      lastMatchedSentenceId: endSentence,
-      lastMatchedSentenceContext: {
-        prevSentence: chapterSentences[endSentence - 1]?.text ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        matchedSentence: chapterSentences[endSentence]!.text,
-        matchedSentenceOffset: endSentence,
-        nextSentence: chapterSentences[endSentence + 1]?.text ?? null,
-      },
-      chapterSentenceCount: sentenceCount,
-      alignedSentenceCount: sentenceRanges.length,
-      audioFiles,
-    })
-
-    updateAudioFileReports(this.report, audioFiles, this.audioFileDurations)
+  private markSpine(item: PendingSpineItem) {
+    this.pendingSpine.set(item.index, item)
   }
 
   private async getSentenceRanges(
@@ -480,6 +470,20 @@ export class Aligner {
       lastFoundSentence = i
       lastFoundSentenceEnd = alignments[endOffset]!.endFrame
 
+      const sentenceScores = alignments
+        .slice(startOffset, endOffset + 1)
+        .map((a) => a.score)
+        .filter((score) => score !== -Infinity)
+      if (sentenceScores.length > 0) {
+        const mean =
+          sentenceScores.reduce((acc, score) => acc + score, 0) /
+          sentenceScores.length
+        this.sentenceScores.set(
+          slotKey({ chapterId, id: sentenceIndexOffset + i }),
+          Math.min(Math.max((mean + 10) * 10, 0), 100),
+        )
+      }
+
       const { start, end, audiofile } = this.frameRangeToAudioRange(
         startFrame,
         alignments[endOffset]!.endFrame,
@@ -492,6 +496,7 @@ export class Aligner {
         start,
         end,
         audiofile,
+        interpolated: false,
       })
 
       if (
@@ -565,6 +570,7 @@ export class Aligner {
           start,
           end,
           audiofile,
+          interpolated: false,
         })
       }
       if (ranges.length) wordRanges.push(ranges)
@@ -635,7 +641,6 @@ export class Aligner {
     chapterId: string,
     chunk: number,
     sentenceIndexOffset: number,
-    chapterSentences: SegmentationResult["sentences"],
     slugifiedChapter: string,
     sentenceStarts: [number, number][],
     wordStarts: [number, number][][],
@@ -700,19 +705,15 @@ export class Aligner {
       endOffset: alignedEmissionsEnd,
     })
 
-    this.addChapterReport(
-      spineIndex,
-      chapter,
+    this.chunkDebug.push({
+      spine: spineIndex,
       chunk,
+      firstSentence: firstFoundSentence,
+      lastSentence: lastFoundSentence,
+      emissionsStart: alignedEmissionsStart,
+      emissionsEnd: alignedEmissionsEnd,
       score,
-      chapterSentences,
-      sentenceStarts.length,
-      sentenceRanges,
-      firstFoundSentence,
-      lastFoundSentence,
-      alignedEmissionsStart,
-      alignedEmissionsEnd,
-    )
+    })
 
     return {
       lastSentenceRange: sentenceRanges.at(-1) ?? null,
@@ -774,6 +775,22 @@ export class Aligner {
     this.timing.setMetadata("language", locale.toString())
     this.timing.setMetadata("granularity", this.granularity)
 
+    const toc = await this.epub.getTableOfContents({ resolveToRoot: true })
+    const visit = (
+      items: { href?: string; title: string; children?: unknown }[],
+    ) => {
+      for (const item of items) {
+        if (item.href) {
+          const key = hrefStem(item.href)
+          if (!this.titles.has(key)) this.titles.set(key, item.title)
+        }
+        if (Array.isArray(item.children)) {
+          visit(item.children as typeof items)
+        }
+      }
+    }
+    visit(toc?.children ?? [])
+
     return { locale }
   }
 
@@ -813,10 +830,17 @@ export class Aligner {
     locale: Intl.Locale,
   ) {
     const chapterId = spineItem.id
+    const title = this.titles.get(hrefStem(spineItem.href)) ?? null
+
     if (manifest[chapterId]?.properties?.includes("nav")) {
-      this.report.unalignedChapters.push({
+      this.markSpine({
+        index,
         href: spineItem.href,
-        reason: "is-nav",
+        chapterId,
+        title,
+        status: "is-nav",
+        sentenceCount: 0,
+        preview: null,
       })
       return []
     }
@@ -840,9 +864,14 @@ export class Aligner {
 
     if (chapterSentences.length === 0 || slugifiedChapterLength === 0) {
       this.logger?.info(`Chapter #${index} has no text; skipping`)
-      this.report.unalignedChapters.push({
+      this.markSpine({
+        index,
         href: spineItem.href,
-        reason: "no-text",
+        chapterId,
+        title,
+        status: "no-text",
+        sentenceCount: 0,
+        preview: null,
       })
       return []
     }
@@ -853,9 +882,14 @@ export class Aligner {
       chapterSentences[0]!.words.length < 4
     ) {
       this.logger?.info(`Chapter #${index} is fewer than four words; skipping`)
-      this.report.unalignedChapters.push({
+      this.markSpine({
+        index,
         href: spineItem.href,
-        reason: "too-short",
+        chapterId,
+        title,
+        status: "too-short",
+        sentenceCount: chapterSentences.length,
+        preview: previewOf(chapterSentences),
       })
       return []
     }
@@ -944,29 +978,6 @@ export class Aligner {
         this.logger?.info(
           `Could not find chapter #${index} in the transcripton`,
         )
-        this.report.unalignedChapters.push({
-          href: spineItem.href,
-          reason: "not-found",
-          spineIndex: index,
-          score: 0,
-          chapterSentenceCount: chunkSentences.length,
-          start: chapterSentences
-            .slice(firstSentence, firstSentence + 3)
-            .map((s) => s.text)
-            .join("")
-            .slice(0, 80),
-          end: chapterSentences
-            .slice(
-              Math.max(
-                firstSentence,
-                firstSentence + chunkSentences.length - 3,
-              ),
-              firstSentence + chunkSentences.length,
-            )
-            .map((s) => s.text)
-            .join("")
-            .slice(-80),
-        })
         continue
       }
 
@@ -975,29 +986,6 @@ export class Aligner {
         this.logger?.info(
           `Could not find chapter #${index} in the transcripton`,
         )
-        this.report.unalignedChapters.push({
-          href: spineItem.href,
-          reason: "not-found",
-          spineIndex: index,
-          score: 0,
-          chapterSentenceCount: chunkSentences.length,
-          start: chapterSentences
-            .slice(firstSentence, firstSentence + 3)
-            .map((s) => s.text)
-            .join("")
-            .slice(0, 80),
-          end: chapterSentences
-            .slice(
-              Math.max(
-                firstSentence,
-                firstSentence + chunkSentences.length - 3,
-              ),
-              firstSentence + chunkSentences.length,
-            )
-            .map((s) => s.text)
-            .join("")
-            .slice(-80),
-        })
         continue
       }
 
@@ -1026,7 +1014,6 @@ export class Aligner {
         chapterId,
         chunkIndex,
         firstSentence,
-        chapterSentences,
         chunkString,
         slugifiedChapterRanges,
         slugifiedWordStarts,
@@ -1041,6 +1028,21 @@ export class Aligner {
     }
 
     const chunkEntries = this.alignedChapters.slice(firstAlignedChapterIndex)
+    this.markSpine({
+      index,
+      href: spineItem.href,
+      chapterId,
+      title,
+      status: chunkEntries.length > 0 ? "aligned" : "not-found",
+      sentenceCount: chapterSentences.length,
+      preview:
+        chunkEntries.length > 0
+          ? null
+          : previewOf([
+              ...chapterSentences.slice(0, 3),
+              ...chapterSentences.slice(-3),
+            ]),
+    })
     if (chunkEntries.length > 1) {
       const claimed = chunkEntries.filter((e) => e.sentenceRanges.length > 0)
       const offsetSources = claimed.length > 0 ? claimed : chunkEntries
@@ -1127,17 +1129,7 @@ export class Aligner {
       collapsedStart += sentences.length
     }
 
-    for (const audiofile of this.audiofiles) {
-      if (
-        !this.report.audioFiles.some(({ filepath }) => filepath === audiofile)
-      ) {
-        this.report.unalignedAudioFiles.push({
-          filepath: audiofile,
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          duration: this.audioFileDurations[audiofile]!,
-        })
-      }
-    }
+    this.report = await this.buildReport(expanded)
 
     await this.epub.addMetadata({
       type: "meta",
@@ -1162,5 +1154,92 @@ export class Aligner {
       `,
       "utf-8",
     )
+  }
+
+  private async buildReport(ranges: SentenceRange[]): Promise<ReportV3> {
+    const trackIndex = new Map(this.audiofiles.map((file, i) => [file, i]))
+    const rangesByChapter = new Map<string, SentenceRange[]>()
+    for (const range of ranges) {
+      const list = rangesByChapter.get(range.chapterId) ?? []
+      list.push(range)
+      rangesByChapter.set(range.chapterId, list)
+    }
+
+    const spine: Omit<
+      ReportSpineItem,
+      | "matchedSentenceCount"
+      | "interpolatedSentenceCount"
+      | "matchedSeconds"
+      | "interpolatedSeconds"
+      | "score"
+    >[] = []
+    const spans: ReportSpan[] = []
+
+    for (const pending of this.pendingSpine.values()) {
+      const { chapterId, ...item } = pending
+      let firstMatch: SentenceContext | null = null
+      let lastMatch: SentenceContext | null = null
+
+      if (item.sentenceCount > 0) {
+        const chapterSpans = buildChapterSpans({
+          spine: item.index,
+          sentenceCount: item.sentenceCount,
+          ranges: rangesByChapter.get(chapterId) ?? [],
+          trackIndex: (audiofile) => trackIndex.get(audiofile) ?? -1,
+          sentenceScore: (id) =>
+            this.sentenceScores.get(slotKey({ chapterId, id })) ?? null,
+        })
+        spans.push(...chapterSpans)
+
+        const aligned = chapterSpans.filter((span) => span.state === "aligned")
+        const first = aligned[0]
+        const last = aligned.at(-1)
+        if (first && last) {
+          const sentences = await this.getChapterSentences(chapterId)
+          const context = (id: number): SentenceContext => ({
+            prevSentence: sentences[id - 1]?.text ?? null,
+            matchedSentence: sentences[id]?.text ?? "",
+            nextSentence: sentences[id + 1]?.text ?? null,
+          })
+          firstMatch = context(first.firstSentence)
+          lastMatch = context(last.lastSentence)
+        }
+      }
+
+      spine.push({ ...item, firstMatch, lastMatch })
+    }
+
+    const tracks: Omit<
+      ReportTrack,
+      "matchedSeconds" | "interpolatedSeconds"
+    >[] = []
+    let offset = 0
+    for (const [index, audiofile] of enumerate(this.audiofiles)) {
+      const duration = this.audioFileDurations[audiofile] ?? 0
+      const source = await readTrackSource(audiofile)
+      tracks.push({
+        index,
+        name: basename(audiofile),
+        duration: roundSeconds(duration),
+        offset: roundSeconds(offset),
+        source: source
+          ? {
+              file: source.source,
+              start: source.start,
+              end: source.end,
+              title: source.title ?? null,
+            }
+          : null,
+      })
+      offset += duration
+    }
+
+    return assembleReport({
+      aligner: "ctc",
+      spine,
+      tracks,
+      spans,
+      debug: { chunks: this.chunkDebug },
+    })
   }
 }

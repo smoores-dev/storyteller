@@ -3,13 +3,11 @@
 import { useCallback } from "react"
 
 import {
+  type AlignmentAudioOverride,
+  type AlignmentChapterOverride,
   type BookAlignmentReportView,
   type Judgment,
 } from "@/alignmentReportView"
-import {
-  type AlignmentAudioOverride,
-  type AlignmentChapterOverride,
-} from "@/database/alignmentReports"
 import { useUpdateBookAlignmentOverridesMutation } from "@/store/api"
 
 export type OverrideChange = {
@@ -23,7 +21,6 @@ export function useOverrideEditor(view: BookAlignmentReportView) {
   return useCallback(
     (change: OverrideChange) => {
       const chapters: Record<string, AlignmentChapterOverride> = {}
-      const unalignedChapters: Record<string, AlignmentChapterOverride> = {}
       const audioFiles: Record<string, AlignmentAudioOverride> = {}
 
       for (const item of view.items) {
@@ -32,21 +29,20 @@ export function useOverrideEditor(view: BookAlignmentReportView) {
             ? change.judgments[item.href]
             : item.judgment
         if (!judgment) continue
-        const target = item.kind === "chapter" ? chapters : unalignedChapters
-        target[item.href] = { judgment }
+        chapters[item.href] = { judgment }
       }
 
-      for (const file of view.audioFiles) {
+      for (const track of view.tracks) {
         const excluded =
-          change.audio && file.name in change.audio
-            ? change.audio[file.name]
-            : file.excluded
-        if (excluded) audioFiles[file.name] = { excluded: true }
+          change.audio && track.name in change.audio
+            ? change.audio[track.name]
+            : track.excluded
+        if (excluded) audioFiles[track.name] = { excluded: true }
       }
 
       void update({
         uuid: view.bookUuid,
-        overrides: { chapters, unalignedChapters, audioFiles },
+        overrides: { chapters, audioFiles },
       })
     },
     [view, update],

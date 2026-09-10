@@ -2,10 +2,13 @@ import { type Clip } from "@v3/_/components/audio"
 
 import {
   type Judgment,
-  type ReportChapterAudio,
-  type ReportSpineItem,
+  type ReportSpan,
+  type ViewSpineItem,
+  type ViewTrack,
 } from "@/alignmentReportView"
 import { type UUID } from "@/uuid"
+
+export type Track = ViewTrack & { present: boolean }
 
 export type ReportTone = "positive" | "good" | "moderate" | "poor" | "muted"
 
@@ -89,47 +92,74 @@ export function judgmentTone(judgment: Judgment | null): ReportTone | null {
   return null
 }
 
-export function itemTone(item: ReportSpineItem): ReportTone {
+export function matchedPercent(item: ViewSpineItem): number | null {
+  if (item.sentenceCount === 0) return null
+  return (item.matchedSentenceCount / item.sentenceCount) * 100
+}
+
+export function itemTone(item: ViewSpineItem): ReportTone {
   const judged = judgmentTone(item.judgment)
   if (judged) return judged
-  if (item.kind === "unaligned") {
-    return item.reason === "not-found" ? "poor" : "muted"
-  }
-  return confidenceTone(item.confidence)
+  if (item.status === "not-found") return "poor"
+  if (item.status !== "aligned") return "muted"
+  return percentTone(matchedPercent(item))
+}
+
+export function trackTone(track: Track): ReportTone {
+  if (track.excluded) return "muted"
+  if (track.duration <= 0) return "muted"
+  const placed = track.matchedSeconds + track.interpolatedSeconds
+  if (placed === 0) return "poor"
+  return placed / track.duration > 0.98 ? "good" : "moderate"
 }
 
 export function hrefStem(href: string): string {
   return (href.split("/").pop() ?? href).replace(/\.[^.]+$/, "")
 }
 
-export function chapterClip(
+export function trackLabel(track: ViewTrack): string {
+  return track.source?.title ?? hrefStem(track.name)
+}
+
+export function spansOf(spans: ReportSpan[], index: number): ReportSpan[] {
+  return spans.filter((span) => span.spine === index)
+}
+
+export function trackClip(
   bookUuid: UUID,
-  label: string,
-  audio: ReportChapterAudio,
-): Clip {
+  track: Track,
+  range?: { start?: number; end?: number; label?: string | null },
+): Clip | null {
+  const label = range?.label ?? trackLabel(track)
+  if (track.present) {
+    return {
+      bookUuid,
+      path: track.name,
+      name: track.name,
+      ...(range?.start !== undefined && { start: range.start }),
+      ...(range?.end !== undefined && { end: range.end }),
+      label,
+      sublabel: track.name,
+    }
+  }
+  if (!track.source) return null
+  const base = track.source.start
   return {
     bookUuid,
-    path: audio.name,
-    name: audio.name,
-    start: audio.start,
-    end: audio.end,
+    path: track.source.file,
+    name: track.name,
+    start: base + (range?.start ?? 0),
+    end: base + (range?.end ?? track.duration),
     label,
-    sublabel: audio.name,
+    sublabel: hrefStem(track.source.file),
   }
 }
 
-export function fileClip(
-  bookUuid: UUID,
-  name: string,
-  range?: { start: number; end?: number; label?: string | null },
-): Clip {
-  return {
-    bookUuid,
-    path: name,
-    name,
-    ...(range && { start: range.start }),
-    ...(range?.end !== undefined && { end: range.end }),
-    label: range?.label ?? hrefStem(name),
-    sublabel: name,
-  }
+export function trackTime(
+  track: Track,
+  clip: Clip,
+  currentTime: number,
+): number {
+  if (clip.path === track.name) return currentTime
+  return currentTime - (track.source?.start ?? 0)
 }

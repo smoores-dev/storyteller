@@ -13,6 +13,7 @@ export interface TrackSource {
   sourceSize: number
   start: number
   end: number
+  title?: string | null
 }
 
 export function getTrackSourceFilepath(audioFilepath: string) {
@@ -25,12 +26,13 @@ export async function describeTrackSource(
   filepath: string,
   start: number,
   end: number,
+  title: string | null = null,
 ): Promise<TrackSource> {
   const { size } = await stat(filepath)
   const rel = relative(root, filepath)
   const source =
     rel && !rel.startsWith("..") && !isAbsolute(rel) ? rel : basename(filepath)
-  return { source, sourceSize: size, start, end }
+  return { source, sourceSize: size, start, end, title }
 }
 
 export async function writeTrackSource(

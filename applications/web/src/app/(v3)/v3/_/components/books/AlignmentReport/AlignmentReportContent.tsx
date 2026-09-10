@@ -19,10 +19,10 @@ import { LooseAudio } from "./LooseAudio"
 import { Masthead } from "./Masthead"
 import { Reel } from "./Reel"
 import { SpineList } from "./SpineList"
-import { useAudioFiles } from "./useAudioFiles"
 import { useNarrow } from "./useNarrow"
 import { useOverrideEditor } from "./useOverrideEditor"
 import { useReportSelection } from "./useReportSelection"
+import { useTracks } from "./useTracks"
 
 export function AlignmentReportContent({
   uuid,
@@ -142,13 +142,15 @@ function ReportBody({
   view: BookAlignmentReportView
   narrow: boolean
 }) {
-  const audio = useAudioFiles(view.bookUuid, view.audioFiles)
+  const audio = useTracks(view.bookUuid, view.tracks)
   const selection = useReportSelection()
   const editor = useOverrideEditor(view)
 
   const openItem =
     view.items.find((item) => item.href === selection.openHref) ??
-    (narrow ? null : view.items.find((item) => item.kind === "chapter") ?? null)
+    (narrow
+      ? null
+      : view.items.find((item) => item.status === "aligned") ?? null)
 
   const openIndex = openItem
     ? view.items.findIndex((item) => item.href === openItem.href)
@@ -162,6 +164,9 @@ function ReportBody({
     <ChapterDetail
       bookUuid={view.bookUuid}
       item={openItem}
+      items={view.items}
+      spans={view.spans}
+      tracks={audio.tracks}
       editor={editor}
       onBack={
         narrow
@@ -193,12 +198,16 @@ function ReportBody({
       <SpineList
         bookUuid={view.bookUuid}
         items={view.items}
+        spans={view.spans}
+        tracks={audio.tracks}
         selection={selection}
         editor={editor}
       />
       <LooseAudio
         bookUuid={view.bookUuid}
-        files={audio.files}
+        items={view.items}
+        spans={view.spans}
+        tracks={audio.tracks}
         editor={editor}
         narrow={narrow}
       />
@@ -210,9 +219,10 @@ function ReportBody({
       <Masthead view={view} narrow={narrow} />
       <Reel
         bookUuid={view.bookUuid}
-        files={audio.files}
+        tracks={audio.tracks}
         totalSeconds={audio.totalSeconds}
         items={view.items}
+        spans={view.spans}
         selectedHref={openItem?.href ?? null}
         onSelect={selection.setOpenHref}
         narrow={narrow}

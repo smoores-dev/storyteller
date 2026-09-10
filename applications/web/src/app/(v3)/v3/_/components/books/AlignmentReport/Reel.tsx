@@ -14,7 +14,7 @@ import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import { type ReportSpineItem } from "@/alignmentReportView"
+import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
@@ -22,92 +22,378 @@ import {
   type ReportTone,
   TONE_FILL,
   TONE_TEXT,
-  fileClip,
-  hrefStem,
+  type Track,
   itemTone,
+  trackClip,
+  trackLabel,
+  trackTime,
+  trackTone,
 } from "./shared"
-import { type AudioFile } from "./useAudioFiles"
 
 const PX_PER_HOUR = 520
+const PX_PER_SENTENCE = 0.5
 const ZOOM_STEP = 1.5
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 12
 const ZOOM_KEY = "storyteller-alignment-reel-zoom"
+const MODE_KEY = "storyteller-alignment-reel-mode"
 const WINDOW_MIN_FRACTION = 0.02
 const LABEL_MIN_PX = 48
 const TICK_MIN_PX = 64
-const TICK_STEPS = [10, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200]
+const SECOND_TICKS = [10, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200]
+const SENTENCE_TICKS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
 const SEGMENT_JOIN_SECONDS = 15
+const GAP_SECONDS = 1
 
 const STRIPES =
   "bg-[repeating-linear-gradient(135deg,transparent_0_3px,var(--color-muted-foreground)_3px_5px)] opacity-40"
 
+const GAP = "border-poor/70 bg-poor/10 border border-dashed"
+
+type Mode = "audio" | "spine"
+
+type Fill = "solid" | "soft" | "unmatched" | "gap"
+
+type Part = {
+  key: string
+  start: number
+  end: number
+  tone: ReportTone
+  fill: Fill
+  href: string | null
+}
+
+type Block = {
+  key: string
+  href: string | null
+  label: string
+  title: string
+  start: number
+  end: number
+  tone: ReportTone
+  parts: Part[]
+  dimmed: boolean
+  disabled: boolean
+  onClick: (fraction: number) => void
+}
+
 type Segment = {
+  key: string
   href: string
   label: string
   start: number
   end: number
   tone: ReportTone
-  placed: boolean
+  fill: Fill
+  onClick: () => void
 }
 
-function buildSegments(
-  files: AudioFile[],
-  toneByHref: Map<string, ReportTone>,
-): Segment[] {
+type Playing = { track: Track; time: number }
+
+type Axis = {
+  total: number
+  blocks: Block[]
+  segments: Segment[]
+  formatTick: (value: number) => string
+  playhead: (playing: Playing | null) => number | null
+}
+
+function partClass(part: { tone: ReportTone; fill: Fill }): string {
+  if (part.fill === "solid") return cn(TONE_FILL[part.tone], "opacity-80")
+  if (part.fill === "soft") return cn(TONE_FILL[part.tone], "opacity-35")
+  if (part.fill === "unmatched") return STRIPES
+  return GAP
+}
+
+function buildAudioAxis(input: {
+  bookUuid: UUID
+  tracks: Track[]
+  items: ViewSpineItem[]
+  spans: ReportSpan[]
+  totalSeconds: number
+  play: (clip: ReturnType<typeof trackClip>) => void
+  onSelect: (href: string) => void
+}): Axis {
+  const itemByIndex = new Map(input.items.map((item) => [item.index, item]))
+  const toneByIndex = new Map(
+    input.items.map((item) => [item.index, itemTone(item)]),
+  )
+
+  const spansByTrack = new Map<number, ReportSpan[]>()
+  for (const span of input.spans) {
+    if (!span.audio) continue
+    const list = spansByTrack.get(span.audio.track) ?? []
+    list.push(span)
+    spansByTrack.set(span.audio.track, list)
+  }
+  for (const list of spansByTrack.values()) {
+    list.sort((a, b) => (a.audio?.start ?? 0) - (b.audio?.start ?? 0))
+  }
+
+  const blocks: Block[] = input.tracks.map((track) => {
+    const parts: Part[] = []
+    let cursor = 0
+    const gap = (end: number) => {
+      if (end - cursor >= GAP_SECONDS) {
+        parts.push({
+          key: `gap-${cursor}`,
+          start: cursor,
+          end,
+          tone: "poor",
+          fill: "gap",
+          href: null,
+        })
+      }
+    }
+    for (const span of spansByTrack.get(track.index) ?? []) {
+      if (!span.audio) continue
+      const start = Math.max(span.audio.start, cursor)
+      const end = Math.max(span.audio.end, start)
+      gap(start)
+      const item = itemByIndex.get(span.spine)
+      parts.push({
+        key: `${span.spine}-${span.firstSentence}`,
+        start,
+        end,
+        tone: toneByIndex.get(span.spine) ?? "muted",
+        fill: span.state === "aligned" ? "solid" : "soft",
+        href: item?.href ?? null,
+      })
+      cursor = end
+    }
+    gap(track.duration)
+
+    const label = trackLabel(track)
+    const playable = track.present || track.source !== null
+    return {
+      key: track.name,
+      href: null,
+      label,
+      title: `${track.name} · ${formatClock(track.duration)}`,
+      start: track.offset,
+      end: track.offset + track.duration,
+      tone: trackTone(track),
+      parts,
+      dimmed: track.excluded,
+      disabled: !playable,
+      onClick: (fraction) => {
+        const time = fraction * track.duration
+        const part = parts.find(
+          (entry) => time >= entry.start && time < entry.end,
+        )
+        const item = input.items.find((entry) => entry.href === part?.href)
+        input.play(
+          trackClip(input.bookUuid, track, {
+            start: time,
+            label: item?.label ?? null,
+          }),
+        )
+      },
+    }
+  })
+
   const segments: Segment[] = []
-  for (const file of files) {
-    for (const chunk of file.chunks) {
-      if (!chunk.href) continue
-      const start = file.offset + chunk.start
-      const end = file.offset + chunk.end
+  for (const track of input.tracks) {
+    for (const span of spansByTrack.get(track.index) ?? []) {
+      if (!span.audio) continue
+      const item = itemByIndex.get(span.spine)
+      if (!item) continue
+      const start = track.offset + span.audio.start
+      const end = track.offset + span.audio.end
       const last = segments.at(-1)
       if (
         last &&
-        last.href === chunk.href &&
+        last.href === item.href &&
         start - last.end < SEGMENT_JOIN_SECONDS
       ) {
-        last.end = end
+        last.end = Math.max(last.end, end)
+        if (span.state === "aligned") last.fill = "solid"
         continue
       }
       segments.push({
-        href: chunk.href,
-        label: chunk.label ?? hrefStem(chunk.href),
+        key: `${item.href}-${start}`,
+        href: item.href,
+        label: item.label,
         start,
         end,
-        tone: toneByHref.get(chunk.href) ?? "muted",
-        placed: chunk.placed,
+        tone: toneByIndex.get(span.spine) ?? "muted",
+        fill: span.state === "aligned" ? "solid" : "soft",
+        onClick: () => {
+          input.onSelect(item.href)
+        },
       })
     }
   }
-  return segments
+
+  return {
+    total: input.totalSeconds,
+    blocks,
+    segments,
+    formatTick: formatClock,
+    playhead: (playing) =>
+      playing ? playing.track.offset + playing.time : null,
+  }
+}
+
+function buildSpineAxis(input: {
+  bookUuid: UUID
+  tracks: Track[]
+  items: ViewSpineItem[]
+  spans: ReportSpan[]
+  play: (clip: ReturnType<typeof trackClip>) => void
+  onSelect: (href: string) => void
+}): Axis {
+  const spansByIndex = new Map<number, ReportSpan[]>()
+  for (const span of input.spans) {
+    const list = spansByIndex.get(span.spine) ?? []
+    list.push(span)
+    spansByIndex.set(span.spine, list)
+  }
+  for (const list of spansByIndex.values()) {
+    list.sort((a, b) => a.firstSentence - b.firstSentence)
+  }
+
+  const offsets = new Map<number, number>()
+  let cursor = 0
+  const blocks: Block[] = []
+  for (const item of input.items) {
+    if (item.sentenceCount === 0) continue
+    const tone = itemTone(item)
+    const start = cursor
+    offsets.set(item.index, start)
+    const parts: Part[] = (spansByIndex.get(item.index) ?? []).map((span) => ({
+      key: `${span.firstSentence}`,
+      start: span.firstSentence,
+      end: span.lastSentence + 1,
+      tone,
+      fill:
+        span.state === "aligned"
+          ? "solid"
+          : span.state === "interpolated"
+            ? "soft"
+            : "unmatched",
+      href: item.href,
+    }))
+    blocks.push({
+      key: item.href,
+      href: item.href,
+      label: item.label,
+      title: `${item.label} · ${item.matchedSentenceCount}/${item.sentenceCount}`,
+      start,
+      end: start + item.sentenceCount,
+      tone,
+      parts,
+      dimmed: item.judgment === "excluded",
+      disabled: false,
+      onClick: () => {
+        input.onSelect(item.href)
+      },
+    })
+    cursor += item.sentenceCount
+  }
+
+  const segments: Segment[] = []
+  for (const item of input.items) {
+    const offset = offsets.get(item.index)
+    if (offset === undefined) continue
+    for (const span of spansByIndex.get(item.index) ?? []) {
+      if (!span.audio) continue
+      const track = input.tracks[span.audio.track]
+      if (!track) continue
+      const start = offset + span.firstSentence
+      const end = offset + span.lastSentence + 1
+      const last = segments.at(-1)
+      if (last && last.key.startsWith(`${track.name}|`) && last.end === start) {
+        last.end = end
+        continue
+      }
+      const audio = span.audio
+      segments.push({
+        key: `${track.name}|${start}`,
+        href: item.href,
+        label: trackLabel(track),
+        start,
+        end,
+        tone: trackTone(track),
+        fill: "solid",
+        onClick: () => {
+          input.play(
+            trackClip(input.bookUuid, track, {
+              start: audio.start,
+              end: audio.end,
+              label: item.label,
+            }),
+          )
+        },
+      })
+    }
+  }
+
+  const playhead = (playing: Playing | null) => {
+    if (!playing) return null
+    const { track, time } = playing
+    const span = input.spans.find(
+      (entry) =>
+        entry.audio?.track === track.index &&
+        time >= entry.audio.start &&
+        time < entry.audio.end,
+    )
+    const offset = span ? offsets.get(span.spine) : undefined
+    if (!span?.audio || offset === undefined) return null
+    const length = span.audio.end - span.audio.start
+    const fraction = length > 0 ? (time - span.audio.start) / length : 0
+    return (
+      offset +
+      span.firstSentence +
+      fraction * (span.lastSentence - span.firstSentence + 1)
+    )
+  }
+
+  return {
+    total: cursor,
+    blocks,
+    segments,
+    formatTick: (value) => String(value),
+    playhead,
+  }
+}
+
+function basePx(mode: Mode, total: number): number {
+  return mode === "audio"
+    ? (total / 3600) * PX_PER_HOUR
+    : total * PX_PER_SENTENCE
 }
 
 function trackWidthFor(
-  totalSeconds: number,
+  mode: Mode,
+  total: number,
   zoom: number,
   viewportWidth: number,
 ): number {
-  return Math.max(viewportWidth, (totalSeconds / 3600) * PX_PER_HOUR * zoom)
+  return Math.max(viewportWidth, basePx(mode, total) * zoom)
 }
 
 function clampZoom(zoom: number): number {
   return Math.min(Math.max(zoom, ZOOM_MIN), ZOOM_MAX)
 }
 
-function readStoredZoom(): number {
-  if (typeof window === "undefined") return 1
+function readStored<T extends string | number>(
+  key: string,
+  parse: (raw: string) => T | null,
+  fallback: T,
+): T {
+  if (typeof window === "undefined") return fallback
   try {
-    const stored = Number(window.localStorage.getItem(ZOOM_KEY))
-    return Number.isFinite(stored) && stored > 0 ? clampZoom(stored) : 1
+    const raw = window.localStorage.getItem(key)
+    return raw === null ? fallback : parse(raw) ?? fallback
   } catch {
-    return 1
+    return fallback
   }
 }
 
-function storeZoom(zoom: number) {
+function store(key: string, value: string) {
   try {
-    window.localStorage.setItem(ZOOM_KEY, String(zoom))
+    window.localStorage.setItem(key, value)
   } catch {
     return
   }
@@ -118,8 +404,8 @@ type Drag =
   | { mode: "resize"; edge: "left" | "right" }
 
 function Minimap({
-  files,
-  totalSeconds,
+  blocks,
+  total,
   scrollLeft,
   viewportWidth,
   trackWidth,
@@ -127,8 +413,8 @@ function Minimap({
   onPan,
   onResize,
 }: {
-  files: AudioFile[]
-  totalSeconds: number
+  blocks: Block[]
+  total: number
   scrollLeft: number
   viewportWidth: number
   trackWidth: number
@@ -187,22 +473,17 @@ function Minimap({
         drag.current = null
       }}
     >
-      {files.map((file) => (
+      {blocks.map((block) => (
         <span
-          key={file.name}
+          key={block.key}
           className={cn(
-            "absolute inset-y-0",
-            file.excluded
-              ? "bg-muted-foreground/20"
-              : file.duration > 0 && file.placedSeconds / file.duration > 0.98
-                ? "bg-good/60"
-                : file.placedSeconds > 0
-                  ? "bg-moderate/60"
-                  : "bg-poor/40",
+            "absolute inset-y-0.5 rounded-[1px]",
+            TONE_FILL[block.tone],
+            block.dimmed && "opacity-30",
           )}
           style={{
-            left: `${(file.offset / totalSeconds) * 100}%`,
-            width: `${(file.duration / totalSeconds) * 100}%`,
+            left: `${(block.start / total) * 100}%`,
+            width: `calc(${((block.end - block.start) / total) * 100}% - 1px)`,
           }}
         />
       ))}
@@ -228,17 +509,19 @@ function Minimap({
 
 export function Reel({
   bookUuid,
-  files,
+  tracks,
   totalSeconds,
   items,
+  spans,
   selectedHref,
   onSelect,
   narrow,
 }: {
   bookUuid: UUID
-  files: AudioFile[]
+  tracks: Track[]
   totalSeconds: number
-  items: ReportSpineItem[]
+  items: ViewSpineItem[]
+  spans: ReportSpan[]
   selectedHref: string | null
   onSelect: (href: string) => void
   narrow: boolean
@@ -248,11 +531,31 @@ export function Reel({
   const scroller = useRef<HTMLDivElement>(null)
   const [viewportWidth, setViewportWidth] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
-  const [zoom, setZoom] = useState(readStoredZoom)
+  const [zoom, setZoom] = useState(() =>
+    readStored(
+      ZOOM_KEY,
+      (raw) => {
+        const parsed = Number(raw)
+        return Number.isFinite(parsed) && parsed > 0 ? clampZoom(parsed) : null
+      },
+      1,
+    ),
+  )
+  const [mode, setMode] = useState<Mode>(() =>
+    readStored<Mode>(
+      MODE_KEY,
+      (raw) => (raw === "audio" || raw === "spine" ? raw : null),
+      "audio",
+    ),
+  )
 
   useEffect(() => {
-    storeZoom(zoom)
+    store(ZOOM_KEY, String(zoom))
   }, [zoom])
+
+  useEffect(() => {
+    store(MODE_KEY, mode)
+  }, [mode])
 
   useLayoutEffect(() => {
     const element = scroller.current
@@ -267,27 +570,57 @@ export function Reel({
     }
   }, [])
 
-  const toneByHref = useMemo(
-    () => new Map(items.map((item) => [item.href, itemTone(item)])),
-    [items],
-  )
-  const segments = useMemo(
-    () => buildSegments(files, toneByHref),
-    [files, toneByHref],
-  )
+  const playingTrack = clip
+    ? tracks.find((track) => track.name === clip.name) ?? null
+    : null
+  const playing: Playing | null =
+    playingTrack && clip
+      ? {
+          track: playingTrack,
+          time: trackTime(playingTrack, clip, currentTime),
+        }
+      : null
 
-  const trackWidth = trackWidthFor(totalSeconds, zoom, viewportWidth)
-  const pxPerSecond = totalSeconds > 0 ? trackWidth / totalSeconds : 0
+  const axis = useMemo(() => {
+    const playClip = (next: ReturnType<typeof trackClip>) => {
+      if (next) play(next)
+    }
+    return mode === "audio"
+      ? buildAudioAxis({
+          bookUuid,
+          tracks,
+          items,
+          spans,
+          totalSeconds,
+          play: playClip,
+          onSelect,
+        })
+      : buildSpineAxis({
+          bookUuid,
+          tracks,
+          items,
+          spans,
+          play: playClip,
+          onSelect,
+        })
+  }, [mode, bookUuid, tracks, items, spans, totalSeconds, play, onSelect])
 
+  const playhead = axis.playhead(playing)
+
+  const total = axis.total
+  const trackWidth = trackWidthFor(mode, total, zoom, viewportWidth)
+  const pxPerUnit = total > 0 ? trackWidth / total : 0
+
+  const tickSteps = mode === "audio" ? SECOND_TICKS : SENTENCE_TICKS
   const tickStep =
-    TICK_STEPS.find((step) => step * pxPerSecond >= TICK_MIN_PX) ??
-    TICK_STEPS[TICK_STEPS.length - 1] ??
-    3600
+    tickSteps.find((step) => step * pxPerUnit >= TICK_MIN_PX) ??
+    tickSteps[tickSteps.length - 1] ??
+    1
   const ticks: number[] = []
-  for (let at = 0; at < totalSeconds; at += tickStep) ticks.push(at)
+  for (let at = 0; at < total; at += tickStep) ticks.push(at)
 
-  const geometry = useRef({ segments, pxPerSecond, viewportWidth })
-  geometry.current = { segments, pxPerSecond, viewportWidth }
+  const geometry = useRef({ axis, pxPerUnit, viewportWidth })
+  geometry.current = { axis, pxPerUnit, viewportWidth }
 
   const applyZoom = (
     resolve: (current: number) => number,
@@ -301,7 +634,7 @@ export function Reel({
       if (next === current) return current
       requestAnimationFrame(() => {
         element.scrollLeft = scrollAfter(
-          trackWidthFor(totalSeconds, next, width),
+          trackWidthFor(mode, total, next, width),
         )
       })
       return next
@@ -311,14 +644,13 @@ export function Reel({
   const zoomAround = (factor: number, clientX: number | null) => {
     const element = scroller.current
     if (!element) return
-    const { pxPerSecond: pps } = geometry.current
+    const { pxPerUnit: ppu } = geometry.current
     const rect = element.getBoundingClientRect()
     const offset = clientX === null ? 0 : clientX - rect.left
-    const seconds = (element.scrollLeft + offset) / pps
+    const units = (element.scrollLeft + offset) / ppu
     applyZoom(
       (current) => current * factor,
-      (nextWidth) =>
-        seconds * (totalSeconds > 0 ? nextWidth / totalSeconds : 0) - offset,
+      (nextWidth) => units * (total > 0 ? nextWidth / total : 0) - offset,
     )
   }
 
@@ -331,7 +663,7 @@ export function Reel({
       edge === "left" ? Math.min(fraction, right - WINDOW_MIN_FRACTION) : left
     const nextRight =
       edge === "right" ? Math.max(fraction, left + WINDOW_MIN_FRACTION) : right
-    const base = (totalSeconds / 3600) * PX_PER_HOUR
+    const base = basePx(mode, total)
     if (base <= 0) return
     applyZoom(
       () => viewportWidth / (nextRight - nextLeft) / base,
@@ -366,50 +698,54 @@ export function Reel({
     const element = scroller.current
     if (!element || !selectedHref) return
     const {
-      segments: current,
-      pxPerSecond: pps,
+      axis: current,
+      pxPerUnit: ppu,
       viewportWidth: width,
     } = geometry.current
-    const segment = current.find((entry) => entry.href === selectedHref)
-    if (!segment) return
-    const left = segment.start * pps
-    const right = segment.end * pps
+    const target =
+      current.blocks.find((block) => block.href === selectedHref) ??
+      current.segments.find((segment) => segment.href === selectedHref)
+    if (!target) return
+    const left = target.start * ppu
+    const right = target.end * ppu
     if (left >= element.scrollLeft && right <= element.scrollLeft + width) {
       return
     }
     element.scrollTo({ left: Math.max(0, left - 24), behavior: "smooth" })
-  }, [selectedHref])
+  }, [selectedHref, mode])
 
-  if (files.length === 0 || totalSeconds <= 0) return null
-
-  const playingFile = clip
-    ? files.find((file) => file.name === clip.name)
-    : null
-  const playhead =
-    playingFile !== null && playingFile !== undefined
-      ? (playingFile.offset + currentTime) * pxPerSecond
-      : null
+  if (tracks.length === 0 || total <= 0) return null
 
   const legend = [
-    { key: "placed", swatch: "bg-good" },
-    {
-      key: "unplaced",
-      swatch: "border-poor/70 bg-poor/10 border border-dashed",
-    },
-    { key: "excluded", swatch: STRIPES },
+    { key: "aligned", swatch: "bg-good opacity-80" },
+    { key: "interpolated", swatch: "bg-good opacity-35" },
+    { key: "unmatched", swatch: STRIPES },
+    { key: "loose", swatch: GAP },
     { key: "selected", swatch: "ring-primary bg-transparent ring-2" },
   ] as const
+
+  const totalSentences = items.reduce(
+    (sum, item) => sum + item.sentenceCount,
+    0,
+  )
 
   return (
     <section className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-muted-foreground text-[10px] font-medium tracking-wide">
-          {t("reel.title", {
-            count: files.length,
-            duration: formatClock(totalSeconds),
-          })}
+          {mode === "audio"
+            ? t("reel.title", {
+                count: tracks.length,
+                duration: formatClock(totalSeconds),
+              })
+            : t("reel.titleSpine", {
+                count: axis.blocks.length,
+                sentences: totalSentences,
+              })}
         </span>
-        <span className="text-muted-foreground text-xs">{t("reel.hint")}</span>
+        <span className="text-muted-foreground text-xs">
+          {mode === "audio" ? t("reel.hint") : t("reel.hintSpine")}
+        </span>
         <div className="ml-auto flex items-center gap-3">
           {!narrow && (
             <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
@@ -454,13 +790,29 @@ export function Reel({
             >
               <icon.Plus />
             </TooltipButton>
+            <TooltipButton
+              variant="ghost"
+              size="icon-xs"
+              aria-pressed={mode === "spine"}
+              aria-label={
+                mode === "audio" ? t("reel.mode.spine") : t("reel.mode.audio")
+              }
+              tooltip={
+                mode === "audio" ? t("reel.mode.spine") : t("reel.mode.audio")
+              }
+              onClick={() => {
+                setMode((current) => (current === "audio" ? "spine" : "audio"))
+              }}
+            >
+              {mode === "audio" ? <icon.BookAlt /> : <icon.Audiobook />}
+            </TooltipButton>
           </div>
         </div>
       </div>
 
       <Minimap
-        files={files}
-        totalSeconds={totalSeconds}
+        blocks={axis.blocks}
+        total={total}
         scrollLeft={scrollLeft}
         viewportWidth={viewportWidth}
         trackWidth={trackWidth}
@@ -483,24 +835,22 @@ export function Reel({
           style={{ width: `${trackWidth}px` }}
         >
           <div className={cn("relative", narrow ? "h-2" : "h-5")}>
-            {segments.map((segment) => {
-              const width = (segment.end - segment.start) * pxPerSecond
+            {axis.segments.map((segment) => {
+              const width = (segment.end - segment.start) * pxPerUnit
               const selected = segment.href === selectedHref
               return (
                 <button
-                  key={`${segment.href}-${segment.start}`}
+                  key={segment.key}
                   type="button"
                   title={segment.label}
                   aria-pressed={selected}
-                  onClick={() => {
-                    onSelect(segment.href)
-                  }}
+                  onClick={segment.onClick}
                   className={cn(
                     "focus-visible:ring-ring/40 absolute inset-y-0 flex flex-col justify-end gap-0.5 overflow-hidden rounded-xs text-left outline-none focus-visible:ring-2",
                     selected && "z-10",
                   )}
                   style={{
-                    left: `${segment.start * pxPerSecond}px`,
+                    left: `${segment.start * pxPerUnit}px`,
                     width: `${Math.max(width, 2)}px`,
                   }}
                 >
@@ -519,8 +869,8 @@ export function Reel({
                   <span
                     className={cn(
                       "block rounded-xs",
-                      selected ? "h-2" : "h-1.5 opacity-70",
-                      segment.placed ? TONE_FILL[segment.tone] : STRIPES,
+                      selected ? "h-2" : "h-1.5",
+                      partClass(segment),
                     )}
                   />
                 </button>
@@ -529,20 +879,22 @@ export function Reel({
           </div>
 
           <div className={cn("relative mt-0.5", narrow ? "h-8" : "h-10")}>
-            {files.map((file) => {
-              const width = Math.max(file.duration * pxPerSecond - 2, 3)
+            {axis.blocks.map((block) => {
+              const span = block.end - block.start
+              const width = Math.max(span * pxPerUnit - 2, 3)
               const selected =
                 selectedHref !== null &&
-                file.chunks.some((chunk) => chunk.href === selectedHref)
+                (block.href === selectedHref ||
+                  block.parts.some((part) => part.href === selectedHref))
               return (
                 <button
-                  key={file.name}
+                  key={block.key}
                   type="button"
-                  disabled={!file.present}
+                  disabled={block.disabled}
                   title={
-                    file.present
-                      ? `${file.name} · ${formatClock(file.duration)}`
-                      : `${file.name} · ${t("reel.notOnDisk")}`
+                    block.disabled
+                      ? `${block.title} · ${t("reel.notOnDisk")}`
+                      : block.title
                   }
                   onClick={(event) => {
                     const rect = event.currentTarget.getBoundingClientRect()
@@ -551,58 +903,37 @@ export function Reel({
                       Math.max((event.clientX - rect.left) / rect.width, 0),
                       1,
                     )
-                    const time = fraction * file.duration
-                    const chunk = file.chunks.find(
-                      (entry) => time >= entry.start && time < entry.end,
-                    )
-                    play(
-                      fileClip(bookUuid, file.name, {
-                        start: time,
-                        label: chunk?.label,
-                      }),
-                    )
+                    block.onClick(fraction)
                   }}
                   className={cn(
                     "bg-muted focus-visible:ring-ring/40 absolute inset-y-0 overflow-hidden rounded-sm text-left outline-none focus-visible:ring-2",
-                    file.excluded && "opacity-40",
-                    !file.present && "cursor-not-allowed opacity-30",
+                    block.dimmed && "opacity-40",
+                    block.disabled && "cursor-not-allowed opacity-30",
                     selected && "ring-primary z-10 ring-2",
                   )}
                   style={{
-                    left: `${file.offset * pxPerSecond + 1}px`,
+                    left: `${block.start * pxPerUnit + 1}px`,
                     width: `${width}px`,
                   }}
                 >
-                  {file.chunks.map((chunk) => {
-                    const tone =
-                      (chunk.href ? toneByHref.get(chunk.href) : null) ??
-                      "muted"
-                    return (
-                      <span
-                        key={`${chunk.start}-${chunk.end}`}
-                        className={cn(
-                          "absolute inset-y-0",
-                          chunk.placed
-                            ? cn(TONE_FILL[tone], "opacity-75")
-                            : chunk.href
-                              ? STRIPES
-                              : "border-poor/70 bg-poor/10 border border-dashed",
-                        )}
-                        style={{
-                          left: `${(chunk.start / file.duration) * 100}%`,
-                          width: `${(chunk.duration / file.duration) * 100}%`,
-                        }}
-                      />
-                    )
-                  })}
+                  {block.parts.map((part) => (
+                    <span
+                      key={part.key}
+                      className={cn("absolute inset-y-0", partClass(part))}
+                      style={{
+                        left: `${(part.start / span) * 100}%`,
+                        width: `${((part.end - part.start) / span) * 100}%`,
+                      }}
+                    />
+                  ))}
                   {!narrow && width >= LABEL_MIN_PX && (
                     <span
                       className={cn(
                         "text-foreground/80 absolute bottom-0.5 left-1 max-w-[calc(100%-0.5rem)] truncate text-[10px] tabular-nums",
-                        file.excluded && "line-through",
+                        block.dimmed && "line-through",
                       )}
                     >
-                      {hrefStem(file.name)}
+                      {block.label}
                     </span>
                   )}
                 </button>
@@ -613,7 +944,7 @@ export function Reel({
           {playhead !== null && (
             <span
               className="bg-primary pointer-events-none absolute top-0 bottom-4 z-20 w-0.5 rounded-full"
-              style={{ left: `${playhead}px` }}
+              style={{ left: `${playhead * pxPerUnit}px` }}
             />
           )}
 
@@ -625,9 +956,9 @@ export function Reel({
                   "text-muted-foreground absolute top-0 text-[10px] tabular-nums",
                   index > 0 && "-translate-x-1/2",
                 )}
-                style={{ left: `${tick * pxPerSecond}px` }}
+                style={{ left: `${tick * pxPerUnit}px` }}
               >
-                {formatClock(tick)}
+                {axis.formatTick(tick)}
               </span>
             ))}
           </div>

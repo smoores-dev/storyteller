@@ -8,7 +8,8 @@ import {
   getTranscriptionsFilepath,
 } from "@/assets/paths"
 import {
-  type Report,
+  type AnyReport,
+  type LegacyReport,
   createAlignmentReport,
   summarizeReport,
 } from "@/database/alignmentReports"
@@ -67,14 +68,14 @@ async function backfillReports() {
 
   logger.info({ msg: `Found ${books.length} books to backfill` })
   for (const book of books) {
-    let report: Report | null = null
+    let report: AnyReport | null = null
     try {
       const reportText = await readFile(
         getAlignmentReportFilepath(book as Book),
         { encoding: "utf-8" },
       )
 
-      report = JSON.parse(reportText) as Report
+      report = JSON.parse(reportText) as AnyReport
     } catch (error) {
       if (error instanceof Error && error.message.includes("ENOENT")) {
         logger.warn({
@@ -131,10 +132,10 @@ async function backfillSummaries() {
   let count = 0
   for (const row of rows) {
     if (row.report == null) continue
-    const report: Report =
+    const report: AnyReport =
       typeof row.report === "string"
-        ? (JSON.parse(row.report) as Report)
-        : (row.report as Report)
+        ? (JSON.parse(row.report) as AnyReport)
+        : row.report
     const s = summarizeReport(report)
 
     await sql`
@@ -170,10 +171,10 @@ async function enrichUnalignedAudio() {
   let enriched = 0
   for (const row of rows) {
     if (row.report == null) continue
-    const report: Partial<Report> =
+    const report: Partial<LegacyReport> =
       typeof row.report === "string"
-        ? (JSON.parse(row.report) as Report)
-        : (row.report as Report)
+        ? (JSON.parse(row.report) as Partial<LegacyReport>)
+        : (row.report as unknown as Partial<LegacyReport>)
     if (report.unalignedAudioFiles?.length === 0) continue
 
     let changed = false

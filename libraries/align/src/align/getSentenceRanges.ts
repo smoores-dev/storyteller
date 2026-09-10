@@ -27,6 +27,7 @@ export type SentenceRange = {
   start: number
   end: number
   audiofile: string
+  interpolated: boolean
 }
 
 export type WordRange = {
@@ -36,6 +37,7 @@ export type WordRange = {
   start: number
   end: number
   audiofile: string
+  interpolated: boolean
 }
 
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
@@ -328,6 +330,7 @@ export async function getSentenceRanges(
               start: 0,
               audiofile: end.audiofile,
               end: end.end,
+              interpolated: false,
             })
           } else {
             sentenceRanges.push({
@@ -336,6 +339,7 @@ export async function getSentenceRanges(
               start: start.start,
               audiofile: start.audiofile,
               end: end.end,
+              interpolated: false,
             })
           }
         }
@@ -385,6 +389,7 @@ export async function getSentenceRanges(
                 start: end.audiofile === start.audiofile ? start.start : 0,
                 audiofile: end.audiofile,
                 end: end.end,
+                interpolated: false,
               })
             }
 

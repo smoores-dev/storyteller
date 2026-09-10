@@ -10,11 +10,21 @@ import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import { type Judgment, type ReportSpineItem } from "@/alignmentReportView"
+import {
+  type Judgment,
+  type ReportSpan,
+  type ViewSpineItem,
+} from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
-import { TONE_BADGE, chapterClip, judgmentTone } from "./shared"
+import {
+  TONE_BADGE,
+  type Track,
+  judgmentTone,
+  matchedPercent,
+  trackClip,
+} from "./shared"
 import { type OverrideEditor } from "./useOverrideEditor"
 import { type ReportSelection } from "./useReportSelection"
 
@@ -29,15 +39,6 @@ function rowFillStyle(percent: number | null) {
   }
 }
 
-function matchedPercent(item: ReportSpineItem): number | null {
-  if (item.kind === "unaligned") {
-    return item.chapterSentenceCount ? 0 : null
-  }
-  return item.chapterSentenceCount > 0
-    ? (item.alignedSentenceCount / item.chapterSentenceCount) * 100
-    : null
-}
-
 export function JudgmentBadge({ judgment }: { judgment: Judgment | null }) {
   const t = useTranslation("AlignmentReport")
   const tone = judgmentTone(judgment)
@@ -49,32 +50,60 @@ export function JudgmentBadge({ judgment }: { judgment: Judgment | null }) {
   )
 }
 
-export function ReasonBadge({
-  reason,
-}: {
-  reason: Extract<ReportSpineItem, { kind: "unaligned" }>["reason"]
-}) {
+export function StatusBadge({ status }: { status: ViewSpineItem["status"] }) {
   const t = useTranslation("AlignmentReport")
+  if (status === "aligned") return null
   return (
     <Badge
       className={cn(
         "h-4 px-1.5 text-[10px]",
-        reason === "not-found" ? TONE_BADGE.poor : TONE_BADGE.muted,
+        status === "not-found" ? TONE_BADGE.poor : TONE_BADGE.muted,
       )}
     >
-      {t(`reason.${reason}`)}
+      {t(`reason.${status}`)}
     </Badge>
   )
+}
+
+export function spanClips(
+  bookUuid: UUID,
+  items: ViewSpineItem[],
+  spans: ReportSpan[],
+  tracks: Track[],
+): Clip[] {
+  const labelByIndex = new Map(items.map((item) => [item.index, item.label]))
+  const wanted = new Set(items.map((item) => item.index))
+  return spans
+    .filter((span) => wanted.has(span.spine) && span.audio)
+    .toSorted(
+      (a, b) =>
+        (a.audio?.track ?? 0) - (b.audio?.track ?? 0) ||
+        (a.audio?.start ?? 0) - (b.audio?.start ?? 0),
+    )
+    .flatMap((span) => {
+      const track = span.audio ? tracks[span.audio.track] : undefined
+      if (!track || !span.audio) return []
+      const clip = trackClip(bookUuid, track, {
+        start: span.audio.start,
+        end: span.audio.end,
+        label: labelByIndex.get(span.spine) ?? null,
+      })
+      return clip ? [clip] : []
+    })
 }
 
 function BulkBar({
   bookUuid,
   items,
+  spans,
+  tracks,
   selection,
   editor,
 }: {
   bookUuid: UUID
-  items: ReportSpineItem[]
+  items: ViewSpineItem[]
+  spans: ReportSpan[]
+  tracks: Track[]
   selection: ReportSelection
   editor: OverrideEditor
 }) {
@@ -82,11 +111,7 @@ function BulkBar({
   const { playAll } = usePlayer()
 
   const targets = items.filter((item) => selection.checked.has(item.href))
-  const clips: Clip[] = targets.flatMap((item) =>
-    item.kind === "chapter"
-      ? item.audio.map((audio) => chapterClip(bookUuid, item.label, audio))
-      : [],
-  )
+  const clips = spanClips(bookUuid, targets, spans, tracks)
   const judge = (judgment: Judgment | null) => {
     editor({
       judgments: Object.fromEntries(
@@ -161,11 +186,15 @@ function BulkBar({
 export function SpineList({
   bookUuid,
   items,
+  spans,
+  tracks,
   selection,
   editor,
 }: {
   bookUuid: UUID
-  items: ReportSpineItem[]
+  items: ViewSpineItem[]
+  spans: ReportSpan[]
+  tracks: Track[]
   selection: ReportSelection
   editor: OverrideEditor
 }) {
@@ -178,8 +207,7 @@ export function SpineList({
         ? items.toSorted(
             (a, b) =>
               (matchedPercent(a) ?? -1) - (matchedPercent(b) ?? -1) ||
-              (a.kind === "chapter" ? a.confidence : -1) -
-                (b.kind === "chapter" ? b.confidence : -1),
+              (a.score ?? -1) - (b.score ?? -1),
           )
         : items,
     [items, byConfidence],
@@ -227,6 +255,8 @@ export function SpineList({
         <BulkBar
           bookUuid={bookUuid}
           items={items}
+          spans={spans}
+          tracks={tracks}
           selection={selection}
           editor={editor}
         />
@@ -277,14 +307,14 @@ export function SpineList({
                   }}
                 />
                 <span className="text-muted-foreground text-right text-[10px] tabular-nums">
-                  {item.spineIndex ?? "—"}
+                  {item.index >= 0 ? item.index : "—"}
                 </span>
 
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span
                     className={cn(
                       "truncate",
-                      item.kind === "unaligned" && "text-muted-foreground",
+                      item.status !== "aligned" && "text-muted-foreground",
                     )}
                   >
                     {item.label}
@@ -293,35 +323,33 @@ export function SpineList({
                 </span>
 
                 <span className="flex items-center gap-2">
-                  {item.kind === "chapter" ? (
-                    <>
-                      <span
-                        className={cn(
-                          "tabular-nums",
-                          item.judgment !== null && "text-muted-foreground",
-                        )}
-                      >
-                        {t("list.sentences", {
-                          aligned: item.alignedSentenceCount,
-                          total: item.chapterSentenceCount,
-                        })}
-                      </span>
-                      <span className="text-muted-foreground w-5 text-right text-[10px] tabular-nums">
-                        {item.confidence.toFixed(0)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      {item.chapterSentenceCount !== null && (
-                        <span className="text-muted-foreground tabular-nums">
-                          {t("list.sentences", {
-                            aligned: 0,
-                            total: item.chapterSentenceCount,
+                  {item.sentenceCount > 0 && (
+                    <span
+                      className={cn(
+                        "tabular-nums",
+                        (item.judgment !== null || item.status !== "aligned") &&
+                          "text-muted-foreground",
+                      )}
+                    >
+                      {t("list.sentences", {
+                        aligned: item.matchedSentenceCount,
+                        total: item.sentenceCount,
+                      })}
+                      {item.interpolatedSentenceCount > 0 && (
+                        <span className="text-muted-foreground/70 ml-0.5 text-[10px]">
+                          {t("list.interpolated", {
+                            count: item.interpolatedSentenceCount,
                           })}
                         </span>
                       )}
-                      <ReasonBadge reason={item.reason} />
-                    </>
+                    </span>
+                  )}
+                  {item.status === "aligned" ? (
+                    <span className="text-muted-foreground w-5 text-right text-[10px] tabular-nums">
+                      {item.score === null ? "—" : item.score.toFixed(0)}
+                    </span>
+                  ) : (
+                    <StatusBadge status={item.status} />
                   )}
                   <icon.ChevronRight className="text-muted-foreground size-3.5" />
                 </span>

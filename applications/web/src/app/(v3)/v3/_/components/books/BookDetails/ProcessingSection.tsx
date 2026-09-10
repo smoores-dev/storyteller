@@ -362,7 +362,7 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
           label: tr("marks.sentences"),
           value:
             summary.sentencesTotal > 0
-              ? `${Math.round((summary.sentencesAligned / summary.sentencesTotal) * 100)}%`
+              ? `${Math.round((summary.sentencesMatched / summary.sentencesTotal) * 100)}%`
               : "—",
         },
         {

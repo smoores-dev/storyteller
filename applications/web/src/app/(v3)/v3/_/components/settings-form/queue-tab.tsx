@@ -142,13 +142,13 @@ export function QueueTab() {
       }
     })
   }
-  const resumeAll = () => {
-    jobs.forEach((job) => {
-      if (job.status === "PAUSED") {
-        void resumeJob({ uuid: job.uuid })
-      }
-    })
-  }
+  // const resumeAll = () => {
+  //   jobs.forEach((job) => {
+  //     if (job.status === "PAUSED") {
+  //       void resumeJob({ uuid: job.uuid })
+  //     }
+  //   })
+  // }
 
   const actions = {
     pauseJob: (uuid: UUID) => void pauseJob({ uuid }),
@@ -165,7 +165,7 @@ export function QueueTab() {
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium">{t("title")}</h2>
-              <TooltipButton
+              {/* <TooltipButton
                 variant="outline"
                 size="icon"
                 tooltip={someAreActive ? t("pauseAll") : t("resumeAll")}
@@ -173,7 +173,7 @@ export function QueueTab() {
                 onClick={someAreActive ? pauseAll : resumeAll}
               >
                 {someAreActive ? <icon.PlayerPause /> : <icon.PlayerPlay />}
-              </TooltipButton>
+              </TooltipButton> */}
             </div>
             <p className="text-muted-foreground text-sm">
               {t("subtitle", { count: jobs.length })}

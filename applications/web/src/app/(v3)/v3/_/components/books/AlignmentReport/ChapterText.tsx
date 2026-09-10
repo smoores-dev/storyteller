@@ -7,15 +7,28 @@ import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import { type ReportChapterItem } from "@/alignmentReportView"
+import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { useGetBookChapterTextQuery } from "@/store/api"
 import { type UUID } from "@/uuid"
 
 const STRIP_SELECTOR = "script, style, link, img, svg, video, audio, iframe"
 
-const UNMATCHED = "data-unmatched"
+const STATE = "data-state"
 const MATCH = "data-match"
+
+type Bounds = { first: number; last: number }
+
+function matchedBounds(spans: ReportSpan[]): Bounds | null {
+  const aligned = spans
+    .filter((span) => span.state === "aligned")
+    .toSorted((a, b) => a.firstSentence - b.firstSentence)
+  const first = aligned[0]
+  const last = aligned.at(-1)
+  return first && last
+    ? { first: first.firstSentence, last: last.lastSentence }
+    : null
+}
 
 type Range = { start: number; end: number }
 
@@ -74,19 +87,33 @@ function wrapOffsets(
   }
 }
 
-function boundsFromIds(
+function sentenceElement(body: HTMLElement, id: number): Element | null {
+  return body.querySelector(`[id$="-s${id}"]`)
+}
+
+function markById(
   body: HTMLElement,
-  item: ReportChapterItem,
-): { start: Element; end: Element } | null {
-  const start = body.querySelector(`[id$="-s${item.firstMatchedSentenceId}"]`)
-  const end = body.querySelector(`[id$="-s${item.lastMatchedSentenceId}"]`)
-  return start && end ? { start, end } : null
+  spans: ReportSpan[],
+  bounds: Bounds,
+): boolean {
+  const start = sentenceElement(body, bounds.first)
+  const end = sentenceElement(body, bounds.last)
+  if (!start || !end) return false
+  for (const span of spans) {
+    for (let id = span.firstSentence; id <= span.lastSentence; id++) {
+      sentenceElement(body, id)?.setAttribute(STATE, span.state)
+    }
+  }
+  start.setAttribute(MATCH, "first")
+  end.setAttribute(MATCH, "last")
+  return true
 }
 
 function boundsFromText(
   body: HTMLElement,
-  item: ReportChapterItem,
+  item: ViewSpineItem,
 ): { first: Range; last: Range } | null {
+  if (!item.firstMatch || !item.lastMatch) return null
   const text = body.textContent
   const first = sentencePattern(item.firstMatch.matchedSentence)
   const last = sentencePattern(item.lastMatch.matchedSentence)
@@ -107,36 +134,28 @@ function boundsFromText(
   return { first: firstRange, last: lastRange }
 }
 
-function markMatches(body: HTMLElement, item: ReportChapterItem): boolean {
-  const byId = boundsFromIds(body, item)
-  if (byId) {
-    for (const node of textNodesOf(body)) {
-      const beforeStart =
-        byId.start.compareDocumentPosition(node) &
-        Node.DOCUMENT_POSITION_PRECEDING
-      const afterEnd =
-        byId.end.compareDocumentPosition(node) &
-          Node.DOCUMENT_POSITION_FOLLOWING && !byId.end.contains(node)
-      if (beforeStart || afterEnd) wrap(node, UNMATCHED)
-    }
-    byId.start.setAttribute(MATCH, "first")
-    byId.end.setAttribute(MATCH, "last")
-    return true
-  }
+function markMatches(
+  body: HTMLElement,
+  item: ViewSpineItem,
+  spans: ReportSpan[],
+): boolean {
+  const bounds = matchedBounds(spans)
+  if (bounds && markById(body, spans, bounds)) return true
 
   const byText = boundsFromText(body, item)
   if (!byText) return false
   const length = body.textContent.length
   wrapOffsets(body, byText.first, MATCH, "first")
   wrapOffsets(body, byText.last, MATCH, "last")
-  wrapOffsets(body, { start: 0, end: byText.first.start }, UNMATCHED)
-  wrapOffsets(body, { start: byText.last.end, end: length }, UNMATCHED)
+  wrapOffsets(body, { start: 0, end: byText.first.start }, STATE, "unmatched")
+  wrapOffsets(body, { start: byText.last.end, end: length }, STATE, "unmatched")
   return true
 }
 
 function prepare(
   xhtml: string,
-  item: ReportChapterItem,
+  item: ViewSpineItem,
+  spans: ReportSpan[],
 ): { html: string; marked: boolean } {
   const parsed = new DOMParser().parseFromString(xhtml, "application/xhtml+xml")
   const failed = parsed.querySelector("parsererror")
@@ -147,7 +166,7 @@ function prepare(
   for (const element of body.querySelectorAll(STRIP_SELECTOR)) {
     element.remove()
   }
-  const marked = markMatches(body, item)
+  const marked = markMatches(body, item, spans)
   return { html: body.innerHTML, marked }
 }
 
@@ -169,9 +188,11 @@ function scrollToMatch(container: HTMLElement, which: "first" | "last") {
 export function ChapterText({
   bookUuid,
   item,
+  spans,
 }: {
   bookUuid: UUID
-  item: ReportChapterItem
+  item: ViewSpineItem
+  spans: ReportSpan[]
 }) {
   const t = useTranslation("AlignmentReport")
   const container = useRef<HTMLDivElement>(null)
@@ -184,8 +205,8 @@ export function ChapterText({
   )
 
   const prepared = useMemo(
-    () => (data === undefined ? null : prepare(data, item)),
-    [data, item],
+    () => (data === undefined ? null : prepare(data, item, spans)),
+    [data, item, spans],
   )
 
   useEffect(() => {
@@ -242,7 +263,7 @@ export function ChapterText({
         ref={container}
         className={cn(
           "max-h-[60vh] min-h-24 overflow-y-auto rounded-md border px-4 py-3 text-sm leading-relaxed",
-          "[&_*]:font-sans! [&_[data-unmatched]]:opacity-35 [&_h1]:text-lg [&_h1]:font-medium [&_h2]:text-base [&_h2]:font-medium [&_h3]:font-medium [&_p]:my-2",
+          "[&_[data-state=interpolated]]:decoration-moderate/70 [&_[data-state=interpolated]]:text-moderate/70 [&_*]:font-sans! [&_[data-state=interpolated]]:underline [&_[data-state=interpolated]]:decoration-dotted [&_[data-state=interpolated]]:decoration-2 [&_[data-state=interpolated]]:underline-offset-4 [&_[data-state=unmatched]]:opacity-35 [&_h1]:text-lg [&_h1]:font-medium [&_h2]:text-base [&_h2]:font-medium [&_h3]:font-medium [&_p]:my-2",
           "[&_[data-match]]:bg-highlight-bg/70 [&_[data-match]]:border-highlight [&_[data-match]]:dark:bg-highlight/25 [&_[data-match]]:border-b [&_[data-match]]:box-decoration-clone",
           (unavailable || !prepared) && "text-muted-foreground",
         )}

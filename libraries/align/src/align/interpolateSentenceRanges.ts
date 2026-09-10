@@ -64,7 +64,13 @@ function buildGapRanges(
       const start = cursor
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const end = start + (span * weights[i]!) / totalWeight
-      result.push({ ...slot, audiofile: left.audiofile, start, end })
+      result.push({
+        ...slot,
+        audiofile: left.audiofile,
+        start,
+        end,
+        interpolated: true,
+      })
       cursor = end
     }
     return result
@@ -106,7 +112,13 @@ function buildGapRanges(
       const start = cursor
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const end = start + (leftAvail * leftWeights[i]!) / leftTotalWeight
-      result.push({ ...slot, audiofile: left.audiofile, start, end })
+      result.push({
+        ...slot,
+        audiofile: left.audiofile,
+        start,
+        end,
+        interpolated: true,
+      })
       cursor = end
     }
   }
@@ -120,7 +132,13 @@ function buildGapRanges(
       const start = cursor
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const end = start + (rightAvail * rightWeights[i]!) / rightTotalWeight
-      result.push({ ...slot, audiofile: right.audiofile, start, end })
+      result.push({
+        ...slot,
+        audiofile: right.audiofile,
+        start,
+        end,
+        interpolated: true,
+      })
       cursor = end
     }
   }

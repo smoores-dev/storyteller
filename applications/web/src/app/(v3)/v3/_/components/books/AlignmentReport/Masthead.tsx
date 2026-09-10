@@ -139,12 +139,12 @@ export function Masthead({
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5">
           <Stat
             percent={percentOf(
-              summary.sentencesAligned,
+              summary.sentencesMatched,
               summary.sentencesTotal,
             )}
             label={t("stats.sentences")}
             sub={t("stats.sentencesSub", {
-              aligned: summary.sentencesAligned,
+              aligned: summary.sentencesMatched,
               total: summary.sentencesTotal,
             })}
           />

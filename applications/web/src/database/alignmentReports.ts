@@ -1,11 +1,15 @@
 import { type Selectable, sql } from "kysely"
 
-import { type CtcReport, type Report } from "@storyteller-platform/align"
-
 import {
+  type AlignmentAudioOverride,
+  type AlignmentChapterOverride,
   type AlignmentFacets,
-  type Judgment,
-  buildReportModel,
+  type AlignmentOverrides,
+  type AnyReport,
+  type LegacyReport,
+  type ReportV3,
+  normalizeReport,
+  summarizeReport as summarizeReportView,
 } from "@/alignmentReportView"
 import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
@@ -13,14 +17,14 @@ import type { UUID } from "@/uuid"
 import { db } from "./connection"
 import { type DB } from "./schema"
 
-export type { CtcReport, Report }
-
-export type AnyReport = Report | CtcReport
-
-type ChapterReport = AnyReport["chapters"][number]
-type UnalignedChapterReport = AnyReport["unalignedChapters"][number]
-type AudioFileReport = AnyReport["audioFiles"][number]
-type UnalignedAudioFileReport = AnyReport["unalignedAudioFiles"][number]
+export type {
+  AlignmentAudioOverride,
+  AlignmentChapterOverride,
+  AlignmentOverrides,
+  AnyReport,
+  LegacyReport,
+  ReportV3,
+}
 
 export interface AlignmentSummary {
   grade: AlignmentGrade
@@ -36,52 +40,22 @@ export interface AlignmentSummary {
   unalignedAudio: number
 }
 
-export interface AlignmentChapterOverride {
-  judgment?: Judgment | null
-  ignored?: boolean
-}
-
-export interface AlignmentAudioOverride {
-  excluded?: boolean
-  ignored?: boolean
-}
-
-export interface AlignmentOverrides {
-  chapters?: Record<string, AlignmentChapterOverride>
-  unalignedChapters?: Record<string, AlignmentChapterOverride>
-  audioFiles?: Record<string, AlignmentAudioOverride>
-}
-
 export function summarizeReport(
-  report: {
-    chapters: ChapterReport[]
-    unalignedChapters?: UnalignedChapterReport[]
-    audioFiles?: AudioFileReport[]
-    unalignedAudioFiles?: UnalignedAudioFileReport[]
-  },
+  report: AnyReport,
   overrides?: AlignmentOverrides | null,
   audiobookDuration?: number | null,
 ): AlignmentSummary {
-  const { summary, items } = buildReportModel({
-    report,
-    overrides,
-    audiobookDuration,
-  })
+  const normalized = normalizeReport(report)
+  const summary = summarizeReportView(normalized, overrides, audiobookDuration)
 
-  let failedChapters = 0
-  for (const item of items) {
-    if (item.judgment === "excluded") {
-      continue
-    }
-    if (item.kind === "unaligned") {
-      if (item.reason === "not-found") {
-        failedChapters += 1
-      }
-      continue
-    }
-    if (item.chapterSentenceCount > 0 && item.alignedSentenceCount === 0) {
-      failedChapters += 1
-    }
+  let mutedChapters = 0
+  for (const item of normalized.spine) {
+    if (item.status !== "aligned") continue
+    const override =
+      overrides?.chapters?.[item.href] ??
+      overrides?.unalignedChapters?.[item.href]
+    if (override?.judgment === "excluded" || override?.ignored) continue
+    if (item.matchedSeconds + item.interpolatedSeconds === 0) mutedChapters += 1
   }
 
   return {
@@ -92,9 +66,9 @@ export function summarizeReport(
     sentenceCoverage: summary.sentenceCoverage,
     audioCoverage: summary.audioCoverage,
     chapters: summary.chapters,
-    missingSentences: summary.sentencesTotal - summary.sentencesAligned,
-    mutedChapters: summary.noAudio,
-    failedChapters,
+    missingSentences: summary.sentencesTotal - summary.sentencesMatched,
+    mutedChapters,
+    failedChapters: summary.failed,
     unalignedAudio: summary.looseAudio,
   }
 }
@@ -108,7 +82,6 @@ export type AlignmentReport = Omit<
   uuid: UUID
   jobUuid: UUID | null
   bookUuid: UUID | null
-  // null on old reports
   report: AnyReport | null
 }
 
@@ -129,8 +102,9 @@ export async function createAlignmentReport(input: {
   bookUuid: UUID | null
   report: AnyReport
 }): Promise<AlignmentReport> {
+  const report = normalizeReport(input.report)
   const s = summarizeReport(
-    input.report,
+    report,
     null,
     await getAudiobookDuration(input.bookUuid),
   )
@@ -141,7 +115,7 @@ export async function createAlignmentReport(input: {
       .values({
         jobUuid: input.jobUuid,
         bookUuid: input.bookUuid,
-        report: JSON.stringify(input.report),
+        report: JSON.stringify(report),
         grade: s.grade,
         score: s.score,
         confidence: s.confidence,

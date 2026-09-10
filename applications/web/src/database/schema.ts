@@ -40,9 +40,7 @@ export interface AlignmentReport {
   mutedChapters: number | null
   overrides: string | null
   report: ColumnType<
-    | import("@storyteller-platform/align").Report
-    | import("@storyteller-platform/align").CtcReport
-    | null,
+    import("@/alignmentReportView").AnyReport | null,
     string | null,
     string | null
   >
