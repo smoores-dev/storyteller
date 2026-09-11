@@ -101,6 +101,7 @@ export function itemTone(item: ViewSpineItem): ReportTone {
   const judged = judgmentTone(item.judgment)
   if (judged) return judged
   if (item.status === "not-found") return "poor"
+  if (item.status === "audio-only") return "moderate"
   if (item.status !== "aligned") return "muted"
   return percentTone(matchedPercent(item))
 }

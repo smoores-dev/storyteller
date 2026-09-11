@@ -479,13 +479,18 @@ function recountTotals(report: ReportV3): ReportV3["totals"] {
     totals.sentences += item.sentenceCount
     totals.matchedSentences += item.matchedSentenceCount
     totals.interpolatedSentences += item.interpolatedSentenceCount
+    totals.droppedSentences += item.droppedSentenceCount
   }
   totals.unmatchedSentences =
-    totals.sentences - totals.matchedSentences - totals.interpolatedSentences
+    totals.sentences -
+    totals.matchedSentences -
+    totals.interpolatedSentences -
+    totals.droppedSentences
   for (const track of report.tracks) {
     totals.seconds += track.duration
     totals.matchedSeconds += track.matchedSeconds
     totals.interpolatedSeconds += track.interpolatedSeconds
+    totals.looseSeconds += track.looseSeconds
     totals.tracks++
     if (track.matchedSeconds === 0 && track.interpolatedSeconds === 0) {
       totals.unalignedTracks++
@@ -715,6 +720,7 @@ export function buildReportView(args: {
     items,
     tracks,
     spans: report.spans,
+    holes: report.holes,
     totals: report.totals,
   }
 }

@@ -288,6 +288,13 @@ function ChapterBody({
               })}
             </span>
           )}
+          {item.droppedSentenceCount > 0 && (
+            <span className="text-muted-foreground ml-1 text-[11px] font-normal">
+              {t("detail.dropped", {
+                count: item.droppedSentenceCount,
+              })}
+            </span>
+          )}
         </span>
       ),
       tone: percentTone(sentencePercent),

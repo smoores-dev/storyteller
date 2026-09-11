@@ -54,3 +54,85 @@ publications.
 | Name        | audio-cover-image                                                                                                    |
 | Description | Indicates that a manifest item is to be used as the cover art when presenting the audio to the user.                 |
 | Example     | `<item id="audio-cover" href="audio cover.png" properties="storyteller:audio-cover-image" media-type="image/png" />` |
+
+### 3.2 alignment-report
+
+|             |                                                                                                                                                    |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name        | alignment-report                                                                                                                                   |
+| Description | Indicates that a manifest item contains extra information about the alignment process performed by Storyteller. To be used for debugging purposes. |
+| Example     | `<item id="alignment-report" href="alignment report.json" properties="storyteller:alignment-report" media-type="application/json" />`              |
+
+## 4. SMIL Properties Vocabulary
+
+### 4.1 interpolated
+
+|             |                                                                                |
+| ----------- | ------------------------------------------------------------------------------ |
+| Name        | interpolated                                                                   |
+| Description | Indicates that a sentence range was interpolated during the alignment process. |
+| Example     | `<par epub:type="storyteller:interpolated">...</par>`                          |
+
+### 4.2 dropped
+
+|             |                                                                           |
+| ----------- | ------------------------------------------------------------------------- |
+| Name        | dropped                                                                   |
+| Description | Indicates that a sentence range was dropped during the alignment process. |
+| Example     | `<par epub:type="storyteller:dropped">...</par>`                          |
+
+### 4.3 unmatched
+
+|             |                                                                             |
+| ----------- | --------------------------------------------------------------------------- |
+| Name        | unmatched                                                                   |
+| Description | Indicates that a sentence range was unmatched during the alignment process. |
+| Example     | `<par epub:type="storyteller:unmatched">...</par>`                          |
+
+## 4. Media Overlay Structural Semantics
+
+Storyteller marks every `par` element in the media overlays it writes with one
+of the following terms in its `epub:type` attribute. Word-level `par` elements
+carry the term for the word, and the enclosing `text-range-small` `seq` carries
+the term for the sentence. The `storyteller` prefix is declared on the `smil`
+root element.
+
+### 4.1 matched
+
+|             |                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| Name        | matched                                                                                    |
+| Description | The aligner located this text in the audio. The clip boundaries come from the alignment.   |
+| Example     | `<par id="chapter1-s12" epub:type="storyteller:matched">`                                  |
+
+### 4.2 interpolated
+
+|             |                                                                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Name        | interpolated                                                                                                                   |
+| Description | The aligner did not locate this text, but it lies between two matched sentences of the same chapter. The clip is inferred.     |
+| Example     | `<par id="chapter1-s13" epub:type="storyteller:interpolated">`                                                                 |
+
+### 4.3 unmatched
+
+|             |                                                                                                                                                            |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name        | unmatched                                                                                                                                                  |
+| Description | The aligner did not locate this text and it lies before the first or after the last matched sentence of its chapter. The clip is extrapolated from the nearest match. |
+| Example     | `<par id="chapter1-s0" epub:type="storyteller:unmatched">`                                                                                                 |
+
+### 4.4 dropped
+
+|             |                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Name        | dropped                                                                                                                          |
+| Description | The aligner determined that this text is not read in the audio. The clip is a placeholder so that playback stays continuous.     |
+| Example     | `<par id="chapter1-s14" epub:type="storyteller:dropped">`                                                                        |
+
+### 4.5 audio-only
+
+|             |                                                                                                                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name        | audio-only                                                                                                                                                                                                      |
+| Description | Narration with no corresponding text, such as a chapter announcement or an aside. The entry references the nearest sentence, or the heading of an audio-only chapter, so that reading systems keep playing. Reading systems that recognise the term may skip it or play it without highlighting. |
+| Example     | `<par id="chapter1-s12-after0" epub:type="storyteller:audio-only">`                                                                                                                                             |

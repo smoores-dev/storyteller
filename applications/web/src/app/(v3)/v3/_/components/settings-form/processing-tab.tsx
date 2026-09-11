@@ -187,6 +187,22 @@ export function ProcessingSettingsFields({
     { value: 4, label: ta("maxTrackLength4") },
   ]
 
+  const gapOptions = [
+    { value: "0", label: tt("gapSecondsOff") },
+    ...[2, 5, 10, 30].map((seconds) => ({
+      value: String(seconds),
+      label: tt("gapSecondsValue", { count: seconds }),
+    })),
+  ]
+
+  const audioChapterOptions = [
+    { value: "0", label: tt("audioChapterSecondsOff") },
+    ...[1, 2, 5, 10].map((minutes) => ({
+      value: String(minutes * 60),
+      label: tt("audioChapterSecondsValue", { count: minutes }),
+    })),
+  ]
+
   const codecOptions = [
     { value: "default", label: ta("codecDefault") },
     { value: "libopus", label: ta("codecOpus") },
@@ -272,6 +288,86 @@ export function ProcessingSettingsFields({
           )}
 
           <AlignerSettings restart={restart} />
+
+          <SettingsFormField
+            name="alignmentGapSeconds"
+            label={tt("gapSeconds")}
+            description={tt("gapsDescription")}
+            render={(field, fieldState, isLocked) => (
+              <Select
+                disabled={isLocked}
+                aria-invalid={fieldState.invalid}
+                data-disabled={isLocked}
+                items={gapOptions}
+                value={String(field.value ?? 0)}
+                onValueChange={(value) => {
+                  if (value !== null) field.onChange(parseFloat(value))
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {gapOptions.find(
+                      ({ value }) => value === String(field.value ?? 0),
+                    )?.label ?? tt("gapSecondsOff")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {gapOptions.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+
+          <SettingsFormField
+            name="alignmentAudioChapterSeconds"
+            label={tt("audioChapterSeconds")}
+            render={(field, fieldState, isLocked) => (
+              <Select
+                disabled={isLocked}
+                aria-invalid={fieldState.invalid}
+                data-disabled={isLocked}
+                items={audioChapterOptions}
+                value={String(field.value ?? 0)}
+                onValueChange={(value) => {
+                  if (value !== null) field.onChange(parseFloat(value))
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {audioChapterOptions.find(
+                      ({ value }) => value === String(field.value ?? 0),
+                    )?.label ?? tt("audioChapterSecondsOff")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {audioChapterOptions.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+
+          <SettingsFormField
+            name="alignmentDropUnread"
+            label={tt("dropUnread")}
+            description={tt("dropUnreadDescription")}
+            render={(field, _fieldState, isLocked) => (
+              <Switch
+                checked={field.value ?? true}
+                onCheckedChange={(checked) => {
+                  field.onChange(checked)
+                }}
+                disabled={isLocked}
+              />
+            )}
+          />
         </SettingsCard>
       </SettingsSection>
 

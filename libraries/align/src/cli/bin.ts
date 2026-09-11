@@ -283,6 +283,9 @@ async function main() {
             reportsPath: parsed.reports,
             logger,
             onProgress: updateProgressBar,
+            gapSeconds: parsed.gapSeconds,
+            audioChapterSeconds: parsed.audioChapterSeconds,
+            dropUnread: parsed.dropUnread,
           },
         )
 
@@ -303,6 +306,9 @@ async function main() {
             reportsPath: parsed.reports,
             logger,
             onProgress: updateProgressBar,
+            gapSeconds: parsed.gapSeconds,
+            audioChapterSeconds: parsed.audioChapterSeconds,
+            dropUnread: parsed.dropUnread,
           },
         )
 
@@ -489,6 +495,9 @@ async function main() {
             reportsPath: parsed.reports,
             logger,
             onProgress: updateProgressBar,
+            gapSeconds: parsed.gapSeconds,
+            audioChapterSeconds: parsed.audioChapterSeconds,
+            dropUnread: parsed.dropUnread,
           },
         )
 

@@ -15,9 +15,21 @@ export type {
 export { ctcAlign } from "./align/ctc/align.ts"
 export type { AlignOptions as CtcAlignOptions } from "./align/ctc/Aligner.ts"
 export {
+  type AudioChapter,
+  type Hole,
+  type HoleAnchor,
+  LEGACY_RANGE_BEHAVIOUR,
+  type RangeBehaviour,
+  collapseRanges,
+  planAudioChapters,
+  rangeBehaviour,
+} from "./align/holes.ts"
+export { type RangeState } from "./align/getSentenceRanges.ts"
+export {
   REPORT_VERSION,
   type ReportChunkDebug,
   type ReportDebug,
+  type ReportHole,
   type ReportSpan,
   type ReportSpineItem,
   type ReportTotals,

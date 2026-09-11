@@ -21,13 +21,15 @@ export type StorytellerTranscription = {
   timeline: StorytellerTimelineEntry[]
 }
 
+export type RangeState = "matched" | "interpolated" | "unmatched" | "dropped"
+
 export type SentenceRange = {
   id: number
   chapterId: string
   start: number
   end: number
   audiofile: string
-  interpolated: boolean
+  state: RangeState
 }
 
 export type WordRange = {
@@ -37,7 +39,7 @@ export type WordRange = {
   start: number
   end: number
   audiofile: string
-  interpolated: boolean
+  state: RangeState
 }
 
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
@@ -330,7 +332,7 @@ export async function getSentenceRanges(
               start: 0,
               audiofile: end.audiofile,
               end: end.end,
-              interpolated: false,
+              state: "matched",
             })
           } else {
             sentenceRanges.push({
@@ -339,7 +341,7 @@ export async function getSentenceRanges(
               start: start.start,
               audiofile: start.audiofile,
               end: end.end,
-              interpolated: false,
+              state: "matched",
             })
           }
         }
@@ -389,7 +391,7 @@ export async function getSentenceRanges(
                 start: end.audiofile === start.audiofile ? start.start : 0,
                 audiofile: end.audiofile,
                 end: end.end,
-                interpolated: false,
+                state: "matched",
               })
             }
 

@@ -53,6 +53,7 @@ import { env } from "@/env"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 import { getCurrentVersion } from "@/versions"
+import { rangeBehaviourSettings } from "@/work/rangeBehaviour"
 
 import type { ControlMessage, RestartMode } from "./distributor"
 import { type JobStats, buildJobStats } from "./jobStats"
@@ -354,12 +355,12 @@ export default async function processBook({
                   granularity: settings.alignmentGranularity ?? "sentence",
                   reportsPath: reportFilepath,
                   logger,
-
                   onProgress: (p) => {
                     onProgress(0.15 + p * 0.85)
                   },
                   primaryLocale: locale,
                   signal,
+                  ...rangeBehaviourSettings(settings),
                 },
               )
             } else {
@@ -377,6 +378,7 @@ export default async function processBook({
                   },
                   primaryLocale: locale,
                   signal,
+                  ...rangeBehaviourSettings(settings),
                 },
               )
             }

@@ -1,4 +1,4 @@
-import type { SentenceRange } from "./getSentenceRanges.ts"
+import type { RangeState, SentenceRange } from "./getSentenceRanges.ts"
 
 export const REPORT_VERSION = 3
 
@@ -14,6 +14,7 @@ export type SpineStatus =
   | "too-short"
   | "is-nav"
   | "no-text"
+  | "audio-only"
 
 export type ReportSpineItem = {
   index: number
@@ -23,8 +24,10 @@ export type ReportSpineItem = {
   sentenceCount: number
   matchedSentenceCount: number
   interpolatedSentenceCount: number
+  droppedSentenceCount: number
   matchedSeconds: number
   interpolatedSeconds: number
+  looseSeconds: number
   score: number | null
   firstMatch: SentenceContext | null
   lastMatch: SentenceContext | null
@@ -45,10 +48,11 @@ export type ReportTrack = {
   offset: number
   matchedSeconds: number
   interpolatedSeconds: number
+  looseSeconds: number
   source: ReportTrackSource | null
 }
 
-export type SpanState = "aligned" | "interpolated" | "unmatched"
+export type SpanState = "aligned" | "interpolated" | "unmatched" | "dropped"
 
 export type SpanText = {
   spine: number
@@ -67,16 +71,26 @@ export type ReportSpan = SpanText &
     | { state: "aligned"; audio: SpanAudio; score: number | null }
     | { state: "interpolated"; audio: SpanAudio }
     | { state: "unmatched"; audio: null }
+    | { state: "dropped"; audio: null }
   )
+
+export type ReportHole = {
+  spine: number
+  sentence: number
+  position: "before" | "after"
+  audio: SpanAudio
+}
 
 export type ReportTotals = {
   sentences: number
   matchedSentences: number
   interpolatedSentences: number
   unmatchedSentences: number
+  droppedSentences: number
   seconds: number
   matchedSeconds: number
   interpolatedSeconds: number
+  looseSeconds: number
   spine: Record<SpineStatus, number>
   tracks: number
   unalignedTracks: number
@@ -102,6 +116,7 @@ export type ReportV3 = {
   spine: ReportSpineItem[]
   tracks: ReportTrack[]
   spans: ReportSpan[]
+  holes: ReportHole[]
   totals: ReportTotals
   debug?: ReportDebug
 }
@@ -112,15 +127,18 @@ export function emptyTotals(): ReportTotals {
     matchedSentences: 0,
     interpolatedSentences: 0,
     unmatchedSentences: 0,
+    droppedSentences: 0,
     seconds: 0,
     matchedSeconds: 0,
     interpolatedSeconds: 0,
+    looseSeconds: 0,
     spine: {
       aligned: 0,
       "not-found": 0,
       "too-short": 0,
       "is-nav": 0,
       "no-text": 0,
+      "audio-only": 0,
     },
     tracks: 0,
     unalignedTracks: 0,
@@ -134,6 +152,7 @@ export function emptyReport(aligner: ReportV3["aligner"]): ReportV3 {
     spine: [],
     tracks: [],
     spans: [],
+    holes: [],
     totals: emptyTotals(),
   }
 }
@@ -148,6 +167,13 @@ function roundScore(value: number): number {
 
 type SentenceState = { state: SpanState; range: SentenceRange | null }
 
+const SPAN_STATE: Record<RangeState, SpanState> = {
+  matched: "aligned",
+  interpolated: "interpolated",
+  unmatched: "unmatched",
+  dropped: "dropped",
+}
+
 export function buildChapterSpans(input: {
   spine: number
   sentenceCount: number
@@ -158,26 +184,12 @@ export function buildChapterSpans(input: {
   const byId = new Map<number, SentenceRange>()
   for (const range of input.ranges) byId.set(range.id, range)
 
-  let firstAligned = -1
-  let lastAligned = -1
-  for (const [id, range] of byId) {
-    if (range.interpolated) continue
-    if (firstAligned === -1 || id < firstAligned) firstAligned = id
-    if (id > lastAligned) lastAligned = id
-  }
-
   const states: SentenceState[] = []
   for (let id = 0; id < input.sentenceCount; id++) {
     const range = byId.get(id) ?? null
-    if (!range) {
-      states.push({ state: "unmatched", range: null })
-    } else if (!range.interpolated) {
-      states.push({ state: "aligned", range })
-    } else if (id > firstAligned && id < lastAligned) {
-      states.push({ state: "interpolated", range })
-    } else {
-      states.push({ state: "unmatched", range: null })
-    }
+    const state = range ? SPAN_STATE[range.state] : "unmatched"
+    const timed = state === "aligned" || state === "interpolated"
+    states.push({ state, range: timed ? range : null })
   }
 
   const spans: ReportSpan[] = []
@@ -201,8 +213,12 @@ export function buildChapterSpans(input: {
       lastSentence: runEnd,
     }
 
-    if (head.state === "unmatched" || !head.range) {
-      spans.push({ ...text, state: "unmatched", audio: null })
+    if (!head.range) {
+      spans.push({
+        ...text,
+        state: head.state === "dropped" ? "dropped" : "unmatched",
+        audio: null,
+      })
     } else {
       let start = head.range.start
       let end = head.range.end
@@ -246,7 +262,7 @@ export function spanSentences(span: SpanText): number {
   return span.lastSentence - span.firstSentence + 1
 }
 
-export function spanSeconds(span: ReportSpan): number {
+export function spanSeconds(span: { audio: SpanAudio | null }): number {
   return span.audio ? span.audio.end - span.audio.start : 0
 }
 
@@ -256,12 +272,18 @@ export function assembleReport(input: {
     ReportSpineItem,
     | "matchedSentenceCount"
     | "interpolatedSentenceCount"
+    | "droppedSentenceCount"
     | "matchedSeconds"
     | "interpolatedSeconds"
+    | "looseSeconds"
     | "score"
   >[]
-  tracks: Omit<ReportTrack, "matchedSeconds" | "interpolatedSeconds">[]
+  tracks: Omit<
+    ReportTrack,
+    "matchedSeconds" | "interpolatedSeconds" | "looseSeconds"
+  >[]
   spans: ReportSpan[]
+  holes?: ReportHole[]
   debug?: ReportDebug
 }): ReportV3 {
   const spine: ReportSpineItem[] = input.spine
@@ -270,8 +292,10 @@ export function assembleReport(input: {
       ...item,
       matchedSentenceCount: 0,
       interpolatedSentenceCount: 0,
+      droppedSentenceCount: 0,
       matchedSeconds: 0,
       interpolatedSeconds: 0,
+      looseSeconds: 0,
       score: null,
     }))
   const spineByIndex = new Map(spine.map((item) => [item.index, item]))
@@ -280,6 +304,7 @@ export function assembleReport(input: {
     ...track,
     matchedSeconds: 0,
     interpolatedSeconds: 0,
+    looseSeconds: 0,
   }))
 
   const scoreSums = new Map<number, { sum: number; count: number }>()
@@ -311,7 +336,20 @@ export function assembleReport(input: {
         item.interpolatedSeconds += seconds
       }
       if (track) track.interpolatedSeconds += seconds
+    } else if (span.state === "dropped") {
+      if (item) item.droppedSentenceCount += sentences
     }
+  }
+
+  const holes = (input.holes ?? []).toSorted(
+    (a, b) => a.audio.track - b.audio.track || a.audio.start - b.audio.start,
+  )
+  for (const hole of holes) {
+    const seconds = spanSeconds(hole)
+    const item = spineByIndex.get(hole.spine)
+    if (item) item.looseSeconds += seconds
+    const track = tracks[hole.audio.track]
+    if (track) track.looseSeconds += seconds
   }
 
   const totals = emptyTotals()
@@ -321,6 +359,7 @@ export function assembleReport(input: {
     item.score = scores ? roundScore(scores.sum / scores.count) : null
     item.matchedSeconds = roundSeconds(item.matchedSeconds)
     item.interpolatedSeconds = roundSeconds(item.interpolatedSeconds)
+    item.looseSeconds = roundSeconds(item.looseSeconds)
     if (
       item.status === "aligned" &&
       item.matchedSentenceCount === 0 &&
@@ -332,16 +371,22 @@ export function assembleReport(input: {
     totals.sentences += item.sentenceCount
     totals.matchedSentences += item.matchedSentenceCount
     totals.interpolatedSentences += item.interpolatedSentenceCount
+    totals.droppedSentences += item.droppedSentenceCount
   }
   totals.unmatchedSentences =
-    totals.sentences - totals.matchedSentences - totals.interpolatedSentences
+    totals.sentences -
+    totals.matchedSentences -
+    totals.interpolatedSentences -
+    totals.droppedSentences
 
   for (const track of tracks) {
     track.matchedSeconds = roundSeconds(track.matchedSeconds)
     track.interpolatedSeconds = roundSeconds(track.interpolatedSeconds)
+    track.looseSeconds = roundSeconds(track.looseSeconds)
     totals.seconds += track.duration
     totals.matchedSeconds += track.matchedSeconds
     totals.interpolatedSeconds += track.interpolatedSeconds
+    totals.looseSeconds += track.looseSeconds
     totals.tracks++
     if (track.matchedSeconds === 0 && track.interpolatedSeconds === 0) {
       totals.unalignedTracks++
@@ -350,6 +395,7 @@ export function assembleReport(input: {
   totals.seconds = roundSeconds(totals.seconds)
   totals.matchedSeconds = roundSeconds(totals.matchedSeconds)
   totals.interpolatedSeconds = roundSeconds(totals.interpolatedSeconds)
+  totals.looseSeconds = roundSeconds(totals.looseSeconds)
 
   return {
     version: REPORT_VERSION,
@@ -357,6 +403,7 @@ export function assembleReport(input: {
     spine,
     tracks,
     spans,
+    holes,
     totals,
     ...(input.debug && { debug: input.debug }),
   }

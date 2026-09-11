@@ -63,6 +63,11 @@ import {
   useUpdateSettingsMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
+import {
+  DEFAULT_AUDIO_CHAPTER_SECONDS,
+  DEFAULT_DROP_UNREAD,
+  DEFAULT_GAP_SECONDS,
+} from "@/work/rangeBehaviour"
 
 import { AuthProviderInput } from "./AuthProviderInput"
 import { MetadataFieldOverridesEditor } from "./MetadataFieldOverridesEditor"
@@ -1145,6 +1150,10 @@ export function SettingsForm({
     aligner: settings.aligner ?? "whisper",
     ctcEngine: settings.ctcEngine ?? "wav2vec-local",
     alignmentGranularity: settings.alignmentGranularity ?? "sentence",
+    alignmentGapSeconds: settings.alignmentGapSeconds ?? DEFAULT_GAP_SECONDS,
+    alignmentAudioChapterSeconds:
+      settings.alignmentAudioChapterSeconds ?? DEFAULT_AUDIO_CHAPTER_SECONDS,
+    alignmentDropUnread: settings.alignmentDropUnread ?? DEFAULT_DROP_UNREAD,
     ctcDevice: settings.ctcDevice ?? null,
     // ctcServerUrl: settings.ctcServerUrl ?? "",
     // ctcServerApiKey: settings.ctcServerApiKey ?? "",

@@ -43,22 +43,34 @@ import { getTrackDuration } from "../common/ffmpeg.ts"
 import { parseDom } from "../markup/parseDom.ts"
 import { segmentChapter } from "../markup/segmentation.ts"
 import { inlineFootnotes, liftText } from "../markup/transform.ts"
+import { readTrackSource } from "../process/trackSource.ts"
 import {
   generateGuidedNavigationDocuments,
   generateGuidedNavigationManifest,
 } from "../readium/guidedNavigation.ts"
 
 import {
+  READALOUD_STYLESHEET,
+  writeAudioChapters,
+} from "./audioChapters.ts"
+import { type ChapterHole, createMediaOverlay } from "./ctc/mediaOverlay.ts"
+import {
   type MappedTimeline,
   type SentenceRange,
   type StorytellerTranscription,
   type WordRange,
-  collapseSentenceRangeGaps,
   expandEmptySentenceRanges,
   getChapterDuration,
   getSentenceRanges,
   mapTranscriptionTimeline,
 } from "./getSentenceRanges.ts"
+import {
+  LEGACY_RANGE_BEHAVIOUR,
+  type RangeBehaviour,
+  collapseRanges,
+  planAudioChapters,
+  rangeBehaviour,
+} from "./holes.ts"
 import {
   type SentenceLengths,
   interpolateSentenceRanges,
@@ -184,6 +196,9 @@ export interface AlignOptions {
   logger?: Logger | null | undefined
   onProgress?: ((progress: number) => void) | null | undefined
   signal?: AbortSignal | null | undefined
+  gapSeconds?: number | null | undefined
+  audioChapterSeconds?: number | null | undefined
+  dropUnread?: boolean | null | undefined
 }
 
 export async function align(
@@ -269,6 +284,7 @@ export async function align(
     options.primaryLocale,
     options.logger,
     options.signal,
+    rangeBehaviour(options),
   )
 
   const timing = await aligner.alignBook(options.onProgress)
@@ -380,6 +396,7 @@ export class Aligner {
     private languageOverride?: Intl.Locale | null,
     private logger?: Logger | null,
     private abortSignal?: AbortSignal | null,
+    private behaviour: RangeBehaviour = LEGACY_RANGE_BEHAVIOUR,
   ) {
     this.transcription = concatTranscriptions(transcriptions, audiofiles)
 
@@ -411,7 +428,10 @@ export class Aligner {
     return segmentation.filter((s) => s.text.match(/\S/))
   }
 
-  private async writeAlignedChapter(alignedChapter: AlignedChapter) {
+  private async writeAlignedChapter(
+    alignedChapter: AlignedChapter,
+    holes: ChapterHole[] = [],
+  ) {
     const locale =
       this.languageOverride ??
       (await this.epub.getLanguage()) ??
@@ -528,9 +548,68 @@ export class Aligner {
       }
     }
 
-    const audiofiles = Array.from(
-      new Set(sentenceRanges.map(({ audiofile }) => audiofile)),
+    await this.addAudio([
+      ...sentenceRanges.map(({ audiofile }) => audiofile),
+      ...holes.map(({ audiofile }) => audiofile),
+    ])
+
+    const { name: chapterStem } = parse(chapter.href)
+
+    const mediaOverlayId = `${chapter.id}_overlay`
+    await this.epub.addManifestItem(
+      {
+        id: mediaOverlayId,
+        href: `MediaOverlays/${chapterStem}.smil`,
+        mediaType: MediaType.SMIL.mime,
+      },
+      createMediaOverlay(
+        chapter,
+        this.granularity,
+        sentenceRanges,
+        wordRangeMap,
+        sentenceIdToBlockFragment,
+        sentenceIdToFragment,
+        wordIdToFragment,
+        holes,
+      ),
+      "xml",
     )
+
+    await this.epub.updateManifestItem(chapter.id, {
+      ...chapter,
+      mediaOverlay: mediaOverlayId,
+    })
+
+    await this.epub.writeXhtmlItemContents(chapter.id, xml)
+
+    const chapterDuration = getChapterDuration(
+      [
+        ...sentenceRanges,
+        ...holes.map((hole) => ({
+          ...hole,
+          id: hole.sentenceId,
+          chapterId: chapter.id,
+          state: "unmatched" as const,
+        })),
+      ].toSorted(
+        (a, b) =>
+          this.audiofiles.indexOf(a.audiofile) -
+            this.audiofiles.indexOf(b.audiofile) || a.start - b.start,
+      ),
+    )
+
+    await this.epub.addMetadata({
+      type: "meta",
+      properties: {
+        property: "media:duration",
+        refines: `#${mediaOverlayId}`,
+      },
+      value: Epub.formatSmilDuration(chapterDuration),
+    })
+  }
+
+  private async addAudio(files: string[]) {
+    const audiofiles = Array.from(new Set(files))
 
     await Promise.all(
       audiofiles.map(async (audiofile) => {
@@ -561,44 +640,6 @@ export class Aligner {
       }),
     )
 
-    const { name: chapterStem } = parse(chapter.href)
-
-    const mediaOverlayId = `${chapter.id}_overlay`
-    await this.epub.addManifestItem(
-      {
-        id: mediaOverlayId,
-        href: `MediaOverlays/${chapterStem}.smil`,
-        mediaType: MediaType.SMIL.mime,
-      },
-      createMediaOverlay(
-        chapter,
-        this.granularity,
-        sentenceRanges,
-        wordRangeMap,
-        sentenceIdToBlockFragment,
-        sentenceIdToFragment,
-        wordIdToFragment,
-      ),
-      "xml",
-    )
-
-    await this.epub.updateManifestItem(chapter.id, {
-      ...chapter,
-      mediaOverlay: mediaOverlayId,
-    })
-
-    await this.epub.writeXhtmlItemContents(chapter.id, xml)
-
-    const chapterDuration = getChapterDuration(sentenceRanges)
-
-    await this.epub.addMetadata({
-      type: "meta",
-      properties: {
-        property: "media:duration",
-        refines: `#${mediaOverlayId}`,
-      },
-      value: Epub.formatSmilDuration(chapterDuration),
-    })
   }
 
   private addChapterReport(
@@ -992,10 +1033,43 @@ export class Aligner {
       chapterSentenceCounts,
       this.audioFileDurations,
       sentenceLengths,
+      { dropUnread: this.behaviour.dropUnread },
     )
 
     const expanded = expandEmptySentenceRanges(interpolated)
-    const collapsed = await collapseSentenceRangeGaps(expanded)
+    const { ranges: collapsed, holes } = collapseRanges(
+      expanded,
+      this.audiofiles,
+      this.audioFileDurations,
+      this.behaviour,
+    )
+
+    const sources = new Map(
+      await Promise.all(
+        this.audiofiles.map(
+          async (file) => [file, await readTrackSource(file)] as const,
+        ),
+      ),
+    )
+    const { chapters, remaining } = planAudioChapters(
+      holes,
+      this.behaviour,
+      this.audioFileDurations,
+      (file) => sources.get(file)?.title ?? null,
+    )
+
+    const holesByChapter = new Map<string, ChapterHole[]>()
+    for (const hole of remaining) {
+      const list = holesByChapter.get(hole.anchor.chapterId) ?? []
+      list.push({
+        sentenceId: hole.anchor.sentenceId,
+        position: hole.anchor.position,
+        audiofile: hole.audiofile,
+        start: hole.start,
+        end: hole.end,
+      })
+      holesByChapter.set(hole.anchor.chapterId, list)
+    }
 
     let collapsedStart = 0
     for (const alignedChapter of audioOrderedChapters) {
@@ -1010,9 +1084,25 @@ export class Aligner {
       for (const [i, wordRanges] of enumerate(alignedChapter.wordRanges)) {
         alignedChapter.wordRanges[i] = expandEmptySentenceRanges(wordRanges)
       }
-      await this.writeAlignedChapter(alignedChapter)
+      await this.writeAlignedChapter(
+        alignedChapter,
+        holesByChapter.get(alignedChapter.chapter.id) ?? [],
+      )
       collapsedStart += sentences.length
     }
+
+    const audioChapters = await writeAudioChapters(
+      this.epub,
+      chapters,
+      this.languageOverride ??
+        (await this.epub.getLanguage()) ??
+        new Intl.Locale("en-US"),
+    )
+    await this.addAudio(
+      audioChapters.flatMap((chapter) =>
+        chapter.holes.map((hole) => hole.audiofile),
+      ),
+    )
 
     for (const audiofile of this.audiofiles) {
       if (
@@ -1042,7 +1132,7 @@ export class Aligner {
     await this.epub.addManifestItem(
       {
         id: "storyteller_readaloud_styles",
-        href: "Styles/storyteller-readaloud.css",
+        href: READALOUD_STYLESHEET,
         mediaType: MediaType.CSS.mime,
       },
       `
@@ -1057,162 +1147,6 @@ export class Aligner {
   }
 }
 
-function createMediaOverlay(
-  chapter: ManifestItem,
-  granularity: "sentence" | "word",
-  sentenceRanges: SentenceRange[],
-  wordRanges: Map<number, WordRange[]>,
-  sentenceIdToBlockFragment: Map<number, string> | null,
-  sentenceIdToFragment: Map<number, string>,
-  wordIdToFragment: Map<number, Map<number, string>>,
-) {
-  const subSequences = sentenceIdToBlockFragment
-    ? createTextRangeLargeSequences(
-        chapter,
-        granularity,
-        sentenceRanges,
-        wordRanges,
-        sentenceIdToBlockFragment,
-        sentenceIdToFragment,
-        wordIdToFragment,
-      )
-    : createTextRangeSmallSequences(
-        chapter,
-        granularity,
-        sentenceRanges,
-        wordRanges,
-        sentenceIdToFragment,
-        wordIdToFragment,
-      )
-
-  return [
-    Epub.createXmlElement(
-      "smil",
-      {
-        xmlns: "http://www.w3.org/ns/SMIL",
-        "xmlns:epub": "http://www.idpf.org/2007/ops",
-        version: "3.0",
-      },
-      [
-        Epub.createXmlElement("body", {}, [
-          Epub.createXmlElement(
-            "seq",
-            {
-              id: `${chapter.id}_overlay`,
-              "epub:textref": `../${chapter.href}`,
-              "epub:type": "chapter",
-            },
-            subSequences,
-          ),
-        ]),
-      ],
-    ),
-  ]
-}
-
-function createTextRangeLargeSequences(
-  chapter: ManifestItem,
-  granularity: "sentence" | "word",
-  sentenceRanges: SentenceRange[],
-  wordRanges: Map<number, WordRange[]>,
-  sentenceIdToBlockFragment: Map<number, string>,
-  sentenceIdToFragment: Map<number, string>,
-  wordIdToFragment: Map<number, Map<number, string>>,
-) {
-  const blockStarts = sentenceIdToBlockFragment
-    .entries()
-    .toArray()
-    .toSorted(([a], [b]) => a - b)
-
-  return blockStarts.map(([sentenceId, fragment], index) => {
-    const blockEnd =
-      index === blockStarts.length - 1
-        ? sentenceRanges.length - 1
-        : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          blockStarts[index + 1]![0]
-
-    const sentences = sentenceRanges.slice(sentenceId, blockEnd)
-
-    return Epub.createXmlElement(
-      "seq",
-      {
-        id: `${chapter.id}-b${index}`,
-        "epub:type": "text-range-large",
-        "epub:textref": `../${chapter.href}#${fragment}`,
-      },
-      createTextRangeSmallSequences(
-        chapter,
-        granularity,
-        sentences,
-        wordRanges,
-        sentenceIdToFragment,
-        wordIdToFragment,
-      ),
-    )
-  })
-}
-
-function createTextRangeSmallSequences(
-  chapter: ManifestItem,
-  granularity: "sentence" | "word",
-  sentenceRanges: SentenceRange[],
-  wordRanges: Map<number, WordRange[]>,
-  sentenceIdToFragment: Map<number, string>,
-  wordIdToFragment: Map<number, Map<number, string>>,
-) {
-  return sentenceRanges.map((sentenceRange) => {
-    if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
-      return Epub.createXmlElement(
-        "par",
-        {
-          id: `${chapter.id}-s${sentenceRange.id}`,
-        },
-        [
-          Epub.createXmlElement("text", {
-            src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-          }),
-          Epub.createXmlElement("audio", {
-            src: `../Audio/${basename(sentenceRange.audiofile)}`,
-            clipBegin: `${sentenceRange.start.toFixed(3)}s`,
-            clipEnd: `${sentenceRange.end.toFixed(3)}s`,
-          }),
-        ],
-      )
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const words = wordRanges.get(sentenceRange.id)!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
-
-    return Epub.createXmlElement(
-      "seq",
-      {
-        id: `${chapter.id}-s${sentenceRange.id}`,
-        "epub:type": "text-range-small",
-        "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-      },
-      words.map((word) =>
-        Epub.createXmlElement(
-          "par",
-          {
-            id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
-          },
-          [
-            Epub.createXmlElement("text", {
-              src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
-            }),
-            Epub.createXmlElement("audio", {
-              src: `../Audio/${basename(word.audiofile)}`,
-              clipBegin: `${word.start.toFixed(3)}s`,
-              clipEnd: `${word.end.toFixed(3)}s`,
-            }),
-          ],
-        ),
-      ),
-    )
-  })
-}
 
 export function concatTranscriptions(
   transcriptions: Pick<RecognitionResult, "transcript" | "timeline">[],

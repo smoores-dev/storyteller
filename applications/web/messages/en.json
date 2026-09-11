@@ -805,6 +805,16 @@
               }
             },
             "alignmentGranularity": "Alignment granularity",
+            "gapsTitle": "Audio without text",
+            "gapsDescription": "Narration with no matching text, such as a chapter announcement or an aside, can be kept as an audio-only entry in the media overlays instead of being folded into the previous sentence.",
+            "gapSeconds": "Keep gaps longer than",
+            "gapSecondsOff": "Fold every gap into the previous sentence",
+            "gapSecondsValue": "{count, plural, one {# second} other {# seconds}}",
+            "audioChapterSeconds": "Turn gaps between chapters into their own chapter when longer than",
+            "audioChapterSecondsOff": "Never",
+            "audioChapterSecondsValue": "{count, plural, one {# minute} other {# minutes}}",
+            "dropUnread": "Skip sentences the narrator did not read",
+            "dropUnreadDescription": "Sentences the aligner is sure are missing from the narration get no audio of their own, so readers move past them instead of playing a guessed clip.",
             "alignmentGranularityDescription": "Word level alignment may not be accurately reproduces in all clients at the moment, and is only available with the CTC aligner.",
             "alignmentGranularityWord": "Word+Sentence (experimental)",
             "alignmentGranularitySentence": "Sentence",
@@ -2044,7 +2054,8 @@
       "not-found": "not found",
       "too-short": "too short",
       "is-nav": "navigation",
-      "no-text": "no text"
+      "no-text": "no text",
+      "audio-only": "audio only"
     },
     "detail": {
       "empty": "Pick a chapter to see its matches and audio.",
@@ -2065,9 +2076,10 @@
       "jumpLast": "Jump to the last match",
       "loadingText": "Loading chapter text…",
       "textUnavailable": "The chapter text could not be loaded.",
-      "textHint": "Dimmed text was not matched to the narration.",
+      "textHint": "Dimmed text was not matched to the narration. Struck text is not read in it.",
       "textUnmarkedHint": "The matched range could not be located in this text.",
       "interpolated": "{count, plural, one {# sentence} other {# sentences}} interpolated",
+      "dropped": "{count, plural, one {# sentence} other {# sentences}} not read",
       "stretches": "{count, plural, one {# stretch} other {# stretches}}",
       "fromOriginal": "from the original file"
     },

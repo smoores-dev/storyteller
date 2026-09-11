@@ -23,6 +23,7 @@ export const SPINE_STATUSES = [
   "too-short",
   "is-nav",
   "no-text",
+  "audio-only",
 ] as const
 
 export const SpineStatusSchemaV2 = z.enum(SPINE_STATUSES)
@@ -40,6 +41,13 @@ export const ReportSpineItemSchemaV2 = z.object({
   }),
   interpolatedSentenceCount: z.number().meta({
     description: "Sentences placed by interpolation between matches.",
+  }),
+  droppedSentenceCount: z.number().meta({
+    description: "Sentences the aligner determined are not read in the audio.",
+  }),
+  looseSeconds: z.number().meta({
+    description:
+      "Seconds of audio attached to this item as audio-only media overlay entries.",
   }),
   matchedSeconds: z.number(),
   interpolatedSeconds: z.number(),
@@ -69,6 +77,7 @@ export const ReportTrackSchemaV2 = z.object({
   }),
   matchedSeconds: z.number(),
   interpolatedSeconds: z.number(),
+  looseSeconds: z.number(),
   source: ReportTrackSourceSchemaV2.nullable(),
 })
 
@@ -101,16 +110,34 @@ export const ReportSpanSchemaV2 = z.discriminatedUnion("state", [
     state: z.literal("unmatched"),
     audio: z.null(),
   }),
+  z.object({
+    ...SpanTextShape,
+    state: z.literal("dropped"),
+    audio: z.null(),
+  }),
 ])
+
+export const ReportHoleSchemaV2 = z.object({
+  spine: z.number().meta({
+    description: "The spine item whose media overlay carries this audio.",
+  }),
+  sentence: z.number().meta({
+    description: "The sentence the audio-only entry is attached to.",
+  }),
+  position: z.enum(["before", "after"]),
+  audio: SpanAudioSchemaV2,
+})
 
 export const ReportTotalsSchemaV2 = z.object({
   sentences: z.number(),
   matchedSentences: z.number(),
   interpolatedSentences: z.number(),
   unmatchedSentences: z.number(),
+  droppedSentences: z.number(),
   seconds: z.number(),
   matchedSeconds: z.number(),
   interpolatedSeconds: z.number(),
+  looseSeconds: z.number(),
   spine: z.record(SpineStatusSchemaV2, z.number()),
   tracks: z.number(),
   unalignedTracks: z.number(),
@@ -122,6 +149,10 @@ export const AlignmentReportSchemaV2 = z.object({
   spine: z.array(ReportSpineItemSchemaV2),
   tracks: z.array(ReportTrackSchemaV2),
   spans: z.array(ReportSpanSchemaV2),
+  holes: z.array(ReportHoleSchemaV2).meta({
+    description:
+      "Audio with no text, written into the media overlays as audio-only entries.",
+  }),
   totals: ReportTotalsSchemaV2,
 })
 
@@ -211,6 +242,10 @@ export const AlignmentReportViewSchemaV2 = z.object({
   items: z.array(ViewSpineItemSchemaV2),
   tracks: z.array(ViewTrackSchemaV2),
   spans: z.array(ReportSpanSchemaV2),
+  holes: z.array(ReportHoleSchemaV2).meta({
+    description:
+      "Audio with no text, written into the media overlays as audio-only entries.",
+  }),
   totals: ReportTotalsSchemaV2,
 })
 

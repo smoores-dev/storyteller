@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
-import { type SentenceRange } from "../getSentenceRanges.ts"
+import { type RangeState, type SentenceRange } from "../getSentenceRanges.ts"
 import { assembleReport, buildChapterSpans } from "../report-v3.ts"
 
 function range(
@@ -9,9 +9,9 @@ function range(
   start: number,
   end: number,
   audiofile = "a.mp3",
-  interpolated = false,
+  state: RangeState = "matched",
 ): SentenceRange {
-  return { chapterId: "ch", id, start, end, audiofile, interpolated }
+  return { chapterId: "ch", id, start, end, audiofile, state }
 }
 
 const tracks = ["a.mp3", "b.mp3"]
@@ -23,13 +23,13 @@ void describe("buildChapterSpans", () => {
       spine: 4,
       sentenceCount: 7,
       ranges: [
-        range(0, 10, 12.4, "a.mp3", true),
+        range(0, 10, 12.4, "a.mp3", "unmatched"),
         range(1, 12.4, 14),
         range(2, 14, 15.9),
-        range(3, 15.9, 18, "a.mp3", true),
-        range(4, 18, 21.3, "a.mp3", true),
+        range(3, 15.9, 18, "a.mp3", "interpolated"),
+        range(4, 18, 21.3, "a.mp3", "interpolated"),
         range(5, 21.3, 23),
-        range(6, 23, 30, "a.mp3", true),
+        range(6, 23, 30, "a.mp3", "unmatched"),
       ],
       trackIndex,
       sentenceScore: (id) => (id === 1 ? 90 : id === 2 ? 92 : 88),
@@ -98,6 +98,30 @@ void describe("buildChapterSpans", () => {
       [
         [0, 1, 0],
         [2, 3, 1],
+      ],
+    )
+  })
+
+  void it("keeps dropped sentences apart from unmatched ones", () => {
+    const spans = buildChapterSpans({
+      spine: 1,
+      sentenceCount: 4,
+      ranges: [
+        range(0, 0, 4),
+        range(1, 4, 4.5, "a.mp3", "dropped"),
+        range(2, 4.5, 8),
+        range(3, 8, 20, "a.mp3", "unmatched"),
+      ],
+      trackIndex,
+      sentenceScore: () => null,
+    })
+    assert.deepStrictEqual(
+      spans.map((span) => [span.firstSentence, span.state, span.audio]),
+      [
+        [0, "aligned", { track: 0, start: 0, end: 4 }],
+        [1, "dropped", null],
+        [2, "aligned", { track: 0, start: 4.5, end: 8 }],
+        [3, "unmatched", null],
       ],
     )
   })
@@ -215,15 +239,18 @@ void describe("assembleReport", () => {
       matchedSentences: 3,
       interpolatedSentences: 1,
       unmatchedSentences: 2,
+      droppedSentences: 0,
       seconds: 150,
       matchedSeconds: 50,
       interpolatedSeconds: 10,
+      looseSeconds: 0,
       spine: {
         aligned: 1,
         "not-found": 1,
         "too-short": 0,
         "is-nav": 1,
         "no-text": 0,
+        "audio-only": 0,
       },
       tracks: 2,
       unalignedTracks: 1,

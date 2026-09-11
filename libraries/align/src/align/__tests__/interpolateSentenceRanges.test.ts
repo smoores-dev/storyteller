@@ -21,14 +21,14 @@ function sr(
   end: number,
   audiofile = "audio.mp3",
 ): SentenceRange {
-  return { chapterId, id, start, end, audiofile, interpolated: false }
+  return { chapterId, id, start, end, audiofile, state: "matched" }
 }
 
 function run(
   ...args: Parameters<typeof interpolateSentenceRanges>
-): Omit<SentenceRange, "interpolated">[] {
+): Omit<SentenceRange, "state">[] {
   return interpolateSentenceRanges(...args).map(
-    ({ interpolated: _interpolated, ...range }) => range,
+    ({ state: _state, ...range }) => range,
   )
 }
 
@@ -485,21 +485,63 @@ void describe("sentence-length weighting", () => {
   })
 })
 
-void describe("interpolated flag", () => {
-  void it("marks synthesised ranges and leaves known ones alone", () => {
+void describe("range states", () => {
+  void it("interpolates between matches and extrapolates at the edges", () => {
     const result = interpolateSentenceRanges(
-      [sr("ch1", 0, 0, 5), sr("ch1", 3, 20, 25)],
+      [sr("ch1", 1, 5, 10), sr("ch1", 3, 20, 25)],
       { ch1: 5 },
       { "audio.mp3": 40 },
     )
     assert.deepStrictEqual(
-      result.map((range) => [range.id, range.interpolated]),
+      result.map((range) => [range.id, range.state]),
       [
-        [0, false],
-        [1, true],
-        [2, true],
-        [3, false],
-        [4, true],
+        [0, "unmatched"],
+        [1, "matched"],
+        [2, "interpolated"],
+        [3, "matched"],
+        [4, "unmatched"],
+      ],
+    )
+  })
+
+  void it("treats a chapter boundary as an edge", () => {
+    const result = interpolateSentenceRanges(
+      [sr("ch1", 0, 0, 10), sr("ch2", 1, 30, 40)],
+      { ch1: 2, ch2: 2 },
+      { "audio.mp3": 50 },
+    )
+    assert.deepStrictEqual(
+      result.map((range) => [range.chapterId, range.id, range.state]),
+      [
+        ["ch1", 0, "matched"],
+        ["ch1", 1, "unmatched"],
+        ["ch2", 0, "unmatched"],
+        ["ch2", 1, "matched"],
+      ],
+    )
+  })
+
+  void it("marks dropped slots wherever they fall", () => {
+    const result = interpolateSentenceRanges(
+      [sr("ch1", 1, 5, 10), sr("ch1", 3, 20, 25)],
+      { ch1: 5 },
+      { "audio.mp3": 40 },
+      {},
+      {
+        droppedSlots: new Set([
+          slotKey({ chapterId: "ch1", id: 0 }),
+          slotKey({ chapterId: "ch1", id: 2 }),
+        ]),
+      },
+    )
+    assert.deepStrictEqual(
+      result.map((range) => [range.id, range.state]),
+      [
+        [0, "dropped"],
+        [1, "matched"],
+        [2, "dropped"],
+        [3, "matched"],
+        [4, "unmatched"],
       ],
     )
   })

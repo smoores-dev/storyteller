@@ -3,6 +3,7 @@ import {
   command,
   constant,
   flag,
+  float,
   merge,
   message,
   object,
@@ -45,6 +46,19 @@ export const alignParser = object("Alignment", {
     }),
     "epub",
   ),
+  gapSeconds: optional(
+    option("--gap-seconds", float(), {
+      description: message`Stretches of audio longer than this with no matching text become audio-only media overlay entries instead of being folded into the previous sentence.`,
+    }),
+  ),
+  audioChapterSeconds: optional(
+    option("--audio-chapter-seconds", float(), {
+      description: message`Audio-only stretches between chapters at least this long become their own chapters in the output.`,
+    }),
+  ),
+  dropUnread: flag("--drop-unread", {
+    description: message`Give sentences the narrator did not read no audio instead of an interpolated clip.`,
+  }),
 })
 
 export const alignCommand = command(

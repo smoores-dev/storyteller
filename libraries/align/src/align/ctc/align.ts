@@ -20,6 +20,7 @@ import {
   generateGuidedNavigationDocuments,
   generateGuidedNavigationManifest,
 } from "../../readium/guidedNavigation.ts"
+import { rangeBehaviour } from "../holes.ts"
 
 import { type AlignOptions, Aligner } from "./Aligner.ts"
 
@@ -76,6 +77,7 @@ export async function ctcAlign(
     options.primaryLocale,
     options.logger,
     options.signal,
+    rangeBehaviour(options),
   )
 
   const timing = await aligner.alignBook(options.onProgress)
