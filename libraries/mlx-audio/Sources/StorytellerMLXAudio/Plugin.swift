@@ -16,7 +16,9 @@ import MLX
 	"compute": try NodeFunction { (handle: Int, samples: NodeTypedArray<Float>) async throws -> NodeValueConvertible in
 		return try await ModelRegistry.shared.compute(
 			handle: handle,
-			samples: samples.withUnsafeMutableBytes { Array($0) }
+			samples: samples.withUnsafeMutableRawBytes {
+				Array(UnsafeMutableBufferPointer(start: $0.baseAddress?.assumingMemoryBound(to: Float.self), count: $0.count))
+			}
 		).map { $0 as [NodeValueConvertible] }
 	},
 	"closeModel": try NodeFunction { (handle: Int) async throws -> Bool in

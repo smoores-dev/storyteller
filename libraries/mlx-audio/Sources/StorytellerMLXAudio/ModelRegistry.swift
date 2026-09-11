@@ -61,7 +61,7 @@ actor ModelRegistry {
     }
     let batch = MLXArray(samples, [1, samples.count])
     let mean = MLX.mean(batch, axis: -1, keepDims: true)
-    let centered = samples - mean
+    let centered = batch - mean
     let variance = MLX.mean(centered * centered, axis: -1, keepDims: true)
     let input = centered / (sqrt(variance) + 1e-7)
     let output = entry.model(input.asType(.float16))
