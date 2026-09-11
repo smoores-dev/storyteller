@@ -10,10 +10,10 @@ import {
   BUILD_VARIANTS,
   type BuildVariant,
   type Platform,
+  type ResolvedWav2Vec2Device,
   SILERO_VAD_VERSION,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
-  type Wav2Vec2DataType,
   type Wav2Vec2Device,
   type WhisperModel,
 } from "../constants.ts"
@@ -364,7 +364,7 @@ export function resolveVariant(requestedVariant?: BuildVariant): BuildVariant {
 export function resolveWav2Vec2Device(
   requested: Wav2Vec2Device | null | undefined,
   variant: string | null | undefined,
-): Wav2Vec2Device {
+): ResolvedWav2Vec2Device {
   const webgpuAvailable = !(
     process.platform === "linux" && process.arch === "arm64"
   )
@@ -399,10 +399,6 @@ export function resolveWav2Vec2Device(
     variantName.includes("coreml")
 
   return gpuVariant && webgpuAvailable ? "webgpu" : "cpu"
-}
-
-export function resolveWav2Vec2Dtype(device: Wav2Vec2Device): Wav2Vec2DataType {
-  return device === "cpu" ? "fp32" : "fp16"
 }
 
 export function isValidModel(model: string): model is WhisperModel {

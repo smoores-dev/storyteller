@@ -99,6 +99,7 @@ export class EmissionsReader {
     public vocab: Map<string, number>,
     public blankId: number,
     public timings: EmissionTimings[],
+    public tokenizer: EmissionData["tokenizer"],
   ) {}
 
   private static async getFilepaths(fileOrDirectory: string) {
@@ -119,6 +120,7 @@ export class EmissionsReader {
   static async from(fileOrDirectory: string) {
     let vocab: Map<string, number> | null = null
     let blankId: number | null = null
+    let tokenizer: EmissionData["tokenizer"] = null
     const timings: EmissionTimings[] = []
     const frameMap: [string, number, number][] = []
     let numFrames = 0
@@ -135,11 +137,12 @@ export class EmissionsReader {
         vocab: v,
         blankIndex: b,
         emissions: _,
-        tokenizer: __,
+        tokenizer: t,
         ...emissionTimings
       } = await readEmissionsFileHead(path)
       vocab ??= v
       blankId ??= b
+      tokenizer ??= t
       timings.push(emissionTimings)
       frameMap.push([path, f, f + numFrames])
       f += numFrames
@@ -156,6 +159,7 @@ export class EmissionsReader {
       vocab,
       blankId,
       timings,
+      tokenizer,
     )
     return reader
   }
@@ -201,7 +205,9 @@ export class EmissionsReader {
         Math.min(to, framesTo) - from,
       )
 
-      frames.push(...toRows(emissions))
+      for (const row of toRows(emissions)) {
+        frames.push(row)
+      }
     }
 
     return frames

@@ -890,28 +890,14 @@
               "mlx": "GPU (Apple Silicon)"
             },
             "ctcModel": "Model",
-            "ctcModelDescription": "Automatic picks a model to match the device you chose. The MMS models handle any language. Each QuartzNet model handles only the language in its name and runs a lot faster.",
+            "ctcModelDescription": "MMS handles any language and picks its precision from the device you chose. QuartzNet and Citrinet run a lot faster but each covers a fixed set of languages, and books in any other language use MMS. Citrinet is experimental and cannot be aligned yet.",
+            "ctcModelLanguages": "Available for {languages}.",
             "ctcModels": {
-              "default": "Automatic",
-              "fp32": "MMS 32-bit",
-              "fp16": "MMS 16-bit",
-              "mlx": "MMS Apple Silicon",
-              "quartznet15x5_ar": "QuartzNet Arabic",
-              "quartznet15x5_ca": "QuartzNet Catalan",
-              "quartznet15x5_de": "QuartzNet German",
-              "quartznet15x5_en": "QuartzNet English",
-              "quartznet15x5_es": "QuartzNet Spanish",
-              "quartznet15x5_fo": "QuartzNet Faroese",
-              "quartznet15x5_fr": "QuartzNet French",
-              "quartznet15x5_hy": "QuartzNet Armenian",
-              "quartznet15x5_is": "QuartzNet Icelandic",
-              "quartznet15x5_it": "QuartzNet Italian",
-              "quartznet15x5_kk": "QuartzNet Kazakh",
-              "quartznet15x5_mt": "QuartzNet Maltese",
-              "quartznet15x5_pl": "QuartzNet Polish",
-              "quartznet15x5_pt": "QuartzNet Portuguese",
-              "quartznet15x5_ru": "QuartzNet Russian",
-              "quartznet15x5_zh": "QuartzNet Chinese"
+              "mms": "MMS (any language)",
+              "quartznet15x5": "QuartzNet",
+              "citrinet256": "Citrinet 256",
+              "citrinet512": "Citrinet 512",
+              "citrinet1024": "Citrinet 1024"
             }
           },
           "parallelization": {

@@ -2,7 +2,7 @@ import { z } from "zod"
 
 import {
   ALIGNERS,
-  CTC_MODELS,
+  CTC_MODEL_FAMILIES,
   LANGUAGES,
   RECOGNITION_ENGINES,
   WAV2VEC2_DEVICES,
@@ -30,7 +30,7 @@ export type Wav2VecEngine = z.infer<typeof Wav2VecEngineSchema>
 export const Wav2Vec2DeviceSchema = z.enum(WAV2VEC2_DEVICES)
 export type Wav2Vec2Device = z.infer<typeof Wav2Vec2DeviceSchema>
 
-export const CtcModelSchema = z.enum(CTC_MODELS)
+export const CtcModelSchema = z.enum(CTC_MODEL_FAMILIES)
 export type CtcModel = z.infer<typeof CtcModelSchema>
 
 export const WhisperModelSchema = z.enum(WHISPER_MODELS)

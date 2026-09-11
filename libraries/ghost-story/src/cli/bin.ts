@@ -14,13 +14,15 @@ import { z } from "zod/v4"
 import { type RecognitionOptions } from "../api/Recognition.ts"
 import {
   BUILD_VARIANTS,
-  CTC_MODELS,
+  CTC_MODEL_FAMILIES,
   CTC_MODEL_PACKAGES,
   RECOGNITION_ENGINES,
   WAV2VEC2_DEVICES,
-  WAV2VEC2_DTYPES,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
+  ctcModelLanguages,
+  isCtcModelFamily,
+  resolveCtcModel,
 } from "../constants.ts"
 
 import {
@@ -28,8 +30,9 @@ import {
   getInstalledVariant,
   isValidModel,
   isValidVariant,
+  resolveWav2Vec2Device,
 } from "./config.ts"
-import { installModelPackage, isCtcModel } from "./ctc-install.ts"
+import { installModelPackage } from "./ctc-install.ts"
 import {
   PlatformMismatchError,
   installBinary,
@@ -46,7 +49,6 @@ const whisperModelSchema = z.enum(WHISPER_MODELS)
 const buildVariantSchema = z.enum(BUILD_VARIANTS)
 // const wav2vec2ModelSchema = z.enum([WAV2VEC2_MODEL])
 const wav2vec2DeviceSchema = z.enum(WAV2VEC2_DEVICES)
-const wav2vec2DtypeSchema = z.enum(WAV2VEC2_DTYPES)
 
 const INSTALL_TARGETS = ["binary", "model", "vad", "ctc-model", "all"] as const
 const installTargetSchema = z.enum(INSTALL_TARGETS)
@@ -95,11 +97,10 @@ Usage:
       device: wav2vec2DeviceSchema
         .default("auto")
         .describe("Device the CTC model will run on"),
-      dtype: wav2vec2DtypeSchema
+      language: z
+        .string()
         .optional()
-        .describe(
-          "Weight precision. Defaults to fp16 on webgpu, fp32 otherwise",
-        ),
+        .describe("Language of the CTC model, for example en or de"),
     }),
     { f: "force", l: "list", d: "device" },
   ),
@@ -131,9 +132,13 @@ Usage:
         return
       }
       if (target === "ctc-model") {
-        console.log("Available CTC model variants:")
-        for (const variant of CTC_MODELS) {
-          console.log(`  ${variant} (${CTC_MODEL_PACKAGES[variant].name})`)
+        console.log("Available CTC models:")
+        for (const family of CTC_MODEL_FAMILIES) {
+          const languages =
+            family === "mms"
+              ? "any language"
+              : ctcModelLanguages(family).join(", ")
+          console.log(`  ${family} (${languages})`)
         }
         return
       }
@@ -177,15 +182,17 @@ Usage:
       }
 
       if (target === "ctc-model") {
-        const variant = argument ?? "fp32"
-        if (!isCtcModel(variant)) {
-          console.error(`Unknown CTC model variant: ${variant}`)
-          console.error("\nAvailable variants:")
-          for (const v of CTC_MODELS) {
-            console.log(`  ${v}`)
+        const family = argument ?? "mms"
+        if (!isCtcModelFamily(family)) {
+          console.error(`Unknown CTC model: ${family}`)
+          console.error("\nAvailable models:")
+          for (const f of CTC_MODEL_FAMILIES) {
+            console.log(`  ${f}`)
           }
           process.exit(1)
         }
+        const device = resolveWav2Vec2Device(options.device, null)
+        const variant = resolveCtcModel(family, options.language, device)
         await installModelPackage(CTC_MODEL_PACKAGES[variant], {
           force,
           printOutput: true,

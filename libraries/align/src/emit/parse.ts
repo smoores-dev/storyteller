@@ -7,19 +7,17 @@ import {
   message,
   object,
   option,
-  optional,
   withDefault,
 } from "@optique/core"
 import { path } from "@optique/run/valueparser"
 
 import {
-  CTC_MODELS,
+  CTC_MODEL_FAMILIES,
   WAV2VEC2_DEVICES,
-  WAV2VEC2_DTYPES,
   WAV2VEC_ENGINES,
 } from "@storyteller-platform/ghost-story/constants"
 
-import { loggingParser } from "../common/parse.ts"
+import { languageParser, loggingParser } from "../common/parse.ts"
 
 export const emitParser = object({
   engine: withDefault(
@@ -34,16 +32,11 @@ export const emitParser = object({
     }),
     "auto",
   ),
-  dtype: withDefault(
-    option("--dtype", choice(WAV2VEC2_DTYPES, { metavar: "DTYPE" }), {
-      description: message`The data type to load the model with. Use fp32 for device=cpu, and fp16 otherwise.`,
+  model: withDefault(
+    option("--model", choice(CTC_MODEL_FAMILIES, { metavar: "MODEL" }), {
+      description: message`The CTC model family to generate emissions with. mms handles any language and picks its precision from the device, the others need a --language they have a model for.`,
     }),
-    "fp16",
-  ),
-  model: optional(
-    option("--model", choice(CTC_MODELS, { metavar: "MODEL" }), {
-      description: message`The CTC model to generate emissions with. Defaults to the MMS model matching the device and dtype.`,
-    }),
+    "mms",
   ),
   // serverUrl: optional(
   //   map(
@@ -71,6 +64,7 @@ export const emitCommand = command(
       output: argument(path({ metavar: "OUTPUT", type: "directory" })),
     }),
     emitParser,
+    languageParser,
     loggingParser,
   ),
   { description: message`Transcribe a directory of audiobook files.` },

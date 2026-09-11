@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 
 import {
-  type DataType,
   type FeatureExtractor,
   type PreTrainedModel,
   type PreTrainedTokenizer,
@@ -26,7 +25,7 @@ import {
   toFilePath,
   toReadStream,
 } from "../audio/AudioSource.ts"
-import { getModelDir } from "../cli/config.ts"
+import { getModelDir, resolveWav2Vec2Device } from "../cli/config.ts"
 import {
   getModelPackageDir,
   installModelPackage,
@@ -35,10 +34,11 @@ import {
 import {
   CTC_MODEL_PACKAGES,
   type CtcModel,
-  type Language,
+  type CtcModelFamily,
+  type ResolvedWav2Vec2Device,
   WAV2VEC2_SECONDS_PER_CHUNK,
-  type Wav2Vec2DataType,
   type Wav2Vec2Device,
+  resolveCtcModel,
 } from "../constants.ts"
 import { type Timing } from "../utilities/Timing.ts"
 
@@ -60,10 +60,9 @@ declare module "@huggingface/transformers" {
 export interface Wav2Vec2Options {
   modelDir?: string
   device?: Wav2Vec2Device
-  dtype?: Wav2Vec2DataType
-  model?: CtcModel
+  model?: CtcModelFamily
+  language?: string | null
   autoInstall?: boolean
-  language?: Language
   inputFormat?: AudioFormat
   loaded?: Wav2Vec2ModelBundle
   printOutput?: boolean
@@ -74,11 +73,11 @@ export interface Wav2Vec2Options {
 }
 
 const defaultOptions: Required<
-  Pick<Wav2Vec2Options, "device" | "dtype" | "autoInstall" | "printOutput">
+  Pick<Wav2Vec2Options, "device" | "model" | "autoInstall" | "printOutput">
 > = {
   autoInstall: true,
   device: "auto",
-  dtype: "fp32",
+  model: "mms",
   printOutput: true,
 }
 
@@ -136,8 +135,8 @@ export async function emit(
 ): Promise<Wav2Vec2Result> {
   const opts = { ...defaultOptions, ...options }
   const modelDir = opts.modelDir ?? getModelDir()
-  const variant: CtcModel =
-    opts.model ?? (opts.device === "mlx" ? "mlx" : opts.dtype)
+  const device = resolveWav2Vec2Device(opts.device, null)
+  const variant = resolveCtcModel(opts.model, opts.language, device)
   const ctcModel = CTC_MODEL_PACKAGES[variant]
 
   await ensureDir(modelDir)
@@ -158,7 +157,7 @@ export async function emit(
   } else if (!isModelPackageInstalled(ctcModel, modelDir)) {
     throw new Error(
       `${ctcModel.name} is not installed in ${getModelPackageDir(ctcModel, modelDir)}. ` +
-        `Run "ghost-story install ctc-model ${variant}" or allow auto-install.`,
+        `Run "ghost-story install ctc-model ${opts.model} --language ${opts.language ?? "en"} --device ${device}" or allow auto-install.`,
     )
   }
 
@@ -205,15 +204,9 @@ export async function emit(
     frameOffsetSeconds,
     tokenizer,
   } = await timing.timeAsync("transcription", async () => {
-    await using modelInfo = await loadWav2Vec2Model(
-      variant,
-      opts.device,
-      opts.dtype,
-      modelDir,
-    )
+    await using modelInfo = await loadWav2Vec2Model(variant, device, modelDir)
 
-    timing.setMetadata("device", opts.device)
-    timing.setMetadata("dtype", opts.dtype)
+    timing.setMetadata("device", device)
     timing.setMetadata("model", variant)
 
     if (signal?.aborted) {
@@ -230,7 +223,9 @@ export async function emit(
       const strides: number[] | undefined = modelInfo.model.config.conv_stride
       const kernels: number[] | undefined = modelInfo.model.config.conv_kernel
       if (strides === undefined || kernels === undefined) {
-        throw new Error(`Failed to read conv_stride and conv_kernel from model config`)
+        throw new Error(
+          `Failed to read conv_stride and conv_kernel from model config`,
+        )
       }
       minChunkSamples = 1
       let jump = 1
@@ -409,8 +404,7 @@ interface HfModelInfo {
 
 async function loadWav2Vec2Model(
   variant: CtcModel,
-  device: Wav2Vec2Device,
-  dtype: DataType,
+  device: ResolvedWav2Vec2Device,
   modelDir: string,
 ): Promise<ConvCtcModel | HfModelInfo> {
   if (CTC_MODEL_PACKAGES[variant].entryFile === "model.safetensors") {
@@ -424,7 +418,9 @@ async function loadWav2Vec2Model(
       return loadConvCtcOnnxModel(packageDir, device)
     }
 
-    const { loadModel, compute } = await import("@storyteller-platform/mlx-audio")
+    const { loadModel, compute } = await import(
+      "@storyteller-platform/mlx-audio"
+    )
     const model = await loadModel(packageDir)
 
     return {
@@ -450,7 +446,7 @@ async function loadWav2Vec2Model(
     {
       cache_dir: modelDir,
       device: device,
-      dtype: dtype,
+      dtype: variant === "fp16" ? "fp16" : "fp32",
       model_file_name: "model",
       // config: {}
     },

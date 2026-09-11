@@ -78,6 +78,7 @@ export const WAV2VEC2_DEVICES = [
   "mlx",
 ] as const
 export type Wav2Vec2Device = (typeof WAV2VEC2_DEVICES)[number]
+export type ResolvedWav2Vec2Device = Exclude<Wav2Vec2Device, "auto">
 
 export const WAV2VEC2_SECONDS_PER_CHUNK = 25
 
@@ -114,8 +115,69 @@ export const CTC_MODELS = [
   "quartznet15x5_pt",
   "quartznet15x5_ru",
   "quartznet15x5_zh",
+  "citrinet256_en",
+  "citrinet512_ca",
+  "citrinet512_de",
+  "citrinet512_en",
+  "citrinet512_es",
+  "citrinet512_fr",
+  "citrinet512_hy",
+  "citrinet512_it",
+  "citrinet512_nl",
+  "citrinet512_pt",
+  "citrinet512_uk",
+  "citrinet512_zh",
+  "citrinet1024_en",
+  "citrinet1024_ko",
+  "citrinet1024_uk",
+  "citrinet1024_zh",
 ] as const
 export type CtcModel = (typeof CTC_MODELS)[number]
+
+export function isCtcModel(model: string): model is CtcModel {
+  return CTC_MODELS.includes(model as CtcModel)
+}
+
+export const CTC_MODEL_FAMILIES = [
+  "mms",
+  "quartznet15x5",
+  "citrinet256",
+  "citrinet512",
+  "citrinet1024",
+] as const
+export type CtcModelFamily = (typeof CTC_MODEL_FAMILIES)[number]
+
+export function isCtcModelFamily(family: string): family is CtcModelFamily {
+  return CTC_MODEL_FAMILIES.includes(family as CtcModelFamily)
+}
+
+export function ctcModelLanguages(family: CtcModelFamily): Language[] {
+  if (family === "mms") return [...LANGUAGES]
+  return LANGUAGES.filter((language) => isCtcModel(`${family}_${language}`))
+}
+
+export function resolveCtcModel(
+  family: CtcModelFamily,
+  language: string | null | undefined,
+  device: ResolvedWav2Vec2Device,
+): CtcModel {
+  if (family === "mms") {
+    if (device === "mlx") return "mlx"
+    return device === "cpu" ? "fp32" : "fp16"
+  }
+  if (!language) {
+    throw new Error(
+      `${family} needs a language, it handles ${ctcModelLanguages(family).join(", ")}`,
+    )
+  }
+  const model = `${family}_${language}`
+  if (!isCtcModel(model)) {
+    throw new Error(
+      `${family} has no ${language} model, it handles ${ctcModelLanguages(family).join(", ")}`,
+    )
+  }
+  return model
+}
 
 export type CtcModelPackage = {
   name: string
@@ -286,6 +348,134 @@ export const CTC_MODEL_PACKAGES: Record<CtcModel, CtcModelPackage> = {
     packageId: 69180064,
     modelVersionId: 3023115,
     subdir: "quartznet15x5-zh",
+    entryFile: "model.safetensors",
+  },
+  citrinet1024_en: {
+    name: "citrinet1024-en",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190856,
+    modelVersionId: 3023128,
+    subdir: "citrinet1024-en",
+    entryFile: "model.safetensors",
+  },
+  citrinet1024_ko: {
+    name: "citrinet1024-ko",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190862,
+    modelVersionId: 3023131,
+    subdir: "citrinet1024-ko",
+    entryFile: "model.safetensors",
+  },
+  citrinet1024_uk: {
+    name: "citrinet1024-uk",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190858,
+    modelVersionId: 3023129,
+    subdir: "citrinet1024-uk",
+    entryFile: "model.safetensors",
+  },
+  citrinet1024_zh: {
+    name: "citrinet1024-zh",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190861,
+    modelVersionId: 3023130,
+    subdir: "citrinet1024-zh",
+    entryFile: "model.safetensors",
+  },
+  citrinet256_en: {
+    name: "citrinet256-en",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190826,
+    modelVersionId: 3023116,
+    subdir: "citrinet256-en",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_ca: {
+    name: "citrinet512-ca",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190848,
+    modelVersionId: 3023124,
+    subdir: "citrinet512-ca",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_de: {
+    name: "citrinet512-de",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190834,
+    modelVersionId: 3023118,
+    subdir: "citrinet512-de",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_en: {
+    name: "citrinet512-en",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190830,
+    modelVersionId: 3023117,
+    subdir: "citrinet512-en",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_es: {
+    name: "citrinet512-es",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190837,
+    modelVersionId: 3023119,
+    subdir: "citrinet512-es",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_fr: {
+    name: "citrinet512-fr",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190841,
+    modelVersionId: 3023120,
+    subdir: "citrinet512-fr",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_hy: {
+    name: "citrinet512-hy",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190853,
+    modelVersionId: 3023126,
+    subdir: "citrinet512-hy",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_it: {
+    name: "citrinet512-it",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190843,
+    modelVersionId: 3023121,
+    subdir: "citrinet512-it",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_nl: {
+    name: "citrinet512-nl",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190844,
+    modelVersionId: 3023122,
+    subdir: "citrinet512-nl",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_pt: {
+    name: "citrinet512-pt",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190846,
+    modelVersionId: 3023123,
+    subdir: "citrinet512-pt",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_uk: {
+    name: "citrinet512-uk",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190851,
+    modelVersionId: 3023125,
+    subdir: "citrinet512-uk",
+    entryFile: "model.safetensors",
+  },
+  citrinet512_zh: {
+    name: "citrinet512-zh",
+    version: CTC_MODEL_VERSION,
+    packageId: 69190854,
+    modelVersionId: 3023127,
+    subdir: "citrinet512-zh",
     entryFile: "model.safetensors",
   },
 }

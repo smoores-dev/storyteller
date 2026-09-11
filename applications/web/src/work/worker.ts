@@ -17,8 +17,8 @@ import {
   createTiming,
   formatSingleReport,
   resolveWav2Vec2Device,
-  resolveWav2Vec2Dtype,
 } from "@storyteller-platform/ghost-story"
+import { isCtcModel } from "@storyteller-platform/ghost-story/constants"
 
 import { getExtractedCover } from "@/assets/covers"
 import {
@@ -268,12 +268,22 @@ export default async function processBook({
             settings.ctcDevice,
             env.STORYTELLER_WHISPER_VARIANT,
           )
+          const family = settings.ctcModel ?? "mms"
+          const model =
+            family === "mms" || isCtcModel(`${family}_${locale.language}`)
+              ? family
+              : "mms"
+          if (model !== family) {
+            logger.warn(
+              `${family} has no ${locale.language} model, using mms for ${bookRefForLog}`,
+            )
+          }
           await processTiming.timeAsync("transcribe_chapters", () =>
             emit(getProcessedAudioFilepath(book), getEmissionsFilepath(book), {
               engine: settings.ctcEngine ?? "wav2vec-local",
               device,
-              dtype: resolveWav2Vec2Dtype(device),
-              model: settings.ctcModel ?? undefined,
+              model,
+              language: locale,
               // serverUrl: settings.ctcServerUrl,
               // serverApiKey: settings.ctcServerApiKey,
               onProgress,

@@ -1,13 +1,15 @@
 "use client"
 
+import { useLocale } from "next-intl"
 import { type ReactNode, useState } from "react"
 import { Controller, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 import {
   ALIGNERS,
-  CTC_MODELS,
+  CTC_MODEL_FAMILIES,
   WAV2VEC2_DEVICES,
+  ctcModelLanguages,
 } from "@storyteller-platform/ghost-story/constants"
 
 import { Button } from "@v3/_/components/ui/button"
@@ -859,19 +861,19 @@ function CtcAlignerSettings({ restart }: { restart?: ProcessRestart }) {
 
 function Wav2VecLocalSettings() {
   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+  const locale = useLocale()
 
   const deviceOptions = WAV2VEC2_DEVICES.map((value) => ({
     value,
     label: t(`ctcDevices.${value}`),
   }))
 
-  const modelOptions = [
-    { value: "default", label: t("ctcModels.default") },
-    ...CTC_MODELS.map((value) => ({
-      value,
-      label: t.has(`ctcModels.${value}`) ? t(`ctcModels.${value}`) : value,
-    })),
-  ]
+  const modelOptions = CTC_MODEL_FAMILIES.map((value) => ({
+    value,
+    label: t(`ctcModels.${value}`),
+  }))
+
+  const languageNames = new Intl.DisplayNames([locale], { type: "language" })
 
   return (
     <>
@@ -906,28 +908,42 @@ function Wav2VecLocalSettings() {
         name="ctcModel"
         label={t("ctcModel")}
         description={t("ctcModelDescription")}
-        render={(field, fieldState, isLocked) => (
-          <Select
-            items={modelOptions}
-            value={field.value ?? "default"}
-            onValueChange={(value) => {
-              field.onChange(value === "default" ? null : value)
-            }}
-            disabled={isLocked}
-            aria-invalid={fieldState.invalid}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {modelOptions.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        render={(field, fieldState, isLocked) => {
+          const family = field.value ?? "mms"
+          return (
+            <>
+              <Select
+                items={modelOptions}
+                value={family}
+                onValueChange={(value) => {
+                  field.onChange(value === "mms" ? null : value)
+                }}
+                disabled={isLocked}
+                aria-invalid={fieldState.invalid}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelOptions.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {family !== "mms" && (
+                <FieldDescription>
+                  {t("ctcModelLanguages", {
+                    languages: ctcModelLanguages(family)
+                      .map((language) => languageNames.of(language) ?? language)
+                      .join(", "),
+                  })}
+                </FieldDescription>
+              )}
+            </>
+          )
+        }}
       />
     </>
   )

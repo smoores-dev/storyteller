@@ -67,6 +67,11 @@ export async function ctcAlign(
   using epub = await Epub.from(epubPath)
 
   const emissions = await EmissionsReader.from(emissionsDir)
+  if (emissions.tokenizer !== null) {
+    throw new Error(
+      "These emissions come from a model with a subword vocabulary, which the aligner does not support yet. Use the quartznet15x5 or mms model.",
+    )
+  }
 
   const aligner = new Aligner(
     epub,

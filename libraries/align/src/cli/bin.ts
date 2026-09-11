@@ -394,6 +394,7 @@ async function main() {
 
         const transcribeTiming = await emit(processedAudio, emissions, {
           ...parsed,
+          language: primaryLocale,
           signal: controller.signal,
           logger,
           onProgress: updateProgressBar,

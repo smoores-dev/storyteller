@@ -11,11 +11,10 @@ import {
   getModelPackageDir,
   getModelPackageFileUrl,
   installModelPackage,
-  isCtcModel,
   isModelPackageInstalled,
   listModelPackageFiles,
 } from "../src/cli/ctc-install.ts"
-import { type CtcModelPackage } from "../src/constants.ts"
+import { type CtcModelPackage, isCtcModel } from "../src/constants.ts"
 
 const model: CtcModelPackage = {
   name: "test-model",

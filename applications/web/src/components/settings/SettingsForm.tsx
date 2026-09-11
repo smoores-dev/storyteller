@@ -36,6 +36,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
+import { isCtcModelFamily } from "@storyteller-platform/ghost-story/constants"
+
 import type { Settings } from "@/apiModels"
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import {
@@ -1155,7 +1157,10 @@ export function SettingsForm({
       settings.alignmentAudioChapterSeconds ?? DEFAULT_AUDIO_CHAPTER_SECONDS,
     alignmentDropUnread: settings.alignmentDropUnread ?? DEFAULT_DROP_UNREAD,
     ctcDevice: settings.ctcDevice ?? null,
-    ctcModel: settings.ctcModel ?? null,
+    ctcModel:
+      settings.ctcModel && isCtcModelFamily(settings.ctcModel)
+        ? settings.ctcModel
+        : null,
     // ctcServerUrl: settings.ctcServerUrl ?? "",
     // ctcServerApiKey: settings.ctcServerApiKey ?? "",
     transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",

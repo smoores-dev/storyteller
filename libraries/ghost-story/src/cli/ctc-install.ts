@@ -3,11 +3,7 @@
 import { existsSync, statSync } from "node:fs"
 import { join } from "node:path"
 
-import {
-  CTC_MODELS,
-  type CtcModel,
-  type CtcModelPackage,
-} from "../constants.ts"
+import { type CtcModelPackage } from "../constants.ts"
 
 import { GITLAB_PROJECT_ID, getModelDir } from "./config.ts"
 import { downloadFile } from "./install.ts"
@@ -23,10 +19,6 @@ interface GitLabPackageFile {
   file_name: string
   size: number
   file_sha256: string | null
-}
-
-export function isCtcModel(model: string): model is CtcModel {
-  return CTC_MODELS.includes(model as CtcModel)
 }
 
 export function getModelPackageDir(

@@ -66,7 +66,6 @@ export {
   isValidModel,
   resolveVariant,
   resolveWav2Vec2Device,
-  resolveWav2Vec2Dtype,
 } from "./cli/config.ts"
 export {
   type InstallBinaryOptions,

@@ -9,6 +9,8 @@ import { type FieldErrors, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
 
+import { isCtcModelFamily } from "@storyteller-platform/ghost-story/constants"
+
 import { SiteHeader } from "@v3/_/components/site-header"
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -207,7 +209,10 @@ function settingsFormValues(settings: Settings) {
     // TODO: change, if we ever want to use a different CTC engine
     ctcEngine: "wav2vec-local" as const,
     ctcDevice: settings.ctcDevice ?? null,
-    ctcModel: settings.ctcModel ?? null,
+    ctcModel:
+      settings.ctcModel && isCtcModelFamily(settings.ctcModel)
+        ? settings.ctcModel
+        : null,
     // ctcServerUrl: settings.ctcServerUrl ?? "",
     // ctcServerApiKey: settings.ctcServerApiKey ?? "",
     transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",

@@ -20,12 +20,14 @@ import {
   emit as emitFile,
   formatSingleReport,
   readAudioAsFloat32,
+  resolveWav2Vec2Device,
 } from "@storyteller-platform/ghost-story"
 import {
   type CtcModel,
-  type Wav2Vec2DataType,
+  type CtcModelFamily,
   type Wav2Vec2Device,
   type Wav2VecEngine,
+  resolveCtcModel,
 } from "@storyteller-platform/ghost-story/constants"
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -42,8 +44,8 @@ export interface EmitOptions {
   signal?: AbortSignal | null | undefined
   engine?: Wav2VecEngine | null | undefined
   device?: Wav2Vec2Device | null | undefined
-  dtype?: Wav2Vec2DataType | null | undefined
-  model?: CtcModel | null | undefined
+  model?: CtcModelFamily | null | undefined
+  language?: Intl.Locale | null | undefined
   // serverUrl?: string | null | undefined
   // serverApiKey?: string | null | undefined
   logger?: Logger | null | undefined
@@ -51,7 +53,7 @@ export interface EmitOptions {
 
 type Identity = {
   engine: Wav2VecEngine
-  model: CtcModel | null
+  model: CtcModel
   track: TrackSource | null
 }
 
@@ -90,6 +92,13 @@ export async function emit(
   await pruneStaleOutputs(output, filenames)
 
   const engine = options.engine ?? "wav2vec-local"
+  const device = resolveWav2Vec2Device(
+    options.device,
+    process.env["STORYTELLER_WHISPER_VARIANT"],
+  )
+  const family = options.model ?? "mms"
+  const language = options.language?.language ?? null
+  const model = resolveCtcModel(family, language, device)
   // const serverUrl = options.serverUrl ?? ""
   //
   // if (engine === "wav2vec-server" && !serverUrl) {
@@ -112,14 +121,9 @@ export async function emit(
     const emissionName = basename(filename, extname(filename))
     const emissionFilepath = join(output, `${emissionName}.emissions`)
     const identityFilepath = join(output, `${emissionName}.identity`)
-    // not really necessary to include
-    // const device = resolveWav2Vec2Device(
-    //   options.device,
-    //   process.env["STORYTELLER_WHISPER_VARIANT"],
-    // )
     const identity = {
       engine,
-      model: options.model ?? null,
+      model,
       track: await readTrackSource(filepath),
     }
 
@@ -139,7 +143,7 @@ export async function emit(
 
       status =
         cachedIdentity.engine === identity.engine &&
-        (cachedIdentity.model ?? null) === identity.model &&
+        cachedIdentity.model === identity.model &&
         cachedIdentity.track === identity.track
           ? "cached"
           : "stale"
@@ -203,9 +207,9 @@ export async function emit(
       signal,
       engine,
       options: {
-        ...(options.device && { device: options.device }),
-        ...(options.dtype && { dtype: options.dtype }),
-        ...(options.model && { model: options.model }),
+        device,
+        model: family,
+        language,
         ...(samples && { samples: () => samples }),
         onProgress: onFileProgress,
       },
