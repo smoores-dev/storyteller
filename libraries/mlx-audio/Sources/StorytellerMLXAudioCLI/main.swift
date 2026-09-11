@@ -327,22 +327,22 @@ case "cache":
   GPU.set(cacheLimit: 512 * 1024 * 1024)
   print("peak MB:", GPU.peakMemory / 1_048_576)
 
-case "qn-features":
+case "qn-features", "cn-features":
   let reference = try loadArrays(url: modelDir.appendingPathComponent("reference.safetensors"))
-  let model = try QuartzNet.load(directory: modelDir)
+  let model = try loadConvCTCModel(directory: modelDir)
   let samples = reference["samples"]!.asArray(Float.self)
   let features = model.frontend.features(samples)[0]
   let expected = reference["features"]!
   print("features", features.shape, "expected", expected.shape)
   print("max abs diff", abs(features - expected).max().item(Float.self))
 
-case "qn-logprobs":
+case "qn-logprobs", "cn-logprobs":
   let reference = try loadArrays(url: modelDir.appendingPathComponent("reference.safetensors"))
   let samples = reference["samples"]!.asArray(Float.self)
   let expected = reference["logprobs"]!
-  let inverse = Dictionary(uniqueKeysWithValues: (try QuartzNet.load(directory: modelDir)).vocabulary.map { ($1, $0) })
+  let inverse = Dictionary(uniqueKeysWithValues: (try loadConvCTCModel(directory: modelDir)).vocabulary.map { ($1, $0) })
   for dtype in [DType.float32, DType.float16] {
-    let model = try QuartzNet.load(directory: modelDir)
+    let model = try loadConvCTCModel(directory: modelDir)
     model.cast(to: dtype)
     let logProbs = model.logProbs(samples: samples)[0]
     let agreement = mean(argMax(logProbs, axis: -1) .== argMax(expected, axis: -1)).item(Float.self)
@@ -351,28 +351,31 @@ case "qn-logprobs":
     var text = ""
     var last = -1
     for token in argMax(logProbs, axis: -1).asArray(Int32.self).map(Int.init) {
-      if token != last && token != model.config.blank {
-        let piece = inverse[token] ?? "?"
-        text += piece == "\u{2581}" ? " " : piece
+      if token != last && token != model.blank {
+        text += (inverse[token] ?? "?").replacingOccurrences(of: "\u{2581}", with: " ")
       }
       last = token
     }
     print("  ", text.prefix(160))
   }
 
-case "qn-speed":
-  let fp32 = try QuartzNet.load(directory: modelDir)
-  let fp16 = try QuartzNet.load(directory: modelDir)
+case "qn-speed", "cn-speed":
+  let fp32 = try loadConvCTCModel(directory: modelDir)
+  let fp16 = try loadConvCTCModel(directory: modelDir)
   fp16.cast(to: .float16)
   let samples = (0..<count).map { _ in Float.random(in: -0.3...0.3) }
   let features = fp32.frontend.features(samples)
   eval(features)
+  let batched = concatenated(Array(repeating: features, count: batchSize), axis: 0)
+  eval(batched)
   race([
-    Variant("quartznet fp32 model only", chunks: 1) { eval(fp32(features)) },
-    Variant("quartznet fp16 model only", chunks: 1) { eval(fp16(features)) },
-    Variant("quartznet fp32 frontend+model", chunks: 1) { eval(fp32.logProbs(samples: samples)) },
-    Variant("quartznet fp16 frontend+model", chunks: 1) { eval(fp16.logProbs(samples: samples)) },
+    Variant("fp32 model only", chunks: 1) { eval(fp32(features)) },
+    Variant("fp16 model only", chunks: 1) { eval(fp16(features)) },
+    Variant("fp32 frontend+model", chunks: 1) { eval(fp32.logProbs(samples: samples)) },
+    Variant("fp16 frontend+model", chunks: 1) { eval(fp16.logProbs(samples: samples)) },
     Variant("frontend only", chunks: 1) { eval(fp32.frontend.features(samples)) },
+    Variant("fp32 model batch \(batchSize)", chunks: Double(batchSize)) { eval(fp32(batched)) },
+    Variant("fp16 model batch \(batchSize)", chunks: Double(batchSize)) { eval(fp16(batched)) },
   ])
   print("peak MB:", GPU.peakMemory / 1_048_576)
 

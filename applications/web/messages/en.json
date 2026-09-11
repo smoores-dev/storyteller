@@ -886,7 +886,32 @@
               "auto": "Auto",
               "cpu": "CPU",
               "webgpu": "GPU (WebGPU)",
-              "cuda": "GPU (CUDA)"
+              "cuda": "GPU (CUDA)",
+              "mlx": "GPU (Apple Silicon)"
+            },
+            "ctcModel": "Model",
+            "ctcModelDescription": "Automatic picks a model to match the device you chose. The MMS models handle any language. Each QuartzNet model handles only the language in its name and runs a lot faster.",
+            "ctcModels": {
+              "default": "Automatic",
+              "fp32": "MMS 32-bit",
+              "fp16": "MMS 16-bit",
+              "mlx": "MMS Apple Silicon",
+              "quartznet15x5_ar": "QuartzNet Arabic",
+              "quartznet15x5_ca": "QuartzNet Catalan",
+              "quartznet15x5_de": "QuartzNet German",
+              "quartznet15x5_en": "QuartzNet English",
+              "quartznet15x5_es": "QuartzNet Spanish",
+              "quartznet15x5_fo": "QuartzNet Faroese",
+              "quartznet15x5_fr": "QuartzNet French",
+              "quartznet15x5_hy": "QuartzNet Armenian",
+              "quartznet15x5_is": "QuartzNet Icelandic",
+              "quartznet15x5_it": "QuartzNet Italian",
+              "quartznet15x5_kk": "QuartzNet Kazakh",
+              "quartznet15x5_mt": "QuartzNet Maltese",
+              "quartznet15x5_pl": "QuartzNet Polish",
+              "quartznet15x5_pt": "QuartzNet Portuguese",
+              "quartznet15x5_ru": "QuartzNet Russian",
+              "quartznet15x5_zh": "QuartzNet Chinese"
             }
           },
           "parallelization": {

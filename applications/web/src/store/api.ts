@@ -102,6 +102,10 @@ import { type StageName } from "@/work/jobStats"
 import { type RunConfig } from "@/work/runConfig"
 
 import { subscribeToEventStream } from "./eventStream"
+import {
+  GuidedNavigationDocument,
+  GuidedNavigationObject,
+} from "@readium/shared"
 
 type SingleUserSettingUpdate = {
   [K in keyof UserPreferences]: { name: K; value: UserPreferences[K] }
@@ -2452,13 +2456,27 @@ export const api = createApi({
         { type: "BookAlignmentReport", id: uuid },
       ],
     }),
-    getBookChapterText: build.query<string, { uuid: UUID; href: string }>({
-      query: ({ uuid, href }) => ({
+    getBookChapterText: build.query<
+      string,
+      { uuid: UUID; updatedAt: string; href: string }
+    >({
+      query: ({ uuid, updatedAt, href }) => ({
         url: `/books/${uuid}/read/${href
           .split("/")
           .map(encodeURIComponent)
-          .join("/")}`,
+          .join("/")}?v=${new Date(updatedAt).getTime()}`,
         responseHandler: "text",
+      }),
+    }),
+    getBookChapterGuidedNavigation: build.query<
+      GuidedNavigationDocument,
+      { uuid: UUID; updatedAt: string; href: string }
+    >({
+      query: ({ uuid, updatedAt, href }) => ({
+        url: `/books/${uuid}/read/~readium/guided-navigation.json?ref=${href
+          .split("/")
+          .map(encodeURIComponent)
+          .join("/")}&v=${new Date(updatedAt).getTime()}`,
       }),
     }),
     getTranscodedAudio: build.query<TranscodedAudioFile[], { uuid: UUID }>({
@@ -2544,6 +2562,7 @@ export const {
   useGetAlignmentEstimateQuery,
   useGetBookAlignmentReportQuery,
   useGetBookChapterTextQuery,
+  useGetBookChapterGuidedNavigationQuery,
   useGetTranscodedAudioQuery,
   useUpdateBookAlignmentOverridesMutation,
   useCancelJobMutation,

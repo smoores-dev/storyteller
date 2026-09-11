@@ -37,12 +37,13 @@ const model = await loadModel(modelDir)
 console.log("vocab size", model.vocab.size, "samplesPerFrame", model.samplesPerFrame, "minSamples", model.minSamples, "blank", model.blankId)
 
 const first = await compute(model, samples)
-console.log("frames", first.length, "classes", first[0].length)
+console.log("frames", first.frames, "classes", first.classes)
 
 const inverse = new Map([...model.vocab].map(([token, index]) => [index, token]))
 let text = ""
 let last = -1
-for (const row of first) {
+for (let frame = 0; frame < first.frames; frame++) {
+  const row = first.values.subarray(frame * first.classes, (frame + 1) * first.classes)
   let best = 0
   for (let i = 1; i < row.length; i++) if (row[i] > row[best]) best = i
   if (best !== last && best !== model.blankId) text += inverse.get(best) === "|" ? " " : inverse.get(best)
@@ -63,9 +64,9 @@ if (reference?.logprobs) {
     let bestRef = 0
     for (let c = 0; c < shape[1]; c++) {
       const ref = values[frame * shape[1] + c]
-      const out = first[frame][c]
+      const out = first.values[frame * first.classes + c]
       if (c !== model.blankId && c !== model.vocab.get("|")) maxDiff = Math.max(maxDiff, Math.abs(out - ref))
-      if (out > first[frame][bestOut]) bestOut = c
+      if (out > first.values[frame * first.classes + bestOut]) bestOut = c
       if (ref > values[frame * shape[1] + bestRef]) bestRef = c
     }
     if (bestOut === bestRef || (bestRef === model.vocab.get("|") && bestOut === model.blankId)) agree++

@@ -41,6 +41,7 @@ void describe("EmissionsReader", () => {
       secondsPerChunk,
       secondsPerFrame,
       framesPerChunk,
+      frameOffsetSeconds: 0,
     })
   })
 

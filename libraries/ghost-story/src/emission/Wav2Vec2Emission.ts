@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs"
+import { readFile } from "node:fs/promises"
+import { join } from "node:path"
 
 import {
   type DataType,
-  type DeviceType,
   type FeatureExtractor,
   type PreTrainedModel,
   type PreTrainedTokenizer,
@@ -17,6 +18,7 @@ import { ensureDir } from "fs-extra"
 
 import { type ModelInfo as MlxModelInfo } from "@storyteller-platform/mlx-audio"
 
+import { getAudioDuration } from "../audio/AudioConverter.ts"
 import { type AudioFormat } from "../audio/AudioFormat.ts"
 import {
   type AudioSource,
@@ -42,6 +44,9 @@ import {
 } from "../constants.ts"
 import { type Timing } from "../utilities/Timing.ts"
 
+import { type EmissionTokenizer, type Emissions } from "./Emissions.ts"
+import { readSentencePieceModel, unigramTokenizer } from "./sentencepiece.ts"
+
 declare module "@huggingface/transformers" {
   export interface PretrainedConfig {
     conv_stride?: number[]
@@ -53,13 +58,15 @@ export interface Wav2Vec2Options {
   modelDir?: string
   device?: Wav2Vec2Device
   dtype?: Wav2Vec2DataType
+  model?: CtcModel
   autoInstall?: boolean
   language?: Language
   inputFormat?: AudioFormat
   loaded?: Wav2Vec2ModelBundle
   printOutput?: boolean
+  samples?: () => Promise<Float32Array>
   onStart?: () => void
-  onCheckpoint?: (emissions: number[][]) => void
+  onCheckpoint?: (emissions: Emissions) => void
   onProgress?: (progress: number) => void
 }
 
@@ -126,7 +133,8 @@ export async function emit(
 ): Promise<Wav2Vec2Result> {
   const opts = { ...defaultOptions, ...options }
   const modelDir = opts.modelDir ?? getModelDir()
-  const variant: CtcModel = opts.device === "mlx" ? "mlx" : opts.dtype
+  const variant: CtcModel =
+    opts.model ?? (opts.device === "mlx" ? "mlx" : opts.dtype)
   const ctcModel = CTC_MODEL_PACKAGES[variant]
 
   await ensureDir(modelDir)
@@ -162,17 +170,28 @@ export async function emit(
 
   // The model takes mono 16 kHz float samples, so decode straight to those in a
   // single ffmpeg pass rather than writing an intermediate wav and decoding that.
-  timing.setMetadata("conversionRequired", true)
+  const readSamples = opts.samples
+  timing.setMetadata("conversionRequired", readSamples === undefined)
   timing.setMetadata("targetFormat", "f32le")
   const audio = await timing.timeAsync("conversion", () =>
-    readAudioAsFloat32(source),
+    readSamples === undefined ? readAudioAsFloat32(source) : readSamples(),
   )
+
+  let audioLength: number | undefined
+  if (source.type === "file") {
+    // get duration from file
+    const duration = await getAudioDuration(source.path)
+    audioLength = duration
+    timing.setMetadata("audioLength", duration)
+  }
 
   if (signal?.aborted) {
     throw signal.reason
   }
 
   opts.onStart?.()
+
+  const start = performance.now()
   const {
     emissions,
     vocab,
@@ -180,12 +199,19 @@ export async function emit(
     framesPerChunk,
     secondsPerChunk,
     secondsPerFrame,
+    frameOffsetSeconds,
+    tokenizer,
   } = await timing.timeAsync("transcription", async () => {
     await using modelInfo = await loadWav2Vec2Model(
+      variant,
       opts.device,
       opts.dtype,
       modelDir,
     )
+
+    timing.setMetadata("device", opts.device)
+    timing.setMetadata("dtype", opts.dtype)
+    timing.setMetadata("model", variant)
 
     if (signal?.aborted) {
       throw signal.reason
@@ -195,33 +221,33 @@ export async function emit(
 
     const CHUNK_SIZE_SAMPLES = SAMPLE_RATE * WAV2VEC2_SECONDS_PER_CHUNK
 
-    const strides =
-      "model" in modelInfo
-        ? modelInfo.model.config.conv_stride
-        : modelInfo.convStride
-
-    if (strides === undefined) {
-      throw new Error(`Failed to read conv_stride from model config`)
+    let samplesPerFrame: number
+    let minChunkSamples: number
+    if ("model" in modelInfo) {
+      const strides: number[] | undefined = modelInfo.model.config.conv_stride
+      const kernels: number[] | undefined = modelInfo.model.config.conv_kernel
+      if (strides === undefined || kernels === undefined) {
+        throw new Error(`Failed to read conv_stride and conv_kernel from model config`)
+      }
+      minChunkSamples = 1
+      let jump = 1
+      for (let i = 0; i < kernels.length; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        minChunkSamples += (kernels[i]! - 1) * jump
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        jump *= strides[i]!
+      }
+      samplesPerFrame = strides.reduce((a, b) => a * b, 1)
+    } else {
+      samplesPerFrame = modelInfo.samplesPerFrame
+      minChunkSamples = modelInfo.minSamples
     }
 
-    const kernels =
-      "model" in modelInfo
-        ? modelInfo.model.config.conv_kernel
-        : modelInfo.convKernel
-    if (kernels === undefined) {
-      throw new Error(`Failed to read conv_kernel from model config`)
-    }
-
-    let minChunkSamples = 1
-    let jump = 1
-    for (let i = 0; i < kernels.length; i++) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      minChunkSamples += (kernels[i]! - 1) * jump
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      jump *= strides[i]!
-    }
-
-    const emissions: number[][] = []
+    const chunkCount = Math.ceil(audio.length / CHUNK_SIZE_SAMPLES)
+    let values: Float32Array | null = null
+    let classes = 0
+    let written = 0
+    let totalFrames = 0
     let framesPerChunk: null | number = null
     let secondsPerChunk: null | number = null
 
@@ -232,36 +258,57 @@ export async function emit(
       // a crash
       if (chunk.length < minChunkSamples) continue
 
-      const logits = await computeWav2Vec2Logits(modelInfo, chunk)
+      const logits = await computeLogProbs(modelInfo, chunk)
 
       if (signal?.aborted) {
         throw signal.reason
       }
 
-      const logProbs = logits.map((frame) => log_softmax(frame))
-      emissions.push(...logProbs)
+      if (values === null) {
+        classes = logits.classes
+        values = new Float32Array(chunkCount * logits.frames * classes)
+      }
 
-      framesPerChunk ??= logProbs.length
+      values.set(logits.values.subarray(0, logits.frames * classes), written)
+      written += logits.frames * classes
+      totalFrames += logits.frames
+
+      framesPerChunk ??= logits.frames
       secondsPerChunk ??= chunk.length / SAMPLE_RATE
 
-      opts.onCheckpoint?.(emissions)
+      opts.onCheckpoint?.({
+        values: values.subarray(0, written),
+        frames: totalFrames,
+        classes,
+      })
 
       opts.onProgress?.(i / audio.length)
     }
 
-    const stride = strides.reduce((a, b) => a * b, 1)
-    const secondsPerFrame = stride / SAMPLE_RATE
+    const emissions: Emissions = {
+      values: values?.subarray(0, written) ?? new Float32Array(0),
+      frames: totalFrames,
+      classes,
+    }
+
+    const secondsPerFrame = samplesPerFrame / SAMPLE_RATE
 
     const vocab =
-      "tokenizer" in modelInfo
-        ? modelInfo.tokenizer.get_vocab()
-        : modelInfo.vocab
+      "model" in modelInfo ? modelInfo.tokenizer.get_vocab() : modelInfo.vocab
 
     const blankIndex =
       vocab.get("<blank>") ??
-      ("tokenizer" in modelInfo
+      ("model" in modelInfo
         ? modelInfo.tokenizer.pad_token_id
-        : modelInfo.padTokenId)
+        : modelInfo.blankId)
+
+    const frameOffsetSeconds =
+      "model" in modelInfo ? 0 : modelInfo.frameOffsetSeconds
+
+    const tokenizer =
+      "model" in modelInfo || modelInfo.tokenizer === null
+        ? null
+        : await readTokenizer(getModelPackageDir(ctcModel, modelDir), vocab)
 
     if (!framesPerChunk || !secondsPerChunk) {
       throw new Error("Failed to process empty audio source")
@@ -274,18 +321,35 @@ export async function emit(
       secondsPerChunk,
       framesPerChunk,
       secondsPerFrame,
+      frameOffsetSeconds,
+      tokenizer,
     }
   })
+  const end = performance.now()
+
+  if (audioLength) {
+    timing.setMetadata("x Realtime", (audioLength * 1000) / (end - start))
+  }
 
   return {
     emissions,
-    numFrames: emissions.length,
+    numFrames: emissions.frames,
     vocab,
     blankIndex,
     secondsPerChunk,
     framesPerChunk,
     secondsPerFrame,
+    frameOffsetSeconds,
+    tokenizer,
   }
+}
+
+async function readTokenizer(
+  packageDir: string,
+  vocab: Map<string, number>,
+): Promise<EmissionTokenizer> {
+  const bytes = await readFile(join(packageDir, "tokenizer.spm"))
+  return unigramTokenizer(readSentencePieceModel(bytes), vocab)
 }
 
 /**
@@ -341,14 +405,21 @@ interface HfModelInfo {
 }
 
 async function loadWav2Vec2Model(
-  device: DeviceType | "mlx",
+  variant: CtcModel,
+  device: Wav2Vec2Device,
   dtype: DataType,
   modelDir: string,
 ): Promise<MlxModelInfo | HfModelInfo> {
-  if (device === "mlx") {
+  if (CTC_MODEL_PACKAGES[variant].entryFile === "model.safetensors") {
     const { loadModel } = await import("@storyteller-platform/mlx-audio")
 
-    return loadModel(getModelPackageDir(CTC_MODEL_PACKAGES.mlx, modelDir))
+    return loadModel(getModelPackageDir(CTC_MODEL_PACKAGES[variant], modelDir))
+  }
+
+  if (device === "mlx") {
+    throw new Error(
+      `The mlx device only runs MLX models, and ${variant} is not one`,
+    )
   }
 
   const model = await Wav2Vec2ForCTC.from_pretrained(
@@ -357,6 +428,8 @@ async function loadWav2Vec2Model(
       cache_dir: modelDir,
       device: device,
       dtype: dtype,
+      model_file_name: "model.onnx",
+      // config: {}
     },
   )
 
@@ -380,13 +453,13 @@ async function loadWav2Vec2Model(
   }
 }
 
-async function computeWav2Vec2Logits(
+async function computeLogProbs(
   modelInfo: HfModelInfo | MlxModelInfo,
   samples: Float32Array,
-): Promise<number[][]> {
-  if (!("tokenizer" in modelInfo)) {
+): Promise<Emissions> {
+  if (!("model" in modelInfo)) {
     const { compute } = await import("@storyteller-platform/mlx-audio")
-    return compute(modelInfo, samples)
+    return await compute(modelInfo, samples)
   }
 
   const { model, featureExtractor } = modelInfo
@@ -395,17 +468,25 @@ async function computeWav2Vec2Logits(
 
   const output = (await model.forward(inputs)) as { logits: Tensor }
 
-  const logits = output.logits.tolist() as [number[][]]
+  const [rows] = output.logits.tolist() as [number[][]]
 
-  return logits[0]
+  const classes = rows[0]?.length ?? 0
+  const values = new Float32Array(rows.length * classes)
+  rows.forEach((row, frame) => {
+    values.set(log_softmax(row), frame * classes)
+  })
+
+  return { values, frames: rows.length, classes }
 }
 
 export interface Wav2Vec2Result {
-  emissions: number[][]
+  emissions: Emissions
   numFrames: number
   vocab: Map<string, number>
   blankIndex: number
   secondsPerChunk: number
   framesPerChunk: number
   secondsPerFrame: number
+  frameOffsetSeconds: number
+  tokenizer: EmissionTokenizer | null
 }

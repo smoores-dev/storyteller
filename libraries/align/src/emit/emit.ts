@@ -15,11 +15,14 @@ import { type Logger } from "pino"
 import {
   type EmissionOptions,
   type TimingAggregator,
+  audioSourceFromFile,
   createAggregator,
   emit as emitFile,
   formatSingleReport,
+  readAudioAsFloat32,
 } from "@storyteller-platform/ghost-story"
 import {
+  type CtcModel,
   type Wav2Vec2DataType,
   type Wav2Vec2Device,
   type Wav2VecEngine,
@@ -40,6 +43,7 @@ export interface EmitOptions {
   engine?: Wav2VecEngine | null | undefined
   device?: Wav2Vec2Device | null | undefined
   dtype?: Wav2Vec2DataType | null | undefined
+  model?: CtcModel | null | undefined
   // serverUrl?: string | null | undefined
   // serverApiKey?: string | null | undefined
   logger?: Logger | null | undefined
@@ -47,7 +51,16 @@ export interface EmitOptions {
 
 type Identity = {
   engine: Wav2VecEngine
-  track: TrackSource
+  model: CtcModel | null
+  track: TrackSource | null
+}
+
+type PlannedTrack = {
+  filepath: string
+  emissionFilepath: string
+  identityFilepath: string
+  identity: Identity
+  status: "cached" | "stale" | "missing"
 }
 
 export async function emit(
@@ -91,10 +104,9 @@ export async function emit(
   const timing = createAggregator()
   timing.setMetadata("engine", engine)
 
-  for (const [i, filename] of enumerate(filenames)) {
+  const planned: PlannedTrack[] = []
+  for (const filename of filenames) {
     if (aborted()) throw new Error("Aborted")
-
-    options.onProgress?.(i / filenames.length)
 
     const filepath = join(input, filename)
     const emissionName = basename(filename, extname(filename))
@@ -107,7 +119,7 @@ export async function emit(
     // )
     const identity = {
       engine,
-      // device,
+      model: options.model ?? null,
       track: await readTrackSource(filepath),
     }
 
@@ -116,6 +128,7 @@ export async function emit(
       () => 0,
     )
 
+    let status: PlannedTrack["status"] = "missing"
     if (emissionSize > 0) {
       const cachedIdentity = (await readFile(identityFilepath, {
         encoding: "utf-8",
@@ -124,25 +137,64 @@ export async function emit(
         .then((file) => JSON.parse(file) as Record<string, unknown>)
         .catch(() => ({}))) as Partial<Identity>
 
-      if (
+      status =
         cachedIdentity.engine === identity.engine &&
+        (cachedIdentity.model ?? null) === identity.model &&
         cachedIdentity.track === identity.track
-      ) {
-        options.logger?.info(`Found existing emissions for ${filepath}`)
-        options.onProgress?.((i + 1) / filenames.length)
-        continue
-      }
+          ? "cached"
+          : "stale"
+    }
 
+    planned.push({
+      filepath,
+      emissionFilepath,
+      identityFilepath,
+      identity,
+      status,
+    })
+  }
+
+  const decodes = new Map<number, Promise<Float32Array>>()
+
+  function decode(index: number) {
+    const track = planned[index]
+    if (!track || track.status === "cached") return
+    const existing = decodes.get(index)
+    if (existing) return existing
+    const samples = readAudioAsFloat32(audioSourceFromFile(track.filepath))
+    samples.catch(() => {})
+    decodes.set(index, samples)
+    return samples
+  }
+
+  for (const [i, track] of enumerate(planned)) {
+    if (aborted()) throw new Error("Aborted")
+
+    options.onProgress?.(i / planned.length)
+
+    if (track.status === "cached") {
+      options.logger?.info(`Found existing emissions for ${track.filepath}`)
+      options.onProgress?.((i + 1) / planned.length)
+      continue
+    }
+
+    if (track.status === "stale") {
       options.logger?.warn(
-        `Existing emissions for ${filepath} came from a different engine, model or audio track, regenerating`,
+        `Existing emissions for ${track.filepath} came from a different engine, model or audio track, regenerating`,
       )
     }
 
     if (aborted()) throw new Error("Aborted")
 
+    const samples = decode(i)
+    for (let j = i + 1; j < planned.length && !aborted(); j++) {
+      if (decode(j)) break
+    }
+    decodes.delete(i)
+
     // eslint-disable-next-line no-inner-declarations
     function onFileProgress(progress: number) {
-      const updatedProgress = (i + progress) / filenames.length
+      const updatedProgress = (i + progress) / planned.length
       options.logger?.info(`Progress: ${Math.floor(updatedProgress * 100)}%`)
       options.onProgress?.(updatedProgress)
     }
@@ -153,6 +205,8 @@ export async function emit(
       options: {
         ...(options.device && { device: options.device }),
         ...(options.dtype && { dtype: options.dtype }),
+        ...(options.model && { model: options.model }),
+        ...(samples && { samples: () => samples }),
         onProgress: onFileProgress,
       },
     }
@@ -178,22 +232,22 @@ export async function emit(
     //         },
     //       }
 
-    const result = await emitFile(filepath, emissionOptions)
+    const result = await emitFile(track.filepath, emissionOptions)
 
     options.logger?.info(
       formatSingleReport(
         result.timing,
-        `Transcription Timing Report for ${filepath}`,
+        `Transcription Timing Report for ${track.filepath}`,
       ),
     )
     timing.add(result.timing)
 
-    const tmpFilepath = `${emissionFilepath}.tmp`
+    const tmpFilepath = `${track.emissionFilepath}.tmp`
     try {
       await writeEmissionsFile(tmpFilepath, result, { signal })
-      await rm(identityFilepath, { force: true })
-      await rename(tmpFilepath, emissionFilepath)
-      await writeFile(identityFilepath, JSON.stringify(identity), {
+      await rm(track.identityFilepath, { force: true })
+      await rename(tmpFilepath, track.emissionFilepath)
+      await writeFile(track.identityFilepath, JSON.stringify(track.identity), {
         encoding: "utf-8",
       })
     } catch (err) {
@@ -201,7 +255,7 @@ export async function emit(
       throw err
     }
 
-    options.onProgress?.((i + 1) / filenames.length)
+    options.onProgress?.((i + 1) / planned.length)
   }
 
   return timing

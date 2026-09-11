@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import {
   ALIGNERS,
+  CTC_MODELS,
   WAV2VEC2_DEVICES,
 } from "@storyteller-platform/ghost-story/constants"
 
@@ -864,6 +865,14 @@ function Wav2VecLocalSettings() {
     label: t(`ctcDevices.${value}`),
   }))
 
+  const modelOptions = [
+    { value: "default", label: t("ctcModels.default") },
+    ...CTC_MODELS.map((value) => ({
+      value,
+      label: t.has(`ctcModels.${value}`) ? t(`ctcModels.${value}`) : value,
+    })),
+  ]
+
   return (
     <>
       <SettingsFormField
@@ -885,6 +894,33 @@ function Wav2VecLocalSettings() {
             </SelectTrigger>
             <SelectContent>
               {deviceOptions.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+      <SettingsFormField
+        name="ctcModel"
+        label={t("ctcModel")}
+        description={t("ctcModelDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Select
+            items={modelOptions}
+            value={field.value ?? "default"}
+            onValueChange={(value) => {
+              field.onChange(value === "default" ? null : value)
+            }}
+            disabled={isLocked}
+            aria-invalid={fieldState.invalid}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {modelOptions.map(({ value, label }) => (
                 <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>

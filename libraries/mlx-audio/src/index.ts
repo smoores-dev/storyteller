@@ -46,9 +46,11 @@ interface BindingModelInfo {
   samplesPerFrame: number
   minSamples: number
   blankId: number
+  frameOffsetSeconds: number
+  tokenizer: "sentencepiece" | null
 }
 
-interface BindingEmissions {
+export interface Emissions {
   frames: number
   classes: number
   values: Float32Array
@@ -64,7 +66,7 @@ if (!bindingDir && !isSea()) {
 
 const native = requireBinding(bindingDir || packageDir) as {
   loadModel: (directory: string) => Promise<BindingModelInfo>
-  compute: (handle: number, samples: Float32Array) => Promise<BindingEmissions>
+  compute: (handle: number, samples: Float32Array) => Promise<Emissions>
   closeModel: (handle: number) => Promise<number>
 }
 
@@ -74,6 +76,8 @@ export interface ModelInfo {
   samplesPerFrame: number
   minSamples: number
   blankId: number
+  frameOffsetSeconds: number
+  tokenizer: "sentencepiece" | null
   [Symbol.asyncDispose]: () => Promise<void>
 }
 
@@ -91,16 +95,6 @@ export async function loadModel(directory: string): Promise<ModelInfo> {
 export async function compute(
   modelInfo: ModelInfo,
   samples: Float32Array,
-): Promise<number[][]> {
-  const { frames, classes, values } = await native.compute(
-    modelInfo.handle,
-    samples,
-  )
-  const rows: number[][] = new Array<number[]>(frames)
-  for (let frame = 0; frame < frames; frame++) {
-    rows[frame] = Array.from(
-      values.subarray(frame * classes, (frame + 1) * classes),
-    )
-  }
-  return rows
+): Promise<Emissions> {
+  return await native.compute(modelInfo.handle, samples)
 }

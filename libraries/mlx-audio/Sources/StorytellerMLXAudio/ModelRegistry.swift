@@ -9,6 +9,8 @@ struct ModelInfo: Sendable {
   let samplesPerFrame: Int
   let minSamples: Int
   let blankId: Int
+  let frameOffsetSeconds: Double
+  let tokenizer: String?
 }
 
 struct Emissions: Sendable {
@@ -17,16 +19,13 @@ struct Emissions: Sendable {
   let values: [Float]
 }
 
-private struct QuartzNetConfigProbe: Decodable {
-  let architecture: String?
-}
-
 actor ModelRegistry {
   static let shared = ModelRegistry()
 
   private enum Loaded {
     case wav2vec2(Wav2Vec2CTCModel)
     case quartznet(QuartzNet)
+    case citrinet(Citrinet)
   }
 
   private struct Entry {
@@ -49,10 +48,21 @@ actor ModelRegistry {
     GPU.set(cacheLimit: Self.cacheLimit)
     let handle = nextHandle
     nextHandle += 1
-    let configData = try Data(contentsOf: directory.appendingPathComponent("config.json"))
-    let probe = try JSONDecoder().decode(QuartzNetConfigProbe.self, from: configData)
+    let architecture = try ConvCTCArchitecture.read(directory: directory)
     let entry: Entry
-    if probe.architecture == "quartznet15x5" {
+    if architecture == "citrinet" {
+      let model = try Citrinet.load(directory: directory)
+      let info = ModelInfo(
+        handle: handle,
+        vocabulary: model.vocabulary,
+        samplesPerFrame: model.config.samplesPerFrame,
+        minSamples: MelFrontend.fftSize * 4,
+        blankId: model.config.blank,
+        frameOffsetSeconds: model.config.frameOffsetSeconds ?? 0,
+        tokenizer: model.config.tokenizer,
+      )
+      entry = Entry(model: .citrinet(model), info: info)
+    } else if architecture == "quartznet15x5" {
       let model = try QuartzNet.load(directory: directory)
       var vocabulary: [String: Int] = [:]
       for (token, index) in model.vocabulary {
@@ -68,6 +78,8 @@ actor ModelRegistry {
         samplesPerFrame: model.config.samplesPerFrame,
         minSamples: MelFrontend.fftSize * 4,
         blankId: model.config.blank,
+        frameOffsetSeconds: 0,
+        tokenizer: nil,
       )
       entry = Entry(model: .quartznet(model), info: info)
     } else {
@@ -84,6 +96,8 @@ actor ModelRegistry {
         samplesPerFrame: model.config.convStride.reduce(1, *),
         minSamples: minSamples,
         blankId: model.config.padTokenId,
+        frameOffsetSeconds: 0,
+        tokenizer: nil,
       )
       entry = Entry(model: .wav2vec2(model), info: info)
     }
@@ -115,6 +129,8 @@ actor ModelRegistry {
       folded[0..., blank] = logAddExp(logProbs[0..., blank], logProbs[0..., space])
       folded[0..., space] = MLXArray(Self.foldedSpaceScore)
       output = folded
+    case .citrinet(let model):
+      output = model.logProbs(samples: samples)[0]
     }
     return Emissions(frames: output.dim(0), classes: output.dim(-1), values: output.asArray(Float32.self))
   }

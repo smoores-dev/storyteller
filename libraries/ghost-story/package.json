@@ -40,6 +40,7 @@
   "scripts": {
     "build": "tsup",
     "prepack": "yarn build",
+    "upload-ctc-model": "node scripts/upload-ctc-model.mjs",
     "test": "tsx -C @storyteller --test test/whisper-server.test.ts &&  tsx -C @storyteller --test test/whispercpp.test.ts &&  tsx -C @storyteller --test test/vad.test.ts &&  tsx -C @storyteller --test test/model-packages.test.ts &&  yarn test:emission-server",
     "test:emission-server": "tsx -C @storyteller --test test/emission-server.test.ts"
   },
@@ -48,6 +49,7 @@
     "@aws-sdk/client-s3": "^3.994.0",
     "@aws-sdk/client-transcribe": "^3.994.0",
     "@hono/node-server": "^2.1.1",
+    "@huggingface/hub": "^2.17.0",
     "@huggingface/transformers": "^4.2.0",
     "@robingenz/zli": "^0.2.0",
     "@storyteller-platform/fs": "workspace:^",
@@ -59,6 +61,7 @@
     "hono": "^4.13.5",
     "lodash.merge": "^4.6.2",
     "microsoft-cognitiveservices-speech-sdk": "~1.44.0",
+    "onnxruntime-node": "^1.29.0",
     "openai": "~4.103.0",
     "tar": "^7.4.3",
     "undici": "7.14.0",

@@ -9,8 +9,13 @@ import { cn } from "@v3/_/lib/utils"
 
 import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import * as icon from "@/icons"
-import { useGetBookChapterTextQuery } from "@/store/api"
+import {
+  useGetBookChapterGuidedNavigationQuery,
+  useGetBookChapterTextQuery,
+} from "@/store/api"
 import { type UUID } from "@/uuid"
+import { GuidedNavigationDocument } from "@readium/shared"
+import { clipKey, clipSrc, usePlayer } from "../../audio"
 
 const STRIP_SELECTOR = "script, style, link, img, svg, video, audio, iframe"
 
@@ -201,7 +206,26 @@ export function ChapterText({
     isFetching,
     isError,
   } = useGetBookChapterTextQuery(
-    item.readHref ? { uuid: bookUuid, href: item.readHref } : skipToken,
+    item.readHref
+      ? {
+          uuid: bookUuid,
+          updatedAt: new Date().toISOString(),
+          href: item.readHref,
+        }
+      : skipToken,
+  )
+  const {
+    currentData: guidedNavigation,
+    isFetching: isGuidedNavigationFetching,
+    isError: isGuidedNavigationError,
+  } = useGetBookChapterGuidedNavigationQuery(
+    item.readHref
+      ? {
+          uuid: bookUuid,
+          updatedAt: new Date().toISOString(),
+          href: item.readHref,
+        }
+      : skipToken,
   )
 
   const prepared = useMemo(
@@ -221,6 +245,53 @@ export function ChapterText({
   }, [prepared])
 
   const unavailable = !item.readHref || isError
+
+  const player = usePlayer()
+
+  useEffect(() => {
+    if (!guidedNavigation) return
+
+    const guidedNav = GuidedNavigationDocument.deserialize(guidedNavigation)
+
+    if (!guidedNav) return
+
+    const abortController = new AbortController()
+
+    for (const guided of guidedNav.guided ?? []) {
+      for (const child of guided.children ?? []) {
+        if (!child.textref || !child.audioref) continue
+
+        if (!child.fragmentId) continue
+        const fragment = container.current?.querySelector(
+          `#${child.fragmentId}`,
+        )
+        if (!fragment) {
+          console.warn(`Fragment ${child.fragmentId} not found`)
+          continue
+        }
+
+        fragment.addEventListener(
+          "click",
+          () => {
+            player.play({
+              bookUuid,
+              path: child.audioFile.split("/").pop() ?? "",
+              start: child.clip?.start ?? 0,
+              end: child.clip?.end ?? 0,
+              name: child.text?.plain ?? "",
+              label: child.text?.plain ?? "",
+            })
+            console.log(child.audioref)
+          },
+          { signal: abortController.signal },
+        )
+      }
+    }
+
+    return () => {
+      abortController.abort()
+    }
+  }, [guidedNavigation])
 
   return (
     <div className="flex min-h-0 flex-col gap-1.5">
@@ -263,7 +334,7 @@ export function ChapterText({
         ref={container}
         className={cn(
           "max-h-[60vh] min-h-24 overflow-y-auto rounded-md border px-4 py-3 text-sm leading-relaxed",
-          "[&_[data-state=interpolated]]:decoration-moderate/70 [&_[data-state=interpolated]]:text-moderate/70 [&_*]:font-sans! [&_[data-state=interpolated]]:underline [&_[data-state=interpolated]]:decoration-dotted [&_[data-state=interpolated]]:decoration-2 [&_[data-state=interpolated]]:underline-offset-4 [&_[data-state=unmatched]]:opacity-35 [&_[data-state=dropped]]:opacity-35 [&_[data-state=dropped]]:line-through [&_h1]:text-lg [&_h1]:font-medium [&_h2]:text-base [&_h2]:font-medium [&_h3]:font-medium [&_p]:my-2",
+          "[&_[data-state=interpolated]]:decoration-moderate/70 [&_[data-state=interpolated]]:text-moderate/70 [&_*]:font-sans! [&_[data-state=dropped]]:line-through [&_[data-state=dropped]]:opacity-35 [&_[data-state=interpolated]]:underline [&_[data-state=interpolated]]:decoration-dotted [&_[data-state=interpolated]]:decoration-2 [&_[data-state=interpolated]]:underline-offset-4 [&_[data-state=unmatched]]:opacity-35 [&_h1]:text-lg [&_h1]:font-medium [&_h2]:text-base [&_h2]:font-medium [&_h3]:font-medium [&_p]:my-2",
           "[&_[data-match]]:bg-highlight-bg/70 [&_[data-match]]:border-highlight [&_[data-match]]:dark:bg-highlight/25 [&_[data-match]]:border-b [&_[data-match]]:box-decoration-clone",
           (unavailable || !prepared) && "text-muted-foreground",
         )}

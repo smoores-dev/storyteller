@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import {
   ALIGNERS,
+  CTC_MODELS,
   LANGUAGES,
   RECOGNITION_ENGINES,
   WAV2VEC2_DEVICES,
@@ -28,6 +29,9 @@ export type Wav2VecEngine = z.infer<typeof Wav2VecEngineSchema>
 
 export const Wav2Vec2DeviceSchema = z.enum(WAV2VEC2_DEVICES)
 export type Wav2Vec2Device = z.infer<typeof Wav2Vec2DeviceSchema>
+
+export const CtcModelSchema = z.enum(CTC_MODELS)
+export type CtcModel = z.infer<typeof CtcModelSchema>
 
 export const WhisperModelSchema = z.enum(WHISPER_MODELS)
 export type WhisperModel = z.infer<typeof WhisperModelSchema>
@@ -318,6 +322,7 @@ export const SettingsSchema = z.object({
   alignmentDropUnread: z.boolean().nullable(),
   ctcEngine: Wav2VecEngineSchema.nullable(),
   ctcDevice: Wav2Vec2DeviceSchema.nullable(),
+  ctcModel: CtcModelSchema.nullable(),
   // ctcServerUrl: z.string().nullable(),
   // ctcServerApiKey: z.string().nullable(),
   // Transcription settings

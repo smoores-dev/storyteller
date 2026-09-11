@@ -1155,6 +1155,7 @@ export function SettingsForm({
       settings.alignmentAudioChapterSeconds ?? DEFAULT_AUDIO_CHAPTER_SECONDS,
     alignmentDropUnread: settings.alignmentDropUnread ?? DEFAULT_DROP_UNREAD,
     ctcDevice: settings.ctcDevice ?? null,
+    ctcModel: settings.ctcModel ?? null,
     // ctcServerUrl: settings.ctcServerUrl ?? "",
     // ctcServerApiKey: settings.ctcServerApiKey ?? "",
     transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",

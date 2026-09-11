@@ -12,4 +12,5 @@ dependencies = [
     "onnx-safetensors>=1.6.0",
     "onnxruntime>=1.24.3",
     "safetensors>=0.8.0",
+    "sentencepiece>=0.2.2",
 ]

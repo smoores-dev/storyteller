@@ -273,6 +273,7 @@ export default async function processBook({
               engine: settings.ctcEngine ?? "wav2vec-local",
               device,
               dtype: resolveWav2Vec2Dtype(device),
+              model: settings.ctcModel ?? undefined,
               // serverUrl: settings.ctcServerUrl,
               // serverApiKey: settings.ctcServerApiKey,
               onProgress,

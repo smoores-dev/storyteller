@@ -3,6 +3,7 @@ import { basename, dirname, extname, join } from "node:path"
 
 import {
   type EmissionData,
+  type Emissions,
   decodeEmissions,
   encodeEmissions,
 } from "@storyteller-platform/ghost-story"
@@ -51,6 +52,12 @@ export async function readEmissionsFileHead(path: string) {
   return await readEmissionsFile(path, 0, 0)
 }
 
+function toRows({ values, frames, classes }: Emissions): number[][] {
+  return Array.from({ length: frames }, (_, f) =>
+    Array.from(values.subarray(f * classes, (f + 1) * classes)),
+  )
+}
+
 async function packJsonEmissionsFile(path: string) {
   const directory = dirname(path)
   const filebase = basename(path, extname(path))
@@ -59,12 +66,27 @@ async function packJsonEmissionsFile(path: string) {
   const jsonData = await readFile(path, { encoding: "utf-8" })
   const parsed = JSON.parse(jsonData) as Omit<
     EmissionData,
-    "vocab" | "numFrames"
-  > & { vocab: Record<string, number> }
+    "vocab" | "numFrames" | "emissions" | "frameOffsetSeconds" | "tokenizer"
+  > & {
+    vocab: Record<string, number>
+    emissions: number[][]
+    frameOffsetSeconds?: number
+  }
+
+  const rows = parsed.emissions
+  const classes = rows[0]?.length ?? 0
+  const values = new Float32Array(rows.length * classes)
+  rows.forEach((row, i) => {
+    values.set(row, i * classes)
+  })
+
   await writeEmissionsFile(emissionsName, {
     ...parsed,
+    emissions: { values, frames: rows.length, classes },
     vocab: new Map(Object.entries(parsed.vocab)),
-    numFrames: parsed.emissions.length,
+    numFrames: rows.length,
+    frameOffsetSeconds: parsed.frameOffsetSeconds ?? 0,
+    tokenizer: null,
   })
   await rm(path)
   return emissionsName
@@ -113,6 +135,7 @@ export class EmissionsReader {
         vocab: v,
         blankIndex: b,
         emissions: _,
+        tokenizer: __,
         ...emissionTimings
       } = await readEmissionsFileHead(path)
       vocab ??= v
@@ -146,13 +169,9 @@ export class EmissionsReader {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const [path, framesStart, framesEnd] = this.frameMap[fileIndex]!
       const chunkTo = Math.min(chunkFrom + 1000, framesEnd - framesStart)
-      const { emissions: chunk } = await readEmissionsFile(
-        path,
-        chunkFrom,
-        chunkTo,
-      )
-      for (const e of chunk) {
-        yield e
+      const { emissions } = await readEmissionsFile(path, chunkFrom, chunkTo)
+      for (const row of toRows(emissions)) {
+        yield row
       }
 
       frameIndex += chunkTo - chunkFrom
@@ -182,9 +201,7 @@ export class EmissionsReader {
         Math.min(to, framesTo) - from,
       )
 
-      for (const e of emissions) {
-        frames.push(e)
-      }
+      frames.push(...toRows(emissions))
     }
 
     return frames

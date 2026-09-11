@@ -207,6 +207,7 @@ function settingsFormValues(settings: Settings) {
     // TODO: change, if we ever want to use a different CTC engine
     ctcEngine: "wav2vec-local" as const,
     ctcDevice: settings.ctcDevice ?? null,
+    ctcModel: settings.ctcModel ?? null,
     // ctcServerUrl: settings.ctcServerUrl ?? "",
     // ctcServerApiKey: settings.ctcServerApiKey ?? "",
     transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",

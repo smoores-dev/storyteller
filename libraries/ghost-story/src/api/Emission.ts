@@ -1,4 +1,8 @@
 import { type AudioFormat } from "../audio/AudioFormat.ts"
+import {
+  type EmissionTokenizer,
+  type Emissions,
+} from "../emission/Emissions.ts"
 import { type Wav2Vec2Options } from "../emission/Wav2Vec2Emission.ts"
 // import { type Wav2Vec2ServerOptions } from "../emission/Wav2Vec2ServerEmission.ts"
 import { extendDeep } from "../utilities/ObjectUtilities.ts"
@@ -11,6 +15,17 @@ export {
   decodeEmissions,
   encodeEmissions,
 } from "../emission/encoding.ts"
+export {
+  type EmissionTokenizer,
+  type Emissions,
+} from "../emission/Emissions.ts"
+export {
+  type SentencePieceModel,
+  encodeUnigram,
+  readSentencePieceModel,
+  unigramText,
+  unigramTokenizer,
+} from "../emission/sentencepiece.ts"
 
 export async function emit(
   input: AudioInput,
@@ -86,7 +101,7 @@ const defaultEmissionOptions: Partial<EmissionOptions> = {
 }
 
 export interface EmissionResult {
-  emissions: number[][]
+  emissions: Emissions
   numFrames: number
   vocab: Map<string, number>
   blankIndex: number
@@ -94,4 +109,6 @@ export interface EmissionResult {
   secondsPerChunk: number
   framesPerChunk: number
   secondsPerFrame: number
+  frameOffsetSeconds: number
+  tokenizer: EmissionTokenizer | null
 }

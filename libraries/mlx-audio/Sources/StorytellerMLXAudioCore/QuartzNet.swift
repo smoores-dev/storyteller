@@ -129,7 +129,7 @@ final class QuartzNetBlock: Module {
   }
 }
 
-public final class QuartzNet: Module {
+public final class QuartzNet: Module, ConvCTCModel {
   @ModuleInfo(key: "encoder") var encoder: [QuartzNetBlock]
   @ModuleInfo(key: "decoder") var decoder: Conv1d
 
@@ -146,6 +146,8 @@ public final class QuartzNet: Module {
       inputChannels: config.blocks.last?.outputChannels ?? 0, outputChannels: config.classes, kernelSize: 1)
     super.init()
   }
+
+  public var blank: Int { config.blank }
 
   public var dtype: DType { decoder.weight.dtype }
 

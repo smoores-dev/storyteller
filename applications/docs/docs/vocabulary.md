@@ -63,32 +63,6 @@ publications.
 | Description | Indicates that a manifest item contains extra information about the alignment process performed by Storyteller. To be used for debugging purposes. |
 | Example     | `<item id="alignment-report" href="alignment report.json" properties="storyteller:alignment-report" media-type="application/json" />`              |
 
-## 4. SMIL Properties Vocabulary
-
-### 4.1 interpolated
-
-|             |                                                                                |
-| ----------- | ------------------------------------------------------------------------------ |
-| Name        | interpolated                                                                   |
-| Description | Indicates that a sentence range was interpolated during the alignment process. |
-| Example     | `<par epub:type="storyteller:interpolated">...</par>`                          |
-
-### 4.2 dropped
-
-|             |                                                                           |
-| ----------- | ------------------------------------------------------------------------- |
-| Name        | dropped                                                                   |
-| Description | Indicates that a sentence range was dropped during the alignment process. |
-| Example     | `<par epub:type="storyteller:dropped">...</par>`                          |
-
-### 4.3 unmatched
-
-|             |                                                                             |
-| ----------- | --------------------------------------------------------------------------- |
-| Name        | unmatched                                                                   |
-| Description | Indicates that a sentence range was unmatched during the alignment process. |
-| Example     | `<par epub:type="storyteller:unmatched">...</par>`                          |
-
 ## 4. Media Overlay Structural Semantics
 
 Storyteller marks every `par` element in the media overlays it writes with one

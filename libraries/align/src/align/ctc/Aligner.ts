@@ -391,7 +391,12 @@ export class Aligner {
             e < labelOffset + alignments.length &&
             detectDroppedLabels(alignments, s - labelOffset, e - labelOffset)
           ) {
-            droppedSentences.add(i)
+            if (
+              e >= paddedChapterBoundaries[0] &&
+              s < paddedChapterBoundaries[1]
+            ) {
+              droppedSentences.add(i)
+            }
             dropped.push([s, e])
           }
         }
@@ -498,39 +503,41 @@ export class Aligner {
         skippedSentences.add(i)
         continue
       }
-      if (
-        endOffset < paddedChapterBoundaries[0] ||
-        startOffset >= paddedChapterBoundaries[1]
-      ) {
+      if (!alignments[startOffset] || !alignments[endOffset]) {
         skippedSentences.add(i)
-        droppedSentences.add(i)
         continue
       }
+
+      const withinEvidence =
+        endOffset >= paddedChapterBoundaries[0] &&
+        startOffset < paddedChapterBoundaries[1]
+
+      const sentenceLength = endOffset + 1 - startOffset
 
       const goodChars = alignments
         .slice(startOffset, endOffset + 1)
         .reduce((acc, a) => acc + (a.score > -4 ? 1 : 0), 0)
 
-      if (goodChars / (endOffset + 1 - startOffset) < 0.5) {
+      const framesPerChar =
+        (alignments[endOffset].endFrame -
+          alignments[startOffset].startFrame) /
+        sentenceLength
+
+      if (goodChars / sentenceLength < 0.5) {
         skippedSentences.add(i)
+        if (withinEvidence && sentenceLength > 8 && framesPerChar < 2) {
+          droppedSentences.add(i)
+        }
         continue
       }
 
-      const sentenceLength = endOffset + 1 - startOffset
-
-      const framesPerChar =
-        (alignments[endOffset]!.endFrame -
-          alignments[startOffset]!.startFrame) /
-        sentenceLength
-
       if (sentenceLength > 8 && (framesPerChar < 2 || framesPerChar > 15)) {
         skippedSentences.add(i)
-        if (framesPerChar < 2) droppedSentences.add(i)
         continue
       }
 
       const startFrame = this.refineStartFrame(
-        alignments[startOffset]!.startFrame,
+        alignments[startOffset].startFrame,
         lastFoundSentenceEnd,
         padFrames,
         emissionsStart,
@@ -538,7 +545,7 @@ export class Aligner {
 
       firstFoundSentence ??= i
       lastFoundSentence = i
-      lastFoundSentenceEnd = alignments[endOffset]!.endFrame
+      lastFoundSentenceEnd = alignments[endOffset].endFrame
 
       const sentenceScores = alignments
         .slice(startOffset, endOffset + 1)
@@ -556,7 +563,7 @@ export class Aligner {
 
       const { start, end, audiofile } = this.frameRangeToAudioRange(
         startFrame,
-        alignments[endOffset]!.endFrame,
+        alignments[endOffset].endFrame,
         emissionsStart,
       )
 

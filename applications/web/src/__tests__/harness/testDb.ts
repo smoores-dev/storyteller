@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS: Settings = {
   aligner: "whisper",
   ctcEngine: "wav2vec-local" as const,
   ctcDevice: null,
+  ctcModel: null,
   // ctcServerUrl: null,
   // ctcServerApiKey: null,
   alignmentGranularity: "sentence",

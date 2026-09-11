@@ -815,7 +815,32 @@
               "auto": "Auto",
               "cpu": "CPU",
               "webgpu": "GPU (WebGPU)",
-              "cuda": "GPU (CUDA)"
+              "cuda": "GPU (CUDA)",
+              "mlx": "GPU (Apple Silicon)"
+            },
+            "ctcModel": "Model",
+            "ctcModelDescription": "Automatisch kiest een model dat past bij het apparaat dat je koos. De MMS-modellen werken voor elke taal. Elk QuartzNet-model werkt alleen voor de taal in de naam en is een stuk sneller.",
+            "ctcModels": {
+              "default": "Automatisch",
+              "fp32": "MMS 32-bit",
+              "fp16": "MMS 16-bit",
+              "mlx": "MMS Apple Silicon",
+              "quartznet15x5_ar": "QuartzNet Arabisch",
+              "quartznet15x5_ca": "QuartzNet Catalaans",
+              "quartznet15x5_de": "QuartzNet Duits",
+              "quartznet15x5_en": "QuartzNet Engels",
+              "quartznet15x5_es": "QuartzNet Spaans",
+              "quartznet15x5_fo": "QuartzNet Faeroers",
+              "quartznet15x5_fr": "QuartzNet Frans",
+              "quartznet15x5_hy": "QuartzNet Armeens",
+              "quartznet15x5_is": "QuartzNet IJslands",
+              "quartznet15x5_it": "QuartzNet Italiaans",
+              "quartznet15x5_kk": "QuartzNet Kazachs",
+              "quartznet15x5_mt": "QuartzNet Maltees",
+              "quartznet15x5_pl": "QuartzNet Pools",
+              "quartznet15x5_pt": "QuartzNet Portugees",
+              "quartznet15x5_ru": "QuartzNet Russisch",
+              "quartznet15x5_zh": "QuartzNet Chinees"
             }
           },
           "parallelization": {
@@ -1064,7 +1089,6 @@
           }
         }
       },
-
       "queue": {
         "title": "Verwerkingswachtrij",
         "subtitle": "{count, number} boeken worden verwerkt of wachten.",

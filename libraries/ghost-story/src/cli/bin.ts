@@ -25,12 +25,9 @@ import {
 
 import {
   getCompatibleVariants,
-  getConfiguredVariant,
   getInstalledVariant,
   isValidModel,
   isValidVariant,
-  resolveWav2Vec2Device,
-  resolveWav2Vec2Dtype,
 } from "./config.ts"
 import { installModelPackage, isCtcModel } from "./ctc-install.ts"
 import {
@@ -38,7 +35,6 @@ import {
   installBinary,
   installModel,
   installVadModel,
-  installWav2Vec2Model,
 } from "./install.ts"
 import {
   IncompatibleBinaryError,
@@ -201,16 +197,6 @@ Usage:
         for (const m of WHISPER_MODELS) {
           await installModel({ model: m, force, printOutput: true })
         }
-      }
-
-      if (target === "ctc-model") {
-        const variant = getConfiguredVariant() ?? getInstalledVariant()
-        const device = resolveWav2Vec2Device(options.device, variant)
-        await installWav2Vec2Model({
-          device,
-          dtype: options.dtype ?? resolveWav2Vec2Dtype(device),
-          printOutput: true,
-        })
       }
 
       if (target === "vad" || target === "all") {

@@ -9,9 +9,16 @@ export {
   type EmissionData,
   type EmissionOptions,
   type EmissionResult,
+  type EmissionTokenizer,
+  type Emissions,
+  type SentencePieceModel,
   decodeEmissions,
   emit,
   encodeEmissions,
+  encodeUnigram,
+  readSentencePieceModel,
+  unigramText,
+  unigramTokenizer,
 } from "./api/Emission.ts"
 export {
   type AudioFormat,
@@ -65,12 +72,10 @@ export {
   type InstallBinaryOptions,
   type InstallModelOptions,
   type InstallVadModelOptions,
-  type InstallWav2Vec2ModelOptions,
   ensureWhisperInstalled,
   installBinary,
   installModel,
   installVadModel,
-  installWav2Vec2Model,
 } from "./cli/install.ts"
 // export {
 //   type EmissionWireResult,
@@ -78,11 +83,10 @@ export {
 //   encodeEmissions,
 // } from "./emission/EmissionWire.ts"
 export {
-  type LoadWav2Vec2ModelOptions,
   type Wav2Vec2ModelBundle,
   type Wav2Vec2Options,
   type Wav2Vec2Result,
-  loadWav2Vec2Model,
+  readAudioAsFloat32,
 } from "./emission/Wav2Vec2Emission.ts"
 // export { type Wav2Vec2ServerOptions } from "./emission/Wav2Vec2ServerEmission.ts"
 export {

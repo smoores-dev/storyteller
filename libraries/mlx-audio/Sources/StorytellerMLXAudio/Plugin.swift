@@ -44,6 +44,8 @@ extension ModelInfo {
       "samplesPerFrame": samplesPerFrame,
       "minSamples": minSamples,
       "blankId": blankId,
+      "frameOffsetSeconds": frameOffsetSeconds,
+      "tokenizer": tokenizer,
     ]
   }
 }

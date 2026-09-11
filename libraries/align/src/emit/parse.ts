@@ -7,11 +7,13 @@ import {
   message,
   object,
   option,
+  optional,
   withDefault,
 } from "@optique/core"
 import { path } from "@optique/run/valueparser"
 
 import {
+  CTC_MODELS,
   WAV2VEC2_DEVICES,
   WAV2VEC2_DTYPES,
   WAV2VEC_ENGINES,
@@ -37,6 +39,11 @@ export const emitParser = object({
       description: message`The data type to load the model with. Use fp32 for device=cpu, and fp16 otherwise.`,
     }),
     "fp16",
+  ),
+  model: optional(
+    option("--model", choice(CTC_MODELS, { metavar: "MODEL" }), {
+      description: message`The CTC model to generate emissions with. Defaults to the MMS model matching the device and dtype.`,
+    }),
   ),
   // serverUrl: optional(
   //   map(
