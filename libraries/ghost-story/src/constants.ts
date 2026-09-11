@@ -70,15 +70,18 @@ export const WHISPER_MODELS = [
 ] as const
 export type WhisperModel = (typeof WHISPER_MODELS)[number]
 
-export const WAV2VEC2_MODEL = "onnx-community/mms-300m-1130-forced-aligner-ONNX"
-export type Wav2Vec2Model = typeof WAV2VEC2_MODEL
-
-export const WAV2VEC2_DEVICES = ["auto", "cpu", "webgpu", "cuda"] as const
+export const WAV2VEC2_DEVICES = [
+  "auto",
+  "cpu",
+  "webgpu",
+  "cuda",
+  "mlx",
+] as const
 export type Wav2Vec2Device = (typeof WAV2VEC2_DEVICES)[number]
 
 export const WAV2VEC2_SECONDS_PER_CHUNK = 25
 
-export const WAV2VEC2_DTYPES = ["fp32", "fp16", "q8"] as const
+export const WAV2VEC2_DTYPES = ["fp32", "fp16"] as const
 export type Wav2Vec2DataType = (typeof WAV2VEC2_DTYPES)[number]
 
 export const ALIGNERS = ["whisper", "ctc"] as const
@@ -89,6 +92,55 @@ export const WAV2VEC_ENGINES = [
   // "wav2vec-server",
 ] as const
 export type Wav2VecEngine = (typeof WAV2VEC_ENGINES)[number]
+export const CTC_MODEL_VERSION = "1.0.0"
+
+export const CTC_MODELS = ["fp32", "fp16", "mlx"] as const
+export type CtcModel = (typeof CTC_MODELS)[number]
+
+export type CtcModelPackage = {
+  name: string
+  version: string
+  /** id of the package in the gitlab package registry */
+  packageId: number
+  /** id of the model version, which is what the download endpoint takes */
+  modelVersionId: number
+  /** where the files land, relative to the model directory */
+  subdir: string
+  /** file that has to exist for the package to count as installed */
+  entryFile: string
+}
+
+/**
+ * ctc aligner weights in the gitlab model registry.
+ * `subdir` has to match what the loaders expect: transformers.js caches under
+ * the huggingface repo id, the mlx loader takes a plain directory.
+ */
+export const CTC_MODEL_PACKAGES: Record<CtcModel, CtcModelPackage> = {
+  fp32: {
+    name: "mms-300m-1130-forced-aligner-ONNX",
+    version: CTC_MODEL_VERSION,
+    packageId: 68949503,
+    modelVersionId: 3023068,
+    subdir: "onnx-community/mms-300m-1130-forced-aligner-ONNX",
+    entryFile: "onnx/model.onnx",
+  },
+  fp16: {
+    name: "mms-300m-1130-forced-aligner-ONNX-fp16",
+    version: CTC_MODEL_VERSION,
+    packageId: 68959176,
+    modelVersionId: 3023070,
+    subdir: "onnx-community/mms-300m-1130-forced-aligner-ONNX",
+    entryFile: "onnx/model_fp16.onnx",
+  },
+  mlx: {
+    name: "mms-300m-1130-forced-aligner-fp16",
+    version: CTC_MODEL_VERSION,
+    packageId: 68943298,
+    modelVersionId: 3023067,
+    subdir: "mms-300m-1130-forced-aligner-fp16",
+    entryFile: "model.safetensors",
+  },
+}
 
 export const RECOGNITION_ENGINES = [
   "whisper.cpp",

@@ -4,7 +4,12 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types",
+      "../../types"
+    ]
   },
   "extends": ["expo/tsconfig.base", "@tsconfig/strictest"],
   "exclude": ["babel.config.js", "metro.config.js", "ios", "android"],

@@ -12,14 +12,24 @@
     "rewriteRelativeImportExtensions": true,
     "exactOptionalPropertyTypes": false,
     "lib": ["esnext"],
-    "types": ["@types/node", "undici-types"],
-    "customConditions": ["@storyteller"],
-    "outDir": "dist"
+    "types": ["node"],
+    "outDir": "dist",
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types",
+      "../../types"
+    ]
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "package.json"],
   "references": [
     {
       "path": "../media-types"
+    },
+    {
+      "path": "../fs"
+    },
+    {
+      "path": "../mlx-audio"
     }
   ]
 }

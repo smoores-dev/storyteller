@@ -222,6 +222,7 @@ async function main() {
       await emit(parsed.input, parsed.output, {
         ...parsed,
         onProgress: updateProgressBar,
+        logger,
       })
       break
     }

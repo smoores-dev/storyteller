@@ -40,7 +40,7 @@
   "scripts": {
     "build": "tsup",
     "prepack": "yarn build",
-    "test": "tsx -C @storyteller --test test/whisper-server.test.ts &&  tsx -C @storyteller --test test/whispercpp.test.ts &&  tsx -C @storyteller --test test/vad.test.ts &&  yarn test:emission-server",
+    "test": "tsx -C @storyteller --test test/whisper-server.test.ts &&  tsx -C @storyteller --test test/whispercpp.test.ts &&  tsx -C @storyteller --test test/vad.test.ts &&  tsx -C @storyteller --test test/model-packages.test.ts &&  yarn test:emission-server",
     "test:emission-server": "tsx -C @storyteller --test test/emission-server.test.ts"
   },
   "bin": "./dist/cli/bin.js",
@@ -63,6 +63,9 @@
     "tar": "^7.4.3",
     "undici": "7.14.0",
     "zod": "catalog:"
+  },
+  "optionalDependencies": {
+    "@storyteller-platform/mlx-audio": "workspace:^"
   },
   "devDependencies": {
     "@storyteller-platform/eslint": "workspace:*",

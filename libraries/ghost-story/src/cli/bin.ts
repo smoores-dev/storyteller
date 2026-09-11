@@ -14,10 +14,11 @@ import { z } from "zod/v4"
 import { type RecognitionOptions } from "../api/Recognition.ts"
 import {
   BUILD_VARIANTS,
+  CTC_MODELS,
+  CTC_MODEL_PACKAGES,
   RECOGNITION_ENGINES,
   WAV2VEC2_DEVICES,
   WAV2VEC2_DTYPES,
-  WAV2VEC2_MODEL,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
 } from "../constants.ts"
@@ -31,6 +32,7 @@ import {
   resolveWav2Vec2Device,
   resolveWav2Vec2Dtype,
 } from "./config.ts"
+import { installModelPackage, isCtcModel } from "./ctc-install.ts"
 import {
   PlatformMismatchError,
   installBinary,
@@ -66,7 +68,7 @@ Usage:
   ghost-story install binary [variant]    - Install binary (auto-detects platform if variant not specified)
   ghost-story install model <model>       - Install a whisper model
   ghost-story install vad                 - Install Silero VAD model
-  ghost-story install ctc-model           - Install the wav2vec2 CTC alignment model
+  ghost-story install ctc-model [variant] - Install model for CTC alignment (fp32, fp16, or mlx)
   ghost-story install all                 - Install binary, all models, and VAD`,
   args: z.union([
     z.tuple([
@@ -132,7 +134,14 @@ Usage:
         }
         return
       }
-      console.error("Use --list with 'binary' or 'model'")
+      if (target === "ctc-model") {
+        console.log("Available CTC model variants:")
+        for (const variant of CTC_MODELS) {
+          console.log(`  ${variant} (${CTC_MODEL_PACKAGES[variant].name})`)
+        }
+        return
+      }
+      console.error("Use --list with 'binary', 'model', or 'ctc-model'")
       process.exit(1)
     }
 
@@ -171,6 +180,22 @@ Usage:
         await installModel({ model: argument, force, printOutput: true })
       }
 
+      if (target === "ctc-model") {
+        const variant = argument ?? "fp32"
+        if (!isCtcModel(variant)) {
+          console.error(`Unknown CTC model variant: ${variant}`)
+          console.error("\nAvailable variants:")
+          for (const v of CTC_MODELS) {
+            console.log(`  ${v}`)
+          }
+          process.exit(1)
+        }
+        await installModelPackage(CTC_MODEL_PACKAGES[variant], {
+          force,
+          printOutput: true,
+        })
+      }
+
       if (target === "all") {
         console.log("\nInstalling all whisper models...")
         for (const m of WHISPER_MODELS) {
@@ -182,7 +207,6 @@ Usage:
         const variant = getConfiguredVariant() ?? getInstalledVariant()
         const device = resolveWav2Vec2Device(options.device, variant)
         await installWav2Vec2Model({
-          model: WAV2VEC2_MODEL,
           device,
           dtype: options.dtype ?? resolveWav2Vec2Dtype(device),
           printOutput: true,

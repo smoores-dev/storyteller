@@ -12,7 +12,12 @@
     "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
     "lib": ["esnext"],
-    "outDir": "dist"
+    "outDir": "dist",
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types",
+      "../../types"
+    ]
   },
   "include": ["package.json", "src/**/*.ts"],
   "references": [

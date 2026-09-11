@@ -20,14 +20,17 @@ import {
   formatSingleReport,
 } from "@storyteller-platform/ghost-story"
 import {
-  WAV2VEC2_MODEL,
   type Wav2Vec2DataType,
   type Wav2Vec2Device,
   type Wav2VecEngine,
 } from "@storyteller-platform/ghost-story/constants"
 import { MediaType } from "@storyteller-platform/media-types"
 
-import { pruneStaleOutputs, readTrackSource } from "../process/trackSource.ts"
+import {
+  type TrackSource,
+  pruneStaleOutputs,
+  readTrackSource,
+} from "../process/trackSource.ts"
 
 import { writeEmissionsFile } from "./fs.ts"
 
@@ -40,6 +43,11 @@ export interface EmitOptions {
   // serverUrl?: string | null | undefined
   // serverApiKey?: string | null | undefined
   logger?: Logger | null | undefined
+}
+
+type Identity = {
+  engine: Wav2VecEngine
+  track: TrackSource
 }
 
 export async function emit(
@@ -82,7 +90,6 @@ export async function emit(
 
   const timing = createAggregator()
   timing.setMetadata("engine", engine)
-  timing.setMetadata("model", WAV2VEC2_MODEL)
 
   for (const [i, filename] of enumerate(filenames)) {
     if (aborted()) throw new Error("Aborted")
@@ -93,11 +100,16 @@ export async function emit(
     const emissionName = basename(filename, extname(filename))
     const emissionFilepath = join(output, `${emissionName}.emissions`)
     const identityFilepath = join(output, `${emissionName}.identity`)
-    const identity = JSON.stringify({
+    // not really necessary to include
+    // const device = resolveWav2Vec2Device(
+    //   options.device,
+    //   process.env["STORYTELLER_WHISPER_VARIANT"],
+    // )
+    const identity = {
       engine,
-      model: WAV2VEC2_MODEL,
+      // device,
       track: await readTrackSource(filepath),
-    })
+    }
 
     const emissionSize = await stat(emissionFilepath).then(
       (stats) => stats.size,
@@ -105,12 +117,17 @@ export async function emit(
     )
 
     if (emissionSize > 0) {
-      const cachedIdentity = await readFile(identityFilepath, {
+      const cachedIdentity = (await readFile(identityFilepath, {
         encoding: "utf-8",
         signal,
-      }).catch(() => null)
+      })
+        .then((file) => JSON.parse(file) as Record<string, unknown>)
+        .catch(() => ({}))) as Partial<Identity>
 
-      if (cachedIdentity === identity) {
+      if (
+        cachedIdentity.engine === identity.engine &&
+        cachedIdentity.track === identity.track
+      ) {
         options.logger?.info(`Found existing emissions for ${filepath}`)
         options.onProgress?.((i + 1) / filenames.length)
         continue
@@ -134,7 +151,6 @@ export async function emit(
       signal,
       engine,
       options: {
-        model: WAV2VEC2_MODEL,
         ...(options.device && { device: options.device }),
         ...(options.dtype && { dtype: options.dtype }),
         onProgress: onFileProgress,
@@ -177,7 +193,9 @@ export async function emit(
       await writeEmissionsFile(tmpFilepath, result, { signal })
       await rm(identityFilepath, { force: true })
       await rename(tmpFilepath, emissionFilepath)
-      await writeFile(identityFilepath, identity, { encoding: "utf-8" })
+      await writeFile(identityFilepath, JSON.stringify(identity), {
+        encoding: "utf-8",
+      })
     } catch (err) {
       await rm(tmpFilepath, { force: true })
       throw err

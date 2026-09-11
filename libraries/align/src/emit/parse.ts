@@ -34,7 +34,7 @@ export const emitParser = object({
   ),
   dtype: withDefault(
     option("--dtype", choice(WAV2VEC2_DTYPES, { metavar: "DTYPE" }), {
-      description: message`The data type to load the model with`,
+      description: message`The data type to load the model with. Use fp32 for device=cpu, and fp16 otherwise.`,
     }),
     "fp16",
   ),

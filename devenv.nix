@@ -27,6 +27,7 @@ in
     # in the sqlite package.
     sqlite-interactive
     sqlite
+    git
     git-lfs
     vtsls
     google-cloud-sdk

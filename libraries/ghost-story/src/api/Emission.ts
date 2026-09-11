@@ -1,5 +1,4 @@
 import { type AudioFormat } from "../audio/AudioFormat.ts"
-import { WAV2VEC2_MODEL } from "../constants.ts"
 import { type Wav2Vec2Options } from "../emission/Wav2Vec2Emission.ts"
 // import { type Wav2Vec2ServerOptions } from "../emission/Wav2Vec2ServerEmission.ts"
 import { extendDeep } from "../utilities/ObjectUtilities.ts"
@@ -30,8 +29,6 @@ export async function emit(
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     case "wav2vec-local": {
       const Wav2Vec2Emission = await import("../emission/Wav2Vec2Emission.ts")
-
-      timing.setMetadata("model", opts.options.model)
 
       const result = await Wav2Vec2Emission.emit(
         source,
@@ -86,9 +83,6 @@ export type EmissionOptions = BaseEmissionOptions & {
 
 const defaultEmissionOptions: Partial<EmissionOptions> = {
   engine: "wav2vec-local",
-  options: {
-    model: WAV2VEC2_MODEL,
-  },
 }
 
 export interface EmissionResult {

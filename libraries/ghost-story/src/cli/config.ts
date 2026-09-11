@@ -15,7 +15,6 @@ import {
   WHISPER_MODELS,
   type Wav2Vec2DataType,
   type Wav2Vec2Device,
-  type Wav2Vec2Model,
   type WhisperModel,
 } from "../constants.ts"
 import { getAppDataDir } from "../utilities/FileSystem.ts"
@@ -159,14 +158,6 @@ export function getWhisperServerExecutablePath(installDir?: string): string {
 export function getModelPath(model: WhisperModel, modelDir?: string): string {
   const dir = modelDir ?? getModelDir()
   return path.join(dir, `ggml-${model}.bin`)
-}
-
-export function getWav2VecModelPath(
-  model: Wav2Vec2Model,
-  modelDir?: string,
-): string {
-  const dir = modelDir ?? getModelDir()
-  return path.join(dir, `hf-${model}.bin`)
 }
 
 export function getCoremlModelPath(
@@ -378,10 +369,11 @@ export function resolveWav2Vec2Device(
     process.platform === "linux" && process.arch === "arm64"
   )
   const cudaAvailable = process.platform === "linux" && process.arch === "x64"
+  const isMacOS = process.platform === "darwin"
 
   if (requested && requested !== "auto") {
     if (requested === "cuda" && !cudaAvailable) {
-      return webgpuAvailable ? "webgpu" : "cpu"
+      return isMacOS ? "mlx" : webgpuAvailable ? "webgpu" : "cpu"
     }
     return requested === "webgpu" && !webgpuAvailable ? "cpu" : requested
   }
@@ -395,6 +387,10 @@ export function resolveWav2Vec2Device(
     return "cuda"
   }
 
+  if (isMacOS) {
+    return "mlx"
+  }
+
   const gpuVariant =
     variantName.includes("cuda") ||
     variantName.includes("rocm") ||
@@ -406,7 +402,7 @@ export function resolveWav2Vec2Device(
 }
 
 export function resolveWav2Vec2Dtype(device: Wav2Vec2Device): Wav2Vec2DataType {
-  return device === "webgpu" ? "fp16" : "fp32"
+  return device === "cpu" ? "fp32" : "fp16"
 }
 
 export function isValidModel(model: string): model is WhisperModel {

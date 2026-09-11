@@ -35,11 +35,11 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
     "./readium": {
-      "types": "./dist/readium/index.d.ts",
+      "types": "./src/readium/index.ts",
       "default": "./src/readium/index.ts"
     },
     "./report": {

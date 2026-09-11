@@ -1,11 +1,11 @@
 {
   "name": "@storyteller-platform/docs",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
-    "build": "docusaurus build --out-dir ./public/ && rm -rf ../public && mv ./public ../",
+    "build": "docusaurus build --out-dir ./public/ && rm -rf ../../public && mv ./public ../../",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
