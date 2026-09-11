@@ -43,9 +43,15 @@ function assertMetalLibraryInstalled(): void {
 interface BindingModelInfo {
   handle: number
   vocab: Record<string, number>
-  convStride: number[]
-  convKernel: number[]
-  padTokenId: number
+  samplesPerFrame: number
+  minSamples: number
+  blankId: number
+}
+
+interface BindingEmissions {
+  frames: number
+  classes: number
+  values: Float32Array
 }
 
 const bindingDir = process.env["MLX_AUDIO_NATIVE_BINDING"]
@@ -58,16 +64,16 @@ if (!bindingDir && !isSea()) {
 
 const native = requireBinding(bindingDir || packageDir) as {
   loadModel: (directory: string) => Promise<BindingModelInfo>
-  compute: (handle: number, samples: Float32Array) => Promise<number[][]>
+  compute: (handle: number, samples: Float32Array) => Promise<BindingEmissions>
   closeModel: (handle: number) => Promise<number>
 }
 
 export interface ModelInfo {
   handle: number
   vocab: Map<string, number>
-  convStride: number[]
-  convKernel: number[]
-  padTokenId: number
+  samplesPerFrame: number
+  minSamples: number
+  blankId: number
   [Symbol.asyncDispose]: () => Promise<void>
 }
 
@@ -86,5 +92,15 @@ export async function compute(
   modelInfo: ModelInfo,
   samples: Float32Array,
 ): Promise<number[][]> {
-  return await native.compute(modelInfo.handle, samples)
+  const { frames, classes, values } = await native.compute(
+    modelInfo.handle,
+    samples,
+  )
+  const rows: number[][] = new Array<number[]>(frames)
+  for (let frame = 0; frame < frames; frame++) {
+    rows[frame] = Array.from(
+      values.subarray(frame * classes, (frame + 1) * classes),
+    )
+  }
+  return rows
 }

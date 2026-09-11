@@ -10,3 +10,7 @@ build/
 .build/
 .swiftpm/
 *.dylib
+
+_models/
+scripts/.venv
+.build-xcode/

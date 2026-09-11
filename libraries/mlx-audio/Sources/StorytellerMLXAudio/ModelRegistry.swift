@@ -1,20 +1,36 @@
 import Foundation
 import MLXAudioSTT
 import MLX
+import StorytellerMLXAudioCore
 
 struct ModelInfo: Sendable {
   let handle: Int
   let vocabulary: [String: Int]
-  let convKernel: [Int]
-  let convStride: [Int]
-  let padTokenId: Int
+  let samplesPerFrame: Int
+  let minSamples: Int
+  let blankId: Int
+}
+
+struct Emissions: Sendable {
+  let frames: Int
+  let classes: Int
+  let values: [Float]
+}
+
+private struct QuartzNetConfigProbe: Decodable {
+  let architecture: String?
 }
 
 actor ModelRegistry {
   static let shared = ModelRegistry()
 
+  private enum Loaded {
+    case wav2vec2(Wav2Vec2CTCModel)
+    case quartznet(QuartzNet)
+  }
+
   private struct Entry {
-    let model: Wav2Vec2CTCModel
+    let model: Loaded
     let info: ModelInfo
   }
 
@@ -22,12 +38,8 @@ actor ModelRegistry {
   private var bySource: [URL: Int] = [:]
   private var nextHandle = 1
 
-  /// MLX keeps freed Metal buffers around for reuse and, by default, only starts
-  /// releasing them once active plus cached memory nears the GPU's recommended
-  /// working set (about 12 GB on a 16 GB machine). A 25 s chunk of this model
-  /// peaks at a few hundred MB of activations, so this is plenty to keep the
-  /// per-chunk buffers warm without hoarding gigabytes between files.
   private static let cacheLimit = 512 * 1024 * 1024
+  private static let foldedSpaceScore: Float = -30
 
   func load(directory: URL) throws -> ModelInfo {
     if let handle = bySource[directory.standardizedFileURL], let entry = entries[handle] {
@@ -35,55 +47,87 @@ actor ModelRegistry {
     }
 
     GPU.set(cacheLimit: Self.cacheLimit)
-    let model = try Wav2Vec2CTCModel.fromModelDirectory(directory)
     let handle = nextHandle
     nextHandle += 1
-    let vocab = Dictionary(uniqueKeysWithValues: model.defaultVocabulary.map({ ($1, $0) }))
-    let info = ModelInfo(
-      handle: handle,
-      vocabulary: vocab,
-      convKernel: model.config.convKernel,
-      convStride: model.config.convStride,
-      padTokenId: model.config.padTokenId,
-    )
-    let entry = Entry(
-      model: model,
-      info: info
-    )
+    let configData = try Data(contentsOf: directory.appendingPathComponent("config.json"))
+    let probe = try JSONDecoder().decode(QuartzNetConfigProbe.self, from: configData)
+    let entry: Entry
+    if probe.architecture == "quartznet15x5" {
+      let model = try QuartzNet.load(directory: directory)
+      var vocabulary: [String: Int] = [:]
+      for (token, index) in model.vocabulary {
+        switch token {
+        case "<blk>": vocabulary["<blank>"] = index
+        case "\u{2581}": vocabulary["|"] = index
+        default: vocabulary[token] = index
+        }
+      }
+      let info = ModelInfo(
+        handle: handle,
+        vocabulary: vocabulary,
+        samplesPerFrame: model.config.samplesPerFrame,
+        minSamples: MelFrontend.fftSize * 4,
+        blankId: model.config.blank,
+      )
+      entry = Entry(model: .quartznet(model), info: info)
+    } else {
+      let model = try Wav2Vec2CTCModel.fromModelDirectory(directory)
+      var minSamples = 1
+      var jump = 1
+      for (kernel, stride) in zip(model.config.convKernel, model.config.convStride) {
+        minSamples += (kernel - 1) * jump
+        jump *= stride
+      }
+      let info = ModelInfo(
+        handle: handle,
+        vocabulary: Dictionary(uniqueKeysWithValues: model.defaultVocabulary.map({ ($1, $0) })),
+        samplesPerFrame: model.config.convStride.reduce(1, *),
+        minSamples: minSamples,
+        blankId: model.config.padTokenId,
+      )
+      entry = Entry(model: .wav2vec2(model), info: info)
+    }
     entries[handle] = entry
     bySource[directory.standardizedFileURL] = handle
-    return info
+    return entry.info
   }
 
-  func compute(handle: Int, samples: [Float]) throws -> [[Double]] {
+  func compute(handle: Int, samples: [Float]) throws -> Emissions {
     guard let entry = entries[handle] else {
       throw ModelLoadError.notLoaded(handle: handle)
     }
-    let batch = MLXArray(samples, [1, samples.count])
-    let mean = MLX.mean(batch, axis: -1, keepDims: true)
-    let centered = batch - mean
-    let variance = MLX.mean(centered * centered, axis: -1, keepDims: true)
-    let input = centered / (sqrt(variance) + 1e-7)
-    let output = entry.model(input.asType(.float16))
-
-    let numFrames = output.dim(1)
-    let numClasses = output.dim(-1)
-    let flat = output.asArray(Float32.self)
-
-    return (0..<numFrames).map { frame in
-      let start = frame * numClasses
-      return flat[start ..< start + numClasses].map(Double.init)
+    let output: MLXArray
+    switch entry.model {
+    case .wav2vec2(let model):
+      let batch = MLXArray(samples, [1, samples.count])
+      let mean = MLX.mean(batch, axis: -1, keepDims: true)
+      let centered = batch - mean
+      let variance = MLX.mean(centered * centered, axis: -1, keepDims: true)
+      let input = centered / (sqrt(variance) + 1e-7)
+      output = model(input.asType(.float16))[0]
+    case .quartznet(let model):
+      let logProbs = model.logProbs(samples: samples)[0]
+      let blank = entry.info.blankId
+      guard let space = entry.info.vocabulary["|"] else {
+        throw ModelLoadError.missingSpaceToken
+      }
+      var folded = logProbs
+      folded[0..., blank] = logAddExp(logProbs[0..., blank], logProbs[0..., space])
+      folded[0..., space] = MLXArray(Self.foldedSpaceScore)
+      output = folded
     }
+    return Emissions(frames: output.dim(0), classes: output.dim(-1), values: output.asArray(Float32.self))
   }
 
   func close(handle: Int) throws -> Bool {
     bySource = bySource.filter { $0.value != handle }
     let removed = entries.removeValue(forKey: handle) != nil
-    // hand the weights' and activations' buffers back to the system instead of
-    // leaving them in MLX's cache
     GPU.clearCache()
     return removed
   }
 }
 
-enum ModelLoadError: Error { case notLoaded(handle: Int) }
+enum ModelLoadError: Error {
+  case notLoaded(handle: Int)
+  case missingSpaceToken
+}

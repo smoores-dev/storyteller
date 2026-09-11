@@ -15,12 +15,22 @@ let package = Package(
 	],
 	targets: [
 		.target(
+			name: "StorytellerMLXAudioCore",
+			dependencies: [
+				.product(name: "MLX", package: "mlx-swift"),
+				.product(name: "MLXNN", package: "mlx-swift"),
+				.product(name: "MLXFFT", package: "mlx-swift"),
+			],
+			path: "Sources/StorytellerMLXAudioCore",
+		),
+		.target(
 			name: "StorytellerMLXAudio",
 			dependencies: [
 				.product(name: "NodeAPI", package: "node-swift"),
 				.product(name: "NodeModuleSupport", package: "node-swift"),
 				.product(name: "MLXAudioSTT", package: "mlx-audio-swift"),
 				.product(name: "MLX", package: "mlx-swift"),
+				.target(name: "StorytellerMLXAudioCore"),
 			],
 			path: "Sources/StorytellerMLXAudio",
 			linkerSettings: [
@@ -34,6 +44,8 @@ let package = Package(
 			name: "StorytellerMLXAudioCLI",
 			dependencies: [
 				.product(name: "MLXAudioSTT", package: "mlx-audio-swift"),
+				.product(name: "MLXFFT", package: "mlx-swift"),
+				.target(name: "StorytellerMLXAudioCore"),
 			],
 			path: "Sources/StorytellerMLXAudioCLI",
 		),

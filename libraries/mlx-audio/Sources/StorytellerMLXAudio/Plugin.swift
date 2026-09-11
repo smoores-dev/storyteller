@@ -13,13 +13,22 @@ import MLX
 	"loadModel": try NodeFunction { (directory: String) in
 		try await ModelRegistry.shared.load(directory: URL(fileURLWithPath: directory)).record
 	},
-	"compute": try NodeFunction { (handle: Int, samples: NodeTypedArray<Float>) async throws -> NodeValueConvertible in
-		return try await ModelRegistry.shared.compute(
+	"compute": try NodeFunction { (handle: Int, samples: NodeTypedArray<Float>) async throws -> [String: NodePropertyConvertible] in
+		let emissions = try await ModelRegistry.shared.compute(
 			handle: handle,
 			samples: samples.withUnsafeMutableRawBytes {
 				Array(UnsafeMutableBufferPointer(start: $0.baseAddress?.assumingMemoryBound(to: Float.self), count: $0.count))
 			}
-		).map { $0 as [NodeValueConvertible] }
+		)
+		let buffer = try NodeArrayBuffer(capacity: emissions.values.count * MemoryLayout<Float>.size)
+		try buffer.withUnsafeMutableBytes { bytes in
+			emissions.values.withUnsafeBytes { bytes.copyMemory(from: $0) }
+		}
+		return [
+			"frames": emissions.frames,
+			"classes": emissions.classes,
+			"values": try NodeTypedArray<Float>(for: buffer, count: emissions.values.count),
+		]
 	},
 	"closeModel": try NodeFunction { (handle: Int) async throws -> Bool in
 		try await ModelRegistry.shared.close(handle: handle)
@@ -32,9 +41,9 @@ extension ModelInfo {
     return [
       "handle": handle,
       "vocab": vocab,
-      "convKernel": convKernel.map { $0 as NodeValueConvertible },
-      "convStride": convStride.map { $0 as NodeValueConvertible },
-      "padTokenId": padTokenId,
+      "samplesPerFrame": samplesPerFrame,
+      "minSamples": minSamples,
+      "blankId": blankId,
     ]
   }
 }
