@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { describe, it } from "node:test"
 
-import { Epub, type ParsedXml } from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter, type ParsedXml } from "@storyteller-platform/epub"
 
 import { markupChapter } from "../markup.ts"
 
@@ -125,50 +125,28 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can tag words", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version="1.0" encoding="UTF-8"?>
+  // timeout to ensure no regression in speed
+  void it(
+    "can tag words in a reasonable amount of time",
+    { timeout: 6_000 },
+    async (t) => {
+      using epub = await Epub.using(MemoryAdapter).from(
+        await readFile(
+          new URL("../../__fixtures__/moby-dick.epub", import.meta.url),
+        ),
+      )
+      const input = await epub.readXhtmlItemContents("pg-header")
 
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>The Project Gutenberg eBook of Moby Dick; Or the Whale, by Herman Melville</title>
-  </head>
-  <body>
-    <p>
-        Call me Ishmael. Some years ago—never mind how long precisely—having
-        little or no money in my purse, and nothing particular to interest me on
-        shore, I thought I would sail about a little and see the watery part of
-        the world. It is a way I have of driving off the spleen and regulating the
-        circulation. Whenever I find myself growing grim about the mouth; whenever
-        it is a damp, drizzly November in my soul; whenever I find myself
-        involuntarily pausing before coffin warehouses, and bringing up the rear
-        of every funeral I meet; and especially whenever my hypos get such an
-        upper hand of me, that it requires a strong moral principle to prevent me
-        from deliberately stepping into the street, and methodically knocking
-        people’s hats off—then, I account it high time to get to sea as soon
-        as I can.
-    </p>
-    <p>
-        This is my substitute for pistol and ball. With a philosophical
-        flourish Cato throws himself upon his sword; I quietly take to the ship.
-        There is nothing surprising in this. If they but knew it, almost all men
-        in their degree, some time or other, cherish very nearly the same feelings
-        towards the ocean with me.
-    </p>
-  </body>
-</html>
-`) as ParsedXml
+      const { markedUp: output } = await markupChapter(
+        "chapter_one",
+        input,
+        "word",
+        new Intl.Locale("en-US"),
+      )
 
-    const { markedUp: output } = await markupChapter(
-      "chapter_one",
-      input,
-      "word",
-      new Intl.Locale("en-US"),
-    )
-
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
-  })
+      await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    },
+  )
 
   void it("can tag sentences with formatting marks", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
