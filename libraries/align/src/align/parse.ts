@@ -56,9 +56,12 @@ export const alignParser = object("Alignment", {
       description: message`Audio-only stretches between chapters at least this long become their own chapters in the output.`,
     }),
   ),
-  dropUnread: flag("--drop-unread", {
-    description: message`Give sentences the narrator did not read no audio instead of an interpolated clip.`,
-  }),
+  dropUnread: withDefault(
+    flag("--drop-unread", {
+      description: message`Give sentences the narrator did not read no audio instead of an interpolated clip.`,
+    }),
+    false,
+  ),
 })
 
 export const alignCommand = command(

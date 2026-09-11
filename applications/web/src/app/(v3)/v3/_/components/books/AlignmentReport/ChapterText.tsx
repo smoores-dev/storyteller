@@ -1,5 +1,6 @@
 "use client"
 
+import { GuidedNavigationDocument } from "@readium/shared"
 import { skipToken } from "@reduxjs/toolkit/query"
 import { useEffect, useMemo, useRef } from "react"
 
@@ -8,14 +9,13 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
+import { usePlayer } from "@/app/(v3)/v3/_/components/audio"
 import * as icon from "@/icons"
 import {
   useGetBookChapterGuidedNavigationQuery,
   useGetBookChapterTextQuery,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
-import { GuidedNavigationDocument } from "@readium/shared"
-import { clipKey, clipSrc, usePlayer } from "../../audio"
 
 const STRIP_SELECTOR = "script, style, link, img, svg, video, audio, iframe"
 
@@ -214,11 +214,8 @@ export function ChapterText({
         }
       : skipToken,
   )
-  const {
-    currentData: guidedNavigation,
-    isFetching: isGuidedNavigationFetching,
-    isError: isGuidedNavigationError,
-  } = useGetBookChapterGuidedNavigationQuery(
+  const { currentData: guidedNavigation } =
+    useGetBookChapterGuidedNavigationQuery(
     item.readHref
       ? {
           uuid: bookUuid,
@@ -261,7 +258,8 @@ export function ChapterText({
       for (const child of guided.children ?? []) {
         if (!child.textref || !child.audioref) continue
 
-        if (!child.fragmentId) continue
+        const audioFile = child.audioFile
+        if (!child.fragmentId || !audioFile) continue
         const fragment = container.current?.querySelector(
           `#${child.fragmentId}`,
         )
@@ -275,13 +273,12 @@ export function ChapterText({
           () => {
             player.play({
               bookUuid,
-              path: child.audioFile.split("/").pop() ?? "",
+              path: audioFile.split("/").pop() ?? "",
               start: child.clip?.start ?? 0,
               end: child.clip?.end ?? 0,
               name: child.text?.plain ?? "",
               label: child.text?.plain ?? "",
             })
-            console.log(child.audioref)
           },
           { signal: abortController.signal },
         )

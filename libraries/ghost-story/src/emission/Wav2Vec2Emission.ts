@@ -16,8 +16,6 @@ import {
 import { Converter } from "ffmpeg-stream"
 import { ensureDir } from "fs-extra"
 
-import { type ModelInfo as MlxModelInfo } from "@storyteller-platform/mlx-audio"
-
 import { getAudioDuration } from "../audio/AudioConverter.ts"
 import { type AudioFormat } from "../audio/AudioFormat.ts"
 import {
@@ -44,6 +42,11 @@ import {
 } from "../constants.ts"
 import { type Timing } from "../utilities/Timing.ts"
 
+import {
+  CONV_CTC_ONNX_FILE,
+  type ConvCtcModel,
+  loadConvCtcOnnxModel,
+} from "./ConvCtcOnnx.ts"
 import { type EmissionTokenizer, type Emissions } from "./Emissions.ts"
 import { readSentencePieceModel, unigramTokenizer } from "./sentencepiece.ts"
 
@@ -409,11 +412,31 @@ async function loadWav2Vec2Model(
   device: Wav2Vec2Device,
   dtype: DataType,
   modelDir: string,
-): Promise<MlxModelInfo | HfModelInfo> {
+): Promise<ConvCtcModel | HfModelInfo> {
   if (CTC_MODEL_PACKAGES[variant].entryFile === "model.safetensors") {
-    const { loadModel } = await import("@storyteller-platform/mlx-audio")
+    const packageDir = getModelPackageDir(CTC_MODEL_PACKAGES[variant], modelDir)
+    if (device !== "mlx") {
+      if (!existsSync(join(packageDir, CONV_CTC_ONNX_FILE))) {
+        throw new Error(
+          `${variant} only runs on the mlx device, it has no ${CONV_CTC_ONNX_FILE}`,
+        )
+      }
+      return loadConvCtcOnnxModel(packageDir, device)
+    }
 
-    return loadModel(getModelPackageDir(CTC_MODEL_PACKAGES[variant], modelDir))
+    const { loadModel, compute } = await import("@storyteller-platform/mlx-audio")
+    const model = await loadModel(packageDir)
+
+    return {
+      vocab: model.vocab,
+      samplesPerFrame: model.samplesPerFrame,
+      minSamples: model.minSamples,
+      blankId: model.blankId,
+      frameOffsetSeconds: model.frameOffsetSeconds,
+      tokenizer: model.tokenizer,
+      compute: (samples) => compute(model, samples),
+      [Symbol.asyncDispose]: model[Symbol.asyncDispose],
+    }
   }
 
   if (device === "mlx") {
@@ -428,7 +451,7 @@ async function loadWav2Vec2Model(
       cache_dir: modelDir,
       device: device,
       dtype: dtype,
-      model_file_name: "model.onnx",
+      model_file_name: "model",
       // config: {}
     },
   )
@@ -454,12 +477,11 @@ async function loadWav2Vec2Model(
 }
 
 async function computeLogProbs(
-  modelInfo: HfModelInfo | MlxModelInfo,
+  modelInfo: HfModelInfo | ConvCtcModel,
   samples: Float32Array,
 ): Promise<Emissions> {
   if (!("model" in modelInfo)) {
-    const { compute } = await import("@storyteller-platform/mlx-audio")
-    return await compute(modelInfo, samples)
+    return await modelInfo.compute(samples)
   }
 
   const { model, featureExtractor } = modelInfo

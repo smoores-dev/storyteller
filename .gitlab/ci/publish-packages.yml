@@ -466,6 +466,22 @@ release-ghost-story:
       libraries/align/entitlements.plist ./libraries/align/stalign; fi
     - if [ -n "${CODESIGNING}" ]; then codesign --verify --verbose
       ./libraries/align/stalign; fi
+    - |
+      if [ -n "${CODESIGNING}" ]; then
+        echo "Notarizing executable..."
+        rm -f stalign-notarize.zip notarization.json
+        ditto -c -k ./libraries/align/stalign stalign-notarize.zip
+        xcrun notarytool submit stalign-notarize.zip \
+          --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" \
+          --wait --timeout 30m --output-format json > notarization.json
+        cat notarization.json
+        if [ "$(jq -r .status notarization.json)" != "Accepted" ]; then
+          xcrun notarytool log "$(jq -r .id notarization.json)" \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
+          exit 1
+        fi
+        rm -f stalign-notarize.zip notarization.json
+      fi
     - if [ -n "${CODESIGNING}" ]; then spctl --assess --type execute --verbose
       ./libraries/align/stalign; fi
 

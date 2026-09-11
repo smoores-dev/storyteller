@@ -9,20 +9,24 @@ const PROJECT_ID = "67994333"
 const PROJECT_PATH = "storyteller-platform/storyteller"
 const API = `https://gitlab.com/api/v4/projects/${PROJECT_ID}`
 const MLFLOW = `projects/${PROJECT_ID}/ml/mlflow/api/2.0/mlflow`
-const UPLOAD_FILES = ["model.safetensors", "config.json", "vocab.txt"]
+const UPLOAD_FILES = ["model.safetensors", "config.json", "vocab.txt", "model.onnx"]
+const OPTIONAL_FILES = ["tokenizer.spm"]
+const ARCHITECTURE_LABELS = { quartznet15x5: "QuartzNet15x5", citrinet: "Citrinet" }
 
 function usage() {
   console.error(
     [
-      "usage: node scripts/upload-ctc-model.mjs <model-dir> [--name <package>] [--version <semver>] [--description <text>]",
+      "usage: node scripts/upload-ctc-model.mjs <model-dir>... [--name <package>] [--version <semver>] [--description <text>]",
       "",
-      "Publishes a converted CTC model directory to the gitlab ml model registry.",
-      `Only ${UPLOAD_FILES.join(", ")} are uploaded, everything else in the directory is ignored.`,
+      "Publishes converted CTC model directories to the gitlab ml model registry.",
+      `${UPLOAD_FILES.join(", ")} are uploaded, plus ${OPTIONAL_FILES.join(", ")} when the directory has them.`,
+      "Everything else in the directory is ignored. --name only applies to a single directory.",
       "",
       "Reads and creates the model through glab, which handles its own login.",
       "The file upload endpoint only accepts a personal access token or a ci job",
       "token, so put one with the api scope in GITLAB_TOKEN. glab picks that up too,",
-      "which is fine as long as the token can read the project.",
+      "which is fine as long as the token can read the project. Without GITLAB_TOKEN the",
+      "registered model and version are still created and the file upload is skipped.",
     ].join("\n"),
   )
   process.exit(1)
@@ -41,8 +45,9 @@ function parseArguments(argv) {
       positional.push(argument)
     }
   }
-  if (positional.length !== 1) usage()
-  return { modelDir: positional[0], options }
+  if (positional.length === 0) usage()
+  if (positional.length > 1 && options["name"] !== undefined) usage()
+  return { modelDirs: positional, options }
 }
 
 function readToken() {
@@ -51,14 +56,7 @@ function readToken() {
     process.env["GLAB_TOKEN"] ??
     process.env["STORYTELLER_GITLAB_TOKEN"]
 
-  if (token === undefined || token === "") {
-    console.error(
-      "GITLAB_TOKEN is not set. The model registry upload endpoint only accepts a\npersonal access token or a ci job token, never glab's oauth session.",
-    )
-    process.exit(1)
-  }
-
-  return token
+  return token === undefined || token === "" ? null : token
 }
 
 async function glabJson(args) {
@@ -92,7 +90,7 @@ async function glabPostJson(path, body) {
     throw new Error(`glab api ${path} exited with ${code}`)
   }
 
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"))
+  return JSON.parse(chunks.map((chunk) => chunk.toString("utf8")).join(""))
 }
 
 async function getRegisteredModel(name) {
@@ -182,20 +180,33 @@ async function uploadFile(token, modelVersionId, modelDir, fileName) {
   console.log(`uploaded ${fileName}, ${body.byteLength} bytes`)
 }
 
-async function main() {
-  const { modelDir, options } = parseArguments(process.argv.slice(2))
-  const name = options["name"] ?? basename(modelDir)
-  const version = options["version"] ?? "1.0.0"
-  const description =
-    options["description"] ??
-    `QuartzNet15x5 CTC acoustic model converted to MLX safetensors (${name}).`
-
-  const token = readToken()
-
+async function fileSizes(modelDir) {
   const sizes = new Map()
   for (const fileName of UPLOAD_FILES) {
     sizes.set(fileName, (await stat(join(modelDir, fileName))).size)
   }
+  for (const fileName of OPTIONAL_FILES) {
+    const size = await stat(join(modelDir, fileName)).catch(() => null)
+    if (size) sizes.set(fileName, size.size)
+  }
+  return sizes
+}
+
+async function describe(modelDir, name) {
+  const config = JSON.parse(await readFile(join(modelDir, "config.json"), "utf8"))
+  const label = ARCHITECTURE_LABELS[config.architecture]
+  if (!label) {
+    throw new Error(`${modelDir}: unknown architecture ${config.architecture}`)
+  }
+  return `${label} CTC acoustic model, MLX safetensors and the source onnx graph (${name}).`
+}
+
+async function publish(modelDir, options, token) {
+  const name = options["name"] ?? basename(modelDir)
+  const version = options["version"] ?? "1.0.0"
+  const description = options["description"] ?? (await describe(modelDir, name))
+
+  const sizes = await fileSizes(modelDir)
 
   await ensureRegisteredModel(name, description)
   const modelVersionId = await ensureModelVersion(name, version)
@@ -205,9 +216,13 @@ async function main() {
     throw new Error(`${name}@${version} did not show up in the package registry`)
   }
 
-  const uploaded = await listPackageFiles(target.id)
-  for (const fileName of UPLOAD_FILES) {
-    if (uploaded.get(fileName) === sizes.get(fileName)) {
+  const uploaded = token ? await listPackageFiles(target.id) : new Map()
+  for (const [fileName, size] of sizes) {
+    if (!token) {
+      console.log(`skipping ${fileName}, ${size} bytes, GITLAB_TOKEN is not set`)
+      continue
+    }
+    if (uploaded.get(fileName) === size) {
       console.log(`${fileName} is already uploaded`)
       continue
     }
@@ -224,6 +239,29 @@ async function main() {
   console.log(`    subdir: "${name}",`)
   console.log(`    entryFile: "model.safetensors",`)
   console.log(`  },`)
+  console.log("")
+}
+
+async function main() {
+  const { modelDirs, options } = parseArguments(process.argv.slice(2))
+  const token = readToken()
+
+  for (const modelDir of modelDirs) {
+    console.log(`--- ${modelDir}`)
+    await publish(modelDir, options, token)
+  }
+
+  if (!token) {
+    console.log(
+      [
+        "No files were uploaded: the registry upload endpoint only accepts a personal",
+        "access token or a ci job token, never glab's oauth session. Run this again with",
+        "a token that has the api scope to fill the packages:",
+        "",
+        `  GITLAB_TOKEN=<personal access token> node scripts/upload-ctc-model.mjs ${modelDirs.join(" ")}`,
+      ].join("\n"),
+    )
+  }
 }
 
 await main()

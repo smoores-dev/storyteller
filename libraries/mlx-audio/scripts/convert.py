@@ -23,9 +23,9 @@ BN_EPS = 1e-3
 
 FRONTENDS = {"quartznet15x5": {"window": 320, "mels": 64}, "citrinet": {"window": 400, "mels": 80}}
 
-CITRINET_TOKENIZER_REPO = "neongeckocom/stt_en_citrinet_512_gamma_0_25"
-CITRINET_TOKENIZER_FILE = "onnx/tokenizer.spm"
 CITRINET_FRAME_OFFSET_SECONDS = 0.32
+TOKENIZER_CANDIDATES = ("onnx/tokenizer.spm", "tokenizer.spm")
+SPECIAL_TOKENS = ("<unk>", "<blk>", "<pad>", "▁")
 
 
 def mel_filters(mels):
@@ -165,11 +165,38 @@ def is_citrinet(graph):
     return [i.name for i in graph.input] == ["audio_signal", "length"]
 
 
-def fetch_tokenizer(vocab, out):
+def is_character_vocab(vocab):
+    pieces = [token for token in vocab if token not in SPECIAL_TOKENS]
+    return all(len(token) == 1 and not token.startswith("▁") for token in pieces)
+
+
+def find_tokenizer(model_dir, model_repo, tokenizer_repo, tokenizer_file):
+    if tokenizer_repo or tokenizer_file:
+        repo = tokenizer_repo or model_repo
+        name = tokenizer_file or "tokenizer.spm"
+        return pathlib.Path(hf_hub_download(repo, name)), f"{repo}/{name}"
+    if model_dir is None:
+        return None, None
+    for candidate in TOKENIZER_CANDIDATES:
+        path = model_dir / candidate
+        if path.exists():
+            return path, f"{model_repo}/{candidate}"
+    return None, None
+
+
+def install_tokenizer(source, vocab, out):
     import sentencepiece as spm
 
-    path = hf_hub_download(CITRINET_TOKENIZER_REPO, CITRINET_TOKENIZER_FILE)
-    processor = spm.SentencePieceProcessor(model_file=path)
+    target = out / "tokenizer.spm"
+    if source.suffix == ".nemo":
+        with tarfile.open(source) as archive:
+            names = [name for name in archive.getnames() if name.endswith("tokenizer.model")]
+            if len(names) != 1:
+                raise SystemExit(f"{source}: expected one tokenizer.model, found {names}")
+            target.write_bytes(archive.extractfile(names[0]).read())
+    else:
+        shutil.copy(source, target)
+    processor = spm.SentencePieceProcessor(model_file=str(target))
     inverse = {index: token for token, index in vocab.items()}
     pieces = processor.get_piece_size()
     if pieces + 1 != len(vocab):
@@ -177,8 +204,7 @@ def fetch_tokenizer(vocab, out):
     mismatched = [i for i in range(pieces) if processor.id_to_piece(i) != inverse[i]]
     if mismatched:
         raise SystemExit(f"tokenizer pieces differ from vocab.txt at {mismatched[:5]}")
-    shutil.copy(path, out / "tokenizer.spm")
-    print(f"tokenizer: {pieces} pieces match vocab.txt, copied to {out / 'tokenizer.spm'}")
+    print(f"tokenizer: {pieces} pieces match vocab.txt, written to {target}")
 
 
 def read_vocab(path):
@@ -334,6 +360,8 @@ def main():
     parser.add_argument("--out", required=True)
     parser.add_argument("--reference-audio")
     parser.add_argument("--nemo")
+    parser.add_argument("--tokenizer-repo")
+    parser.add_argument("--tokenizer-file")
     args = parser.parse_args()
 
     out = pathlib.Path(args.out)
@@ -377,9 +405,19 @@ def main():
         "blocks": blocks,
     }
     if architecture == "citrinet":
-        config["tokenizer"] = "sentencepiece"
+        tokenizer, origin = find_tokenizer(model_dir, args.model_repo, args.tokenizer_repo, args.tokenizer_file)
+        character = is_character_vocab(vocab)
+        if tokenizer is None and not character:
+            raise SystemExit("the vocabulary is not character level and no tokenizer was found, pass --tokenizer-repo or --tokenizer-file")
+        if tokenizer is not None and character:
+            raise SystemExit("the vocabulary is character level, a sentencepiece tokenizer does not belong with it")
+        config["tokenizer"] = None if character else "sentencepiece"
         config["frameOffsetSeconds"] = CITRINET_FRAME_OFFSET_SECONDS
-        fetch_tokenizer(vocab, out)
+        if tokenizer is None:
+            print(f"character vocabulary of {len(vocab)} labels, no tokenizer")
+        else:
+            print(f"tokenizer source: {origin}")
+            install_tokenizer(tokenizer, vocab, out)
     (out / "config.json").write_text(json.dumps(config, indent=2) + "\n")
     print(f"wrote {len(weights)} tensors, {len(blocks)} blocks, blank {config['blank']}, samples per frame {config['samplesPerFrame']}")
 
@@ -403,7 +441,7 @@ def main():
         text, last = "", -1
         for a in logprobs.argmax(axis=1):
             if a != last and a != config["blank"]:
-                text += " " if inverse[int(a)] == "▁" else inverse[int(a)]
+                text += inverse[int(a)].replace("▁", " ")
             last = a
         print(f"reference {samples.shape[0]} samples, {feats.shape} features, {logprobs.shape} logprobs")
         print(text)
