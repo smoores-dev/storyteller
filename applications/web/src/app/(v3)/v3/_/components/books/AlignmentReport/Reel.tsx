@@ -385,7 +385,7 @@ function readStored<T extends string | number>(
   if (typeof window === "undefined") return fallback
   try {
     const raw = window.localStorage.getItem(key)
-    return raw === null ? fallback : parse(raw) ?? fallback
+    return raw === null ? fallback : (parse(raw) ?? fallback)
   } catch {
     return fallback
   }
@@ -571,7 +571,7 @@ export function Reel({
   }, [])
 
   const playingTrack = clip
-    ? tracks.find((track) => track.name === clip.name) ?? null
+    ? (tracks.find((track) => track.name === clip.name) ?? null)
     : null
   const playing: Playing | null =
     playingTrack && clip

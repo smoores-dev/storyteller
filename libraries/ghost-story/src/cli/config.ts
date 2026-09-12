@@ -369,8 +369,7 @@ export function resolveWav2Vec2Device(
     process.platform === "linux" && process.arch === "arm64"
   )
   const cudaAvailable = process.platform === "linux" && process.arch === "x64"
-  const mlxAvailable =
-    process.platform === "darwin" && process.arch === "arm64"
+  const mlxAvailable = process.platform === "darwin" && process.arch === "arm64"
 
   if (requested && requested !== "auto") {
     if (requested === "cuda" && !cudaAvailable) {

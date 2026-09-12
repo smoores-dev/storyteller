@@ -93,8 +93,8 @@ export function collapseRanges(
     const range = out[i]!
     const prevIndex = flow[f - 1]
     const nextIndex = flow[f + 1]
-    const prev = prevIndex === undefined ? null : ranges[prevIndex] ?? null
-    const next = nextIndex === undefined ? null : ranges[nextIndex] ?? null
+    const prev = prevIndex === undefined ? null : (ranges[prevIndex] ?? null)
+    const next = nextIndex === undefined ? null : (ranges[nextIndex] ?? null)
 
     if (!prev || prev.audiofile !== range.audiofile) {
       if (isHole(range.start)) {
@@ -147,15 +147,12 @@ export function collapseRanges(
     if (referenced.has(audiofile) || duration(audiofile) <= 0) continue
     if (gap === null) continue
     const before = audiofiles.slice(0, index)
-    const prev = flowRanges.findLast((r) => before.includes(r.audiofile)) ?? null
+    const prev =
+      flowRanges.findLast((r) => before.includes(r.audiofile)) ?? null
     const next = prev
       ? (flowRanges[flowRanges.indexOf(prev) + 1] ?? null)
       : (flowRanges[0] ?? null)
-    const anchor = prev
-      ? anchorAfter(prev)
-      : next
-        ? anchorBefore(next)
-        : null
+    const anchor = prev ? anchorAfter(prev) : next ? anchorBefore(next) : null
     if (!anchor) continue
     holes.push({
       audiofile,
@@ -188,8 +185,8 @@ function placeDropped(
     const cluster = out.slice(i, j)
     const prevIndex = flow.findLast((f) => f < i)
     const nextIndex = flow.find((f) => f > j - 1)
-    const prev = prevIndex === undefined ? null : out[prevIndex] ?? null
-    const next = nextIndex === undefined ? null : out[nextIndex] ?? null
+    const prev = prevIndex === undefined ? null : (out[prevIndex] ?? null)
+    const next = nextIndex === undefined ? null : (out[nextIndex] ?? null)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const file = ranges[i]!.audiofile
     const host =
@@ -200,7 +197,8 @@ function placeDropped(
           : null
     if (host) {
       const width = cluster.length * DROPPED_WIDTH
-      if (host.shrink) host.shrink.end = Math.max(host.shrink.start, host.end - width)
+      if (host.shrink)
+        host.shrink.end = Math.max(host.shrink.start, host.end - width)
       else if (prev && prev.audiofile === file) {
         prev.end = Math.max(prev.start, Math.min(prev.end, host.end - width))
       }

@@ -11,7 +11,7 @@ import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
 import { ChapterText } from "./ChapterText"
-import { JudgmentBadge, StatusBadge } from "./SpineList"
+import { JudgmentBadge } from "./SpineList"
 import {
   TONE_TEXT,
   type Track,

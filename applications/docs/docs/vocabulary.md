@@ -73,40 +73,40 @@ root element.
 
 ### 4.1 matched
 
-|             |                                                                                            |
-| ----------- | ------------------------------------------------------------------------------------------ |
-| Name        | matched                                                                                    |
-| Description | The aligner located this text in the audio. The clip boundaries come from the alignment.   |
-| Example     | `<par id="chapter1-s12" epub:type="storyteller:matched">`                                  |
+|             |                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------- |
+| Name        | matched                                                                                  |
+| Description | The aligner located this text in the audio. The clip boundaries come from the alignment. |
+| Example     | `<par id="chapter1-s12" epub:type="storyteller:matched">`                                |
 
 ### 4.2 interpolated
 
-|             |                                                                                                                                |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Name        | interpolated                                                                                                                   |
-| Description | The aligner did not locate this text, but it lies between two matched sentences of the same chapter. The clip is inferred.     |
-| Example     | `<par id="chapter1-s13" epub:type="storyteller:interpolated">`                                                                 |
+|             |                                                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Name        | interpolated                                                                                                               |
+| Description | The aligner did not locate this text, but it lies between two matched sentences of the same chapter. The clip is inferred. |
+| Example     | `<par id="chapter1-s13" epub:type="storyteller:interpolated">`                                                             |
 
 ### 4.3 unmatched
 
-|             |                                                                                                                                                            |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name        | unmatched                                                                                                                                                  |
+|             |                                                                                                                                                                       |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name        | unmatched                                                                                                                                                             |
 | Description | The aligner did not locate this text and it lies before the first or after the last matched sentence of its chapter. The clip is extrapolated from the nearest match. |
-| Example     | `<par id="chapter1-s0" epub:type="storyteller:unmatched">`                                                                                                 |
+| Example     | `<par id="chapter1-s0" epub:type="storyteller:unmatched">`                                                                                                            |
 
 ### 4.4 dropped
 
-|             |                                                                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Name        | dropped                                                                                                                          |
-| Description | The aligner determined that this text is not read in the audio. The clip is a placeholder so that playback stays continuous.     |
-| Example     | `<par id="chapter1-s14" epub:type="storyteller:dropped">`                                                                        |
+|             |                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Name        | dropped                                                                                                                      |
+| Description | The aligner determined that this text is not read in the audio. The clip is a placeholder so that playback stays continuous. |
+| Example     | `<par id="chapter1-s14" epub:type="storyteller:dropped">`                                                                    |
 
 ### 4.5 audio-only
 
-|             |                                                                                                                                                                                                                 |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Name        | audio-only                                                                                                                                                                                                      |
+|             |                                                                                                                                                                                                                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Name        | audio-only                                                                                                                                                                                                                                                                                       |
 | Description | Narration with no corresponding text, such as a chapter announcement or an aside. The entry references the nearest sentence, or the heading of an audio-only chapter, so that reading systems keep playing. Reading systems that recognise the term may skip it or play it without highlighting. |
-| Example     | `<par id="chapter1-s12-after0" epub:type="storyteller:audio-only">`                                                                                                                                             |
+| Example     | `<par id="chapter1-s12-after0" epub:type="storyteller:audio-only">`                                                                                                                                                                                                                              |

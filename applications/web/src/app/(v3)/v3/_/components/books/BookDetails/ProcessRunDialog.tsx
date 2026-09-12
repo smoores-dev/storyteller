@@ -140,11 +140,11 @@ function RunConfigForm({
     {
       bookUuid: book.uuid,
       engine: isCtc
-        ? watchedCtcEngine ?? settings.ctcEngine ?? "wav2vec-local"
-        : watchedEngine ?? settings.transcriptionEngine ?? "whisper.cpp",
+        ? (watchedCtcEngine ?? settings.ctcEngine ?? "wav2vec-local")
+        : (watchedEngine ?? settings.transcriptionEngine ?? "whisper.cpp"),
       whisperModel: isCtc
         ? null
-        : watchedModel ?? settings.whisperModel ?? null,
+        : (watchedModel ?? settings.whisperModel ?? null),
       restart: restart || false,
     },
     { skip: !book.uuid },

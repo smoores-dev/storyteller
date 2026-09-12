@@ -82,7 +82,7 @@ export default async function migrate() {
       const report =
         typeof row.report === "string"
           ? (JSON.parse(row.report) as AnyReport)
-          : (row.report as AnyReport)
+          : row.report
       const s = summarizeReport(report, overrides)
 
       await sql`

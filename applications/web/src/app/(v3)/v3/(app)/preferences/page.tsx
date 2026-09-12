@@ -1,6 +1,6 @@
 import { type Metadata } from "next"
-import { forbidden } from "next/navigation"
 import { getMessages } from "next-intl/server"
+import { forbidden } from "next/navigation"
 
 import { PreferencesForm } from "@v3/_/components/preferences-form/preferences-form"
 import {

@@ -83,7 +83,7 @@ const SleepTimerControl = () => {
       : 0
   const activeMinutes =
     remainingMinutes > 0
-      ? PRESET_MINUTES.find((minutes) => minutes >= remainingMinutes) ?? null
+      ? (PRESET_MINUTES.find((minutes) => minutes >= remainingMinutes) ?? null)
       : 0
 
   return (

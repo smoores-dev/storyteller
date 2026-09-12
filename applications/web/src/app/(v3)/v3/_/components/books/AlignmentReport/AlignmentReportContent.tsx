@@ -229,7 +229,7 @@ function ReportBody({
     view.items.find((item) => item.href === selection.openHref) ??
     (narrow
       ? null
-      : view.items.find((item) => item.status === "aligned") ?? null)
+      : (view.items.find((item) => item.status === "aligned") ?? null))
 
   const openIndex = openItem
     ? view.items.findIndex((item) => item.href === openItem.href)

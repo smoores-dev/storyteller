@@ -302,7 +302,7 @@ async function runJob(job: Job, resumed: boolean): Promise<void> {
       {
         jobUuid: job.uuid,
         bookUuid,
-        restart: resumed ? false : job.restart ?? false,
+        restart: resumed ? false : (job.restart ?? false),
         config: job.config,
         port: port1,
       } satisfies Parameters<typeof processBook>[0],
@@ -362,7 +362,7 @@ async function runJob(job: Job, resumed: boolean): Promise<void> {
       const stage = current.readaloud?.currentStage ?? "SPLIT_TRACKS"
       const requeued = intent === "requeue"
       const position = requeued
-        ? (await getJob(job.uuid))?.position ?? job.position
+        ? ((await getJob(job.uuid))?.position ?? job.position)
         : null
 
       logger.info(`Processing for job ${job.uuid} ${intent}d by user`)

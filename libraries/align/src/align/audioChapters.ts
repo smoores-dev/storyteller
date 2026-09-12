@@ -117,7 +117,13 @@ export async function writeAudioChapters(
       title,
     })
 
-    written.push({ id, href, title, anchor: chapter.anchor, holes: chapter.holes })
+    written.push({
+      id,
+      href,
+      title,
+      anchor: chapter.anchor,
+      holes: chapter.holes,
+    })
   }
 
   return written

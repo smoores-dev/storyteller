@@ -55,7 +55,13 @@ void describe("collapseRanges", () => {
       ],
     )
     assert.deepStrictEqual(
-      holes.map((h) => [h.start, h.end, h.anchor.sentenceId, h.anchor.position, h.boundary]),
+      holes.map((h) => [
+        h.start,
+        h.end,
+        h.anchor.sentenceId,
+        h.anchor.position,
+        h.boundary,
+      ]),
       [
         [0, 5, 0, "before", true],
         [15, 40, 1, "after", false],
@@ -71,7 +77,14 @@ void describe("collapseRanges", () => {
       behaviour,
     )
     assert.deepStrictEqual(
-      holes.map((h) => [h.audiofile, h.start, h.end, h.anchor.chapterId, h.anchor.position, h.boundary]),
+      holes.map((h) => [
+        h.audiofile,
+        h.start,
+        h.end,
+        h.anchor.chapterId,
+        h.anchor.position,
+        h.boundary,
+      ]),
       [
         ["a.mp3", 10, 100, "c1", "after", true],
         ["b.mp3", 0, 50, "c2", "before", true],
@@ -87,7 +100,13 @@ void describe("collapseRanges", () => {
       behaviour,
     )
     assert.deepStrictEqual(
-      holes.map((h) => [h.audiofile, h.start, h.end, h.anchor.chapterId, h.anchor.position]),
+      holes.map((h) => [
+        h.audiofile,
+        h.start,
+        h.end,
+        h.anchor.chapterId,
+        h.anchor.position,
+      ]),
       [["b.mp3", 0, 90, "c1", "after"]],
     )
   })
@@ -104,7 +123,11 @@ void describe("collapseRanges", () => {
       behaviour,
     )
     assert.deepStrictEqual(
-      ranges.map((r) => [r.id, Math.round(r.start * 1000), Math.round(r.end * 1000)]),
+      ranges.map((r) => [
+        r.id,
+        Math.round(r.start * 1000),
+        Math.round(r.end * 1000),
+      ]),
       [
         [0, 0, 11999],
         [1, 11999, 12000],

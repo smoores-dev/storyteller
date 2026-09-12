@@ -400,7 +400,7 @@ export function BookTable({
 
   useEffect(() => {
     rowVirtualizer.measure()
-  }, [showThumbnail])
+  }, [showThumbnail, rowVirtualizer])
 
   const virtualRows = rowVirtualizer.getVirtualItems()
   const lastVirtualRowIndex = virtualRows.at(-1)?.index

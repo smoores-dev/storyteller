@@ -49,10 +49,7 @@ import {
   generateGuidedNavigationManifest,
 } from "../readium/guidedNavigation.ts"
 
-import {
-  READALOUD_STYLESHEET,
-  writeAudioChapters,
-} from "./audioChapters.ts"
+import { READALOUD_STYLESHEET, writeAudioChapters } from "./audioChapters.ts"
 import { type ChapterHole, createMediaOverlay } from "./ctc/mediaOverlay.ts"
 import {
   type MappedTimeline,
@@ -639,7 +636,6 @@ export class Aligner {
         )
       }),
     )
-
   }
 
   private addChapterReport(
@@ -1146,7 +1142,6 @@ export class Aligner {
     return this.timing
   }
 }
-
 
 export function concatTranscriptions(
   transcriptions: Pick<RecognitionResult, "transcript" | "timeline">[],

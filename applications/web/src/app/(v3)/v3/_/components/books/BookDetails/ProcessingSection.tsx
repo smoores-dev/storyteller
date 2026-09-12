@@ -132,7 +132,7 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
       whisperModel:
         activeJob?.config?.aligner === "ctc"
           ? null
-          : activeJob?.config?.whisperModel ?? null,
+          : (activeJob?.config?.whisperModel ?? null),
       restart: activeJob?.restart || false,
     },
     { skip: readaloudStatus !== "PROCESSING" || !activeEngine },

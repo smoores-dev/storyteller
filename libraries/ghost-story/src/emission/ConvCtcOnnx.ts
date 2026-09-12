@@ -89,7 +89,10 @@ export async function loadConvCtcOnnxModel(
     await readFile(join(packageDir, "config.json"), "utf8"),
   ) as ConvCtcConfig
   const tokenizer = config.tokenizer ?? null
-  const vocab = await readVocab(join(packageDir, "vocab.txt"), tokenizer === null)
+  const vocab = await readVocab(
+    join(packageDir, "vocab.txt"),
+    tokenizer === null,
+  )
   const frontend = new MelFrontend({
     sampleRate: config.sampleRate,
     melBins: config.melBins,
@@ -132,7 +135,9 @@ export async function loadConvCtcOnnxModel(
     }
     const output = (await session.run(feeds))[logProbsOutput as string]
     if (output === undefined || output.type !== "float32") {
-      throw new Error(`${packageDir} model.onnx did not return float32 log probabilities`)
+      throw new Error(
+        `${packageDir} model.onnx did not return float32 log probabilities`,
+      )
     }
     const [, frames = 0, classes = 0] = output.dims
     const values = new Float32Array(output.data as Float32Array)

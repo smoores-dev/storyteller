@@ -418,9 +418,8 @@ async function loadWav2Vec2Model(
       return loadConvCtcOnnxModel(packageDir, device)
     }
 
-    const { loadModel, compute } = await import(
-      "@storyteller-platform/mlx-audio"
-    )
+    const { loadModel, compute } =
+      await import("@storyteller-platform/mlx-audio")
     const model = await loadModel(packageDir)
 
     return {

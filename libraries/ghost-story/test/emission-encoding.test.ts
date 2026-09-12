@@ -134,7 +134,9 @@ void describe("encodeEmissions", () => {
     )
     assert.equal(data.emissions.frames, frames)
     for (let frame = 0; frame < frames; frame++) {
-      const row = Array.from(values.subarray(frame * classes, (frame + 1) * classes))
+      const row = Array.from(
+        values.subarray(frame * classes, (frame + 1) * classes),
+      )
       const decoded = data.emissions.values.subarray(
         frame * classes,
         (frame + 1) * classes,

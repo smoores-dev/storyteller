@@ -435,7 +435,7 @@ export async function getLocatorForFragment(
     const startOfNextChapterProgression =
       nextChapterReadingOrderIndex >= publication.readingOrder.items.length
         ? 1
-        : positions[chapterPositionIndex + 1]?.locations.totalProgression ?? 1
+        : (positions[chapterPositionIndex + 1]?.locations.totalProgression ?? 1)
 
     const totalProgression =
       startOfChapterProgression +

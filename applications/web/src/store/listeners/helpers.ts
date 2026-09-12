@@ -230,7 +230,7 @@ export const highlightFragment = (
           enforceContrast: false,
         },
       },
-    } as DecoratorRequest)
+    })
   }
 }
 

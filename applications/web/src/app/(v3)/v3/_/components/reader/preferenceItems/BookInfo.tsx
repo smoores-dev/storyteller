@@ -92,7 +92,7 @@ export const BookInfo = ({
               {title ?? book.title}
             </V3Link>
           ) : (
-            title ?? book.title
+            (title ?? book.title)
           )}
         </ScrollingTitle>
         {ready && parts.length > 0 && (

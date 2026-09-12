@@ -174,7 +174,7 @@ export async function getDisplayJob(uuid: UUID): Promise<DisplayJob | null> {
     grade: alignment?.grade ?? null,
     sentenceCoverage: alignment?.sentenceCoverage ?? null,
     audioCoverage: alignment?.audioCoverage ?? null,
-    reportUuid: alignment?.hasReport ? alignment.uuid ?? null : null,
+    reportUuid: alignment?.hasReport ? (alignment.uuid ?? null) : null,
     hasReport: alignment?.hasReport ?? false,
     score: null,
   })
@@ -221,7 +221,7 @@ export async function getDisplayJobs(
       score: null,
       sentenceCoverage: alignment?.sentenceCoverage ?? null,
       audioCoverage: alignment?.audioCoverage ?? null,
-      reportUuid: alignment?.hasReport ? alignment.uuid ?? null : null,
+      reportUuid: alignment?.hasReport ? (alignment.uuid ?? null) : null,
       hasReport: alignment?.hasReport ?? false,
     }),
   )

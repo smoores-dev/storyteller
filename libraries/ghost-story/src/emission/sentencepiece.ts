@@ -24,7 +24,11 @@ type Field =
   | { number: number; wireType: 0; value: number }
   | { number: number; wireType: 1 | 2 | 5; value: Uint8Array }
 
-function* fields(bytes: Uint8Array, start: number, end: number): Generator<Field> {
+function* fields(
+  bytes: Uint8Array,
+  start: number,
+  end: number,
+): Generator<Field> {
   let pos = start
   function varint() {
     let value = 0
@@ -63,7 +67,9 @@ function* fields(bytes: Uint8Array, start: number, end: number): Generator<Field
         pos += 4
         break
       default:
-        throw new Error(`sentencepiece model has unsupported wire type ${wireType}`)
+        throw new Error(
+          `sentencepiece model has unsupported wire type ${wireType}`,
+        )
     }
   }
 }
@@ -86,8 +92,10 @@ export function readSentencePieceModel(bytes: Uint8Array): SentencePieceModel {
       let score = 0
       let pieceType = 1
       for (const inner of fields(field.value, 0, field.value.length)) {
-        if (inner.number === 1 && inner.wireType === 2) piece = decoder.decode(inner.value)
-        if (inner.number === 2 && inner.wireType === 5) score = float32(inner.value)
+        if (inner.number === 1 && inner.wireType === 2)
+          piece = decoder.decode(inner.value)
+        if (inner.number === 2 && inner.wireType === 5)
+          score = float32(inner.value)
         if (inner.number === 3 && inner.wireType === 0) pieceType = inner.value
       }
       if (pieceType === PIECE_TYPE_UNKNOWN) unkId = pieces.length
@@ -95,8 +103,10 @@ export function readSentencePieceModel(bytes: Uint8Array): SentencePieceModel {
       scores.push(score)
     } else if (field.number === 2 && field.wireType === 2) {
       for (const inner of fields(field.value, 0, field.value.length)) {
-        if (inner.number === 3 && inner.wireType === 0) type = MODEL_TYPES[inner.value] ?? null
-        if (inner.number === 40 && inner.wireType === 0) trainerUnkId = inner.value
+        if (inner.number === 3 && inner.wireType === 0)
+          type = MODEL_TYPES[inner.value] ?? null
+        if (inner.number === 40 && inner.wireType === 0)
+          trainerUnkId = inner.value
       }
     }
   }
@@ -105,17 +115,29 @@ export function readSentencePieceModel(bytes: Uint8Array): SentencePieceModel {
     throw new Error("sentencepiece model does not declare a model type")
   }
 
-  return { type, pieces, scores: Float32Array.from(scores), unkId: unkId ?? trainerUnkId }
+  return {
+    type,
+    pieces,
+    scores: Float32Array.from(scores),
+    unkId: unkId ?? trainerUnkId,
+  }
 }
 
-export function unigramTokenizer(model: SentencePieceModel, vocab: Map<string, number>): EmissionTokenizer {
+export function unigramTokenizer(
+  model: SentencePieceModel,
+  vocab: Map<string, number>,
+): EmissionTokenizer {
   if (model.type !== "unigram") {
-    throw new Error(`sentencepiece model type ${model.type} is not supported, only unigram is`)
+    throw new Error(
+      `sentencepiece model type ${model.type} is not supported, only unigram is`,
+    )
   }
   const scores = new Float32Array(vocab.size)
   for (const [index, piece] of model.pieces.entries()) {
     if (vocab.get(piece) !== index) {
-      throw new Error(`sentencepiece piece ${index} ${JSON.stringify(piece)} does not match the vocabulary`)
+      throw new Error(
+        `sentencepiece piece ${index} ${JSON.stringify(piece)} does not match the vocabulary`,
+      )
     }
     scores[index] = model.scores[index] ?? 0
   }
@@ -131,7 +153,11 @@ export function encodeUnigram(
   let maxLength = 1
   let minScore = Infinity
   for (const [piece, id] of vocab) {
-    if (id === tokenizer.unkId || id >= tokenizer.scores.length || /^<.*>$/.test(piece)) {
+    if (
+      id === tokenizer.unkId ||
+      id >= tokenizer.scores.length ||
+      /^<.*>$/.test(piece)
+    ) {
       continue
     }
     pieceIds.set(piece, id)

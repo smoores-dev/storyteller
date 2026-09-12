@@ -132,7 +132,7 @@ void describe("updateAlignmentOverrides", () => {
         unalignedChapters: [],
         audioFiles: [],
         unalignedAudioFiles: [],
-      } as unknown as Report,
+      },
     })
 
     assert.strictEqual(created.grade, "F")

@@ -519,8 +519,7 @@ export class Aligner {
         .reduce((acc, a) => acc + (a.score > -4 ? 1 : 0), 0)
 
       const framesPerChar =
-        (alignments[endOffset].endFrame -
-          alignments[startOffset].startFrame) /
+        (alignments[endOffset].endFrame - alignments[startOffset].startFrame) /
         sentenceLength
 
       if (goodChars / sentenceLength < 0.5) {

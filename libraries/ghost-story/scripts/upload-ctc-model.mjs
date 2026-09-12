@@ -1,3 +1,5 @@
+// oxlint-disable no-console
+
 import { execFile } from "node:child_process"
 import { readFile, stat } from "node:fs/promises"
 import { basename, join } from "node:path"
@@ -9,9 +11,17 @@ const PROJECT_ID = "67994333"
 const PROJECT_PATH = "storyteller-platform/storyteller"
 const API = `https://gitlab.com/api/v4/projects/${PROJECT_ID}`
 const MLFLOW = `projects/${PROJECT_ID}/ml/mlflow/api/2.0/mlflow`
-const UPLOAD_FILES = ["model.safetensors", "config.json", "vocab.txt", "model.onnx"]
+const UPLOAD_FILES = [
+  "model.safetensors",
+  "config.json",
+  "vocab.txt",
+  "model.onnx",
+]
 const OPTIONAL_FILES = ["tokenizer.spm"]
-const ARCHITECTURE_LABELS = { quartznet15x5: "QuartzNet15x5", citrinet: "Citrinet" }
+const ARCHITECTURE_LABELS = {
+  quartznet15x5: "QuartzNet15x5",
+  citrinet: "Citrinet",
+}
 
 function usage() {
   console.error(
@@ -110,7 +120,10 @@ async function ensureRegisteredModel(name, description) {
     return
   }
 
-  await glabPostJson(`${MLFLOW}/registered-models/create`, { name, description })
+  await glabPostJson(`${MLFLOW}/registered-models/create`, {
+    name,
+    description,
+  })
   console.log(`registered model ${name}`)
 }
 
@@ -121,7 +134,9 @@ async function ensureModelVersion(name, version) {
   )
 
   if (existing) {
-    console.log(`version ${version} already exists as model version ${existing.version}`)
+    console.log(
+      `version ${version} already exists as model version ${existing.version}`,
+    )
     return Number(existing.version)
   }
 
@@ -193,7 +208,9 @@ async function fileSizes(modelDir) {
 }
 
 async function describe(modelDir, name) {
-  const config = JSON.parse(await readFile(join(modelDir, "config.json"), "utf8"))
+  const config = JSON.parse(
+    await readFile(join(modelDir, "config.json"), "utf8"),
+  )
   const label = ARCHITECTURE_LABELS[config.architecture]
   if (!label) {
     throw new Error(`${modelDir}: unknown architecture ${config.architecture}`)
@@ -213,13 +230,17 @@ async function publish(modelDir, options, token) {
 
   const target = await findPackage(name, version)
   if (!target) {
-    throw new Error(`${name}@${version} did not show up in the package registry`)
+    throw new Error(
+      `${name}@${version} did not show up in the package registry`,
+    )
   }
 
   const uploaded = token ? await listPackageFiles(target.id) : new Map()
   for (const [fileName, size] of sizes) {
     if (!token) {
-      console.log(`skipping ${fileName}, ${size} bytes, GITLAB_TOKEN is not set`)
+      console.log(
+        `skipping ${fileName}, ${size} bytes, GITLAB_TOKEN is not set`,
+      )
       continue
     }
     if (uploaded.get(fileName) === size) {

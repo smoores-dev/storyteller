@@ -33,10 +33,10 @@ export const ReaderSlider = ({
     value={value}
     thumbAlignment={thumbAlignment}
     onValueChange={(next) => {
-      onValueChange?.(typeof next === "number" ? next : next[0] ?? value)
+      onValueChange?.(typeof next === "number" ? next : (next[0] ?? value))
     }}
     onValueCommitted={(next) => {
-      onValueCommitted(typeof next === "number" ? next : next[0] ?? value)
+      onValueCommitted(typeof next === "number" ? next : (next[0] ?? value))
     }}
     className={cn(
       "**:data-[slot='slider-indicator']:bg-reader-accent **:data-[slot='slider-marks']:text-reader-text-secondary **:data-[slot='slider-track']:bg-reader-border **:data-[slot='slider-thumb']:border-reader-accent **:data-[slot='slider-thumb']:bg-reader-bg **:data-[slot='slider-thumb']:ring-reader-accent/30",

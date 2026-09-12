@@ -231,7 +231,9 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
 
       return {
         ...prev,
-        groups: prev.groups.map((g) => (g.hidden ? g : reordered[next++] ?? g)),
+        groups: prev.groups.map((g) =>
+          g.hidden ? g : (reordered[next++] ?? g),
+        ),
       }
     })
   }

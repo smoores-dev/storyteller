@@ -604,9 +604,9 @@ startAppListening({
           const clip =
             nearest?.link.href === link.href
               ? getClip(guide, correctLocator)
-              : guide.guided
+              : (guide.guided
                   ?.flatMap((item) => item.children ?? [])
-                  .find((child) => child.clip?.audioResource)?.clip ?? null
+                  .find((child) => child.clip?.audioResource)?.clip ?? null)
 
           if (!clip) {
             console.error("No clip found, starting at beginning")

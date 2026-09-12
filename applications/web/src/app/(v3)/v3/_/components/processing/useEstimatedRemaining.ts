@@ -11,7 +11,7 @@ export function useEstimatedRemaining(job: DisplayJob | null): number | null {
   const aligner = config?.aligner
   const isCtc = aligner === "ctc"
   const engine = (isCtc ? config?.ctcEngine : config?.transcriptionEngine) ?? ""
-  const model = isCtc ? null : config?.whisperModel ?? null
+  const model = isCtc ? null : (config?.whisperModel ?? null)
 
   const { data } = useGetAlignmentEstimateQuery(
     {

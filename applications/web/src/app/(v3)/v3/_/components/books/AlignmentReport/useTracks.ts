@@ -20,7 +20,8 @@ export function useTracks(
     let offset = 0
     for (const track of tracks) {
       const disk = onDisk.get(track.name)
-      const duration = track.duration > 0 ? track.duration : disk?.duration ?? 0
+      const duration =
+        track.duration > 0 ? track.duration : (disk?.duration ?? 0)
       merged.push({
         ...track,
         duration,

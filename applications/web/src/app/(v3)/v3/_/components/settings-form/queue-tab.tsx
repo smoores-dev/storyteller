@@ -3,10 +3,10 @@
 import { type UniqueIdentifier } from "@dnd-kit/abstract"
 import {
   Accessibility,
+  defaultPreset,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
-  defaultPreset,
 } from "@dnd-kit/dom"
 import { move } from "@dnd-kit/helpers"
 import { DragDropProvider } from "@dnd-kit/react"
@@ -30,6 +30,12 @@ import {
   ItemTitle,
 } from "@v3/_/components/ui/item"
 
+import {
+  audioPercentTone,
+  percentTone,
+  TONE_BADGE,
+  TONE_TEXT,
+} from "@/app/(v3)/v3/_/components/books/AlignmentReport/shared"
 import { SearchInput } from "@/app/(v3)/v3/_/components/books/SearchInput"
 import { GradePill } from "@/app/(v3)/v3/_/components/books/grade-pill"
 import { StaticProgressBar } from "@/app/(v3)/v3/_/components/processing/ProgressVisualization"
@@ -47,6 +53,11 @@ import {
   FilterableMenuTrigger,
 } from "@/app/(v3)/v3/_/components/ui/filterable-menu"
 import { Spinner } from "@/app/(v3)/v3/_/components/ui/spinner"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/app/(v3)/v3/_/components/ui/tooltip"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
 import { createSortParser } from "@/app/(v3)/v3/_/hooks/use-book-filters"
@@ -72,14 +83,6 @@ import {
   useResumeJobMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
-import {
-  audioPercentTone,
-  itemTone,
-  percentTone,
-  TONE_BADGE,
-  TONE_TEXT,
-} from "../books/AlignmentReport/shared"
 
 const PAGE_SIZE = 25
 
@@ -109,14 +112,12 @@ export function QueueTab() {
   const order = jobs.map((job) => job.uuid)
   const byUuid = new Map(jobs.map((job) => [job.uuid, job]))
 
-  const announce = useEffectEvent(
-    (kind: AnnounceKind, id: UniqueIdentifier, index: number) =>
-      t(`announce.${kind}`, {
-        title: byUuid.get(String(id) as UUID)?.bookTitle ?? t("untitled"),
-        position: index + 1,
-        total: jobs.length,
-      }),
-  )
+  const announce = (kind: AnnounceKind, id: UniqueIdentifier, index: number) =>
+    t(`announce.${kind}`, {
+      title: byUuid.get(String(id) as UUID)?.bookTitle ?? t("untitled"),
+      position: index + 1,
+      total: jobs.length,
+    })
 
   const [plugins] = useState(() => [
     ...defaultPreset.plugins.filter((plugin) => plugin !== Accessibility),
@@ -143,13 +144,13 @@ export function QueueTab() {
     }),
   ])
 
-  const pauseAll = () => {
-    jobs.forEach((job) => {
-      if (job.status === "RUNNING") {
-        void pauseJob({ uuid: job.uuid })
-      }
-    })
-  }
+  // const pauseAll = () => {
+  //   jobs.forEach((job) => {
+  //     if (job.status === "RUNNING") {
+  //       void pauseJob({ uuid: job.uuid })
+  //     }
+  //   })
+  // }
   // const resumeAll = () => {
   //   jobs.forEach((job) => {
   //     if (job.status === "PAUSED") {
@@ -164,7 +165,7 @@ export function QueueTab() {
     cancelJob: (uuid: UUID) => void cancelJob({ uuid }),
   }
 
-  const someAreActive = jobs.some((job) => job.status === "RUNNING")
+  // const someAreActive = jobs.some((job) => job.status === "RUNNING")
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">

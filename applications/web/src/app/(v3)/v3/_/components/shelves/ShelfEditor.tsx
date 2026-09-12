@@ -50,7 +50,6 @@ import {
 } from "@/store/api"
 import { type UUID } from "@/uuid"
 
-
 import {
   FilterPreview,
   ShelfFilterEditor,
@@ -292,13 +291,13 @@ export function ShelfEditor({
   }, [c])
 
   const currentOrderOption = orderByOptions.find((o) => o.value === orderBy)
-  const orderDirectionOptions = useMemo(() => {
-    return (["desc", "asc"] as const).map((key) => ({
-      value: key,
-      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
-      label: t.plain(`orderDirection.${key}` as "orderDirection.desc"),
-    })) satisfies { value: "asc" | "desc"; label: string }[]
-  }, [t])
+  // const orderDirectionOptions = useMemo(() => {
+  //   return (["desc", "asc"] as const).map((key) => ({
+  //     value: key,
+  //     // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
+  //     label: t.plain(`orderDirection.${key}` as "orderDirection.desc"),
+  //   })) satisfies { value: "asc" | "desc"; label: string }[]
+  // }, [t])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -508,7 +507,7 @@ export function ShelfEditor({
                             icon={o.icon}
                             closeOnClick={false}
                             onSelect={() => {
-                              form.setValue("orderBy", o.value as ShelfOrderBy)
+                              form.setValue("orderBy", o.value)
                               if (orderBy === o.value) {
                                 if (orderDirection === "asc") {
                                   form.setValue("orderDirection", "desc")

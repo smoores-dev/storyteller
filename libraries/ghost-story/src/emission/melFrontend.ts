@@ -61,7 +61,10 @@ export function slaneyMelFilters(
   return filters
 }
 
-export function hannWindow(windowSamples: number, fftSize: number): Float32Array {
+export function hannWindow(
+  windowSamples: number,
+  fftSize: number,
+): Float32Array {
   const window = new Float32Array(fftSize)
   for (let n = 0; n < windowSamples; n++) {
     window[n] = 0.5 - 0.5 * Math.cos((2 * Math.PI * n) / windowSamples)
@@ -185,7 +188,8 @@ export class MelFrontend {
       for (let m = 0; m < melBins; m++) {
         let energy = 0
         for (let k = 0; k < bins; k++) {
-          energy += (power[k] as number) * (this.filters[k * melBins + m] as number)
+          energy +=
+            (power[k] as number) * (this.filters[k * melBins + m] as number)
         }
         const value = Math.log(energy + LOG_GUARD)
         values[f * melBins + m] = value

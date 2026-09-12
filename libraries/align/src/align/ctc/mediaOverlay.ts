@@ -64,7 +64,9 @@ function holesAround(
   position: "before" | "after",
 ) {
   return holes
-    .filter((hole) => hole.sentenceId === sentenceId && hole.position === position)
+    .filter(
+      (hole) => hole.sentenceId === sentenceId && hole.position === position,
+    )
     .map((hole, index) =>
       holePar(
         chapter,
@@ -220,8 +222,20 @@ function createTextRangeSmallSequences(
 ) {
   return sentenceRanges.flatMap((sentenceRange) => {
     const fragment = sentenceIdToFragment.get(sentenceRange.id) ?? ""
-    const before = holesAround(chapter, sentenceRange.id, fragment, holes, "before")
-    const after = holesAround(chapter, sentenceRange.id, fragment, holes, "after")
+    const before = holesAround(
+      chapter,
+      sentenceRange.id,
+      fragment,
+      holes,
+      "before",
+    )
+    const after = holesAround(
+      chapter,
+      sentenceRange.id,
+      fragment,
+      holes,
+      "after",
+    )
     return [...before, sentenceElement(sentenceRange), ...after]
   })
 

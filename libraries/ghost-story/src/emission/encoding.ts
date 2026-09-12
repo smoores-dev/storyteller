@@ -254,12 +254,17 @@ export async function decodeEmissions(
       true,
     )
     topK = extraView.getUint16(OFFSETS.topK - OFFSETS.frameOffsetSeconds, true)
-    unkId = extraView.getUint32(OFFSETS.unkId - OFFSETS.frameOffsetSeconds, true)
+    unkId = extraView.getUint32(
+      OFFSETS.unkId - OFFSETS.frameOffsetSeconds,
+      true,
+    )
     vocabOffset = OFFSETS.vocab
   }
 
   if (encoding === ENCODINGS.sparse && topK === 0) {
-    throw new Error("Failed to decode emissions. Sparse encoding without a top-k")
+    throw new Error(
+      "Failed to decode emissions. Sparse encoding without a top-k",
+    )
   }
 
   const scoresOffset =

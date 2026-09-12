@@ -1,6 +1,5 @@
 import {
   type AlignmentOverrides,
-  type ManifestLike,
   type ReportJob,
   buildReportView,
 } from "@/alignmentReportView"
@@ -61,7 +60,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     listAlignmentReportSummaries(bookUuid),
   ])
   const index = history.findIndex((row) => row.uuid === report?.uuid)
-  const previousRow = index >= 0 ? history[index + 1] ?? null : null
+  const previousRow = index >= 0 ? (history[index + 1] ?? null) : null
   const [job, previousJob] = await Promise.all([
     report?.jobUuid ? getJob(report.jobUuid) : null,
     previousRow?.jobUuid ? getJob(previousRow.jobUuid) : null,
@@ -113,7 +112,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
         }
       : null,
     overrides,
-    ebookManifest: (book.ebook?.manifest as ManifestLike | null) ?? null,
+    ebookManifest: book.ebook?.manifest ?? null,
     audiobookDuration: book.audiobook?.duration ?? null,
   })
 

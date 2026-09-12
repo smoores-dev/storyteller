@@ -48,7 +48,11 @@ void describe("writeAudioChapters", () => {
               audiofile: "/tmp/interview.mp3",
               start: 0,
               end: 90,
-              anchor: { chapterId: anchor.id, sentenceId: 3, position: "after" },
+              anchor: {
+                chapterId: anchor.id,
+                sentenceId: 3,
+                position: "after",
+              },
               boundary: true,
               between: "",
             },
@@ -68,7 +72,10 @@ void describe("writeAudioChapters", () => {
     assert.strictEqual(after[anchorIndex + 1]?.id, chapter.id)
 
     const manifest = await epub.getManifest()
-    assert.strictEqual(manifest[chapter.id]?.mediaOverlay, `${chapter.id}_overlay`)
+    assert.strictEqual(
+      manifest[chapter.id]?.mediaOverlay,
+      `${chapter.id}_overlay`,
+    )
 
     const smil = await epub.readItemContents(`${chapter.id}_overlay`, "utf-8")
     assert.match(smil, /storyteller:audio-only/)
@@ -79,7 +86,9 @@ void describe("writeAudioChapters", () => {
     assert.ok(flat.includes("Interview"))
     const anchorEntries = toc
       .map((entry, index) => ({ entry, index }))
-      .filter(({ entry }) => entry.href?.includes(anchor.href.split("/").pop() ?? ""))
+      .filter(({ entry }) =>
+        entry.href?.includes(anchor.href.split("/").pop() ?? ""),
+      )
     const last = anchorEntries.at(-1)
     assert.ok(last)
     assert.strictEqual(toc[last.index + 1]?.title, "Interview")

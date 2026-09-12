@@ -93,9 +93,9 @@ export async function transcribe(
   const model = options.model ?? "tiny.en"
   const engineModel =
     engine === "openai-cloud"
-      ? options.openAiModelName ?? null
+      ? (options.openAiModelName ?? null)
       : engine === "deepgram"
-        ? options.deepgramModel ?? null
+        ? (options.deepgramModel ?? null)
         : engine === "whisper.cpp" || engine === "whisper-server"
           ? model
           : null

@@ -1,6 +1,6 @@
 "use client"
 
-import { type PointerEvent, useEffect, useRef } from "react"
+import { type PointerEvent, useEffect, useEffectEvent, useRef } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
@@ -33,9 +33,11 @@ export function PlayerDock({ className }: { className?: string } = {}) {
   } = usePlayer()
   const dockRef = useRef<HTMLDivElement>(null)
 
+  const stopEvent = useEffectEvent(stop)
+
   useEffect(() => {
     return () => {
-      stop()
+      stopEvent()
     }
   }, [])
 

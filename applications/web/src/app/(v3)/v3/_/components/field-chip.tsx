@@ -10,12 +10,10 @@ export function useFieldLabel() {
   const c = useCommon()
   return (field: string): string => {
     if (isField(field)) {
-      return c.plain(`fields.label.${field}` as "fields.label.title")
+      return c.plain(`fields.label.${field}`)
     }
     if (isRetiredField(field)) {
-      return c.plain(
-        `fields.retired.${field}` as "fields.retired.alignmentScore",
-      )
+      return c.plain(`fields.retired.${field}`)
     }
     return field
   }

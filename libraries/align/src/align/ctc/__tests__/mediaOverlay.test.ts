@@ -42,7 +42,9 @@ const fragments = new Map([
 ])
 
 function attributesOf(element: unknown) {
-  return Epub.getXmlAttributes(element as Parameters<typeof Epub.getXmlAttributes>[0])
+  return Epub.getXmlAttributes(
+    element as Parameters<typeof Epub.getXmlAttributes>[0],
+  )
 }
 
 void describe("createMediaOverlay", () => {
@@ -68,11 +70,7 @@ void describe("createMediaOverlay", () => {
     )
     assert.deepStrictEqual(
       pars.map((par) => attributesOf(par)["epub:type"]),
-      [
-        "storyteller:unmatched",
-        "storyteller:matched",
-        "storyteller:dropped",
-      ],
+      ["storyteller:unmatched", "storyteller:matched", "storyteller:dropped"],
     )
   })
 
