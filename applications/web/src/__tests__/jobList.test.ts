@@ -31,7 +31,9 @@ function job(
     config: null,
     stats: null,
     alignmentGrade: null,
-    alignmentScore: null,
+    alignmentReportUuid: null,
+    alignmentSentenceCoverage: null,
+    alignmentAudioCoverage: null,
     ...overrides,
     uuid: overrides.uuid as UUID,
   }
