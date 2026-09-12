@@ -40,14 +40,19 @@ RUN yarn install --inline-builds
 # manualy reproducing that stupid onnxruntime install step
 ARG BASE_TAG
 RUN case "$BASE_TAG" in \
-      cuda-12*|cuda-13*) \
-        ORT_VERSION=$(node -p "require('./node_modules/onnxruntime-node/package.json').version") && \
-        curl -fL --retry 5 --retry-all-errors --retry-delay 15 --connect-timeout 30 --speed-limit 10000 --speed-time 60 \
-          -o /tmp/ort.nupkg \
-          "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime.gpu.linux/$ORT_VERSION/microsoft.ml.onnxruntime.gpu.linux.$ORT_VERSION.nupkg" && \
-        node -e "const Z=require('adm-zip');const z=new Z('/tmp/ort.nupkg');for(const f of ['libonnxruntime_providers_cuda.so','libonnxruntime_providers_shared.so'])z.extractEntryTo('runtimes/linux-x64/native/'+f,'node_modules/onnxruntime-node/bin/napi-v6/linux/x64',false,true)" && \
-        rm /tmp/ort.nupkg ;; \
-    esac
+      cuda-12*) ORT_CUDA=cuda12 ;; \
+      cuda-13*) ORT_CUDA=cuda13 ;; \
+      *) ORT_CUDA= ;; \
+    esac && \
+    if [ -n "$ORT_CUDA" ]; then \
+      ORT_VERSION=$(node -p "require('./node_modules/onnxruntime-node/package.json').version") && \
+      ORT_DIST="onnxruntime-linux-x64-gpu_$ORT_CUDA-$ORT_VERSION" && \
+      curl -fL --retry 5 --retry-all-errors --retry-delay 15 --connect-timeout 30 --speed-limit 10000 --speed-time 60 \
+        -o /tmp/ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/$ORT_DIST.tgz" && \
+      tar -xzf /tmp/ort.tgz --strip-components=2 -C node_modules/onnxruntime-node/bin/napi-v6/linux/x64 \
+        "$ORT_DIST/lib/libonnxruntime_providers_cuda.so" "$ORT_DIST/lib/libonnxruntime_providers_shared.so" && \
+      rm /tmp/ort.tgz; \
+    fi
 
 COPY docker-scripts/ ./scripts/
 
