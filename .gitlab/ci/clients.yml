@@ -21,6 +21,19 @@
     - saas-macos-medium-m1
   image: macos-26-xcode-26
 
+test-swift:
+  extends: [.macos_runner, .clients-rules]
+  stage: check
+  script:
+    - swift test --force-resolved-versions --xunit-output swift-results.xml
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - swift-results*.xml
+    reports:
+      junit: swift-results*.xml
+
 .clients-variables:
   variables:
     HOMEBREW_NO_AUTO_UPDATE: "1"

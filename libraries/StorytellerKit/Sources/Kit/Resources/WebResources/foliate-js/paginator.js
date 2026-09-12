@@ -1277,7 +1277,7 @@ export class Paginator extends HTMLElement {
    * navigation, and reflow are mutually exclusive operation types; starting a
    * replacement explicitly resolves or preserves the operation it supersedes.
    *
-   * A reflow operation freezes the last committed visible range, disables snap,
+   * A reflow operation freezes the last committed logical anchor, disables snap,
    * and follows this state machine:
    *
    * Normal path:
@@ -1366,6 +1366,21 @@ export class Paginator extends HTMLElement {
     commitViewport(anchor) {
       this.#committedAnchor = this.#cloneAnchor(anchor)
     }
+    /** Updates same-page follow-along without emitting navigation or scrolling. */
+    preserveAnchor(anchor) {
+      if (
+        !this.#anchorBelongsToView(anchor) ||
+        this.#cssSnap ||
+        this.#continuous
+      )
+        return
+      this.#paginator.#anchor = anchor
+      this.commitViewport(anchor)
+      if (this.#reflow) {
+        this.#reflow.anchor = this.#cloneAnchor(anchor)
+        this.beginReflow()
+      }
+    }
     /** Records the viewport dimensions used to detect scroll-before-resize. */
     recordLayoutViewport(width, height) {
       this.#layoutViewport = { width, height }
@@ -1390,7 +1405,15 @@ export class Paginator extends HTMLElement {
         return true
       }
 
-      const anchor = this.#cloneAnchor(this.#committedAnchor)
+      const pending = this.#cssSnap
+      const pendingNavigation =
+        pending?.reason === "navigation" || pending?.reason === "selection"
+      // A new chapter has no committed viewport until navigation settles.
+      // Preserve its pending target so layout changes cannot cancel navigation.
+      const anchor = this.#cloneAnchor(
+        this.#committedAnchor ??
+          (pendingNavigation ? this.#paginator.#anchor : null),
+      )
       if (!this.#anchorBelongsToView(anchor)) return false
 
       const container = this.#paginator.#container
@@ -1414,9 +1437,8 @@ export class Paginator extends HTMLElement {
       this.#reflow = transaction
       this.#continuous = null
 
-      const pending = this.#cssSnap
       this.#cssSnap = null
-      if (pending?.reason === "navigation" || pending?.reason === "selection") {
+      if (pendingNavigation) {
         transaction.resumeNavigation = {
           anchor: this.#cloneAnchor(this.#paginator.#anchor),
           reason: pending.reason,
@@ -2110,6 +2132,11 @@ export class Paginator extends HTMLElement {
       smooth,
     )
   }
+  /** Preserve a followed sentence already on this page without navigating. */
+  setReflowAnchor(anchor) {
+    if (this.scrolled || this.pageTurnBlocksNavigation) return
+    this.#viewport.preserveAnchor(anchor)
+  }
   async #scrollToAnchor(
     anchor,
     reason = "anchor",
@@ -2188,7 +2215,6 @@ export class Paginator extends HTMLElement {
   #afterScroll(reason, commitViewport = true) {
     const range = this.#getVisibleRange()
     this.#lastVisibleRange = range
-    if (commitViewport) this.#viewport.commitViewport(range)
     // don't set new anchor if relocation was to scroll to anchor
     if (
       reason !== "selection" &&
@@ -2197,6 +2223,11 @@ export class Paginator extends HTMLElement {
     )
       this.#anchor = range
     else this.#justAnchored = true
+
+    // Navigation retains the requested sentence/CFI, while user movement above
+    // replaces it with the visible range. Keeping only the page start here
+    // loses the restored target when late font metrics repaginate the section.
+    if (commitViewport) this.#viewport.commitViewport(this.#anchor ?? range)
 
     this.#viewport.reportPageFlip(reason)
 

@@ -85,6 +85,8 @@ applications/web/migrations/93_add_formats_sidebar.sql
 
 
 **/dist
+libraries/StorytellerKit/Tests/Browser/test-results/
+libraries/StorytellerKit/Tests/Browser/playwright-report/
 
 /libraries/opds/schemas/ajv/standalone.cjs
 

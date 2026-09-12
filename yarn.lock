@@ -12171,6 +12171,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@playwright/test@npm:1.62.1":
+  version: 1.62.1
+  resolution: "@playwright/test@npm:1.62.1"
+  dependencies:
+    playwright: "npm:1.62.1"
+  bin:
+    playwright: cli.js
+  checksum: 10c0/4b76f2f717723f84a73601f74fde97f5d92e4b5c869cf87c0f5628bf247fa1d18c9dc6c8e136463303233239e8ce58f902513d4281a9fabc3c426e911ded2c83
+  languageName: node
+  linkType: hard
+
 "@pnpm/config.env-replace@npm:^1.1.0":
   version: 1.1.0
   resolution: "@pnpm/config.env-replace@npm:1.1.0"
@@ -36651,7 +36662,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright@npm:^1.61.1":
+"playwright@npm:1.62.1, playwright@npm:^1.61.1":
   version: 1.62.1
   resolution: "playwright@npm:1.62.1"
   dependencies:
@@ -41944,6 +41955,7 @@ __metadata:
     "@dword-design/eslint-plugin-import-alias": "patch:@dword-design/eslint-plugin-import-alias@npm%3A5.1.2#~/.yarn/patches/@dword-design-eslint-plugin-import-alias-npm-5.1.2-1b47891395.patch"
     "@eslint/eslintrc": "npm:^3.0.0"
     "@next/eslint-plugin-next": "npm:^14.1.0"
+    "@playwright/test": "npm:1.62.1"
     "@storyteller-platform/eslint": "workspace:*"
     "@types/eslint": "npm:^8.56.2"
     "@types/eslint__eslintrc": "npm:^2.1.1"

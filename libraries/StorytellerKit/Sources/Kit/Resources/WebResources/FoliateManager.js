@@ -538,6 +538,11 @@ class FoliateManager {
 
     window.webkit?.messageHandlers?.Relocated?.postMessage(payload)
 
+    // Reflow changes sentence geometry without necessarily changing the
+    // highlight. Refresh native page-turn timing from the settled viewport.
+    if (detail.reason === "anchor" && !this.#pendingHighlight)
+      this.#reportHighlightVisibility()
+
     if (this.#pendingHighlight) {
       const { sectionIndex: pendingSectionIndex, textId } =
         this.#pendingHighlight
@@ -1474,6 +1479,18 @@ class FoliateManager {
     this.#renderReadaloudHighlight(this.#highlightedSectionIndex, activeEl, doc)
   }
 
+  // Native seeks can move the playhead without drawing a highlight or scrolling.
+  setReflowAnchor(sectionIndex, textId) {
+    const renderer = this.#view?.renderer
+    if (!renderer || renderer.scrolled) return
+    const doc = renderer
+      .getContents?.()
+      .find((content) => content.index === sectionIndex)?.doc
+    const el = doc?.getElementById(textId)
+    if (el && this.#getElementPageInfo(el, doc, renderer)?.visibleArea > 0)
+      renderer.setReflowAnchor?.(el)
+  }
+
   highlightFragment(sectionIndex, textId, seekToLocation = false) {
     debugLog(
       "FoliateManager",
@@ -1572,6 +1589,7 @@ class FoliateManager {
         "FoliateManager",
         `Element ${textId} already intersects the current page; skipping anchor navigation`,
       )
+      renderer.setReflowAnchor?.(el)
     }
 
     this.#pendingHighlight = null
@@ -1595,6 +1613,18 @@ class FoliateManager {
       this.#dimActive,
     )
 
+    this.#reportHighlightVisibility()
+  }
+
+  #reportHighlightVisibility() {
+    const el = this.#highlightedElement?.deref?.()
+    const renderer = this.#view?.renderer
+    const doc = el?.ownerDocument
+    const content = renderer
+      ?.getContents?.()
+      .find((content) => content.index === this.#highlightedSectionIndex)
+    if (!el?.isConnected || content?.doc !== doc) return
+
     const splitInfo = this.#getElementSplitInfo(el, doc, renderer)
     const visibleRatio = splitInfo?.visibleRatio ?? 1.0
     const offScreenRatio = splitInfo?.offScreenRatio ?? 0.0
@@ -1605,7 +1635,7 @@ class FoliateManager {
     )
 
     window.webkit?.messageHandlers?.ElementVisibility?.postMessage({
-      textId: textId,
+      textId: el.id,
       visibleRatio: visibleRatio,
       offScreenRatio: offScreenRatio,
     })
@@ -1794,7 +1824,17 @@ class FoliateManager {
     if (renderer?.scrolled) return null
 
     const pageInfo = this.#getElementPageInfo(el, doc, renderer)
-    if (!pageInfo?.visibleArea || !pageInfo.forwardArea) return null
+    if (!pageInfo) return null
+    if (pageInfo.visibleArea === 0) {
+      // An entirely hidden sentence is not a fully visible, unsplit sentence.
+      // Only its forward portion should request a forward page turn; a stale
+      // highlight behind the viewport must not advance the reader again.
+      return {
+        visibleRatio: 0,
+        offScreenRatio: pageInfo.forwardArea / pageInfo.totalArea,
+      }
+    }
+    if (pageInfo.forwardArea === 0) return null
 
     // Ignore the part of an overlapping highlight which is behind the current page.
     // Only the visible and forward portions determine whether and when to turn forward.

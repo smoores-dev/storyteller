@@ -1,0 +1,37 @@
+test-reader-browser:
+  stage: check
+  image: mcr.microsoft.com/playwright:v1.62.1-noble
+  tags: [saas-linux-large-amd64]
+  needs: []
+  variables:
+    YARN_ENABLE_SCRIPTS: "false"
+    GIT_LFS_SKIP_SMUDGE: "1"
+  rules:
+    - if: >-
+        $CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null)
+      changes:
+        - libraries/StorytellerKit/**/*
+        - package.json
+        - yarn.lock
+        - .yarnrc.yml
+        - .gitlab-ci.yml
+        - .gitlab/ci/reader-browser.yml
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends git-lfs
+    - git lfs pull
+      --include="libraries/StorytellerKit/Sources/Kit/Resources/assets/fonts/Charis-Regular.ttf,libraries/StorytellerKit/Sources/Kit/Resources/assets/fonts/OpenDyslexic-Regular.otf"
+    - npm install --global corepack
+    - yarn workspaces focus storyteller
+    - yarn types:reader:browser
+    # GitLab resolves attachment paths from the project root.
+    - PLAYWRIGHT_JUNIT_OUTPUT_FILE="$CI_PROJECT_DIR/reader-browser-results.xml"
+      yarn test:reader:browser
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - libraries/StorytellerKit/Tests/Browser/test-results/
+      - libraries/StorytellerKit/Tests/Browser/playwright-report/
+    reports:
+      junit: reader-browser-results.xml
