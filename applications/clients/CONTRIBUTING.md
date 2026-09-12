@@ -66,11 +66,15 @@ Not supported yet, but coming soon. You can try playing around with the
 `scripts/androidbuild` cross-compiles the `StorytellerAndroidBridge` package
 (`AndroidApp/swift`) with the Swift SDK for Android, generates Kotlin-callable
 JNI bindings via swift-java's jextract plugin, stages the `.so` set into
-jniLibs, and assembles the debug APK. It needs a swift.org toolchain with the
-matching `swift sdk install` Android bundle (versions must match exactly; the
-Xcode toolchain cannot cross-compile), an Android SDK/NDK (default location
-`~/Library/Android/sdk`, override with `ANDROID_HOME`), and a host JDK 17+. Use
-`--swift-only` or `--apk-only` for partial builds.
+jniLibs, and assembles an optimized APK. Use `--debug` to enable debugging for
+both Swift and Android. Run a full build when switching modes before using
+`--apk-only`.
+
+It needs a swift.org toolchain with the matching `swift sdk install` Android
+bundle (versions must match exactly; the Xcode toolchain cannot cross-compile),
+an Android SDK/NDK (default location `~/Library/Android/sdk`, override with
+`ANDROID_HOME`), and a host JDK 17+. Use `--swift-only` or `--apk-only` for
+partial builds.
 
 `scripts/androidrun` installs and launches the built APK, booting the first
 available emulator AVD if no device is connected (override with

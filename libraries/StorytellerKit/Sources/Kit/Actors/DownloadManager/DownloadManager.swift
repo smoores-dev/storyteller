@@ -73,7 +73,8 @@ public actor DownloadManager {
         startRetryLoop()
     }
 
-    #if os(Windows)
+    // Swift 6.2.3 crashes in IR generation for this continuation on Android under -O.
+    #if os(Windows) || os(Android)
     @_optimize(none)
     #endif
     private func reconnectOutstandingTasks() async {
