@@ -37,18 +37,23 @@ ENV ONNXRUNTIME_NODE_INSTALL=skip
 # link step names the offending package instead of freezing silently
 RUN yarn install --inline-builds
 
+# manualy reproducing that stupid onnxruntime install step
+ARG BASE_TAG
+RUN case "$BASE_TAG" in \
+      cuda-12*|cuda-13*) \
+        ORT_VERSION=$(node -p "require('./node_modules/onnxruntime-node/package.json').version") && \
+        curl -fL --retry 5 --retry-all-errors --retry-delay 15 --connect-timeout 30 --speed-limit 10000 --speed-time 60 \
+          -o /tmp/ort.nupkg \
+          "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime.gpu.linux/$ORT_VERSION/microsoft.ml.onnxruntime.gpu.linux.$ORT_VERSION.nupkg" && \
+        node -e "const Z=require('adm-zip');const z=new Z('/tmp/ort.nupkg');for(const f of ['libonnxruntime_providers_cuda.so','libonnxruntime_providers_shared.so'])z.extractEntryTo('runtimes/linux-x64/native/'+f,'node_modules/onnxruntime-node/bin/napi-v6/linux/x64',false,true)" && \
+        rm /tmp/ort.nupkg ;; \
+    esac
+
 COPY docker-scripts/ ./scripts/
 
 COPY . .
 
 RUN cp docker-scripts/* ./scripts/
-
-ARG BASE_TAG
-RUN case "$BASE_TAG" in \
-      cuda-12*|cuda-13*) \
-        ONNXRUNTIME_NODE_INSTALL=cuda12 node node_modules/onnxruntime-node/script/install.js && \
-        rm -f node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime_providers_tensorrt.so ;; \
-    esac
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
