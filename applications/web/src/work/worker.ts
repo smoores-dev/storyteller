@@ -262,6 +262,15 @@ export default async function processBook({
 
         const settings = await getEffectiveSettings()
 
+        let previousProgress = 0
+        // prevent excessive progress updates
+        const progressCallback = (progress: number) => {
+          if (progress > previousProgress) {
+            previousProgress = progress
+            onProgress(progress)
+          }
+        }
+
         if (settings.aligner === "ctc") {
           logger.info("Generating emissions...")
           const device = resolveWav2Vec2Device(
@@ -286,7 +295,7 @@ export default async function processBook({
               language: locale,
               // serverUrl: settings.ctcServerUrl,
               // serverApiKey: settings.ctcServerApiKey,
-              onProgress,
+              onProgress: progressCallback,
               logger,
               signal,
             }),
@@ -299,7 +308,7 @@ export default async function processBook({
               getTranscriptionsFilepath(book),
               locale,
               {
-                onProgress,
+                onProgress: progressCallback,
                 engine: settings.transcriptionEngine,
                 parallelism: settings.parallelTranscribes,
                 model: settings.whisperModel,
