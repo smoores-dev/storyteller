@@ -72,9 +72,17 @@ export function bandTone(band: number): ReportTone {
 
 export function percentTone(percent: number | null): ReportTone {
   if (percent === null) return "muted"
+  if (percent >= 96) return "positive"
+  if (percent >= 95) return "good"
+  if (percent >= 90) return "moderate"
+  return "poor"
+}
+
+export function audioPercentTone(percent: number | null): ReportTone {
+  if (percent === null) return "muted"
+  if (percent >= 98) return "good"
   if (percent >= 95) return "positive"
-  if (percent >= 85) return "good"
-  if (percent >= 70) return "moderate"
+  if (percent >= 90) return "moderate"
   return "poor"
 }
 

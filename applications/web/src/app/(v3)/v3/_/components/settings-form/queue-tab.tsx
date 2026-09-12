@@ -72,6 +72,14 @@ import {
   useResumeJobMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
+import {
+  audioPercentTone,
+  itemTone,
+  percentTone,
+  TONE_BADGE,
+  TONE_TEXT,
+} from "../books/AlignmentReport/shared"
 
 const PAGE_SIZE = 25
 
@@ -679,7 +687,7 @@ function JobItem({
           >
             {job.bookTitle ?? t("untitled")}
           </V3Link>
-          <StatusBadge status={job.status} />
+
           {job.status === "DONE" && job.alignmentGrade && job.bookUuid && (
             <V3Link
               href={`/books/${job.bookUuid}?report=true`}
@@ -688,6 +696,58 @@ function JobItem({
               <GradePill grade={job.alignmentGrade} />
             </V3Link>
           )}
+          {job.alignmentAudioCoverage != null &&
+          job.alignmentSentenceCoverage != null ? (
+            <Tooltip>
+              <TooltipTrigger
+                aria-label={t("actions.alignmentReport")}
+                className={cn(
+                  "inline-flex items-center gap-1 px-1 text-[11px]",
+                  TONE_BADGE[percentTone(job.alignmentSentenceCoverage)],
+                  TONE_TEXT[percentTone(job.alignmentSentenceCoverage)],
+                )}
+              >
+                <icon.TextGrammar className="size-3" />{" "}
+                {job.alignmentSentenceCoverage}%
+              </TooltipTrigger>
+              <TooltipContent> {t("actions.alignmentReport")} </TooltipContent>
+            </Tooltip>
+          ) : null}
+          {job.alignmentAudioCoverage != null &&
+          job.alignmentSentenceCoverage != null ? (
+            <Tooltip>
+              <TooltipTrigger
+                aria-label={t("actions.alignmentReport")}
+                className={cn(
+                  "inline-flex items-center gap-1 px-1 text-[11px]",
+                  TONE_BADGE[audioPercentTone(job.alignmentAudioCoverage)],
+                  TONE_TEXT[audioPercentTone(job.alignmentAudioCoverage)],
+                )}
+              >
+                <icon.Audiobook className="size-3" />{" "}
+                {job.alignmentAudioCoverage}%
+              </TooltipTrigger>
+              <TooltipContent> {t("actions.alignmentReport")} </TooltipContent>
+            </Tooltip>
+          ) : null}
+
+          {job.status === "DONE" && job.bookUuid && job.alignmentReportUuid ? (
+            <TooltipButton
+              variant="ghost"
+              className="size-5"
+              aria-label={t("actions.alignmentReport")}
+              tooltip={t("actions.alignmentReport")}
+              render={
+                <V3Link
+                  href={`/books/${job.bookUuid}?report=true&reportUuid=${job.alignmentReportUuid}`}
+                />
+              }
+            >
+              <icon.FileText className="size-4" />
+            </TooltipButton>
+          ) : null}
+
+          <StatusBadge status={job.status} />
         </ItemTitle>
         <ItemFooter className="text-muted-foreground flex-wrap justify-start">
           {detail}
@@ -742,22 +802,6 @@ function JobItem({
             }}
           >
             <icon.Close className="size-4" />
-          </TooltipButton>
-        ) : null}
-
-        {job.status === "DONE" && job.bookUuid && job.alignmentReportUuid ? (
-          <TooltipButton
-            variant="ghost"
-            className="size-5"
-            aria-label={t("actions.alignmentReport")}
-            tooltip={t("actions.alignmentReport")}
-            render={
-              <V3Link
-                href={`/books/${job.bookUuid}?report=true&reportUuid=${job.alignmentReportUuid}`}
-              />
-            }
-          >
-            <icon.FileText className="size-4" />
           </TooltipButton>
         ) : null}
       </ItemActions>
