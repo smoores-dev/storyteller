@@ -20,7 +20,7 @@ const ALIGNMENT_DISPLAY_FIELDS: DisplayField[] = [
 const FORCE_DISPLAY_MODE: ForceDisplayMode = {
   layout: "list",
   displayFields: ALIGNMENT_DISPLAY_FIELDS,
-  sortMode: "alignmentGrade",
+  sortMode: "alignedAt",
   sortDirection: "desc",
 }
 
