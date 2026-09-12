@@ -1256,6 +1256,7 @@ export async function removeBookFormat(
   BookEvents.emit("message", {
     type: "bookUpdated",
     bookUuid,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     payload: { [format]: null } as BookUpdatePayload,
   })
 

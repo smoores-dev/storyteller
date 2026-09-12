@@ -229,6 +229,7 @@ struct StorytellerReaderApp: App {
         debugLog(
             "[StorytellerReaderApp] App entering background - posting resign notification"
         )
+        DebugLogFile.shared.flush()
         NotificationCenter.default.post(name: .appWillResignActive, object: nil)
         Task {
             guard await StorytellerRuntime.start() else { return }

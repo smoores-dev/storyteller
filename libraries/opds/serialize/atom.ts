@@ -32,8 +32,10 @@ type XmlNode = Record<string, unknown>
 const plainText = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined
 
+/* oxlint-disable typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type */
 const otherProps = (link: Link): Record<string, unknown> =>
   (link.properties?.otherProperties ?? {}) as Record<string, unknown>
+/* oxlint-enable typescript/no-unnecessary-type-assertion */
 
 const acquisitionXml = (acquisition: Acquisition): XmlNode => {
   const node: XmlNode = { "@_type": acquisition.type }

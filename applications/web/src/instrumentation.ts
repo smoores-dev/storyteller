@@ -19,12 +19,10 @@ export async function register() {
     })
   }
 
-  const { getWatcher: getWatcher } = await import(
-    "./assets/library/scanner/triggers/watcher"
-  )
-  const { getScheduler: getScheduler } = await import(
-    "./assets/library/scanner/triggers/scheduler"
-  )
+  const { getWatcher: getWatcher } =
+    await import("./assets/library/scanner/triggers/watcher")
+  const { getScheduler: getScheduler } =
+    await import("./assets/library/scanner/triggers/scheduler")
   const { logger } = await import("./logging")
   const { migrate } = await import("./database/migrate")
   const { syncChangelog } = await import("./database/changelog")

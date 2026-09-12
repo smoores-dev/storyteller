@@ -339,7 +339,7 @@ const countBitsSet = (x) => {
 
 const countUnsetEnd = (x) => {
   let count = 0
-  while ((x & 1) === 0) (x = x >> 1), count++
+  while ((x & 1) === 0) ((x = x >> 1), count++)
   return count
 }
 
@@ -347,13 +347,11 @@ const decompressPalmDOC = (array) => {
   let output = []
   for (let i = 0; i < array.length; i++) {
     const byte = array[i]
-    if (byte === 0)
-      output.push(0) // uncompressed literal, just copy it
+    if (byte === 0) output.push(0) // uncompressed literal, just copy it
     else if (byte <= 8)
       // copy next 1-8 bytes
       for (const x of array.subarray(i + 1, (i += byte) + 1)) output.push(x)
-    else if (byte <= 0b0111_1111)
-      output.push(byte) // uncompressed literal
+    else if (byte <= 0b0111_1111) output.push(byte) // uncompressed literal
     else if (byte <= 0b1011_1111) {
       // 1st and 2nd bits are 10, meaning this is a length-distance pair
       // read next byte and combine it with current byte
@@ -426,7 +424,7 @@ const huffcdic = async (mobi, loadRecord) => {
   const decompress = (byteArray) => {
     let output = new Uint8Array()
     const bitLength = byteArray.byteLength * 8
-    for (let i = 0; i < bitLength; ) {
+    for (let i = 0; i < bitLength;) {
       const bits = Number(read32Bits(byteArray, i))
       let [found, codeLength, value] = table1[bits >>> 24]
       if (!found) {
@@ -471,7 +469,7 @@ const getIndexData = async (indxIndex, loadRecord) => {
   for (let i = 0; i < indx.numCncx; i++) {
     const record = await loadRecord(indxIndex + indx.numRecords + i + 1)
     const array = new Uint8Array(record)
-    for (let pos = 0; pos < array.byteLength; ) {
+    for (let pos = 0; pos < array.byteLength;) {
       const index = pos
       const { value, length } = getVarLen(array, pos)
       pos += length
@@ -891,7 +889,8 @@ class MOBI6 {
                 ? lastLevel + 1
                 : indent === lastIndent
                   ? lastLevel
-                  : lastLevelOfIndent.get(indent) ?? Math.max(0, lastLevel - 1)
+                  : (lastLevelOfIndent.get(indent) ??
+                    Math.max(0, lastLevel - 1))
             if (level > lastLevel) {
               if (lastItem) {
                 lastItem.subitems ??= []

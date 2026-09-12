@@ -204,7 +204,8 @@ export const getFeed = (doc) => {
 
     const groupLinks = linksByRel.get(REL.GROUP) ?? linksByRel.get("collection")
     const groupLink = groupLinks?.length
-      ? groupLinks.find((link) => groupedItems.has(link.href)) ?? groupLinks[0]
+      ? (groupLinks.find((link) => groupedItems.has(link.href)) ??
+        groupLinks[0])
       : null
     if (groupLink && !groupLinkMap.has(groupLink.href))
       groupLinkMap.set(groupLink.href, groupLink)
@@ -302,7 +303,7 @@ export const getOpenSearch = (doc) => {
         const ns = namespace === defaultNS ? null : namespace
         const val = map.get(ns)?.get(param)
         return encodeURIComponent(
-          val ? val : !ns ? defaultMap.get(param) ?? "" : "",
+          val ? val : !ns ? (defaultMap.get(param) ?? "") : "",
         )
       }),
     params: Array.from(
@@ -314,7 +315,7 @@ export const getOpenSearch = (doc) => {
           ns,
           name: param,
           required: !optional,
-          value: ns && ns !== defaultNS ? "" : defaultMap.get(param) ?? "",
+          value: ns && ns !== defaultNS ? "" : (defaultMap.get(param) ?? ""),
         }
       },
     ),

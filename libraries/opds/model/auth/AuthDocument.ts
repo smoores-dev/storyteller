@@ -91,13 +91,11 @@ export class AuthDocument {
 
     const doc = json as OPDSAuthenticationDocument
 
-    const authentication = doc.authentication.map(
-      (flow): AuthFlow => ({
-        type: flow.type,
-        links: flow.links ? Links.deserialize(flow.links) : undefined,
-        labels: flow.labels,
-      }),
-    )
+    const authentication = doc.authentication.map((flow): AuthFlow => ({
+      type: flow.type,
+      links: flow.links ? Links.deserialize(flow.links) : undefined,
+      labels: flow.labels,
+    }))
 
     return ok(
       new AuthDocument({

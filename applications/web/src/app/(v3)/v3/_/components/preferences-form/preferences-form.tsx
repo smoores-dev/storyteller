@@ -151,7 +151,7 @@ export function PreferencesForm({
 
   const activeTab: Tab | null = isMobile
     ? activeTabRaw
-    : activeTabRaw ?? "profile"
+    : (activeTabRaw ?? "profile")
   const showMobileSidebar = isMobile && !activeTab
 
   const setActiveTabEvent = useCallback(

@@ -20,6 +20,9 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.0"
 }
 
+val developmentDebugging = providers.gradleProperty("storyteller.debugBuild")
+    .map(String::toBoolean).getOrElse(false)
+
 val ciSigningKeystorePath = System.getenv("ANDROID_SIGNING_KEYSTORE_PATH")
 val ciSigningStorePassword = System.getenv("ANDROID_SIGNING_STORE_PASSWORD")
 val ciSigningKeyAlias = System.getenv("ANDROID_SIGNING_KEY_ALIAS")
@@ -41,10 +44,20 @@ android {
     }
 
     buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
         getByName("debug") {
             // Keeps debug installs from colliding with the store app or the v2
             // app's .dev builds, which share the dev.smoores.Storyteller namespace.
             applicationIdSuffix = ".dev3"
+            isDebuggable = developmentDebugging
+            isJniDebuggable = developmentDebugging
+            isMinifyEnabled = !developmentDebugging
+            isShrinkResources = !developmentDebugging
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -369,7 +382,9 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1")
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    if (developmentDebugging) {
+        debugImplementation("androidx.compose.ui:ui-tooling")
+    }
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16")
 }

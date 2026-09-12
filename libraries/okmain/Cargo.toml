@@ -15,7 +15,12 @@ crate-type = ["cdylib"]
 okmain = { version = "0.2.0", features = ["image", "unstable"] }
 napi = "3"
 napi-derive = "3"
-image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
+image = { version = "0.25", default-features = false, features = [
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+] }
 
 [build-dependencies]
 napi-build = "2"

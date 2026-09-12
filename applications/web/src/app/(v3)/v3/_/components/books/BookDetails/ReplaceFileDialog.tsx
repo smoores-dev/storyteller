@@ -69,8 +69,8 @@ export function ReplaceFileDialog({
 
   const sourceInsideAssetDir = Boolean(
     selectedPath &&
-      assetRoot &&
-      (selectedPath === assetRoot || selectedPath.startsWith(`${assetRoot}/`)),
+    assetRoot &&
+    (selectedPath === assetRoot || selectedPath.startsWith(`${assetRoot}/`)),
   )
 
   async function handleSubmit(

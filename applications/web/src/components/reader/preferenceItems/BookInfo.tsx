@@ -72,22 +72,22 @@ export const BookInfo = ({
           style={{
             height:
               detailView.mode === "audio"
-                ? imageDimensions?.audio?.height ?? 40
-                : imageDimensions?.text?.height ?? 40,
+                ? (imageDimensions?.audio?.height ?? 40)
+                : (imageDimensions?.text?.height ?? 40),
             width:
               detailView.mode === "audio"
-                ? imageDimensions?.audio?.width ?? 40
-                : imageDimensions?.text?.width ?? 28,
+                ? (imageDimensions?.audio?.width ?? 40)
+                : (imageDimensions?.text?.width ?? 28),
           }}
           src={getCoverUrl(book.uuid, {
             height:
               detailView.mode === "audio"
-                ? imageDimensions?.audio?.height ?? 40
-                : imageDimensions?.text?.height ?? 40,
+                ? (imageDimensions?.audio?.height ?? 40)
+                : (imageDimensions?.text?.height ?? 40),
             width:
               detailView.mode === "audio"
-                ? imageDimensions?.audio?.width ?? 40
-                : imageDimensions?.text?.width ?? 28,
+                ? (imageDimensions?.audio?.width ?? 40)
+                : (imageDimensions?.text?.width ?? 28),
             audio: detailView.mode === "audio",
             updatedAt: book.updatedAt,
           })}

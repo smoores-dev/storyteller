@@ -158,7 +158,9 @@ export function BookEditForm({ book }: Props) {
       subtitle: book.subtitle,
       language: book.language,
       authors: book.authors.map((author) => author.name),
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
       creators: book.creators as CreatorRelation[],
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
       series: book.series as SeriesRelation[],
       status: book.status?.uuid,
       collections: book.collections.map((collection) => collection.uuid),

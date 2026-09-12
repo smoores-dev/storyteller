@@ -51,7 +51,7 @@ export function SectionMenu({
   const [editorOpen, setEditorOpen] = useState(false)
 
   const editingShelf: ShelfWithBooks | null = isCustom
-    ? userShelves.find((s) => s.uuid === section.shelfUuid) ?? null
+    ? (userShelves.find((s) => s.uuid === section.shelfUuid) ?? null)
     : null
 
   const deleteAction = useConfirmAction({

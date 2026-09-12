@@ -107,7 +107,6 @@ object AndroidBridgeCallbacks {
 
     @JvmStatic
     fun readerStateDidChange(payload: String) {
-        android.util.Log.d("StorytellerReaderState", payload)
         readerStateListener?.callback?.invoke(payload)
     }
 

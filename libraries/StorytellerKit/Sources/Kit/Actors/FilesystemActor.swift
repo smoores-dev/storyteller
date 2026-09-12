@@ -177,6 +177,9 @@ public actor FilesystemActor {
 
     public func ensureSourceIDMarker(in directory: URL, sourceID: BookSourceID) throws {
         try ensureDirectoryExists(at: directory)
+        if let existing = try? sourceIDMarker(in: directory), existing == sourceID {
+            return
+        }
         let marker = directory.appendingPathComponent(
             BookSourceRecord.sourceIDFilename,
             isDirectory: false,

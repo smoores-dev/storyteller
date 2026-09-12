@@ -729,6 +729,7 @@ public struct EbookPlayerView: View {
                     ComicPlayerView(
                         pageURLs: viewModel.comicPageURLs,
                         selectedPageIndex: viewModel.progressManager?.selectedChapterId ?? 0,
+                        isScrollingMode: viewModel.settingsVM.scrollingMode,
                         backgroundColor: readerBackgroundColor,
                         isBottomScrubberVisible: isComicScrubberVisible,
                         isTopChromeVisible: isReaderTopChromeVisible,
@@ -1072,6 +1073,7 @@ public struct EbookPlayerView: View {
             chapters: viewModel.chapterList,
             selectedChapterHref: viewModel.selectedChapterHref,
             hasAudioNarration: viewModel.hasAudioNarration,
+            isComicBook: viewModel.isComicBook,
             isScrollingMode: viewModel.settingsVM.scrollingMode,
             freeBrowseMode: viewModel.settingsVM.freeBrowseMode,
         )
@@ -1147,15 +1149,15 @@ public struct EbookPlayerView: View {
     // webview bottoms out at the safe area, so deduct the safe-area inset.
     private var webViewBottomInset: CGFloat {
         if viewModel.settingsVM.alwaysShowMiniPlayer {
-            let audio = viewModel.hasAudioNarration
+            let supportsLayout = viewModel.hasAudioNarration || viewModel.isComicBook
             let showStats =
-                audio && viewModel.settingsVM.miniPlayerStatSlots.hasActiveComplication
+                supportsLayout && viewModel.settingsVM.miniPlayerStatSlots.hasActiveComplication
             let band = MiniPlayerMetrics.bottomBandHeight(
                 showStats: showStats,
                 safeAreaBottom: safeAreaInsets.bottom,
             )
             return MiniPlayerMetrics.compactHeight(
-                size: audio ? viewModel.settingsVM.miniPlayerSize : .compact,
+                size: supportsLayout ? viewModel.settingsVM.miniPlayerSize : .compact,
                 showStats: showStats,
             ) + max(0, band - safeAreaInsets.bottom)
         }

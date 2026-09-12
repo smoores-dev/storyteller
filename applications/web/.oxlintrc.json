@@ -1,0 +1,45 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": [
+    "../../.oxlintrc.json",
+    "../../config/oxlint/react-recommended.json",
+    "../../config/oxlint/nextjs.json",
+    "../../config/oxlint/typescript-strict.json"
+  ],
+  "ignorePatterns": [
+    "**/.*",
+    "**/dist",
+    "**/node_modules",
+    "tsbuild",
+    "/assets",
+    "/cache",
+    "/dev-data",
+    "/file-write-dist",
+    "/whisper-builds",
+    "/work-dist",
+    "/next-env.d.ts"
+  ],
+  "rules": {
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "react-compiler/react-compiler": "error",
+    "storyteller/no-next-intl-use-translations": "error",
+    "storyteller/no-react-hook-form-watch": "error",
+    "react/react-in-jsx-scope": "off",
+    "react/jsx-no-target-blank": "off",
+    "react/no-unknown-property": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx"],
+      "rules": {
+        "import-alias/prefer-alias": [
+          "error",
+          {
+            "alias": { "@": "./applications/web/src" },
+            "aliasForSubpaths": true
+          }
+        ]
+      }
+    }
+  ]
+}

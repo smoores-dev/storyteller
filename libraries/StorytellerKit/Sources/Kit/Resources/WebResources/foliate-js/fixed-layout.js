@@ -270,8 +270,8 @@ export class FixedLayout extends HTMLElement {
     const section =
       spread?.center ??
       (this.#side === "left"
-        ? spread.left ?? spread.right
-        : spread.right ?? spread.left)
+        ? (spread.left ?? spread.right)
+        : (spread.right ?? spread.left))
     return this.book.sections.indexOf(section)
   }
   #reportLocation(reason) {

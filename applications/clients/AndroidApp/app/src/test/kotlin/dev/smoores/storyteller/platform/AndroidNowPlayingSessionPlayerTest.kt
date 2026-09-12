@@ -5,6 +5,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,6 +16,53 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [28])
 class AndroidNowPlayingSessionPlayerTest {
+    @Test
+    fun cachedQueueTracksChapterChangesAndSeekability() {
+        val player = AndroidNowPlayingSessionPlayer(Looper.getMainLooper()) { _, _, _, _ -> }
+        player.configureCommands(commandConfiguration())
+        player.update(snapshot())
+        val chapters = windowedAudiobookState()
+        player.updateAudiobookState(chapters)
+        val originalItem = player.currentMediaItem
+        player.update(snapshot().copy(elapsedSeconds = 25.0))
+        assertSame(originalItem, player.currentMediaItem)
+        assertEquals(25_000L, player.currentPosition)
+
+        player.updateAudiobookState(chapters.copy(currentChapterID = "chapter-5", currentChapterIndex = 4))
+        assertEquals("Ending", player.currentMediaItem?.mediaMetadata?.title)
+        assertEquals(180_000L, player.duration)
+        player.configureCommands(commandConfiguration().copy(supportsChangePlaybackPosition = false))
+        assertFalse(player.isCurrentMediaItemSeekable)
+        player.configureCommands(commandConfiguration())
+        assertTrue(player.isCurrentMediaItemSeekable)
+
+        player.update(snapshot().copy(artwork = byteArrayOf(4, 5, 6)))
+        assertTrue(player.mediaMetadata.artworkData.contentEquals(byteArrayOf(4, 5, 6)))
+    }
+
+    @Test
+    fun positionTicksPreserveQueueButMetadataAndDurationChangesArePublished() {
+        val player = AndroidNowPlayingSessionPlayer(Looper.getMainLooper()) { _, _, _, _ -> }
+        player.configureCommands(commandConfiguration())
+        player.update(snapshot())
+        val originalItem = player.currentMediaItem
+
+        player.update(snapshot().copy(elapsedSeconds = 24.0, playbackRate = 1.75))
+        assertSame(originalItem, player.currentMediaItem)
+        assertEquals(24_000L, player.currentPosition)
+        assertEquals(1.75f, player.playbackParameters.speed)
+
+        player.update(snapshot().copy(title = "New book", durationSeconds = 300.0))
+        assertEquals("New book", player.currentMediaItem?.mediaMetadata?.title)
+        assertEquals(300_000L, player.duration)
+
+        player.clear()
+        assertEquals(0, player.mediaItemCount)
+        player.update(snapshot())
+        assertEquals("The Book", player.currentMediaItem?.mediaMetadata?.title)
+        assertEquals(120_000L, player.duration)
+    }
+
     @Test
     fun acceptsSessionPreparationWhileTheMirrorIsEmpty() {
         val player = AndroidNowPlayingSessionPlayer(Looper.getMainLooper()) { _, _, _, _ -> }

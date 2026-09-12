@@ -3,30 +3,31 @@
     "**/.yarn": true,
     "**/.pnp.*": true
   },
-  // "eslint.experimental.useFlatConfig": true,
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "oxc.enable.oxlint": true,
+  "oxc.enable.oxfmt": true,
   "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[yaml]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
 
   "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "cmake.configureOnOpen": false,
@@ -34,17 +35,6 @@
     "editor.defaultFormatter": "jnoortheen.nix-ide"
   },
   "tailwindCSS.experimental.configFile": "../applications/web/src/app/(v3)/v3/globals.css",
-  "eslint.workingDirectories": [
-    "audiobook",
-    "config/eslint",
-    "config/tsup",
-    "docs",
-    "fs",
-    "mobile",
-    "path",
-    "web",
-    "."
-  ],
   "i18n-ally.localesPaths": ["./web/messages"],
   "i18n-ally.keystyle": "nested",
   "python.defaultInterpreterPath": "${workspaceFolder}/libraries/mlx-audio/scripts/.venv/bin/python"

@@ -261,7 +261,7 @@ export function useMenuSurface({
     setActiveId((prev) =>
       userNavigatedRef.current && prev !== null && registryRef.current.has(prev)
         ? prev
-        : orderedIds()[0] ?? null,
+        : (orderedIds()[0] ?? null),
     )
   }, [registryVersion, searchable, orderedIds])
 
@@ -342,6 +342,7 @@ export function useMenuSurface({
     }
 
     const rtl =
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
       getComputedStyle(event.currentTarget as HTMLElement).direction === "rtl"
     const inwardKey = rtl ? "ArrowLeft" : "ArrowRight"
     const outwardKey = rtl ? "ArrowRight" : "ArrowLeft"

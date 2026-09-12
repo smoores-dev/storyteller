@@ -508,7 +508,7 @@ function WatchRuleCard({
             value={
               rule.importMode === "copy"
                 ? "replace"
-                : rule.epub2ImportStrategy ?? USE_DEFAULT_VALUE
+                : (rule.epub2ImportStrategy ?? USE_DEFAULT_VALUE)
             }
             onValueChange={(v) => {
               onChange({
@@ -1690,7 +1690,7 @@ function getUniformMode(
   const modes = METADATA_FIELDS.map((f) => overrides[f])
   const allSame = modes.every((m) => m === modes[0])
 
-  return allSame ? modes[0] ?? "custom" : "custom"
+  return allSame ? (modes[0] ?? "custom") : "custom"
 }
 
 function PerFieldOverridesEditor({

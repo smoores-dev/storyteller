@@ -8,9 +8,9 @@ import {
   Title,
 } from "@mantine/core"
 import type { Metadata } from "next"
+import { AuthError } from "next-auth"
 import { revalidatePath } from "next/cache"
 import { forbidden } from "next/navigation"
-import { AuthError } from "next-auth"
 
 import type { User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"

@@ -171,7 +171,7 @@ export async function extractCoverFileFromAudioDir(
   }
 
   // when an epub sits alongside audio, only honour an explicit "audio cover"
-  const filepath = hasEpub ? audioCover : audioCover ?? cover
+  const filepath = hasEpub ? audioCover : (audioCover ?? cover)
   if (!filepath) return null
 
   const file = await open(filepath)

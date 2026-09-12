@@ -170,7 +170,9 @@ function ScheduleSection() {
   const [showCronInput, setShowCronInput] = useState(false)
 
   const cron =
-    cronDraft !== undefined ? cronDraft : settings?.backupCronExpression ?? null
+    cronDraft !== undefined
+      ? cronDraft
+      : (settings?.backupCronExpression ?? null)
   const retention =
     retentionDraft ?? settings?.backupRetentionCount ?? DEFAULT_RETENTION
   const intervalMinutes = cron ? cronExpressionToMinutes(cron) : null
@@ -184,6 +186,7 @@ function ScheduleSection() {
           (settings.backupRetentionCount ?? DEFAULT_RETENTION)))
 
   const handleSave = useCallback(async () => {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     const result = await updateSettings({
       backupCronExpression: cron,
       backupRetentionCount: retention,

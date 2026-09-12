@@ -64,7 +64,7 @@ public final class EphemeralProgressManager {
     /// Track whether we've performed initial seek to server location.
     /// This happens when the book is first opened and has been
     /// read in a previous session.
-    public var hasPerformedInitialSeek = false
+    private var hasPerformedInitialSeek = false
 
     private enum UserNavDirection: String {
         case left
@@ -115,8 +115,6 @@ public final class EphemeralProgressManager {
     private let syncDebounceDelay: Duration = .seconds(1)
 
     /// Wake-from-sleep handling
-    private var lastResumeTime: Date?
-    private let resumeSuppressionDuration: TimeInterval = 30
 
     /// Book metadata for lockscreen display
     public var bookTitle: String? = nil
@@ -292,17 +290,10 @@ public final class EphemeralProgressManager {
     /// Audio locators are detected via type.contains("audio") to match server behavior:
     /// storyteller/web/src/components/reader/BookService.ts:892 (translateLocator)
     public func handleBookStructureReady() {
-        guard !hasPerformedInitialSeek else {
-            debugLog("[EPM] Initial seek already performed, skipping")
-            return
-        }
-
         guard let bridge = commsBridge else {
             debugLog("[EPM] Bridge not available for initial seek")
             return
         }
-
-        hasPerformedInitialSeek = true
 
         Task { @StorytellerUIActor in
             do {
@@ -1443,13 +1434,8 @@ public final class EphemeralProgressManager {
         )
     }
 
-    /// Handle app resume - check PSA for newer position and suppress nav actions
+    /// Handle app resume - check PSA for newer position
     public func handleResume() async {
-        lastResumeTime = Date()
-        debugLog(
-            "[EPM] Resume detected - suppressing nav actions for \(resumeSuppressionDuration)s"
-        )
-
         guard let bookID else {
             debugLog("[EPM] No bookID, skipping position check")
             return

@@ -1,6 +1,6 @@
 import * as CFI from "./epubcfi.js"
-import { TOCProgress, SectionProgress } from "./progress.js"
 import { Overlayer } from "./overlayer.js"
+import { TOCProgress, SectionProgress } from "./progress.js"
 import { textWalker } from "./text-walker.js"
 
 const SEARCH_PREFIX = "foliate-search:"
@@ -159,7 +159,7 @@ class CursorAutohider {
       ({ screenX, screenY }) => {
         // check if it actually moved
         if (screenX === this.#state.x && screenY === this.#state.y) return
-        ;(this.#state.x = screenX), (this.#state.y = screenY)
+        ;((this.#state.x = screenX), (this.#state.y = screenY))
         this.show()
         if (this.#timeout) clearTimeout(this.#timeout)
         if (check()) this.#timeout = setTimeout(this.hide.bind(this), 1000)

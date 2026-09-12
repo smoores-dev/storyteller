@@ -47,7 +47,7 @@
     "@readium/shared": "^2.4.0",
     "@reduxjs/toolkit": "^2.11.2",
     "@reflink/reflink": "^0.1.19",
-    "@remix-run/node": "^2.17.0",
+    "@remix-run/node": "^2.17.5",
     "@scalar/nextjs-openapi": "^0.1.17",
     "@speed-highlight/core": "^2.1.0",
     "@storyteller-platform/align": "workspace:*",
@@ -118,6 +118,7 @@
     "react-circular-progressbar": "^2.2.0",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.70.0",
+    "react-is": "^19.1.0",
     "react-redux": "^9.2.0",
     "react-window": "^2.1.0",
     "recharts": "canary",
@@ -139,7 +140,6 @@
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.44.1",
-    "@storyteller-platform/eslint": "workspace:*",
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/typography": "^0.5.20",
     "@tsconfig/strictest": "^2.0.5",
@@ -158,8 +158,6 @@
     "@types/yazl": "^3",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
     "esbuild": "^0.28.0",
-    "eslint": "^8.0.0",
-    "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "kysely-codegen": "^0.18.5",
     "playwright": "^1.61.1",
     "postcss": "^8.4.49",
@@ -167,7 +165,7 @@
     "postcss-simple-vars": "^7.0.1",
     "shadcn": "^4.0.6",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.2",
+    "typescript": "^7.0.2",
     "typescript-plugin-css-modules": "^5.0.1"
   },
   "resolutions": {

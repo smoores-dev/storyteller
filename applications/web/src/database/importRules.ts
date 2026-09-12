@@ -37,6 +37,7 @@ async function getConfigRuleObjects(): Promise<ImportRuleWithCollections[]> {
   const entries = await getConfigImportRules()
   const now = new Date().toISOString()
 
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
   const rules: ImportRuleWithCollections[] = entries.map((entry) => ({
     uuid: randomUUID(),
     kind: entry.kind,

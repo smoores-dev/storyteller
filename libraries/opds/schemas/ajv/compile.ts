@@ -9,10 +9,11 @@
  * (named exports are picked up by Node's cjs-module-lexer) with no import.meta
  * shim. run via `yarn schemas:sync`.
  */
+import fs from "node:fs"
+
 import { Ajv } from "ajv"
 import addFormats from "ajv-formats"
 import standaloneCode from "ajv/dist/standalone"
-import fs from "node:fs"
 
 import { allSchemas } from "../registry.generated.ts"
 import { roots } from "../roots.generated.ts"

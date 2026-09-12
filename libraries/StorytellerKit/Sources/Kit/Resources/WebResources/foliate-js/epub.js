@@ -326,7 +326,8 @@ const getMetadata = (opf) => {
     belongsTo: {
       collection: belongsTo.collection?.map(makeCollection),
       series:
-        belongsTo.series?.map(makeCollection) ?? legacyMeta?.["calibre:series"]
+        (belongsTo.series?.map(makeCollection) ??
+        legacyMeta?.["calibre:series"])
           ? {
               name: legacyMeta?.["calibre:series"],
               position: parseFloat(legacyMeta?.["calibre:series_index"]),

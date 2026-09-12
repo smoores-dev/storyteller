@@ -25,6 +25,8 @@ node_modules
 **/*tsconfig.tsbuildinfo
 
 tsbuild
+# per-package output of tsconfig.build.json
+.tsbuild/
 
 # direnv/devenv config and cache
 local.envrc

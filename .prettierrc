@@ -1,5 +1,0 @@
-{
-  "proseWrap": "always",
-  "semi": false,
-  "plugins": ["prettier-plugin-tailwindcss", "prettier-plugin-sql"]
-}

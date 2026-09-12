@@ -35,6 +35,7 @@ class PlayerComplicationTest {
             PlayerComplication.STAT_SLEEP_TIMER,
             PlayerComplication.STAT_FINISH_TIME,
             PlayerComplication.SLEEP_TIMER,
+            PlayerComplication.VOLUME,
             PlayerComplication.FREE_BROWSE_LOCK,
         )
         assertEquals(expected, PlayerComplication.entries.filter { it.requiresAudio }.toSet())

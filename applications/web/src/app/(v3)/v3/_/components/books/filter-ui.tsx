@@ -191,6 +191,7 @@ export function FileSizeInput({
 
   const unitItems = (["bytes", "kb", "mb", "gb"] as const).map((u) => ({
     value: u,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     label: t.plain(`fileSizeUnit.${u}` as "fileSizeUnit.mb"),
   }))
 

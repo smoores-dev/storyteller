@@ -2,7 +2,16 @@
   // This file is not used in compilation. It is here just for a nice editor experience.
   "extends": "@tsconfig/docusaurus/tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
+    // `strict` became the default in TypeScript 6; this project never opted out,
+    // so it is spelled out here to keep that decision local.
+    "strict": true,
+    // `baseUrl` is deprecated in TypeScript 6 and not supported by Oxlint's
+    // type-aware linter, so clear the value inherited from @tsconfig/docusaurus
+    // and anchor the `@site` alias with ${configDir} instead.
+    "baseUrl": null,
+    "paths": {
+      "@site/*": ["${configDir}/*"]
+    },
     "incremental": true,
     "composite": true,
     "noEmit": false,

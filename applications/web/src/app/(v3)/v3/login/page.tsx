@@ -1,8 +1,8 @@
 import { type Metadata } from "next"
-import { cookies, headers } from "next/headers"
-import { redirect } from "next/navigation"
 import { AuthError } from "next-auth"
 import { getTranslations } from "next-intl/server"
+import { cookies, headers } from "next/headers"
+import { redirect } from "next/navigation"
 
 import { apiHost } from "@/app/apiHost"
 import { fetchApiRoute } from "@/app/fetchApiRoute"

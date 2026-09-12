@@ -2,7 +2,7 @@ name: Storyteller
 options:
   minimumXcodeGenVersion: 2.38.0
   deploymentTarget:
-    iOS: "18.0"
+    iOS: "17.0"
     macOS: "15.0"
     watchOS: "10.0"
     tvOS: "17.0"
@@ -102,7 +102,7 @@ targets:
     platform: iOS
     settings:
       base:
-        IPHONEOS_DEPLOYMENT_TARGET: 18.0
+        IPHONEOS_DEPLOYMENT_TARGET: 17.0
         CODE_SIGN_ENTITLEMENTS: XCodeApps/StorytellerReaderIos.entitlements
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_FILE: XCodeApps/Info-iOS.plist
@@ -191,7 +191,7 @@ targets:
       Release: XCodeApps/Configs/Release.xcconfig
     settings:
       base:
-        IPHONEOS_DEPLOYMENT_TARGET: 18.0
+        IPHONEOS_DEPLOYMENT_TARGET: 17.0
         APPLICATION_EXTENSION_API_ONLY: YES
         CODE_SIGN_ENTITLEMENTS: XCodeApps/StorytellerReaderWidgets.entitlements
         CODE_SIGN_STYLE: Automatic

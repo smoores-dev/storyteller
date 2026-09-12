@@ -1,0 +1,21 @@
+diff --git a/Sources/SwiftJava/JavaObject+MethodCalls.swift b/Sources/SwiftJava/JavaObject+MethodCalls.swift
+index b5b7928a..5a22e61e 100644
+--- a/Sources/SwiftJava/JavaObject+MethodCalls.swift
++++ b/Sources/SwiftJava/JavaObject+MethodCalls.swift
+@@ -22,5 +22,3 @@ private func methodMangling<each Param: JavaValue>(
+   var parameterTypesArray: [JavaType] = []
+-  for parameterType in repeat each parameterTypes {
+-    parameterTypesArray.append(parameterType.javaType)
+-  }
++  repeat parameterTypesArray.append((each parameterTypes).javaType)
+   return MethodSignature(
+@@ -43,6 +41,7 @@ private func getJValues<each Arg: JavaValue>(_ arg: repeat each Arg, in environm
+   .init(unsafeUninitializedCapacity: countArgs(repeat each arg)) { (buffer, initializedCount) in
+-    for arg in repeat each arg {
+-      buffer[initializedCount] = arg.getJValue(in: environment)
++    func append<Value: JavaValue>(_ value: Value) {
++      buffer[initializedCount] = value.getJValue(in: environment)
+       initializedCount += 1
+     }
++    repeat append(each arg)
+   }

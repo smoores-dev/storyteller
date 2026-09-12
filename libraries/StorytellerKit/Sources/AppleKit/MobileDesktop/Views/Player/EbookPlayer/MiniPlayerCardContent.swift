@@ -52,11 +52,11 @@ struct MiniPlayerCardContent: View {
     var onExpandTap: (() -> Void)? = nil
 
     private var effectiveSize: MiniPlayerSize {
-        display.hasAudioNarration ? config.size : .compact
+        display.supportsMiniPlayerLayout ? config.size : .compact
     }
 
     private var hasStatBand: Bool {
-        display.hasAudioNarration && config.statSlots.hasActiveComplication
+        display.supportsMiniPlayerLayout && config.statSlots.hasActiveComplication
     }
 
     var body: some View {
@@ -124,7 +124,9 @@ struct MiniPlayerSlotRow: View {
     var onExpandTap: (() -> Void)? = nil
 
     private func isHidden(_ comp: PlayerComplication) -> Bool {
-        (comp == .none && editing == nil) || (comp.requiresAudio && !display.hasAudioNarration)
+        if comp == .scrubBar && display.isComicBook { return false }
+        return (comp == .none && editing == nil)
+            || (comp.requiresAudio && !display.hasAudioNarration)
     }
 
     private var entries: [(index: Int, comp: PlayerComplication)] {
@@ -217,9 +219,15 @@ struct MiniPlayerSlotRow: View {
             .frame(height: MiniPlayerMetrics.scrubControlHeight)
 
             HStack(spacing: 4) {
-                Text(formatTimeClock(scrubElapsed))
-                Spacer(minLength: 0)
-                Text("-\(formatTimeClock(display.chapterTimeRemaining))")
+                if display.isComicBook {
+                    Text("Page \(display.currentPage ?? 1)")
+                    Spacer(minLength: 0)
+                    Text("of \(display.totalPages ?? display.chapters.count)")
+                } else {
+                    Text(formatTimeClock(scrubElapsed))
+                    Spacer(minLength: 0)
+                    Text("-\(formatTimeClock(display.chapterTimeRemaining))")
+                }
             }
             .font(.system(size: 10, weight: .medium).monospacedDigit())
             .foregroundStyle(.secondary)

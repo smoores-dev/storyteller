@@ -20,7 +20,7 @@ export class ResolvedPos {
     let start = 0
     let parentOffset = pos
 
-    for (let node: Node | TextNode | Root = doc; ; ) {
+    for (let node: Node | TextNode | Root = doc; ;) {
       const { index, offset } = node.findIndex(parentOffset)
       const rem = parentOffset - offset
       path.push(node, index, start + offset)

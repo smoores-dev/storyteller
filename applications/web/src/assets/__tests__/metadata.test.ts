@@ -14,6 +14,7 @@ type TagRow = BookWithRelations["tags"][number]
 
 function creator(name: string, fileAs?: string): CreatorRow {
   return {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     uuid: "00000000-0000-0000-0000-000000000000" as CreatorRow["uuid"],
     id: 0,
     name,
@@ -25,6 +26,7 @@ function creator(name: string, fileAs?: string): CreatorRow {
 
 function seriesRow(name: string, position?: number): SeriesRow {
   return {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     uuid: "00000000-0000-0000-0000-000000000000" as SeriesRow["uuid"],
     name,
     featured: false,
@@ -36,6 +38,7 @@ function seriesRow(name: string, position?: number): SeriesRow {
 
 function tagRow(name: string): TagRow {
   return {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     uuid: "00000000-0000-0000-0000-000000000000" as TagRow["uuid"],
     name,
     icon: null,

@@ -202,6 +202,7 @@ export const highlightFragment = (
   const tokens = readReaderTokens()
   const style = preferences.highlightStyle
 
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
   activeFrame.msg.send("decorate", {
     group: HIGHLIGHT_GROUP,
     action: "add",

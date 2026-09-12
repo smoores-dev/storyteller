@@ -81,6 +81,20 @@ type GraphQLCommitNode = {
   author: GraphQLUser
 }
 
+type GraphQLCommitsPage = {
+  pageInfo?: { hasNextPage?: boolean; endCursor?: string | null } | null
+  nodes: GraphQLCommitNode[]
+}
+
+// Annotated by hand: inferred, the responses below trip TS7022 ("referenced
+// directly or indirectly in its own initializer") in the pagination loop, where
+// `cursor` is reassigned from the response. This is the shape the queries ask
+// for, and it is what `result.error` / `result.data` are read against anyway.
+type GraphQLResponse<Data> = {
+  error?: { message: string }
+  data?: Data
+}
+
 export type Contributor = Omit<GraphQLUser, "webUrl" | "bot"> & {
   gitlabUrl: string
   commits: number
@@ -93,11 +107,13 @@ function normalizeGitLabUrl(url: string): string {
 }
 
 async function fetchProjectMembers(): Promise<GraphQLMemberNode[]> {
-  const result = await client.query(projectMembersQuery, {}).toPromise()
+  const result: GraphQLResponse<{
+    project?: { projectMembers?: { nodes: GraphQLMemberNode[] } | null } | null
+  }> = await client.query(projectMembersQuery, {}).toPromise()
   if (result.error) {
     throw new Error(`Failed to fetch project members: ${result.error.message}`)
   }
-  return result.data?.project?.projectMembers?.nodes
+  return result.data?.project?.projectMembers?.nodes ?? []
 }
 
 async function fetchAllCommits(): Promise<GraphQLCommitNode[]> {
@@ -106,9 +122,9 @@ async function fetchAllCommits(): Promise<GraphQLCommitNode[]> {
   let cursor: string | null = null
 
   while (hasNextPage) {
-    const result = await client
-      .query(commitsQuery, { after: cursor })
-      .toPromise()
+    const result: GraphQLResponse<{
+      project?: { repository?: { commits?: GraphQLCommitsPage } | null } | null
+    }> = await client.query(commitsQuery, { after: cursor }).toPromise()
 
     if (result.error) {
       throw new Error(
@@ -160,8 +176,8 @@ async function fetchGitLabContributors(): Promise<Contributor[]> {
       const author = commit.author
       if (!author || author.bot) continue
 
-      if (contributorMap.has(author.username)) {
-        const contributor = contributorMap.get(author.username)
+      const contributor = contributorMap.get(author.username)
+      if (contributor) {
         contributor.commits += 1
 
         if (
@@ -196,6 +212,7 @@ async function fetchGitLabContributors(): Promise<Contributor[]> {
 
     return contributors
   } catch (error) {
+    // oxlint-disable-next-line typescript/restrict-template-expressions -- this project is not strict, so tsc types the catch binding as any
     throw new Error(`Failed to fetch gitlab contributors: ${error}`)
   }
 }

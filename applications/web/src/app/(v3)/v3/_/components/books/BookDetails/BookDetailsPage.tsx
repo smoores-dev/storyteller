@@ -38,9 +38,9 @@ import { ReviewSection } from "./sections/ReviewSection"
 
 const DynamicAlignmentReport = dynamic(
   () =>
-    import(
-      "@v3/_/components/books/AlignmentReport/AlignmentReportContent"
-    ).then((mod) => mod.AlignmentReportContent),
+    import("@v3/_/components/books/AlignmentReport/AlignmentReportContent").then(
+      (mod) => mod.AlignmentReportContent,
+    ),
   { ssr: false },
 )
 

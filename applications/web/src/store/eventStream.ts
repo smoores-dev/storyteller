@@ -30,6 +30,7 @@ const ELECTION_DELAY_MS = 400
 const listeners = {
   book: new Set(),
   job: new Set(),
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
 } as { [K in Channel]: Set<(event: ChannelMap[K]) => void> }
 
 const tabId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`

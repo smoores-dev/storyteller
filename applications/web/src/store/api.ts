@@ -1763,7 +1763,7 @@ export const api = createApi({
           api.util.updateQueryData("getBook", { uuid: bookUuid }, (draft) => {
             const existing = draft.userBookRating
             const nextReview =
-              review !== undefined ? review : existing?.review ?? null
+              review !== undefined ? review : (existing?.review ?? null)
 
             let nextRating: number | null
             let nextDimensions: RatingDimensionScores | null
@@ -1784,7 +1784,7 @@ export const api = createApi({
               }
             } else {
               nextRating =
-                rating !== undefined ? rating : existing?.rating ?? null
+                rating !== undefined ? rating : (existing?.rating ?? null)
               nextDimensions = existing?.dimensions ?? null
             }
 

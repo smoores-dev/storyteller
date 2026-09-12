@@ -1,8 +1,7 @@
 #! /usr/bin/env node
 
-import { build } from "esbuild"
-import { builtinModules } from "node:module"
-import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path"
+import { execFileSync } from "node:child_process"
+import { randomUUID } from "node:crypto"
 import {
   copyFileSync,
   existsSync,
@@ -12,11 +11,13 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs"
-import { execFileSync } from "node:child_process"
-import nodeGypBuild from "node-gyp-build"
-import { fileURLToPath, pathToFileURL } from "node:url"
-import { randomUUID } from "node:crypto"
+import { builtinModules } from "node:module"
 import { createRequire } from "node:module"
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path"
+import { fileURLToPath, pathToFileURL } from "node:url"
+
+import { build } from "esbuild"
+import nodeGypBuild from "node-gyp-build"
 
 const require = createRequire(import.meta.url)
 const nodePrefix = new Set(builtinModules)

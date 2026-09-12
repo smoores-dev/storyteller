@@ -1,7 +1,7 @@
 import { type Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { getTranslations } from "next-intl/server"
 
 import { createUserToken, hashPassword } from "@/auth/auth"
 import { getCookieDomain, getCookieSecure } from "@/cookies"

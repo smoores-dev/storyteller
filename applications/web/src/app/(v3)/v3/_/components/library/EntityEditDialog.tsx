@@ -135,6 +135,7 @@ function EditShelfDialog({
     skip: !open,
   })
 
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
   const shelf = (shelves as unknown as ShelfWithBooks[]).find(
     (s) => s.uuid === shelfUuid,
   )

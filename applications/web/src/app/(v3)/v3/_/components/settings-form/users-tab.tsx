@@ -124,7 +124,9 @@ export function UsersTab({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {users?.map((user) => <UserRow key={user.id} user={user} />)}
+              {users?.map((user) => (
+                <UserRow key={user.id} user={user} />
+              ))}
             </CardContent>
           </Card>
         )}

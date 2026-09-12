@@ -292,6 +292,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     using ctx = setupTestDb()
     const { seriesUuid } = seedLibrary(ctx)
 
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     const series = await getSeriesByUuid(seriesUuid as never)
     assert.ok(series)
     const oldXml = (

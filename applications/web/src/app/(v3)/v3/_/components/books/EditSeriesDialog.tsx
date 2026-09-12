@@ -152,9 +152,9 @@ export function EditSeriesDialog({
           <div className="py-4">
             <h2 className="text-sm font-medium">Books in this series</h2>
             <div className="grid grid-cols-1 gap-2">
-              {booksData?.pages
-                .flat()
-                .map((book) => <div key={book.uuid}>{book.title}</div>)}
+              {booksData?.pages.flat().map((book) => (
+                <div key={book.uuid}>{book.title}</div>
+              ))}
             </div>
           </div>
           <DialogFooter>

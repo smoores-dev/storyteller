@@ -11,11 +11,11 @@ export function withPageAuth<
   },
 >(permissions: Permission[]) {
   return (
-      page: (
-        props: T,
-        user: UserWithPermissions,
-      ) => Promise<React.ReactNode> | React.ReactNode,
-    ) =>
+    page: (
+      props: T,
+      user: UserWithPermissions,
+    ) => Promise<React.ReactNode> | React.ReactNode,
+  ) =>
     async (props: T) => {
       const user = await assertAuthenticatedUser()
 

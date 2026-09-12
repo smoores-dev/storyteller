@@ -236,11 +236,10 @@ export async function transcribe(
   return timing
 }
 
-export interface TranscribeFileOptions
-  extends Omit<
-    TranscribeOptions,
-    "engine" | "model" | "processors" | "threads"
-  > {
+export interface TranscribeFileOptions extends Omit<
+  TranscribeOptions,
+  "engine" | "model" | "processors" | "threads"
+> {
   engine: RecognitionEngine
   model: WhisperModel
   processors: number

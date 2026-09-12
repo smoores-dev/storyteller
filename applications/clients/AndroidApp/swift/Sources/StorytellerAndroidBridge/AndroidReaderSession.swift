@@ -192,7 +192,7 @@ final class AndroidReaderSession {
     private var router: ReaderMessageRouter?
     private var styleManager: ReaderStyleManager?
     private var statePublisher: Task<Void, Never>?
-    private var lastStatePayload: String?
+    private var lastPublishedState: ReaderState?
     private var isDarkMode = false
     private var overlayToggleCount = 0
     private var keepScreenOn = false
@@ -229,7 +229,7 @@ final class AndroidReaderSession {
     private var timelineForwardLocator: BookLocator?
     private var timelineForwardDescription = ""
 
-    private struct OverlayOptions: Encodable {
+    private struct OverlayOptions: Encodable, Equatable {
         var showProgress = kDefaultShowProgress
         var showPageNumber = kDefaultShowPageNumber
         var showTimeRemainingInBook = kDefaultShowTimeRemainingInBook
@@ -504,7 +504,7 @@ final class AndroidReaderSession {
         self.session = session
         overlayToggleCount = 0
         keepScreenOn = false
-        lastStatePayload = nil
+        lastPublishedState = nil
         resetSearchState()
         currentBookID = bookID
         highlights = []
@@ -649,7 +649,7 @@ final class AndroidReaderSession {
 
         evaluator?.close()
         evaluator = nil
-        lastStatePayload = nil
+        lastPublishedState = nil
         pendingServerPosition = nil
     }
 
@@ -811,7 +811,7 @@ final class AndroidReaderSession {
                 timelineForwardDescription = ""
                 publishState(session)
             case "sceneActive":
-                _ = await session.reconcilePositionAfterSceneActivation()
+                await session.handleSceneBecameActive()
             case "sceneBackground":
                 await session.handleSceneEnteredBackground()
             default:
@@ -1620,15 +1620,15 @@ final class AndroidReaderSession {
         await sendHighlightsToJS()
     }
 
-    private struct ReaderState: Encodable {
-        struct Toc: Encodable {
+    private struct ReaderState: Encodable, Equatable {
+        struct Toc: Encodable, Equatable {
             let label: String
             let href: String
             let level: Int
             let sectionIndex: Int
         }
 
-        struct Theme: Encodable {
+        struct Theme: Encodable, Equatable {
             let id: String
             let name: String
             let isBuiltIn: Bool
@@ -1652,7 +1652,7 @@ final class AndroidReaderSession {
             let customCSS: String?
         }
 
-        struct HighlightItem: Encodable {
+        struct HighlightItem: Encodable, Equatable {
             let id: String
             let text: String
             let colorId: String?
@@ -1661,26 +1661,26 @@ final class AndroidReaderSession {
             let chapterTitle: String?
         }
 
-        struct PaletteEntry: Encodable {
+        struct PaletteEntry: Encodable, Equatable {
             let id: String
             let color: String
             let label: String
         }
 
-        struct PendingEdit: Encodable {
+        struct PendingEdit: Encodable, Equatable {
             let id: String
             let text: String
             let colorId: String?
             let note: String?
         }
 
-        struct ServerPosition: Encodable {
+        struct ServerPosition: Encodable, Equatable {
             let title: String?
             let totalProgression: Double?
         }
 
-        struct Search: Encodable {
-            struct Section: Encodable {
+        struct Search: Encodable, Equatable {
+            struct Section: Encodable, Equatable {
                 let label: String
                 let results: [SearchResult]
             }
@@ -1693,7 +1693,7 @@ final class AndroidReaderSession {
             let error: String?
         }
 
-        struct DisplaySettings: Encodable {
+        struct DisplaySettings: Encodable, Equatable {
             let fontSize: Double
             let fontFamily: String
             let lineSpacing: Double
@@ -1715,7 +1715,7 @@ final class AndroidReaderSession {
             let readaloudDimAmount: Double
         }
 
-        struct MiniPlayerState: Encodable {
+        struct MiniPlayerState: Encodable, Equatable {
             let size: MiniPlayerSize
             let leadingStyle: MiniPlayerLeadingStyle
             let cycleFirst: MiniPlayerCycleBlock
@@ -1731,7 +1731,7 @@ final class AndroidReaderSession {
             let progressThickness: Double
         }
 
-        struct DockState: Encodable {
+        struct DockState: Encodable, Equatable {
             let leadingSlots: [PlayerComplication]
             let trailingSlots: [PlayerComplication]
             let centerSlots: [PlayerComplication]
@@ -1741,16 +1741,16 @@ final class AndroidReaderSession {
             let progressScope: MiniPlayerProgressScope
         }
 
-        struct MenuBarState: Encodable {
+        struct MenuBarState: Encodable, Equatable {
             let slots: [PlayerComplication]
         }
 
-        struct FullPlayerState: Encodable {
+        struct FullPlayerState: Encodable, Equatable {
             let statSlots: [PlayerComplication]
             let controlSlots: [PlayerComplication]
         }
 
-        struct PlaybackModes: Encodable {
+        struct PlaybackModes: Encodable, Equatable {
             let freeBrowseMode: String
             let readaloudHighlightVisibility: String
             let doubleTapPlay: String
@@ -2015,10 +2015,10 @@ final class AndroidReaderSession {
                 ? timelineForwardDescription : nil,
         )
 
-        guard let payload = try? encodeReaderJSON(state), payload != lastStatePayload else {
+        guard state != lastPublishedState, let payload = try? encodeReaderJSON(state) else {
             return
         }
-        lastStatePayload = payload
+        lastPublishedState = state
         notifyAndroidReaderStateDidChange(payload)
     }
 }

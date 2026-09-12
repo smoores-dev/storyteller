@@ -10,6 +10,9 @@ public final class DebugLogBuffer: @unchecked Sendable {
 
     private let lock = NSLock()
     private var buffer: [String] = []
+    private var lastBody = ""
+    private var lastStamped = ""
+    private var repeatCount = 0
     private let maxSize = 2000
     private var verbose: Bool
 
@@ -30,6 +33,10 @@ public final class DebugLogBuffer: @unchecked Sendable {
         let envEnabled = ProcessInfo.processInfo.environment["STORYTELLER_VERBOSE_LOG"] != nil
         let storedEnabled = UserDefaults.standard.bool(forKey: Self.verboseDefaultsKey)
         verbose = envEnabled || storedEnabled
+    }
+
+    init(isolatedVerbose: Bool) {
+        verbose = isolatedVerbose
     }
 
     public func setVerbose(_ enabled: Bool) {
@@ -56,16 +63,33 @@ public final class DebugLogBuffer: @unchecked Sendable {
         return true
     }
 
-    func append(_ message: String) {
+    func appendCollapsing(_ message: String, body: String) -> [String] {
         #if os(watchOS)
-        return
+        return []
         #else
         lock.lock()
         defer { lock.unlock() }
+
+        if body == lastBody, !buffer.isEmpty {
+            repeatCount += 1
+            buffer[buffer.count - 1] = "\(lastStamped) [x\(repeatCount)]"
+            return []
+        }
+
+        var lines: [String] = []
+        if repeatCount > 1 {
+            lines.append("\(lastStamped) [repeated \(repeatCount) times]")
+        }
+        lines.append(message)
+
+        lastBody = body
+        lastStamped = message
+        repeatCount = 1
         buffer.append(message)
         if buffer.count > maxSize {
             buffer.removeFirst()
         }
+        return lines
         #endif
     }
 
@@ -77,8 +101,12 @@ public final class DebugLogBuffer: @unchecked Sendable {
 
     public func clear() {
         lock.lock()
-        defer { lock.unlock() }
         buffer.removeAll()
+        lastBody = ""
+        lastStamped = ""
+        repeatCount = 0
+        lock.unlock()
+        DebugLogFile.shared.clear()
     }
 }
 
@@ -90,13 +118,16 @@ private let logTimestampFormatter: DateFormatter = {
 }()
 
 private func emit(_ message: String) {
-    DebugLogBuffer.shared.append("\(logTimestampFormatter.string(from: Date())) \(message)")
+    let stamped = "\(logTimestampFormatter.string(from: Date())) \(message)"
+    for line in DebugLogBuffer.shared.appendCollapsing(stamped, body: message) {
+        DebugLogFile.shared.append(line)
+    }
 
     #if DEBUG
     #if canImport(os)
-    logger.debug("\(message, privacy: .public)")
+    logger.debug("\(stamped, privacy: .public)")
     #else
-    print(message)
+    print(stamped)
     #endif
     #endif
 }

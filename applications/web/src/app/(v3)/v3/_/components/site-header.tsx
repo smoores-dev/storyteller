@@ -40,7 +40,7 @@ export function SiteHeader({
                 <div className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs">
                   {parents.map((crumb, idx) => (
                     <Fragment
-                      key={"render" in crumb ? idx : crumb.url ?? crumb.label}
+                      key={"render" in crumb ? idx : (crumb.url ?? crumb.label)}
                     >
                       {idx > 0 && (
                         <span aria-hidden className="opacity-50">

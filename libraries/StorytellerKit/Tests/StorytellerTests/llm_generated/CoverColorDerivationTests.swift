@@ -36,6 +36,7 @@ private func testBookID(_ uuid: String = "book-1") -> BookID {
     BookID(sourceID: "source-1", uuid: uuid)
 }
 
+@Suite(.serialized)
 struct CoverColorDerivationTests {
     @Test func keyIsStableAndIdentitySensitive() {
         let a = CoverColorDerivation.key(bookID: testBookID(), audio: false)

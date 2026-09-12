@@ -1,5 +1,5 @@
 {
-  "originHash" : "734c660098df74fe5eb05fb5cdd6c484ef67a82c0e07411f3ee730c32509ebb0",
+  "originHash" : "dceb430cd097db4ffc20f7d5d30c798c4f355e999ba26edda79d530e9cca1461",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://codeberg.org/richwaters/StoryAlign.git",
       "state" : {
-        "revision" : "7b98e371757a94086fe3c87e5518dd373078111e",
-        "version" : "1.2.5"
+        "revision" : "9e0200375cc80fe4c8170e8970b89589c0c7c9a2",
+        "version" : "1.4.0"
       }
     },
     {

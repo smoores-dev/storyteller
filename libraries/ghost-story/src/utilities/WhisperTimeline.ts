@@ -264,7 +264,7 @@ export function parseWhisperServerOutput(
       (run) => {
         const confidence = run.isMerged
           ? run.probability
-          : run.first.probability ?? 0
+          : (run.first.probability ?? 0)
 
         words.push({
           text: run.text,

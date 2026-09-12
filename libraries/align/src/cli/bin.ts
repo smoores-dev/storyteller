@@ -446,8 +446,8 @@ async function main() {
 
       const markedup =
         parsed.textRef === "id-fragment"
-          ? parsed.markedup ??
-            scratchPath(`stalign-markedup-${randomUUID()}.epub`)
+          ? (parsed.markedup ??
+            scratchPath(`stalign-markedup-${randomUUID()}.epub`))
           : parsed.epub
 
       if (parsed.textRef === "id-fragment") {

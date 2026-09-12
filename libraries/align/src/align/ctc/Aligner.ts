@@ -807,9 +807,10 @@ export class Aligner {
   private getMatchedBoundaries() {
     return this.alignedChapters
       .toSorted((a, b) => a.startOffset - b.startOffset)
-      .map<
-        [number, number]
-      >(({ startOffset, endOffset }) => [startOffset, endOffset])
+      .map<[number, number]>(({ startOffset, endOffset }) => [
+        startOffset,
+        endOffset,
+      ])
   }
 
   private narrowToAvailableBoundary(boundary: { start: number; end: number }) {
@@ -1075,7 +1076,7 @@ export class Aligner {
 
       const chunkEvidenceHead =
         chunkIndex === 0
-          ? evidenceRange?.[0] ?? boundaries.evidenceRange[0]
+          ? (evidenceRange?.[0] ?? boundaries.evidenceRange[0])
           : boundaries.evidenceRange[0]
       const chunkEvidenceTail =
         chunkIndex === chunks.length - 1 && evidenceRange
@@ -1084,7 +1085,7 @@ export class Aligner {
 
       const chunkMatchedHead =
         chunkIndex === 0
-          ? matchedRange?.[0] ?? boundaries.matchedRange[0]
+          ? (matchedRange?.[0] ?? boundaries.matchedRange[0])
           : boundaries.matchedRange[0]
       const chunkMatchedTail =
         chunkIndex === chunks.length - 1 && matchedRange

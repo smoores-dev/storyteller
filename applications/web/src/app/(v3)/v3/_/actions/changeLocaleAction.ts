@@ -1,8 +1,8 @@
 "use server"
 
+import { type Locale } from "next-intl"
 import { revalidatePath } from "next/cache"
 import { cookies, headers } from "next/headers"
-import { type Locale } from "next-intl"
 
 import { getCurrentUser } from "@/auth/auth"
 import { setUserSetting } from "@/database/userSettings"

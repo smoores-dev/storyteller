@@ -1,0 +1,15 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": [
+    "../../.oxlintrc.json",
+    "../../config/oxlint/react-recommended.json",
+    "../../config/oxlint/typescript-recommended.json"
+  ],
+  "ignorePatterns": [
+    "**/.*",
+    "**/dist",
+    "**/node_modules",
+    "tsbuild",
+    "/public/assets"
+  ]
+}

@@ -176,7 +176,7 @@ function extractWordTimelineFromSegments(
 
     const timeOffset =
       currentOffsetIndex < splitOffsets.length
-        ? splitOffsets[currentOffsetIndex]?.offset ?? 0
+        ? (splitOffsets[currentOffsetIndex]?.offset ?? 0)
         : 0
 
     for (const word of segment.words) {

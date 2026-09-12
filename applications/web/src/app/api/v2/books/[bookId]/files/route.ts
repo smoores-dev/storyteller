@@ -21,7 +21,6 @@ import { computeFileHash } from "@/assets/fs"
 import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import {
-  type BookFormat,
   type BookWithRelations,
   getBook,
   getBookUuid,
@@ -241,7 +240,7 @@ export const GET = withHasPermission<Params>("bookRead", {
   try {
     filepath = await getFilepath(book, format, rpf)
   } catch {
-    after(() => markFormatMissing(bookUuid, format as BookFormat))
+    after(() => markFormatMissing(bookUuid, format))
 
     return Response.json(
       { message: `Could not open ${format} for book with id ${bookId}` },
@@ -261,7 +260,7 @@ export const GET = withHasPermission<Params>("bookRead", {
   try {
     file = stack.use(await open(filepath))
   } catch {
-    after(() => markFormatMissing(bookUuid, format as BookFormat))
+    after(() => markFormatMissing(bookUuid, format))
 
     return Response.json(
       { message: `Could not open ${format} for book with id ${bookId}` },

@@ -1,6 +1,9 @@
 {
   "extends": ["@tsconfig/strictest/tsconfig.json"],
   "compilerOptions": {
+    // tsgolint does not auto-include
+    // @types packages the way tsc does, so list them explicitly.
+    "types": ["node", "smil-clockvalue"],
     "composite": true,
     "emitDeclarationOnly": true,
     "incremental": true,

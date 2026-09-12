@@ -48,7 +48,7 @@ export interface DownloadOptions {
   destPath: string
   expectedSize?: number
   /** verified after the download, the file is removed when it doesn't match */
-  expectedSha256?: string
+  expectedSha256?: string | undefined
   printOutput?: boolean
   onProgress?: ((downloaded: number, total: number) => void) | undefined
   signal?: AbortSignal | null | undefined
@@ -77,7 +77,7 @@ export async function downloadFile(options: DownloadOptions): Promise<void> {
   const contentLength = response.headers.get("content-length")
   const totalSize = contentLength
     ? parseInt(contentLength, 10)
-    : expectedSize ?? 0
+    : (expectedSize ?? 0)
 
   if (!response.body) {
     throw new Error("Response body is null")

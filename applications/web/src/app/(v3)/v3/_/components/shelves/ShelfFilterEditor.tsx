@@ -806,7 +806,7 @@ function ConditionEditor({
       fieldDef.defaultOperator ??
       (newOperators.includes(condition.operator)
         ? condition.operator
-        : newOperators[0] ?? "is")
+        : (newOperators[0] ?? "is"))
 
     onChange({
       type: "condition",
@@ -875,7 +875,10 @@ function ConditionEditor({
             {FIELD_GROUPS.map((group) => (
               <FilterableMenuGroup key={group.key}>
                 <FilterableMenuLabel>
-                  {t.plain(`fieldGroups.${group.key}` as "fieldGroups.text")}
+                  {
+                    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
+                    t.plain(`fieldGroups.${group.key}` as "fieldGroups.text")
+                  }
                 </FilterableMenuLabel>
                 {group.fields.map((field) => (
                   <FilterableMenuItem
@@ -953,12 +956,18 @@ function ConditionEditor({
                 {countOperators.map((op) => (
                   <FilterableMenuItem
                     key={op}
-                    textValue={t.plain(`operators.${op}` as "operators.is")}
+                    textValue={
+                      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
+                      t.plain(`operators.${op}` as "operators.is")
+                    }
                     onSelect={() => {
                       handleOperatorChange(op)
                     }}
                   >
-                    {t.plain(`operators.${op}` as "operators.is")}
+                    {
+                      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
+                      t.plain(`operators.${op}` as "operators.is")
+                    }
                   </FilterableMenuItem>
                 ))}
               </FilterableMenuGroup>

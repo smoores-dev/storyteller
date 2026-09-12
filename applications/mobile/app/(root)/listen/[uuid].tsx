@@ -183,8 +183,8 @@ export default function PlayerScreen() {
 
   const listing =
     format === "audiobook"
-      ? book?.audiobook?.manifest?.toc ?? fromTracks
-      : book?.readaloud?.audioManifest?.toc ?? fromTracks
+      ? (book?.audiobook?.manifest?.toc ?? fromTracks)
+      : (book?.readaloud?.audioManifest?.toc ?? fromTracks)
 
   const readingOrder =
     format === "audiobook"
@@ -198,7 +198,7 @@ export default function PlayerScreen() {
 
   const chapters = listing.flatMap((item) => [
     item,
-    ...("children" in item ? item.children ?? [] : []),
+    ...("children" in item ? (item.children ?? []) : []),
   ])
 
   const currentChapterIndex = chapters.findLastIndex((link) => {

@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": [
+    "../../.oxlintrc.json",
+    "../../config/oxlint/typescript-strict.json"
+  ],
+  "ignorePatterns": [
+    "**/.*",
+    "**/dist",
+    "**/node_modules",
+    "tsbuild",
+    "/schemas/*.generated.ts",
+    "/schemas/ajv/compile.ts",
+    "/schemas/ajv/standalone.cjs",
+    "/schemas/sync.ts",
+    "/schemas/vendor"
+  ],
+  "rules": {}
+}

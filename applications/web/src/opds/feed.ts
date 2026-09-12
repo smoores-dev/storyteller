@@ -175,6 +175,7 @@ export function createBooksFeed(
   const lastUpdated =
     books.length > 0
       ? books.reduce((latest, book) => {
+          // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
           const date = new Date(book.updatedAt as Date | string)
           return Math.max(latest, date.getTime())
         }, 0)

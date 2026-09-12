@@ -315,7 +315,7 @@ export const preferencesSlice = createSlice({
       const currentSpeed =
         target === "global"
           ? state.global.playbackSpeed
-          : state.perBook[target]?.playbackSpeed ?? state.global.playbackSpeed
+          : (state.perBook[target]?.playbackSpeed ?? state.global.playbackSpeed)
       setTargetPreference(state, target, "playbackSpeed", currentSpeed + value)
     },
 
@@ -331,10 +331,10 @@ export const preferencesSlice = createSlice({
       const detailView =
         target === "global"
           ? state.global.detailView
-          : state.perBook[target]?.detailView ?? {
+          : (state.perBook[target]?.detailView ?? {
               mode: "text",
               scope: "chapter",
-            }
+            })
 
       if (detailView.mode === "audio") {
         if (detailView.scope === "book") {

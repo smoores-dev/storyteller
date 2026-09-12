@@ -128,6 +128,7 @@ export const reconcileMetadataStep = defineStep(
           replace: identifiersMode === "always",
         },
       }),
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     } as BookRelationsUpdate)
 
     const updated = await getBook(input.bookUuid)

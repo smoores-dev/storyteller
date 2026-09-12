@@ -58,6 +58,14 @@ public func debugLogJSON(requestID: String) async throws {
     }
 }
 
+public func exportDebugLogFile(requestID: String) async throws {
+    try await deliverAndroidBridgePayload(requestID: requestID) {
+        try encodeJSON(
+            AndroidDebugLogExport(path: DebugLogFile.shared.exportCombined()?.path)
+        )
+    }
+}
+
 public func clearDebugLog(requestID: String) async throws {
     try await deliverAndroidBridgePayload(requestID: requestID) {
         DebugLogBuffer.shared.clear()
@@ -75,6 +83,10 @@ public func setVerboseLogging(requestID: String, enabled: Bool) async throws {
 private struct AndroidDebugLog: Encodable {
     let verbose: Bool
     let messages: [String]
+}
+
+private struct AndroidDebugLogExport: Encodable {
+    let path: String?
 }
 
 public func liveSyncPeerFound(instanceID: String, host: String, port: Int32) async {

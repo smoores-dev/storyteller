@@ -41,7 +41,7 @@ export function BookSectionsDialog({
   const reorder = (nextVisible: DetailSectionKey[]) => {
     const queue = [...nextVisible]
     const nextOrder = order.map((key) =>
-      hidden.includes(key) ? key : queue.shift() ?? key,
+      hidden.includes(key) ? key : (queue.shift() ?? key),
     )
 
     setSections({ order: nextOrder, hidden })

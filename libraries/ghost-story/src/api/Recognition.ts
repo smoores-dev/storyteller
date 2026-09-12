@@ -101,9 +101,8 @@ export async function recognize(
     }
 
     case "whisper-server": {
-      const WhisperServerSTT = await import(
-        "../recognition/WhisperServerSTT.ts"
-      )
+      const WhisperServerSTT =
+        await import("../recognition/WhisperServerSTT.ts")
 
       const result = await WhisperServerSTT.recognize(
         source,
@@ -139,9 +138,8 @@ export async function recognize(
     }
 
     case "microsoft-azure": {
-      const AzureCognitiveServicesSTT = await import(
-        "../recognition/AzureCognitiveServicesSTT.ts"
-      )
+      const AzureCognitiveServicesSTT =
+        await import("../recognition/AzureCognitiveServicesSTT.ts")
 
       if (!opts.options.subscriptionKey) {
         throw new Error("Azure subscription key is required")
@@ -168,9 +166,8 @@ export async function recognize(
     }
 
     case "amazon-transcribe": {
-      const AmazonTranscribeSTT = await import(
-        "../recognition/AmazonTranscribeSTT.ts"
-      )
+      const AmazonTranscribeSTT =
+        await import("../recognition/AmazonTranscribeSTT.ts")
 
       const result = await AmazonTranscribeSTT.recognize(
         source,

@@ -263,7 +263,7 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
         ? "collections"
         : item.kind === "shelf"
           ? "shelves"
-          : builtinGroupFor(item.builtinKey ?? "") ?? "library"
+          : (builtinGroupFor(item.builtinKey ?? "") ?? "library")
 
     return (
       s.groups.find((g) => g.kind === kind) ?? s.groups[s.groups.length - 1]
@@ -581,7 +581,7 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
         }}
         shelf={
           shelfEditorState && shelfEditorState !== "create"
-            ? userShelves.find((s) => s.uuid === shelfEditorState) ?? null
+            ? (userShelves.find((s) => s.uuid === shelfEditorState) ?? null)
             : null
         }
         onSaved={handleShelfSaved}

@@ -9,7 +9,7 @@ const concatTypedArray = (a, b) => {
 }
 
 const strcmp = (a, b) => {
-  ;(a = a.toLowerCase()), (b = b.toLowerCase())
+  ;((a = a.toLowerCase()), (b = b.toLowerCase()))
   return a < b ? -1 : a > b ? 1 : 0
 }
 
@@ -192,7 +192,7 @@ class StarDictIndex extends Index {
     const words = []
     const offsets = []
     const sizes = []
-    for (let i = 0; i < arr.length; ) {
+    for (let i = 0; i < arr.length;) {
       const newI = arr.subarray(0, i + 256).indexOf(0, i)
       if (newI < 0) throw new Error("Word too big")
       words.push([i, newI])

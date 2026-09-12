@@ -15,6 +15,7 @@ public final class MediaOverlayManager {
     private let bookStructure: [SectionInfo]
     private let bookID: BookID
     private let reloadBookIntoActor: () async -> Void
+    private let seekToFragment: @Sendable (Int, String) async -> Bool
     private let settingsVM: any ReaderSettingsReading
     /// Section indices that contain at least one SMIL entry (used to skip non-audio sections).
     private let audioSectionIndices: [Int]
@@ -44,9 +45,6 @@ public final class MediaOverlayManager {
 
     public var isPlaying: Bool = false
     public var isInBackground: Bool = false
-    /// The webview missed view updates while backgrounded; cleared only after
-    /// a confirmed re-anchor navigation.
-    public var viewPositionDirty: Bool = false
 
     /// Task for delayed page flips during fractional sentence playback
     /// (i.e. when a sentence is half on this page and half on the next)
@@ -150,12 +148,16 @@ public final class MediaOverlayManager {
         bridge: ReaderCommsBridge?,
         settingsVM: any ReaderSettingsReading,
         reloadBookIntoActor: @escaping () async -> Void,
+        seekToFragment: @escaping @Sendable (Int, String) async -> Bool = { sectionIndex, textId in
+            await SMILPlayerActor.shared.seekToFragment(sectionIndex: sectionIndex, textId: textId)
+        },
     ) {
         self.bookStructure = bookStructure
         self.bookID = bookID
         self.commsBridge = bridge
         self.settingsVM = settingsVM
         self.reloadBookIntoActor = reloadBookIntoActor
+        self.seekToFragment = seekToFragment
         let audioSections = Self.buildAudioSectionIndices(bookStructure: bookStructure)
         audioSectionIndices = audioSections
         audioSectionIndexBySection = Self.buildAudioSectionIndexMap(
@@ -252,12 +254,6 @@ public final class MediaOverlayManager {
             liveSyncFollowRate = nil
             lastLiveSyncApplyTime = nil
         }
-        if isInBackground && state.isPlaying {
-            if !viewPositionDirty {
-                debugLog("[MOM] Audio playing while backgrounded")
-            }
-            viewPositionDirty = true
-        }
         chapterElapsedSeconds = state.chapterElapsed
         chapterTotalSeconds = state.chapterTotal
         bookElapsedSeconds = state.bookElapsed
@@ -335,11 +331,9 @@ public final class MediaOverlayManager {
             "[MOM] Actor advanced to: section=\(sectionIndex), entry=\(entryIndex), textId=\(entry.textId)"
         )
 
-        // A backgrounded webview cannot be trusted to run JS; skip the send
-        // and let the scene-active re-anchor restore navigation and highlight.
-        if isInBackground {
-            viewPositionDirty = true
-        } else if !playheadDiverged {
+        // A backgrounded webview cannot be trusted to run JS. Scene activation
+        // resyncs it.
+        if !isInBackground, !playheadDiverged {
             Task {
                 await sendHighlightCommand(
                     sectionIndex: sectionIndex,
@@ -596,14 +590,19 @@ public final class MediaOverlayManager {
         // not re-drive the view, which already moved.
         suppressActorHighlightsUntil = Date().addingTimeInterval(0.5)
 
-        let success = await SMILPlayerActor.shared.seekToFragment(
-            sectionIndex: sectionIndex,
-            textId: anchor,
-        )
+        let success = await seekToFragment(sectionIndex, anchor)
         if success {
             debugLog("[MOM] handleSeekEvent - seek successful")
             playheadDiverged = false
 
+            // Preserve the selected playhead through reflow even when its
+            // highlight is hidden, without navigating the viewport again.
+            if source == .doubleTap || source == .userNav {
+                try? await commsBridge?.sendJsSetReflowAnchor(
+                    sectionIndex: sectionIndex,
+                    textId: anchor,
+                )
+            }
             if wasPlaying {
                 await sendHighlightCommand(sectionIndex: sectionIndex, textId: anchor)
                 debugLog("[MOM] handleSeekEvent - resuming playback")

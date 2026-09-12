@@ -413,8 +413,8 @@ private struct ReadaloudPreviewPane: View {
             index == activeIndex && highlightVisible
             && settingsVM.readaloudHighlightMode == "underline"
             && settingsVM.readaloudUnderlineStyle != "solid"
-        if decorated {
-            styledText(at: index)
+        if #available(iOS 18.0, *), decorated {
+            styledText(at: index, decorateUnderline: true)
                 .customAttribute(ReadaloudUnderlineMark())
                 .textRenderer(
                     UnderlineDecorationRenderer(
@@ -427,8 +427,8 @@ private struct ReadaloudPreviewPane: View {
         }
     }
 
-    private func styledText(at index: Int) -> Text {
-        var text = Text(attributedSentence(at: index))
+    private func styledText(at index: Int, decorateUnderline: Bool = false) -> Text {
+        var text = Text(attributedSentence(at: index, decorateUnderline: decorateUnderline))
         if index == activeIndex && highlightVisible
             && settingsVM.readaloudHighlightMode == "text"
         {
@@ -438,7 +438,7 @@ private struct ReadaloudPreviewPane: View {
         return text
     }
 
-    private func attributedSentence(at index: Int) -> AttributedString {
+    private func attributedSentence(at index: Int, decorateUnderline: Bool) -> AttributedString {
         let fg = pageForeground
         let highlight = highlightPreviewColor
         let dimming = isPlaying && settingsVM.readaloudDimOthers
@@ -451,7 +451,7 @@ private struct ReadaloudPreviewPane: View {
                     span.foregroundColor = highlight
                 case "underline":
                     span.foregroundColor = fg
-                    if settingsVM.readaloudUnderlineStyle == "solid" {
+                    if !decorateUnderline {
                         span.underlineStyle = Text.LineStyle(pattern: .solid, color: highlight)
                     }
                 default:
@@ -467,7 +467,10 @@ private struct ReadaloudPreviewPane: View {
 
     private var highlightPreviewColor: Color {
         let hex = settingsVM.themeHex(
-            settingsVM.highlightColor, role: .highlight, for: colorScheme)
+            settingsVM.highlightColor,
+            role: .highlight,
+            for: colorScheme,
+        )
         return Color(hex: hex ?? "") ?? .yellow
     }
 

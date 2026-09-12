@@ -101,7 +101,7 @@ function chooseBestFromBins(bins: Map<number, number[]>, dir: 1 | -1) {
     return null
   }
 
-  return dir > 0 ? max(best) ?? null : min(best) ?? null
+  return dir > 0 ? (max(best) ?? null) : (min(best) ?? null)
 }
 
 function getOffsetFromWordIndex(

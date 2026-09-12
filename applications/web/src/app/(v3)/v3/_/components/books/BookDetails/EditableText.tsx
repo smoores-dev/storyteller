@@ -90,7 +90,7 @@ export function EditableText({
         const fieldValue =
           type === "date"
             ? toDateInputValue(field.value)
-            : (field.value as string | null) ?? ""
+            : ((field.value as string | null) ?? "")
 
         const commonProps = {
           id: name,

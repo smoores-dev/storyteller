@@ -36,6 +36,16 @@
         android:name=".StorytellerApplication"
         android:label="Storyteller v3"
         tools:ignore="MissingIntentFilterForMediaSearch">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <!-- Voice play-from-search is TBD. -->
         <meta-data
             android:name="com.google.android.gms.car.application"

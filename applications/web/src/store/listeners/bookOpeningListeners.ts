@@ -258,6 +258,7 @@ async function loadPublication(
       )
     }
     const response = await fetched.readAsJSON()
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     const manifest = Manifest.deserialize(response as string)
     if (!manifest) {
       throw new PublicationLoadError(

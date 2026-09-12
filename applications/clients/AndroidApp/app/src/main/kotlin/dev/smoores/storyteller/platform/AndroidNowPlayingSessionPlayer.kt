@@ -64,6 +64,15 @@ internal class AndroidNowPlayingSessionPlayer(
     private var commandConfiguration: AndroidNowPlayingCommandConfiguration? = null
     private var audiobookState: AndroidNowPlayingAudiobookState? = null
 
+    private data class PlaylistKey(
+        val metadata: MediaMetadata,
+        val duration: Double?,
+        val chapters: AndroidNowPlayingAudiobookState?,
+        val seekable: Boolean,
+    )
+    private var playlistKey: PlaylistKey? = null
+    private var cachedPlaylist: Pair<List<MediaItemData>, Int>? = null
+
     fun update(snapshot: AndroidNowPlayingSnapshot) {
         requireApplicationThread()
         this.snapshot = snapshot
@@ -74,6 +83,8 @@ internal class AndroidNowPlayingSessionPlayer(
         requireApplicationThread()
         snapshot = null
         audiobookState = null
+        playlistKey = null
+        cachedPlaylist = null
         invalidateState()
     }
 
@@ -261,6 +272,23 @@ internal class AndroidNowPlayingSessionPlayer(
     }
 
     private fun chapterPlaylist(
+        snapshot: AndroidNowPlayingSnapshot,
+        nowPlayingMetadata: MediaMetadata,
+    ): Pair<List<MediaItemData>, Int> {
+        val key = PlaylistKey(
+            metadata = nowPlayingMetadata,
+            duration = snapshot.durationSeconds,
+            chapters = audiobookState,
+            seekable = commandConfiguration?.supportsChangePlaybackPosition == true,
+        )
+        cachedPlaylist?.let { if (playlistKey == key) return it }
+        val result = buildChapterPlaylist(snapshot, nowPlayingMetadata)
+        playlistKey = key
+        cachedPlaylist = result
+        return result
+    }
+
+    private fun buildChapterPlaylist(
         snapshot: AndroidNowPlayingSnapshot,
         nowPlayingMetadata: MediaMetadata,
     ): Pair<List<MediaItemData>, Int> {

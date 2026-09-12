@@ -7,17 +7,19 @@ cd "${SCRIPT_DIR}/.."
 
 usage() {
     cat <<'EOF'
-Usage: scripts/androidbuild [--swift-only|--apk-only]
+Usage: scripts/androidbuild [--swift-only|--apk-only] [--debug]
 
 Cross-compiles the StorytellerAndroidBridge dynamic library (AndroidApp/swift, with
 jextract-generated JNI bindings) using the Swift SDK for Android, stages it
-plus the Swift runtime into AndroidApp jniLibs, and assembles the debug APK
-with Gradle.
+plus the Swift runtime into AndroidApp jniLibs, and assembles an optimized APK
+with Gradle. Swift and its source dependencies use release optimization by default.
+The APK keeps the debug variant name, signing, and .dev3 app ID for in-place updates.
 
 Options:
   -h, --help      Show this help.
   --swift-only    Build and stage the Swift .so files, skip Gradle.
-  --apk-only      Skip the Swift build, only run Gradle.
+  --apk-only      Reuse staged Swift libraries (must match the selected mode).
+  --debug         Disable optimization and enable debugging on both sides.
 
 Environment:
   ANDROID_HOME                Android SDK path. Default: ~/Library/Android/sdk
@@ -32,22 +34,18 @@ EOF
 
 SWIFT_ONLY=0
 APK_ONLY=0
-case "${1:-}" in
--h | --help)
-    usage
-    exit 0
-    ;;
---swift-only)
-    SWIFT_ONLY=1
-    shift
-    ;;
---apk-only)
-    APK_ONLY=1
-    shift
-    ;;
-esac
-
-if [[ "$#" -ne 0 ]]; then
+SWIFT_CONFIGURATION=release
+DEBUG_BUILD=false
+for arg in "$@"; do
+    case "${arg}" in
+    -h | --help) usage; exit 0 ;;
+    --swift-only) SWIFT_ONLY=1 ;;
+    --apk-only) APK_ONLY=1 ;;
+    --debug) SWIFT_CONFIGURATION=debug; DEBUG_BUILD=true ;;
+    *) usage >&2; exit 2 ;;
+    esac
+done
+if [[ "${SWIFT_ONLY}" -eq 1 && "${APK_ONLY}" -eq 1 ]]; then
     usage >&2
     exit 2
 fi
@@ -131,7 +129,23 @@ if [[ "${APK_ONLY}" -eq 0 ]]; then
         (cd AndroidApp/swift && "${SWIFT_BIN}" package clean)
     fi
 
+    # Pack expansions avoid a Swift 6.2.3 SIL verifier crash when optimizing
+    # swift-java 0.4.2's heterogeneous pack loops.
+    (cd AndroidApp/swift && "${SWIFT_BIN}" package resolve)
+    SWIFT_JAVA_CHECKOUT="AndroidApp/swift/.build/checkouts/swift-java"
+    PACK_PATCH="${SCRIPT_DIR}/patches/swift-java-0.4.2-pack-expansion.patch"
+    if git -C "${SWIFT_JAVA_CHECKOUT}" apply --reverse --check "${PACK_PATCH}" 2>/dev/null; then
+        :
+    elif git -C "${SWIFT_JAVA_CHECKOUT}" apply --check "${PACK_PATCH}"; then
+        chmod u+w "${SWIFT_JAVA_CHECKOUT}/Sources/SwiftJava/JavaObject+MethodCalls.swift"
+        git -C "${SWIFT_JAVA_CHECKOUT}" apply "${PACK_PATCH}"
+    else
+        echo "SwiftJava pack-loop workaround no longer applies; review the dependency before building." >&2
+        exit 1
+    fi
+
     (cd AndroidApp/swift && "${SWIFT_BIN}" build \
+            --configuration "${SWIFT_CONFIGURATION}" \
             --disable-sandbox \
             --swift-sdk "${TRIPLE}" \
             --product StorytellerAndroidBridge)
@@ -140,8 +154,8 @@ if [[ "${APK_ONLY}" -eq 0 ]]; then
 
     rm -rf "${JNILIBS}"
     mkdir -p "${JNILIBS}"
-    cp "AndroidApp/swift/.build/${TRIPLE}/debug/libStorytellerAndroidBridge.so" "${JNILIBS}/"
-    cp "AndroidApp/swift/.build/${TRIPLE}/debug/libSwiftJava.so" "${JNILIBS}/"
+    cp "AndroidApp/swift/.build/${TRIPLE}/${SWIFT_CONFIGURATION}/libStorytellerAndroidBridge.so" "${JNILIBS}/"
+    cp "AndroidApp/swift/.build/${TRIPLE}/${SWIFT_CONFIGURATION}/libSwiftJava.so" "${JNILIBS}/"
 
     RUNTIME_LIBS="${SDK_BUNDLE}/swift-android/swift-resources/usr/lib/swift-aarch64/android"
     for lib in "${RUNTIME_LIBS}"/*.so; do
@@ -166,9 +180,15 @@ if [[ "${APK_ONLY}" -eq 0 ]]; then
     javac --release 17 -d "${SWIFTKIT_CLASSES}" @"${SWIFTKIT_CLASSES}/sources.txt"
     jar cf "${SWIFTKIT_OUT}/swiftkit-core.jar" -C "${SWIFTKIT_CLASSES}" org
     echo "Built ${SWIFTKIT_OUT}/swiftkit-core.jar"
+    printf '%s\n' "${SWIFT_CONFIGURATION}" > "${JNILIBS}/.swift-configuration"
 fi
 
 if [[ "${SWIFT_ONLY}" -eq 0 ]]; then
-    (cd AndroidApp && ./gradlew :app:assembleDebug)
+    if [[ ! -f "${JNILIBS}/.swift-configuration" ]] ||
+        [[ "$(<"${JNILIBS}/.swift-configuration")" != "${SWIFT_CONFIGURATION}" ]]; then
+        echo "Staged Swift libraries do not match ${SWIFT_CONFIGURATION}; run a full build first." >&2
+        exit 1
+    fi
+    (cd AndroidApp && ./gradlew :app:assembleDebug -Pstoryteller.debugBuild="${DEBUG_BUILD}")
     echo "APK: AndroidApp/app/build/outputs/apk/debug/app-debug.apk"
 fi

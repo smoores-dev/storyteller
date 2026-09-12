@@ -1,8 +1,11 @@
 /** @type {import('lint-staged').Config} */
 const config = {
-  "*.{js,jsx,ts,tsx}": "yarn eslint --fix",
-  "*.{js,jsx,ts,tsx,json}": ["yarn prettier --write", () => "yarn check:types"],
-  "*.{md,yaml,yml,json,sql}": "yarn prettier --write",
+  "*.{js,jsx,ts,tsx}": "yarn oxlint --fix --no-error-on-unmatched-pattern",
+  "*.{js,jsx,ts,tsx,json}": [
+    "yarn oxfmt --no-error-on-unmatched-pattern",
+    () => "yarn check:types",
+  ],
+  "*.{md,yaml,yml,json}": "yarn oxfmt --no-error-on-unmatched-pattern",
   "applications/web/migrations/*.sql": ["./scripts/dump-schema.sh"],
   "libraries/epub/*": () => [
     "yarn workspace @storyteller-platform/epub readme",

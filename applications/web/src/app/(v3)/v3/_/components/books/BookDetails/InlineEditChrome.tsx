@@ -75,6 +75,7 @@ export function InlineFieldChrome({
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     if (!commitOnBlur) return
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
     void commitField(name)
   }

@@ -216,7 +216,7 @@ function WatchRuleCard({
               value={
                 rule.importMode === "copy"
                   ? "replace"
-                  : rule.epub2ImportStrategy ?? ""
+                  : (rule.epub2ImportStrategy ?? "")
               }
               onChange={(e) => {
                 const strategy = e.currentTarget.value || null
@@ -1325,7 +1325,7 @@ export function SettingsForm({
         deleteRuleUuids={state.deleteRuleUuids ?? []}
         onRulesChange={(rules) => {
           form.setFieldValue(
-            "importRules",
+            "importRules", // oxlint-disable-line typescript/no-unnecessary-type-assertion -- tsgo vs ts 5 diff
             rules as unknown as Settings["importRules"],
           )
         }}

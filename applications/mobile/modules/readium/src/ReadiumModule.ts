@@ -1,4 +1,4 @@
-import { NativeModule, requireNativeModule } from "expo-modules-core"
+import { type NativeModule, requireNativeModule } from "expo-modules-core"
 
 import { type UUID } from "@/uuid"
 

@@ -123,6 +123,7 @@ export async function recognize(
     const transcript = firstAlternative?.transcript || ""
     const words = firstAlternative?.words || []
 
+    /* oxlint-disable typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type */
     const timeline = words.map(
       (wordEntry: DeepgramWordEntry) =>
         ({
@@ -133,6 +134,7 @@ export async function recognize(
           confidence: wordEntry.confidence,
         }) as TimelineEntry,
     )
+    /* oxlint-enable typescript/no-unnecessary-type-assertion */
 
     if (opts.punctuate) {
       applyPunctuationToTimeline(timeline, transcript)

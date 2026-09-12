@@ -349,6 +349,17 @@ public final class ReaderCommsBridge {
         return try? JSONDecoder().decode(FirstVisiblePosition.self, from: jsonData)
     }
 
+    /// Preserve a visible sentence through reflow without scrolling or highlighting it.
+    public func sendJsSetReflowAnchor(sectionIndex: Int, textId: String) async throws {
+        guard let js else {
+            throw ReaderCommsBridgeError.jsNotAvailable
+        }
+        let escapedTextId = textId.replacingOccurrences(of: "'", with: "\\'")
+        _ = try await js.evaluate(
+            "window.foliateManager.setReflowAnchor(\(sectionIndex), '\(escapedTextId)')"
+        )
+    }
+
     /// Swift commands JS to highlight a specific text fragment
     /// JS will apply highlight CSS and report visibility for page flip timing
     /// - Parameters:

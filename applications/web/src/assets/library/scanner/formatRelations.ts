@@ -65,6 +65,7 @@ export function getFormatRelationPatch(
   switch (ctx.format) {
     case "ebook":
       return {
+        // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
         ebook: {
           filepath: ctx.filepath,
           ...(update as EbookRelationPatch),
@@ -72,6 +73,7 @@ export function getFormatRelationPatch(
       }
     case "audiobook":
       return {
+        // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
         audiobook: {
           filepath: ctx.filepath,
           ...(update as AudiobookRelationPatch),

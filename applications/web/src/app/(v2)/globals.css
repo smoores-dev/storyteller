@@ -18,7 +18,8 @@
   --animate-swap-right: swap-right 0.5s ease-in-out 0.25s both;
   --animate-swap-left: swap-left 0.5s ease-in-out 0.25s both;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif,
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-heading: var(--font-young-serif);
   --font-literata: Literata;

@@ -1,6 +1,11 @@
 package dev.smoores.storyteller.ui
 
 import android.content.ClipData
+import android.content.Context
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,6 +80,7 @@ internal fun SettingsScreen(
     setLiveSyncEnabled: (Boolean) -> Unit = {},
     loadLiveSyncStatus: (suspend () -> LiveSyncStatus)? = null,
     loadDebugLog: (suspend () -> DebugLogState)? = null,
+    exportDebugLogFile: (suspend () -> String?)? = null,
     clearDebugLog: (suspend () -> Unit)? = null,
     setVerboseLogging: (Boolean) -> Unit = {},
     einkOptions: EinkOptions? = null,
@@ -257,6 +263,7 @@ internal fun SettingsScreen(
             Text("Debug", style = MaterialTheme.typography.titleMedium)
             DebugLogSection(
                 loadDebugLog = loadDebugLog,
+                exportDebugLogFile = exportDebugLogFile,
                 clearDebugLog = clearDebugLog,
                 setVerboseLogging = setVerboseLogging,
             )
@@ -352,6 +359,7 @@ private fun SettingToggleRow(
 @Composable
 private fun DebugLogSection(
     loadDebugLog: suspend () -> DebugLogState,
+    exportDebugLogFile: (suspend () -> String?)?,
     clearDebugLog: (suspend () -> Unit)?,
     setVerboseLogging: (Boolean) -> Unit,
 ) {
@@ -374,6 +382,7 @@ private fun DebugLogSection(
         DebugLogDialog(
             onDismiss = { dialogOpen = false },
             loadDebugLog = loadDebugLog,
+            exportDebugLogFile = exportDebugLogFile,
             clearDebugLog = clearDebugLog,
             setVerboseLogging = setVerboseLogging,
         )
@@ -384,10 +393,12 @@ private fun DebugLogSection(
 private fun DebugLogDialog(
     onDismiss: () -> Unit,
     loadDebugLog: suspend () -> DebugLogState,
+    exportDebugLogFile: (suspend () -> String?)?,
     clearDebugLog: (suspend () -> Unit)?,
     setVerboseLogging: (Boolean) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val clipboard = LocalClipboard.current
     var verbose by remember { mutableStateOf(false) }
     var messages by remember { mutableStateOf(listOf<String>()) }
@@ -427,7 +438,8 @@ private fun DebugLogDialog(
                         Text("Verbose logging", style = MaterialTheme.typography.bodyLarge)
                         Text(
                             "Includes high-volume performance diagnostics. Turn this on, " +
-                                "reproduce the issue, then copy the log.",
+                                "reproduce the issue, then share the file. The list below " +
+                                "shows only recent messages.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -462,6 +474,14 @@ private fun DebugLogDialog(
                             )
                         }
                     }) { Text("Copy") }
+                    if (exportDebugLogFile != null) {
+                        TextButton(onClick = {
+                            scope.launch {
+                                val path = runCatching { exportDebugLogFile() }.getOrNull()
+                                if (path != null) shareDebugLogFile(context, File(path))
+                            }
+                        }) { Text("Share File") }
+                    }
                     if (clearDebugLog != null) {
                         TextButton(onClick = {
                             scope.launch {
@@ -638,3 +658,17 @@ internal fun connectionText(status: String, message: String?): String =
         "error" -> "Could not connect"
         else -> "Not configured"
     }
+
+private fun shareDebugLogFile(context: Context, file: File) {
+    val uri = FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        file,
+    )
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(send, null))
+}

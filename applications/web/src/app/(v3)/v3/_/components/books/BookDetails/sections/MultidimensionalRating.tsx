@@ -35,7 +35,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 function toNumber(value: number | readonly number[]): number {
-  return typeof value === "number" ? value : value[0] ?? 0
+  return typeof value === "number" ? value : (value[0] ?? 0)
 }
 
 function snap(value: number): number {
@@ -156,7 +156,7 @@ export function MultidimensionalRating({
     committedAverage != null &&
     Math.abs(rating - committedAverage) > 0.01
 
-  const effectiveRating = isManualOverride ? rating : average ?? rating
+  const effectiveRating = isManualOverride ? rating : (average ?? rating)
 
   const data = inUseDimensions.map((d) => ({
     label: d.label,

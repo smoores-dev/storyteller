@@ -404,10 +404,16 @@ private struct CoverImageView: View {
     let image: Image
 
     var body: some View {
-        image
-            .resizable()
-            .widgetAccentedRenderingMode(.fullColor)
-            .scaledToFill()
+        if #available(iOS 18.0, *) {
+            image
+                .resizable()
+                .widgetAccentedRenderingMode(.fullColor)
+                .scaledToFill()
+        } else {
+            image
+                .resizable()
+                .scaledToFill()
+        }
     }
 }
 

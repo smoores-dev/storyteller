@@ -446,6 +446,7 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
                     },
                     loadLiveSyncStatus = viewModel::liveSyncStatus,
                     loadDebugLog = viewModel::debugLog,
+                    exportDebugLogFile = viewModel::exportDebugLogFile,
                     clearDebugLog = viewModel::clearDebugLog,
                     setVerboseLogging = viewModel::setVerboseLogging,
                     einkOptions = if (EinkDisplay.isBoox) einkOptions else null,

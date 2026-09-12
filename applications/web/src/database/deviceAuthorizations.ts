@@ -72,6 +72,7 @@ export async function createDeviceAuthorization() {
 
   await db
     .insertInto("deviceAuthorization")
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     .values({
       deviceCode,
       userCode,

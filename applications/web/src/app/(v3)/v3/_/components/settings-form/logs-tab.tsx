@@ -214,6 +214,7 @@ export function LogsTab() {
     retentionDraft !== savedRetention
 
   const handleSaveRetention = useCallback(async () => {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     const result = await updateSettings({
       logRetentionDays: retention,
     } as Partial<Settings> as Settings)
@@ -450,9 +451,9 @@ function LogLine({
 }) {
   const levelName = LEVEL_NAMES[entry.level] ?? `LVL${entry.level}`
   const colorClass = highlighting
-    ? LEVEL_TEXT[paneTheme][entry.level] ?? "text-foreground"
+    ? (LEVEL_TEXT[paneTheme][entry.level] ?? "text-foreground")
     : "text-foreground"
-  const bgClass = highlighting ? LEVEL_BG[paneTheme][entry.level] ?? "" : ""
+  const bgClass = highlighting ? (LEVEL_BG[paneTheme][entry.level] ?? "") : ""
 
   return (
     <div
