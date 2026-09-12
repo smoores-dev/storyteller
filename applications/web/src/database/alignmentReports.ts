@@ -8,6 +8,7 @@ import {
   type AnyReport,
   type LegacyReport,
   type ReportV3,
+  gradeForScore,
   normalizeReport,
   summarizeReport as summarizeReportView,
 } from "@/alignmentReportView"
@@ -290,6 +291,43 @@ export async function recomputeAlignmentSummaries(
       .execute()
     count++
   }
+
+  const oldReports = await db
+    .selectFrom("alignmentReport")
+    .select([
+      "uuid",
+      "bookUuid",
+      "confidence",
+      "sentenceCoverage",
+      "audioCoverage",
+    ])
+    .where("report", "is", null)
+    .where(
+      "uuid",
+      "not in",
+      rows.map((r) => r.uuid),
+    )
+    .where("bookUuid", "in", bookUuids)
+    .execute()
+
+  for (const report of oldReports) {
+    // just recalc grade
+    const s =
+      report.sentenceCoverage && report.audioCoverage
+        ? gradeForScore(report.sentenceCoverage, report.audioCoverage)
+        : ({ grade: "F", band: 4, score: 0 } as const)
+
+    await db
+      .updateTable("alignmentReport")
+      .set({
+        grade: s.grade,
+        score: s.score,
+      })
+      .where("uuid", "=", report.uuid)
+      .execute()
+    count++
+  }
+
   return count
 }
 
