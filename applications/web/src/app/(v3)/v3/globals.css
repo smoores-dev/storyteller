@@ -79,9 +79,7 @@
 
   --font-sans:
     var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif,
-    --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui,
-    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-    "Noto Color Emoji";
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-heading: var(--font-literata), Georgia, serif;
   --font-seriff: var(--font-literata), Georgia, serif;
   --font-serif: var(--font-literata), Georgia, serif;
