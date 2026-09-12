@@ -1,4 +1,5 @@
 import { type Selectable } from "kysely"
+import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
 import {
   ACTIVE_JOB_STATUSES,
@@ -31,20 +32,33 @@ export type DisplayJob = Omit<Job, "config"> & {
   config: RunConfigSummary | null
   bookTitle: string | null
   alignmentGrade: AlignmentGrade | null
-  alignmentScore: number | null
+  // alignmentScore: number | null
+  alignmentReportUuid: UUID | null
+  alignmentSentenceCoverage: number | null
+  alignmentAudioCoverage: number | null
 }
 
 export function toDisplayJob(
   job: Job,
   bookTitle: string | null = null,
-  alignment?: { grade: AlignmentGrade | null; score: number | null },
+  alignment?: {
+    grade: AlignmentGrade | null
+    score: number | null
+    sentenceCoverage: number | null
+    audioCoverage: number | null
+    reportUuid: UUID | null
+    hasReport: boolean
+  },
 ): DisplayJob {
   return {
     ...job,
     config: summarizeRunConfig(job.config),
     bookTitle,
     alignmentGrade: alignment?.grade ?? null,
-    alignmentScore: alignment?.score ?? null,
+    // alignmentScore: alignment?.score ?? null,
+    alignmentSentenceCoverage: alignment?.sentenceCoverage ?? null,
+    alignmentAudioCoverage: alignment?.audioCoverage ?? null,
+    alignmentReportUuid: alignment?.reportUuid ?? null,
   }
 }
 
@@ -125,22 +139,27 @@ function getDisplayJobBase() {
     .leftJoin("book", "book.uuid", "job.bookUuid")
     .selectAll("job")
     .select("book.title as bookTitle")
-    .select((eb) => [
-      eb
-        .selectFrom("alignmentReport")
-        .select("grade")
-        .whereRef("alignmentReport.jobUuid", "=", "job.uuid")
-        .orderBy("createdAt", "desc")
-        .limit(1)
-        .as("alignmentGrade"),
-      eb
-        .selectFrom("alignmentReport")
-        .select("score")
-        .whereRef("alignmentReport.jobUuid", "=", "job.uuid")
-        .orderBy("createdAt", "desc")
-        .limit(1)
-        .as("alignmentScore"),
-    ])
+    .select((eb) =>
+      jsonObjectFrom(
+        eb
+          .selectFrom("alignmentReport")
+          .select((eb) => [
+            "uuid",
+            "grade",
+            "sentenceCoverage",
+            "audioCoverage",
+            eb
+              .case()
+              .when("report", "is not", null)
+              .then(true)
+              .else(false)
+              .end()
+              .as("hasReport"),
+          ])
+          .whereRef("alignmentReport.jobUuid", "=", "job.uuid")
+          .orderBy("createdAt", "desc"),
+      ).as("alignment"),
+    )
 }
 
 export async function getDisplayJob(uuid: UUID): Promise<DisplayJob | null> {
@@ -150,10 +169,14 @@ export async function getDisplayJob(uuid: UUID): Promise<DisplayJob | null> {
   if (!row) {
     return null
   }
-  const { bookTitle, alignmentGrade, alignmentScore, ...job } = row
+  const { bookTitle, alignment, ...job } = row
   return toDisplayJob(job, bookTitle ?? null, {
-    grade: alignmentGrade ?? null,
-    score: alignmentScore ?? null,
+    grade: alignment?.grade ?? null,
+    sentenceCoverage: alignment?.sentenceCoverage ?? null,
+    audioCoverage: alignment?.audioCoverage ?? null,
+    reportUuid: alignment?.hasReport ? alignment.uuid ?? null : null,
+    hasReport: alignment?.hasReport ?? false,
+    score: null,
   })
 }
 
@@ -192,10 +215,14 @@ export async function getDisplayJobs(
     .$if(offset !== undefined, (qb) => qb.offset(offset ?? 0))
     .execute()
 
-  return rows.map(({ bookTitle, alignmentGrade, alignmentScore, ...row }) =>
+  return rows.map(({ bookTitle, alignment, ...row }) =>
     toDisplayJob(row, bookTitle ?? null, {
-      grade: alignmentGrade ?? null,
-      score: alignmentScore ?? null,
+      grade: alignment?.grade ?? null,
+      score: null,
+      sentenceCoverage: alignment?.sentenceCoverage ?? null,
+      audioCoverage: alignment?.audioCoverage ?? null,
+      reportUuid: alignment?.hasReport ? alignment.uuid ?? null : null,
+      hasReport: alignment?.hasReport ?? false,
     }),
   )
 }

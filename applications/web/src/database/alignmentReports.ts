@@ -160,6 +160,7 @@ export async function createAlignmentReport(input: {
 
 export async function getAlignmentReportForBook(
   bookUuid: UUID,
+  reportUuid?: UUID,
 ): Promise<AlignmentReport | null> {
   const row = await db
     .selectFrom("alignmentReport")
@@ -167,6 +168,10 @@ export async function getAlignmentReportForBook(
     .where("bookUuid", "=", bookUuid)
     .orderBy("createdAt", "desc")
     .orderBy(sql`rowid`, "desc")
+    .$if(!!reportUuid, (qb) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      qb.where("uuid", "=", reportUuid!),
+    )
     .limit(1)
     .executeTakeFirst()
 

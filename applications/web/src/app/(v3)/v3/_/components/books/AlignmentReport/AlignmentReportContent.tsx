@@ -1,5 +1,6 @@
 "use client"
 
+import { useSearchParams } from "next/navigation"
 import { useRef } from "react"
 
 import { PlayerDock } from "@v3/_/components/audio"
@@ -26,18 +27,25 @@ import { useTracks } from "./useTracks"
 
 export function AlignmentReportContent({
   uuid,
+  // alignmentReportUuid,
   compact = false,
   onClose,
   onBack,
   embedded = false,
 }: {
   uuid: UUID
+  // alignmentReportUuid?: UUID
   compact?: boolean
   onClose?: () => void
   onBack?: () => void
   embedded?: boolean
 }) {
-  const { data, isLoading, isError } = useGetBookAlignmentReportQuery({ uuid })
+  const searchParams = useSearchParams()
+  const alignmentReportUuid = searchParams.get("reportUuid") as UUID | undefined
+  const { data, isLoading, isError } = useGetBookAlignmentReportQuery({
+    uuid,
+    reportUuid: alignmentReportUuid,
+  })
   const t = useTranslation("AlignmentReport")
   const root = useRef<HTMLDivElement>(null)
   const narrow = useNarrow(root)

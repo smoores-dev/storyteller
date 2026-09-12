@@ -2449,9 +2449,10 @@ export const api = createApi({
     }),
     getBookAlignmentReport: build.query<
       BookAlignmentReportView,
-      { uuid: UUID }
+      { uuid: UUID; reportUuid?: UUID }
     >({
-      query: ({ uuid }) => `/books/${uuid}/alignment-report`,
+      query: ({ uuid, reportUuid }) =>
+        `/books/${uuid}/alignment-report${reportUuid ? `?reportUuid=${reportUuid}` : ""}`,
       providesTags: (_result, _error, { uuid }) => [
         { type: "BookAlignmentReport", id: uuid },
       ],

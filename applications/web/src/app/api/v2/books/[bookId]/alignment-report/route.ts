@@ -50,9 +50,12 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
 ) => {
   const { bookId } = await context.params
   const bookUuid = bookId as UUID
+  const reportUuid = request.nextUrl.searchParams.get("reportUuid") as
+    | UUID
+    | undefined
 
   const [report, book] = await Promise.all([
-    getAlignmentReportForBook(bookUuid),
+    getAlignmentReportForBook(bookUuid, reportUuid),
     getBook(bookUuid, request.auth.user.id),
   ])
   const job = report?.jobUuid ? await getJob(report.jobUuid) : null

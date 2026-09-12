@@ -745,13 +745,17 @@ function JobItem({
           </TooltipButton>
         ) : null}
 
-        {job.status === "DONE" && job.bookUuid ? (
+        {job.status === "DONE" && job.bookUuid && job.alignmentReportUuid ? (
           <TooltipButton
             variant="ghost"
             className="size-5"
             aria-label={t("actions.alignmentReport")}
             tooltip={t("actions.alignmentReport")}
-            render={<V3Link href={`/books/${job.bookUuid}?report=true`} />}
+            render={
+              <V3Link
+                href={`/books/${job.bookUuid}?report=true&reportUuid=${job.alignmentReportUuid}`}
+              />
+            }
           >
             <icon.FileText className="size-4" />
           </TooltipButton>
