@@ -47,11 +47,17 @@ WHERE
       name = 'ctcDevice'
   );
 
+-- delete existing setting
+DELETE FROM settings
+WHERE
+  name = 'alignmentGranularity';
+
+-- add new setting
 INSERT INTO
   settings (name, value)
 SELECT
   'alignmentGranularity',
-  'sentence'
+  '"sentence"'
 WHERE
   NOT EXISTS (
     SELECT
