@@ -76,6 +76,7 @@ __tests__
 /libraries/mlx-audio/.build
 
 
+!/types
 
 /docker
 
