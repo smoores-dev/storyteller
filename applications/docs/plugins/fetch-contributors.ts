@@ -1,14 +1,14 @@
-import type { LoadContext } from "@docusaurus/types"
+import type { LoadContext, Plugin } from "@docusaurus/types"
 
 import {
   type Contributor,
   gitLabContributors,
 } from "../utils/gitlabContributors"
 
-export default function (context: LoadContext) {
+export default function (context: LoadContext): Plugin<Contributor[]> {
   return {
     name: "fetch-contributors-plugin",
-    async loadContent(): Promise<Contributor[]> {
+    async loadContent() {
       return gitLabContributors
     },
     async contentLoaded({ content, actions }) {

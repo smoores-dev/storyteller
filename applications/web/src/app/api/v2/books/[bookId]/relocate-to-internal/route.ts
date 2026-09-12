@@ -36,7 +36,7 @@ export const POST = withHasPermission<Params>("bookUpdate")(async (
   const parsed = BodySchema.safeParse(json ?? {})
 
   const mode: RelocateMode = parsed.success
-    ? parsed.data?.mode ?? "copy"
+    ? (parsed.data?.mode ?? "copy")
     : "copy"
 
   const updated = await relocateToInternal(book, mode)

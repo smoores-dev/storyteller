@@ -47,6 +47,7 @@ async function getFileGitLogs(filePath: string): Promise<GitLog[]> {
 
     return gitLogs
   } catch (error) {
+    // oxlint-disable-next-line typescript/restrict-template-expressions -- this project is not strict, so tsc types the catch binding as any
     throw new Error(`Failed to get git logs for file: ${filePath}: ${error}`)
   }
 }

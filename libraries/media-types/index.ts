@@ -26,6 +26,7 @@ class Row<M extends Mime = Mime> {
   constructor(mime: M, row: MediaTypeRow) {
     this.mime = mime
     this.name = row.name as Table[M]["name"]
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     this.kind = row.kind as Table[M]["kind"]
     this.extensions = row.extensions
     this.extension = row.extensions[0] ?? null

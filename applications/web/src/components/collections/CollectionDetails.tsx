@@ -31,7 +31,7 @@ export function CollectionDetails({
   })
 
   const description = collectionUuid
-    ? collection?.description ?? initialDescription
+    ? (collection?.description ?? initialDescription)
     : "Books that have not yet been added to any collections."
 
   return (

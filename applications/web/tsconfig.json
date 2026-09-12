@@ -8,6 +8,11 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    // `types` defaults to an empty list in TypeScript 6, and `node-gyp-build`
+    // and `smil-clockvalue` only have ambient `declare module` shims in
+    // `../../types`, so they have to be loaded explicitly for the imports in the
+    // workspace sources this project type-checks to resolve.
+    "types": ["node", "node-gyp-build", "smil-clockvalue"],
     "preserveSymlinks": true,
     "skipLibCheck": true,
     "checkJs": false,

@@ -2,7 +2,6 @@
   "name": "@storyteller-platform/epub",
   "version": "0.7.1",
   "type": "module",
-  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
   "exports": {
@@ -15,7 +14,7 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
     "readme:api": "typedoc",
     "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
@@ -25,21 +24,18 @@
     "prepack": "yarn build"
   },
   "devDependencies": {
-    "@storyteller-platform/eslint": "workspace:*",
-    "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/node": "^24.0.0",
     "@types/yauzl-promise": "^4",
     "@types/yazl": "^3",
-    "eslint": "^8.0.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "markdown-toc": "^1.2.0",
     "remark-toc": "^9.0.0",
-    "tsup": "^8.5.0",
     "tsx": "^4.19.2",
-    "typedoc": "^0.28.13",
+    "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.6.3",
     "typedoc-plugin-remark": "^1.2.0",
-    "typescript": "^5.9.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "dependencies": {
     "@readium/shared": "^2.2.0",
@@ -57,14 +53,8 @@
   "publishConfig": {
     "access": "public",
     "exports": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   }
 }

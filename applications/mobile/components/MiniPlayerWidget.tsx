@@ -100,11 +100,9 @@ export function MiniPlayerWidget() {
       }
     })
 
-  const widgetAnimatedStyle = useAnimatedStyle(
-    (): ViewStyle => ({
-      transform: [{ translateX: translateX.value }],
-    }),
-  )
+  const widgetAnimatedStyle = useAnimatedStyle((): ViewStyle => ({
+    transform: [{ translateX: translateX.value }],
+  }))
 
   if (format === "ebook") return null
 

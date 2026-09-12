@@ -188,6 +188,7 @@ export const highlightFragment = (
     clearHighlight(activeFrame)
   }
 
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
   activeFrame.msg.send("decorate", {
     group: "highlight",
     action: "add",

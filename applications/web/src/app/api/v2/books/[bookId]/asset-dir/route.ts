@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
-import { type ConflictResolution, changeBookAssetDir } from "@/assets/fs"
+import { changeBookAssetDir } from "@/assets/fs"
 import { getSafeFilepathSegment } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"
@@ -62,7 +62,7 @@ export const PUT = withHasPermission<Params>("bookUpdate")(async (
   const result = await changeBookAssetDir(
     book,
     sanitized,
-    parsed.data.conflictResolution as ConflictResolution | undefined,
+    parsed.data.conflictResolution,
   )
 
   if ("conflict" in result) {

@@ -1,7 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { useLocale } from "next-intl"
+import { useRouter } from "next/navigation"
 
 import { changeLocaleAction } from "@v3/_/actions/changeLocaleAction"
 import {

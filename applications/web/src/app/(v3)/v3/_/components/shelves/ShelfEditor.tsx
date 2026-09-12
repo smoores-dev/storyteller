@@ -283,6 +283,7 @@ export function ShelfEditor({
   const orderByOptions = useMemo(() => {
     return SORTABLE_FIELDS.map((key) => ({
       value: key,
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
       label: c.plain(`fields.label.${key}` as "fields.label.title"),
     })) satisfies { value: ShelfOrderBy; label: string }[]
   }, [c])
@@ -290,6 +291,7 @@ export function ShelfEditor({
   const orderDirectionOptions = useMemo(() => {
     return (["desc", "asc"] as const).map((key) => ({
       value: key,
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
       label: t.plain(`orderDirection.${key}` as "orderDirection.desc"),
     })) satisfies { value: "asc" | "desc"; label: string }[]
   }, [t])

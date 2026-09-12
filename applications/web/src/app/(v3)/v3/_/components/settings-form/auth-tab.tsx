@@ -473,6 +473,7 @@ function BuiltInProviderFields({
                   label: string
                 }[]
               }
+              // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
               value={field.value as string}
               onValueChange={field.onChange}
               disabled={isAuthProvidersLocked}
@@ -553,6 +554,7 @@ function CustomProviderFields({
             <FieldLabel>{t("type")}</FieldLabel>
             <Select
               items={providerTypeOptions}
+              // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
               value={field.value as string}
               onValueChange={field.onChange}
               disabled={isAuthProvidersLocked}

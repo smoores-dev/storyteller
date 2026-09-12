@@ -69,16 +69,12 @@ export function BookmarkItem({ activeBookmarks }: Props) {
   const currentTrack = useAppSelector(getCurrentTrack)
   const tracks = useAppSelector(getTracks)
 
-  const buttonAnimatedStyle = useAnimatedStyle(
-    (): ViewStyle => ({
-      transform: [{ scale: bookmarkScale.value }],
-    }),
-  )
-  const iconAnimatedStyle = useAnimatedStyle(
-    (): ViewStyle => ({
-      transform: [{ rotate: `${bookmarkRotation.value}deg` }],
-    }),
-  )
+  const buttonAnimatedStyle = useAnimatedStyle((): ViewStyle => ({
+    transform: [{ scale: bookmarkScale.value }],
+  }))
+  const iconAnimatedStyle = useAnimatedStyle((): ViewStyle => ({
+    transform: [{ rotate: `${bookmarkRotation.value}deg` }],
+  }))
 
   if (!bookUuid) return null
 
@@ -87,6 +83,7 @@ export function BookmarkItem({ activeBookmarks }: Props) {
   const showActive = activeBookmarks.length > 0
 
   const runBookmarkConfirmationAnimation = () => {
+    // oxlint-disable-next-line react-compiler/react-compiler -- this writes to shared values, not to a returned object
     bookmarkScale.value = BOOKMARK_CONFIRMATION_SCALE
     bookmarkScale.value = withSpring(1, BOOKMARK_SCALE_SPRING)
     bookmarkRotation.value = -BOOKMARK_WIGGLE_DEGREES

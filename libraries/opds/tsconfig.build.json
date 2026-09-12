@@ -1,0 +1,31 @@
+{
+  // Builds the published package: the same program as tsconfig.json, but emitting
+  // JavaScript next to the declarations. The build script runs `tsc -b`, which also
+  // builds referenced projects, so this works from a fresh checkout.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "emitDeclarationOnly": false,
+    "declaration": true,
+    // .ts specifiers are rewritten to .js on emit; allowImportingTsExtensions is
+    // only legal when emitting declarations alone.
+    "allowImportingTsExtensions": false,
+    // Pinned so a file added to the program later cannot move the published layout.
+    "rootDir": ".",
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
+  },
+  // The dev-only AJV pipeline (compiling the vendored schemas into standalone.cjs) and the
+  // test catalog are type-checked but never shipped: the built ./validate entry loads the
+  // standalone.cjs copied by the build script instead.
+  "exclude": [
+    "dist",
+    "schemas/sync.ts",
+    "schemas/ajv/compile.ts",
+    "schemas/ajv/validate.ts",
+    "schemas/ajv/standalone.cjs",
+    "schemas/registry.generated.ts",
+    "schemas/roots.generated.ts",
+    "test-catalog.json.ts",
+    "**/*.test.ts"
+  ],
+  "references": [{ "path": "../media-types" }]
+}

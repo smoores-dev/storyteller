@@ -1,6 +1,6 @@
-import { test, expect } from "./support.ts"
 import { reflowBook } from "./fixtures/reflow.ts"
 import { pageSentences, applyCustomFont } from "./reflow-support.ts"
+import { test, expect } from "./support.ts"
 
 for (const width of [412, 412.125]) {
   test(`restored sentence survives font reflow at width ${width}`, async ({

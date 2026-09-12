@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+// oxlint-disable import-alias/prefer-alias storyteller/no-tmpdir
 /* eslint-disable no-console */
 
 import { execSync } from "node:child_process"
@@ -8,7 +9,6 @@ import { join } from "node:path"
 
 import { z } from "zod"
 
-// eslint-disable-next-line @dword-design/import-alias/prefer-alias
 import { documentedServerEnvVars } from "../src/envSchema"
 
 const START_MARKER = "<!-- AUTO-GENERATED-ENV-VARS-START -->"
@@ -122,7 +122,7 @@ async function main() {
     let tmpDir: string | null = null
     try {
       await writeFile(docsPath, newContent, "utf-8")
-      execSync(`yarn prettier --write ${docsPath}`, { stdio: "pipe" })
+      execSync(`yarn oxfmt ${docsPath}`, { stdio: "pipe" })
       const formattedNewContent = await readFile(docsPath, "utf-8")
 
       if (formattedNewContent !== currentContent) {
@@ -158,7 +158,7 @@ async function main() {
     }
   } else {
     await writeFile(docsPath, newContent, "utf-8")
-    execSync(`yarn prettier --write ${docsPath}`, { stdio: "inherit" })
+    execSync(`yarn oxfmt ${docsPath}`, { stdio: "inherit" })
     console.log("generated environment variables table in self-hosting.md")
   }
 }

@@ -34,7 +34,7 @@ async function decryptSettingValue(name: string, value: unknown) {
       (value as AuthProvider[]).map(async (provider) => ({
         ...provider,
         clientSecret: provider.clientSecret
-          ? (await decryptSecret(provider.clientSecret)) ?? ""
+          ? ((await decryptSecret(provider.clientSecret)) ?? "")
           : provider.clientSecret,
       })),
     )
@@ -157,6 +157,7 @@ async function loadConfigFile(): Promise<ConfigFileCache> {
 
   let settings: Partial<Settings>
   try {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     settings = ConfigFileSchema.parse(rawSettings) as Partial<Settings>
   } catch (err) {
     if (err instanceof ZodError) {
@@ -288,6 +289,7 @@ export async function updateSettings(settings: Settings) {
     if (unchanged) continue
 
     const stored = JSON.stringify(
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
       await encryptSettingValue(settingName, value as unknown),
     )
 

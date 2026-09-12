@@ -18,9 +18,8 @@ function getLazyIcon(
   if (cached) return cached
 
   const component = lazy(async () => {
-    const { REGISTRY_ICON_COMPONENTS } = await import(
-      "@/icons/registry-components"
-    )
+    const { REGISTRY_ICON_COMPONENTS } =
+      await import("@/icons/registry-components")
     const Icon = REGISTRY_ICON_COMPONENTS[tablerName]
 
     if (!Icon) {

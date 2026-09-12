@@ -45,7 +45,7 @@
   },
   "scripts": {
     "compile": "NODE_OPTIONS=--experimental-import-meta-resolve ./scripts/bundle.js && node --build-sea sea-config.json",
-    "build": "tsup",
+    "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
     "install": "node-gyp-build",
     "prepack": "yarn build",
     "test": "yarn tsx --test"
@@ -84,42 +84,26 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@storyteller-platform/eslint": "workspace:*",
-    "@storyteller-platform/tsup": "workspace:*",
     "@tsconfig/strictest": "^2.0.5",
     "@types/cli-progress": "^3",
     "@types/node": "^24.0.0",
     "@types/yazl": "^3",
-    "eslint": "^8.0.0",
     "node-addon-api": "^8.3.1",
     "node-gyp": "^11.2.0",
     "prebuildify": "^6.0.1",
-    "tsup": "^8.5.0",
     "tsx": "^4.19.2",
-    "typescript": "~5.8.3"
+    "typescript": "^7.0.2"
   },
   "publishConfig": {
     "access": "public",
     "exports": {
       ".": {
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       },
       "./readium": {
-        "import": {
-          "types": "./dist/readium.d.ts",
-          "default": "./dist/readium.js"
-        },
-        "require": {
-          "types": "./dist/readium.d.cts",
-          "default": "./dist/readium.cjs"
-        }
+        "types": "./dist/readium/index.d.ts",
+        "default": "./dist/readium/index.js"
       }
     }
   }

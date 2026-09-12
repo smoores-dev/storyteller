@@ -37,7 +37,7 @@
     "./constants": "./src/constants.ts"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
     "prepack": "yarn build",
     "test": "tsx -C @storyteller --test test/whisper-server.test.ts &&  tsx -C @storyteller --test test/whispercpp.test.ts &&  tsx -C @storyteller --test test/vad.test.ts &&  tsx -C @storyteller --test test/model-packages.test.ts"
   },
@@ -64,41 +64,25 @@
     "@storyteller-platform/mlx-audio": "workspace:^"
   },
   "devDependencies": {
-    "@storyteller-platform/eslint": "workspace:*",
-    "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/cli-progress": "^3",
     "@types/fs-extra": "~11.0.4",
     "@types/lodash.merge": "^4",
     "@types/node": "^24.0.0",
     "@types/tar": "^6.1.13",
-    "eslint": "^8.0.0",
-    "tsup": "^8.5.0",
     "tsx": "^4.19.2",
-    "typescript": "~5.8.3"
+    "typescript": "^7.0.2"
   },
   "publishConfig": {
     "access": "public",
     "exports": {
       ".": {
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       },
       "./server": {
-        "import": {
-          "types": "./dist/cli/whisper-server.d.ts",
-          "default": "./dist/cli/whisper-server.js"
-        },
-        "require": {
-          "types": "./dist/cli/whisper-server.d.cts",
-          "default": "./dist/cli/whisper-server.cjs"
-        }
+        "types": "./dist/cli/whisper-server.d.ts",
+        "default": "./dist/cli/whisper-server.js"
       },
       "./recognition": {
         "types": "./dist/api/Recognition.d.ts",

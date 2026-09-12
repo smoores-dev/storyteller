@@ -17,6 +17,7 @@ import { type UUID } from "@/uuid"
 export function useStaticShelves() {
   const { data: shelves = [], isLoading } = useListUserShelvesQuery()
 
+  /* oxlint-disable typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type */
   const staticShelves = useMemo(
     () =>
       (shelves as unknown as ShelfWithBooks[]).filter(
@@ -24,6 +25,7 @@ export function useStaticShelves() {
       ),
     [shelves],
   )
+  /* oxlint-enable typescript/no-unnecessary-type-assertion */
 
   return { staticShelves, isLoading }
 }
@@ -54,10 +56,12 @@ export function AddToShelfList({
   const memberships = useMemo(() => {
     const map = new Map<string, Set<string>>()
     for (const shelf of staticShelves) {
+      /* oxlint-disable typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type */
       map.set(
         shelf.uuid as string,
         new Set(shelf.books.map((book) => book.bookUuid)),
       )
+      /* oxlint-enable typescript/no-unnecessary-type-assertion */
     }
     return map
   }, [staticShelves])

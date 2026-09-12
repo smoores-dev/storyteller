@@ -232,7 +232,7 @@ export const useNavigator = ({
     }
 
     const initialLocator = initialPosition?.locator
-      ? Locator.deserialize(initialPosition.locator) ?? null
+      ? (Locator.deserialize(initialPosition.locator) ?? null)
       : null
 
     const translatedLocator = initialLocator

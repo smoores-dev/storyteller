@@ -241,6 +241,7 @@ export function loadAddon(): NodeKitRaw {
 
   try {
     const mod = { exports: {} as NodeKitRaw }
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     process.dlopen(mod as unknown as NodeJS.Module, resolution.resolved)
     store[ADDON_CACHE] = { path: resolution.resolved, addon: mod.exports }
     return mod.exports

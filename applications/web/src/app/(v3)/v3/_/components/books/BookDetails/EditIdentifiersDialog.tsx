@@ -345,7 +345,7 @@ function IdentifierTypeMenu({
 }) {
   const current = items.find((item) => item.value === value)
   const label =
-    value === NEW_TYPE ? newTypeLabel : current?.label ?? placeholder
+    value === NEW_TYPE ? newTypeLabel : (current?.label ?? placeholder)
 
   return (
     <FilterableMenu>

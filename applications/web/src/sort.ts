@@ -162,7 +162,7 @@ function sortValue(
       return book.alignmentSummary?.score ?? null
     case "alignmentGrade":
       return book.alignmentSummary?.grade
-        ? GRADE_RANK[book.alignmentSummary.grade] ?? null
+        ? (GRADE_RANK[book.alignmentSummary.grade] ?? null)
         : null
     case "alignmentMissingSentences":
       return book.alignmentSummary?.missingSentences ?? null

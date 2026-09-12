@@ -110,6 +110,7 @@ export async function recognize(
   }
 
   // check for config
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
   const configResponse = await fetch(`${baseUrl}/config`, {
     headers,
     dispatcher: createTimeoutAgent(opts.timeout),
@@ -138,6 +139,7 @@ export async function recognize(
         configForm.append("processors", String(effectiveProcessors))
         configForm.append("threads", String(whisperConfig.threads))
 
+        // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
         await fetch(`${baseUrl}/config`, {
           method: "POST",
           headers,
@@ -156,6 +158,7 @@ export async function recognize(
   }
 
   const response = await timing.timeAsync("upload", async () =>
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     fetch(url, {
       method: "POST",
       body: form,

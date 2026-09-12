@@ -28,7 +28,7 @@ export const GET = withHasPermission<Params>("bookRead", {
 
   const image = audio
     ? book.audiobook?.cover
-    : book.ebook?.cover ?? book.readaloud?.cover
+    : (book.ebook?.cover ?? book.readaloud?.cover)
 
   if (!image) {
     return new Response(null, {

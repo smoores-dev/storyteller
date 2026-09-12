@@ -1,5 +1,6 @@
 import { Button, Modal, Text, useComputedColorScheme } from "@mantine/core"
 import Uppy, { type Meta, type UppyFile } from "@uppy/core"
+
 import "@uppy/core/dist/style.min.css"
 import "@uppy/dashboard/dist/style.min.css"
 import Dashboard from "@uppy/react/lib/Dashboard"

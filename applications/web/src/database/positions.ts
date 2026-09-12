@@ -202,6 +202,7 @@ export async function getPosition(userId: UUID, bookUuid: UUID) {
       userId,
       bookUuid,
       // This seems to be automatically parsed by kysely?
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
       locator: result.locator as unknown as ReadiumLocator,
       timestamp: result.timestamp,
     }

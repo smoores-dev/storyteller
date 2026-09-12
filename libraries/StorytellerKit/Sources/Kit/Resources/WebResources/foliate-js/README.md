@@ -440,9 +440,7 @@ The `dict.js` module can be used to load dictd and StarDict dictionaries. Usage:
 import { StarDict } from "./dict.js"
 import { inflate } from "your inflate implementation"
 
-const { ifo, dz, idx, syn } = {
-  /* `File` (or `Blob`) objects */
-}
+const { ifo, dz, idx, syn } = {/* `File` (or `Blob`) objects */}
 const dict = new StarDict()
 await dict.loadIfo(ifo)
 await dict.loadDict(dz, inflate)

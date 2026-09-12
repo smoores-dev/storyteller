@@ -1,3 +1,4 @@
+// oxlint-disable storyteller/no-tmpdir
 import { execSync } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
@@ -57,8 +58,8 @@ async function main() {
     rmSync(tmpDir, { recursive: true, force: true })
   }
 
-  logger.info("Running prettier on outputs")
-  execSync(`yarn prettier --write "${SCHEMA_SQL_PATH}" "${SCHEMA_TS_PATH}"`, {
+  logger.info("Formatting the generated types")
+  execSync(`yarn oxfmt "${SCHEMA_TS_PATH}"`, {
     stdio: "inherit",
     cwd: join(cwd(), ".."),
   })

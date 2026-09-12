@@ -4,7 +4,6 @@
   "description": "Cross-platform native loader and typed wrapper for StorytellerNodeKit",
   "license": "MIT",
   "type": "module",
-  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
@@ -34,46 +33,31 @@
     "access": "public",
     "exports": {
       ".": {
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       },
       "./types": {
-        "import": {
-          "types": "./dist/types.d.ts",
-          "default": "./dist/types.js"
-        },
-        "require": {
-          "types": "./dist/types.d.cts",
-          "default": "./dist/types.cjs"
-        }
+        "types": "./dist/types.d.ts",
+        "default": "./dist/types.js"
       }
     }
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.2.0",
-    "@storyteller-platform/eslint": "workspace:*",
-    "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
     "@types/node": "^24.0.0",
-    "eslint": "^8.0.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "markdown-toc": "^1.2.0",
     "remark-toc": "^9.0.0",
-    "tsup": "^8.5.0",
     "tsx": "^4.19.2",
-    "typedoc": "^0.28.13",
+    "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.6.3",
     "typedoc-plugin-remark": "^1.2.0",
-    "typescript": "^5.9.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "tsup",
+    "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
     "build:native": "../../applications/clients/scripts/nodebuild",
     "build:native:debug": "../../applications/clients/scripts/nodebuild --debug",
     "load-test": "node scripts/load-test.mjs",

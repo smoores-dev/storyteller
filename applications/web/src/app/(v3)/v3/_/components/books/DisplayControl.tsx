@@ -93,7 +93,7 @@ export function DisplayControl({
   const effectiveLayout = forceLayout ?? bookLayout
   const isGrid = effectiveLayout === "grid"
 
-  const shown = isGrid ? displayOverrides ?? currentFields : listDisplayFields
+  const shown = isGrid ? (displayOverrides ?? currentFields) : listDisplayFields
 
   const resetLayout = () => {
     dispatch(
@@ -196,7 +196,9 @@ export function DisplayControl({
       )
 
   const toggleField = (field: DisplayField) => {
-    const base = isGrid ? displayOverrides ?? currentFields : listDisplayFields
+    const base = isGrid
+      ? (displayOverrides ?? currentFields)
+      : listDisplayFields
     const next = base.includes(field)
       ? base.filter((f) => f !== field)
       : insertDisplayField(base, field)

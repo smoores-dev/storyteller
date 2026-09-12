@@ -1792,14 +1792,17 @@ export class Paginator extends HTMLElement {
         !this.#anchorBelongsToView(transaction.anchor)
       )
         return
-      this.#paginator
-        .#scrollToAnchor(transaction.anchor, "anchor", false, false)
-        .catch((error) =>
-          console.warn(
-            "Failed to preserve the viewport during repagination",
-            error,
-          ),
-        )
+      this.#paginator.#scrollToAnchor(
+        transaction.anchor,
+        "anchor",
+        false,
+        false,
+      ).catch((error) =>
+        console.warn(
+          "Failed to preserve the viewport during repagination",
+          error,
+        ),
+      )
     }
     #scheduleReflowAdvance(transaction) {
       if (this.#reflow !== transaction) return

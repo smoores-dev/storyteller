@@ -376,11 +376,12 @@ export function SettingsForm({
     if (searchTab !== activeTabRaw) {
       setActiveTabEvent(searchTab as Tab)
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
   const activeTab: Tab | null = isMobile
     ? activeTabRaw
-    : activeTabRaw ?? "library"
+    : (activeTabRaw ?? "library")
   const showMobileSidebar = isMobile && !activeTab
 
   const matchingSections = useMemo(() => {
@@ -430,6 +431,7 @@ export function SettingsForm({
     ) {
       setActiveTabEvent(firstMatch)
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- pre-existing; these dependencies are left out on purpose
   }, [matchingTabs, searchQuery, setActiveTabEvent])
 
   const filteredTabs = searchQuery
@@ -516,6 +518,7 @@ export function SettingsForm({
     <SettingsSidebar
       tabs={filteredTabs}
       activeTab={activeTab}
+      // oxlint-disable-next-line react-hooks/rules-of-hooks -- passing an Effect Event as a prop; react-hooks v4 permits this
       onTabChange={setActiveTabEvent}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}

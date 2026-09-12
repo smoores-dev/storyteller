@@ -1,5 +1,5 @@
-import { test, expect } from "./support.ts"
 import { reflowBook } from "./fixtures/reflow.ts"
+import { test, expect } from "./support.ts"
 
 for (const width of [320, 600]) {
   for (const height of [480, 640]) {

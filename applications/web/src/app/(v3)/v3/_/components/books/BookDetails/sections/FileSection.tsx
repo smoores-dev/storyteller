@@ -191,11 +191,11 @@ function FormatFileRow({
 
   const pageCount =
     format !== "audiobook"
-      ? book.pageCount ?? ("pageCount" in fmt ? fmt.pageCount : null)
+      ? (book.pageCount ?? ("pageCount" in fmt ? fmt.pageCount : null))
       : null
   const duration =
     format !== "ebook"
-      ? book.duration ?? ("duration" in fmt ? fmt.duration : null)
+      ? (book.duration ?? ("duration" in fmt ? fmt.duration : null))
       : null
   const fileSize = formatFileSize(fmt.fileSize ?? null)
   const identifiers = fmt.identifiers

@@ -312,6 +312,7 @@ export function BookDoubleCover({
     ab.style.zIndex = String(STATES.idle.audiobook.z)
     eb.style.transform = tx(STATES.idle.ebook)
     eb.style.zIndex = String(STATES.idle.ebook.z)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const transitionTo = useCallback((target: CoverState) => {
@@ -361,6 +362,7 @@ export function BookDoubleCover({
     }
 
     stateRef.current = target
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- pre-existing; these dependencies are left out on purpose
   }, [])
 
   useEffect(() => {

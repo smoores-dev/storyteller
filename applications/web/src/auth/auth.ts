@@ -3,10 +3,6 @@ import { randomUUID } from "node:crypto"
 import { Auth, createActionURL, raw, skipCSRFCheck } from "@auth/core"
 import { hash, verify as verifyPassword } from "argon2"
 import { type Insertable } from "kysely"
-import type { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
-import { cookies, headers, headers as nextHeaders } from "next/headers"
-import { notFound, redirect } from "next/navigation"
-import { type NextRequest, NextResponse } from "next/server"
 import NextAuth, {
   type DefaultSession,
   type NextAuthConfig,
@@ -18,6 +14,10 @@ import type {
   OIDCConfig,
 } from "next-auth/providers"
 import Credentials from "next-auth/providers/credentials"
+import type { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers"
+import { cookies, headers, headers as nextHeaders } from "next/headers"
+import { notFound, redirect } from "next/navigation"
+import { type NextRequest, NextResponse } from "next/server"
 
 import { getCookieDomain, getCookieSecure } from "@/cookies"
 import { KyselyAdapter } from "@/database/authAdapter"
@@ -327,6 +327,7 @@ export async function createSessionTokenForUserId(
 
   await db
     .insertInto("session")
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     .values({
       sessionToken,
       userId,

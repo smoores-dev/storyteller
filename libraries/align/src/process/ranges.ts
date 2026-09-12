@@ -36,7 +36,7 @@ export async function getSafeChapterRanges(
       }
 
     const end =
-      next.filename === chapter.filename ? next.start ?? duration : duration
+      next.filename === chapter.filename ? (next.start ?? duration) : duration
 
     return {
       filepath: chapter.filename,

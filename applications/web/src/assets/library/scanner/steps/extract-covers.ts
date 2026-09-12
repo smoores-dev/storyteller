@@ -75,11 +75,11 @@ export const extractTextCoverStep = defineStep(
       const ebookSource =
         input.format === "ebook"
           ? input.epub
-          : input.book.ebook?.filepath ?? null
+          : (input.book.ebook?.filepath ?? null)
       const readaloudSource =
         input.format === "readaloud"
           ? input.epub
-          : input.book.readaloud?.filepath ?? null
+          : (input.book.readaloud?.filepath ?? null)
 
       const cover = await extractTextCover({
         ebook: ebookSource,

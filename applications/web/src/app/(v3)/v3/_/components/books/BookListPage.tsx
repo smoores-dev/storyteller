@@ -627,7 +627,7 @@ function BookListPageInner({
 
   const shownUuid =
     selectedBookUuid ??
-    (animate && driver.visible ? lastSelectedRef.current?.uuid ?? null : null)
+    (animate && driver.visible ? (lastSelectedRef.current?.uuid ?? null) : null)
   const shownBook = selectedBookUuid
     ? selectedBook
     : lastSelectedRef.current?.book

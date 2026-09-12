@@ -11,10 +11,10 @@ export type ServerFieldError = { path: string; message: string }
 function serverFieldErrors(error: unknown): ServerFieldError[] {
   if (!error || typeof error !== "object" || !("data" in error)) return []
 
-  const data = (error as { data: unknown }).data
+  const data = error.data
   if (!data || typeof data !== "object" || !("fieldErrors" in data)) return []
 
-  const fieldErrors = (data as { fieldErrors: unknown }).fieldErrors
+  const fieldErrors = data.fieldErrors
   if (!Array.isArray(fieldErrors)) return []
 
   return fieldErrors.filter(

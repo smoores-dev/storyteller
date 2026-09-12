@@ -373,7 +373,7 @@ export function BookTable({
   useEffect(() => {
     rowVirtualizer.measure()
     table.setState((state) => ({ ...state }))
-  }, [showThumbnail])
+  }, [showThumbnail]) // oxlint-disable-line react-hooks/exhaustive-deps
 
   const virtualRows = rowVirtualizer.getVirtualItems()
   const lastVirtualRowIndex = virtualRows.at(-1)?.index
@@ -495,6 +495,7 @@ export function BookTable({
                   }
                 }}
               >
+                {/* oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type */}
                 {c.plain("fields.short.title" as never)}
 
                 {sortField === "title" &&
@@ -508,6 +509,7 @@ export function BookTable({
               <div
                 role="separator"
                 aria-orientation="vertical"
+                // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
                 aria-label={`Resize ${c.plain("fields.short.title" as never)} column`}
                 aria-valuenow={
                   titleWidth !== undefined ? Math.round(titleWidth) : undefined

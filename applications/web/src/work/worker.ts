@@ -191,7 +191,7 @@ export default async function processBook({
         const runLanguage = config?.language ?? book.language
         const locale = runLanguage
           ? new Intl.Locale(runLanguage)
-          : (await epub.getLanguage()) ?? new Intl.Locale("en-US")
+          : ((await epub.getLanguage()) ?? new Intl.Locale("en-US"))
 
         const settings = await getEffectiveSettings()
         await processTiming.timeAsync("transcribe_chapters", () =>

@@ -268,9 +268,9 @@ function PaletteResults({
 
   const books = searching
     ? debouncedSearch
-      ? searchData?.pages.flat() ?? []
+      ? (searchData?.pages.flat() ?? [])
       : []
-    : recentData?.pages.flat() ?? []
+    : (recentData?.pages.flat() ?? [])
   const isLoadingBooks = searching
     ? isSearchFetching || debouncedSearch !== trimmed
     : isRecentFetching && !recentData

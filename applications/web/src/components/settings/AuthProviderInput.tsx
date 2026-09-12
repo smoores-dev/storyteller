@@ -129,6 +129,7 @@ export function AuthProviderInput({ value, onChange }: Props) {
       store={combobox}
       withinPortal={false}
       onOptionSubmit={(value) => {
+        // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
         onChange(value as UUID)
         setTextValue(Providers.find((p) => p.value === value)?.label ?? "")
         combobox.closeDropdown()

@@ -169,6 +169,7 @@ export function LibraryPage({
     }
 
     return items
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [
     allItems,
     sidebarSearch,
@@ -262,10 +263,10 @@ export function LibraryPage({
   })
   const selectedDescription =
     selectedItem && selectedItem !== NONE_KEY && selectedItem !== ALL_KEY
-      ? selectedShelf?.description ??
+      ? (selectedShelf?.description ??
         describableCollections.find((c) => c.uuid === selectedItem)
           ?.description ??
-        describableSeries.find((s) => s.uuid === selectedItem)?.description
+        describableSeries.find((s) => s.uuid === selectedItem)?.description)
       : undefined
 
   const source = useMemo<BookListSource>(() => {

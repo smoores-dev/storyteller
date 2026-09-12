@@ -1,7 +1,8 @@
-import { readFile } from "node:fs/promises"
-import chalk, { supportsColor } from "chalk"
 import assert from "node:assert"
+import { readFile } from "node:fs/promises"
 import { test } from "node:test"
+
+import chalk, { supportsColor } from "chalk"
 
 import { colors, colorsDetailed, InputImage } from "../index.js"
 

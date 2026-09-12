@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "emitDeclarationOnly": false,
+    "declaration": true,
+    "allowImportingTsExtensions": false,
+    "rootDir": "src",
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "src/**/__tests__"],
+  "references": [
+    { "path": "../epub" },
+    { "path": "../audiobook" },
+    { "path": "../ghost-story" },
+    { "path": "../media-types" }
+  ]
+}

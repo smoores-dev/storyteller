@@ -1,5 +1,5 @@
-import FoliateManager from "/reader/FoliateManager.js"
 import { makeBook } from "/fixtures/book.mjs"
+import FoliateManager from "/reader/FoliateManager.js"
 
 const container = document.getElementById("reader-container")
 const messages = []

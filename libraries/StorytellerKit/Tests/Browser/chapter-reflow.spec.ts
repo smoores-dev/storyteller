@@ -1,7 +1,7 @@
-import { test, expect } from "./support.ts"
-import type { FoliateView } from "./harness.d.ts"
 import { reflowBook } from "./fixtures/reflow.ts"
+import type { FoliateView } from "./harness.d.ts"
 import { pageSentences } from "./reflow-support.ts"
+import { test, expect } from "./support.ts"
 
 test("reflow before a new chapter's first navigation settles preserves navigation completion", async ({
   reader,

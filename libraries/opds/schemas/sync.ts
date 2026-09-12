@@ -1,11 +1,11 @@
 import { mkdir, rm, writeFile } from "node:fs/promises"
 import { dirname, join, relative, sep } from "node:path"
+import { setTimeout } from "node:timers/promises"
 import { fileURLToPath } from "node:url"
 
 import $RefParser from "@apidevtools/json-schema-ref-parser"
 import { ParserOptions } from "@apidevtools/json-schema-ref-parser/dist/lib/options"
 import { type JSONSchema, compile } from "json-schema-to-typescript"
-import { setTimeout } from "node:timers/promises"
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const VENDOR = join(HERE, "vendor")

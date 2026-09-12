@@ -1,4 +1,5 @@
 import { Carousel } from "@mantine/carousel"
+
 import "@mantine/carousel/styles.css"
 import { Checkbox, Stack, Title, px } from "@mantine/core"
 import Link from "next/link"

@@ -1,6 +1,6 @@
-import FoliateManager from "./FoliateManager.js"
 import BookLoader from "./BookLoader.js"
 import { debugLog } from "./DebugConfig.js"
+import FoliateManager from "./FoliateManager.js"
 
 debugLog("Main", "Initializing FoliateManager")
 

@@ -1,9 +1,15 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     },
+    // `types` defaults to an empty list in TypeScript 6, and these two packages
+    // only have ambient `declare module` shims in `../../types`, so they have to
+    // be loaded explicitly for their imports to resolve.
+    "types": ["node-gyp-build", "smil-clockvalue"],
+    // Metro resolves CSS imports such as `@/global.css`; there is no declaration
+    // file for them to match against.
+    "noUncheckedSideEffectImports": false,
     "allowImportingTsExtensions": true,
     "typeRoots": [
       "./node_modules/@types",

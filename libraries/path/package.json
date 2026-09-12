@@ -2,7 +2,6 @@
   "name": "@storyteller-platform/path",
   "version": "0.2.0",
   "type": "module",
-  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": "./index.ts"
@@ -11,32 +10,19 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
     "prepack": "yarn build"
   },
   "devDependencies": {
-    "@storyteller-platform/eslint": "workspace:*",
-    "@storyteller-platform/tsup": "workspace:^",
     "@tsconfig/strictest": "^2.0.5",
-    "@types/node": "^24.0.0",
-    "eslint": "^8.0.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.2"
+    "@types/node": "^24.0.0"
   },
   "publishConfig": {
     "access": "public",
     "exports": {
       ".": {
-        "@storyteller": "./index.ts",
-        "@storyteller-node": "./index.ts",
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       }
     }
   }

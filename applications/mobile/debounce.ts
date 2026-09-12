@@ -5,7 +5,10 @@ export function debounce<A extends unknown[]>(
 ): ((...args: A) => void) & {
   cancel: () => void
 } {
-  let timeout: number | null
+  // `@types/node` ends up in this program (via `@storyteller-platform/audiobook`)
+  // and its `setTimeout` overload can win over the DOM one, so the timer's type
+  // is not reliably `number`.
+  let timeout: ReturnType<typeof setTimeout> | null
   let isCancelled = false
 
   function debounced(this: unknown, ...args: A): void {

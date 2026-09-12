@@ -1,6 +1,6 @@
-import { test, expect } from "./support.ts"
 import { reflowBook } from "./fixtures/reflow.ts"
 import { pageSentences } from "./reflow-support.ts"
+import { test, expect } from "./support.ts"
 
 test("reflow reports fresh visibility for the active playhead", async ({
   reader,

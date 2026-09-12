@@ -1,6 +1,6 @@
 import { type Metadata } from "next"
-import { notFound } from "next/navigation"
 import { getTranslations } from "next-intl/server"
+import { notFound } from "next/navigation"
 
 import { withPageAuth } from "@v3/_/server/page-auth-wrapper"
 

@@ -262,6 +262,7 @@ export const bookToPublication = (
 const latestModified = (books: BookWithRelations[]): string => {
   if (books.length === 0) return new Date().toISOString()
   const latest = books.reduce((acc, book) => {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     const time = new Date(book.updatedAt as Date | string).getTime()
     return Math.max(acc, time)
   }, 0)

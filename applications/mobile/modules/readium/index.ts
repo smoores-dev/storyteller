@@ -249,7 +249,7 @@ export function readiumToStorytellerAuthors(
     return {
       name: parseLocalizedString(a.name),
       file_as: a.sortAs ?? parseLocalizedString(a.name),
-      role: Array.isArray(a.role) ? a.role.join(", ") : a.role ?? null,
+      role: Array.isArray(a.role) ? a.role.join(", ") : (a.role ?? null),
     }
   })
 }

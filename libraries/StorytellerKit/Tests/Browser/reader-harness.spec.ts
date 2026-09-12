@@ -1,5 +1,5 @@
-import { test, expect } from "./support.ts"
 import type { BookDefinition } from "./harness.d.ts"
+import { test, expect } from "./support.ts"
 
 const book: BookDefinition = {
   sections: [

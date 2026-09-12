@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next"
+import { NextIntlClientProvider } from "next-intl"
+import { getTranslations } from "next-intl/server"
 import localFont from "next/font/local"
 import { cookies, headers } from "next/headers"
 import Script from "next/script"
-import { NextIntlClientProvider } from "next-intl"
-import { getTranslations } from "next-intl/server"
 import { NuqsAdapter } from "nuqs/adapters/next"
 
 import { TauriTitlebarSync } from "@v3/_/components/tauri-titlebar-sync"

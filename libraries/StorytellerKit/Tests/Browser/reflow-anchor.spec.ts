@@ -1,7 +1,7 @@
-import { test, expect } from "./support.ts"
-import type { FoliateView } from "./harness.d.ts"
 import { reflowBook } from "./fixtures/reflow.ts"
+import type { FoliateView } from "./harness.d.ts"
 import { pageSentences } from "./reflow-support.ts"
+import { test, expect } from "./support.ts"
 
 for (const highlighted of [true, false]) {
   test(`explicit seek preserves its reflow anchor with highlight ${highlighted}`, async ({

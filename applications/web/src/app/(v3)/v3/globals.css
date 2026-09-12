@@ -83,15 +83,17 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif,
+  --font-sans:
+    var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-heading: var(--font-literata), Georgia, serif;
   --font-seriff: var(--font-literata), Georgia, serif;
   --font-serif: var(--font-literata), Georgia, serif;
   --font-open-dyslexic: OpenDyslexic;
   /* --font-mono: var(--font-geist-mono); */
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -257,10 +259,10 @@
     var(--foreground)
   );
 
-  --shell-inset-shadow: -1px 0 0 oklch(0.885 0.015 78),
-    -10px 0 22px oklch(0.35 0.04 65 / 0.06);
-  --shell-main-edge: -1px 0 0 oklch(0.895 0.014 78),
-    -8px 0 18px oklch(0.35 0.04 65 / 0.05);
+  --shell-inset-shadow:
+    -1px 0 0 oklch(0.885 0.015 78), -10px 0 22px oklch(0.35 0.04 65 / 0.06);
+  --shell-main-edge:
+    -1px 0 0 oklch(0.895 0.014 78), -8px 0 18px oklch(0.35 0.04 65 / 0.05);
 
   --st-orange-50: oklch(0.966 0.02 58.1);
   --st-orange-100: oklch(0.929 0.034 53.1);
@@ -379,7 +381,8 @@ html:not(.dark) [data-shell="spine"] {
     var(--sidebar)
   );
 
-  --shell-inset-shadow: inset -1px 0 0 oklch(1 0.02 80 / 0.08),
+  --shell-inset-shadow:
+    inset -1px 0 0 oklch(1 0.02 80 / 0.08),
     10px 0 24px -14px oklch(0.15 0.025 40 / 0.5);
   /* --shell-main-edge: none; */
 }

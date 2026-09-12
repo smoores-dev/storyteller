@@ -211,7 +211,7 @@ export function BookGrid({
   })
 
   const activeUuid =
-    nav.activeIndex !== null ? books[nav.activeIndex]?.uuid ?? null : null
+    nav.activeIndex !== null ? (books[nav.activeIndex]?.uuid ?? null) : null
 
   const c = useCommon()
   const tActions = useTranslation("BookActions")

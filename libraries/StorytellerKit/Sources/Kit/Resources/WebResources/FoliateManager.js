@@ -1,9 +1,9 @@
 import "./foliate-js/view.js"
-import { Overlayer } from "./foliate-js/overlayer.js"
-import { SpanHighlighter } from "./SpanHighlighter.js"
-import { debugLog } from "./DebugConfig.js"
-import { getIntersectingElements } from "./VisibilityDetection.js"
 import BookmarkManager from "./BookmarkManager.js"
+import { debugLog } from "./DebugConfig.js"
+import { SpanHighlighter } from "./SpanHighlighter.js"
+import { getIntersectingElements } from "./VisibilityDetection.js"
+import { Overlayer } from "./foliate-js/overlayer.js"
 
 const getReadaloudCSS = ({
   activeClass,

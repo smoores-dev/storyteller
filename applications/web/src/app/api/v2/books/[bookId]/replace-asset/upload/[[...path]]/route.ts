@@ -139,6 +139,7 @@ const server = new Server({
         await replaceBookAssetFromUpload({
           book,
           uploadPath: filepath,
+          // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
           format: format.data as ScanFormat,
           metadataFieldOverrides,
           signal: new AbortController().signal,
@@ -154,6 +155,7 @@ const server = new Server({
         await replaceBookAssetFromUpload({
           book,
           uploadPath: batchUuidDir,
+          // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
           format: format.data as ScanFormat,
           metadataFieldOverrides,
           signal: new AbortController().signal,
@@ -178,6 +180,7 @@ const server = new Server({
           book,
           uploadPath: batchUuidDir,
           metadataFieldOverrides,
+          // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
           format: format.data as ScanFormat,
           relativePath,
           signal: new AbortController().signal,

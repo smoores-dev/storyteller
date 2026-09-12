@@ -3211,6 +3211,7 @@ export class Epub {
 
     const filename = await this.resolveEntry(rootfile, item.href)
 
+    /* oxlint-disable typescript/no-unnecessary-type-assertion -- tsgolint treats these casts as unnecessary, but each one still narrows the value that is written out */
     const data =
       encoding === "utf-8" || encoding === "xml"
         ? new TextEncoder().encode(
@@ -3221,6 +3222,7 @@ export class Epub {
                 )) as string),
           )
         : (contents as Uint8Array)
+    /* oxlint-enable typescript/no-unnecessary-type-assertion */
 
     await this.writeEntryContents(filename, data)
   }
@@ -3619,7 +3621,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
     (Epub & { storage: A["kind"] }) | (EpubReader & { storage: A["kind"] })
   > {
     const adapter = await this.adapterClass.init(
-      source,
+      source, // oxlint-disable-line typescript/no-unnecessary-type-assertion
       options as AdapterOptions<A>,
     )
     const inputPath = typeof source === "string" ? source : undefined
@@ -3743,7 +3745,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       )
     }
 
-    return epub as EpubInstanceFor<A>
+    return epub as EpubInstanceFor<A> // oxlint-disable-line typescript/no-unnecessary-type-assertion
   }
 
   /**
@@ -3783,7 +3785,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
 
     const source = outputPath ?? path
     const adapter = await this.adapterClass.init(
-      source,
+      source, // oxlint-disable-line typescript/no-unnecessary-type-assertion
       options as AdapterOptions<A>,
     )
     const epub = new Epub(this.adapterClass, adapter, source)
@@ -3800,6 +3802,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
     try {
       const version = await epub.getVersion()
       if (version.startsWith("3.")) {
+        // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
         return epub as EpubInstanceFor<A>
       }
 
@@ -3859,6 +3862,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
         await epub.writeXhtmlItemContents(item.id, contents)
       }
 
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
       return epub as EpubInstanceFor<A>
     } catch (error) {
       epub.discardAndClose()

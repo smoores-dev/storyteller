@@ -280,8 +280,8 @@ export async function ensureSidebarDefaults(
           ? "collections"
           : item.kind === "shelf"
             ? "shelves"
-            : SIDEBAR_BUILTINS.find((b) => b.key === item.builtinKey)?.group ??
-              "library"
+            : (SIDEBAR_BUILTINS.find((b) => b.key === item.builtinKey)?.group ??
+              "library")
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const groupUuid = groupUuidByKind.get(kind)!

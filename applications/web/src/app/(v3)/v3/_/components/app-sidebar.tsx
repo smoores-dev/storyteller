@@ -841,7 +841,7 @@ function ShelfEditorFromSidebar({
   const shelves = rawShelves
 
   const shelf = shelfUuid
-    ? shelves.find((s) => s.uuid === shelfUuid) ?? null
+    ? (shelves.find((s) => s.uuid === shelfUuid) ?? null)
     : null
 
   return (

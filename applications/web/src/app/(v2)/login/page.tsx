@@ -1,10 +1,10 @@
 import { type PublicProvider } from "@auth/core/types"
 import { Center, Image, Paper, Stack, Text, Title } from "@mantine/core"
 import { type Metadata } from "next"
+import { AuthError } from "next-auth"
 import { cookies, headers } from "next/headers"
 import NextImage from "next/image"
 import { redirect } from "next/navigation"
-import { AuthError } from "next-auth"
 
 import { apiHost } from "@/app/apiHost"
 import { fetchApiRoute } from "@/app/fetchApiRoute"

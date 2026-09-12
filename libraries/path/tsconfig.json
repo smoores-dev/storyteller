@@ -1,6 +1,9 @@
 {
   "extends": ["@tsconfig/strictest/tsconfig.json"],
   "compilerOptions": {
+    // tsgolint (Oxlint's type-aware engine) does not auto-include
+    // @types packages the way tsc does, so list them explicitly.
+    "types": ["node"],
     "composite": true,
     "emitDeclarationOnly": true,
     "incremental": true,

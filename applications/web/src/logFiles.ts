@@ -140,7 +140,7 @@ export async function readLastLines(
       const segments = splitBufferOnNewlines(combined)
 
       carry =
-        position > 0 ? segments.shift() ?? Buffer.alloc(0) : Buffer.alloc(0)
+        position > 0 ? (segments.shift() ?? Buffer.alloc(0)) : Buffer.alloc(0)
 
       for (let i = segments.length - 1; i >= 0; i--) {
         if (matched.length >= lineCount) break

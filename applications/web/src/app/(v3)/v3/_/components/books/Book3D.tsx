@@ -530,6 +530,7 @@ function Slab({
                     fontSize: titleSize,
                     display: "-webkit-box",
                     WebkitLineClamp: String(fit.titleLines),
+                    // oxlint-disable-next-line typescript/no-deprecated
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
                   }}

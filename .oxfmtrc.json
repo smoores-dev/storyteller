@@ -1,0 +1,92 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "proseWrap": "always",
+  "semi": false,
+  "printWidth": 80,
+  "sortImports": {
+    "customGroups": [
+      {
+        "elementNamePattern": ["@storyteller-platform/**"],
+        "groupName": "storyteller"
+      },
+      {
+        "elementNamePattern": ["@v3/**"],
+        "groupName": "v3Alias"
+      },
+      {
+        "elementNamePattern": ["@/**"],
+        "groupName": "alias"
+      }
+    ],
+    "groups": [
+      "builtin",
+      "external",
+      "storyteller",
+      "v3Alias",
+      "alias",
+      "internal",
+      "parent",
+      ["sibling", "index"],
+      ["style", "unknown"]
+    ],
+    "ignoreCase": false,
+    "newlinesBetween": true,
+    "order": "asc"
+  },
+  "sortPackageJson": false,
+  "sortTailwindcss": {},
+  "ignorePatterns": [
+    ".yarn",
+    ".jj/",
+    "storyteller",
+    "/assets",
+    "/cache",
+    "/dev-data",
+    "/data",
+    "/applications/web/.next",
+    "node_modules",
+    "tsbuild",
+    "/applications/docs/.docusaurus",
+    "__fixtures__",
+    "/applications/web/work-dist",
+    "/applications/web/file-write-dist",
+    "/applications/web/whisper-builds",
+    "libraries/epub/index.js",
+    "libraries/epub/index.cjs",
+    "libraries/epub/index.d.ts",
+    "libraries/epub/node.js",
+    "libraries/epub/node.cjs",
+    "libraries/epub/node.d.ts",
+    "libraries/epub/index.test.d.ts",
+    "libraries/epub/gen",
+    "libraries/epub/README.md",
+    "/libraries/fs/index.js",
+    "/libraries/fs/index.cjs",
+    "/libraries/fs/index.d.ts",
+    "/libraries/path/index.js",
+    "/libraries/path/index.cjs",
+    "/libraries/path/index.d.ts",
+    "/libraries/audiobook/dist/",
+    "/libraries/audiobook/README.md",
+    "/libraries/nodekit/README.md",
+    "/libraries/opds/README.md",
+    "flake.*",
+    ".devcontainer.json",
+    "**/dist",
+    "/libraries/opds/schemas/ajv/standalone.cjs",
+    "/libraries/media-types/table.json",
+    "/applications/tauri/.staging",
+    "/applications/tauri/.cache",
+    "/applications/tauri/src-tauri",
+    "/applications/web/next-env.d.ts",
+    "/applications/clients/XCodeApps/Assets.xcassets/",
+    "**/.build/**",
+    "/applications/clients/AndroidApp/app/build/",
+    "/applications/clients/XCodeApps/TVAssets.xcassets/",
+    "/libraries/StorytellerKit/Sources/Kit/Resources/WebResources/foliate-js/vendor/fflate.js",
+    "/libraries/StorytellerKit/Sources/Kit/Resources/WebResources/foliate-js/vendor/zip.js",
+    "libraries/StorytellerKit/Tests/Browser/test-results/",
+    "libraries/StorytellerKit/Tests/Browser/playwright-report/",
+    "/libraries/align/bundle/"
+  ]
+}

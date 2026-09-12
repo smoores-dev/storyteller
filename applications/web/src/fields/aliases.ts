@@ -18,6 +18,7 @@ export function resolveFieldAlias(field: Field): {
 } {
   const def = FIELD_REGISTRY[field]
   if ("alias" in def) {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
     return { field: def.alias.of as BaseField, qualifier: def.alias.qualifier }
   }
   return { field: field as BaseField }

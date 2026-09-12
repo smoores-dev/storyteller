@@ -20,6 +20,7 @@ export function SectionPageClient({ section }: { section: FacetSection }) {
     : undefined
 
   if (section === "formats") {
+    /* oxlint-disable typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type */
     const itemLabels = Object.fromEntries(
       FORMAT_VALUES.map((value) => [
         value,
@@ -28,6 +29,7 @@ export function SectionPageClient({ section }: { section: FacetSection }) {
         ),
       ]),
     )
+    /* oxlint-enable typescript/no-unnecessary-type-assertion */
 
     return (
       <LibraryPage

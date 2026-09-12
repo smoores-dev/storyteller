@@ -7,7 +7,7 @@ import {
   type NestedKeyOf,
   type NestedValueOf,
   type createTranslator,
-  // eslint-disable-next-line no-restricted-syntax
+  // oxlint-disable-next-line storyteller/no-next-intl-use-translations
   useTranslations,
 } from "next-intl"
 
@@ -71,7 +71,7 @@ export function useTranslation<
       values?: Record<string, string | number>,
     ) => string
   }
-  // eslint-disable-next-line no-restricted-syntax
+  // oxlint-disable-next-line storyteller/no-next-intl-use-translations
   const t = useTranslations(namespace)
 
   const fn = (<TargetKey extends NamespacedMessageKeys<Messages, NestedKey>>(

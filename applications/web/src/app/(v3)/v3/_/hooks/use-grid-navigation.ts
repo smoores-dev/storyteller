@@ -149,7 +149,7 @@ export function useGridNavigation({
       if (!enabled || itemCount === 0) return
       if (event.target !== event.currentTarget) return
       setActiveIndex((current) =>
-        current !== null ? current : cbRef.current.initialIndex?.() ?? 0,
+        current !== null ? current : (cbRef.current.initialIndex?.() ?? 0),
       )
     },
     [enabled, itemCount],

@@ -1,0 +1,9 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": [
+    "../../.oxlintrc.json",
+    "../../config/oxlint/typescript-strict.json"
+  ],
+  "ignorePatterns": ["**/.*", "**/dist", "**/node_modules", "tsbuild"],
+  "rules": {}
+}

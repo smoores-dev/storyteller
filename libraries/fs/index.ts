@@ -41,7 +41,7 @@ export async function* getFileChunks(path: string): AsyncGenerator<Buffer> {
 
 export function scratchPath(...segments: string[]): string {
   return resolve(
-    // eslint-disable-next-line no-restricted-syntax
+    // oxlint-disable-next-line storyteller/no-tmpdir
     process.env["STORYTELLER_SCRATCH_DIR"] || tmpdir(),
     ...segments,
   )

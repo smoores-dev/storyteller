@@ -1,7 +1,7 @@
-import { Overlayer } from "./foliate-js/overlayer.js"
-import { SpanHighlighter } from "./SpanHighlighter.js"
 import { debugLog } from "./DebugConfig.js"
 import { SelectionToolbar } from "./SelectionToolbar.js"
+import { SpanHighlighter } from "./SpanHighlighter.js"
+import { Overlayer } from "./foliate-js/overlayer.js"
 
 console.log("[BookmarkManager] Module loaded")
 

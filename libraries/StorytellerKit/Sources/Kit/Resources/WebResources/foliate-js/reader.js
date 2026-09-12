@@ -1,7 +1,7 @@
 import "./view.js"
-import { createTOCView } from "./ui/tree.js"
-import { createMenu } from "./ui/menu.js"
 import { Overlayer } from "./overlayer.js"
+import { createMenu } from "./ui/menu.js"
+import { createTOCView } from "./ui/tree.js"
 
 const getCSS = ({ spacing, justify, hyphenate }) => `
     @namespace epub "http://www.idpf.org/2007/ops";

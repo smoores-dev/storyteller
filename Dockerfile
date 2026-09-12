@@ -26,7 +26,6 @@ COPY libraries/opds/package.json ./libraries/opds/package.json
 COPY libraries/nodekit/package.json ./libraries/nodekit/package.json
 COPY libraries/media-types/package.json ./libraries/media-types/package.json
 COPY config/tsup/package.json ./config/tsup/package.json
-COPY config/eslint/package.json ./config/eslint/package.json
 
 # prevent onnxruntime from installing shit, almost always hangs
 ENV ONNXRUNTIME_NODE_INSTALL=skip
@@ -45,7 +44,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG CI_COMMIT_TAG
 ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 
-RUN yarn workspaces foreach -Rpt --from @storyteller-platform/web --exclude @storyteller-platform/eslint run build
+RUN yarn workspaces foreach -Rpt --from @storyteller-platform/web run build
 
 # Pre-install whisper.cpp binary and default model in builder stage
 ARG TARGETARCH

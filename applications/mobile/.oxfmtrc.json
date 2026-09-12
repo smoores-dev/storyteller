@@ -1,0 +1,16 @@
+{
+  "$schema": "../../node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "printWidth": 80,
+  "sortPackageJson": false,
+  "sortTailwindcss": {},
+  "ignorePatterns": [
+    "/android",
+    "/ios",
+    "/dist",
+    "/.expo",
+    "/modules/*/android/build",
+    "/modules/*/ios/.build",
+    "/uniwind-types.d.ts"
+  ]
+}

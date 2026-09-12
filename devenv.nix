@@ -78,8 +78,7 @@ in
     "mkhl.direnv"
     # Copied from .vscode/extensions.json
     "arcanis.vscode-zipfs"
-    "dbaeumer.vscode-eslint"
-    "esbenp.prettier-vscode"
+    "oxc.oxc-vscode"
     "ms-python.python"
     "ms-python.vscode-pylance"
     "ms-azuretools.vscode-docker"

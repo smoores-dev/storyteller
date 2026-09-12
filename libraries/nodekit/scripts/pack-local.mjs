@@ -1,3 +1,4 @@
+// oxlint-disable storyteller/no-tmpdir
 import { execFileSync } from "node:child_process"
 import {
   existsSync,
@@ -52,7 +53,6 @@ if (!existsSync(binaryPath)) {
 
 const outDir = join(packageDir, ".pack-local")
 const tarballDir = join(outDir, "tarballs")
-// eslint-disable-next-line no-restricted-syntax
 const consumerDir = join(tmpdir(), "nodekit-pack-local-consumer")
 const npmDir = join(packageDir, "npm")
 const artifactsDir = join(packageDir, "artifacts")

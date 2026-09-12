@@ -124,8 +124,8 @@ export function useBookFilters(options: UseBookFiltersOptions = {}) {
   const canSaveSort = !EXCLUDED_SORT_SAVE_PAGES.includes(currentPage)
   const defaultSorts = useAppSelector(selectDefaultSorts)
   const defaultSort = canSaveSort
-    ? defaultSorts[currentPage] ?? options.defaultSort ?? defaultSortDefault
-    : options.defaultSort ?? defaultSortDefault
+    ? (defaultSorts[currentPage] ?? options.defaultSort ?? defaultSortDefault)
+    : (options.defaultSort ?? defaultSortDefault)
 
   const [userFilter, setUserFilterRaw] = useQueryState("f", filterParser)
   const [searchQueryParam, setSearchQueryParam] = useQueryState(

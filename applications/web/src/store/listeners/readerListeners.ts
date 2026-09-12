@@ -125,7 +125,7 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
           resolve(false)
           return
         }
-        reject(e as Error)
+        reject(e as Error) // oxlint-disable-line typescript/no-unnecessary-type-assertion
       }
     })
   })
@@ -502,11 +502,13 @@ startAppListening({
       // @ts-expect-error private property, but no other way to check if the frame is destroyed or hidden
       if (activeFrame.hidden || activeFrame.destroyed) return
 
+      /* oxlint-disable typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type */
       highlightFragment(
         activeFrame as FrameManager & { msg: FrameComms },
         locator,
         true,
       )
+      /* oxlint-enable typescript/no-unnecessary-type-assertion */
       listenerApi.dispatch(
         readingSessionSlice.actions.updateCurrentlyHighlightedFragment(locator),
       )

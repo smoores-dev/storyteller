@@ -1,7 +1,0 @@
-/android
-/ios
-/dist
-/.expo
-/modules/*/android/build
-/modules/*/ios/.build
-/uniwind-types.d.ts
