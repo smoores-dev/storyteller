@@ -9,7 +9,8 @@ let package = Package(
 		.executable(name: "st-mlx-audio-cli", targets: ["StorytellerMLXAudioCLI"]),
 	],
 	dependencies: [
-		.package(url: "https://github.com/kabiroberai/node-swift.git", from: "1.5.2"),
+		// replace with main node-swift once https://github.com/kabiroberai/node-swift/pull/54 is merged
+		.package(url: "https://github.com/circlebackai/node-swift", revision: "da71bc7d076a2f2b2870e8a55b99c22f906478fc"),
 		.package(url: "https://github.com/Blaizzy/mlx-audio-swift.git", from: "0.1.3"),
 		.package(url: "https://github.com/ml-explore/mlx-swift", from: "0.10.0"),
 	],
