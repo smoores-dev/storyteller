@@ -90,22 +90,41 @@ export function gradeForScore(
   if (sentenceScore === null || audioScore === null) {
     return { grade: "F", band: FAILING_BAND, score: 0 }
   }
+  //   S ≥ 98% audio and ≥ 95% ebook
+  // - A ≥ 95% both
+  // - B ≥ 90% both -- probably good enough for sync but not readaloud
+  // - C ≥ 90% audio, < 90% text -- needs evaluation / buyer beware
+  // - F < 90% either -- probably not fit for readaloud or sync
 
   const score =
     sentenceScore * SENTENCE_WEIGHT + audioScore * (1 - SENTENCE_WEIGHT)
 
-  if (sentenceScore >= 98 && audioScore >= 98) {
+  if (sentenceScore >= 96 && audioScore >= 98) {
     return { grade: "S", band: 0, score }
   }
-
-  const gradesWithoutS = GRADE_BANDS.slice(1)
-
-  const band = gradesWithoutS.findIndex(({ min }) => score >= min)
-  const entry = gradesWithoutS[band]
-  if (!entry) {
-    return { grade: "F", band: FAILING_BAND, score: 0 }
+  if (sentenceScore >= 95 && audioScore >= 95) {
+    return { grade: "A", band: 1, score }
   }
-  return { grade: entry.grade, band: band + 1, score }
+  if (sentenceScore >= 90 && audioScore >= 90) {
+    return { grade: "B", band: 2, score }
+  }
+  if (sentenceScore >= 90 && audioScore < 90) {
+    return { grade: "C", band: 3, score }
+  }
+  return { grade: "F", band: FAILING_BAND, score: 0 }
+
+  // if(sentenceScore < 90 && audioScore < 90) {
+  //   return { grade: "F", band: FAILING_BAND, score: 0 }
+  // }
+
+  // const gradesWithoutS = GRADE_BANDS.slice(1)
+
+  // const band = gradesWithoutS.findIndex(({ min }) => score >= min)
+  // const entry = gradesWithoutS[band]
+  // if (!entry) {
+  //   return { grade: "F", band: FAILING_BAND, score: 0 }
+  // }
+  // return { grade: entry.grade, band: band + 1, score }
 }
 
 type LegacyContext = {
