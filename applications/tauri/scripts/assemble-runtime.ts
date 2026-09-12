@@ -114,32 +114,37 @@ copy(
   "file write worker bundle",
 )
 
-const alignPrebuild = join(
-  repoRoot,
-  "libraries",
-  "align",
-  "prebuilds",
-  target.alignPrebuild,
-)
-copy(
-  alignPrebuild,
-  join(
-    webStaging,
-    "work-dist",
-    "@storyteller-platform",
-    "align",
-    "prebuilds",
-    target.alignPrebuild,
-  ),
-  "align native addon prebuild",
-)
-for (const entry of readdirSync(alignPrebuild)) {
-  const content = readFileSync(join(alignPrebuild, entry))
-  if (content.subarray(0, 30).toString().includes("git-lfs")) {
-    throw new Error(
-      `${entry} is a git-lfs pointer, not a real binary — run: git lfs pull`,
-    )
+function stagePrebuild(library: string, prebuild: string, what: string) {
+  const from = join(repoRoot, "libraries", library, "prebuilds", prebuild)
+  copy(
+    from,
+    join(
+      webStaging,
+      "work-dist",
+      "@storyteller-platform",
+      library,
+      "prebuilds",
+      prebuild,
+    ),
+    what,
+  )
+  for (const entry of readdirSync(from)) {
+    const content = readFileSync(join(from, entry))
+    if (content.subarray(0, 30).toString().includes("git-lfs")) {
+      throw new Error(
+        `${entry} is a git-lfs pointer, not a real binary — run: git lfs pull`,
+      )
+    }
   }
+}
+
+stagePrebuild("align", target.alignPrebuild, "align native addon prebuild")
+if (target.platform === "darwin" && target.arch === "arm64") {
+  stagePrebuild(
+    "mlx-audio",
+    `${target.platform}-${target.arch}`,
+    "mlx-audio native binding and metal library",
+  )
 }
 
 const wasmDir = join(

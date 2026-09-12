@@ -369,11 +369,15 @@ export function resolveWav2Vec2Device(
     process.platform === "linux" && process.arch === "arm64"
   )
   const cudaAvailable = process.platform === "linux" && process.arch === "x64"
-  const isMacOS = process.platform === "darwin"
+  const mlxAvailable =
+    process.platform === "darwin" && process.arch === "arm64"
 
   if (requested && requested !== "auto") {
     if (requested === "cuda" && !cudaAvailable) {
-      return isMacOS ? "mlx" : webgpuAvailable ? "webgpu" : "cpu"
+      return mlxAvailable ? "mlx" : webgpuAvailable ? "webgpu" : "cpu"
+    }
+    if (requested === "mlx" && !mlxAvailable) {
+      return webgpuAvailable ? "webgpu" : "cpu"
     }
     return requested === "webgpu" && !webgpuAvailable ? "cpu" : requested
   }
@@ -387,7 +391,7 @@ export function resolveWav2Vec2Device(
     return "cuda"
   }
 
-  if (isMacOS) {
+  if (mlxAvailable) {
     return "mlx"
   }
 
