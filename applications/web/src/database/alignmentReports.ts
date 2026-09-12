@@ -222,6 +222,54 @@ export async function updateAlignmentOverrides(
   return row
 }
 
+export async function recomputeAlignmentSummaries(
+  bookUuids: UUID[] | null,
+): Promise<number> {
+  const rows = await db
+    .selectFrom("alignmentReport")
+    .leftJoin("audiobook", "audiobook.bookUuid", "alignmentReport.bookUuid")
+    .select([
+      "alignmentReport.uuid",
+      "alignmentReport.report",
+      "alignmentReport.overrides",
+      "audiobook.duration",
+    ])
+    .where("alignmentReport.report", "is not", null)
+    .$if(bookUuids !== null, (qb) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      qb.where("alignmentReport.bookUuid", "in", bookUuids!),
+    )
+    .execute()
+
+  let count = 0
+  for (const row of rows) {
+    if (!row.report) continue
+    const raw: unknown = row.overrides
+    const overrides = (
+      typeof raw === "string" ? JSON.parse(raw) : raw
+    ) as AlignmentOverrides | null
+    const s = summarizeReport(row.report, overrides, row.duration)
+    await db
+      .updateTable("alignmentReport")
+      .set({
+        grade: s.grade,
+        score: s.score,
+        confidence: s.confidence,
+        sentenceCoverage: s.sentenceCoverage,
+        audioCoverage: s.audioCoverage,
+        chapters: s.chapters,
+        missingSentences: s.missingSentences,
+        mutedChapters: s.mutedChapters,
+        failedChapters: s.failedChapters,
+        unalignedAudio: s.unalignedAudio,
+      })
+      .where("uuid", "=", row.uuid)
+      .execute()
+    count++
+  }
+  return count
+}
+
 export async function getAlignmentFacets(): Promise<AlignmentFacets> {
   const gradeResult = await sql<{ grade: string; count: number }>`
     select grade, count(*) as count

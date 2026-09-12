@@ -53,6 +53,7 @@ import {
   useDeleteBooksMutation,
   useGetCurrentUserQuery,
   useMergeBooksMutation,
+  useRecomputeAlignmentReportsMutation,
   useRelocateToInternalMutation,
   useScanBooksMutation,
   useUpgradeBookEpubMutation,
@@ -148,6 +149,7 @@ export function useBookActionItems({
   const [addToCollections] = useAddBooksToCollectionsMutation()
   const [scanBooks] = useScanBooksMutation()
   const [clearCache] = useClearBooksCacheMutation()
+  const [recomputeAlignmentReports] = useRecomputeAlignmentReportsMutation()
   const [upgradeEpub] = useUpgradeBookEpubMutation()
   const [deleteBooks, { isLoading: isDeleting }] = useDeleteBooksMutation()
   const [mergeBooks, { isLoading: isMerging }] = useMergeBooksMutation()
@@ -191,6 +193,18 @@ export function useBookActionItems({
   const handleClearCache = useCallback(async () => {
     await clearCache({ bookUuids }).unwrap()
   }, [clearCache, bookUuids])
+
+  const handleRecomputeAlignmentReports = useCallback(async () => {
+    try {
+      const { count } = await recomputeAlignmentReports({ bookUuids }).unwrap()
+      toast.success(t("recomputeAlignmentReportsDone", { count }))
+    } catch (error) {
+      console.error(error)
+      toast.error(t("recomputeAlignmentReportsFailed"), {
+        description: (error as Error).message,
+      })
+    }
+  }, [recomputeAlignmentReports, bookUuids, t])
 
   const handleUpgrade = useCallback(async () => {
     await Promise.all(
@@ -587,6 +601,15 @@ export function useBookActionItems({
         clearCacheAction.confirm(modifiers)
       },
     })
+
+    if (books.some((b) => b.alignmentSummary)) {
+      entries.push({
+        key: "recomputeAlignmentReports",
+        label: t.plain("recomputeAlignmentReports"),
+        icon: <icon.ReportAnalytics className="size-4" />,
+        onSelect: () => void handleRecomputeAlignmentReports(),
+      })
+    }
   }
 
   if (canUpdate) {

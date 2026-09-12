@@ -435,6 +435,25 @@ export const api = createApi({
         body: { bookUuids },
       }),
     }),
+    recomputeAlignmentReports: build.mutation<
+      { count: number },
+      { bookUuids?: UUID[] }
+    >({
+      query: ({ bookUuids }) => ({
+        url: `/books/alignment-reports/recompute`,
+        method: "POST",
+        body: { bookUuids },
+      }),
+      invalidatesTags: (_result, _error, { bookUuids }) => [
+        "Books",
+        ...(bookUuids
+          ? bookUuids.map((uuid) => ({
+              type: "BookAlignmentReport" as const,
+              id: uuid,
+            }))
+          : ["BookAlignmentReport" as const]),
+      ],
+    }),
     deleteBooks: build.mutation<
       void,
       {
@@ -2515,6 +2534,7 @@ export const {
   useCreateCollectionMutation,
   useCreateInviteMutation,
   useClearBooksCacheMutation,
+  useRecomputeAlignmentReportsMutation,
   useDeleteBookAssetsMutation,
   useDeleteBookMutation,
   useDeleteBooksMutation,
