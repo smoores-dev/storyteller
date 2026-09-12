@@ -110,6 +110,14 @@ export async function createAlignmentReport(input: {
   )
 
   const row = await db.transaction().execute(async (tr) => {
+    const lastOne = await tr
+      .selectFrom("alignmentReport")
+      .selectAll()
+      .where("bookUuid", "=", input.bookUuid)
+      .orderBy("createdAt", "desc")
+      .limit(1)
+      .executeTakeFirst()
+
     const inserted = await tr
       .insertInto("alignmentReport")
       .values({
@@ -136,6 +144,11 @@ export async function createAlignmentReport(input: {
         .set({ report: null })
         .where("bookUuid", "=", input.bookUuid)
         .where("uuid", "!=", inserted.uuid)
+
+        .$if(!!lastOne, (qb) =>
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          qb.where("uuid", "!=", lastOne!.uuid),
+        )
         .execute()
     }
 
