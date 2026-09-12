@@ -5,7 +5,7 @@ let package = Package(
     name: "Storyteller",
     platforms: [
         .macOS(.v15),
-        .iOS(.v18),
+        .iOS(.v17),
         .watchOS(.v10),
         .tvOS(.v17),
     ],
@@ -28,7 +28,7 @@ let package = Package(
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.7.0"),
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", from: "2.0.0"),
         .package(url: "https://github.com/kabiroberai/node-swift.git", from: "1.5.2"),
-        .package(url: "https://codeberg.org/richwaters/StoryAlign.git", from: "1.2.5"),
+        .package(url: "https://codeberg.org/richwaters/StoryAlign.git", from: "1.4.0"),
     ],
     targets: [
         .target(

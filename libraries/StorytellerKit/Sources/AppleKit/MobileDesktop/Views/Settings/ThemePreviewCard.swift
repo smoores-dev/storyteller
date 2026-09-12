@@ -53,13 +53,14 @@ struct ThemePreviewCard: View {
     }
 
     private var needsDecoration: Bool {
-        theme.readaloudHighlightMode == "underline"
+        guard #available(iOS 18.0, *) else { return false }
+        return theme.readaloudHighlightMode == "underline"
             && theme.readaloudUnderlineStyle != "solid"
     }
 
     @ViewBuilder
     private var sampleText: some View {
-        if needsDecoration {
+        if #available(iOS 18.0, *), needsDecoration {
             combinedText.textRenderer(
                 UnderlineDecorationRenderer(
                     style: theme.readaloudUnderlineStyle,
@@ -100,10 +101,10 @@ struct ThemePreviewCard: View {
         var tail = AttributedString(Self.tail)
         tail.foregroundColor = foreground
 
-        var readaloudText =
-            needsDecoration
-            ? Text(readaloudSpan).customAttribute(ReadaloudUnderlineMark())
-            : Text(readaloudSpan)
+        var readaloudText = Text(readaloudSpan)
+        if #available(iOS 18.0, *), needsDecoration {
+            readaloudText = readaloudText.customAttribute(ReadaloudUnderlineMark())
+        }
         if theme.readaloudHighlightMode == "text" {
             if theme.readaloudTextItalic { readaloudText = readaloudText.italic() }
             if theme.readaloudTextBold { readaloudText = readaloudText.bold() }
