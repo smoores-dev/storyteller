@@ -28,7 +28,6 @@ COPY libraries/opds/package.json ./libraries/opds/package.json
 COPY libraries/nodekit/package.json ./libraries/nodekit/package.json
 COPY libraries/media-types/package.json ./libraries/media-types/package.json
 COPY libraries/mlx-audio/package.json ./libraries/mlx-audio/package.json
-COPY config/tsup/package.json ./config/tsup/package.json
 
 # prevent onnxruntime from installing shit, almost always hangs
 ENV ONNXRUNTIME_NODE_INSTALL=skip
