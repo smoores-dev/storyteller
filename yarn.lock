@@ -15979,6 +15979,7 @@ __metadata:
   dependencies:
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/node": "npm:^24.0.0"
+    typescript: "npm:^7.0.2"
   languageName: unknown
   linkType: soft
 
