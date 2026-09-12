@@ -141,19 +141,16 @@ export function ChapterDetail({
         </div>
       </div>
 
-      {item.status === "aligned" ? (
-        <ChapterBody
-          bookUuid={bookUuid}
-          item={item}
-          items={items}
-          spans={spansOf(spans, item.index)}
-          allSpans={spans}
-          tracks={tracks}
-          editor={editor}
-        />
-      ) : (
-        <UnalignedBody item={item} />
-      )}
+      {/* {item.status === "aligned" ? ( */}
+      <ChapterBody
+        bookUuid={bookUuid}
+        item={item}
+        items={items}
+        spans={spansOf(spans, item.index)}
+        allSpans={spans}
+        tracks={tracks}
+        editor={editor}
+      />
     </div>
   )
 }
@@ -235,6 +232,8 @@ function ChapterBody({
   tracks: Track[]
   editor: OverrideEditor
 }) {
+  const notAligned = item.status !== "aligned"
+
   const t = useTranslation("AlignmentReport")
   const hulls = trackHulls(item, items, spans, allSpans, tracks)
   const allAudioExcluded =
@@ -315,21 +314,23 @@ function ChapterBody({
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-3">
-        {stats.map((stat) => (
-          <div key={stat.key} className="flex items-center gap-1">
-            {stat.icon}
-            <span
-              className={cn(
-                "text-base leading-none font-medium tabular-nums",
-                TONE_TEXT[stat.tone],
-              )}
-            >
-              {stat.value}
-            </span>
-          </div>
-        ))}
-      </div>
+      {!notAligned && (
+        <div className="grid grid-cols-3 gap-3">
+          {stats.map((stat) => (
+            <div key={stat.key} className="flex items-center gap-1">
+              {stat.icon}
+              <span
+                className={cn(
+                  "text-base leading-none font-medium tabular-nums",
+                  TONE_TEXT[stat.tone],
+                )}
+              >
+                {stat.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {hulls.length === 0 ? (
         <p className="text-muted-foreground text-xs">
@@ -433,27 +434,6 @@ function ChapterBody({
       )}
 
       <ChapterText bookUuid={bookUuid} item={item} spans={spans} />
-    </>
-  )
-}
-
-function UnalignedBody({ item }: { item: ViewSpineItem }) {
-  const t = useTranslation("AlignmentReport")
-  return (
-    <>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <StatusBadge status={item.status} />
-        {item.sentenceCount > 0 && (
-          <span className="text-muted-foreground text-xs tabular-nums">
-            {t("detail.sentenceCount", { count: item.sentenceCount })}
-          </span>
-        )}
-      </div>
-      {item.preview && (
-        <p className="text-muted-foreground bg-muted/40 rounded-md p-3 text-xs leading-relaxed italic">
-          {item.preview}
-        </p>
-      )}
     </>
   )
 }

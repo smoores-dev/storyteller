@@ -234,6 +234,7 @@ function ReportBody({
   const openIndex = openItem
     ? view.items.findIndex((item) => item.href === openItem.href)
     : -1
+
   const step = (delta: number) => {
     const next = view.items[openIndex + delta]
     if (next) selection.setOpenHref(next.href)

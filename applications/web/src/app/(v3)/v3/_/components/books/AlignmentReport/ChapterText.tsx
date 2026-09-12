@@ -200,6 +200,7 @@ export function ChapterText({
   spans: ReportSpan[]
 }) {
   const t = useTranslation("AlignmentReport")
+  const notAligned = item.status !== "aligned"
   const container = useRef<HTMLDivElement>(null)
   const {
     currentData: data,
@@ -216,14 +217,14 @@ export function ChapterText({
   )
   const { currentData: guidedNavigation } =
     useGetBookChapterGuidedNavigationQuery(
-    item.readHref
-      ? {
-          uuid: bookUuid,
-          updatedAt: new Date().toISOString(),
-          href: item.readHref,
-        }
-      : skipToken,
-  )
+      item.readHref && !notAligned
+        ? {
+            uuid: bookUuid,
+            updatedAt: new Date().toISOString(),
+            href: item.readHref,
+          }
+        : skipToken,
+    )
 
   const prepared = useMemo(
     () => (data === undefined ? null : prepare(data, item, spans)),
@@ -231,6 +232,8 @@ export function ChapterText({
   )
 
   useEffect(() => {
+    if (notAligned) return
+
     const element = container.current
     if (!element || !prepared) return
     element.scrollTop = 0
@@ -239,13 +242,15 @@ export function ChapterText({
     const box = element.getBoundingClientRect()
     const rect = target.getBoundingClientRect()
     element.scrollTop = Math.max(0, rect.top - box.top - 24)
-  }, [prepared])
+  }, [prepared, notAligned])
 
   const unavailable = !item.readHref || isError
 
   const player = usePlayer()
+  const play = player.play
 
   useEffect(() => {
+    if (notAligned) return
     if (!guidedNavigation) return
 
     const guidedNav = GuidedNavigationDocument.deserialize(guidedNavigation)
@@ -271,7 +276,7 @@ export function ChapterText({
         fragment.addEventListener(
           "click",
           () => {
-            player.play({
+            play({
               bookUuid,
               path: audioFile.split("/").pop() ?? "",
               start: child.clip?.start ?? 0,
@@ -288,45 +293,47 @@ export function ChapterText({
     return () => {
       abortController.abort()
     }
-  }, [guidedNavigation])
+  }, [guidedNavigation, notAligned, bookUuid, play])
 
   return (
     <div className="flex min-h-0 flex-col gap-1.5">
-      <div className="flex items-center gap-1">
-        <span className="text-muted-foreground min-w-0 flex-1 truncate text-[10px]">
-          {unavailable
-            ? t("detail.textUnavailable")
-            : !prepared || isFetching
-              ? t("detail.loadingText")
-              : prepared.marked
-                ? t("detail.textHint")
-                : t("detail.textUnmarkedHint")}
-        </span>
-        <TooltipButton
-          variant="ghost"
-          size="icon-xs"
-          aria-label={t("detail.jumpFirst")}
-          tooltip={t("detail.jumpFirst")}
-          disabled={!prepared?.marked}
-          onClick={() => {
-            if (container.current) scrollToMatch(container.current, "first")
-          }}
-        >
-          <icon.ArrowUp />
-        </TooltipButton>
-        <TooltipButton
-          variant="ghost"
-          size="icon-xs"
-          aria-label={t("detail.jumpLast")}
-          tooltip={t("detail.jumpLast")}
-          disabled={!prepared?.marked}
-          onClick={() => {
-            if (container.current) scrollToMatch(container.current, "last")
-          }}
-        >
-          <icon.ArrowDown />
-        </TooltipButton>
-      </div>
+      {!notAligned && (
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground min-w-0 flex-1 truncate text-[10px]">
+            {unavailable
+              ? t("detail.textUnavailable")
+              : !prepared || isFetching
+                ? t("detail.loadingText")
+                : prepared.marked
+                  ? t("detail.textHint")
+                  : t("detail.textUnmarkedHint")}
+          </span>
+          <TooltipButton
+            variant="ghost"
+            size="icon-xs"
+            aria-label={t("detail.jumpFirst")}
+            tooltip={t("detail.jumpFirst")}
+            disabled={!prepared?.marked}
+            onClick={() => {
+              if (container.current) scrollToMatch(container.current, "first")
+            }}
+          >
+            <icon.ArrowUp />
+          </TooltipButton>
+          <TooltipButton
+            variant="ghost"
+            size="icon-xs"
+            aria-label={t("detail.jumpLast")}
+            tooltip={t("detail.jumpLast")}
+            disabled={!prepared?.marked}
+            onClick={() => {
+              if (container.current) scrollToMatch(container.current, "last")
+            }}
+          >
+            <icon.ArrowDown />
+          </TooltipButton>
+        </div>
+      )}
       <div
         ref={container}
         className={cn(
