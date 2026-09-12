@@ -267,23 +267,23 @@
   --st-orange-800: oklch(0.556 0.155 43.9);
   --st-orange-900: oklch(0.502 0.143 44);
 
-  /* ===== sage ===== */
-  --positive: oklch(0.5 0.075 150);
-  --positive-bg: oklch(0.955 0.03 150);
-  --positive-line: oklch(0.86 0.055 150);
-
   /* ===== teal ===== */
-  --good: oklch(0.52 0.065 215);
+  --good: oklch(0.62 0.1 215);
   --good-bg: oklch(0.955 0.028 215);
   --good-line: oklch(0.86 0.05 215);
 
+  /* ===== sage ===== */
+  --positive: oklch(0.6 0.1 150);
+  --positive-bg: oklch(0.955 0.03 150);
+  --positive-line: oklch(0.86 0.055 150);
+
   /* ===== ochre ===== */
-  --moderate: oklch(0.56 0.1 72);
+  --moderate: oklch(79.903% 0.16508 98.02);
   --moderate-bg: oklch(0.955 0.045 78);
   --moderate-line: oklch(0.85 0.08 78);
 
   /* ===== brick ===== */
-  --poor: oklch(0.51 0.13 32);
+  --poor: oklch(0.58 0.16 32);
   --poor-bg: oklch(0.955 0.035 40);
   --poor-line: oklch(0.86 0.07 40);
 
