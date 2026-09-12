@@ -7,6 +7,7 @@ import {
 import { withHasPermission } from "@/auth/auth"
 import {
   getAlignmentReportForBook,
+  listAlignmentReportSummaries,
   updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"
@@ -54,11 +55,17 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     | UUID
     | undefined
 
-  const [report, book] = await Promise.all([
+  const [report, book, history] = await Promise.all([
     getAlignmentReportForBook(bookUuid, reportUuid),
     getBook(bookUuid, request.auth.user.id),
+    listAlignmentReportSummaries(bookUuid),
   ])
-  const job = report?.jobUuid ? await getJob(report.jobUuid) : null
+  const index = history.findIndex((row) => row.uuid === report?.uuid)
+  const previousRow = index >= 0 ? history[index + 1] ?? null : null
+  const [job, previousJob] = await Promise.all([
+    report?.jobUuid ? getJob(report.jobUuid) : null,
+    previousRow?.jobUuid ? getJob(previousRow.jobUuid) : null,
+  ])
 
   if (!report?.report) {
     return Response.json(
@@ -88,6 +95,23 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     jobUuid: report.jobUuid,
     job: reportJob(job),
     createdAt: report.createdAt,
+    latest: index === 0,
+    previous: previousRow
+      ? {
+          reportUuid: previousRow.uuid,
+          createdAt: previousRow.createdAt,
+          hasReport: previousRow.hasReport === 1,
+          job: reportJob(previousJob),
+          grade: previousRow.grade,
+          score: previousRow.score,
+          confidence: previousRow.confidence,
+          sentenceCoverage: previousRow.sentenceCoverage,
+          audioCoverage: previousRow.audioCoverage,
+          chapters: previousRow.chapters,
+          failedChapters: previousRow.failedChapters,
+          unalignedAudio: previousRow.unalignedAudio,
+        }
+      : null,
     overrides,
     ebookManifest: (book.ebook?.manifest as ManifestLike | null) ?? null,
     audiobookDuration: book.audiobook?.duration ?? null,

@@ -228,6 +228,24 @@ export const ViewTrackSchemaV2 = ReportTrackSchemaV2.extend({
   }),
 })
 
+export const AlignmentReportPreviousSchemaV2 = z.object({
+  reportUuid: uuidv4,
+  createdAt: z.string(),
+  hasReport: z.boolean().meta({
+    description:
+      "False once the report payload was pruned. Only the stored summary remains, so it can no longer be opened.",
+  }),
+  job: AlignmentReportJobSchemaV2.nullable(),
+  grade: z.enum(ALIGNMENT_GRADES),
+  score: z.number().nullable(),
+  confidence: z.number().nullable(),
+  sentenceCoverage: z.number().nullable(),
+  audioCoverage: z.number().nullable(),
+  chapters: z.number().nullable(),
+  failedChapters: z.number().nullable(),
+  unalignedAudio: z.number().nullable(),
+})
+
 export const AlignmentReportViewSchemaV2 = z.object({
   bookUuid: uuidv4,
   bookTitle: z.string().nullable(),
@@ -237,6 +255,12 @@ export const AlignmentReportViewSchemaV2 = z.object({
     description: "The job that produced this report, when it still exists.",
   }),
   createdAt: z.string(),
+  latest: z.boolean().meta({
+    description: "Whether this is the newest report for the book.",
+  }),
+  previous: AlignmentReportPreviousSchemaV2.nullable().meta({
+    description: "The stored summary of the report that came before this one.",
+  }),
   aligner: z.enum(["ctc", "classic"]),
   summary: AlignmentReportSummarySchemaV2,
   items: z.array(ViewSpineItemSchemaV2),

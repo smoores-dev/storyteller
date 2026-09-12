@@ -1715,6 +1715,16 @@
     "openBook": "Boek",
     "createdByJob": "Gemaakt {relativeTime}",
     "lastGraded": "Laatst beoordeeld op {date}",
+    "previous": {
+      "title": "Vorig rapport",
+      "open": "Openen",
+      "pruned": "details niet meer opgeslagen",
+      "hide": "Vorig rapport verbergen",
+      "show": "Vorig rapport tonen",
+      "older": "Ouder rapport",
+      "latest": "Terug naar het nieuwste rapport",
+      "now": "Nu {value}"
+    },
     "ignored": "Genegeerd",
     "verdict": {
       "excellent": "Uitstekend gesynchroniseerd",
@@ -1892,6 +1902,7 @@
         "language": "Taal",
         "alignmentConfidence": "Synchronisatiezekerheid",
         "alignmentGrade": "Synchronisatiecijfer",
+        "alignmentPreviousGrade": "Vorig synchronisatiecijfer",
         "alignmentSentenceCoverage": "Zinnen gesynchroniseerd",
         "alignmentAudioCoverage": "Audio gesynchroniseerd",
         "alignedAt": "Laatst gesynchroniseerd",
@@ -1928,6 +1939,7 @@
         "language": "Taal",
         "alignmentConfidence": "Zekerheid",
         "alignmentGrade": "Cijfer",
+        "alignmentPreviousGrade": "Vorig cijfer",
         "alignmentSentenceCoverage": "Zinnen",
         "alignmentAudioCoverage": "Audio",
         "alignedAt": "Gesynchroniseerd",
@@ -1958,6 +1970,16 @@
           "no-media": "Geen media"
         },
         "alignmentGrade": {
+          "S": "S",
+          "A": "A",
+          "A-": "A-",
+          "B": "B",
+          "B-": "B-",
+          "C": "C",
+          "D": "D",
+          "F": "F"
+        },
+        "alignmentPreviousGrade": {
           "S": "S",
           "A": "A",
           "A-": "A-",

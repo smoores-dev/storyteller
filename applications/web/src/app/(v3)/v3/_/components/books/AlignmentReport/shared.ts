@@ -2,6 +2,7 @@ import { type Clip } from "@v3/_/components/audio"
 
 import {
   type Judgment,
+  type ReportJob,
   type ReportSpan,
   type ViewSpineItem,
   type ViewTrack,
@@ -120,6 +121,16 @@ export function trackTone(track: Track): ReportTone {
   const placed = track.matchedSeconds + track.interpolatedSeconds
   if (placed === 0) return "poor"
   return placed / track.duration > 0.98 ? "good" : "moderate"
+}
+
+export function engineLabel(config: ReportJob["config"]): string | null {
+  if (!config) return null
+  const parts =
+    config.aligner === "ctc"
+      ? [config.ctcEngine]
+      : [config.transcriptionEngine, config.whisperModel]
+  const label = parts.filter(Boolean).join(" ")
+  return label || null
 }
 
 export function hrefStem(href: string): string {

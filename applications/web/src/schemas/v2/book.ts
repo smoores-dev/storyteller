@@ -251,6 +251,7 @@ export const BookSchemaV2 = z.object({
       audioCoverage: z.nullish(z.number()),
       failedChapters: z.nullish(z.number()),
       unalignedAudio: z.nullish(z.number()),
+      previousGrade: z.nullish(z.enum(ALIGNMENT_GRADES)),
     }),
   ),
   ebook: z.nullish(

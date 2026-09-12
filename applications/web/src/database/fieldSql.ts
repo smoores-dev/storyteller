@@ -191,8 +191,8 @@ function dateColumn(column: DateBookColumn): FieldSqlImpl {
   }
 }
 
-function latestReportColumn(column: string) {
-  return sql`(select ${sql.raw(column)} from alignment_report where book_uuid = book.uuid order by created_at desc limit 1)`
+function latestReportColumn(column: string, offset = 0) {
+  return sql`(select ${sql.raw(column)} from alignment_report where book_uuid = book.uuid order by created_at desc, rowid desc limit 1 offset ${sql.lit(offset)})`
 }
 
 function reportNumber(column: string): FieldSqlImpl {
@@ -209,11 +209,16 @@ function reportNumber(column: string): FieldSqlImpl {
   }
 }
 
-function reportString(column: string): FieldSqlImpl {
+function reportString(column: string, offset = 0): FieldSqlImpl {
   return {
-    isEmpty: (eb) => eb(latestReportColumn(column), "is", null),
+    isEmpty: (eb) => eb(latestReportColumn(column, offset), "is", null),
     compare: (eb, operator, value) =>
-      stringExprComparison(eb, latestReportColumn(column), operator, value),
+      stringExprComparison(
+        eb,
+        latestReportColumn(column, offset),
+        operator,
+        value,
+      ),
   }
 }
 
@@ -968,6 +973,7 @@ export const FIELD_SQL = {
   alignedAt: dateColumn("book.alignedAt"),
 
   alignmentGrade: reportString("grade"),
+  alignmentPreviousGrade: reportString("grade", 1),
   alignmentConfidence: reportNumber("confidence"),
   alignmentSentenceCoverage: reportNumber("sentence_coverage"),
   alignmentAudioCoverage: reportNumber("audio_coverage"),

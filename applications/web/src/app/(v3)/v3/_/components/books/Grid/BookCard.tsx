@@ -219,6 +219,15 @@ export function SecondaryText({
       ) : (
         none
       )
+    case "alignmentPreviousGrade":
+      return book.alignmentSummary?.previousGrade ? (
+        <GradePill
+          grade={book.alignmentSummary.previousGrade}
+          className="opacity-60"
+        />
+      ) : (
+        none
+      )
     case "alignmentSentenceCoverage":
       return book.alignmentSummary?.sentenceCoverage != null ? (
         <span>{Math.round(book.alignmentSummary.sentenceCoverage)}%</span>
@@ -489,7 +498,9 @@ export const BookCard = memo(function BookCard({
               return <CreatorsLine key={field} book={book} field={field} />
             }
 
-            const hasPill = row.includes("alignmentGrade")
+            const hasPill =
+              row.includes("alignmentGrade") ||
+              row.includes("alignmentPreviousGrade")
 
             return (
               <div

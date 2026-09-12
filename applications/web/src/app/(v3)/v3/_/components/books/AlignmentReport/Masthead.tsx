@@ -4,10 +4,7 @@ import { formatClock } from "@v3/_/components/audio"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import {
-  type BookAlignmentReportView,
-  type ReportJob,
-} from "@/alignmentReportView"
+import { type BookAlignmentReportView } from "@/alignmentReportView"
 import { ProcessingDropdown } from "@/app/(v3)/v3/_/components/books/BookDetails/ProcessingSection"
 import { useProcessingRun } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
 import {
@@ -25,21 +22,12 @@ import {
   TONE_TILE,
   bandTone,
   confidenceTone,
+  engineLabel,
   percentTone,
 } from "./shared"
 
 function percentOf(part: number, whole: number): number | null {
   return whole > 0 ? (part / whole) * 100 : null
-}
-
-function engineLabel(config: ReportJob["config"]): string | null {
-  if (!config) return null
-  const parts =
-    config.aligner === "ctc"
-      ? [config.ctcEngine]
-      : [config.transcriptionEngine, config.whisperModel]
-  const label = parts.filter(Boolean).join(" ")
-  return label || null
 }
 
 function Stat({

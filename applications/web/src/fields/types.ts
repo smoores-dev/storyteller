@@ -51,6 +51,7 @@ export type DatePreset = { label: string; days: number }
 
 export type FieldDefBase = {
   sortable: boolean
+  displayOnly?: true
   defaultSort?: "asc" | "desc"
   quick: boolean
   token: string

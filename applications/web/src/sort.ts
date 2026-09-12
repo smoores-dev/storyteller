@@ -36,11 +36,22 @@ export const CREATOR_DISPLAY_FIELDS: readonly CreatorDisplayField[] =
     .filter(([, def]) => def.group === "creators" && !def.sortable)
     .map(([field]) => field) as CreatorDisplayField[]
 
-export type DisplayField = SortField | CreatorDisplayField
+export type DisplayOnlyField = AcceptedKeys<
+  typeof FIELD_REGISTRY,
+  { displayOnly: true }
+>
+export const DISPLAY_ONLY_FIELDS: readonly DisplayOnlyField[] = Object.entries(
+  FIELD_REGISTRY,
+)
+  .filter(([, def]) => "displayOnly" in def)
+  .map(([field]) => field) as DisplayOnlyField[]
+
+export type DisplayField = SortField | CreatorDisplayField | DisplayOnlyField
 
 export const DISPLAY_FIELDS = [
   ...SORTABLE_FIELDS,
   ...CREATOR_DISPLAY_FIELDS,
+  ...DISPLAY_ONLY_FIELDS,
 ] as const
 
 const NEUTRAL_DISPLAY_FIELDS: readonly SortField[] = [
@@ -91,6 +102,7 @@ const COMPACT_DISPLAY_FIELDS: ReadonlySet<DisplayField> = new Set([
   "userRating",
   "alignmentConfidence",
   "alignmentGrade",
+  "alignmentPreviousGrade",
   "alignmentSentenceCoverage",
   "alignmentAudioCoverage",
 ])

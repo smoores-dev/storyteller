@@ -178,6 +178,29 @@ export async function getAlignmentReportForBook(
   return row ?? null
 }
 
+export async function listAlignmentReportSummaries(bookUuid: UUID) {
+  return db
+    .selectFrom("alignmentReport")
+    .select([
+      "uuid",
+      "jobUuid",
+      "createdAt",
+      "grade",
+      "score",
+      "confidence",
+      "sentenceCoverage",
+      "audioCoverage",
+      "chapters",
+      "failedChapters",
+      "unalignedAudio",
+      sql<number>`report is not null`.as("hasReport"),
+    ])
+    .where("bookUuid", "=", bookUuid)
+    .orderBy("createdAt", "desc")
+    .orderBy(sql`rowid`, "desc")
+    .execute()
+}
+
 export async function updateAlignmentOverrides(
   reportUuid: UUID,
   overrides: AlignmentOverrides,

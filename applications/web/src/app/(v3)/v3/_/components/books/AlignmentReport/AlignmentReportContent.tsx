@@ -1,7 +1,7 @@
 "use client"
 
-import { useSearchParams } from "next/navigation"
-import { useRef } from "react"
+import { parseAsString, useQueryState } from "nuqs"
+import { type ReactNode, useRef } from "react"
 
 import { PlayerDock } from "@v3/_/components/audio"
 import { Button } from "@v3/_/components/ui/button"
@@ -13,11 +13,17 @@ import { cn } from "@v3/_/lib/utils"
 import { type BookAlignmentReportView } from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { useGetBookAlignmentReportQuery } from "@/store/api"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
+import {
+  selectShowPreviousAlignmentReport,
+  uiSettingsSlice,
+} from "@/store/slices/uiSettingsSlice"
 import type { UUID } from "@/uuid"
 
 import { ChapterDetail } from "./ChapterDetail"
 import { LooseAudio } from "./LooseAudio"
 import { Masthead } from "./Masthead"
+import { PreviousReport } from "./PreviousReport"
 import { Reel } from "./Reel"
 import { SpineList } from "./SpineList"
 import { useNarrow } from "./useNarrow"
@@ -27,28 +33,33 @@ import { useTracks } from "./useTracks"
 
 export function AlignmentReportContent({
   uuid,
-  // alignmentReportUuid,
   compact = false,
   onClose,
   onBack,
   embedded = false,
 }: {
   uuid: UUID
-  // alignmentReportUuid?: UUID
   compact?: boolean
   onClose?: () => void
   onBack?: () => void
   embedded?: boolean
 }) {
-  const searchParams = useSearchParams()
-  const alignmentReportUuid = searchParams.get("reportUuid") as UUID | undefined
+  const [reportUuid, setReportUuid] = useQueryState("reportUuid", parseAsString)
   const { data, isLoading, isError } = useGetBookAlignmentReportQuery({
     uuid,
-    reportUuid: alignmentReportUuid,
+    reportUuid: (reportUuid as UUID | null) ?? undefined,
   })
   const t = useTranslation("AlignmentReport")
   const root = useRef<HTMLDivElement>(null)
   const narrow = useNarrow(root)
+  const dispatch = useAppDispatch()
+  const showPrevious = useAppSelector(selectShowPreviousAlignmentReport)
+  const setShowPrevious = (value: boolean) => {
+    dispatch(uiSettingsSlice.actions.setShowPreviousAlignmentReport(value))
+  }
+  const openReport = (next: UUID | null) => {
+    void setReportUuid(next)
+  }
 
   return (
     <div
@@ -61,6 +72,13 @@ export function AlignmentReportContent({
         embedded={embedded}
         onClose={onClose}
         onBack={onBack}
+        showPrevious={showPrevious}
+        onShowPrevious={() => {
+          setShowPrevious(true)
+        }}
+        onOpenLatest={() => {
+          openReport(null)
+        }}
       />
 
       {isLoading && (
@@ -70,7 +88,25 @@ export function AlignmentReportContent({
         <p className="text-muted-foreground p-4 text-sm">{t("notAvailable")}</p>
       )}
 
-      {data && <ReportBody view={data} narrow={narrow} />}
+      {data && (
+        <ReportBody
+          view={data}
+          narrow={narrow}
+          previous={
+            showPrevious && data.previous ? (
+              <PreviousReport
+                previous={data.previous}
+                summary={data.summary}
+                narrow={narrow}
+                onOpen={openReport}
+                onHide={() => {
+                  setShowPrevious(false)
+                }}
+              />
+            ) : null
+          }
+        />
+      )}
 
       <PlayerDock className="shrink-0" />
     </div>
@@ -83,12 +119,18 @@ function ReportHeader({
   embedded,
   onClose,
   onBack,
+  showPrevious,
+  onShowPrevious,
+  onOpenLatest,
 }: {
   view: BookAlignmentReportView | undefined
   compact: boolean
   embedded: boolean
   onClose?: () => void
   onBack?: () => void
+  showPrevious: boolean
+  onShowPrevious: () => void
+  onOpenLatest: () => void
 }) {
   const t = useTranslation("AlignmentReport")
 
@@ -127,18 +169,45 @@ function ReportHeader({
             {t("openFullPage")}
           </V3Link>
         )}
+        {view && !view.latest && (
+          <span className="flex shrink-0 items-center gap-1.5">
+            <span className="bg-muted text-muted-foreground rounded px-1.5 py-px text-[11px] font-medium">
+              {t("previous.older")}
+            </span>
+            <button
+              type="button"
+              onClick={onOpenLatest}
+              className="text-muted-foreground hover:text-primary inline-flex items-center gap-1 text-[11px] hover:underline"
+            >
+              <icon.ArrowBack className="size-3" />
+              {t("previous.latest")}
+            </button>
+          </span>
+        )}
       </div>
-      {onClose && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="shrink-0"
-          aria-label={t("close")}
-          onClick={onClose}
-        >
-          <icon.Close />
-        </Button>
-      )}
+      <div className="flex shrink-0 items-center gap-1">
+        {view?.previous && !showPrevious && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("previous.show")}
+            title={t("previous.show")}
+            onClick={onShowPrevious}
+          >
+            <icon.History />
+          </Button>
+        )}
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("close")}
+            onClick={onClose}
+          >
+            <icon.Close />
+          </Button>
+        )}
+      </div>
     </header>
   )
 }
@@ -146,9 +215,11 @@ function ReportHeader({
 function ReportBody({
   view,
   narrow,
+  previous,
 }: {
   view: BookAlignmentReportView
   narrow: boolean
+  previous: ReactNode
 }) {
   const audio = useTracks(view.bookUuid, view.tracks)
   const selection = useReportSelection()
@@ -224,7 +295,10 @@ function ReportBody({
 
   const top = (
     <>
-      <Masthead view={view} narrow={narrow} />
+      <div className="flex flex-wrap items-stretch gap-3">
+        <Masthead view={view} narrow={narrow} />
+        {previous}
+      </div>
       <Reel
         bookUuid={view.bookUuid}
         tracks={audio.tracks}

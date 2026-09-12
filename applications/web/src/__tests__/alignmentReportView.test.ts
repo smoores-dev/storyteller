@@ -365,6 +365,7 @@ void describe("judgments", () => {
       reportUuid: "r" as UUID,
       jobUuid: null,
       createdAt: "",
+      latest: true,
       overrides,
     })
     assert.strictEqual(view.items[0]?.judgment, "excluded")
@@ -407,6 +408,7 @@ void describe("labels", () => {
       reportUuid: "r" as UUID,
       jobUuid: null,
       createdAt: "",
+      latest: true,
       ebookManifest: manifest ?? null,
     })
 

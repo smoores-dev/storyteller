@@ -1763,6 +1763,7 @@
         "language": "Language",
         "alignmentConfidence": "Alignment Confidence",
         "alignmentGrade": "Alignment Grade",
+        "alignmentPreviousGrade": "Previous Alignment Grade",
         "alignmentSentenceCoverage": "Sentence Coverage (%)",
         "alignmentAudioCoverage": "Audio Coverage (%)",
         "alignedAt": "Date Aligned",
@@ -1807,6 +1808,16 @@
           "C": "C",
           "D": "D",
           "F": "F"
+        },
+        "alignmentPreviousGrade": {
+          "S": "S",
+          "A": "A",
+          "A-": "A-",
+          "B": "B",
+          "B-": "B-",
+          "C": "C",
+          "D": "D",
+          "F": "F"
         }
       },
       "short": {
@@ -1822,6 +1833,7 @@
         "language": "Lang.",
         "alignmentConfidence": "Confidence",
         "alignmentGrade": "Grade",
+        "alignmentPreviousGrade": "Prev. grade",
         "alignmentSentenceCoverage": "Sentences",
         "alignmentAudioCoverage": "Audio",
         "alignedAt": "Aligned",
@@ -1993,6 +2005,17 @@
     "openBook": "Book",
     "createdByJob": "Created {relativeTime}",
     "lastGraded": "Last graded {date}",
+    "previous": {
+      "title": "Previous report",
+      "open": "Open",
+      "pruned": "details no longer stored",
+      "hide": "Hide the previous report",
+      "show": "Show the previous report",
+      "older": "Older report",
+      "latest": "Back to the latest report",
+      "now": "Now {value}"
+    },
+
     "job": {
       "took": "took {duration}"
     },

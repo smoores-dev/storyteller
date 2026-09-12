@@ -52,6 +52,7 @@ export type UISettings = {
   detailCoverWidth: number | null
   processingToastLocation: ProcessingToastLocation
   processingToastCollapsed: boolean
+  showPreviousAlignmentReport: boolean
   theme: "light" | "dark" | "system"
 }
 
@@ -101,6 +102,7 @@ const defaults: UISettings = {
   defaultSorts: {},
   processingToastLocation: "floating",
   processingToastCollapsed: false,
+  showPreviousAlignmentReport: true,
 }
 
 export { defaults as UI_SETTINGS_DEFAULTS }
@@ -346,6 +348,11 @@ export const uiSettingsSlice = createSlice({
       state.processingToastCollapsed = action.payload
       saveToCookie(state)
     },
+
+    setShowPreviousAlignmentReport: (state, action: PayloadAction<boolean>) => {
+      state.showPreviousAlignmentReport = action.payload
+      saveToCookie(state)
+    },
   },
 })
 
@@ -427,3 +434,7 @@ export const selectProcessingToastLocation = (state: {
 export const selectProcessingToastCollapsed = (state: {
   uiSettings: UISettings
 }) => state.uiSettings.processingToastCollapsed
+
+export const selectShowPreviousAlignmentReport = (state: {
+  uiSettings: UISettings
+}) => state.uiSettings.showPreviousAlignmentReport

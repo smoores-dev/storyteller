@@ -92,6 +92,15 @@ export function ColumnValue({
       ) : (
         "\u2014"
       )
+    case "alignmentPreviousGrade":
+      return book.alignmentSummary?.previousGrade ? (
+        <GradePill
+          grade={book.alignmentSummary.previousGrade}
+          className="opacity-60"
+        />
+      ) : (
+        "\u2014"
+      )
     case "alignmentSentenceCoverage":
       return book.alignmentSummary?.sentenceCoverage != null
         ? `${Math.round(book.alignmentSummary.sentenceCoverage)}%`
@@ -150,6 +159,7 @@ export const columnWidths: Record<DisplayField, number> = {
   userRating: 50,
   alignmentConfidence: 60,
   alignmentGrade: 60,
+  alignmentPreviousGrade: 60,
   alignmentSentenceCoverage: 60,
   alignmentAudioCoverage: 60,
 }

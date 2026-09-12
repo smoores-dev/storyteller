@@ -23,6 +23,7 @@ const FIELD_ICONS: Record<FieldIconKey, FieldIconDef> = {
   review: { base: icon.Pencil },
   search: { base: icon.Search },
   alignmentGrade: { base: icon.Certificate },
+  alignmentPreviousGrade: { base: icon.History },
   status: { base: icon.Progress },
   tags: {
     base: icon.Tag,

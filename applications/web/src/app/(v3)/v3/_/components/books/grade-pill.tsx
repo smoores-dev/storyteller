@@ -6,7 +6,7 @@ const GRADE_STYLES: Record<string, string> = {
   "A-": "bg-positive-bg text-positive dark:bg-positive-900 dark:text-positive-200",
   B: "bg-moderate-bg text-moderate dark:bg-moderate-900 dark:text-moderate-200",
   "B-": "bg-moderate-bg text-moderate dark:bg-moderate-900 dark:text-moderate-200",
-  C: "bg-poor-bg text-poor dark:bg-poor-900 dark:text-poor-200",
+  C: "bg-moderate-bg text-moderate dark:bg-moderate-900 dark:text-moderate-200",
   D: "bg-poor-bg text-poor dark:bg-poor-900 dark:text-poor-200",
   F: "bg-poor-bg text-poor dark:bg-poor-900 dark:text-poor-200",
 }
@@ -17,7 +17,7 @@ export const GRADE_COLORS: Record<string, string> = {
   "A-": "var(--positive)",
   B: "var(--moderate)",
   "B-": "var(--moderate)",
-  C: "var(--poor)",
+  C: "var(--moderate)",
   D: "var(--poor)",
   F: "var(--poor)",
 }

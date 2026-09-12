@@ -17,6 +17,7 @@ import { type UUID } from "@/uuid"
 
 import {
   type AlignmentReportJobSchemaV2,
+  type AlignmentReportPreviousSchemaV2,
   type AlignmentReportSummarySchemaV2,
   type AlignmentReportViewSchemaV2,
   type Judgment,
@@ -39,6 +40,8 @@ export type BookAlignmentReportView = z.infer<
 >
 
 export type ReportJob = z.infer<typeof AlignmentReportJobSchemaV2>
+
+export type PreviousReport = z.infer<typeof AlignmentReportPreviousSchemaV2>
 
 export interface AlignmentChapterOverride {
   judgment?: Judgment | null
@@ -703,6 +706,8 @@ export function buildReportView(args: {
   jobUuid: UUID | null
   job?: ReportJob | null
   createdAt: string
+  latest: boolean
+  previous?: PreviousReport | null
   overrides?: AlignmentOverrides | null
   ebookManifest?: ManifestLike | null
   audiobookDuration?: number | null
@@ -734,6 +739,8 @@ export function buildReportView(args: {
     jobUuid: args.jobUuid,
     job: args.job ?? null,
     createdAt: args.createdAt,
+    latest: args.latest,
+    previous: args.previous ?? null,
     aligner: report.aligner,
     summary: summarizeReport(report, args.overrides, args.audiobookDuration),
     items,

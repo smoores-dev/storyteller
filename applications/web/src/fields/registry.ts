@@ -382,6 +382,17 @@ export const FIELD_REGISTRY = {
     group: "alignment",
     type: "enum",
   },
+  alignmentPreviousGrade: {
+    control: "enum",
+    sortable: false,
+    displayOnly: true,
+    quick: false,
+    token: "previousGrade",
+    options: [...ALIGNMENT_GRADES],
+    labelKey: "alignmentPreviousGrade",
+    group: "alignment",
+    type: "enum",
+  },
   alignmentConfidence: {
     control: "number-range",
     sortable: true,
