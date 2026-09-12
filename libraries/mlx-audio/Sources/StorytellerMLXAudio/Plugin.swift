@@ -64,6 +64,16 @@ private func nodeQueue() throws -> NodeAsyncQueue {
 	return queue
 }
 
+// Needed, bc otherwise we get this error after spinning up a second worker
+// Error: There is no target NodeAsyncQueue associated with this Task, and there is no global default queue.
+
+// Basically: node-swift delegates async work to a global default queue
+// but that assumption of "there is one queue" is wrong the moment this plugin gets loaded for the second time
+// therefore, we need to manually handle a task queue
+
+// see 
+// - https://github.com/kabiroberai/node-swift/issues/7 (decision that lead to this)
+// - https://github.com/kabiroberai/node-swift/issues/51 (discussion)
 @NodeActor
 private func offloaded<Value: Sendable>(
 	_ work: @escaping @Sendable () async throws -> Value,
