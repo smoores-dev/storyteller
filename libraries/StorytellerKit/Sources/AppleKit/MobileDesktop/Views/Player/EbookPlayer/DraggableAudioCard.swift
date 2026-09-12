@@ -45,11 +45,11 @@ struct DraggableAudioCard<FullContent: View>: View {
     )
 
     private var effectiveSize: MiniPlayerSize {
-        display.hasAudioNarration ? miniPlayerConfig.size : .compact
+        display.supportsMiniPlayerLayout ? miniPlayerConfig.size : .compact
     }
 
     private var hasStatBand: Bool {
-        display.hasAudioNarration && miniPlayerConfig.statSlots.hasActiveComplication
+        display.supportsMiniPlayerLayout && miniPlayerConfig.statSlots.hasActiveComplication
     }
 
     private var compactHeight: CGFloat {

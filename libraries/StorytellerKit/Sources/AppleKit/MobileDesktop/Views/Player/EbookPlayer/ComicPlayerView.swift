@@ -1,4 +1,6 @@
 #if os(iOS) || os(macOS)
+import ImageIO
+import Observation
 import SwiftUI
 
 #if os(macOS)
@@ -10,6 +12,7 @@ import UIKit
 struct ComicPlayerView: View {
     let pageURLs: [URL]
     let selectedPageIndex: Int
+    let isScrollingMode: Bool
     let backgroundColor: Color
     let isBottomScrubberVisible: Bool
     let isTopChromeVisible: Bool
@@ -20,7 +23,15 @@ struct ComicPlayerView: View {
 
     var body: some View {
         Group {
-            if let pageURL = pageURLs[safe: selectedPageIndex] {
+            if isScrollingMode, !pageURLs.isEmpty {
+                ContinuousComicView(
+                    pageURLs: pageURLs,
+                    selectedPageIndex: selectedPageIndex,
+                    onPageSelected: onPageSelected,
+                    onToggleOverlay: onToggleOverlay,
+                )
+                .id(pageURLs)
+            } else if let pageURL = pageURLs[safe: selectedPageIndex] {
                 PlatformComicPageView(
                     pageURLs: pageURLs,
                     pageURL: pageURL,
@@ -50,6 +61,199 @@ struct ComicPlayerView: View {
             onNavigateRight()
             return .handled
         }
+    }
+}
+
+private struct ContinuousComicView: View {
+    let pageURLs: [URL]
+    let selectedPageIndex: Int
+    let onPageSelected: (Int) -> Void
+    let onToggleOverlay: () -> Void
+
+    @State private var aspectRatios: [CGFloat] = []
+    @State private var scrollPage: Int?
+    @Environment(\.displayScale) private var displayScale
+    @State private var pages: [ContinuousComicPage] = []
+    @State private var retainedPages: Set<Int> = []
+
+    private struct LoadingWindow: Equatable {
+        let page: Int
+        let size: CGSize
+        let scale: CGFloat
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            if aspectRatios.count == pageURLs.count {
+                ScrollView(.vertical) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(pageURLs.indices, id: \.self) { index in
+                            ContinuousComicPageImage(page: pages[index])
+                                .frame(
+                                    width: geometry.size.width,
+                                    height: geometry.size.width / aspectRatios[index],
+                                )
+                                .clipped()
+                                .accessibilityLabel("Page \(index + 1)")
+                                .id(index)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollPosition(id: $scrollPage, anchor: .top)
+                .task(id: LoadingWindow(
+                    page: scrollPage ?? selectedPageIndex,
+                    size: geometry.size,
+                    scale: displayScale,
+                )) {
+                    await loadNearbyPages(
+                        around: scrollPage ?? selectedPageIndex,
+                        size: geometry.size,
+                        scale: displayScale,
+                    )
+                }
+                .contentShape(Rectangle())
+                .onTapGesture(perform: onToggleOverlay)
+                .onAppear { scrollPage = selectedPageIndex }
+                .onChange(of: selectedPageIndex) { _, index in
+                    if scrollPage != index {
+                        scrollPage = index
+                    }
+                }
+                .onChange(of: scrollPage) { _, index in
+                    if let index, index != selectedPageIndex {
+                        onPageSelected(index)
+                    }
+                }
+            } else {
+                ProgressView("Loading comic...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task(id: pageURLs) {
+            let urls = pageURLs
+            let ratios = await Task.detached(priority: .userInitiated) {
+                urls.map { url -> CGFloat in
+                    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+                            as? [CFString: Any],
+                        let width = properties[kCGImagePropertyPixelWidth] as? NSNumber,
+                        let height = properties[kCGImagePropertyPixelHeight] as? NSNumber,
+                        width.doubleValue > 0, height.doubleValue > 0
+                    else { return 1 }
+                    let orientation = properties[kCGImagePropertyOrientation] as? NSNumber
+                    if (5...8).contains(orientation?.intValue ?? 1) {
+                        return CGFloat(height.doubleValue / width.doubleValue)
+                    }
+                    return CGFloat(width.doubleValue / height.doubleValue)
+                }
+            }.value
+            guard !Task.isCancelled else { return }
+            pages = urls.map { ContinuousComicPage(url: $0) }
+            aspectRatios = ratios
+        }
+    }
+
+    private func loadNearbyPages(around page: Int, size: CGSize, scale: CGFloat) async {
+        guard pageURLs.indices.contains(page), size.width > 0, size.height > 0 else { return }
+        var lower = page
+        var upper = page
+        var ahead: CGFloat = 0
+        var behind: CGFloat = 0
+        while upper + 1 < pageURLs.count,
+            ahead < size.height * 4 || upper < page + 2
+        {
+            upper += 1
+            ahead += size.width / aspectRatios[upper]
+        }
+        while lower > 0, behind < size.height * 2 || lower > page - 2 {
+            lower -= 1
+            behind += size.width / aspectRatios[lower]
+        }
+        let retained = Set(lower...upper)
+        for index in retainedPages.subtracting(retained) {
+            pages[index].evict()
+        }
+        retainedPages = retained
+        let order = Array(page...upper) + Array((lower..<page).reversed())
+        for index in order {
+            guard !Task.isCancelled else { return }
+            let pixelSize = max(size.width, size.width / aspectRatios[index]) * scale
+            await pages[index].load(pixelSize: Int(ceil(pixelSize)))
+        }
+    }
+}
+
+private struct ContinuousComicPageImage: View {
+    let page: ContinuousComicPage
+    @Environment(\.displayScale) private var displayScale
+
+    var body: some View {
+        Group {
+            if let image = page.image {
+                Image(decorative: image, scale: displayScale).resizable()
+            } else if page.failedToLoad {
+                ContentUnavailableView("Unable to load page", systemImage: "photo")
+            } else {
+                Color.clear.overlay { ProgressView() }
+            }
+        }
+    }
+}
+
+@MainActor
+@Observable
+private final class ContinuousComicPage {
+    let url: URL
+    private(set) var image: CGImage?
+    private(set) var failedToLoad = false
+    @ObservationIgnored private var loadedPixelSize = 0
+    @ObservationIgnored private var pending: Task<CGImage?, Never>?
+    @ObservationIgnored private var pendingPixelSize = 0
+    @ObservationIgnored private var generation = 0
+
+    init(url: URL) {
+        self.url = url
+    }
+
+    func load(pixelSize: Int) async {
+        guard !failedToLoad, image == nil || loadedPixelSize < pixelSize else { return }
+        if pending == nil || pendingPixelSize < pixelSize {
+            pending?.cancel()
+            generation += 1
+            pendingPixelSize = pixelSize
+            let url = url
+            pending = Task.detached(priority: .userInitiated) {
+                guard !Task.isCancelled,
+                    let source = CGImageSourceCreateWithURL(url as CFURL, nil)
+                else { return nil as CGImage? }
+                return CGImageSourceCreateThumbnailAtIndex(
+                    source, 0,
+                    [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceCreateThumbnailWithTransform: true,
+                        kCGImageSourceThumbnailMaxPixelSize: max(pixelSize, 1),
+                        kCGImageSourceShouldCacheImmediately: true,
+                    ] as CFDictionary,
+                )
+            }
+        }
+        let requestedGeneration = generation
+        let requestedPixelSize = pendingPixelSize
+        let decoded = await pending?.value
+        guard generation == requestedGeneration, pending != nil else { return }
+        pending = nil
+        image = decoded
+        loadedPixelSize = requestedPixelSize
+        failedToLoad = decoded == nil
+    }
+
+    func evict() {
+        generation += 1
+        pending?.cancel()
+        pending = nil
+        image = nil
+        loadedPixelSize = 0
     }
 }
 

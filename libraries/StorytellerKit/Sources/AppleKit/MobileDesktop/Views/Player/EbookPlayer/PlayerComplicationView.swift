@@ -24,6 +24,9 @@ struct MiniPlayerDisplayModel {
     var chapters: [ChapterItem] = []
     var selectedChapterHref: String?
     var hasAudioNarration: Bool
+    var isComicBook: Bool = false
+
+    var supportsMiniPlayerLayout: Bool { hasAudioNarration || isComicBook }
     var isScrollingMode: Bool = false
     var freeBrowseMode: String = kDefaultFreeBrowseMode
 
