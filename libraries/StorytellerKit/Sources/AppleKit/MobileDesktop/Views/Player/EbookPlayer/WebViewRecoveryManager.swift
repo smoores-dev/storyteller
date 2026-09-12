@@ -3,41 +3,33 @@ import Foundation
 
 @MainActor
 struct WebViewRecoveryStateAccess {
-    struct Snapshot {
-        let chapterID: Int?
-        let fraction: Double
-        let extractedEbookPath: URL?
-    }
-
-    let snapshot: () -> Snapshot?
+    let extractedEbookPath: () -> URL?
     let setExtractedEbookPath: (URL?) -> Void
-    let sectionCount: () -> Int?
+    let flushPosition: () async -> Void
 }
 
+/// Rebuilds the webview after the system reaps its content process. A WKWebView
+/// load started in the background stalls, so the reload waits for the scene.
 @MainActor
 final class WebViewRecoveryManager {
-    private weak var bridge: ReaderCommsBridge?
     private let stateAccess: WebViewRecoveryStateAccess
 
     private var isRecovering = false
-    private var savedChapterId: Int?
-    private var savedFraction: Double = 0
+    private var reloadDeferred = false
+    private var pendingReloadPath: URL?
+    private var sceneIsActive = true
 
     init(viewModel: EbookPlayerViewModel) {
         stateAccess = WebViewRecoveryStateAccess(
-            snapshot: { [weak viewModel] in
-                guard let viewModel else { return nil }
-                return WebViewRecoveryStateAccess.Snapshot(
-                    chapterID: viewModel.progressManager?.selectedChapterId,
-                    fraction: viewModel.progressManager?.chapterSeekBarValue ?? 0,
-                    extractedEbookPath: viewModel.extractedEbookPath,
-                )
+            extractedEbookPath: { [weak viewModel] in
+                viewModel?.extractedEbookPath
             },
             setExtractedEbookPath: { [weak viewModel] path in
                 viewModel?.extractedEbookPath = path
             },
-            sectionCount: { [weak viewModel] in
-                viewModel?.bookStructure.count
+            flushPosition: { [weak viewModel] in
+                await viewModel?.session?.progressManager?
+                    .syncProgressToServer(reason: .appBackgrounding)
             },
         )
     }
@@ -46,64 +38,64 @@ final class WebViewRecoveryManager {
         self.stateAccess = stateAccess
     }
 
-    func setBridge(_ bridge: ReaderCommsBridge) {
-        self.bridge = bridge
-    }
-
     func handleContentPurged() {
         guard !isRecovering else { return }
-        guard let snapshot = stateAccess.snapshot() else { return }
 
-        debugLog("[RecoveryManager] Content purged, starting recovery")
+        debugLog("[RecoveryManager] Content purged")
         isRecovering = true
 
-        savedChapterId = snapshot.chapterID
-        savedFraction = snapshot.fraction
+        Task { @MainActor in
+            // With no audio running, the stored position is the playhead.
+            await stateAccess.flushPosition()
+            reloadIfSceneActive()
+        }
+    }
 
-        debugLog(
-            "[RecoveryManager] Saved view state: chapter=\(savedChapterId ?? -1), fraction=\(savedFraction)"
-        )
+    func setSceneActive(_ active: Bool) {
+        sceneIsActive = active
+        guard active, reloadDeferred else { return }
+        reloadDeferred = false
+        debugLog("[RecoveryManager] Scene active, running deferred reload")
+        if pendingReloadPath != nil {
+            restoreWebViewIfSceneActive()
+        } else {
+            reloadWebView()
+        }
+    }
 
-        let path = snapshot.extractedEbookPath
+    private func reloadIfSceneActive() {
+        guard sceneIsActive else {
+            debugLog("[RecoveryManager] Scene inactive, holding reload until active")
+            reloadDeferred = true
+            return
+        }
+        reloadWebView()
+    }
+
+    private func reloadWebView() {
+        pendingReloadPath = stateAccess.extractedEbookPath()
         stateAccess.setExtractedEbookPath(nil)
 
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(100))
-            stateAccess.setExtractedEbookPath(path)
+            restoreWebViewIfSceneActive()
         }
     }
 
-    func handleBookStructureReadyIfRecovering(
-        restoreSavedViewPosition: Bool = true
-    ) -> Bool {
+    private func restoreWebViewIfSceneActive() {
+        guard sceneIsActive else {
+            reloadDeferred = true
+            return
+        }
+        let path = pendingReloadPath
+        pendingReloadPath = nil
+        stateAccess.setExtractedEbookPath(path)
+    }
+
+    func handleBookStructureReadyIfRecovering() -> Bool {
         guard isRecovering else { return false }
-
-        if restoreSavedViewPosition {
-            debugLog(
-                "[RecoveryManager] Book reloaded, restoring view position to chapter \(savedChapterId ?? -1), fraction \(savedFraction)"
-            )
-        } else {
-            debugLog("[RecoveryManager] Book reloaded at native audio position")
-        }
-
-        Task { @MainActor in
-            if restoreSavedViewPosition,
-                let chapterId = savedChapterId,
-                let sectionCount = stateAccess.sectionCount(),
-                chapterId < sectionCount
-            {
-                try? await bridge?.sendJsGoToFractionInSectionCommand(
-                    sectionIndex: chapterId,
-                    fraction: savedFraction,
-                )
-            }
-
-            debugLog("[RecoveryManager] Recovery complete")
-            isRecovering = false
-            savedChapterId = nil
-            savedFraction = 0
-        }
-
+        debugLog("[RecoveryManager] Recovery complete")
+        isRecovering = false
         return true
     }
 

@@ -164,6 +164,7 @@ public final class MediaViewModel {
     public var libraryViewSnapshot = LibraryViewSnapshot()
     public var bookSources: [BookSourceRecord] = []
     public var uploadPermittedSourceIDs: Set<BookSourceID> = []
+    @ObservationIgnored private var uploadPermissionTask: Task<Void, Never>?
     var bookProgressCache: [BookID: BookProgress] = [:]
     @ObservationIgnored private var readBookIds: Set<BookID> = []
 
@@ -502,6 +503,16 @@ public final class MediaViewModel {
         }
     }
 
+    private func refreshUploadPermissions() {
+        guard uploadPermissionTask == nil else { return }
+        uploadPermissionTask = Task { @MainActor [weak self] in
+            let permitted = await BookServiceActor.shared.uploadPermittedSourceIDs()
+            guard let self else { return }
+            self.setIfChanged(\.uploadPermittedSourceIDs, permitted)
+            self.uploadPermissionTask = nil
+        }
+    }
+
     /// Assigns only when the value actually differs. `@Observable` notifies observers on every
     /// setter call regardless of equality, so unguarded reassignment of unchanged state (as happens
     /// on the frequent no-op background refreshes) churns the whole library UI and tears down any
@@ -543,12 +554,7 @@ public final class MediaViewModel {
         }
 
         setIfChanged(\.bookSources, snapshot.sources)
-        // Cheap after the first query per source: storyteller actors cache the definitive
-        // server answer for the session and skip the network while disconnected.
-        setIfChanged(
-            \.uploadPermittedSourceIDs,
-            await BookServiceActor.shared.uploadPermittedSourceIDs(),
-        )
+        refreshUploadPermissions()
         logPerfCheckpoint(
             "refreshMetadata load source metadata",
             source: source,

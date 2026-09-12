@@ -1062,6 +1062,15 @@ class StorytellerBridgeClient(context: Context) {
         }
     }
 
+    suspend fun exportDebugLogFile(): String? {
+        val json = AndroidBridgeCallbacks.requestPayload { requestID ->
+            StorytellerAndroidBridge.exportDebugLogFile(requestID)
+        }
+        return withContext(Dispatchers.Default) {
+            JSONObject(json).optionalString("path")
+        }
+    }
+
     suspend fun clearDebugLog() {
         AndroidBridgeCallbacks.requestPayload { requestID ->
             StorytellerAndroidBridge.clearDebugLog(requestID)

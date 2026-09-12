@@ -811,7 +811,7 @@ final class AndroidReaderSession {
                 timelineForwardDescription = ""
                 publishState(session)
             case "sceneActive":
-                _ = await session.reconcilePositionAfterSceneActivation()
+                await session.handleSceneBecameActive()
             case "sceneBackground":
                 await session.handleSceneEnteredBackground()
             default:

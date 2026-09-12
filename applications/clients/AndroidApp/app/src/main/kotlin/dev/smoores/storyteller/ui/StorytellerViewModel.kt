@@ -209,6 +209,8 @@ class StorytellerViewModel private constructor(
 
     suspend fun debugLog(): DebugLogState = client.debugLog()
 
+    suspend fun exportDebugLogFile(): String? = client.exportDebugLogFile()
+
     suspend fun clearDebugLog() = client.clearDebugLog()
 
     fun setVerboseLogging(enabled: Boolean) {

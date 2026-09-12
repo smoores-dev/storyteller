@@ -432,9 +432,11 @@ extension SettingsView {
 }
 
 private struct IOSDebugLogView: View {
-    @State private var logText: String = ""
+    @State private var logLines: [String] = []
     @State private var messageCount: Int = 0
     @State private var verbose = DebugLogBuffer.shared.isVerbose
+    @State private var export: DebugLogExport?
+    @State private var fileSizeText = ""
 
     var body: some View {
         List {
@@ -445,14 +447,28 @@ private struct IOSDebugLogView: View {
                     }
             } footer: {
                 Text(
-                    "Includes high-volume performance diagnostics. Turn this on, reproduce the issue, then copy the log."
+                    "Includes high-volume performance diagnostics. Turn this on, reproduce the issue, then share the log."
                 )
             }
 
             Section {
-                Text(logText)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
+                Button {
+                    export = DebugLogFile.shared.exportCombined().map(DebugLogExport.init)
+                } label: {
+                    Label("Share Full Log\(fileSizeText)", systemImage: "square.and.arrow.up")
+                }
+            } footer: {
+                Text(
+                    "The list below holds only the most recent messages. The full log keeps a much longer history on disk."
+                )
+            }
+
+            Section {
+                ForEach(logLines.indices, id: \.self) { index in
+                    Text(logLines[index])
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                }
             } header: {
                 Text("\(messageCount) messages")
             }
@@ -461,7 +477,7 @@ private struct IOSDebugLogView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
-                    UIPasteboard.general.string = logText
+                    UIPasteboard.general.string = logLines.joined(separator: "\n")
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
@@ -478,6 +494,9 @@ private struct IOSDebugLogView: View {
                 }
             }
         }
+        .sheet(item: $export) { export in
+            ShareSheet(url: export.url)
+        }
         .onAppear {
             loadMessages()
         }
@@ -486,8 +505,28 @@ private struct IOSDebugLogView: View {
     private func loadMessages() {
         let messages = DebugLogBuffer.shared.getMessages()
         messageCount = messages.count
-        logText = messages.joined(separator: "\n")
+        logLines = messages
+        let bytes = DebugLogFile.shared.totalBytes()
+        fileSizeText =
+            bytes > 0
+            ? " (\(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)))"
+            : ""
     }
+}
+
+private struct DebugLogExport: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
+}
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 #endif
 

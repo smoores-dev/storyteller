@@ -60,10 +60,6 @@ class EbookPlayerViewModel {
         session?.hasAudioNarration ?? false
     }
 
-    var isJoiningExistingSession: Bool {
-        session?.isJoiningExistingSession ?? false
-    }
-
     var chapterList: [ChapterItem] {
         if !tocEntries.isEmpty {
             return tocEntries.enumerated().map { idx, entry in
@@ -465,10 +461,8 @@ class EbookPlayerViewModel {
         session.isViewRecovering = { [weak self] in
             self?.recoveryManager?.isInRecovery == true
         }
-        session.onRecoveryStructureReady = { [weak self] restoreSavedViewPosition in
-            _ = self?.recoveryManager?.handleBookStructureReadyIfRecovering(
-                restoreSavedViewPosition: restoreSavedViewPosition
-            )
+        session.onRecoveryStructureReady = { [weak self] in
+            _ = self?.recoveryManager?.handleBookStructureReadyIfRecovering()
         }
         #endif
         session.configureMediaOverlayManager = { [weak self] manager in
@@ -708,21 +702,19 @@ class EbookPlayerViewModel {
     func handleScenePhaseChange(_ phase: ScenePhase) {
         switch phase {
             case .active:
+                #if os(iOS)
+                recoveryManager?.setSceneActive(true)
+                #endif
                 let precedingTask = scenePhaseTask
                 scenePhaseTask = Task { @MainActor [weak self] in
                     await precedingTask?.value
-                    guard let self else { return }
-                    let positionOwner = await self.session?
-                        .reconcilePositionAfterSceneActivation() ?? .persistedProgress
-                    switch positionOwner {
-                        case .persistedProgress:
-                            await self.progressManager?.handleResume()
-                        case .nativeAudio:
-                            break
-                    }
+                    await self?.session?.handleSceneBecameActive()
                 }
             case .background:
                 debugLog("[EbookPlayerViewModel] Entering background - audio continues natively")
+                #if os(iOS)
+                recoveryManager?.setSceneActive(false)
+                #endif
                 let precedingTask = scenePhaseTask
                 scenePhaseTask = Task { @MainActor [weak self] in
                     await precedingTask?.value
@@ -740,8 +732,6 @@ class EbookPlayerViewModel {
         bridgeInitialColorScheme = initialColorScheme
 
         #if os(iOS)
-        recoveryManager?.setBridge(bridge)
-
         if recoveryManager?.isInRecovery == true {
             debugLog(
                 "[EbookPlayerViewModel] Recovery mode - updating existing managers with new bridge"

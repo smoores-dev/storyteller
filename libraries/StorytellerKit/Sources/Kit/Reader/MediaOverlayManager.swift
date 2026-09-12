@@ -45,9 +45,6 @@ public final class MediaOverlayManager {
 
     public var isPlaying: Bool = false
     public var isInBackground: Bool = false
-    /// The webview missed view updates while backgrounded; cleared only after
-    /// a confirmed re-anchor navigation.
-    public var viewPositionDirty: Bool = false
 
     /// Task for delayed page flips during fractional sentence playback
     /// (i.e. when a sentence is half on this page and half on the next)
@@ -257,12 +254,6 @@ public final class MediaOverlayManager {
             liveSyncFollowRate = nil
             lastLiveSyncApplyTime = nil
         }
-        if isInBackground && state.isPlaying {
-            if !viewPositionDirty {
-                debugLog("[MOM] Audio playing while backgrounded")
-            }
-            viewPositionDirty = true
-        }
         chapterElapsedSeconds = state.chapterElapsed
         chapterTotalSeconds = state.chapterTotal
         bookElapsedSeconds = state.bookElapsed
@@ -340,11 +331,9 @@ public final class MediaOverlayManager {
             "[MOM] Actor advanced to: section=\(sectionIndex), entry=\(entryIndex), textId=\(entry.textId)"
         )
 
-        // A backgrounded webview cannot be trusted to run JS; skip the send
-        // and let the scene-active re-anchor restore navigation and highlight.
-        if isInBackground {
-            viewPositionDirty = true
-        } else if !playheadDiverged {
+        // A backgrounded webview cannot be trusted to run JS. Scene activation
+        // resyncs it.
+        if !isInBackground, !playheadDiverged {
             Task {
                 await sendHighlightCommand(
                     sectionIndex: sectionIndex,

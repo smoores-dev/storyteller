@@ -56,7 +56,7 @@ final class HeadlessReaderSettings: ReaderSettingsReading {
     var readaloudTextItalic: Bool { kDefaultReadaloudTextItalic }
     var readaloudTextBold: Bool { kDefaultReadaloudTextBold }
     var readaloudUnderlineStyle: String { kDefaultReadaloudUnderlineStyle }
-    var freeBrowseMode: String { "never" }
+    var freeBrowseMode: String = "never"
     var readaloudHighlightVisibility: String = "paused"
     var doubleTapPlay: String { "never" }
 }
@@ -125,12 +125,6 @@ public final class ReadingSessionStore {
     }
 }
 
-/// The authoritative position source when a reader scene becomes active.
-public enum ResumePositionOwner: Equatable, Sendable {
-    case persistedProgress
-    case nativeAudio
-}
-
 /// One open book's reading lifecycle, independent of any view. Runs headless
 /// when no bridge is attached (CarPlay, backgrounded playback).
 @StorytellerUIActor
@@ -153,7 +147,6 @@ public final class ReadingSession {
     public var extractedEbookPath: URL?
     public var originalEbookURL: URL?
     public var ebookFileFormat: EbookFileFormat = .epub
-    public var isJoiningExistingSession = false
     public private(set) var lastPrepareError: Error?
 
     @ObservationIgnored private var nativeLoadingTask: Task<Void, Never>?
@@ -163,15 +156,14 @@ public final class ReadingSession {
     @ObservationIgnored private var audioAttachmentID: UUID?
     @ObservationIgnored private var isEnded = false
     @ObservationIgnored private let audioPositionAccess: ReadingSessionAudioPositionAccess
-    /// Survives replacement of the view-bound managers while the app is
-    /// backgrounded. The native audio actor is authoritative until its current
-    /// position has been applied to the webview.
-    @ObservationIgnored private var foregroundAudioPositionDirty = false
+    @ObservationIgnored private var documentNeedsPosition = false
+    @ObservationIgnored private var structureReady = false
+    @ObservationIgnored private var recoveryViewPosition: (section: Int, fraction: Double)?
 
     @ObservationIgnored public var onComicPrepared: ((URL) -> Void)?
     @ObservationIgnored public var onUserNavigation: (() -> Void)?
     @ObservationIgnored public var isViewRecovering: (() -> Bool)?
-    @ObservationIgnored public var onRecoveryStructureReady: ((Bool) -> Void)?
+    @ObservationIgnored public var onRecoveryStructureReady: (() -> Void)?
     @ObservationIgnored public var configureMediaOverlayManager: ((MediaOverlayManager) -> Void)?
     @ObservationIgnored public var onReadaloudAvailabilityChanged: ((Bool) -> Void)?
     @ObservationIgnored public var onViewStructureReady: (() async -> Void)?
@@ -276,7 +268,6 @@ public final class ReadingSession {
                 debugLog(
                     "[ReadingSession] Book already loaded and playing in SMILPlayerActor, joining existing session"
                 )
-                isJoiningExistingSession = true
             }
 
             let nativeStructure = await SMILPlayerActor.shared.getBookStructure()
@@ -400,8 +391,14 @@ public final class ReadingSession {
     }
 
     public func attachBridge(_ bridge: ReaderCommsBridge, isRecovery: Bool) {
+        if isRecovery, let manager = progressManager, let section = manager.selectedChapterId {
+            recoveryViewPosition = (section, manager.chapterSeekBarValue)
+        } else {
+            recoveryViewPosition = nil
+        }
         commsBridge = bridge
         isViewAttached = true
+        structureReady = false
 
         if audioAttachmentID == nil {
             let id = UUID()
@@ -545,28 +542,13 @@ public final class ReadingSession {
         progressManager?.bookStructure = structureToUse
         progressManager?.isRTLPageProgression = message.isRTL ?? false
 
-        let actorState = await audioPositionAccess.currentState()
-        let actorOwnsThisBook = actorState?.bookID == bookID
-        let actorIsPlayingThisBook = actorOwnsThisBook && actorState?.isPlaying == true
-        let shouldUseActorPosition =
-            actorOwnsThisBook
-            && (foregroundAudioPositionDirty
-                || mediaOverlayManager?.viewPositionDirty == true
-                || actorIsPlayingThisBook)
-
         if isRecovering {
             debugLog("[ReadingSession] Recovery mode - reusing existing MOM/SMILPlayerActor")
             mediaOverlayManager?.commsBridge = bridge
-            if shouldUseActorPosition {
-                debugLog(
-                    "[ReadingSession] Recovery mode - native audio position supersedes saved view position"
-                )
-                _ = await navigateToCurrentActorPosition(
-                    bridge: bridge,
-                    fallbackToInitialPosition: false
-                )
-            }
-            onRecoveryStructureReady?(!shouldUseActorPosition)
+            onRecoveryStructureReady?()
+            structureReady = true
+            documentNeedsPosition = true
+            await ensureWebviewSyncedToPlayhead(reason: "recovery structure ready")
         } else {
             let hasMediaOverlay = structureToUse.contains { !$0.mediaOverlay.isEmpty }
 
@@ -601,22 +583,9 @@ public final class ReadingSession {
             }
             onReadaloudAvailabilityChanged?(hasAudioNarration)
 
-            // A recreated view can attach to a live session (kept open for
-            // background readaloud); the fresh document needs the initial seek
-            // again even though it already ran once.
-            let isViewReattach = progressManager?.hasPerformedInitialSeek == true
-            if isViewReattach {
-                progressManager?.hasPerformedInitialSeek = false
-            }
-            if shouldUseActorPosition || isJoiningExistingSession || isViewReattach {
-                debugLog("[ReadingSession] Joining session - navigating to current actor position")
-                await navigateToCurrentActorPosition(
-                    bridge: bridge,
-                    fallbackToInitialPosition: !shouldUseActorPosition
-                )
-            } else {
-                progressManager?.handleBookStructureReady()
-            }
+            structureReady = true
+            documentNeedsPosition = true
+            await ensureWebviewSyncedToPlayhead(reason: "book structure ready")
 
             Task { @StorytellerUIActor in
                 let syncInterval = await SettingsActor.shared.config.sync
@@ -628,31 +597,70 @@ public final class ReadingSession {
         await onViewStructureReady?()
     }
 
-    @discardableResult
-    private func navigateToCurrentActorPosition(
-        bridge: ReaderCommsBridge,
-        fallbackToInitialPosition: Bool = true
-    ) async -> Bool {
-        guard await audioPositionAccess.loadedBookID() == bookID else {
-            debugLog("[ReadingSession] Audio actor has a different book")
-            return false
+    /// The one path that moves the webview to the current play position.
+    /// Callers never decide whether it is needed. This does.
+    public func ensureWebviewSyncedToPlayhead(reason: String) async {
+        guard isViewAttached, structureReady, let bridge = commsBridge else {
+            debugLog("[ReadingSession] Playhead sync deferred, view not ready (\(reason))")
+            return
         }
 
+        let engineOwnsBook = await audioPositionAccess.loadedBookID() == bookID
+        if let position = recoveryViewPosition,
+            !engineOwnsBook || mediaOverlayManager?.playheadDiverged == true,
+            bookStructure.indices.contains(position.section)
+        {
+            do {
+                try await bridge.sendJsGoToFractionInSectionCommand(
+                    sectionIndex: position.section,
+                    fraction: position.fraction,
+                )
+                recoveryViewPosition = nil
+                documentNeedsPosition = false
+            } catch {
+                debugLog("[ReadingSession] Restoring reader position failed: \(error)")
+            }
+            return
+        }
+
+        // Free browse is the reader deliberately away from the playhead.
+        // A document that was never positioned is not away from anything.
+        if !documentNeedsPosition, mediaOverlayManager?.playheadDiverged == true {
+            debugLog("[ReadingSession] Playhead sync skipped, reader browsed away (\(reason))")
+            return
+        }
+
+        if engineOwnsBook, await applyEnginePosition(to: bridge, reason: reason) {
+            recoveryViewPosition = nil
+            documentNeedsPosition = false
+            return
+        }
+
+        guard documentNeedsPosition else {
+            if !engineOwnsBook {
+                await progressManager?.handleResume()
+            }
+            return
+        }
+        recoveryViewPosition = nil
+        documentNeedsPosition = false
+        debugLog("[ReadingSession] Playhead sync: applying stored position (\(reason))")
+        progressManager?.handleBookStructureReady()
+    }
+
+    private func applyEnginePosition(to bridge: ReaderCommsBridge, reason: String) async -> Bool {
         await audioPositionAccess.reconcilePositionFromPlayer()
         guard let syncData = await audioPositionAccess.backgroundSyncData() else {
-            debugLog("[ReadingSession] No sync data from actor")
-            if fallbackToInitialPosition {
-                progressManager?.handleBookStructureReady()
-            }
+            debugLog("[ReadingSession] Playhead sync: no engine sync data (\(reason))")
             return false
         }
 
+        let hrefWithFragment = "\(syncData.href)#\(syncData.fragment)"
         debugLog(
-            "[ReadingSession] Navigating to actor position: section=\(syncData.sectionIndex), href=\(syncData.href), fragment=\(syncData.fragment)"
+            "[ReadingSession] Playhead sync to engine: section=\(syncData.sectionIndex), \(hrefWithFragment) (\(reason))"
         )
 
         do {
-            let hrefWithFragment = "\(syncData.href)#\(syncData.fragment)"
             if let mediaOverlayManager {
                 let actorState = await audioPositionAccess.currentState()
                 let actorIsPlaying =
@@ -669,19 +677,9 @@ public final class ReadingSession {
             }
 
             progressManager?.selectedChapterId = syncData.sectionIndex
-            progressManager?.hasPerformedInitialSeek = true
-            foregroundAudioPositionDirty = false
-            mediaOverlayManager?.viewPositionDirty = false
-
-            debugLog(
-                "[ReadingSession] Successfully joined session at section \(syncData.sectionIndex)"
-            )
             return true
         } catch {
-            debugLog("[ReadingSession] Failed to navigate to actor position: \(error)")
-            if fallbackToInitialPosition {
-                progressManager?.handleBookStructureReady()
-            }
+            debugLog("[ReadingSession] Playhead sync to engine failed: \(error)")
             return false
         }
     }
@@ -738,42 +736,15 @@ public final class ReadingSession {
         )
     }
 
-    /// Determines which position source owns scene activation and re-anchors
-    /// the webview when native audio advanced while the scene was inactive.
-    /// Callers must not apply persisted progress when native audio owns the
-    /// position, even if navigation must be retried after rebuilding the bridge.
-    public func reconcilePositionAfterSceneActivation() async -> ResumePositionOwner {
+    public func handleSceneBecameActive() async {
         mediaOverlayManager?.isInBackground = false
-        let viewDirty =
-            foregroundAudioPositionDirty || mediaOverlayManager?.viewPositionDirty == true
-        debugLog("[ReadingSession] Scene active (viewPositionDirty=\(viewDirty))")
-
-        guard viewDirty else { return .persistedProgress }
-        guard isViewAttached else { return .nativeAudio }
-        guard await audioPositionAccess.loadedBookID() == bookID else {
-            foregroundAudioPositionDirty = false
-            mediaOverlayManager?.viewPositionDirty = false
-            return .persistedProgress
-        }
-
-        debugLog("[ReadingSession] Scene active - re-anchoring view to audio position")
-        if let bridge = commsBridge {
-            _ = await navigateToCurrentActorPosition(
-                bridge: bridge,
-                fallbackToInitialPosition: false
-            )
-        }
-        return .nativeAudio
+        debugLog("[ReadingSession] Scene active")
+        await ensureWebviewSyncedToPlayhead(reason: "scene active")
     }
 
     public func handleSceneEnteredBackground() async {
         mediaOverlayManager?.isInBackground = true
-        let wasPlaying = await audioPositionAccess.currentState()?.isPlaying ?? false
-        debugLog("[ReadingSession] Scene background (playing=\(wasPlaying))")
-        if wasPlaying {
-            foregroundAudioPositionDirty = true
-            mediaOverlayManager?.viewPositionDirty = true
-        }
+        debugLog("[ReadingSession] Scene background")
     }
 
     public func close(_ policy: ReadingSessionClosePolicy) async {
@@ -782,6 +753,7 @@ public final class ReadingSession {
                 guard !isEnded else { return }
                 debugLog("[ReadingSession] Detaching view from session for \(bookID)")
                 isViewAttached = false
+                structureReady = false
                 commsBridge = nil
                 clearViewHooks()
                 // The view-bound managers hold a dead bridge; replace them with
