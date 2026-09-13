@@ -81,6 +81,8 @@ export type Wav2Vec2Device = (typeof WAV2VEC2_DEVICES)[number]
 export type ResolvedWav2Vec2Device = Exclude<Wav2Vec2Device, "auto">
 
 export const WAV2VEC2_SECONDS_PER_CHUNK = 25
+export const QUARTZNET_SECONDS_PER_CHUNK = 38
+export const DEFAULT_CTC_BATCH_SIZE = 2
 
 export const WAV2VEC2_DTYPES = ["fp32", "fp16"] as const
 export type Wav2Vec2DataType = (typeof WAV2VEC2_DTYPES)[number]
@@ -156,14 +158,54 @@ export function ctcModelLanguages(family: CtcModelFamily): Language[] {
   return LANGUAGES.filter((language) => isCtcModel(`${family}_${language}`))
 }
 
+/**
+ * QuartzNet on MLX pads every depthwise convolution up to the next power of
+ * two before its FFT, so throughput is a staircase in the chunk length: 20 to
+ * 39 seconds all cost the same, and 38 seconds carries the most audio for it.
+ */
+export function ctcChunkSeconds(family: CtcModelFamily): number {
+  return family === "quartznet15x5"
+    ? QUARTZNET_SECONDS_PER_CHUNK
+    : WAV2VEC2_SECONDS_PER_CHUNK
+}
+
+/**
+ * The precision a model actually runs in. CPU always runs float32, an explicit
+ * request wins on any GPU, and left to itself MMS takes half precision while
+ * the convolutional models keep float32 until their accuracy has been compared.
+ */
+export function resolveCtcDtype(
+  family: CtcModelFamily,
+  device: ResolvedWav2Vec2Device,
+  requested: Wav2Vec2DataType | null | undefined,
+): Wav2Vec2DataType {
+  if (device === "cpu") return "fp32"
+  if (requested) return requested
+  return family === "mms" ? "fp16" : "fp32"
+}
+
+/**
+ * How many chunks go through the model per call when the caller has no
+ * preference. Batching amortises GPU dispatch and is a clear win there, while
+ * on a CPU the larger tensors only fall out of cache and slow the run down.
+ */
+export function resolveCtcBatchSize(
+  device: ResolvedWav2Vec2Device,
+  requested: number | null | undefined,
+): number {
+  if (requested) return Math.max(1, Math.floor(requested))
+  return device === "cpu" ? 1 : DEFAULT_CTC_BATCH_SIZE
+}
+
 export function resolveCtcModel(
   family: CtcModelFamily,
   language: string | null | undefined,
   device: ResolvedWav2Vec2Device,
+  dtype?: Wav2Vec2DataType | null,
 ): CtcModel {
   if (family === "mms") {
     if (device === "mlx") return "mlx"
-    return device === "cpu" ? "fp32" : "fp16"
+    return resolveCtcDtype(family, device, dtype)
   }
   if (!language) {
     throw new Error(

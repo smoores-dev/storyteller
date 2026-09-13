@@ -12,7 +12,7 @@ export interface MelFeatures {
 
 export const HOP_SAMPLES = 160
 
-const PRE_EMPHASIS = 0.97
+export const PRE_EMPHASIS = 0.97
 const LOG_GUARD = 2 ** -24
 const STD_GUARD = 1e-5
 const MEL_LINEAR_HZ_PER_MEL = 200 / 3

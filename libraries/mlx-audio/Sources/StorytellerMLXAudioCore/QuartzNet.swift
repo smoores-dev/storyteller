@@ -163,6 +163,10 @@ public final class QuartzNet: Module, ConvCTCModel {
     self(frontend.features(samples))
   }
 
+  public func logProbs(batch: [[Float]]) -> MLXArray {
+    self(concatenated(batch.map { frontend.features($0) }, axis: 0))
+  }
+
   public func cast(to dtype: DType) {
     update(parameters: parameters().mapValues { $0.asType(dtype) })
     eval(self)

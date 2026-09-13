@@ -1161,6 +1161,8 @@ export function SettingsForm({
       settings.ctcModel && isCtcModelFamily(settings.ctcModel)
         ? settings.ctcModel
         : null,
+    ctcDtype: settings.ctcDtype ?? null,
+    ctcBatchSize: settings.ctcBatchSize ?? null,
     // ctcServerUrl: settings.ctcServerUrl ?? "",
     // ctcServerApiKey: settings.ctcServerApiKey ?? "",
     transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",

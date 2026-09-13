@@ -25,8 +25,11 @@ import {
 import {
   type CtcModel,
   type CtcModelFamily,
+  type Wav2Vec2DataType,
   type Wav2Vec2Device,
   type Wav2VecEngine,
+  ctcChunkSeconds,
+  resolveCtcDtype,
   resolveCtcModel,
 } from "@storyteller-platform/ghost-story/constants"
 import { MediaType } from "@storyteller-platform/media-types"
@@ -45,6 +48,8 @@ export interface EmitOptions {
   engine?: Wav2VecEngine | null | undefined
   device?: Wav2Vec2Device | null | undefined
   model?: CtcModelFamily | null | undefined
+  dtype?: Wav2Vec2DataType | null | undefined
+  batchSize?: number | null | undefined
   language?: Intl.Locale | null | undefined
   // serverUrl?: string | null | undefined
   // serverApiKey?: string | null | undefined
@@ -54,6 +59,8 @@ export interface EmitOptions {
 type Identity = {
   engine: Wav2VecEngine
   model: CtcModel
+  dtype: Wav2Vec2DataType
+  chunkSeconds: number
   track: TrackSource | null
 }
 
@@ -98,7 +105,9 @@ export async function emit(
   )
   const family = options.model ?? "mms"
   const language = options.language?.language ?? null
-  const model = resolveCtcModel(family, language, device)
+  const dtype = resolveCtcDtype(family, device, options.dtype)
+  const model = resolveCtcModel(family, language, device, dtype)
+  const chunkSeconds = ctcChunkSeconds(family)
   // const serverUrl = options.serverUrl ?? ""
   //
   // if (engine === "wav2vec-server" && !serverUrl) {
@@ -124,6 +133,8 @@ export async function emit(
     const identity = {
       engine,
       model,
+      dtype,
+      chunkSeconds,
       track: await readTrackSource(filepath),
     }
 
@@ -144,6 +155,8 @@ export async function emit(
       status =
         cachedIdentity.engine === identity.engine &&
         cachedIdentity.model === identity.model &&
+        cachedIdentity.dtype === identity.dtype &&
+        cachedIdentity.chunkSeconds === identity.chunkSeconds &&
         cachedIdentity.track === identity.track
           ? "cached"
           : "stale"
@@ -184,7 +197,7 @@ export async function emit(
 
     if (track.status === "stale") {
       options.logger?.warn(
-        `Existing emissions for ${track.filepath} came from a different engine, model or audio track, regenerating`,
+        `Existing emissions for ${track.filepath} came from a different engine, model, precision, chunk length or audio track, regenerating`,
       )
     }
 
@@ -209,6 +222,8 @@ export async function emit(
       options: {
         device,
         model: family,
+        dtype,
+        batchSize: options.batchSize ?? null,
         language,
         ...(samples && { samples: () => samples }),
         onProgress: onFileProgress,

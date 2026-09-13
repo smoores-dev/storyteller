@@ -379,6 +379,65 @@ case "qn-speed", "cn-speed":
   ])
   print("peak MB:", GPU.peakMemory / 1_048_576)
 
+case "qn-compile":
+  let samples = (0..<count).map { _ in Float.random(in: -0.3...0.3) }
+  var variants: [Variant] = []
+  for dtype in [DType.float32, DType.float16] {
+    let model = try QuartzNet.load(directory: modelDir)
+    model.cast(to: dtype)
+    let features = model.frontend.features(samples)
+    eval(features)
+    let batched = concatenated(Array(repeating: features, count: batchSize), axis: 0)
+    eval(batched)
+    eval(model(features))
+    eval(model(batched))
+    let compiled = compile(inputs: [model]) { (x: MLXArray) in model(x) }
+    eval(compiled(features))
+    eval(compiled(batched))
+    let diff = abs(compiled(features) - model(features)).max().item(Float.self)
+    print(dtype, "compiled vs plain max abs diff", diff)
+    variants.append(Variant("\(dtype) plain batch 1", chunks: 1) { eval(model(features)) })
+    variants.append(Variant("\(dtype) compiled batch 1", chunks: 1) { eval(compiled(features)) })
+    variants.append(Variant("\(dtype) plain batch \(batchSize)", chunks: Double(batchSize)) { eval(model(batched)) })
+    variants.append(Variant("\(dtype) compiled batch \(batchSize)", chunks: Double(batchSize)) { eval(compiled(batched)) })
+  }
+  race(variants)
+  print("peak MB:", GPU.peakMemory / 1_048_576)
+
+case "qn-fftlen":
+  let channels = 512
+  let kernel = 75
+  let frames = (count / 160 + 1 + 1) / 2
+  let t = frames + kernel - 1
+  let x = MLXArray((0..<(channels * t)).map { _ in Float.random(in: -1...1) }, [channels, t])
+  let w = MLXArray((0..<(channels * kernel)).map { _ in Float.random(in: -1...1) }, [channels, kernel])
+  let x3 = x.transposed().expandedDimensions(axis: 0)
+  let w3 = w.expandedDimensions(axis: -1)
+  eval(x, w, x3, w3)
+  var variants: [Variant] = [
+    Variant("conv1d groups=\(channels) k\(kernel) t\(t)", chunks: 1) {
+      eval(conv1d(x3, w3, padding: kernel / 2, groups: channels))
+    }
+  ]
+  var lengths: [Int] = []
+  for n in stride(from: t, through: 2 * t, by: 1) {
+    var m = n
+    for p in [2, 3, 5] { while m % p == 0 { m /= p } }
+    if m == 1 { lengths.append(n) }
+  }
+  var pow2 = 1
+  while pow2 < t { pow2 *= 2 }
+  lengths = Array(Set(lengths + [pow2, 2 * pow2])).sorted()
+  for n in lengths {
+    let spectrum = MLXFFT.rfft(w, n: n, axis: -1)
+    eval(spectrum)
+    variants.append(
+      Variant("rfft*irfft n=\(n)", chunks: 1) {
+        eval(MLXFFT.irfft(MLXFFT.rfft(x, n: n, axis: -1) * spectrum, n: n, axis: -1))
+      })
+  }
+  race(variants)
+
 case "qn-profile":
   func randomArray(_ shape: [Int]) -> MLXArray {
     MLXArray((0..<shape.reduce(1, *)).map { _ in Float.random(in: -1...1) }, shape)

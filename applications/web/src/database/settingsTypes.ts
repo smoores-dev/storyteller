@@ -6,6 +6,7 @@ import {
   LANGUAGES,
   RECOGNITION_ENGINES,
   WAV2VEC2_DEVICES,
+  WAV2VEC2_DTYPES,
   WAV2VEC_ENGINES,
   WHISPER_MODELS,
 } from "@storyteller-platform/ghost-story/constants"
@@ -31,6 +32,7 @@ export const Wav2Vec2DeviceSchema = z.enum(WAV2VEC2_DEVICES)
 export type Wav2Vec2Device = z.infer<typeof Wav2Vec2DeviceSchema>
 
 export const CtcModelSchema = z.enum(CTC_MODEL_FAMILIES)
+export const CtcDtypeSchema = z.enum(WAV2VEC2_DTYPES)
 export type CtcModel = z.infer<typeof CtcModelSchema>
 
 export const WhisperModelSchema = z.enum(WHISPER_MODELS)
@@ -323,6 +325,8 @@ export const SettingsSchema = z.object({
   ctcEngine: Wav2VecEngineSchema.nullable(),
   ctcDevice: Wav2Vec2DeviceSchema.nullable(),
   ctcModel: CtcModelSchema.nullable(),
+  ctcDtype: CtcDtypeSchema.nullable(),
+  ctcBatchSize: z.coerce.number<number>().nullable(),
   // ctcServerUrl: z.string().nullable(),
   // ctcServerApiKey: z.string().nullable(),
   // Transcription settings

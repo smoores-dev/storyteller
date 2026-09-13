@@ -895,6 +895,16 @@
             "ctcModel": "Model",
             "ctcModelDescription": "MMS handles any language and picks its precision from the device you chose. QuartzNet and Citrinet run a lot faster but each covers a fixed set of languages, and books in any other language use MMS. Citrinet is experimental and cannot be aligned yet.",
             "ctcModelLanguages": "Available for {languages}.",
+            "ctcDtype": "Precision",
+            "ctcDtypeDescription": "Half precision runs faster on a GPU and can shift the alignment slightly. Automatic uses half precision for MMS and full precision for QuartzNet and Citrinet. On a CPU everything runs in full precision.",
+            "ctcDtypes": {
+              "auto": "Automatic",
+              "fp32": "Full precision",
+              "fp16": "Half precision"
+            },
+            "ctcBatchSize": "Chunks per batch",
+            "ctcBatchSizePlaceholder": "Automatic",
+            "ctcBatchSizeDescription": "How many pieces of audio the model looks at in one go. On a GPU higher is faster and uses more memory. Leave it empty for 2 on a GPU and 1 on a CPU, pick 1 on a machine with little memory and 4 on a machine with plenty.",
             "ctcModels": {
               "mms": "MMS (any language)",
               "quartznet15x5": "QuartzNet",

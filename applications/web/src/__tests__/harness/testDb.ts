@@ -34,6 +34,8 @@ const DEFAULT_SETTINGS: Settings = {
   ctcEngine: "wav2vec-local" as const,
   ctcDevice: null,
   ctcModel: null,
+  ctcDtype: null,
+  ctcBatchSize: null,
   // ctcServerUrl: null,
   // ctcServerApiKey: null,
   alignmentGranularity: "sentence",

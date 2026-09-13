@@ -13,6 +13,8 @@ export const RUN_CONFIG_SETTING_KEYS = [
   "ctcEngine",
   "ctcDevice",
   "ctcModel",
+  "ctcDtype",
+  "ctcBatchSize",
   "alignmentGranularity",
   "alignmentGapSeconds",
   "alignmentAudioChapterSeconds",

@@ -3,10 +3,12 @@ import {
   choice,
   command,
   constant,
+  integer,
   merge,
   message,
   object,
   option,
+  optional,
   withDefault,
 } from "@optique/core"
 import { path } from "@optique/run/valueparser"
@@ -14,6 +16,7 @@ import { path } from "@optique/run/valueparser"
 import {
   CTC_MODEL_FAMILIES,
   WAV2VEC2_DEVICES,
+  WAV2VEC2_DTYPES,
   WAV2VEC_ENGINES,
 } from "@storyteller-platform/ghost-story/constants"
 
@@ -37,6 +40,16 @@ export const emitParser = object({
       description: message`The CTC model family to generate emissions with. mms handles any language and picks its precision from the device, the others need a --language they have a model for.`,
     }),
     "mms",
+  ),
+  dtype: optional(
+    option("--dtype", choice(WAV2VEC2_DTYPES, { metavar: "PRECISION" }), {
+      description: message`The precision to run the model in on a GPU. CPU always runs fp32. Unset uses fp16 for mms and fp32 for the other families.`,
+    }),
+  ),
+  batchSize: optional(
+    option("--batch-size", integer({ min: 1 }), {
+      description: message`How many chunks of audio go through the model per call. Higher is faster on a GPU and needs more memory. Unset picks 2 on a GPU and 1 on a CPU.`,
+    }),
   ),
   // serverUrl: optional(
   //   map(

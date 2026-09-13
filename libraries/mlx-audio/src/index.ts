@@ -65,13 +65,24 @@ if (!bindingDir && !isSea()) {
 }
 
 const native = requireBinding(bindingDir || packageDir) as {
-  loadModel: (directory: string) => Promise<BindingModelInfo>
-  compute: (handle: number, samples: Float32Array) => Promise<Emissions>
+  loadModel: (directory: string, dtype: ModelDtype) => Promise<BindingModelInfo>
+  compute: (
+    handle: number,
+    samples: Float32Array,
+    batch: number,
+  ) => Promise<Emissions>
   closeModel: (handle: number) => Promise<number>
+}
+
+export type ModelDtype = "fp32" | "fp16"
+
+export interface LoadModelOptions {
+  dtype?: ModelDtype
 }
 
 export interface ModelInfo {
   handle: number
+  dtype: ModelDtype
   vocab: Map<string, number>
   samplesPerFrame: number
   minSamples: number
@@ -81,10 +92,15 @@ export interface ModelInfo {
   [Symbol.asyncDispose]: () => Promise<void>
 }
 
-export async function loadModel(directory: string): Promise<ModelInfo> {
-  const modelInfo = await native.loadModel(directory)
+export async function loadModel(
+  directory: string,
+  options: LoadModelOptions = {},
+): Promise<ModelInfo> {
+  const dtype = options.dtype ?? "fp32"
+  const modelInfo = await native.loadModel(directory, dtype)
   return {
     ...modelInfo,
+    dtype,
     vocab: new Map(Object.entries(modelInfo.vocab)),
     [Symbol.asyncDispose]: async () => {
       await native.closeModel(modelInfo.handle)
@@ -92,9 +108,32 @@ export async function loadModel(directory: string): Promise<ModelInfo> {
   }
 }
 
+/**
+ * Runs several chunks of the same length through the model in one call. Each
+ * call has a fixed dispatch cost of several milliseconds, so batching chunks
+ * is markedly faster than one call per chunk.
+ */
 export async function compute(
   modelInfo: ModelInfo,
-  samples: Float32Array,
-): Promise<Emissions> {
-  return await native.compute(modelInfo.handle, samples)
+  chunks: Float32Array[],
+): Promise<Emissions[]> {
+  const first = chunks[0]
+  if (first === undefined) return []
+  if (chunks.some((chunk) => chunk.length !== first.length)) {
+    throw new Error("Every chunk in a batch must have the same length")
+  }
+  let samples = first
+  if (chunks.length > 1) {
+    samples = new Float32Array(first.length * chunks.length)
+    chunks.forEach((chunk, index) => {
+      samples.set(chunk, index * first.length)
+    })
+  }
+  const batched = await native.compute(modelInfo.handle, samples, chunks.length)
+  const stride = batched.frames * batched.classes
+  return chunks.map((_, index) => ({
+    frames: batched.frames,
+    classes: batched.classes,
+    values: batched.values.subarray(index * stride, (index + 1) * stride),
+  }))
 }

@@ -7,6 +7,7 @@ public protocol ConvCTCModel: AnyObject {
   var blank: Int { get }
   func callAsFunction(_ features: MLXArray) -> MLXArray
   func logProbs(samples: [Float]) -> MLXArray
+  func logProbs(batch: [[Float]]) -> MLXArray
   func cast(to dtype: DType)
 }
 

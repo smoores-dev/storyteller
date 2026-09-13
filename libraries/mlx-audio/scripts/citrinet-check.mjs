@@ -88,7 +88,7 @@ console.log(
   model.frameOffsetSeconds,
 )
 
-const first = await compute(model, samples)
+const [first] = await compute(model, [samples])
 console.log("frames", first.frames, "classes", first.classes)
 
 const inverse = new Map(
@@ -139,7 +139,7 @@ if (reference?.logprobs) {
 
 const rounds = 10
 const start = performance.now()
-for (let i = 0; i < rounds; i++) await compute(model, samples)
+for (let i = 0; i < rounds; i++) await compute(model, [samples])
 const perChunk = (performance.now() - start) / rounds
 console.log(
   `${perChunk.toFixed(1)} ms per ${seconds} s chunk, ${((seconds * 1000) / perChunk).toFixed(0)}x realtime`,

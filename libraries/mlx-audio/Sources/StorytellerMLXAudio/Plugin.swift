@@ -10,15 +10,16 @@ import MLX
 			"supported": true,
 		]
 	},
-	"loadModel": try NodeFunction { (directory: String) in
-		try await ModelRegistry.shared.load(directory: URL(fileURLWithPath: directory)).record
+	"loadModel": try NodeFunction { (directory: String, dtype: String) in
+		try await ModelRegistry.shared.load(directory: URL(fileURLWithPath: directory), dtype: dtype).record
 	},
-	"compute": try NodeFunction { (handle: Int, samples: NodeTypedArray<Float>) async throws -> [String: NodePropertyConvertible] in
+	"compute": try NodeFunction { (handle: Int, samples: NodeTypedArray<Float>, batch: Int) async throws -> [String: NodePropertyConvertible] in
 		let emissions = try await ModelRegistry.shared.compute(
 			handle: handle,
 			samples: samples.withUnsafeMutableRawBytes {
 				Array(UnsafeMutableBufferPointer(start: $0.baseAddress?.assumingMemoryBound(to: Float.self), count: $0.count))
-			}
+			},
+			batch: batch
 		)
 		let buffer = try NodeArrayBuffer(capacity: emissions.values.count * MemoryLayout<Float>.size)
 		try buffer.withUnsafeMutableBytes { bytes in

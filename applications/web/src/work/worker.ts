@@ -292,6 +292,8 @@ export default async function processBook({
               engine: settings.ctcEngine ?? "wav2vec-local",
               device,
               model,
+              dtype: settings.ctcDtype,
+              batchSize: settings.ctcBatchSize,
               language: locale,
               // serverUrl: settings.ctcServerUrl,
               // serverApiKey: settings.ctcServerApiKey,
@@ -496,10 +498,7 @@ export default async function processBook({
 
   const summary = processTiming.summary()
 
-  const enableTiming = env.STORYTELLER_LOG_LEVEL === "debug"
-  if (enableTiming) {
-    logger.info(formatSingleReport(summary, `Process Book: ${book.title}`))
-  }
+  logger.info(formatSingleReport(summary, `Process Book: ${book.title}`))
 
   logger.info(`Completed synchronizing book ${bookRefForLog}`)
 

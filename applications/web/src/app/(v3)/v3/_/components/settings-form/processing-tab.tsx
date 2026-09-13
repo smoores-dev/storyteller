@@ -9,6 +9,7 @@ import {
   ALIGNERS,
   CTC_MODEL_FAMILIES,
   WAV2VEC2_DEVICES,
+  WAV2VEC2_DTYPES,
   ctcModelLanguages,
 } from "@storyteller-platform/ghost-story/constants"
 
@@ -873,6 +874,11 @@ function Wav2VecLocalSettings() {
     label: t(`ctcModels.${value}`),
   }))
 
+  const dtypeOptions = ["auto", ...WAV2VEC2_DTYPES].map((value) => ({
+    value,
+    label: t(`ctcDtypes.${value as "auto" | (typeof WAV2VEC2_DTYPES)[number]}`),
+  }))
+
   const languageNames = new Intl.DisplayNames([locale], { type: "language" })
 
   return (
@@ -944,6 +950,58 @@ function Wav2VecLocalSettings() {
             </>
           )
         }}
+      />
+      <SettingsFormField
+        name="ctcDtype"
+        label={t("ctcDtype")}
+        description={t("ctcDtypeDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Select
+            items={dtypeOptions}
+            value={field.value ?? "auto"}
+            onValueChange={(value) => {
+              field.onChange(value === "auto" ? null : value)
+            }}
+            disabled={isLocked}
+            aria-invalid={fieldState.invalid}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {dtypeOptions.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+      <SettingsFormField
+        name="ctcBatchSize"
+        label={t("ctcBatchSize")}
+        description={t("ctcBatchSizeDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Input
+            id="ctcBatchSize"
+            type="number"
+            min={1}
+            max={16}
+            placeholder={t("ctcBatchSizePlaceholder")}
+            disabled={isLocked}
+            {...field}
+            value={field.value ?? ""}
+            onChange={(e) => {
+              field.onChange(
+                e.target.value === ""
+                  ? null
+                  : Math.max(1, parseInt(e.target.value) || 1),
+              )
+            }}
+            aria-invalid={fieldState.invalid}
+          />
+        )}
       />
     </>
   )

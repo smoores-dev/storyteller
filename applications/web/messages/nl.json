@@ -824,6 +824,16 @@
             "ctcModel": "Model",
             "ctcModelDescription": "MMS werkt voor elke taal en kiest zijn precisie op basis van het apparaat dat je koos. QuartzNet en Citrinet zijn een stuk sneller maar werken elk voor een vaste set talen, boeken in een andere taal gebruiken MMS. Citrinet is experimenteel en kan nog niet uitgelijnd worden.",
             "ctcModelLanguages": "Beschikbaar voor {languages}.",
+            "ctcDtype": "Precisie",
+            "ctcDtypeDescription": "Halve precisie is sneller op een GPU en kan de uitlijning iets verschuiven. Automatisch gebruikt halve precisie voor MMS en volledige precisie voor QuartzNet en Citrinet. Op een CPU draait alles in volledige precisie.",
+            "ctcDtypes": {
+              "auto": "Automatisch",
+              "fp32": "Volledige precisie",
+              "fp16": "Halve precisie"
+            },
+            "ctcBatchSize": "Stukken per batch",
+            "ctcBatchSizePlaceholder": "Automatisch",
+            "ctcBatchSizeDescription": "Hoeveel stukken audio het model tegelijk bekijkt. Op een GPU is meer sneller en gebruikt het meer geheugen. Laat het leeg voor 2 op een GPU en 1 op een CPU, kies 1 op een machine met weinig geheugen en 4 op een machine met veel geheugen.",
             "ctcModels": {
               "mms": "MMS (elke taal)",
               "quartznet15x5": "QuartzNet",
