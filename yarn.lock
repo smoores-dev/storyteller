@@ -6130,13 +6130,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@edrlab/thorium-locales@github:edrlab/thorium-locales":
-  version: 1.0.0
-  resolution: "@edrlab/thorium-locales@https://github.com/edrlab/thorium-locales.git#commit=e175badc67ac33dcda6911dd5ebcf7a1570bee8c"
-  checksum: 10c0/4fd92aeab920dfeb3ad6a6c985ae418ed5af6a82ff15c800c3f5318804ee295d1d805d4bf838870fb267fd62755a1620dd54ed75465ed1c538c85e3ee5d68c1b
-  languageName: node
-  linkType: hard
-
 "@egjs/hammerjs@npm:^2.0.17":
   version: 2.0.17
   resolution: "@egjs/hammerjs@npm:2.0.17"
@@ -13580,22 +13573,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@readium/decorator@npm:1.0.2":
-  version: 1.0.2
-  resolution: "@readium/decorator@npm:1.0.2"
+"@readium/decorator@npm:1.2.0":
+  version: 1.2.0
+  resolution: "@readium/decorator@npm:1.2.0"
   dependencies:
-    "@readium/navigator-html-injectables": "npm:2.6.3"
-    "@readium/shared": "npm:2.4.0"
-  checksum: 10c0/df95159ba897f7d86f78090224a406de92e787dfc034b35f4a198dbed82f79015b5a0c2f81d69db741ec2e60e3767a7153218532bb7bbbdb482080e44a4ac4cb
-  languageName: node
-  linkType: hard
-
-"@readium/helpers@npm:1.0.0":
-  version: 1.0.0
-  resolution: "@readium/helpers@npm:1.0.0"
-  dependencies:
-    user-agent-data-types: "npm:^0.4.2"
-  checksum: 10c0/fa51e6a7f47a54454f54ebfcf4aa3f9e990eac6c7a1f1dfee4edee967b7f2621852a5e8c44f9db466a5727e77bf995745f002bceaf22d87e3024fffb816b0547
+    "@readium/navigator-html-injectables": "npm:2.8.0"
+    "@readium/shared": "npm:2.5.0"
+  checksum: 10c0/395eaefcf7ce8538326f8f8d6766325c00f475d1e6b288f60d4f7c6502bbff226c7508f46646138dcd8f5248002a1a2c2eec5dff3e2df625642e9c1fcb5f8705
   languageName: node
   linkType: hard
 
@@ -13608,54 +13592,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@readium/navigator-html-injectables@npm:2.6.3, @readium/new-navigator-html-injectables@npm:@readium/navigator-html-injectables@latest":
-  version: 2.6.3
-  resolution: "@readium/navigator-html-injectables@npm:2.6.3"
+"@readium/navigator-html-injectables@npm:2.8.0, @readium/navigator-html-injectables@npm:^2.8.0":
+  version: 2.8.0
+  resolution: "@readium/navigator-html-injectables@npm:2.8.0"
   dependencies:
-    "@readium/helpers": "npm:1.0.0"
-    "@readium/shared": "npm:2.4.0"
-  checksum: 10c0/120710a658ade51cf2718e8b77ef6cc9d604fd0d3e4cb1692f954267d7d400bc1e742408dffab33864629ef07332ec5a6b03ff9240d0491b3a8280673722b85e
+    "@readium/helpers": "npm:1.1.0"
+    "@readium/shared": "npm:2.5.0"
+  checksum: 10c0/1884a1ae974a9ab60b22059f53f0e060248426b133bfc1171f0390f6dbaed4f83dc740f8a9fe55563a687578cfc1001e9bb9990585a1853e4dc4e79696f8bf85
   languageName: node
   linkType: hard
 
-"@readium/navigator@npm:2.8.2":
-  version: 2.8.2
-  resolution: "@readium/navigator@npm:2.8.2"
+"@readium/navigator@npm:^2.10.0":
+  version: 2.10.0
+  resolution: "@readium/navigator@npm:2.10.0"
   dependencies:
-    "@readium/decorator": "npm:1.0.2"
-    "@readium/helpers": "npm:1.0.0"
-    "@readium/navigator-html-injectables": "npm:2.6.3"
-    "@readium/shared": "npm:2.4.0"
-  checksum: 10c0/455539592477ec427c2b8643fb159645e18d8d1066b1e4237a57d4a3d0d9866259fed0872f60b5133d096f7c1c113c737decebcc0de5482e701b4d605497b5a8
+    "@readium/decorator": "npm:1.2.0"
+    "@readium/helpers": "npm:1.1.0"
+    "@readium/navigator-html-injectables": "npm:2.8.0"
+    "@readium/shared": "npm:2.5.0"
+  checksum: 10c0/ee53327328f640101b2108956519b9102db7ad524549d46738511f9581e01311a5f8eef669751f3d0ef4d79e4d5f18d551322dc27e0a27203ea7b2447fdcc86b
   languageName: node
   linkType: hard
 
-"@readium/shared@npm:2.4.0":
-  version: 2.4.0
-  resolution: "@readium/shared@npm:2.4.0"
-  checksum: 10c0/b799ba21119c93ff2a8d09ffa5b2ec0695d049d78632f6edbf54831b11af691ff66d84daec53b336f625bd1848d7239baffcd1357d3d81d45452f5f916372ebb
-  languageName: node
-  linkType: hard
-
-"@readium/shared@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "@readium/shared@npm:2.2.0"
-  dependencies:
-    "@edrlab/thorium-locales": "github:edrlab/thorium-locales"
-  checksum: 10c0/83ce30f1aba155338df4544bbf38c4283c149a00cf681d49a576503533cfe8b9b8ed4fbd666f1e2b8f63dfacc05a424f525cf13deb85d93ad76cc04543a377ec
-  languageName: node
-  linkType: hard
-
-"@readium/shared@npm:^2.2.3":
-  version: 2.2.3
-  resolution: "@readium/shared@npm:2.2.3"
-  dependencies:
-    "@edrlab/thorium-locales": "github:edrlab/thorium-locales"
-  checksum: 10c0/96486955b66c0614c50097530faeeac3d38a7eae30e73ad906bb713036ca3c715ca8ab2ac341736d857db334267dcb41153707ab21e701985eed1761aff33b9b
-  languageName: node
-  linkType: hard
-
-"@readium/shared@npm:^2.4.0":
+"@readium/shared@npm:2.5.0, @readium/shared@npm:^2.5.0":
   version: 2.5.0
   resolution: "@readium/shared@npm:2.5.0"
   dependencies:
@@ -15507,7 +15466,7 @@ __metadata:
     "@esfx/async-semaphore": "npm:^1.0.0"
     "@optique/core": "npm:^0.10.7"
     "@optique/run": "npm:^0.10.7"
-    "@readium/shared": "npm:^2.2.0"
+    "@readium/shared": "catalog:"
     "@storyteller-platform/audiobook": "workspace:^"
     "@storyteller-platform/epub": "workspace:^"
     "@storyteller-platform/fs": "workspace:^"
@@ -15583,7 +15542,7 @@ __metadata:
     "@docusaurus/theme-classic": "npm:^3.10.1"
     "@docusaurus/types": "npm:^3.10.1"
     "@mdx-js/react": "npm:^3.1.0"
-    "@readium/shared": "npm:^2.2.3"
+    "@readium/shared": "catalog:"
     "@storyteller-platform/opds": "workspace:*"
     "@tsconfig/docusaurus": "npm:^2.0.3"
     "@types/lunr": "npm:^2"
@@ -15605,7 +15564,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/epub@workspace:libraries/epub"
   dependencies:
-    "@readium/shared": "npm:^2.2.0"
+    "@readium/shared": "catalog:"
     "@storyteller-platform/fs": "workspace:^"
     "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/path": "workspace:^"
@@ -15962,7 +15921,7 @@ __metadata:
     typedoc-plugin-remark: "npm:^1.2.0"
     typescript: "npm:@typescript/typescript6@^6.0.2"
   peerDependencies:
-    "@readium/shared": ^2.2.0
+    "@readium/shared": "*"
     ajv: ^8.20.0
     ajv-formats: ^3.0.1
   peerDependenciesMeta:
@@ -16034,10 +15993,9 @@ __metadata:
     "@mantine/hooks": "npm:^8.3.0"
     "@node-rs/xxhash": "npm:^1.7.6"
     "@parcel/watcher": "npm:^2.5.6"
-    "@readium/navigator": "npm:2.8.2"
-    "@readium/navigator-html-injectables": "npm:2.6.3"
-    "@readium/new-navigator-html-injectables": "npm:@readium/navigator-html-injectables@latest"
-    "@readium/shared": "npm:^2.4.0"
+    "@readium/navigator": "npm:^2.10.0"
+    "@readium/navigator-html-injectables": "npm:^2.8.0"
+    "@readium/shared": "catalog:"
     "@reduxjs/toolkit": "npm:^2.11.2"
     "@reflink/reflink": "npm:^0.1.19"
     "@remix-run/node": "npm:^2.17.5"

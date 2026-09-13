@@ -61,7 +61,7 @@
     "@esfx/async-semaphore": "^1.0.0",
     "@optique/core": "^0.10.7",
     "@optique/run": "^0.10.7",
-    "@readium/shared": "^2.2.0",
+    "@readium/shared": "catalog:",
     "@storyteller-platform/audiobook": "workspace:^",
     "@storyteller-platform/epub": "workspace:^",
     "@storyteller-platform/fs": "workspace:^",

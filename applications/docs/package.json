@@ -20,7 +20,7 @@
     "@docusaurus/plugin-content-pages": "^3.10.1",
     "@docusaurus/preset-classic": "^3.10.1",
     "@mdx-js/react": "^3.1.0",
-    "@readium/shared": "^2.2.3",
+    "@readium/shared": "catalog:",
     "@storyteller-platform/opds": "workspace:*",
     "@urql/core": "^6.0.1",
     "@urql/exchange-retry": "^2.0.0",

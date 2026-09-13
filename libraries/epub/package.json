@@ -38,7 +38,7 @@
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "dependencies": {
-    "@readium/shared": "^2.2.0",
+    "@readium/shared": "catalog:",
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/media-types": "workspace:^",
     "@storyteller-platform/path": "workspace:^",

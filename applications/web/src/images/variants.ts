@@ -52,15 +52,20 @@ function variantExtension(mimeType: string) {
 }
 
 export function getVariantCacheDirectory(sha256: string) {
-  return join(IMAGE_CACHE_DIR, sha256.slice(0, 2), sha256.slice(2, 4), sha256)
+  // oxfmt-ignore
+  return join(/*turbopackIgnore: true*/ IMAGE_CACHE_DIR,
+    sha256.slice(0, 2),
+    sha256.slice(2, 4),
+    sha256,
+  )
 }
 
 function getVariantCachePath(
   variant: ImageVariant,
   image: VariantSource,
 ): string {
-  return join(
-    getVariantCacheDirectory(image.sha256),
+  // oxfmt-ignore
+  return join(/*turbopackIgnore: true*/ getVariantCacheDirectory(image.sha256),
     `${variant}.${variantExtension(image.mimeType)}`,
   )
 }
