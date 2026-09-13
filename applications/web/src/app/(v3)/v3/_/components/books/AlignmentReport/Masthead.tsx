@@ -1,6 +1,7 @@
 "use client"
 
 import { formatClock } from "@v3/_/components/audio"
+import { Button } from "@v3/_/components/ui/button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
@@ -57,12 +58,32 @@ function Stat({
   )
 }
 
-function Reprocess({ book }: { book: BookWithRelations }) {
+function Reprocess({
+  book,
+  pending,
+}: {
+  book: BookWithRelations
+  pending: number
+}) {
   const t = useTranslation("Processing")
+  const tr = useTranslation("AlignmentReport")
   const { start, dialog, positions, canProcessAny } = useProcessingRun([book])
   if (!canProcessAny) return null
+  const sync = positions.find((position) => position.key === "sync")
   return (
-    <>
+    <div className="flex items-center gap-1">
+      {pending > 0 && sync && !sync.disabled && (
+        <Button
+          size="xs"
+          title={tr("pending.summary", { count: pending })}
+          onClick={(event) => {
+            start(sync.restart, { shiftKey: event.shiftKey })
+          }}
+        >
+          <icon.Clock />
+          {tr("pending.realign")}
+        </Button>
+      )}
       <ProcessingDropdown
         positions={positions}
         onSelect={start}
@@ -71,7 +92,17 @@ function Reprocess({ book }: { book: BookWithRelations }) {
         size="xs"
       />
       {dialog}
-    </>
+    </div>
+  )
+}
+
+function Count({ value, label }: { value: number; label: string }) {
+  if (value === 0) return null
+  return (
+    <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+      <span className="text-sm font-medium tabular-nums">{value}</span>
+      <span className="text-muted-foreground text-xs">{label}</span>
+    </span>
   )
 }
 
@@ -162,14 +193,24 @@ export function Masthead({
               {t("stats.confidence")}
             </span>
           </span>
+          <Count
+            value={summary.excluded + summary.excludedByRule}
+            label={t("stats.skipped")}
+          />
+          <Count value={summary.review} label={t("stats.toCheck")} />
         </div>
+        {summary.pending > 0 && (
+          <span className="text-primary text-[11px]">
+            {t("pending.summary", { count: summary.pending })}
+          </span>
+        )}
         <span className="text-muted-foreground/80 truncate text-[11px]">
           {provenance.join(" · ")}
         </span>
       </div>
       {book && (
         <div className="ml-2 shrink-0 self-start">
-          <Reprocess book={book} />
+          <Reprocess book={book} pending={summary.pending} />
         </div>
       )}
     </section>

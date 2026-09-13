@@ -10,7 +10,11 @@ import { v4 as uuidv4 } from "uuid"
 
 import { type JsColor } from "@storyteller-platform/okmain"
 
-import { type BookAlignmentReportView } from "@/alignmentReportView"
+import {
+  type AlignmentDecisions,
+  type AlignmentOverrides,
+  type BookAlignmentReportView,
+} from "@/alignmentReportView"
 import { dismissalKey } from "@/announcement-builtins"
 import {
   type Invite,
@@ -21,7 +25,6 @@ import {
 import { type UpgradeResult } from "@/app/api/v2/books/[bookId]/upgrade-epub/route"
 import { type BackupInfo } from "@/backups"
 import { type Role } from "@/components/books/edit/marcRelators"
-import { type AlignmentOverrides } from "@/database/alignmentReports"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -2502,6 +2505,26 @@ export const api = createApi({
         { type: "TranscodedAudio", id: uuid },
       ],
     }),
+    getBookAlignmentDecisions: build.query<AlignmentDecisions, { uuid: UUID }>({
+      query: ({ uuid }) => `/books/${uuid}/alignment-decisions`,
+      providesTags: (_result, _error, { uuid }) => [
+        { type: "BookAlignmentReport", id: uuid },
+      ],
+    }),
+    updateBookAlignmentDecisions: build.mutation<
+      AlignmentDecisions,
+      { uuid: UUID; decisions: AlignmentDecisions }
+    >({
+      query: ({ uuid, decisions }) => ({
+        url: `/books/${uuid}/alignment-decisions`,
+        method: "PUT",
+        body: decisions,
+      }),
+      invalidatesTags: (_result, _error, { uuid }) => [
+        { type: "BookAlignmentReport", id: uuid },
+        "Books",
+      ],
+    }),
     updateBookAlignmentOverrides: build.mutation<
       { ok: boolean },
       { uuid: UUID; overrides: AlignmentOverrides }
@@ -2582,6 +2605,8 @@ export const {
   useGetBookChapterTextQuery,
   useGetBookChapterGuidedNavigationQuery,
   useGetTranscodedAudioQuery,
+  useGetBookAlignmentDecisionsQuery,
+  useUpdateBookAlignmentDecisionsMutation,
   useUpdateBookAlignmentOverridesMutation,
   useCancelJobMutation,
   useReorderJobsMutation,

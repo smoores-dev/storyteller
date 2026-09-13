@@ -4,10 +4,11 @@ import {
   buildReportView,
 } from "@/alignmentReportView"
 import { withHasPermission } from "@/auth/auth"
+import { getAlignmentDecisions } from "@/database/alignmentDecisions"
 import {
+  applyAlignmentOverrides,
   getAlignmentReportForBook,
   listAlignmentReportSummaries,
-  updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"
 import { type Job, getJob } from "@/database/jobs"
@@ -54,10 +55,11 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     | UUID
     | undefined
 
-  const [report, book, history] = await Promise.all([
+  const [report, book, history, decisions] = await Promise.all([
     getAlignmentReportForBook(bookUuid, reportUuid),
     getBook(bookUuid, request.auth.user.id),
     listAlignmentReportSummaries(bookUuid),
+    getAlignmentDecisions(bookUuid),
   ])
   const index = history.findIndex((row) => row.uuid === report?.uuid)
   const previousRow = index >= 0 ? (history[index + 1] ?? null) : null
@@ -79,12 +81,6 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
       { status: 404 },
     )
   }
-
-  const overrides = report.overrides
-    ? typeof report.overrides === "string"
-      ? (JSON.parse(report.overrides) as AlignmentOverrides)
-      : report.overrides
-    : null
 
   const view = buildReportView({
     report: report.report,
@@ -111,7 +107,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
           unalignedAudio: previousRow.unalignedAudio,
         }
       : null,
-    overrides,
+    decisions,
     ebookManifest: book.ebook?.manifest ?? null,
     audiobookDuration: book.audiobook?.duration ?? null,
   })
@@ -120,7 +116,7 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
 })
 
 /**
- * @description Replace the overrides on a book's latest alignment report
+ * @description Replace a book's chapter judgments and whole-track audio exclusions using the overrides shape. Kept for older clients, prefer the alignment-decisions endpoint.
  * @pathParams BookIdParamsSchemaV2
  * @request AlignmentOverridesSchemaV2
  * @auth bearer
@@ -142,7 +138,7 @@ export const PATCH = withHasPermission<Params>("bookProcess")(async (
   }
 
   const overrides = (await request.json()) as AlignmentOverrides
-  await updateAlignmentOverrides(report.uuid, overrides)
+  await applyAlignmentOverrides(bookUuid, overrides)
 
   return Response.json({ ok: true })
 })

@@ -1,12 +1,27 @@
 import type { TimingSummary } from "@storyteller-platform/ghost-story"
 
+import { type AlignmentGrade } from "@/shelves"
+
 export type StageName = "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS"
+
+export interface AlignmentJobSummary {
+  grade: AlignmentGrade
+  score: number | null
+  sentenceCoverage: number | null
+  audioCoverage: number | null
+  chapters: number
+  excluded: number
+  excludedByRule: number
+  review: number
+  failed: number
+}
 
 export interface JobStats {
   audioDurationSeconds: number | null
   pageCount: number | null
   stages: Partial<Record<StageName, number>>
   totalWallMs: number
+  alignment?: AlignmentJobSummary | null
 }
 
 const PHASE_TO_STAGE: Record<string, StageName> = {
@@ -17,7 +32,11 @@ const PHASE_TO_STAGE: Record<string, StageName> = {
 
 export function buildJobStats(
   summary: TimingSummary,
-  inputs: { audioDurationSeconds: number | null; pageCount: number | null },
+  inputs: {
+    audioDurationSeconds: number | null
+    pageCount: number | null
+    alignment?: AlignmentJobSummary | null
+  },
 ): JobStats {
   const stages: Partial<Record<StageName, number>> = {}
 
@@ -33,5 +52,6 @@ export function buildJobStats(
     pageCount: inputs.pageCount,
     stages,
     totalWallMs: summary.wallClockMs,
+    alignment: inputs.alignment ?? null,
   }
 }

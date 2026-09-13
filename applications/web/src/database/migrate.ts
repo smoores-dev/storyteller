@@ -101,6 +101,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "117_alignment_coverage_columns.sql": (
     await import("./migrations/117_alignment_coverage_columns.sql")
   ).default,
+  "120_alignment_decisions.sql": (
+    await import("./migrations/120_alignment_decisions.sql")
+  ).default,
 }
 
 async function isFirstStartup() {

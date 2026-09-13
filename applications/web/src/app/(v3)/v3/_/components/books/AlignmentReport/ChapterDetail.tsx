@@ -11,19 +11,23 @@ import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
 import { ChapterText } from "./ChapterText"
-import { JudgmentBadge } from "./SpineList"
+import { JudgmentBadge, ListenBadge, PendingBadge } from "./SpineList"
 import {
   TONE_TEXT,
   type Track,
   confidenceTone,
   hrefStem,
   matchedPercent,
+  needsListen,
   percentTone,
+  rangeExcluded,
+  ruleSignal,
+  skippedByRule,
   spansOf,
   trackClip,
   trackLabel,
 } from "./shared"
-import { type OverrideEditor } from "./useOverrideEditor"
+import { type DecisionEditor } from "./useDecisionEditor"
 
 export function ChapterDetail({
   bookUuid,
@@ -42,7 +46,7 @@ export function ChapterDetail({
   items: ViewSpineItem[]
   spans: ReportSpan[]
   tracks: Track[]
-  editor: OverrideEditor
+  editor: DecisionEditor
   onBack?: () => void
   onPrev?: () => void
   onNext?: () => void
@@ -60,6 +64,8 @@ export function ChapterDetail({
 
   const approved = item.judgment === "approved"
   const excluded = item.judgment === "excluded"
+  const included = item.judgment === "included"
+  const canInclude = included || skippedByRule(item)
 
   return (
     <div
@@ -84,6 +90,8 @@ export function ChapterDetail({
           {hrefStem(item.href)}
         </span>
         <JudgmentBadge judgment={item.judgment} />
+        <ListenBadge item={item} />
+        <PendingBadge item={item} />
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
           {onPrev !== undefined || onNext !== undefined ? (
             <>
@@ -138,8 +146,27 @@ export function ChapterDetail({
           >
             <icon.EyeOff />
           </TooltipButton>
+          {canInclude && (
+            <TooltipButton
+              variant={included ? "secondary" : "ghost"}
+              size="icon-sm"
+              aria-pressed={included}
+              aria-label={t("actions.include")}
+              tooltip={t("actions.includeHint")}
+              className={cn(included && "text-good")}
+              onClick={() => {
+                editor({
+                  judgments: { [item.href]: included ? null : "included" },
+                })
+              }}
+            >
+              <icon.Eye />
+            </TooltipButton>
+          )}
         </div>
       </div>
+
+      <RuleLine item={item} />
 
       {/* {item.status === "aligned" ? ( */}
       <ChapterBody
@@ -152,6 +179,41 @@ export function ChapterDetail({
         editor={editor}
       />
     </div>
+  )
+}
+
+function RuleLine({ item }: { item: ViewSpineItem }) {
+  const t = useTranslation("AlignmentReport")
+  const signal = ruleSignal(item)
+  const evidence = signal
+    ? t("rule.signal", {
+        source: t(`source.${signal.source}`),
+        value: signal.value || t("rule.noText"),
+      })
+    : null
+
+  let message: string | null = null
+  if (item.status === "excluded") {
+    message =
+      item.judgment === "included" || item.judgment === "approved"
+        ? t("rule.skippedPending")
+        : item.decision === "excluded" && item.judgment === null
+          ? t("rule.restoredPending")
+          : skippedByRule(item)
+            ? t("rule.skipped")
+            : null
+  } else if (item.judgment === "excluded") {
+    message = t("rule.excludedPending")
+  } else if (needsListen(item)) {
+    message = t("rule.listen")
+  }
+
+  if (!message) return null
+  return (
+    <p className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
+      <span className="text-foreground/80">{message}</span>
+      {evidence && <span>{evidence}</span>}
+    </p>
   )
 }
 
@@ -230,14 +292,20 @@ function ChapterBody({
   spans: ReportSpan[]
   allSpans: ReportSpan[]
   tracks: Track[]
-  editor: OverrideEditor
+  editor: DecisionEditor
 }) {
   const notAligned = item.status !== "aligned"
 
   const t = useTranslation("AlignmentReport")
   const hulls = trackHulls(item, items, spans, allSpans, tracks)
-  const allAudioExcluded =
-    hulls.length > 0 && hulls.every((hull) => hull.track.excluded)
+  const hullRange = (hull: TrackHull) => ({
+    track: hull.track.name,
+    start: hull.start,
+    end: hull.end,
+  })
+  const hullExcluded = (hull: TrackHull) =>
+    rangeExcluded(hull.track, hull.start, hull.end)
+  const allAudioExcluded = hulls.length > 0 && hulls.every(hullExcluded)
 
   const sentencePercent =
     item.judgment === "approved" ? 100 : matchedPercent(item)
@@ -359,13 +427,14 @@ function ChapterBody({
             ]
               .filter((part): part is string => part !== null)
               .join(" · ")
+            const excluded = hullExcluded(hull)
             return (
               <span
                 key={hull.track.name}
                 title={title}
                 className={cn(
                   "inline-flex items-center gap-0.5 rounded-md border py-0.5 pr-0.5 pl-0.5 text-[11px]",
-                  hull.track.excluded && "text-muted-foreground",
+                  excluded && "text-muted-foreground",
                 )}
               >
                 {clip ? (
@@ -374,10 +443,7 @@ function ChapterBody({
                   <span className="size-5 shrink-0" />
                 )}
                 <span
-                  className={cn(
-                    "tabular-nums",
-                    hull.track.excluded && "line-through",
-                  )}
+                  className={cn("tabular-nums", excluded && "line-through")}
                 >
                   {trackLabel(hull.track)}
                 </span>
@@ -392,22 +458,24 @@ function ChapterBody({
                   size="icon-xs"
                   className="size-5"
                   aria-label={
-                    hull.track.excluded
-                      ? t("actions.includeFile")
-                      : t("actions.excludeFile")
+                    excluded
+                      ? t("actions.restoreStretch")
+                      : t("actions.excludeStretch")
                   }
                   tooltip={
-                    hull.track.excluded
-                      ? t("actions.includeFile")
-                      : t("actions.excludeFile")
+                    excluded
+                      ? t("actions.restoreStretch")
+                      : t("actions.excludeStretch")
                   }
                   onClick={() => {
-                    editor({
-                      audio: { [hull.track.name]: !hull.track.excluded },
-                    })
+                    editor(
+                      excluded
+                        ? { restoreRanges: [hullRange(hull)] }
+                        : { excludeRanges: [hullRange(hull)] },
+                    )
                   }}
                 >
-                  {hull.track.excluded ? <icon.Volume /> : <icon.VolumeOff />}
+                  {excluded ? <icon.Volume /> : <icon.VolumeOff />}
                 </TooltipButton>
               </span>
             )
@@ -417,11 +485,12 @@ function ChapterBody({
               variant="ghost"
               size="xs"
               onClick={() => {
-                editor({
-                  audio: Object.fromEntries(
-                    hulls.map((hull) => [hull.track.name, !allAudioExcluded]),
-                  ),
-                })
+                const ranges = hulls.map(hullRange)
+                editor(
+                  allAudioExcluded
+                    ? { restoreRanges: ranges }
+                    : { excludeRanges: ranges },
+                )
               }}
             >
               {allAudioExcluded ? <icon.Volume /> : <icon.VolumeOff />}
@@ -433,7 +502,9 @@ function ChapterBody({
         </div>
       )}
 
-      <ChapterText bookUuid={bookUuid} item={item} spans={spans} />
+      {item.status !== "excluded" && (
+        <ChapterText bookUuid={bookUuid} item={item} spans={spans} />
+      )}
     </>
   )
 }

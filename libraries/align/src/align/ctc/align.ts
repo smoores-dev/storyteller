@@ -23,6 +23,7 @@ import {
 import { rangeBehaviour } from "../holes.ts"
 
 import { type AlignOptions, Aligner } from "./Aligner.ts"
+import { NO_DECISIONS } from "./exclusions.ts"
 
 export async function ctcAlign(
   input: string,
@@ -83,6 +84,10 @@ export async function ctcAlign(
     options.logger,
     options.signal,
     rangeBehaviour(options),
+    {
+      decisions: options.decisions ?? NO_DECISIONS,
+      autoExclude: options.autoExclude ?? true,
+    },
   )
 
   const timing = await aligner.alignBook(options.onProgress)

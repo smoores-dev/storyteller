@@ -322,6 +322,7 @@ export const SettingsSchema = z.object({
   alignmentGapSeconds: z.coerce.number<number>().nullable(),
   alignmentAudioChapterSeconds: z.coerce.number<number>().nullable(),
   alignmentDropUnread: z.boolean().nullable(),
+  alignmentAutoExclude: z.boolean().nullable(),
   ctcEngine: Wav2VecEngineSchema.nullable(),
   ctcDevice: Wav2Vec2DeviceSchema.nullable(),
   ctcModel: CtcModelSchema.nullable(),

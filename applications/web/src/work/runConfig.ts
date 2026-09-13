@@ -19,6 +19,7 @@ export const RUN_CONFIG_SETTING_KEYS = [
   "alignmentGapSeconds",
   "alignmentAudioChapterSeconds",
   "alignmentDropUnread",
+  "alignmentAutoExclude",
   // "ctcServerUrl",
   // "ctcServerApiKey",
   // transcription

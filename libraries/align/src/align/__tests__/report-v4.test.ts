@@ -2,7 +2,7 @@ import assert from "node:assert"
 import { describe, it } from "node:test"
 
 import { type RangeState, type SentenceRange } from "../getSentenceRanges.ts"
-import { assembleReport, buildChapterSpans } from "../report-v3.ts"
+import { assembleReport, buildChapterSpans } from "../report-v4.ts"
 
 function range(
   id: number,
@@ -151,12 +151,15 @@ void describe("assembleReport", () => {
   void it("rolls spans up into spine items, tracks and totals", () => {
     const report = assembleReport({
       aligner: "ctc",
+      autoExclude: true,
       spine: [
         {
           index: 1,
           href: "ch1.xhtml",
           title: "One",
           status: "aligned",
+          classification: null,
+          decision: null,
           sentenceCount: 4,
           firstMatch: null,
           lastMatch: null,
@@ -166,7 +169,14 @@ void describe("assembleReport", () => {
           index: 0,
           href: "nav.xhtml",
           title: null,
-          status: "is-nav",
+          status: "excluded",
+          classification: {
+            zone: "front",
+            verdict: "exclude",
+            decidedBy: { source: "nav", value: "nav", verdict: "exclude" },
+            signals: [{ source: "nav", value: "nav", verdict: "exclude" }],
+          },
+          decision: null,
           sentenceCount: 0,
           firstMatch: null,
           lastMatch: null,
@@ -177,6 +187,8 @@ void describe("assembleReport", () => {
           href: "ch2.xhtml",
           title: null,
           status: "aligned",
+          classification: null,
+          decision: null,
           sentenceCount: 2,
           firstMatch: null,
           lastMatch: null,
@@ -224,7 +236,7 @@ void describe("assembleReport", () => {
     assert.deepStrictEqual(
       report.spine.map((item) => [item.index, item.status, item.score]),
       [
-        [0, "is-nav", null],
+        [0, "excluded", null],
         [1, "aligned", 86.7],
         [2, "not-found", null],
       ],
@@ -248,8 +260,7 @@ void describe("assembleReport", () => {
         aligned: 1,
         "not-found": 1,
         "too-short": 0,
-        "is-nav": 1,
-        "no-text": 0,
+        excluded: 1,
         "audio-only": 0,
       },
       tracks: 2,

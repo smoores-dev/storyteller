@@ -27,6 +27,17 @@ export interface Account {
   userId: string
 }
 
+export interface AlignmentDecision {
+  bookUuid: import("@/uuid").UUID
+  createdAt: Generated<string>
+  decision: import("@/alignmentReportView").ChapterDecision
+  endSeconds: number | null
+  key: string
+  kind: "chapter" | "audio"
+  startSeconds: number | null
+  uuid: Generated<import("@/uuid").UUID>
+}
+
 export interface AlignmentReport {
   audioCoverage: number | null
   bookUuid: import("@/uuid").UUID | null
@@ -601,6 +612,7 @@ export interface VerificationToken {
 
 export interface DB {
   account: Account
+  alignmentDecision: AlignmentDecision
   alignmentReport: AlignmentReport
   audiobook: Audiobook
   book: Book

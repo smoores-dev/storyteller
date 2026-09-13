@@ -23,9 +23,12 @@ import {
   type Track,
   judgmentTone,
   matchedPercent,
+  needsListen,
+  ruleSignal,
+  skippedByRule,
   trackClip,
 } from "./shared"
-import { type OverrideEditor } from "./useOverrideEditor"
+import { type DecisionEditor } from "./useDecisionEditor"
 import { type ReportSelection } from "./useReportSelection"
 
 const ROW_FILL =
@@ -50,17 +53,62 @@ export function JudgmentBadge({ judgment }: { judgment: Judgment | null }) {
   )
 }
 
-export function StatusBadge({ status }: { status: ViewSpineItem["status"] }) {
+export function StatusBadge({ item }: { item: ViewSpineItem }) {
   const t = useTranslation("AlignmentReport")
-  if (status === "aligned") return null
+  if (item.status === "aligned") return null
+  const signal = item.status === "excluded" ? ruleSignal(item) : null
   return (
     <Badge
+      title={
+        signal
+          ? t("rule.signal", {
+              source: t(`source.${signal.source}`),
+              value: signal.value || t("rule.noText"),
+            })
+          : undefined
+      }
       className={cn(
         "h-4 px-1.5 text-[10px]",
-        status === "not-found" ? TONE_BADGE.poor : TONE_BADGE.muted,
+        item.status === "not-found" ? TONE_BADGE.poor : TONE_BADGE.muted,
       )}
     >
-      {t(`reason.${status}`)}
+      {t(`reason.${item.status}`)}
+    </Badge>
+  )
+}
+
+export function ListenBadge({ item }: { item: ViewSpineItem }) {
+  const t = useTranslation("AlignmentReport")
+  if (!needsListen(item)) return null
+  const signal = ruleSignal(item)
+  return (
+    <Badge
+      title={
+        signal
+          ? t("rule.signal", {
+              source: t(`source.${signal.source}`),
+              value: signal.value,
+            })
+          : undefined
+      }
+      className={cn("h-4 gap-0.5 px-1.5 text-[10px]", TONE_BADGE.moderate)}
+    >
+      <icon.Headphones className="size-2.5" />
+      {t("rule.listen")}
+    </Badge>
+  )
+}
+
+export function PendingBadge({ item }: { item: ViewSpineItem }) {
+  const t = useTranslation("AlignmentReport")
+  if (!item.pending) return null
+  return (
+    <Badge
+      title={t("pending.hint")}
+      className="border-primary/40 text-primary h-4 gap-0.5 border bg-transparent px-1.5 text-[10px]"
+    >
+      <icon.Clock className="size-2.5" />
+      {t("pending.badge")}
     </Badge>
   )
 }
@@ -105,7 +153,7 @@ function BulkBar({
   spans: ReportSpan[]
   tracks: Track[]
   selection: ReportSelection
-  editor: OverrideEditor
+  editor: DecisionEditor
 }) {
   const t = useTranslation("AlignmentReport")
   const { playAll } = usePlayer()
@@ -147,6 +195,19 @@ function BulkBar({
       >
         <icon.EyeOff />
       </TooltipButton>
+      {targets.some(skippedByRule) && (
+        <TooltipButton
+          variant="ghost"
+          size="icon-xs"
+          aria-label={t("actions.include")}
+          tooltip={t("actions.includeHint")}
+          onClick={() => {
+            judge("included")
+          }}
+        >
+          <icon.Eye />
+        </TooltipButton>
+      )}
       <Button
         variant="ghost"
         size="xs"
@@ -196,7 +257,7 @@ export function SpineList({
   spans: ReportSpan[]
   tracks: Track[]
   selection: ReportSelection
-  editor: OverrideEditor
+  editor: DecisionEditor
 }) {
   const t = useTranslation("AlignmentReport")
   const [byConfidence, setByConfidence] = useState(false)
@@ -294,7 +355,8 @@ export function SpineList({
                   ROW_FILL,
                   isOpen && "bg-muted",
                   isChecked && "bg-primary/10",
-                  item.judgment === "excluded" &&
+                  (item.judgment === "excluded" ||
+                    item.status === "excluded") &&
                     "text-muted-foreground bg-muted",
                 )}
               >
@@ -320,6 +382,8 @@ export function SpineList({
                     {item.label}
                   </span>
                   <JudgmentBadge judgment={item.judgment} />
+                  <ListenBadge item={item} />
+                  <PendingBadge item={item} />
                 </span>
 
                 <span className="flex items-center gap-2">
@@ -349,7 +413,7 @@ export function SpineList({
                       {item.score === null ? "—" : item.score.toFixed(0)}
                     </span>
                   ) : (
-                    <StatusBadge status={item.status} />
+                    <StatusBadge item={item} />
                   )}
                   <icon.ChevronRight className="text-muted-foreground size-3.5" />
                 </span>

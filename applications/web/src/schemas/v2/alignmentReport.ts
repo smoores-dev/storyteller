@@ -11,9 +11,14 @@ export const SentenceContextSchemaV2 = z.object({
   nextSentence: z.string().nullable(),
 })
 
-export const JUDGMENT_OPTIONS = ["approved", "excluded"] as const
+export const JUDGMENT_OPTIONS = ["approved", "excluded", "included"] as const
 
-export const JudgmentSchemaV2 = z.enum(JUDGMENT_OPTIONS)
+export const CHAPTER_DECISIONS = JUDGMENT_OPTIONS
+
+export const JudgmentSchemaV2 = z.enum(JUDGMENT_OPTIONS).meta({
+  description:
+    "The user's decision for a chapter. Excluded chapters are skipped by the aligner and left out of the score. Included chapters are aligned even when a rule would skip them. Approved chapters are included and their aligner score is trusted.",
+})
 
 export type Judgment = z.infer<typeof JudgmentSchemaV2>
 
@@ -21,12 +26,77 @@ export const SPINE_STATUSES = [
   "aligned",
   "not-found",
   "too-short",
-  "is-nav",
-  "no-text",
+  "excluded",
   "audio-only",
 ] as const
 
 export const SpineStatusSchemaV2 = z.enum(SPINE_STATUSES)
+
+export const EXCLUSION_SOURCES = [
+  "linear",
+  "nav",
+  "media-type",
+  "landmark",
+  "content-type",
+  "guide",
+  "filename",
+  "no-text",
+] as const
+
+export const EXCLUSION_VERDICTS = ["exclude", "review", "include"] as const
+
+export const SPINE_ZONES = ["front", "body", "back"] as const
+
+export const ExclusionSignalSchemaV2 = z.object({
+  source: z.enum(EXCLUSION_SOURCES).meta({
+    description: "Where the evidence came from, in order of precedence.",
+  }),
+  value: z.string().meta({
+    description:
+      "The matched value, such as the landmark type or the filename token.",
+  }),
+  verdict: z.enum(EXCLUSION_VERDICTS),
+  division: z.boolean().optional().meta({
+    description:
+      "True for the blanket frontmatter, bodymatter and backmatter types, which rank below every other signal.",
+  }),
+})
+
+export const ReportClassificationSchemaV2 = z.object({
+  zone: z.enum(SPINE_ZONES).meta({
+    description: "Front is the first 15% of the spine, back the last 15%.",
+  }),
+  verdict: z.enum(EXCLUSION_VERDICTS).meta({
+    description:
+      "Exclude means a rule marked it as not narrated. Review means it is aligned but deserves a listen. Include is the default.",
+  }),
+  decidedBy: ExclusionSignalSchemaV2.nullable(),
+  signals: z.array(ExclusionSignalSchemaV2).meta({
+    description: "Every signal collected, including the ones that lost.",
+  }),
+})
+
+export const AudioExclusionSchemaV2 = z.object({
+  track: z.string().meta({ description: "The transcoded track's file name." }),
+  start: z.number().nullable().meta({
+    description: "Seconds into the track. Null means from the start.",
+  }),
+  end: z.number().nullable().meta({
+    description: "Seconds into the track. Null means to the end.",
+  }),
+})
+
+export const AlignmentDecisionsSchemaV2 = z.object({
+  chapters: z.record(z.string(), JudgmentSchemaV2).meta({
+    description: "Keyed by spine item href.",
+  }),
+  audio: z.array(AudioExclusionSchemaV2).meta({
+    description:
+      "Audio ranges the aligner masks and the score leaves out. A range with null start and end excludes the whole track.",
+  }),
+})
+
+export type AlignmentDecisionsV2 = z.infer<typeof AlignmentDecisionsSchemaV2>
 
 export const ReportSpineItemSchemaV2 = z.object({
   index: z.number().meta({ description: "Position in the EPUB spine." }),
@@ -35,6 +105,12 @@ export const ReportSpineItemSchemaV2 = z.object({
     description: "Chapter title from the table of contents, when known.",
   }),
   status: SpineStatusSchemaV2,
+  classification: ReportClassificationSchemaV2.nullable().meta({
+    description: "What the exclusion rules made of this item during the run.",
+  }),
+  decision: JudgmentSchemaV2.nullable().meta({
+    description: "The user's decision the run was made with.",
+  }),
   sentenceCount: z.number(),
   matchedSentenceCount: z.number().meta({
     description: "Sentences the aligner placed directly.",
@@ -78,6 +154,9 @@ export const ReportTrackSchemaV2 = z.object({
   matchedSeconds: z.number(),
   interpolatedSeconds: z.number(),
   looseSeconds: z.number(),
+  excluded: z
+    .array(z.object({ start: z.number(), end: z.number() }))
+    .meta({ description: "Ranges the run masked, in seconds." }),
   source: ReportTrackSourceSchemaV2.nullable(),
 })
 
@@ -144,8 +223,11 @@ export const ReportTotalsSchemaV2 = z.object({
 })
 
 export const AlignmentReportSchemaV2 = z.object({
-  version: z.literal(3),
+  version: z.literal(4),
   aligner: z.enum(["ctc", "classic"]),
+  autoExclude: z.boolean().meta({
+    description: "Whether the run applied the exclusion rules.",
+  }),
   spine: z.array(ReportSpineItemSchemaV2),
   tracks: z.array(ReportTrackSchemaV2),
   spans: z.array(ReportSpanSchemaV2),
@@ -181,7 +263,20 @@ export const AlignmentReportSummarySchemaV2 = z.object({
   audioTotalSeconds: z.number(),
   chapters: z.number().meta({ description: "Spine items with text." }),
   approved: z.number(),
-  excluded: z.number(),
+  excluded: z.number().meta({
+    description: "Chapters excluded by the user's decision.",
+  }),
+  excludedByRule: z.number().meta({
+    description: "Spine items the run skipped because a rule matched.",
+  }),
+  review: z.number().meta({
+    description:
+      "Aligned chapters the rules flagged as only sometimes narrated, with no decision yet.",
+  }),
+  pending: z.number().meta({
+    description:
+      "Chapters whose decision changed since the run. They only take effect on the next alignment.",
+  }),
   failed: z.number().meta({
     description: "Counted chapters with text that matched nothing.",
   }),
@@ -219,13 +314,25 @@ export const ViewSpineItemSchemaV2 = ReportSpineItemSchemaV2.extend({
     description:
       "The reading order href to fetch the chapter text from the read endpoint.",
   }),
-  judgment: JudgmentSchemaV2.nullable(),
+  judgment: JudgmentSchemaV2.nullable().meta({
+    description: "The user's current decision.",
+  }),
+  pending: z.boolean().meta({
+    description:
+      "The current decision would change whether this item is aligned. It takes effect on the next alignment.",
+  }),
 })
 
 export const ViewTrackSchemaV2 = ReportTrackSchemaV2.extend({
   excluded: z.boolean().meta({
     description: "The whole track is excluded from the audio score.",
   }),
+  excludedRanges: z
+    .array(z.object({ start: z.number(), end: z.number() }))
+    .meta({
+      description:
+        "Ranges currently excluded from the audio score, in seconds, merged.",
+    }),
 })
 
 export const AlignmentReportPreviousSchemaV2 = z.object({
@@ -262,6 +369,8 @@ export const AlignmentReportViewSchemaV2 = z.object({
     description: "The stored summary of the report that came before this one.",
   }),
   aligner: z.enum(["ctc", "classic"]),
+  autoExclude: z.boolean(),
+  decisions: AlignmentDecisionsSchemaV2,
   summary: AlignmentReportSummarySchemaV2,
   items: z.array(ViewSpineItemSchemaV2),
   tracks: z.array(ViewTrackSchemaV2),

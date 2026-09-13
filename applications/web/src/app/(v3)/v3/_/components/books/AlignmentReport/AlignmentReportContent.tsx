@@ -26,8 +26,8 @@ import { Masthead } from "./Masthead"
 import { PreviousReport } from "./PreviousReport"
 import { Reel } from "./Reel"
 import { SpineList } from "./SpineList"
+import { useDecisionEditor } from "./useDecisionEditor"
 import { useNarrow } from "./useNarrow"
-import { useOverrideEditor } from "./useOverrideEditor"
 import { useReportSelection } from "./useReportSelection"
 import { useTracks } from "./useTracks"
 
@@ -223,7 +223,7 @@ function ReportBody({
 }) {
   const audio = useTracks(view.bookUuid, view.tracks)
   const selection = useReportSelection()
-  const editor = useOverrideEditor(view)
+  const editor = useDecisionEditor(view)
 
   const openItem =
     view.items.find((item) => item.href === selection.openHref) ??

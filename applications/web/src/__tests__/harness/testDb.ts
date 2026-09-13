@@ -42,6 +42,7 @@ const DEFAULT_SETTINGS: Settings = {
   alignmentGapSeconds: null,
   alignmentAudioChapterSeconds: null,
   alignmentDropUnread: null,
+  alignmentAutoExclude: null,
   transcriptionEngine: null,
   whisperModel: null,
   whisperThreads: 4,

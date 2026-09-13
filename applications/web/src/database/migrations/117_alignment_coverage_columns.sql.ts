@@ -1,3 +1,7 @@
+import {
+  type AlignmentOverrides,
+  overridesToDecisions,
+} from "@/alignmentReportView"
 import { summarizeReport } from "@/database/alignmentReports"
 import { db } from "@/database/connection"
 import { logger } from "@/logging"
@@ -22,8 +26,12 @@ export default async function migrate() {
       const raw: unknown = row.overrides
       const overrides = (
         typeof raw === "string" ? JSON.parse(raw) : raw
-      ) as Parameters<typeof summarizeReport>[1]
-      const s = summarizeReport(row.report, overrides, row.duration)
+      ) as AlignmentOverrides | null
+      const s = summarizeReport(
+        row.report,
+        overridesToDecisions(overrides),
+        row.duration,
+      )
       await db
         .updateTable("alignmentReport")
         .set({

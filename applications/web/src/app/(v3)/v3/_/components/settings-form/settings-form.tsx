@@ -46,6 +46,7 @@ import {
 } from "@/store/api"
 import {
   DEFAULT_AUDIO_CHAPTER_SECONDS,
+  DEFAULT_AUTO_EXCLUDE,
   DEFAULT_DROP_UNREAD,
   DEFAULT_GAP_SECONDS,
 } from "@/work/rangeBehaviour"
@@ -206,6 +207,7 @@ function settingsFormValues(settings: Settings) {
     alignmentAudioChapterSeconds:
       settings.alignmentAudioChapterSeconds ?? DEFAULT_AUDIO_CHAPTER_SECONDS,
     alignmentDropUnread: settings.alignmentDropUnread ?? DEFAULT_DROP_UNREAD,
+    alignmentAutoExclude: settings.alignmentAutoExclude ?? DEFAULT_AUTO_EXCLUDE,
     // TODO: change, if we ever want to use a different CTC engine
     ctcEngine: "wav2vec-local" as const,
     ctcDevice: settings.ctcDevice ?? null,

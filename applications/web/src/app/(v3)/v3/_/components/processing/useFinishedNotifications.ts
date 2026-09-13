@@ -37,11 +37,29 @@ export function useFinishedNotifications() {
 
       const title = job.bookTitle ?? t("toast.aBook")
       if (job.status === "DONE") {
-        const href = job.bookUuid ? `${basePath}/books/${job.bookUuid}` : null
+        const href = job.bookUuid
+          ? `${basePath}/books/${job.bookUuid}?report=true`
+          : null
+        const alignment = job.stats?.alignment
+        const skipped = alignment
+          ? alignment.excluded + alignment.excludedByRule
+          : 0
+        const description = alignment
+          ? [
+              t("toast.grade", { grade: alignment.grade }),
+              skipped > 0 && t("toast.skipped", { count: skipped }),
+              alignment.review > 0 &&
+                t("toast.toCheck", { count: alignment.review }),
+            ]
+              .filter((segment): segment is string => segment !== false)
+              .join(" · ")
+          : undefined
         toast.success(t("toast.ready", { title }), {
+          description,
+          duration: 15000,
           ...(href && {
             action: {
-              label: t("toast.open"),
+              label: t("toast.openReport"),
               onClick: () => {
                 router.push(href)
               },
@@ -56,7 +74,12 @@ export function useFinishedNotifications() {
           document.hidden
         ) {
           const notification = new Notification(t("toast.notifyReadyTitle"), {
-            body: t("toast.notifyReadyBody", { title }),
+            body: alignment
+              ? t("toast.notifyReadyBodyGraded", {
+                  title,
+                  grade: alignment.grade,
+                })
+              : t("toast.notifyReadyBody", { title }),
             icon: getCoverUrl(job.bookUuid, {
               width: 96,
               height: 64,

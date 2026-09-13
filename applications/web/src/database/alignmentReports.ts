@@ -1,61 +1,58 @@
 import { type Selectable, sql } from "kysely"
 
 import {
-  type AlignmentAudioOverride,
-  type AlignmentChapterOverride,
+  type AlignmentDecisions,
   type AlignmentFacets,
   type AlignmentOverrides,
   type AnyReport,
   type LegacyReport,
-  type ReportV3,
+  type ReportV4,
   gradeForScore,
+  itemDecision,
   normalizeReport,
+  overridesToDecisions,
   summarizeReport as summarizeReportView,
 } from "@/alignmentReportView"
-import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
+import { type AlignmentJobSummary } from "@/work/jobStats"
 
+import {
+  getAlignmentDecisions,
+  replaceAlignmentDecisions,
+} from "./alignmentDecisions"
 import { db } from "./connection"
 import { type DB } from "./schema"
 
 export type {
-  AlignmentAudioOverride,
-  AlignmentChapterOverride,
+  AlignmentDecisions,
   AlignmentOverrides,
   AnyReport,
   LegacyReport,
-  ReportV3,
+  ReportV4,
 }
 
-export interface AlignmentSummary {
-  grade: AlignmentGrade
+export interface AlignmentSummary extends AlignmentJobSummary {
   band: number
-  score: number | null
   confidence: number | null
-  sentenceCoverage: number | null
-  audioCoverage: number | null
-  chapters: number
   missingSentences: number
   mutedChapters: number
   failedChapters: number
   unalignedAudio: number
+  pending: number
 }
 
 export function summarizeReport(
   report: AnyReport,
-  overrides?: AlignmentOverrides | null,
+  decisions?: AlignmentDecisions | null,
   audiobookDuration?: number | null,
 ): AlignmentSummary {
   const normalized = normalizeReport(report)
-  const summary = summarizeReportView(normalized, overrides, audiobookDuration)
+  const summary = summarizeReportView(normalized, decisions, audiobookDuration)
 
   let mutedChapters = 0
   for (const item of normalized.spine) {
     if (item.status !== "aligned") continue
-    const override =
-      overrides?.chapters?.[item.href] ??
-      overrides?.unalignedChapters?.[item.href]
-    if (override?.judgment === "excluded" || override?.ignored) continue
+    if (itemDecision(decisions, item.href) === "excluded") continue
     if (item.matchedSeconds + item.interpolatedSeconds === 0) mutedChapters += 1
   }
 
@@ -69,8 +66,28 @@ export function summarizeReport(
     chapters: summary.chapters,
     missingSentences: summary.sentencesTotal - summary.sentencesMatched,
     mutedChapters,
+    excluded: summary.excluded,
+    excludedByRule: summary.excludedByRule,
+    review: summary.review,
+    pending: summary.pending,
+    failed: summary.failed,
     failedChapters: summary.failed,
     unalignedAudio: summary.looseAudio,
+  }
+}
+
+function summaryColumns(s: AlignmentSummary) {
+  return {
+    grade: s.grade,
+    score: s.score,
+    confidence: s.confidence,
+    sentenceCoverage: s.sentenceCoverage,
+    audioCoverage: s.audioCoverage,
+    chapters: s.chapters,
+    missingSentences: s.missingSentences,
+    mutedChapters: s.mutedChapters,
+    failedChapters: s.failedChapters,
+    unalignedAudio: s.unalignedAudio,
   }
 }
 
@@ -102,11 +119,11 @@ export async function createAlignmentReport(input: {
   jobUuid: UUID | null
   bookUuid: UUID | null
   report: AnyReport
-}): Promise<AlignmentReport> {
+}): Promise<{ report: AlignmentReport; summary: AlignmentSummary }> {
   const report = normalizeReport(input.report)
   const s = summarizeReport(
     report,
-    null,
+    input.bookUuid ? await getAlignmentDecisions(input.bookUuid) : null,
     await getAudiobookDuration(input.bookUuid),
   )
 
@@ -125,16 +142,7 @@ export async function createAlignmentReport(input: {
         jobUuid: input.jobUuid,
         bookUuid: input.bookUuid,
         report: JSON.stringify(report),
-        grade: s.grade,
-        score: s.score,
-        confidence: s.confidence,
-        sentenceCoverage: s.sentenceCoverage,
-        audioCoverage: s.audioCoverage,
-        chapters: s.chapters,
-        missingSentences: s.missingSentences,
-        mutedChapters: s.mutedChapters,
-        failedChapters: s.failedChapters,
-        unalignedAudio: s.unalignedAudio,
+        ...summaryColumns(s),
       })
       .returningAll()
       .executeTakeFirstOrThrow()
@@ -156,7 +164,7 @@ export async function createAlignmentReport(input: {
     return inserted
   })
 
-  return row
+  return { report: row, summary: s }
 }
 
 export async function getAlignmentReportForBook(
@@ -202,48 +210,48 @@ export async function listAlignmentReportSummaries(bookUuid: UUID) {
     .execute()
 }
 
-export async function updateAlignmentOverrides(
-  reportUuid: UUID,
-  overrides: AlignmentOverrides,
-): Promise<AlignmentReport> {
-  const existing = await db
-    .selectFrom("alignmentReport")
-    .selectAll()
-    .where("uuid", "=", reportUuid)
-    .executeTakeFirstOrThrow()
-
-  if (!existing.report) {
-    throw new Error(
-      `Alignment report ${reportUuid} has been superseded and its payload pruned; overrides can only be set on the latest report`,
-    )
-  }
-
+export async function resummarizeLatestReport(
+  bookUuid: UUID,
+): Promise<AlignmentSummary | null> {
+  const latest = await getAlignmentReportForBook(bookUuid)
+  if (!latest?.report) return null
   const s = summarizeReport(
-    existing.report,
-    overrides,
-    await getAudiobookDuration(existing.bookUuid),
+    latest.report,
+    await getAlignmentDecisions(bookUuid),
+    await getAudiobookDuration(bookUuid),
   )
-
-  const row = await db
+  await db
     .updateTable("alignmentReport")
-    .set({
-      overrides: JSON.stringify(overrides),
-      grade: s.grade,
-      score: s.score,
-      confidence: s.confidence,
-      sentenceCoverage: s.sentenceCoverage,
-      audioCoverage: s.audioCoverage,
-      chapters: s.chapters,
-      missingSentences: s.missingSentences,
-      mutedChapters: s.mutedChapters,
-      failedChapters: s.failedChapters,
-      unalignedAudio: s.unalignedAudio,
-    })
-    .where("uuid", "=", reportUuid)
-    .returningAll()
-    .executeTakeFirstOrThrow()
+    .set(summaryColumns(s))
+    .where("uuid", "=", latest.uuid)
+    .execute()
+  return s
+}
 
-  return row
+export async function updateAlignmentDecisions(
+  bookUuid: UUID,
+  decisions: AlignmentDecisions,
+): Promise<AlignmentDecisions> {
+  const stored = await replaceAlignmentDecisions(bookUuid, decisions)
+  await resummarizeLatestReport(bookUuid)
+  return stored
+}
+
+export async function applyAlignmentOverrides(
+  bookUuid: UUID,
+  overrides: AlignmentOverrides,
+): Promise<AlignmentDecisions> {
+  const current = await getAlignmentDecisions(bookUuid)
+  const incoming = overridesToDecisions(overrides)
+  return updateAlignmentDecisions(bookUuid, {
+    chapters: incoming.chapters,
+    audio: [
+      ...current.audio.filter(
+        (exclusion) => exclusion.start !== null || exclusion.end !== null,
+      ),
+      ...incoming.audio,
+    ],
+  })
 }
 
 export async function recomputeAlignmentSummaries(
@@ -254,8 +262,8 @@ export async function recomputeAlignmentSummaries(
     .leftJoin("audiobook", "audiobook.bookUuid", "alignmentReport.bookUuid")
     .select([
       "alignmentReport.uuid",
+      "alignmentReport.bookUuid",
       "alignmentReport.report",
-      "alignmentReport.overrides",
       "audiobook.duration",
     ])
     .where("alignmentReport.report", "is not", null)
@@ -268,25 +276,13 @@ export async function recomputeAlignmentSummaries(
   let count = 0
   for (const row of rows) {
     if (!row.report) continue
-    const raw: unknown = row.overrides
-    const overrides = (
-      typeof raw === "string" ? JSON.parse(raw) : raw
-    ) as AlignmentOverrides | null
-    const s = summarizeReport(row.report, overrides, row.duration)
+    const decisions = row.bookUuid
+      ? await getAlignmentDecisions(row.bookUuid)
+      : null
+    const s = summarizeReport(row.report, decisions, row.duration)
     await db
       .updateTable("alignmentReport")
-      .set({
-        grade: s.grade,
-        score: s.score,
-        confidence: s.confidence,
-        sentenceCoverage: s.sentenceCoverage,
-        audioCoverage: s.audioCoverage,
-        chapters: s.chapters,
-        missingSentences: s.missingSentences,
-        mutedChapters: s.mutedChapters,
-        failedChapters: s.failedChapters,
-        unalignedAudio: s.unalignedAudio,
-      })
+      .set(summaryColumns(s))
       .where("uuid", "=", row.uuid)
       .execute()
     count++

@@ -170,7 +170,11 @@
       "user_permission.user_read": "Generated<boolean>",
       "user_permission.user_update": "Generated<boolean>",
       "user_permission.uuid": "Generated<import(\"@/uuid\").UUID>",
-      "verification_token.expires": "Date"
+      "verification_token.expires": "Date",
+      "alignment_decision.uuid": "Generated<import(\"@/uuid\").UUID>",
+      "alignment_decision.book_uuid": "import(\"@/uuid\").UUID",
+      "alignment_decision.kind": "\"chapter\" | \"audio\"",
+      "alignment_decision.decision": "import(\"@/alignmentReportView\").ChapterDecision"
     }
   }
 }

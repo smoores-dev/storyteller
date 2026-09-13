@@ -67,6 +67,7 @@ import {
 import { type UUID } from "@/uuid"
 import {
   DEFAULT_AUDIO_CHAPTER_SECONDS,
+  DEFAULT_AUTO_EXCLUDE,
   DEFAULT_DROP_UNREAD,
   DEFAULT_GAP_SECONDS,
 } from "@/work/rangeBehaviour"
@@ -1156,6 +1157,7 @@ export function SettingsForm({
     alignmentAudioChapterSeconds:
       settings.alignmentAudioChapterSeconds ?? DEFAULT_AUDIO_CHAPTER_SECONDS,
     alignmentDropUnread: settings.alignmentDropUnread ?? DEFAULT_DROP_UNREAD,
+    alignmentAutoExclude: settings.alignmentAutoExclude ?? DEFAULT_AUTO_EXCLUDE,
     ctcDevice: settings.ctcDevice ?? null,
     ctcModel:
       settings.ctcModel && isCtcModelFamily(settings.ctcModel)

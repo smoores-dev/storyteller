@@ -372,6 +372,21 @@ export function ProcessingSettingsFields({
               />
             )}
           />
+
+          <SettingsFormField
+            name="alignmentAutoExclude"
+            label={tt("autoExclude")}
+            description={tt("autoExcludeDescription")}
+            render={(field, _fieldState, isLocked) => (
+              <Switch
+                checked={field.value ?? true}
+                onCheckedChange={(checked) => {
+                  field.onChange(checked)
+                }}
+                disabled={isLocked}
+              />
+            )}
+          />
         </SettingsCard>
       </SettingsSection>
 

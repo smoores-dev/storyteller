@@ -1,6 +1,7 @@
 import { type Clip } from "@v3/_/components/audio"
 
 import {
+  type ExclusionSignal,
   type Judgment,
   type ReportJob,
   type ReportSpan,
@@ -97,8 +98,51 @@ export function confidenceTone(confidence: number | null): ReportTone {
 
 export function judgmentTone(judgment: Judgment | null): ReportTone | null {
   if (judgment === "approved") return "positive"
+  if (judgment === "included") return "good"
   if (judgment === "excluded") return "muted"
   return null
+}
+
+const MECHANICAL_SOURCES = new Set<ExclusionSignal["source"]>([
+  "linear",
+  "nav",
+  "media-type",
+  "no-text",
+])
+
+export function ruleSignal(item: ViewSpineItem): ExclusionSignal | null {
+  const decidedBy = item.classification?.decidedBy
+  if (!decidedBy || MECHANICAL_SOURCES.has(decidedBy.source)) return null
+  return decidedBy
+}
+
+export function skippedByRule(item: ViewSpineItem): boolean {
+  return (
+    item.status === "excluded" &&
+    item.classification?.verdict === "exclude" &&
+    ruleSignal(item) !== null
+  )
+}
+
+export function needsListen(item: ViewSpineItem): boolean {
+  return (
+    item.judgment === null &&
+    item.status !== "excluded" &&
+    item.classification?.verdict === "review"
+  )
+}
+
+export function rangeExcluded(
+  track: ViewTrack,
+  start: number,
+  end: number,
+): boolean {
+  return (
+    track.excluded ||
+    track.excludedRanges.some(
+      (range) => range.start <= start && range.end >= end,
+    )
+  )
 }
 
 export function matchedPercent(item: ViewSpineItem): number | null {

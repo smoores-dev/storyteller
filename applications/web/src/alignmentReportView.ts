@@ -1,11 +1,22 @@
 import type z from "zod"
 
 import {
+  type AlignmentDecisions,
+  type AudioExclusion,
+  type ChapterDecision,
+  type ExclusionSignal,
+  type ExclusionSource,
+  chapterAligned,
+  excludedByRule,
+  spineZone,
+} from "@storyteller-platform/align/exclusions"
+import {
   REPORT_VERSION,
+  type ReportClassification,
   type ReportSpan,
   type ReportSpineItem,
   type ReportTrack,
-  type ReportV3,
+  type ReportV4,
   type SpineStatus,
   assembleReport,
   emptyTotals,
@@ -25,7 +36,19 @@ import {
   type ViewTrackSchemaV2,
 } from "./schemas/v2/alignmentReport"
 
-export type { Judgment, ReportSpan, ReportSpineItem, ReportTrack, ReportV3 }
+export type {
+  AlignmentDecisions,
+  AudioExclusion,
+  ChapterDecision,
+  ExclusionSignal,
+  ExclusionSource,
+  Judgment,
+  ReportClassification,
+  ReportSpan,
+  ReportSpineItem,
+  ReportTrack,
+  ReportV4,
+}
 
 export type ViewSpineItem = z.infer<typeof ViewSpineItemSchemaV2>
 
@@ -43,6 +66,8 @@ export type ReportJob = z.infer<typeof AlignmentReportJobSchemaV2>
 
 export type PreviousReport = z.infer<typeof AlignmentReportPreviousSchemaV2>
 
+export const NO_DECISIONS: AlignmentDecisions = { chapters: {}, audio: [] }
+
 export interface AlignmentChapterOverride {
   judgment?: Judgment | null
   ignored?: boolean
@@ -57,6 +82,38 @@ export interface AlignmentOverrides {
   chapters?: Record<string, AlignmentChapterOverride>
   unalignedChapters?: Record<string, AlignmentChapterOverride>
   audioFiles?: Record<string, AlignmentAudioOverride>
+}
+
+export function chapterJudgment(
+  override: AlignmentChapterOverride | undefined,
+): Judgment | null {
+  if (!override) return null
+  if (override.judgment !== undefined) return override.judgment
+  return override.ignored ? "excluded" : null
+}
+
+export function audioExcluded(
+  override: AlignmentAudioOverride | undefined,
+): boolean {
+  return override?.excluded ?? override?.ignored ?? false
+}
+
+export function overridesToDecisions(
+  overrides: AlignmentOverrides | null | undefined,
+): AlignmentDecisions {
+  const chapters = new Map<string, ChapterDecision>()
+  for (const section of [overrides?.unalignedChapters, overrides?.chapters]) {
+    for (const [href, override] of Object.entries(section ?? {})) {
+      const judgment = chapterJudgment(override)
+      if (judgment) chapters.set(href, judgment)
+      else chapters.delete(href)
+    }
+  }
+  const audio: AudioExclusion[] = []
+  for (const [track, override] of Object.entries(overrides?.audioFiles ?? {})) {
+    if (audioExcluded(override)) audio.push({ track, start: null, end: null })
+  }
+  return { chapters: Object.fromEntries(chapters), audio }
 }
 
 export interface AlignmentFacets {
@@ -158,9 +215,11 @@ export type LegacyChapter = {
   audioFiles: LegacyAudioSpan[]
 }
 
+export type LegacyStatus = SpineStatus | "is-nav" | "no-text"
+
 export type LegacyUnalignedChapter = {
   href: string
-  reason: SpineStatus
+  reason: LegacyStatus
   spineIndex?: number
   chapterSentenceCount?: number
   start?: string
@@ -180,10 +239,88 @@ export type LegacyReport = {
   unalignedAudioFiles?: LegacyAudioFile[]
 }
 
-export type AnyReport = ReportV3 | LegacyReport
+export type ReportV3 = Omit<
+  ReportV4,
+  "version" | "autoExclude" | "spine" | "tracks" | "totals"
+> & {
+  version: 3
+  spine: (Omit<ReportSpineItem, "status" | "classification" | "decision"> & {
+    status: LegacyStatus
+  })[]
+  tracks: Omit<ReportTrack, "excluded">[]
+  totals: Omit<ReportV4["totals"], "spine"> & {
+    spine: Record<LegacyStatus, number>
+  }
+}
+
+export type AnyReport = ReportV4 | ReportV3 | LegacyReport
+
+export function isReportV4(report: AnyReport): report is ReportV4 {
+  return (report as { version?: unknown }).version === REPORT_VERSION
+}
 
 export function isReportV3(report: AnyReport): report is ReportV3 {
-  return (report as { version?: unknown }).version === REPORT_VERSION
+  return (report as { version?: unknown }).version === 3
+}
+
+export function mechanicalClassification(
+  source: ExclusionSource,
+  index: number,
+  length: number,
+): ReportClassification {
+  const signal = {
+    source,
+    value: source === "no-text" ? "" : source,
+    verdict: "exclude" as const,
+  }
+  return {
+    zone: spineZone(Math.max(index, 0), length),
+    verdict: "exclude",
+    decidedBy: signal,
+    signals: [signal],
+  }
+}
+
+function upgradeStatus(
+  status: LegacyStatus,
+  index: number,
+  length: number,
+): Pick<ReportSpineItem, "status" | "classification"> {
+  if (status === "is-nav") {
+    return {
+      status: "excluded",
+      classification: mechanicalClassification("nav", index, length),
+    }
+  }
+  if (status === "no-text") {
+    return {
+      status: "excluded",
+      classification: mechanicalClassification("no-text", index, length),
+    }
+  }
+  return { status, classification: null }
+}
+
+export function upgradeReportV3(report: ReportV3): ReportV4 {
+  const length = report.spine.length
+  const spine: ReportSpineItem[] = report.spine.map((item) => ({
+    ...item,
+    ...upgradeStatus(item.status, item.index, length),
+    decision: null,
+  }))
+  const tracks: ReportTrack[] = report.tracks.map((track) => ({
+    ...track,
+    excluded: [],
+  }))
+  const upgraded: ReportV4 = {
+    ...report,
+    version: REPORT_VERSION,
+    autoExclude: false,
+    spine,
+    tracks,
+    totals: emptyTotals(),
+  }
+  return { ...upgraded, totals: recountTotals(upgraded) }
 }
 
 export function fileName(path: string): string {
@@ -287,9 +424,9 @@ function mergeHull(hulls: LegacyAudioSpan[], span: LegacyAudioSpan) {
   }
 }
 
-export function fromLegacyReport(report: LegacyReport): ReportV3 {
+export function fromLegacyReport(report: LegacyReport): ReportV4 {
   const merged = mergeLegacyChapters(report.chapters)
-  const aligner: ReportV3["aligner"] = report.chapters.some(
+  const aligner: ReportV4["aligner"] = report.chapters.some(
     (chapter) => "chunk" in chapter,
   )
     ? "ctc"
@@ -352,6 +489,8 @@ export function fromLegacyReport(report: LegacyReport): ReportV3 {
       href: chapter.href,
       title: null,
       status: matched ? "aligned" : "not-found",
+      classification: null,
+      decision: null,
       sentenceCount: chapter.sentenceCount,
       firstMatch: matched ? chapter.firstMatch : null,
       lastMatch: matched ? chapter.lastMatch : null,
@@ -451,7 +590,9 @@ export function fromLegacyReport(report: LegacyReport): ReportV3 {
     }
   }
 
-  for (const chapter of report.unalignedChapters ?? []) {
+  const unaligned = report.unalignedChapters ?? []
+  const spineLength = report.chapters.length + unaligned.length
+  for (const chapter of unaligned) {
     const sentences = chapter.chapterSentenceCount ?? 0
     const found = spineByHref.get(chapter.href)
     if (found) {
@@ -465,7 +606,8 @@ export function fromLegacyReport(report: LegacyReport): ReportV3 {
       index,
       href: chapter.href,
       title: null,
-      status: chapter.reason,
+      ...upgradeStatus(chapter.reason, index, spineLength),
+      decision: null,
       sentenceCount: sentences,
       firstMatch: null,
       lastMatch: null,
@@ -486,7 +628,13 @@ export function fromLegacyReport(report: LegacyReport): ReportV3 {
   }
 
   const spine = [...spineByHref.values()]
-  const assembled = assembleReport({ aligner, spine, tracks, spans })
+  const assembled = assembleReport({
+    aligner,
+    autoExclude: false,
+    spine,
+    tracks,
+    spans,
+  })
 
   for (const item of assembled.spine) {
     const score = legacyScores.get(item.index)
@@ -500,7 +648,7 @@ export function fromLegacyReport(report: LegacyReport): ReportV3 {
   return { ...assembled, totals: recountTotals(assembled) }
 }
 
-function recountTotals(report: ReportV3): ReportV3["totals"] {
+function recountTotals(report: ReportV4): ReportV4["totals"] {
   const totals = emptyTotals()
   for (const item of report.spine) {
     totals.spine[item.status]++
@@ -527,8 +675,10 @@ function recountTotals(report: ReportV3): ReportV3["totals"] {
   return totals
 }
 
-export function normalizeReport(report: AnyReport): ReportV3 {
-  return isReportV3(report) ? report : fromLegacyReport(report)
+export function normalizeReport(report: AnyReport): ReportV4 {
+  if (isReportV4(report)) return report
+  if (isReportV3(report)) return upgradeReportV3(report)
+  return fromLegacyReport(report)
 }
 
 type TocEntry = { href?: string; title?: string; children?: TocEntry[] }
@@ -561,31 +711,70 @@ function indexManifest(manifest: ManifestLike | null | undefined): {
   return { titles, readHrefs }
 }
 
-export function chapterJudgment(
-  override: AlignmentChapterOverride | undefined,
-): Judgment | null {
-  if (!override) return null
-  if (override.judgment !== undefined) return override.judgment
-  return override.ignored ? "excluded" : null
-}
-
-export function audioExcluded(
-  override: AlignmentAudioOverride | undefined,
-): boolean {
-  return override?.excluded ?? override?.ignored ?? false
-}
-
-export function itemJudgment(
-  overrides: AlignmentOverrides | null | undefined,
+export function itemDecision(
+  decisions: AlignmentDecisions | null | undefined,
   href: string,
-): Judgment | null {
-  return chapterJudgment(
-    overrides?.chapters?.[href] ?? overrides?.unalignedChapters?.[href],
-  )
+): ChapterDecision | null {
+  return decisions?.chapters[href] ?? null
 }
 
 export function hasText(status: SpineStatus): boolean {
   return status === "aligned" || status === "not-found"
+}
+
+export function wouldAlign(
+  item: Pick<ReportSpineItem, "classification">,
+  decision: ChapterDecision | null,
+  autoExclude: boolean,
+): boolean {
+  if (!item.classification) return decision !== "excluded"
+  return chapterAligned(item.classification, decision, autoExclude)
+}
+
+export function itemPending(
+  item: Pick<ReportSpineItem, "status" | "classification">,
+  decision: ChapterDecision | null,
+  autoExclude: boolean,
+): boolean {
+  if (item.status === "audio-only") return false
+  return (
+    wouldAlign(item, decision, autoExclude) !== (item.status !== "excluded")
+  )
+}
+
+export function mergeRanges(
+  ranges: { start: number; end: number }[],
+): { start: number; end: number }[] {
+  const sorted = ranges
+    .filter((range) => range.end > range.start)
+    .toSorted((a, b) => a.start - b.start)
+  const merged: { start: number; end: number }[] = []
+  for (const range of sorted) {
+    const last = merged.at(-1)
+    if (last && range.start <= last.end) {
+      last.end = Math.max(last.end, range.end)
+    } else {
+      merged.push({ ...range })
+    }
+  }
+  return merged
+}
+
+export function trackExcludedRanges(
+  decisions: AlignmentDecisions | null | undefined,
+  track: Pick<ReportTrack, "name" | "duration">,
+): { start: number; end: number }[] {
+  const ranges = (decisions?.audio ?? [])
+    .filter((exclusion) => exclusion.track === track.name)
+    .map((exclusion) => ({
+      start: Math.max(0, exclusion.start ?? 0),
+      end: Math.min(track.duration, exclusion.end ?? track.duration),
+    }))
+  return mergeRanges(ranges)
+}
+
+export function rangeSeconds(ranges: { start: number; end: number }[]): number {
+  return ranges.reduce((sum, range) => sum + (range.end - range.start), 0)
 }
 
 export function creditedSentences(
@@ -606,8 +795,8 @@ export function creditedSentences(
 }
 
 export function summarizeReport(
-  report: ReportV3,
-  overrides?: AlignmentOverrides | null,
+  report: ReportV4,
+  decisions?: AlignmentDecisions | null,
   audiobookDuration?: number | null,
 ): AlignmentReportSummary {
   let sentencesMatched = 0
@@ -617,6 +806,9 @@ export function summarizeReport(
   let chapters = 0
   let approved = 0
   let excluded = 0
+  let excludedByRuleCount = 0
+  let review = 0
+  let pending = 0
   let failed = 0
 
   const spansBySpine = new Map<number, ReportSpan[]>()
@@ -627,18 +819,30 @@ export function summarizeReport(
   }
 
   for (const item of report.spine) {
+    const decision = itemDecision(decisions, item.href)
+    if (itemPending(item, decision, report.autoExclude)) pending += 1
+    if (item.status === "excluded") {
+      if (decision === "excluded") excluded += 1
+      else if (
+        item.decision !== "excluded" &&
+        excludedByRule(item.classification)
+      ) {
+        excludedByRuleCount += 1
+      }
+      continue
+    }
     if (!hasText(item.status)) continue
     chapters += 1
-    const judgment = itemJudgment(overrides, item.href)
-    if (judgment === "approved") approved += 1
-    if (judgment === "excluded") {
+    if (decision === "approved") approved += 1
+    if (decision === "excluded") {
       excluded += 1
       continue
     }
+    if (item.classification?.verdict === "review" && !decision) review += 1
     const credited = creditedSentences(item, spansBySpine.get(item.index) ?? [])
-    const counted = judgment === "approved" ? credited : item.sentenceCount
+    const counted = decision === "approved" ? credited : item.sentenceCount
     const confidence =
-      judgment === "approved" ? 100 : item.score === null ? 0 : item.score
+      decision === "approved" ? 100 : item.score === null ? 0 : item.score
     sentencesMatched += credited
     sentencesTotal += counted
     weightedConfidence += confidence * counted
@@ -652,14 +856,17 @@ export function summarizeReport(
   let looseAudio = 0
   let looseSeconds = 0
   for (const track of report.tracks) {
-    if (audioExcluded(overrides?.audioFiles?.[track.name])) {
+    const masked = rangeSeconds(trackExcludedRanges(decisions, track))
+    if (masked >= track.duration) {
       excludedSeconds += track.duration
       continue
     }
+    excludedSeconds += masked
     const placed = track.matchedSeconds + track.interpolatedSeconds
+    const total = track.duration - masked
     audioPlacedSeconds += placed
-    audioTotalSeconds += track.duration
-    const loose = track.duration - placed
+    audioTotalSeconds += total
+    const loose = total - placed
     if (loose >= GAP_SECONDS) {
       looseAudio += 1
       looseSeconds += loose
@@ -698,6 +905,9 @@ export function summarizeReport(
     chapters,
     approved,
     excluded,
+    excludedByRule: excludedByRuleCount,
+    review,
+    pending,
     failed,
     looseAudio,
     looseSeconds: round(looseSeconds, 3),
@@ -714,29 +924,36 @@ export function buildReportView(args: {
   createdAt: string
   latest: boolean
   previous?: PreviousReport | null
-  overrides?: AlignmentOverrides | null
+  decisions?: AlignmentDecisions | null
   ebookManifest?: ManifestLike | null
   audiobookDuration?: number | null
 }): BookAlignmentReportView {
   const report = normalizeReport(args.report)
+  const decisions = args.decisions ?? NO_DECISIONS
   const { titles, readHrefs } = indexManifest(args.ebookManifest)
 
   const items: ViewSpineItem[] = report.spine.map((item) => {
     const key = stem(item.href).toLowerCase()
     const title = item.title ?? titles.get(key) ?? null
+    const judgment = itemDecision(decisions, item.href)
     return {
       ...item,
       title,
       label: title ?? stem(item.href),
       readHref: readHrefs.get(key) ?? null,
-      judgment: itemJudgment(args.overrides, item.href),
+      judgment,
+      pending: itemPending(item, judgment, report.autoExclude),
     }
   })
 
-  const tracks: ViewTrack[] = report.tracks.map((track) => ({
-    ...track,
-    excluded: audioExcluded(args.overrides?.audioFiles?.[track.name]),
-  }))
+  const tracks: ViewTrack[] = report.tracks.map((track) => {
+    const excludedRanges = trackExcludedRanges(decisions, track)
+    return {
+      ...track,
+      excluded: rangeSeconds(excludedRanges) >= track.duration,
+      excludedRanges,
+    }
+  })
 
   return {
     bookUuid: args.bookUuid,
@@ -748,7 +965,9 @@ export function buildReportView(args: {
     latest: args.latest,
     previous: args.previous ?? null,
     aligner: report.aligner,
-    summary: summarizeReport(report, args.overrides, args.audiobookDuration),
+    autoExclude: report.autoExclude,
+    decisions,
+    summary: summarizeReport(report, decisions, args.audiobookDuration),
     items,
     tracks,
     spans: report.spans,

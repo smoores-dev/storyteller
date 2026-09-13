@@ -34,6 +34,7 @@ import {
   getReadaloudFilepath,
   getTranscriptionsFilepath,
 } from "@/assets/paths"
+import { getAlignmentDecisions } from "@/database/alignmentDecisions"
 import {
   type AnyReport,
   createAlignmentReport,
@@ -56,7 +57,11 @@ import { getCurrentVersion } from "@/versions"
 import { rangeBehaviourSettings } from "@/work/rangeBehaviour"
 
 import type { ControlMessage, RestartMode } from "./distributor"
-import { type JobStats, buildJobStats } from "./jobStats"
+import {
+  type AlignmentJobSummary,
+  type JobStats,
+  buildJobStats,
+} from "./jobStats"
 import type { RunConfig } from "./runConfig"
 
 const STAGES = ["SPLIT_TRACKS", "TRANSCRIBE_CHAPTERS", "SYNC_CHAPTERS"] as const
@@ -118,6 +123,7 @@ export default async function processBook({
   }
 
   let book = await getBookOrThrow(bookUuid)
+  let alignmentSummary: AlignmentJobSummary | null = null
 
   if (restart === "full") {
     await processTiming.timeAsync("delete_all_cache", () =>
@@ -350,6 +356,7 @@ export default async function processBook({
           )
 
           const settings = await getEffectiveSettings()
+          const decisions = await getAlignmentDecisions(bookUuid)
           const readaloudFilepath = getReadaloudFilepath(book, settings)
           const readaloudDirectory = dirname(readaloudFilepath)
           await mkdir(readaloudDirectory, { recursive: true })
@@ -383,6 +390,7 @@ export default async function processBook({
                   primaryLocale: locale,
                   signal,
                   ...rangeBehaviourSettings(settings),
+                  decisions,
                 },
               )
             } else {
@@ -401,6 +409,7 @@ export default async function processBook({
                   primaryLocale: locale,
                   signal,
                   ...rangeBehaviourSettings(settings),
+                  decisions,
                 },
               )
             }
@@ -413,11 +422,12 @@ export default async function processBook({
               encoding: "utf-8",
             })
 
-            await createAlignmentReport({
+            const { summary } = await createAlignmentReport({
               jobUuid,
               bookUuid,
               report: JSON.parse(reportJson) as AnyReport,
             })
+            alignmentSummary = summary
           } catch (err) {
             logger.warn({
               msg: "Failed to persist alignment report",
@@ -505,5 +515,6 @@ export default async function processBook({
   return buildJobStats(summary, {
     audioDurationSeconds: book.audiobook?.duration ?? null,
     pageCount: book.ebook?.pageCount ?? null,
+    alignment: alignmentSummary,
   })
 }

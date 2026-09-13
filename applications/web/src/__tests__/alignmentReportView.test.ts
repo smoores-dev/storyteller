@@ -3,18 +3,23 @@ import { describe, it } from "node:test"
 
 import {
   type ReportSpan,
-  type ReportV3,
+  type ReportV4,
   assembleReport,
 } from "@storyteller-platform/align/report"
 
 import {
+  type AlignmentDecisions,
   type AlignmentOverrides,
   GRADE_BANDS,
   type LegacyReport,
+  type ReportV3,
   buildReportView,
   fromLegacyReport,
   gradeForScore,
+  mechanicalClassification,
+  overridesToDecisions,
   summarizeReport,
+  upgradeReportV3,
 } from "@/alignmentReportView"
 import { summarizeReport as summarizeColumns } from "@/database/alignmentReports"
 import { type UUID } from "@/uuid"
@@ -77,7 +82,9 @@ type ItemInput = {
   index: number
   href: string
   sentences: number
-  status?: ReportV3["spine"][number]["status"]
+  status?: ReportV4["spine"][number]["status"]
+  classification?: ReportV4["spine"][number]["classification"]
+  decision?: ReportV4["spine"][number]["decision"]
 }
 
 const item = (input: ItemInput) => ({
@@ -85,10 +92,24 @@ const item = (input: ItemInput) => ({
   href: input.href,
   title: null,
   status: input.status ?? ("aligned" as const),
+  classification: input.classification ?? null,
+  decision: input.decision ?? null,
   sentenceCount: input.sentences,
   firstMatch: null,
   lastMatch: null,
   preview: null,
+})
+
+const decide = (input: Partial<AlignmentDecisions>): AlignmentDecisions => ({
+  chapters: input.chapters ?? {},
+  audio: input.audio ?? [],
+})
+
+const ruled = (verdict: "exclude" | "review" | "include") => ({
+  zone: "front" as const,
+  verdict,
+  decidedBy: { source: "landmark" as const, value: "cover", verdict },
+  signals: [{ source: "landmark" as const, value: "cover", verdict }],
 })
 
 const track = (index: number, name: string, duration: number, offset = 0) => ({
@@ -135,8 +156,12 @@ const unmatched = (spine: number, first: number, last: number): ReportSpan => ({
   audio: null,
 })
 
-const report = (input: Parameters<typeof assembleReport>[0]) =>
-  assembleReport(input)
+type ReportInput = Omit<Parameters<typeof assembleReport>[0], "autoExclude"> & {
+  autoExclude?: boolean
+}
+
+const report = (input: ReportInput) =>
+  assembleReport({ autoExclude: true, ...input })
 
 void describe("gradeForScore", () => {
   void it("maps every band edge to its grade", () => {
@@ -230,7 +255,7 @@ void describe("the score", () => {
         tracks: [track(0, "1.mp3", 600), track(1, "2.mp3", 400, 600)],
         spans: [aligned(1, 0, 99, { track: 0, start: 0, end: 600 })],
       }),
-      { audioFiles: { "2.mp3": { excluded: true } } },
+      decide({ audio: [{ track: "2.mp3", start: null, end: null }] }),
       1000,
     )
     assert.strictEqual(summary.audioTotalSeconds, 600)
@@ -272,9 +297,10 @@ void describe("the score", () => {
   })
 
   void it("has no score when nothing counts", () => {
-    const summary = summarizeReport(base, {
-      chapters: { "a.xhtml": { judgment: "excluded" } },
-    })
+    const summary = summarizeReport(
+      base,
+      decide({ chapters: { "a.xhtml": "excluded" } }),
+    )
     assert.strictEqual(summary.sentencesTotal, 0)
     assert.strictEqual(summary.score, 0)
     assert.strictEqual(summary.grade, "F")
@@ -286,7 +312,13 @@ void describe("the score", () => {
       report({
         aligner: "ctc",
         spine: [
-          item({ index: 0, href: "nav.xhtml", sentences: 0, status: "is-nav" }),
+          item({
+            index: 0,
+            href: "nav.xhtml",
+            sentences: 0,
+            status: "excluded",
+            classification: mechanicalClassification("nav", 0, 3),
+          }),
           item({ index: 1, href: "a.xhtml", sentences: 10 }),
           item({
             index: 2,
@@ -324,9 +356,10 @@ void describe("judgments", () => {
   })
 
   void it("approving makes the denominator match the numerator", () => {
-    const summary = summarizeReport(base, {
-      chapters: { "a.xhtml": { judgment: "approved" } },
-    })
+    const summary = summarizeReport(
+      base,
+      decide({ chapters: { "a.xhtml": "approved" } }),
+    )
     assert.strictEqual(summary.sentencesMatched, 160)
     assert.strictEqual(summary.sentencesTotal, 160)
     assert.strictEqual(summary.confidence, 100)
@@ -335,9 +368,10 @@ void describe("judgments", () => {
   })
 
   void it("excluding drops the chapter but leaves the track counted", () => {
-    const summary = summarizeReport(base, {
-      chapters: { "a.xhtml": { judgment: "excluded" } },
-    })
+    const summary = summarizeReport(
+      base,
+      decide({ chapters: { "a.xhtml": "excluded" } }),
+    )
     assert.strictEqual(summary.sentencesMatched, 100)
     assert.strictEqual(summary.sentencesTotal, 100)
     assert.strictEqual(summary.excluded, 1)
@@ -345,9 +379,10 @@ void describe("judgments", () => {
   })
 
   void it("excluding a track drops it from the audio totals", () => {
-    const summary = summarizeReport(base, {
-      audioFiles: { "1.mp3": { excluded: true } },
-    })
+    const summary = summarizeReport(
+      base,
+      decide({ audio: [{ track: "1.mp3", start: null, end: null }] }),
+    )
     assert.strictEqual(summary.audioPlacedSeconds, 600)
     assert.strictEqual(summary.audioTotalSeconds, 600)
     assert.strictEqual(summary.sentencesTotal, 200)
@@ -366,10 +401,26 @@ void describe("judgments", () => {
       jobUuid: null,
       createdAt: "",
       latest: true,
-      overrides,
+      decisions: overridesToDecisions(overrides),
     })
     assert.strictEqual(view.items[0]?.judgment, "excluded")
+    assert.strictEqual(view.items[0].pending, true)
     assert.strictEqual(view.tracks[1]?.excluded, true)
+  })
+
+  void it("excludes only the masked seconds of a track", () => {
+    const summary = summarizeReport(
+      base,
+      decide({
+        audio: [
+          { track: "1.mp3", start: 100, end: 200 },
+          { track: "1.mp3", start: 150, end: 250 },
+        ],
+      }),
+    )
+    assert.strictEqual(summary.audioTotalSeconds, 1050)
+    assert.strictEqual(summary.audioPlacedSeconds, 1200)
+    assert.strictEqual(summary.audioCoverage, 100)
   })
 
   void it("counts every not-found chapter as zero until it is judged", () => {
@@ -392,15 +443,147 @@ void describe("judgments", () => {
     assert.strictEqual(plain.sentencesMatched, 160)
     assert.strictEqual(plain.failed, 1)
 
-    const judged = summarizeReport(withMissing, {
-      unalignedChapters: { "notes.xhtml": { judgment: "excluded" } },
-    })
+    const judged = summarizeReport(
+      withMissing,
+      decide({ chapters: { "notes.xhtml": "excluded" } }),
+    )
     assert.strictEqual(judged.sentencesTotal, 200)
   })
 })
 
+void describe("exclusions", () => {
+  const base = report({
+    aligner: "ctc",
+    spine: [
+      item({
+        index: 0,
+        href: "cover.xhtml",
+        sentences: 0,
+        status: "excluded",
+        classification: ruled("exclude"),
+      }),
+      item({
+        index: 1,
+        href: "foreword.xhtml",
+        sentences: 10,
+        classification: ruled("review"),
+      }),
+      item({ index: 2, href: "a.xhtml", sentences: 100 }),
+      item({
+        index: 3,
+        href: "b.xhtml",
+        sentences: 100,
+        status: "excluded",
+        decision: "excluded",
+      }),
+    ],
+    tracks: [track(0, "1.mp3", 1000)],
+    spans: [
+      aligned(1, 0, 9, { track: 0, start: 0, end: 100 }),
+      aligned(2, 0, 99, { track: 0, start: 100, end: 1000 }),
+    ],
+  })
+
+  void it("counts what the rules skipped and what deserves a listen", () => {
+    const summary = summarizeReport(
+      base,
+      decide({ chapters: { "b.xhtml": "excluded" } }),
+    )
+    assert.strictEqual(summary.chapters, 2)
+    assert.strictEqual(summary.excludedByRule, 1)
+    assert.strictEqual(summary.excluded, 1)
+    assert.strictEqual(summary.review, 1)
+    assert.strictEqual(summary.pending, 0)
+  })
+
+  void it("marks decisions that only apply on the next run as pending", () => {
+    const summary = summarizeReport(
+      base,
+      decide({
+        chapters: { "cover.xhtml": "included", "a.xhtml": "excluded" },
+      }),
+    )
+    assert.strictEqual(summary.pending, 3)
+    assert.strictEqual(summary.excluded, 1)
+    assert.strictEqual(summary.excludedByRule, 1)
+  })
+
+  void it("settles a review once the chapter is judged", () => {
+    const summary = summarizeReport(
+      base,
+      decide({
+        chapters: { "foreword.xhtml": "approved", "b.xhtml": "excluded" },
+      }),
+    )
+    assert.strictEqual(summary.review, 0)
+    assert.strictEqual(summary.approved, 1)
+  })
+
+  void it("upgrades a version three report", () => {
+    const v3: ReportV3 = {
+      version: 3,
+      aligner: "ctc",
+      spine: [
+        {
+          ...item({ index: 0, href: "nav.xhtml", sentences: 0 }),
+          status: "is-nav",
+          matchedSentenceCount: 0,
+          interpolatedSentenceCount: 0,
+          droppedSentenceCount: 0,
+          matchedSeconds: 0,
+          interpolatedSeconds: 0,
+          looseSeconds: 0,
+          score: null,
+        },
+      ],
+      tracks: [
+        {
+          ...track(0, "1.mp3", 100),
+          matchedSeconds: 0,
+          interpolatedSeconds: 0,
+          looseSeconds: 0,
+        },
+      ],
+      spans: [],
+      holes: [],
+      totals: {
+        sentences: 0,
+        matchedSentences: 0,
+        interpolatedSentences: 0,
+        unmatchedSentences: 0,
+        droppedSentences: 0,
+        seconds: 100,
+        matchedSeconds: 0,
+        interpolatedSeconds: 0,
+        looseSeconds: 0,
+        spine: {
+          aligned: 0,
+          "not-found": 0,
+          "too-short": 0,
+          "is-nav": 1,
+          "no-text": 0,
+          excluded: 0,
+          "audio-only": 0,
+        },
+        tracks: 1,
+        unalignedTracks: 1,
+      },
+    }
+    const upgraded = upgradeReportV3(v3)
+    assert.strictEqual(upgraded.version, 4)
+    assert.strictEqual(upgraded.autoExclude, false)
+    assert.strictEqual(upgraded.spine[0]?.status, "excluded")
+    assert.strictEqual(
+      upgraded.spine[0].classification?.decidedBy?.source,
+      "nav",
+    )
+    assert.deepStrictEqual(upgraded.tracks[0]?.excluded, [])
+    assert.strictEqual(upgraded.totals.spine.excluded, 1)
+  })
+})
+
 void describe("labels", () => {
-  const view = (input: ReportV3, manifest?: object) =>
+  const view = (input: ReportV4, manifest?: object) =>
     buildReportView({
       report: input,
       bookUuid: "b" as UUID,
@@ -611,7 +794,7 @@ void describe("legacy reports", () => {
     assert.deepStrictEqual(
       converted.spine.map((entry) => [entry.href, entry.status, entry.preview]),
       [
-        ["nav.xhtml", "is-nav", null],
+        ["nav.xhtml", "excluded", null],
         ["mid.xhtml", "not-found", "mid.xhtml starts here"],
       ],
     )
@@ -648,7 +831,7 @@ void describe("summarizeReport for the stored columns", () => {
         audioFiles: [audioFile("/audio/1.mp3", 600)],
         unalignedAudioFiles: [{ filepath: "/audio/2.mp3", duration: 60 }],
       }),
-      { unalignedChapters: { "d.xhtml": { judgment: "excluded" } } },
+      decide({ chapters: { "d.xhtml": "excluded" } }),
     )
     assert.strictEqual(summary.chapters, 4)
     assert.strictEqual(summary.missingSentences, 80)

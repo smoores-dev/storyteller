@@ -1,18 +1,17 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
-import { type Report } from "@storyteller-platform/align"
-
 import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
 import {
+  type LegacyReport,
+  applyAlignmentOverrides,
   createAlignmentReport,
   getAlignmentReportForBook,
-  updateAlignmentOverrides,
 } from "@/database/alignmentReports"
 import { migrateOverrides } from "@/database/migrations/115_alignment_overrides_ignored.sql"
 import { type UUID } from "@/uuid"
 
-const makeReport = (): Report =>
+const makeReport = (): LegacyReport =>
   ({
     chapters: [
       {
@@ -25,19 +24,19 @@ const makeReport = (): Report =>
     unalignedChapters: [],
     audioFiles: [],
     unalignedAudioFiles: [],
-  }) as unknown as Report
+  }) as unknown as LegacyReport
 
 void describe("createAlignmentReport", () => {
   void it("prunes the payload of superseded reports but keeps their summary", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [{ title: "Book" }]) as UUID[]
 
-    const first = await createAlignmentReport({
+    const { report: first } = await createAlignmentReport({
       bookUuid: bookUuid!,
       jobUuid: null,
       report: makeReport(),
     })
-    const second = await createAlignmentReport({
+    const { report: second } = await createAlignmentReport({
       bookUuid: bookUuid!,
       jobUuid: null,
       report: makeReport(),
@@ -66,7 +65,7 @@ void describe("createAlignmentReport", () => {
       jobUuid: null,
       report: makeReport(),
     })
-    const second = await createAlignmentReport({
+    const { report: second } = await createAlignmentReport({
       bookUuid: bookUuid!,
       jobUuid: null,
       report: makeReport(),
@@ -78,12 +77,12 @@ void describe("createAlignmentReport", () => {
   })
 })
 
-void describe("updateAlignmentOverrides", () => {
+void describe("applyAlignmentOverrides", () => {
   void it("re-grades the stored summary when a chapter is ignored", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [{ title: "Book" }]) as UUID[]
 
-    const created = await createAlignmentReport({
+    const { report: created } = await createAlignmentReport({
       bookUuid: bookUuid!,
       jobUuid: null,
       report: {
@@ -141,10 +140,16 @@ void describe("updateAlignmentOverrides", () => {
     assert.strictEqual(created.sentenceCoverage, 50)
     assert.strictEqual(created.audioCoverage, 100)
 
-    const updated = await updateAlignmentOverrides(created.uuid, {
+    const decisions = await applyAlignmentOverrides(bookUuid!, {
       chapters: { "ch2.xhtml": { ignored: true } },
     })
+    assert.deepStrictEqual(decisions, {
+      chapters: { "ch2.xhtml": "excluded" },
+      audio: [],
+    })
 
+    const updated = await getAlignmentReportForBook(bookUuid!)
+    assert.strictEqual(updated?.uuid, created.uuid)
     assert.strictEqual(updated.grade, "S")
     assert.strictEqual(updated.score, 100)
     assert.strictEqual(updated.confidence, 96)

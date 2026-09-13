@@ -1,5 +1,6 @@
 import { sql } from "kysely"
 
+import { overridesToDecisions } from "@/alignmentReportView"
 import {
   type AlignmentOverrides,
   type AnyReport,
@@ -83,7 +84,7 @@ export default async function migrate() {
         typeof row.report === "string"
           ? (JSON.parse(row.report) as AnyReport)
           : row.report
-      const s = summarizeReport(report, overrides)
+      const s = summarizeReport(report, overridesToDecisions(overrides))
 
       await sql`
         UPDATE alignment_report SET

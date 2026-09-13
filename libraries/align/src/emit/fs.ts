@@ -92,7 +92,11 @@ async function packJsonEmissionsFile(path: string) {
   return emissionsName
 }
 
+const MASKED_LOG_PROB = -1e4
+
 export class EmissionsReader {
+  private masks: [number, number][] = []
+
   private constructor(
     public numFrames: number = 0,
     public frameMap: [string, number, number][],
@@ -101,6 +105,36 @@ export class EmissionsReader {
     public timings: EmissionTimings[],
     public tokenizer: EmissionData["tokenizer"],
   ) {}
+
+  withMasks(masks: [number, number][]): EmissionsReader {
+    const reader = new EmissionsReader(
+      this.numFrames,
+      this.frameMap,
+      this.vocab,
+      this.blankId,
+      this.timings,
+      this.tokenizer,
+    )
+    reader.masks = masks
+      .filter(([start, end]) => end > start)
+      .toSorted((a, b) => a[0] - b[0])
+    return reader
+  }
+
+  private isMasked(frame: number): boolean {
+    for (const [start, end] of this.masks) {
+      if (frame < start) return false
+      if (frame < end) return true
+    }
+    return false
+  }
+
+  private maskRow(row: number[], frame: number): number[] {
+    if (!this.isMasked(frame)) return row
+    const masked = new Array<number>(row.length).fill(MASKED_LOG_PROB)
+    masked[this.blankId] = 0
+    return masked
+  }
 
   private static async getFilepaths(fileOrDirectory: string) {
     if (
@@ -174,8 +208,9 @@ export class EmissionsReader {
       const [path, framesStart, framesEnd] = this.frameMap[fileIndex]!
       const chunkTo = Math.min(chunkFrom + 1000, framesEnd - framesStart)
       const { emissions } = await readEmissionsFile(path, chunkFrom, chunkTo)
+      let frame = framesStart + chunkFrom
       for (const row of toRows(emissions)) {
-        yield row
+        yield this.maskRow(row, frame++)
       }
 
       frameIndex += chunkTo - chunkFrom
@@ -205,8 +240,9 @@ export class EmissionsReader {
         Math.min(to, framesTo) - from,
       )
 
+      let frame = Math.max(framesFrom, from)
       for (const row of toRows(emissions)) {
-        frames.push(row)
+        frames.push(this.maskRow(row, frame++))
       }
     }
 

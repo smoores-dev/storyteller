@@ -376,6 +376,16 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
           label: tNouns("chapter", { count: summary.chapters }),
           value: `${summary.chapters}`,
         },
+        ...[
+          {
+            label: tr("marks.skipped"),
+            count: summary.excluded + summary.excludedByRule,
+          },
+          { label: tr("marks.toCheck"), count: summary.review },
+          { label: tr("marks.pending"), count: summary.pending },
+        ]
+          .filter((mark) => mark.count > 0)
+          .map((mark) => ({ label: mark.label, value: `${mark.count}` })),
       ]
     : []
 

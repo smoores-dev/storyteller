@@ -18,6 +18,8 @@ import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
+import { ButtonGroup } from "../../ui/button-group"
+
 import {
   type ReportTone,
   TONE_FILL,
@@ -31,7 +33,6 @@ import {
   trackTime,
   trackTone,
 } from "./shared"
-import { ButtonGroup } from "../../ui/button-group";
 
 const PX_PER_HOUR = 520
 const PX_PER_SENTENCE = 0.5
@@ -286,7 +287,7 @@ function buildSpineAxis(input: {
       end: start + item.sentenceCount,
       tone,
       parts,
-      dimmed: item.judgment === "excluded",
+      dimmed: item.judgment === "excluded" || item.status === "excluded",
       disabled: false,
       onClick: () => {
         input.onSelect(item.href)
@@ -724,9 +725,6 @@ export function Reel({
                 sentences: totalSentences,
               })}
         </span>
-        <span className="text-muted-foreground text-xs">
-          {mode === "audio" ? t("reel.hint") : t("reel.hintSpine")}
-        </span>
         <div className="ml-auto flex items-center gap-3">
           {!narrow && (
             <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
@@ -772,33 +770,37 @@ export function Reel({
               <icon.Plus />
             </TooltipButton>
             <ButtonGroup>
-            <TooltipButton
-              // variant="ghost"
-              variant="outline"
-              size="icon-xs"
-              className={cn(mode !== "audio" && "bg-muted text-muted-foreground")}
-              aria-label={t("reel.mode.audio")}
-              tooltip={t("reel.mode.audio")}
-              onClick={() => {
-                setMode("audio")
-              }}
-            >
-              <icon.Audiobook />
-            </TooltipButton>
-            <TooltipButton
-              // variant="ghost"
-              variant="outline"
-              size="icon-xs"
-              className={cn(mode !== "spine" && "bg-muted text-muted-foreground")}
-              aria-label={t("reel.mode.spine")}
-              tooltip={t("reel.mode.spine")}
-              onClick={() => {
-                setMode("spine")
-              }}
-            >
-              <icon.BookAlt />
-            </TooltipButton>
-</ButtonGroup>
+              <TooltipButton
+                // variant="ghost"
+                variant="outline"
+                size="icon-xs"
+                className={cn(
+                  mode !== "audio" && "bg-muted text-muted-foreground",
+                )}
+                aria-label={t("reel.mode.audio")}
+                tooltip={t("reel.mode.audio")}
+                onClick={() => {
+                  setMode("audio")
+                }}
+              >
+                <icon.Audiobook />
+              </TooltipButton>
+              <TooltipButton
+                // variant="ghost"
+                variant="outline"
+                size="icon-xs"
+                className={cn(
+                  mode !== "spine" && "bg-muted text-muted-foreground",
+                )}
+                aria-label={t("reel.mode.spine")}
+                tooltip={t("reel.mode.spine")}
+                onClick={() => {
+                  setMode("spine")
+                }}
+              >
+                <icon.BookAlt />
+              </TooltipButton>
+            </ButtonGroup>
           </div>
         </div>
       </div>

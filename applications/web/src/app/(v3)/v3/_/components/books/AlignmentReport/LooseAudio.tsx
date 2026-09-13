@@ -13,8 +13,14 @@ import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
-import { TONE_BADGE, type Track, trackClip, trackLabel } from "./shared"
-import { type OverrideEditor } from "./useOverrideEditor"
+import {
+  TONE_BADGE,
+  type Track,
+  rangeExcluded,
+  trackClip,
+  trackLabel,
+} from "./shared"
+import { type DecisionEditor } from "./useDecisionEditor"
 
 const SHORT_SECONDS = 5
 const GAP_SECONDS = 1
@@ -69,7 +75,7 @@ export function LooseAudio({
   items: ViewSpineItem[]
   spans: ReportSpan[]
   tracks: Track[]
-  editor: OverrideEditor
+  editor: DecisionEditor
   narrow: boolean
 }) {
   const t = useTranslation("AlignmentReport")
@@ -134,12 +140,14 @@ export function LooseAudio({
                     ? t("loose.afterLast", { label: before })
                     : null
             const clip = trackClip(bookUuid, track, { start, end, label: hint })
+            const excluded = rangeExcluded(track, start, end)
+            const range = { track: track.name, start, end }
             return (
               <div
                 key={`${track.name}-${start}`}
                 className={cn(
                   "flex items-center gap-2 px-2 py-1 text-xs",
-                  track.excluded && "text-muted-foreground",
+                  excluded && "text-muted-foreground",
                 )}
               >
                 {clip ? (
@@ -152,7 +160,7 @@ export function LooseAudio({
                     <span
                       className={cn(
                         "shrink-0 tabular-nums",
-                        track.excluded && "line-through",
+                        excluded && "line-through",
                       )}
                     >
                       {trackLabel(track)}
@@ -170,7 +178,7 @@ export function LooseAudio({
                 <span className="text-muted-foreground ml-auto shrink-0 tabular-nums">
                   {formatClock(end - start)}
                 </span>
-                {track.excluded && (
+                {excluded && (
                   <Badge
                     className={cn("h-4 px-1.5 text-[10px]", TONE_BADGE.muted)}
                   >
@@ -181,20 +189,24 @@ export function LooseAudio({
                   variant="ghost"
                   size="icon-xs"
                   aria-label={
-                    track.excluded
-                      ? t("actions.includeFile")
-                      : t("actions.excludeFile")
+                    excluded
+                      ? t("actions.restoreStretch")
+                      : t("actions.excludeStretch")
                   }
                   tooltip={
-                    track.excluded
-                      ? t("actions.includeFile")
-                      : t("actions.excludeFile")
+                    excluded
+                      ? t("actions.restoreStretch")
+                      : t("actions.excludeStretch")
                   }
                   onClick={() => {
-                    editor({ audio: { [track.name]: !track.excluded } })
+                    editor(
+                      excluded
+                        ? { restoreRanges: [range] }
+                        : { excludeRanges: [range] },
+                    )
                   }}
                 >
-                  {track.excluded ? <icon.Volume /> : <icon.VolumeOff />}
+                  {excluded ? <icon.Volume /> : <icon.VolumeOff />}
                 </TooltipButton>
               </div>
             )

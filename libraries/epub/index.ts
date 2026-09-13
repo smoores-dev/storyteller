@@ -180,6 +180,7 @@ export interface Collection {
 export interface NavigationItem {
   title: string
   href?: string
+  type?: string
   children?: NavigationList
 }
 
@@ -190,7 +191,7 @@ export interface Navigation {
   children: NavigationList
 }
 
-interface GuideItem {
+export interface GuideItem {
   href: string
   title: string
   type: string
@@ -2726,16 +2727,16 @@ export class Epub {
         continue
       }
 
+      const type = firstChild[":@"]?.["@_epub:type"]?.trim()
       children.push({
         title: Epub.getXhtmlTextContent(Epub.getXmlChildren(firstChild)),
         ...(Epub.getXmlElementName(firstChild) === "a" &&
           firstChild[":@"]?.["@_href"] && {
-            href: await this.resolveHref(
-              firstChild[":@"]["@_href"],
-              undefined,
-              { toRoot: resolveToRoot },
-            ),
+            href: await this.resolveHref(firstChild[":@"]["@_href"], navHref, {
+              toRoot: resolveToRoot,
+            }),
           }),
+        ...(type && { type }),
         ...(secondChild &&
           Epub.getXmlElementName(secondChild) === "ol" && {
             children: await this.getNavigationChildren(secondChild, navHref, {

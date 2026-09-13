@@ -10,17 +10,16 @@ import {
 } from "@storyteller-platform/epub"
 
 import {
-  type ExclusionTier,
+  type ExclusionSource,
   type ExclusionVerdict,
   type SpineClassification,
+  type SpineZone,
   classifySpine,
 } from "../exclusions.ts"
 
-type Zone = "front" | "body" | "back"
-
 interface Expectation {
   verdict: ExclusionVerdict
-  tier: ExclusionTier | null
+  source: ExclusionSource | null
   value?: string
 }
 
@@ -59,13 +58,13 @@ function image(src: string) {
 
 function by(
   verdict: ExclusionVerdict,
-  tier: ExclusionTier,
+  source: ExclusionSource,
   value?: string,
 ): Expectation {
-  return value === undefined ? { verdict, tier } : { verdict, tier, value }
+  return value === undefined ? { verdict, source } : { verdict, source, value }
 }
 
-const byDefault: Expectation = { verdict: "include", tier: null }
+const byDefault: Expectation = { verdict: "include", source: null }
 
 const front: SpineFixture[] = [
   {
@@ -143,9 +142,8 @@ const front: SpineFixture[] = [
     href: "Text/dedication.xhtml",
     contents: page("<p>For my mother, who never learned to swim.</p>"),
     landmark: "dedication",
-    because:
-      "a dedication landmark excludes just like the dedication content type does",
-    expect: by("exclude", "landmark", "dedication"),
+    because: "a dedication is read aloud often enough to deserve a listen",
+    expect: by("review", "landmark", "dedication"),
   },
   {
     id: "epigraph",
@@ -156,8 +154,8 @@ const front: SpineFixture[] = [
         "<blockquote><p>Water always finds its way home.</p></blockquote>",
       ),
     ),
-    because: "an epigraph section on an untagged body is enough",
-    expect: by("exclude", "content-type", "epigraph"),
+    because: "an epigraph section on an untagged body flags it for a listen",
+    expect: by("review", "content-type", "epigraph"),
   },
   {
     id: "praise",
@@ -496,7 +494,7 @@ const body: SpineFixture[] = [
 
 const spine = [...front, ...body, ...back]
 
-const zones = new Map<string, Zone>([
+const zones = new Map<string, SpineZone>([
   ...front.map((item) => [item.id, "front"] as const),
   ...bodySpecials.map((item) => [item.id, "body"] as const),
   ...back.map((item) => [item.id, "back"] as const),
@@ -641,7 +639,7 @@ void describe("classifySpine", () => {
 
   void it("places every fixture in the zone it was built for", () => {
     for (const [id, zone] of zones) {
-      assert.strictEqual(resultFor(id).position, zone, id)
+      assert.strictEqual(resultFor(id).zone, zone, id)
     }
   })
 
@@ -651,7 +649,7 @@ void describe("classifySpine", () => {
       assert.ok(
         result.signals.some(
           (signal) =>
-            signal.tier === result.decidedBy?.tier &&
+            signal.source === result.decidedBy?.source &&
             signal.value === result.decidedBy.value,
         ),
         result.id,
@@ -674,7 +672,7 @@ void describe("classifySpine", () => {
       void it(`${item.id}: ${item.because}`, () => {
         const result = resultFor(item.id)
         assert.strictEqual(result.verdict, item.expect.verdict)
-        assert.strictEqual(result.decidedBy?.tier ?? null, item.expect.tier)
+        assert.strictEqual(result.decidedBy?.source ?? null, item.expect.source)
         if (item.expect.value !== undefined) {
           assert.strictEqual(result.decidedBy?.value, item.expect.value)
         }
@@ -683,12 +681,12 @@ void describe("classifySpine", () => {
   })
 
   void describe("precedence keeps the losing evidence", () => {
-    const loses = (id: string, tier: ExclusionTier, value: string) => {
+    const loses = (id: string, source: ExclusionSource, value: string) => {
       assert.ok(
         resultFor(id).signals.some(
-          (signal) => signal.tier === tier && signal.value === value,
+          (signal) => signal.source === source && signal.value === value,
         ),
-        `${id} should still record ${tier}=${value}`,
+        `${id} should still record ${source}=${value}`,
       )
     }
 

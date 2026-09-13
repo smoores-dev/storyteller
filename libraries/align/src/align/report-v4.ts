@@ -1,6 +1,12 @@
+import type {
+  ChapterDecision,
+  ExclusionSignal,
+  ExclusionVerdict,
+  SpineZone,
+} from "./ctc/exclusions.ts"
 import type { RangeState, SentenceRange } from "./getSentenceRanges.ts"
 
-export const REPORT_VERSION = 3
+export const REPORT_VERSION = 4
 
 export type SentenceContext = {
   prevSentence: string | null
@@ -12,15 +18,23 @@ export type SpineStatus =
   | "aligned"
   | "not-found"
   | "too-short"
-  | "is-nav"
-  | "no-text"
+  | "excluded"
   | "audio-only"
+
+export type ReportClassification = {
+  zone: SpineZone
+  verdict: ExclusionVerdict
+  decidedBy: ExclusionSignal | null
+  signals: ExclusionSignal[]
+}
 
 export type ReportSpineItem = {
   index: number
   href: string
   title: string | null
   status: SpineStatus
+  classification: ReportClassification | null
+  decision: ChapterDecision | null
   sentenceCount: number
   matchedSentenceCount: number
   interpolatedSentenceCount: number
@@ -41,6 +55,11 @@ export type ReportTrackSource = {
   title: string | null
 }
 
+export type ExcludedRange = {
+  start: number
+  end: number
+}
+
 export type ReportTrack = {
   index: number
   name: string
@@ -49,6 +68,7 @@ export type ReportTrack = {
   matchedSeconds: number
   interpolatedSeconds: number
   looseSeconds: number
+  excluded: ExcludedRange[]
   source: ReportTrackSource | null
 }
 
@@ -110,9 +130,10 @@ export type ReportDebug = {
   chunks: ReportChunkDebug[]
 }
 
-export type ReportV3 = {
+export type ReportV4 = {
   version: typeof REPORT_VERSION
   aligner: "ctc" | "classic"
+  autoExclude: boolean
   spine: ReportSpineItem[]
   tracks: ReportTrack[]
   spans: ReportSpan[]
@@ -136,8 +157,7 @@ export function emptyTotals(): ReportTotals {
       aligned: 0,
       "not-found": 0,
       "too-short": 0,
-      "is-nav": 0,
-      "no-text": 0,
+      excluded: 0,
       "audio-only": 0,
     },
     tracks: 0,
@@ -145,10 +165,14 @@ export function emptyTotals(): ReportTotals {
   }
 }
 
-export function emptyReport(aligner: ReportV3["aligner"]): ReportV3 {
+export function emptyReport(
+  aligner: ReportV4["aligner"],
+  autoExclude = true,
+): ReportV4 {
   return {
     version: REPORT_VERSION,
     aligner,
+    autoExclude,
     spine: [],
     tracks: [],
     spans: [],
@@ -267,7 +291,8 @@ export function spanSeconds(span: { audio: SpanAudio | null }): number {
 }
 
 export function assembleReport(input: {
-  aligner: ReportV3["aligner"]
+  aligner: ReportV4["aligner"]
+  autoExclude: boolean
   spine: Omit<
     ReportSpineItem,
     | "matchedSentenceCount"
@@ -280,12 +305,13 @@ export function assembleReport(input: {
   >[]
   tracks: Omit<
     ReportTrack,
-    "matchedSeconds" | "interpolatedSeconds" | "looseSeconds"
+    "matchedSeconds" | "interpolatedSeconds" | "looseSeconds" | "excluded"
   >[]
   spans: ReportSpan[]
   holes?: ReportHole[]
+  excludedAudio?: Map<number, ExcludedRange[]>
   debug?: ReportDebug
-}): ReportV3 {
+}): ReportV4 {
   const spine: ReportSpineItem[] = input.spine
     .toSorted((a, b) => a.index - b.index)
     .map((item) => ({
@@ -305,6 +331,7 @@ export function assembleReport(input: {
     matchedSeconds: 0,
     interpolatedSeconds: 0,
     looseSeconds: 0,
+    excluded: input.excludedAudio?.get(track.index) ?? [],
   }))
 
   const scoreSums = new Map<number, { sum: number; count: number }>()
@@ -400,6 +427,7 @@ export function assembleReport(input: {
   return {
     version: REPORT_VERSION,
     aligner: input.aligner,
+    autoExclude: input.autoExclude,
     spine,
     tracks,
     spans,

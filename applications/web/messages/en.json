@@ -818,6 +818,8 @@
             "audioChapterSecondsValue": "{count, plural, one {# minute} other {# minutes}}",
             "dropUnread": "Skip sentences the narrator did not read",
             "dropUnreadDescription": "Sentences the aligner is sure are missing from the narration get no audio of their own, so readers move past them instead of playing a guessed clip.",
+            "autoExclude": "Skip front and back matter automatically",
+            "autoExcludeDescription": "Covers, tables of contents, copyright pages, indexes and publisher pages are left out of the alignment. Chapters that are only sometimes narrated, like forewords and dedications, are still aligned and flagged in the report. You can include or exclude any chapter from the report.",
             "alignmentGranularityDescription": "Word level alignment may not be accurately reproduces in all clients at the moment, and is only available with the CTC aligner.",
             "alignmentGranularityWord": "Word+Sentence (experimental)",
             "alignmentGranularitySentence": "Sentence",
@@ -1222,8 +1224,15 @@
           "queuedSuffix": "+{count, number} queued",
           "ready": "{title} is ready",
           "open": "Open",
+          "openReport": "Report",
+          "grade": "Grade {grade}",
+          "sentences": "{percent, number}% sentences",
+          "audio": "{percent, number}% audio",
+          "skipped": "{count, plural, one {# chapter skipped} other {# chapters skipped}}",
+          "toCheck": "{count, plural, one {# chapter to check} other {# chapters to check}}",
           "notifyReadyTitle": "Book ready",
           "notifyReadyBody": "{title} has finished aligning.",
+          "notifyReadyBodyGraded": "{title} has finished aligning with grade {grade}.",
           "failed": "{title} failed to process",
           "aBook": "A book"
         },
@@ -2025,7 +2034,6 @@
       "latest": "Back to the latest report",
       "now": "Now {value}"
     },
-
     "job": {
       "took": "took {duration}"
     },
@@ -2041,14 +2049,17 @@
     },
     "judgment": {
       "approved": "Approved",
-      "excluded": "Excluded"
+      "excluded": "Excluded",
+      "included": "Included"
     },
     "stats": {
       "sentences": "Sentences aligned",
       "sentencesSub": "{aligned, number} of {total, number}",
       "audio": "Audio placed",
       "audioSub": "{placed} of {total}",
-      "confidence": "Confidence"
+      "confidence": "Confidence",
+      "skipped": "skipped",
+      "toCheck": "to check"
     },
     "reel": {
       "title": "{count, plural, one {# track} other {# tracks}} · {duration}",
@@ -2094,15 +2105,18 @@
       "clearJudgment": "Clear",
       "excludeAudio": "Also exclude its audio",
       "restoreAudio": "Restore its audio",
-      "excludeFile": "Exclude this audio file",
-      "includeFile": "Include this audio file"
+      "include": "Include",
+      "includeHint": "Align it even though a rule would skip it",
+      "excludeStretch": "Exclude this stretch of audio",
+      "restoreStretch": "Restore this stretch of audio"
     },
     "reason": {
       "not-found": "not found",
       "too-short": "too short",
       "is-nav": "navigation",
       "no-text": "no text",
-      "audio-only": "audio only"
+      "audio-only": "audio only",
+      "excluded": "skipped"
     },
     "detail": {
       "empty": "Pick a chapter to see its matches and audio.",
@@ -2133,7 +2147,10 @@
     },
     "marks": {
       "sentences": "Sentences aligned",
-      "audio": "Audio placed"
+      "audio": "Audio placed",
+      "skipped": "Skipped",
+      "toCheck": "To check",
+      "pending": "Pending next alignment"
     },
     "loose": {
       "title": "Audio not placed",
@@ -2146,6 +2163,31 @@
       "showShort": "{count, plural, one {# gap} other {# gaps}} under {seconds, number} s hidden · show",
       "hideShort": "Hide {count, plural, one {# gap} other {# gaps}} under {seconds, number} s",
       "onlyShort": "Only gaps under {seconds, number} s remain."
+    },
+    "rule": {
+      "skipped": "Skipped by a rule",
+      "skippedPending": "Included, aligned on the next run",
+      "excludedPending": "Excluded, skipped on the next run",
+      "restoredPending": "Restored, aligned on the next run",
+      "listen": "Worth a listen",
+      "signal": "{source}: {value}",
+      "noText": "no text"
+    },
+    "source": {
+      "linear": "not in reading order",
+      "nav": "navigation document",
+      "media-type": "not a text document",
+      "landmark": "landmark",
+      "content-type": "epub type",
+      "guide": "guide",
+      "filename": "file name",
+      "no-text": "text"
+    },
+    "pending": {
+      "badge": "Pending",
+      "hint": "Takes effect on the next alignment",
+      "summary": "{count, plural, one {# change waits} other {# changes wait}} for the next alignment",
+      "realign": "Realign now"
     }
   },
   "Player": {
