@@ -86,9 +86,20 @@ function toTrack(clip: Clip): ClipTrack {
 
 export function play(clip: Clip): void {
   const activePlayer = getPlayer()
-  const active = activePlayer.getActiveTrack()
+  const active = activePlayer.getActiveTrack() as ClipTrack | null
   if (active && active.id === clipKey(clip)) {
     void activePlayer.togglePlay()
+    return
+  }
+  const sameFile =
+    active !== null &&
+    active.clip.bookUuid === clip.bookUuid &&
+    active.clip.path === clip.path &&
+    activePlayer.getQueue().length === 1
+  if (sameFile) {
+    Object.assign(active, toTrack(clip))
+    activePlayer.seekTo(clip.start ?? 0)
+    void activePlayer.play()
     return
   }
   void activePlayer.replacePlaylist([toTrack(clip)])
@@ -136,12 +147,16 @@ export function setRate(rate: number): void {
   getPlayer().setPlaybackRate(rate)
 }
 
-export function usePlayer() {
-  const state = useSyncExternalStore(
+export function usePlayerSelector<T>(select: (state: PlayerSnapshot) => T): T {
+  return useSyncExternalStore(
     subscribe,
-    () => snapshot,
-    () => emptySnapshot,
+    () => select(snapshot),
+    () => select(emptySnapshot),
   )
+}
+
+export function usePlayer() {
+  const state = usePlayerSelector((current) => current)
 
   return {
     ...state,

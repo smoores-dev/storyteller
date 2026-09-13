@@ -183,3 +183,25 @@ export function trackTime(
   if (clip.path === track.name) return currentTime
   return currentTime - (track.source?.start ?? 0)
 }
+
+export function readStored<T extends string | number>(
+  key: string,
+  parse: (raw: string) => T | null,
+  fallback: T,
+): T {
+  if (typeof window === "undefined") return fallback
+  try {
+    const raw = window.localStorage.getItem(key)
+    return raw === null ? fallback : (parse(raw) ?? fallback)
+  } catch {
+    return fallback
+  }
+}
+
+export function store(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value)
+  } catch {
+    return
+  }
+}

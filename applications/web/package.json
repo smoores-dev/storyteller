@@ -88,6 +88,7 @@
     "dbgate-query-splitter": "^4.11.3",
     "debounce": "^2.2.0",
     "deepmerge-ts": "^7.1.5",
+    "dompurify": "^3.4.15",
     "embla-carousel": "^8.5.2",
     "embla-carousel-react": "^8.5.2",
     "fast-blurhash": "^1.2.0",

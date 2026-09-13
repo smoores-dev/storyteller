@@ -221,6 +221,18 @@ void describe("player store", () => {
     assert.strictEqual(audio.currentTime, 120)
   })
 
+  void it("seeks within the loaded file instead of reloading it", () => {
+    play(clipA)
+    metadata(120)
+    const loads = audio.loads
+    play({ ...clipA, start: 60, end: undefined, label: "Sentence" })
+    assert.strictEqual(audio.loads, loads)
+    assert.strictEqual(audio.currentTime, 60)
+    assert.strictEqual(audio.paused, false)
+    seek(500)
+    assert.strictEqual(audio.currentTime, 120)
+  })
+
   void it("releases the window for the whole file", () => {
     play(clipA)
     metadata(120)

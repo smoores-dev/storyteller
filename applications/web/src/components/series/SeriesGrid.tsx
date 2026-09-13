@@ -22,6 +22,7 @@ import { ContentEditable } from "@/components/books/edit/ContentEditable"
 import { type BookWithRelations } from "@/database/books"
 import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useSanitizedHtml } from "@/sanitizeHtml"
 import {
   getCoverUrl,
   useDeleteSeriesMutation,
@@ -141,6 +142,7 @@ export function SeriesGrid({ series }: Props) {
   const [selectedSeries, setSelectedSeries] = useState<SeriesWithBooks | null>(
     null,
   )
+  const seriesDescription = useSanitizedHtml(selectedSeries?.description)
 
   const [updateSeries, { isLoading }] = useUpdateSeriesMutation()
   const [deleteSeries, { isLoading: isDeleteLoading }] =
@@ -360,12 +362,8 @@ export function SeriesGrid({ series }: Props) {
             size="lg"
           >
             <Stack gap={4} className="my-4">
-              {selectedSeries?.description && (
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: selectedSeries.description,
-                  }}
-                />
+              {seriesDescription && (
+                <div dangerouslySetInnerHTML={{ __html: seriesDescription }} />
               )}
               <Stack className="gap-4">
                 {bookList.map((book) => {

@@ -2,25 +2,80 @@
 
 import { GuidedNavigationDocument } from "@readium/shared"
 import { skipToken } from "@reduxjs/toolkit/query"
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
-import { usePlayer } from "@/app/(v3)/v3/_/components/audio"
+import { play, usePlayerSelector } from "@/app/(v3)/v3/_/components/audio"
 import * as icon from "@/icons"
+import { sanitizeHtml } from "@/sanitizeHtml"
 import {
   useGetBookChapterGuidedNavigationQuery,
   useGetBookChapterTextQuery,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
 
+import { readStored, store } from "./shared"
+
 const STRIP_SELECTOR = "script, style, link, img, svg, video, audio, iframe"
 
 const STATE = "data-state"
 const MATCH = "data-match"
+const READABLE = "data-readable"
+const READING = "data-reading"
+const FOLLOW_KEY = "alignment-report:chapter-text:follow"
+const PROBLEM_SELECTOR = `[${STATE}=interpolated], [${STATE}=dropped]`
+
+type Sentence = {
+  fragmentId: string
+  path: string
+  start: number
+  end: number
+  text: string
+}
+
+function sentencesOf(guidedNavigation: unknown): Sentence[] {
+  const document = GuidedNavigationDocument.deserialize(guidedNavigation)
+  const sentences: Sentence[] = []
+  for (const guided of document?.guided ?? []) {
+    for (const child of guided.children ?? []) {
+      const clip = child.clip
+      const fragmentId = child.fragmentId
+      if (!clip || !fragmentId) continue
+      const path = clip.audioResource.split("/").pop()
+      if (!path || clip.start === undefined || clip.end === undefined) continue
+      sentences.push({
+        fragmentId,
+        path,
+        start: clip.start,
+        end: clip.end,
+        text: child.plainText ?? "",
+      })
+    }
+  }
+  return sentences.toSorted(
+    (a, b) => a.path.localeCompare(b.path) || a.start - b.start,
+  )
+}
+
+function readingFragment(
+  sentences: Sentence[],
+  path: string,
+  time: number,
+): string | null {
+  let current: Sentence | null = null
+  for (const sentence of sentences) {
+    if (sentence.path !== path) continue
+    if (sentence.start > time) {
+      return current !== null ? current.fragmentId : null
+    }
+    current = sentence
+  }
+  return current !== null && time < current.end ? current.fragmentId : null
+}
 
 type Bounds = { first: number; last: number }
 
@@ -172,22 +227,52 @@ function prepare(
     element.remove()
   }
   const marked = markMatches(body, item, spans)
-  return { html: body.innerHTML, marked }
+  return { html: sanitizeHtml(body.innerHTML), marked }
 }
 
-function scrollToMatch(container: HTMLElement, which: "first" | "last") {
-  const target = container.querySelector(`[${MATCH}="${which}"]`)
-  if (!target) return
+function centeredTop(container: HTMLElement, target: Element): number {
   const box = container.getBoundingClientRect()
   const rect = target.getBoundingClientRect()
-  container.scrollTo({
-    top:
-      container.scrollTop +
-      (rect.top - box.top) -
-      container.clientHeight / 2 +
-      rect.height / 2,
-    behavior: "smooth",
-  })
+  const top =
+    container.scrollTop +
+    (rect.top - box.top) -
+    container.clientHeight / 2 +
+    rect.height / 2
+  return Math.min(
+    Math.max(top, 0),
+    container.scrollHeight - container.clientHeight,
+  )
+}
+
+function sentenceNumber(element: Element): number {
+  return Number(/-s(\d+)$/.exec(element.id)?.[1] ?? Number.NaN)
+}
+
+function problemAreas(container: HTMLElement): Element[] {
+  const areas: Element[] = []
+  let previous: Element | null = null
+  for (const element of container.querySelectorAll(PROBLEM_SELECTOR)) {
+    const continues =
+      previous !== null &&
+      previous.getAttribute(STATE) === element.getAttribute(STATE) &&
+      sentenceNumber(previous) + 1 === sentenceNumber(element)
+    if (!continues) areas.push(element)
+    previous = element
+  }
+  return areas
+}
+
+function stepProblem(container: HTMLElement, direction: 1 | -1) {
+  const current = container.scrollTop
+  const tops = problemAreas(container).map((area) =>
+    centeredTop(container, area),
+  )
+  const target =
+    direction === 1
+      ? tops.find((top) => top > current + 1)
+      : tops.findLast((top) => top < current - 1)
+  if (target === undefined) return
+  container.scrollTo({ top: target, behavior: "smooth" })
 }
 
 export function ChapterText({
@@ -231,6 +316,22 @@ export function ChapterText({
     [data, item, spans],
   )
 
+  const sentences = useMemo(
+    () => (guidedNavigation ? sentencesOf(guidedNavigation) : []),
+    [guidedNavigation],
+  )
+
+  const readingId = usePlayerSelector((state) => {
+    const clip = state.clip
+    if (!clip || clip.bookUuid !== bookUuid) return null
+    return readingFragment(sentences, clip.path, state.currentTime)
+  })
+
+  const [follow, setFollow] = useState(
+    () => readStored(FOLLOW_KEY, (raw) => raw, "") === "1",
+  )
+  const [problemCount, setProblemCount] = useState(0)
+
   useEffect(() => {
     if (notAligned) return
 
@@ -244,56 +345,70 @@ export function ChapterText({
     element.scrollTop = Math.max(0, rect.top - box.top - 24)
   }, [prepared, notAligned])
 
-  const unavailable = !item.readHref || isError
-
-  const player = usePlayer()
-  const play = player.play
-
   useEffect(() => {
-    if (notAligned) return
-    if (!guidedNavigation) return
-
-    const guidedNav = GuidedNavigationDocument.deserialize(guidedNavigation)
-
-    if (!guidedNav) return
-
-    const abortController = new AbortController()
-
-    for (const guided of guidedNav.guided ?? []) {
-      for (const child of guided.children ?? []) {
-        if (!child.textref || !child.audioref) continue
-
-        const audioFile = child.audioFile
-        if (!child.fragmentId || !audioFile) continue
-        const fragment = container.current?.querySelector(
-          `#${child.fragmentId}`,
-        )
-        if (!fragment) {
-          console.warn(`Fragment ${child.fragmentId} not found`)
-          continue
-        }
-
-        fragment.addEventListener(
-          "click",
-          () => {
-            play({
-              bookUuid,
-              path: audioFile.split("/").pop() ?? "",
-              start: child.clip?.start ?? 0,
-              end: child.clip?.end ?? 0,
-              name: child.text?.plain ?? "",
-              label: child.text?.plain ?? "",
-            })
-          },
-          { signal: abortController.signal },
-        )
+    const element = container.current
+    if (!element || !prepared || sentences.length === 0) return
+    const byFragment = new Map(
+      sentences.map((sentence) => [sentence.fragmentId, sentence]),
+    )
+    for (const fragmentId of byFragment.keys()) {
+      element
+        .querySelector(`#${CSS.escape(fragmentId)}`)
+        ?.setAttribute(READABLE, "")
+    }
+    const onClick = (event: MouseEvent) => {
+      if (document.getSelection()?.isCollapsed === false) return
+      for (
+        let node = event.target as Element | null;
+        node && node !== element;
+        node = node.parentElement
+      ) {
+        const sentence = byFragment.get(node.id)
+        if (!sentence) continue
+        play({
+          bookUuid,
+          path: sentence.path,
+          name: sentence.path,
+          start: sentence.start,
+          label: item.label,
+          sublabel: sentence.text,
+        })
+        return
       }
     }
-
+    element.addEventListener("click", onClick)
     return () => {
-      abortController.abort()
+      element.removeEventListener("click", onClick)
     }
-  }, [guidedNavigation, notAligned, bookUuid, play])
+  }, [prepared, sentences, bookUuid, item.label])
+
+  useEffect(() => {
+    const element = container.current
+    if (!element || !prepared || readingId === null) return
+    const target = element.querySelector(`#${CSS.escape(readingId)}`)
+    if (!target) return
+    target.setAttribute(READING, "")
+    if (follow) {
+      const box = element.getBoundingClientRect()
+      const rect = target.getBoundingClientRect()
+      if (rect.top < box.top || rect.bottom > box.bottom) {
+        element.scrollTo({
+          top: centeredTop(element, target),
+          behavior: "smooth",
+        })
+      }
+    }
+    return () => {
+      target.removeAttribute(READING)
+    }
+  }, [prepared, readingId, follow])
+
+  useEffect(() => {
+    const element = container.current
+    setProblemCount(element && prepared ? problemAreas(element).length : 0)
+  }, [prepared])
+
+  const unavailable = !item.readHref || isError
 
   return (
     <div className="flex min-h-0 flex-col gap-1.5">
@@ -311,11 +426,26 @@ export function ChapterText({
           <TooltipButton
             variant="ghost"
             size="icon-xs"
-            aria-label={t("detail.jumpFirst")}
-            tooltip={t("detail.jumpFirst")}
-            disabled={!prepared?.marked}
+            aria-label={t("detail.followAlong")}
+            tooltip={t("detail.followAlong")}
+            aria-pressed={follow}
+            disabled={sentences.length === 0}
+            className={cn(follow && "bg-muted text-foreground")}
             onClick={() => {
-              if (container.current) scrollToMatch(container.current, "first")
+              setFollow(!follow)
+              store(FOLLOW_KEY, follow ? "0" : "1")
+            }}
+          >
+            <icon.ArrowAutofitDown />
+          </TooltipButton>
+          <TooltipButton
+            variant="ghost"
+            size="icon-xs"
+            aria-label={t("detail.previousProblem")}
+            tooltip={t("detail.previousProblem")}
+            disabled={problemCount === 0}
+            onClick={() => {
+              if (container.current) stepProblem(container.current, -1)
             }}
           >
             <icon.ArrowUp />
@@ -323,11 +453,11 @@ export function ChapterText({
           <TooltipButton
             variant="ghost"
             size="icon-xs"
-            aria-label={t("detail.jumpLast")}
-            tooltip={t("detail.jumpLast")}
-            disabled={!prepared?.marked}
+            aria-label={t("detail.nextProblem")}
+            tooltip={t("detail.nextProblem")}
+            disabled={problemCount === 0}
             onClick={() => {
-              if (container.current) scrollToMatch(container.current, "last")
+              if (container.current) stepProblem(container.current, 1)
             }}
           >
             <icon.ArrowDown />
@@ -340,6 +470,8 @@ export function ChapterText({
           "max-h-[60vh] min-h-24 overflow-y-auto rounded-md border px-4 py-3 text-sm leading-relaxed",
           "[&_[data-state=interpolated]]:decoration-moderate/70 [&_[data-state=interpolated]]:text-moderate/70 [&_*]:font-sans! [&_[data-state=dropped]]:line-through [&_[data-state=dropped]]:opacity-35 [&_[data-state=interpolated]]:underline [&_[data-state=interpolated]]:decoration-dotted [&_[data-state=interpolated]]:decoration-2 [&_[data-state=interpolated]]:underline-offset-4 [&_[data-state=unmatched]]:opacity-35 [&_h1]:text-lg [&_h1]:font-medium [&_h2]:text-base [&_h2]:font-medium [&_h3]:font-medium [&_p]:my-2",
           "[&_[data-match]]:bg-highlight-bg/70 [&_[data-match]]:border-highlight [&_[data-match]]:dark:bg-highlight/25 [&_[data-match]]:border-b [&_[data-match]]:box-decoration-clone",
+          "[&_[data-readable]]:hover:bg-tint [&_[data-readable]]:cursor-pointer [&_[data-readable]]:rounded-xs [&_[data-readable]]:transition-colors [&_[data-readable]]:motion-reduce:transition-none",
+          "[&_[data-reading]]:bg-tint-strong [&_[data-reading]]:shadow-tint-strong [&_[data-reading]]:text-foreground [&_[data-reading]]:box-decoration-clone [&_[data-reading]]:opacity-100 [&_[data-reading]]:shadow-[0_0_0_3px] [&_[data-reading]]:hover:bg-tint-strong",
           (unavailable || !prepared) && "text-muted-foreground",
         )}
         dangerouslySetInnerHTML={

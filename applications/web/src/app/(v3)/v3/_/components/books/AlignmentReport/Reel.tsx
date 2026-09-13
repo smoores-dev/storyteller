@@ -24,6 +24,8 @@ import {
   TONE_TEXT,
   type Track,
   itemTone,
+  readStored,
+  store,
   trackClip,
   trackLabel,
   trackTime,
@@ -376,28 +378,6 @@ function trackWidthFor(
 
 function clampZoom(zoom: number): number {
   return Math.min(Math.max(zoom, ZOOM_MIN), ZOOM_MAX)
-}
-
-function readStored<T extends string | number>(
-  key: string,
-  parse: (raw: string) => T | null,
-  fallback: T,
-): T {
-  if (typeof window === "undefined") return fallback
-  try {
-    const raw = window.localStorage.getItem(key)
-    return raw === null ? fallback : (parse(raw) ?? fallback)
-  } catch {
-    return fallback
-  }
-}
-
-function store(key: string, value: string) {
-  try {
-    window.localStorage.setItem(key, value)
-  } catch {
-    return
-  }
 }
 
 type Drag =

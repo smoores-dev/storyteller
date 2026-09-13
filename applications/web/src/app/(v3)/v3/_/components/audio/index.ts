@@ -9,6 +9,7 @@ export {
   stop,
   toggle,
   usePlayer,
+  usePlayerSelector,
   wholeFile,
 } from "./store"
 export { PlayerDock } from "./PlayerDock"

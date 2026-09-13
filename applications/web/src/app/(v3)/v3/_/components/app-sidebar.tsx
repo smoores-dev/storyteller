@@ -54,6 +54,7 @@ import {
 import { usePermission } from "@/hooks/usePermission"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
+import { sanitizeHtml } from "@/sanitizeHtml"
 import {
   useGetLatestChangelogQuery,
   useListCollectionsQuery,
@@ -206,9 +207,8 @@ export function AppSidebar({
 
     toastShownRef.current = true
 
-    const cleanedDescription = formatChangelogDescription(
-      latestChangelog?.description,
-    )
+    const formatted = formatChangelogDescription(latestChangelog?.description)
+    const cleanedDescription = formatted ? sanitizeHtml(formatted) : undefined
 
     toast(`A new version (v${latestVersion}) is available`, {
       dismissible: true,
