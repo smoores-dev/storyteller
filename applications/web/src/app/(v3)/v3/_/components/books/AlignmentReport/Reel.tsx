@@ -29,6 +29,7 @@ import {
   trackTime,
   trackTone,
 } from "./shared"
+import { ButtonGroup } from "../../ui/button-group";
 
 const PX_PER_HOUR = 520
 const PX_PER_SENTENCE = 0.5
@@ -790,22 +791,34 @@ export function Reel({
             >
               <icon.Plus />
             </TooltipButton>
+            <ButtonGroup>
             <TooltipButton
-              variant="ghost"
+              // variant="ghost"
+              variant="outline"
               size="icon-xs"
-              aria-pressed={mode === "spine"}
-              aria-label={
-                mode === "audio" ? t("reel.mode.spine") : t("reel.mode.audio")
-              }
-              tooltip={
-                mode === "audio" ? t("reel.mode.spine") : t("reel.mode.audio")
-              }
+              className={cn(mode !== "audio" && "bg-muted text-muted-foreground")}
+              aria-label={t("reel.mode.audio")}
+              tooltip={t("reel.mode.audio")}
               onClick={() => {
-                setMode((current) => (current === "audio" ? "spine" : "audio"))
+                setMode("audio")
               }}
             >
-              {mode === "audio" ? <icon.BookAlt /> : <icon.Audiobook />}
+              <icon.Audiobook />
             </TooltipButton>
+            <TooltipButton
+              // variant="ghost"
+              variant="outline"
+              size="icon-xs"
+              className={cn(mode !== "spine" && "bg-muted text-muted-foreground")}
+              aria-label={t("reel.mode.spine")}
+              tooltip={t("reel.mode.spine")}
+              onClick={() => {
+                setMode("spine")
+              }}
+            >
+              <icon.BookAlt />
+            </TooltipButton>
+</ButtonGroup>
           </div>
         </div>
       </div>
