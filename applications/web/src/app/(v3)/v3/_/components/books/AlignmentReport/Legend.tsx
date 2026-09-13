@@ -95,7 +95,7 @@ export function Legend({ className }: { className?: string }) {
           {t(`legend.${fill.key}`)}
         </Entry>
       ))}
-      <Popover>
+      {/* <Popover>
         <PopoverTrigger
           render={
             <Button
@@ -124,8 +124,8 @@ export function Legend({ className }: { className?: string }) {
             ))}
           </div>
         </PopoverContent>
-      </Popover>
-      <span>{t("legend.track")}</span>
+      </Popover> */}
+      {/* <span>{t("legend.track")}</span> */}
     </div>
   )
 }
