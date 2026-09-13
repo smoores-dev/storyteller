@@ -95,26 +95,32 @@ export function gradeForScore(
   }
   //   S ≥ 98% audio and ≥ 95% ebook
   // - A ≥ 95% both
-  // - B ≥ 90% both -- probably good enough for sync but not readaloud
-  // - C ≥ 90% audio, < 90% text -- needs evaluation / buyer beware
-  // - F < 90% either -- probably not fit for readaloud or sync
+  // - B ≥ 90% both check book
+  // - C ≥ 90% audio, < 90% text -- check both
+  // - D
+  // - F < 50% either -- probably not fit for readaloud or sync
 
   const score =
     sentenceScore * SENTENCE_WEIGHT + audioScore * (1 - SENTENCE_WEIGHT)
 
-  if (sentenceScore >= 96 && audioScore >= 98) {
+  if (sentenceScore >= 95 && audioScore >= 98) {
     return { grade: "S", band: 0, score }
   }
-  if (sentenceScore >= 95 && audioScore >= 95) {
+  if (sentenceScore >= 90 && audioScore >= 96) {
     return { grade: "A", band: 1, score }
   }
-  if (sentenceScore >= 90 && audioScore >= 90) {
+  if (sentenceScore < 90 && audioScore >= 96) {
     return { grade: "B", band: 2, score }
   }
-  if (sentenceScore >= 90 && audioScore < 90) {
+  if (sentenceScore >= 90 && audioScore < 96) {
     return { grade: "C", band: 3, score }
   }
-  return { grade: "F", band: FAILING_BAND, score: 0 }
+
+  if (sentenceScore <= 50 && audioScore <= 50) {
+    return { grade: "F", band: FAILING_BAND, score: 0 }
+  }
+
+  return { grade: "D", band: FAILING_BAND, score }
 
   // if(sentenceScore < 90 && audioScore < 90) {
   //   return { grade: "F", band: FAILING_BAND, score: 0 }
