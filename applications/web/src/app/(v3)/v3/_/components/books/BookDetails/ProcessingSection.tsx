@@ -15,6 +15,7 @@ import { useReportPanel } from "@v3/_/hooks/use-report-panel"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
+import { GRADE_TILE } from "@/app/(v3)/v3/_/components/books/grade-pill"
 import { useStageLabels } from "@/app/(v3)/v3/_/components/processing/useStageLabels"
 import {
   useFormatDate,
@@ -325,24 +326,6 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
   )
 }
 
-type GradeTone = "positive" | "good" | "moderate" | "poor"
-
-function gradeTone(grade: string): GradeTone {
-  if (grade.startsWith("A")) return "positive"
-  if (grade.startsWith("B")) return "good"
-  if (grade === "C") return "moderate"
-  return "poor"
-}
-
-const GRADE_BADGE: Record<GradeTone, string> = {
-  positive:
-    "border-positive-border bg-positive-bg text-positive dark:border-positive-900 dark:bg-positive-950/40 dark:text-positive-300",
-  good: "border-good-border bg-good-bg text-good dark:border-good-900 dark:bg-good-950/40 dark:text-good-300",
-  moderate:
-    "border-moderate-border bg-moderate-bg text-moderate dark:border-moderate-900 dark:bg-moderate-950/40 dark:text-moderate-300",
-  poor: "border-poor-border bg-poor-bg text-poor dark:border-poor-900 dark:bg-poor-950/40 dark:text-poor-300",
-}
-
 function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
   const { data } = useGetBookAlignmentReportQuery({ uuid: book.uuid })
   const { setReportMode } = useReportPanel()
@@ -353,7 +336,6 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
 
   const grade = data?.summary.grade ?? book.alignmentSummary?.grade
   if (!grade) return null
-  const tone = gradeTone(grade)
   const summary = data?.summary
 
   const marks: { label: string; value: string }[] = summary
@@ -395,7 +377,7 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
         <Badge
           className={cn(
             "size-9 justify-center rounded-md border text-base font-semibold tabular-nums",
-            GRADE_BADGE[tone],
+            GRADE_TILE[grade],
           )}
         >
           {grade}

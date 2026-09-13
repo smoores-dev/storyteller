@@ -10,7 +10,6 @@ import {
 import {
   type AlignmentDecisions,
   type AlignmentOverrides,
-  GRADE_BANDS,
   type LegacyReport,
   type ReportV3,
   buildReportView,
@@ -22,6 +21,7 @@ import {
   upgradeReportV3,
 } from "@/alignmentReportView"
 import { summarizeReport as summarizeColumns } from "@/database/alignmentReports"
+import { ALIGNMENT_GRADES } from "@/fields"
 import { type UUID } from "@/uuid"
 
 const context = (matchedSentence: string) => ({
@@ -164,35 +164,36 @@ const report = (input: ReportInput) =>
   assembleReport({ autoExclude: true, ...input })
 
 void describe("gradeForScore", () => {
-  void it("maps every band edge to its grade", () => {
-    for (const [band, entry] of GRADE_BANDS.entries()) {
-      const at = Number.isFinite(entry.min) ? entry.min : 0
-      assert.deepStrictEqual(gradeForScore(at, at), {
-        grade: entry.grade,
-        band,
-        score: at,
-      })
+  void it("numbers the bands in grade order", () => {
+    const cases: [number, number, (typeof ALIGNMENT_GRADES)[number]][] = [
+      [95, 98, "S"],
+      [90, 96, "A"],
+      [89, 97, "B"],
+      [95, 90, "C"],
+      [60, 60, "D"],
+      [40, 40, "F"],
+    ]
+    for (const [sentences, audio, grade] of cases) {
+      const result = gradeForScore(sentences, audio)
+      assert.strictEqual(result.grade, grade)
+      assert.strictEqual(result.band, ALIGNMENT_GRADES.indexOf(grade))
     }
-    assert.deepStrictEqual(gradeForScore(94.9, 94.9), {
-      grade: "A-",
-      band: 2,
-      score: 94.9,
-    })
   })
 
   void it("only awards S when both sentences and audio are near perfect", () => {
     assert.deepStrictEqual(gradeForScore(100, 90), {
-      grade: "A",
-      band: 1,
+      grade: "C",
+      band: 3,
       score: 97,
     })
     assert.strictEqual(gradeForScore(98, 98).grade, "S")
+    assert.strictEqual(gradeForScore(100, 96).grade, "A")
   })
 
   void it("fails a report with no score at all", () => {
     assert.deepStrictEqual(gradeForScore(null, null), {
       grade: "F",
-      band: GRADE_BANDS.length - 1,
+      band: ALIGNMENT_GRADES.length - 1,
       score: 0,
     })
   })
@@ -216,7 +217,7 @@ void describe("the score", () => {
     assert.strictEqual(summary.audioPlacedSeconds, 500)
     assert.strictEqual(summary.audioTotalSeconds, 1000)
     assert.strictEqual(summary.score, 0.8 * 70 + 0.5 * 30)
-    assert.strictEqual(summary.grade, "F")
+    assert.strictEqual(summary.grade, "D")
   })
 
   void it("credits single interpolated sentences between matches", () => {
@@ -401,6 +402,7 @@ void describe("judgments", () => {
       jobUuid: null,
       createdAt: "",
       latest: true,
+      playback: { readaloud: null, original: true },
       decisions: overridesToDecisions(overrides),
     })
     assert.strictEqual(view.items[0]?.judgment, "excluded")
@@ -592,6 +594,7 @@ void describe("labels", () => {
       jobUuid: null,
       createdAt: "",
       latest: true,
+      playback: { readaloud: null, original: true },
       ebookManifest: manifest ?? null,
     })
 
@@ -837,6 +840,6 @@ void describe("summarizeReport for the stored columns", () => {
     assert.strictEqual(summary.missingSentences, 80)
     assert.strictEqual(summary.failedChapters, 2)
     assert.strictEqual(summary.unalignedAudio, 1)
-    assert.strictEqual(summary.grade, "F")
+    assert.strictEqual(summary.grade, "D")
   })
 })

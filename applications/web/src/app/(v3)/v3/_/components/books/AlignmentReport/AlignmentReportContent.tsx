@@ -21,6 +21,7 @@ import {
 import type { UUID } from "@/uuid"
 
 import { ChapterDetail } from "./ChapterDetail"
+import { Legend } from "./Legend"
 import { LooseAudio } from "./LooseAudio"
 import { Masthead } from "./Masthead"
 import { PreviousReport } from "./PreviousReport"
@@ -62,10 +63,7 @@ export function AlignmentReportContent({
   }
 
   return (
-    <div
-      ref={root}
-      className="relative flex h-[100cqh] min-h-0 flex-col overflow-hidden"
-    >
+    <div ref={root} className="relative flex h-[100cqh] min-h-0 flex-col">
       <ReportHeader
         view={data}
         compact={compact}
@@ -184,6 +182,18 @@ function ReportHeader({
             </button>
           </span>
         )}
+        {view && view.audioSource === "none" && (
+          <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 text-[11px]">
+            <icon.VolumeOff className="size-3" />
+            {t("audio.none")}
+          </span>
+        )}
+        {view && view.audioSource === "original" && !view.latest && (
+          <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 text-[11px]">
+            <icon.Volume className="size-3" />
+            {t("audio.original")}
+          </span>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {view?.previous && !showPrevious && (
@@ -221,7 +231,7 @@ function ReportBody({
   narrow: boolean
   previous: ReactNode
 }) {
-  const audio = useTracks(view.bookUuid, view.tracks)
+  const audio = useTracks(view)
   const selection = useReportSelection()
   const editor = useDecisionEditor(view)
 
@@ -310,6 +320,7 @@ function ReportBody({
         onSelect={selection.setOpenHref}
         narrow={narrow}
       />
+      <Legend />
     </>
   )
 
@@ -332,7 +343,7 @@ function ReportBody({
           <div className="p-4 pr-3">{list}</div>
         </ScrollArea>
         <ScrollArea className="h-full min-h-0">
-          <div className="p-4 pl-0">{detail}</div>
+          <div className="h-full p-4 pl-0">{detail}</div>
         </ScrollArea>
       </div>
     </div>

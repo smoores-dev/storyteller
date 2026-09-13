@@ -18,10 +18,12 @@ import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
-import { ButtonGroup } from "../../ui/button-group"
+import { ButtonGroup } from "@/app/(v3)/v3/_/components/ui/button-group"
 
 import {
+  GAP,
   type ReportTone,
+  STRIPES,
   TONE_FILL,
   TONE_TEXT,
   type Track,
@@ -48,11 +50,6 @@ const SECOND_TICKS = [10, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200]
 const SENTENCE_TICKS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
 const SEGMENT_JOIN_SECONDS = 15
 const GAP_SECONDS = 1
-
-const STRIPES =
-  "bg-[repeating-linear-gradient(135deg,transparent_0_3px,var(--color-muted-foreground)_3px_5px)] opacity-40"
-
-const GAP = "border-poor/70 bg-poor/10 border border-dashed"
 
 type Mode = "audio" | "spine"
 
@@ -168,7 +165,7 @@ function buildAudioAxis(input: {
     gap(track.duration)
 
     const label = trackLabel(track)
-    const playable = track.present || track.source !== null
+    const playable = track.playback !== null
     return {
       key: track.name,
       href: null,
@@ -698,14 +695,6 @@ export function Reel({
 
   if (tracks.length === 0 || total <= 0) return null
 
-  const legend = [
-    { key: "aligned", swatch: "bg-good opacity-80" },
-    { key: "interpolated", swatch: "bg-good opacity-35" },
-    { key: "unmatched", swatch: STRIPES },
-    { key: "loose", swatch: GAP },
-    { key: "selected", swatch: "ring-primary bg-transparent ring-2" },
-  ] as const
-
   const totalSentences = items.reduce(
     (sum, item) => sum + item.sentenceCount,
     0,
@@ -726,24 +715,6 @@ export function Reel({
               })}
         </span>
         <div className="ml-auto flex items-center gap-3">
-          {!narrow && (
-            <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
-              {legend.map((entry) => (
-                <span
-                  key={entry.key}
-                  className="inline-flex items-center gap-1.5"
-                >
-                  <i
-                    className={cn(
-                      "inline-block size-2.5 rounded-xs",
-                      entry.swatch,
-                    )}
-                  />
-                  {t(`reel.legend.${entry.key}`)}
-                </span>
-              ))}
-            </div>
-          )}
           <div className="flex items-center">
             <TooltipButton
               variant="ghost"

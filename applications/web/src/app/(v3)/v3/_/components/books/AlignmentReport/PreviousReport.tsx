@@ -8,16 +8,14 @@ import {
   type AlignmentReportSummary,
   type PreviousReport as PreviousReportData,
 } from "@/alignmentReportView"
+import { GRADE_TILE } from "@/app/(v3)/v3/_/components/books/grade-pill"
 import { useFormatDate } from "@/app/(v3)/v3/_/lib/formatters"
-import { ALIGNMENT_GRADES } from "@/fields"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
 import {
   type ReportTone,
   TONE_TEXT,
-  TONE_TILE,
-  bandTone,
   confidenceTone,
   engineLabel,
   percentTone,
@@ -82,7 +80,6 @@ export function PreviousReport({
 }) {
   const t = useTranslation("AlignmentReport")
   const formatDate = useFormatDate()
-  const tone = bandTone(ALIGNMENT_GRADES.indexOf(previous.grade))
 
   const provenance = [
     formatDate(previous.createdAt),
@@ -93,14 +90,14 @@ export function PreviousReport({
   return (
     <section
       className={cn(
-        "bg-card/60 flex w-fit max-w-full items-center gap-3 rounded-lg border border-dashed px-3 py-2",
+        "bg-card/60 flex w-fit max-w-full items-center gap-3 rounded-md border border-dashed px-3 py-2",
         narrow && "w-full",
       )}
     >
       <div
         className={cn(
           "flex size-9 shrink-0 items-center justify-center rounded-md border text-base opacity-80",
-          TONE_TILE[tone],
+          GRADE_TILE[previous.grade],
         )}
       >
         <span className="font-heading leading-none font-medium">

@@ -8,9 +8,10 @@ import {
   type ViewSpineItem,
   type ViewTrack,
 } from "@/alignmentReportView"
+import { type AlignmentGrade } from "@/shelves"
 import { type UUID } from "@/uuid"
 
-export type Track = ViewTrack & { present: boolean }
+export type Track = ViewTrack
 
 export type ReportTone = "positive" | "good" | "moderate" | "poor" | "muted"
 
@@ -54,46 +55,63 @@ export const TONE_TILE: Record<ReportTone, string> = {
   muted: "border-border bg-muted text-foreground",
 }
 
-export const BAND_VERDICT = [
-  "excellent",
-  "strong",
-  "good",
-  "fair",
-  "rough",
-  "patchy",
-  "weak",
-  "failed",
-] as const
+export const GRADE_VERDICT = {
+  S: "excellent",
+  A: "strong",
+  B: "good",
+  C: "fair",
+  D: "weak",
+  F: "failed",
+} as const satisfies Record<AlignmentGrade, string>
 
-export function bandTone(band: number): ReportTone {
-  if (band <= 1) return "good"
-  if (band <= 3) return "positive"
-  if (band <= 5) return "moderate"
-  return "poor"
+export const STRIPES =
+  "bg-[repeating-linear-gradient(135deg,transparent_0_3px,var(--color-muted-foreground)_3px_5px)] opacity-40"
+
+export const GAP = "border-poor/70 bg-poor/10 border border-dashed"
+
+export const TRACK_PLACED_GOOD = 98
+
+export type ToneLadder = { min: number; tone: ReportTone }[]
+
+export const SENTENCE_LADDER: ToneLadder = [
+  { min: 95, tone: "good" },
+  { min: 90, tone: "positive" },
+  { min: 80, tone: "moderate" },
+  { min: 0, tone: "poor" },
+]
+
+export const AUDIO_LADDER: ToneLadder = [
+  { min: 98, tone: "good" },
+  { min: 96, tone: "positive" },
+  { min: 90, tone: "moderate" },
+  { min: 0, tone: "poor" },
+]
+
+export const CONFIDENCE_LADDER: ToneLadder = [
+  { min: 90, tone: "good" },
+  { min: 80, tone: "positive" },
+  { min: 70, tone: "moderate" },
+  { min: 0, tone: "poor" },
+]
+
+export function ladderTone(
+  value: number | null,
+  ladder: ToneLadder,
+): ReportTone {
+  if (value === null) return "muted"
+  return ladder.find((step) => value >= step.min)?.tone ?? "poor"
 }
 
 export function percentTone(percent: number | null): ReportTone {
-  if (percent === null) return "muted"
-  if (percent >= 96) return "good"
-  if (percent >= 95) return "positive"
-  if (percent >= 90) return "moderate"
-  return "poor"
+  return ladderTone(percent, SENTENCE_LADDER)
 }
 
 export function audioPercentTone(percent: number | null): ReportTone {
-  if (percent === null) return "muted"
-  if (percent >= 98) return "good"
-  if (percent >= 95) return "positive"
-  if (percent >= 90) return "moderate"
-  return "poor"
+  return ladderTone(percent, AUDIO_LADDER)
 }
 
 export function confidenceTone(confidence: number | null): ReportTone {
-  if (confidence === null) return "muted"
-  if (confidence >= 90) return "positive"
-  if (confidence >= 80) return "good"
-  if (confidence >= 70) return "moderate"
-  return "poor"
+  return ladderTone(confidence, CONFIDENCE_LADDER)
 }
 
 export function judgmentTone(judgment: Judgment | null): ReportTone | null {
@@ -164,7 +182,9 @@ export function trackTone(track: Track): ReportTone {
   if (track.duration <= 0) return "muted"
   const placed = track.matchedSeconds + track.interpolatedSeconds
   if (placed === 0) return "poor"
-  return placed / track.duration > 0.98 ? "good" : "moderate"
+  return (placed / track.duration) * 100 > TRACK_PLACED_GOOD
+    ? "good"
+    : "moderate"
 }
 
 export function engineLabel(config: ReportJob["config"]): string | null {
@@ -195,10 +215,11 @@ export function trackClip(
   range?: { start?: number; end?: number; label?: string | null },
 ): Clip | null {
   const label = range?.label ?? trackLabel(track)
-  if (track.present) {
+  if (track.playback === "readaloud" && track.readaloudHref) {
     return {
       bookUuid,
-      path: track.name,
+      path: track.readaloudHref,
+      via: "read",
       name: track.name,
       ...(range?.start !== undefined && { start: range.start }),
       ...(range?.end !== undefined && { end: range.end }),
@@ -206,7 +227,7 @@ export function trackClip(
       sublabel: track.name,
     }
   }
-  if (!track.source) return null
+  if (track.playback !== "original" || !track.source) return null
   const base = track.source.start
   return {
     bookUuid,
@@ -224,7 +245,7 @@ export function trackTime(
   clip: Clip,
   currentTime: number,
 ): number {
-  if (clip.path === track.name) return currentTime
+  if (clip.via === "read") return currentTime
   return currentTime - (track.source?.start ?? 0)
 }
 

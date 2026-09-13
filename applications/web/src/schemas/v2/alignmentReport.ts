@@ -240,7 +240,7 @@ export const AlignmentReportSchemaV2 = z.object({
 
 export const AlignmentReportSummarySchemaV2 = z.object({
   grade: z.enum(ALIGNMENT_GRADES),
-  band: z.number().meta({ description: "0 is the best band, 7 the worst." }),
+  band: z.number().meta({ description: "0 is the best band, 5 the worst." }),
   score: z.number().nullable().meta({
     description:
       "0-100. Seventy percent sentences matched, thirty percent audio placed. Determines the grade.",
@@ -324,6 +324,14 @@ export const ViewSpineItemSchemaV2 = ReportSpineItemSchemaV2.extend({
 })
 
 export const ViewTrackSchemaV2 = ReportTrackSchemaV2.extend({
+  playback: z.enum(["readaloud", "original"]).nullable().meta({
+    description:
+      "Where this track can be played from. The readaloud file holds the exact audio of the newest report but only tracks that were written into it, otherwise the original audiobook file when the report knows where the track came from, or null when neither is available.",
+  }),
+  readaloudHref: z.string().nullable().meta({
+    description:
+      "The track's href inside the readaloud file, when playback is readaloud.",
+  }),
   excluded: z.boolean().meta({
     description: "The whole track is excluded from the audio score.",
   }),
@@ -364,6 +372,10 @@ export const AlignmentReportViewSchemaV2 = z.object({
   createdAt: z.string(),
   latest: z.boolean().meta({
     description: "Whether this is the newest report for the book.",
+  }),
+  audioSource: z.enum(["readaloud", "original", "none"]).meta({
+    description:
+      "Where the report's audio can be played from. The readaloud file holds the exact tracks of the newest report, older reports fall back to the original audiobook files when the report knows where each track came from.",
   }),
   previous: AlignmentReportPreviousSchemaV2.nullable().meta({
     description: "The stored summary of the report that came before this one.",

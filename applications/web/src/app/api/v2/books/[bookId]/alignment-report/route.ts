@@ -91,6 +91,13 @@ export const GET = withHasPermission<Params>("bookProcess")(async (
     job: reportJob(job),
     createdAt: report.createdAt,
     latest: index === 0,
+    playback: {
+      readaloud:
+        index === 0 && book.readaloud && !book.readaloud.missing
+          ? (book.readaloud.manifest ?? {})
+          : null,
+      original: !!book.audiobook && !book.audiobook.missing,
+    },
     previous: previousRow
       ? {
           reportUuid: previousRow.uuid,

@@ -1,6 +1,7 @@
 export type Clip = {
   bookUuid: string
   path: string
+  via?: "listen" | "read"
   name: string
   start?: number
   end?: number
@@ -14,7 +15,7 @@ function trim(seconds: number): number {
 
 export function clipSrc(clip: Clip): string {
   const path = clip.path.split("/").map(encodeURIComponent).join("/")
-  const base = `/api/v2/books/${clip.bookUuid}/listen/${path}`
+  const base = `/api/v2/books/${clip.bookUuid}/${clip.via ?? "listen"}/${path}`
   if (clip.start === undefined && clip.end === undefined) return base
   const start = trim(Math.max(clip.start ?? 0, 0))
   if (clip.end === undefined) return `${base}#t=${start}`

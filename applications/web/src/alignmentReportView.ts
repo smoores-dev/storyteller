@@ -23,6 +23,7 @@ import {
   spanSentences,
 } from "@storyteller-platform/align/report"
 
+import { ALIGNMENT_GRADES } from "@/fields"
 import { type AlignmentGrade } from "@/shelves"
 import { type UUID } from "@/uuid"
 
@@ -122,33 +123,22 @@ export interface AlignmentFacets {
   muted: number
 }
 
-export const GRADE_BANDS = [
-  { min: 98, grade: "S" },
-  { min: 96, grade: "A" },
-  { min: 93, grade: "A-" },
-  { min: 90, grade: "B" },
-  { min: 85, grade: "B-" },
-  { min: 80, grade: "C" },
-  { min: 75, grade: "D" },
-  { min: Number.NEGATIVE_INFINITY, grade: "F" },
-] as const satisfies readonly { min: number; grade: AlignmentGrade }[]
-
-const FAILING_BAND = GRADE_BANDS.length - 1
-
 export const SENTENCE_WEIGHT = 0.7
 
 export const GAP_SECONDS = 1
 
+type Graded = { grade: AlignmentGrade; band: number; score: number }
+
+function graded(grade: AlignmentGrade, score: number): Graded {
+  return { grade, band: ALIGNMENT_GRADES.indexOf(grade), score }
+}
+
 export function gradeForScore(
   sentenceScore: number | null,
   audioScore: number | null,
-): {
-  grade: AlignmentGrade
-  band: number
-  score: number
-} {
+): Graded {
   if (sentenceScore === null || audioScore === null) {
-    return { grade: "F", band: FAILING_BAND, score: 0 }
+    return graded("F", 0)
   }
   //   S ≥ 98% audio and ≥ 95% ebook
   // - A ≥ 95% both
@@ -160,37 +150,12 @@ export function gradeForScore(
   const score =
     sentenceScore * SENTENCE_WEIGHT + audioScore * (1 - SENTENCE_WEIGHT)
 
-  if (sentenceScore >= 95 && audioScore >= 98) {
-    return { grade: "S", band: 0, score }
-  }
-  if (sentenceScore >= 90 && audioScore >= 96) {
-    return { grade: "A", band: 1, score }
-  }
-  if (sentenceScore < 90 && audioScore >= 96) {
-    return { grade: "B", band: 2, score }
-  }
-  if (sentenceScore >= 90 && audioScore < 96) {
-    return { grade: "C", band: 3, score }
-  }
-
-  if (sentenceScore <= 50 && audioScore <= 50) {
-    return { grade: "F", band: FAILING_BAND, score: 0 }
-  }
-
-  return { grade: "D", band: FAILING_BAND, score }
-
-  // if(sentenceScore < 90 && audioScore < 90) {
-  //   return { grade: "F", band: FAILING_BAND, score: 0 }
-  // }
-
-  // const gradesWithoutS = GRADE_BANDS.slice(1)
-
-  // const band = gradesWithoutS.findIndex(({ min }) => score >= min)
-  // const entry = gradesWithoutS[band]
-  // if (!entry) {
-  //   return { grade: "F", band: FAILING_BAND, score: 0 }
-  // }
-  // return { grade: entry.grade, band: band + 1, score }
+  if (sentenceScore >= 95 && audioScore >= 98) return graded("S", score)
+  if (sentenceScore >= 90 && audioScore >= 96) return graded("A", score)
+  if (audioScore >= 96) return graded("B", score)
+  if (sentenceScore >= 90) return graded("C", score)
+  if (sentenceScore <= 50 && audioScore <= 50) return graded("F", 0)
+  return graded("D", score)
 }
 
 type LegacyContext = {
@@ -684,8 +649,29 @@ export function normalizeReport(report: AnyReport): ReportV4 {
 type TocEntry = { href?: string; title?: string; children?: TocEntry[] }
 
 export type ManifestLike = {
-  readingOrder?: { href?: string; title?: string }[]
+  readingOrder?: { href?: string; title?: string; type?: string }[]
+  resources?: { href?: string; type?: string }[]
   toc?: TocEntry[]
+}
+
+function audioHrefs(
+  manifest: ManifestLike | null | undefined,
+): Map<string, string> {
+  const hrefs = new Map<string, string>()
+  for (const link of [
+    ...(manifest?.readingOrder ?? []),
+    ...(manifest?.resources ?? []),
+  ]) {
+    if (!link.href || !link.type?.startsWith("audio/")) continue
+    const name = link.href.split("/").pop()
+    if (name && !hrefs.has(name)) hrefs.set(name, link.href)
+  }
+  return hrefs
+}
+
+export type PlaybackSources = {
+  readaloud: ManifestLike | null
+  original: boolean
 }
 
 function indexManifest(manifest: ManifestLike | null | undefined): {
@@ -923,6 +909,7 @@ export function buildReportView(args: {
   job?: ReportJob | null
   createdAt: string
   latest: boolean
+  playback: PlaybackSources
   previous?: PreviousReport | null
   decisions?: AlignmentDecisions | null
   ebookManifest?: ManifestLike | null
@@ -946,10 +933,24 @@ export function buildReportView(args: {
     }
   })
 
+  const readaloudAudio = audioHrefs(args.playback.readaloud)
+  const audioSource: BookAlignmentReportView["audioSource"] = args.playback
+    .readaloud
+    ? "readaloud"
+    : args.playback.original
+      ? "original"
+      : "none"
   const tracks: ViewTrack[] = report.tracks.map((track) => {
     const excludedRanges = trackExcludedRanges(decisions, track)
+    const readaloudHref = readaloudAudio.get(track.name) ?? null
     return {
       ...track,
+      playback: readaloudHref
+        ? "readaloud"
+        : args.playback.original && track.source
+          ? "original"
+          : null,
+      readaloudHref,
       excluded: rangeSeconds(excludedRanges) >= track.duration,
       excludedRanges,
     }
@@ -963,6 +964,7 @@ export function buildReportView(args: {
     job: args.job ?? null,
     createdAt: args.createdAt,
     latest: args.latest,
+    audioSource,
     previous: args.previous ?? null,
     aligner: report.aligner,
     autoExclude: report.autoExclude,

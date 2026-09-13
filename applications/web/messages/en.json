@@ -1821,9 +1821,7 @@
         "alignmentGrade": {
           "S": "S",
           "A": "A",
-          "A-": "A-",
           "B": "B",
-          "B-": "B-",
           "C": "C",
           "D": "D",
           "F": "F"
@@ -1831,9 +1829,7 @@
         "alignmentPreviousGrade": {
           "S": "S",
           "A": "A",
-          "A-": "A-",
           "B": "B",
-          "B-": "B-",
           "C": "C",
           "D": "D",
           "F": "F"
@@ -2042,8 +2038,6 @@
       "strong": "Strong alignment",
       "good": "Good alignment",
       "fair": "Fair alignment",
-      "rough": "Rough alignment",
-      "patchy": "Patchy alignment",
       "weak": "Weak alignment",
       "failed": "Alignment failed"
     },
@@ -2066,16 +2060,8 @@
       "titleSpine": "{count, plural, one {# chapter} other {# chapters}} · {sentences, plural, one {# sentence} other {# sentences}}",
       "hint": "Click a track to play from there",
       "hintSpine": "Click a chapter to open it, click its audio to play it",
-      "notOnDisk": "not on disk",
+      "notOnDisk": "audio not available",
       "fromOriginal": "played from the original file",
-      "legend": {
-        "aligned": "matched",
-        "interpolated": "interpolated",
-        "unmatched": "not matched",
-        "loose": "no text",
-        "excluded": "excluded",
-        "selected": "selected chapter"
-      },
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "mode": {
@@ -2159,10 +2145,14 @@
       "beforeFirst": "before {label}",
       "afterLast": "after {label}",
       "fromExcluded": "in {label}, excluded",
-      "notOnDisk": "not on disk",
+      "unavailable": "audio not available",
       "showShort": "{count, plural, one {# gap} other {# gaps}} under {seconds, number} s hidden · show",
       "hideShort": "Hide {count, plural, one {# gap} other {# gaps}} under {seconds, number} s",
-      "onlyShort": "Only gaps under {seconds, number} s remain."
+      "onlyShort": "Only gaps under {seconds, number} s remain.",
+      "sort": "Sort stretches",
+      "sortByLength": "Longest first",
+      "sortByPosition": "Position in the book",
+      "sortByTrack": "Track name"
     },
     "rule": {
       "skipped": "Skipped by a rule",
@@ -2188,6 +2178,33 @@
       "hint": "Takes effect on the next alignment",
       "summary": "{count, plural, one {# change waits} other {# changes wait}} for the next alignment",
       "realign": "Realign now"
+    },
+    "audio": {
+      "none": "Audio for this report is not available",
+      "original": "Audio plays from the original files"
+    },
+    "legend": {
+      "sentences": "Sentences matched",
+      "andUp": "{min, number}% and up",
+      "between": "{min, number} to {max, number}%",
+      "under": "under {max, number}%",
+      "fills": "Fills",
+      "solid": "matched",
+      "soft": "filled in from neighbours",
+      "striped": "not read",
+      "dimmed": "skipped",
+      "gap": "no text",
+      "track": "Thin strip: the audio track, coloured by how much of it was placed",
+      "help": "How to read the reel",
+      "explain": {
+        "chapters": "Each chapter block is coloured by the share of its sentences that were matched to the narration. Approved chapters count as fully matched, included chapters are shown as good, excluded chapters are dimmed.",
+        "fills": "A solid fill is sentences matched to the narration. A lighter fill is sentences whose timing was filled in from their neighbours. Stripes mark sentences that were not read. A dashed outline marks audio with no text. Dimmed blocks are skipped chapters.",
+        "track": "The thin strip above each block is the audio track. It is coloured by how much of the track was placed in the book.",
+        "trackGood": "{min, number}% or more placed",
+        "trackModerate": "partly placed",
+        "trackPoor": "nothing placed",
+        "trackMuted": "excluded or empty"
+      }
     }
   },
   "Player": {

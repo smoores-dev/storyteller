@@ -133,6 +133,7 @@ export async function createAlignmentReport(input: {
       .selectAll()
       .where("bookUuid", "=", input.bookUuid)
       .orderBy("createdAt", "desc")
+      .orderBy(sql`rowid`, "desc")
       .limit(1)
       .executeTakeFirst()
 
@@ -298,20 +299,14 @@ export async function recomputeAlignmentSummaries(
       "audioCoverage",
     ])
     .where("report", "is", null)
-    .where(
-      "uuid",
-      "not in",
-      rows.map((r) => r.uuid),
+    .$if(bookUuids !== null, (qb) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      qb.where("alignmentReport.bookUuid", "in", bookUuids!),
     )
-    .where("bookUuid", "in", bookUuids)
     .execute()
 
   for (const report of oldReports) {
-    // just recalc grade
-    const s =
-      report.sentenceCoverage && report.audioCoverage
-        ? gradeForScore(report.sentenceCoverage, report.audioCoverage)
-        : ({ grade: "F", band: 4, score: 0 } as const)
+    const s = gradeForScore(report.sentenceCoverage, report.audioCoverage)
 
     await db
       .updateTable("alignmentReport")

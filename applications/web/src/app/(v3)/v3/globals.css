@@ -270,24 +270,44 @@
   --st-orange-900: oklch(0.502 0.143 44);
 
   /* ===== teal ===== */
-  --good: oklch(0.62 0.1 215);
-  --good-bg: oklch(0.955 0.028 215);
-  --good-line: oklch(0.86 0.05 215);
+  --good: oklch(0.6 0.13 205);
+  --good-bg: oklch(0.95 0.035 205);
+  --good-line: oklch(0.84 0.07 205);
 
-  /* ===== sage ===== */
-  --positive: oklch(0.6 0.1 150);
-  --positive-bg: oklch(0.955 0.03 150);
-  --positive-line: oklch(0.86 0.055 150);
+  /* ===== green ===== */
+  --positive: oklch(0.6 0.16 145);
+  --positive-bg: oklch(0.95 0.04 145);
+  --positive-line: oklch(0.84 0.08 145);
 
-  /* ===== ochre ===== */
-  --moderate: oklch(79.903% 0.16508 98.02);
-  --moderate-bg: oklch(0.955 0.045 78);
-  --moderate-line: oklch(0.85 0.08 78);
+  /* ===== amber ===== */
+  --moderate: oklch(0.7 0.16 75);
+  --moderate-bg: oklch(0.955 0.05 80);
+  --moderate-line: oklch(0.86 0.1 80);
 
-  /* ===== brick ===== */
-  --poor: oklch(0.58 0.16 32);
-  --poor-bg: oklch(0.955 0.035 40);
-  --poor-line: oklch(0.86 0.07 40);
+  /* ===== red ===== */
+  --poor: oklch(0.58 0.2 28);
+  --poor-bg: oklch(0.95 0.035 28);
+  --poor-line: oklch(0.85 0.08 28);
+
+  /* ===== grades: blue, green, gold, orange, red, dark red ===== */
+  --grade-s: oklch(0.56 0.16 245);
+  --grade-s-bg: oklch(0.95 0.03 245);
+  --grade-s-line: oklch(0.84 0.07 245);
+  --grade-a: oklch(0.6 0.16 145);
+  --grade-a-bg: oklch(0.95 0.04 145);
+  --grade-a-line: oklch(0.84 0.08 145);
+  --grade-b: oklch(0.68 0.15 88);
+  --grade-b-bg: oklch(0.955 0.05 88);
+  --grade-b-line: oklch(0.86 0.1 88);
+  --grade-c: oklch(0.66 0.18 52);
+  --grade-c-bg: oklch(0.955 0.045 52);
+  --grade-c-line: oklch(0.86 0.1 52);
+  --grade-d: oklch(0.58 0.2 28);
+  --grade-d-bg: oklch(0.95 0.035 28);
+  --grade-d-line: oklch(0.85 0.08 28);
+  --grade-f: oklch(0.44 0.17 20);
+  --grade-f-bg: oklch(0.94 0.035 20);
+  --grade-f-line: oklch(0.8 0.09 20);
 
   --highlight-wash: oklch(0.91 0.06 80);
   --highlight-edge: oklch(0.78 0.11 72);
@@ -420,6 +440,36 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 
   --shell-inset-shadow: none;
   --shell-main-edge: none;
+  --good: oklch(0.74 0.12 205);
+  --good-bg: oklch(0.28 0.04 205);
+  --good-line: oklch(0.4 0.07 205);
+  --positive: oklch(0.74 0.15 145);
+  --positive-bg: oklch(0.28 0.045 145);
+  --positive-line: oklch(0.4 0.08 145);
+  --moderate: oklch(0.8 0.15 80);
+  --moderate-bg: oklch(0.3 0.05 80);
+  --moderate-line: oklch(0.42 0.09 80);
+  --poor: oklch(0.72 0.17 28);
+  --poor-bg: oklch(0.29 0.05 28);
+  --poor-line: oklch(0.42 0.09 28);
+  --grade-s: oklch(0.72 0.14 245);
+  --grade-s-bg: oklch(0.28 0.04 245);
+  --grade-s-line: oklch(0.4 0.07 245);
+  --grade-a: oklch(0.74 0.15 145);
+  --grade-a-bg: oklch(0.28 0.045 145);
+  --grade-a-line: oklch(0.4 0.08 145);
+  --grade-b: oklch(0.8 0.15 88);
+  --grade-b-bg: oklch(0.3 0.05 88);
+  --grade-b-line: oklch(0.42 0.09 88);
+  --grade-c: oklch(0.76 0.17 52);
+  --grade-c-bg: oklch(0.3 0.05 52);
+  --grade-c-line: oklch(0.42 0.09 52);
+  --grade-d: oklch(0.72 0.17 28);
+  --grade-d-bg: oklch(0.29 0.05 28);
+  --grade-d-line: oklch(0.42 0.09 28);
+  --grade-f: oklch(0.66 0.17 20);
+  --grade-f-bg: oklch(0.27 0.05 20);
+  --grade-f-line: oklch(0.4 0.09 20);
 }
 
 @media (min-width: 768px) {

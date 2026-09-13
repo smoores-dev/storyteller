@@ -8,6 +8,7 @@ import { cn } from "@v3/_/lib/utils"
 import { type BookAlignmentReportView } from "@/alignmentReportView"
 import { ProcessingDropdown } from "@/app/(v3)/v3/_/components/books/BookDetails/ProcessingSection"
 import { useProcessingRun } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
+import { GRADE_TILE } from "@/app/(v3)/v3/_/components/books/grade-pill"
 import {
   useFormatDate,
   useFormatDuration,
@@ -18,10 +19,8 @@ import * as icon from "@/icons"
 import { useGetBookQuery } from "@/store/api"
 
 import {
-  BAND_VERDICT,
+  GRADE_VERDICT,
   TONE_TEXT,
-  TONE_TILE,
-  bandTone,
   confidenceTone,
   engineLabel,
   percentTone,
@@ -122,8 +121,7 @@ export function Masthead({
     { skip: !canProcess },
   )
   const { summary, job } = view
-  const tone = bandTone(summary.band)
-  const verdict = BAND_VERDICT[summary.band] ?? "failed"
+  const verdict = GRADE_VERDICT[summary.grade]
 
   const provenance = [
     formatDate(view.createdAt),
@@ -137,14 +135,14 @@ export function Masthead({
   return (
     <section
       className={cn(
-        "bg-card flex w-fit max-w-full items-center gap-3 rounded-lg border px-3 py-2",
+        "bg-card flex w-fit max-w-full items-center gap-3 rounded-md border px-3 py-2",
         narrow && "w-full",
       )}
     >
       <div
         className={cn(
-          "flex size-11 shrink-0 items-center justify-center rounded-lg border text-xl",
-          TONE_TILE[tone],
+          "flex size-11 shrink-0 items-center justify-center rounded-md border text-xl",
+          GRADE_TILE[summary.grade],
         )}
       >
         <span className="font-heading leading-none font-medium">

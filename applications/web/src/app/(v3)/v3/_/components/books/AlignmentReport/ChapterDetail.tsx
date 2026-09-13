@@ -56,7 +56,7 @@ export function ChapterDetail({
 
   if (!item) {
     return (
-      <p className="text-muted-foreground rounded-lg border p-6 text-xs">
+      <p className="text-muted-foreground rounded-md border p-6 text-xs">
         {t("detail.empty")}
       </p>
     )
@@ -69,30 +69,42 @@ export function ChapterDetail({
 
   return (
     <div
-      className={cn("flex flex-col gap-3", !narrow && "rounded-lg border p-4")}
+      className={cn(
+        "flex min-h-0 flex-col gap-3",
+        !narrow && "bg-card h-full rounded-md border p-4",
+      )}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-start gap-2">
         {onBack && (
           <Button
             variant="ghost"
             size="icon-sm"
+            className="shrink-0"
             aria-label={t("back")}
             onClick={onBack}
           >
             <icon.ArrowLeft />
           </Button>
         )}
-        <h3 className="font-heading min-w-0 truncate text-lg leading-tight font-medium">
-          {item.label}
-        </h3>
-        <span className="text-muted-foreground shrink-0 text-[11px]">
-          {item.index >= 0 && `${t("detail.spine", { index: item.index })} · `}
-          {hrefStem(item.href)}
-        </span>
-        <JudgmentBadge judgment={item.judgment} />
-        <ListenBadge item={item} />
-        <PendingBadge item={item} />
-        <div className="ml-auto flex shrink-0 items-center gap-0.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h3
+            className="font-heading truncate text-lg leading-tight font-medium"
+            title={item.label}
+          >
+            {item.label}
+          </h3>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-muted-foreground text-[11px]">
+              {item.index >= 0 &&
+                `${t("detail.spine", { index: item.index })} · `}
+              {hrefStem(item.href)}
+            </span>
+            <JudgmentBadge judgment={item.judgment} />
+            <ListenBadge item={item} />
+            <PendingBadge item={item} />
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
           {onPrev !== undefined || onNext !== undefined ? (
             <>
               <TooltipButton
@@ -168,7 +180,6 @@ export function ChapterDetail({
 
       <RuleLine item={item} />
 
-      {/* {item.status === "aligned" ? ( */}
       <ChapterBody
         bookUuid={bookUuid}
         item={item}
@@ -177,6 +188,7 @@ export function ChapterDetail({
         allSpans={spans}
         tracks={tracks}
         editor={editor}
+        narrow={narrow}
       />
     </div>
   )
@@ -285,6 +297,7 @@ function ChapterBody({
   allSpans,
   tracks,
   editor,
+  narrow,
 }: {
   bookUuid: UUID
   item: ViewSpineItem
@@ -293,6 +306,7 @@ function ChapterBody({
   allSpans: ReportSpan[]
   tracks: Track[]
   editor: DecisionEditor
+  narrow: boolean
 }) {
   const notAligned = item.status !== "aligned"
 
@@ -349,14 +363,14 @@ function ChapterBody({
             item.sentenceCount
           )}
           {item.interpolatedSentenceCount > 0 && (
-            <span className="text-muted-foreground ml-1 text-[11px] font-normal">
+            <span className="text-muted-foreground ml-1 text-[11px] font-normal whitespace-nowrap">
               {t("detail.interpolated", {
                 count: item.interpolatedSentenceCount,
               })}
             </span>
           )}
           {item.droppedSentenceCount > 0 && (
-            <span className="text-muted-foreground ml-1 text-[11px] font-normal">
+            <span className="text-muted-foreground ml-1 text-[11px] font-normal whitespace-nowrap">
               {t("detail.dropped", {
                 count: item.droppedSentenceCount,
               })}
@@ -383,7 +397,7 @@ function ChapterBody({
   return (
     <>
       {!notAligned && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
           {stats.map((stat) => (
             <div key={stat.key} className="flex items-center gap-1">
               {stat.icon}
@@ -422,7 +436,9 @@ function ChapterBody({
             const title = [
               `${hull.track.name} · ${formatClock(hull.start)} → ${formatClock(hull.end)}`,
               t("detail.stretches", { count: hull.stretches }),
-              !hull.track.present && clip ? t("detail.fromOriginal") : null,
+              hull.track.playback === "original" && clip
+                ? t("detail.fromOriginal")
+                : null,
               shared || null,
             ]
               .filter((part): part is string => part !== null)
@@ -433,14 +449,22 @@ function ChapterBody({
                 key={hull.track.name}
                 title={title}
                 className={cn(
-                  "inline-flex items-center gap-0.5 rounded-md border py-0.5 pr-0.5 pl-0.5 text-[11px]",
+                  "inline-flex items-center gap-0.5 rounded-sm border py-0.5 pr-0.5 pl-0.5 text-[11px]",
                   excluded && "text-muted-foreground",
                 )}
               >
                 {clip ? (
                   <PlayButton clip={clip} className="size-5" />
                 ) : (
-                  <span className="size-5 shrink-0" />
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="size-5"
+                    disabled
+                    aria-label={t("loose.unavailable")}
+                  >
+                    <icon.PlayerPlay />
+                  </Button>
                 )}
                 <span
                   className={cn("tabular-nums", excluded && "line-through")}
@@ -503,7 +527,12 @@ function ChapterBody({
       )}
 
       {item.status !== "excluded" && (
-        <ChapterText bookUuid={bookUuid} item={item} spans={spans} />
+        <ChapterText
+          bookUuid={bookUuid}
+          item={item}
+          spans={spans}
+          className={narrow ? "max-h-[60vh]" : "min-h-0 flex-1"}
+        />
       )}
     </>
   )

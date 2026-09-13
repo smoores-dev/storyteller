@@ -7,18 +7,7 @@ import {
   type RetiredFieldDef,
 } from "./types"
 
-export const ALIGNMENT_GRADES = [
-  "S",
-  "A",
-  "A-",
-  "B",
-  "B-",
-  "C",
-  "D",
-  "F",
-  // "D",
-  // "F",
-] as const
+export const ALIGNMENT_GRADES = ["S", "A", "B", "C", "D", "F"] as const
 
 export const RECENCY_DATE_PRESETS: DatePreset[] = [
   { label: "Last 24 hours", days: 1 },

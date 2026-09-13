@@ -27,7 +27,7 @@ const makeReport = (): LegacyReport =>
   }) as unknown as LegacyReport
 
 void describe("createAlignmentReport", () => {
-  void it("prunes the payload of superseded reports but keeps their summary", async () => {
+  void it("prunes all but the two newest payloads and keeps every summary", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [{ title: "Book" }]) as UUID[]
 
@@ -41,6 +41,11 @@ void describe("createAlignmentReport", () => {
       jobUuid: null,
       report: makeReport(),
     })
+    const { report: third } = await createAlignmentReport({
+      bookUuid: bookUuid!,
+      jobUuid: null,
+      report: makeReport(),
+    })
 
     const rows = ctx.sqlite
       .prepare(
@@ -48,12 +53,14 @@ void describe("createAlignmentReport", () => {
       )
       .all(bookUuid) as { uuid: string; pruned: number; grade: string }[]
 
-    assert.strictEqual(rows.length, 2)
+    assert.strictEqual(rows.length, 3)
     const firstRow = rows.find((r) => r.uuid === first.uuid)
     const secondRow = rows.find((r) => r.uuid === second.uuid)
+    const thirdRow = rows.find((r) => r.uuid === third.uuid)
     assert.strictEqual(firstRow?.pruned, 1)
     assert.ok(firstRow.grade)
     assert.strictEqual(secondRow?.pruned, 0)
+    assert.strictEqual(thirdRow?.pruned, 0)
   })
 
   void it("returns the latest report with its payload intact", async () => {
@@ -134,7 +141,7 @@ void describe("applyAlignmentOverrides", () => {
       },
     })
 
-    assert.strictEqual(created.grade, "F")
+    assert.strictEqual(created.grade, "B")
     assert.strictEqual(created.score, 65)
     assert.strictEqual(created.confidence, 58)
     assert.strictEqual(created.sentenceCoverage, 50)

@@ -19,8 +19,10 @@ import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
 
 import {
+  type ReportTone,
   TONE_BADGE,
   type Track,
+  itemTone,
   judgmentTone,
   matchedPercent,
   needsListen,
@@ -31,14 +33,12 @@ import {
 import { type DecisionEditor } from "./useDecisionEditor"
 import { type ReportSelection } from "./useReportSelection"
 
-const ROW_FILL =
-  "[--row-fill:color-mix(in_oklab,var(--color-positive)_14%,transparent)] dark:[--row-fill:color-mix(in_oklab,var(--color-positive)_22%,transparent)]"
-
-function rowFillStyle(percent: number | null) {
+function rowFillStyle(percent: number | null, tone: ReportTone) {
   if (percent === null || percent <= 0) return undefined
   const stop = `${Math.min(percent, 100).toFixed(1)}%`
+  const fill = `color-mix(in oklab, var(--color-${tone}) 22%, transparent)`
   return {
-    backgroundImage: `linear-gradient(to right, var(--row-fill) ${stop}, transparent ${stop})`,
+    backgroundImage: `linear-gradient(to right, ${fill} ${stop}, transparent ${stop})`,
   }
 }
 
@@ -169,77 +169,79 @@ function BulkBar({
   }
 
   return (
-    <div className="border-primary/40 bg-primary/5 flex flex-wrap items-center gap-1 rounded-lg border px-2 py-1 text-xs">
-      <span className="mr-1 font-medium">
-        {t("bulk.selected", { count: targets.length })}
-      </span>
-      <TooltipButton
-        variant="ghost"
-        size="icon-xs"
-        aria-label={t("actions.approve")}
-        tooltip={t("actions.approve")}
-        onClick={() => {
-          judge("approved")
-        }}
-      >
-        <icon.Check />
-      </TooltipButton>
-      <TooltipButton
-        variant="ghost"
-        size="icon-xs"
-        aria-label={t("actions.exclude")}
-        tooltip={t("actions.exclude")}
-        onClick={() => {
-          judge("excluded")
-        }}
-      >
-        <icon.EyeOff />
-      </TooltipButton>
-      {targets.some(skippedByRule) && (
+    <div className="bg-card sticky top-0 z-10 -mb-2 pb-2 text-xs">
+      <div className="border-primary/40 bg-primary/5 flex flex-wrap items-center gap-1 rounded-md border px-2 py-1">
+        <span className="mr-1 font-medium">
+          {t("bulk.selected", { count: targets.length })}
+        </span>
         <TooltipButton
           variant="ghost"
           size="icon-xs"
-          aria-label={t("actions.include")}
-          tooltip={t("actions.includeHint")}
+          aria-label={t("actions.approve")}
+          tooltip={t("actions.approve")}
           onClick={() => {
-            judge("included")
+            judge("approved")
           }}
         >
-          <icon.Eye />
+          <icon.Check />
         </TooltipButton>
-      )}
-      <Button
-        variant="ghost"
-        size="xs"
-        disabled={!targets.some((item) => item.judgment !== null)}
-        onClick={() => {
-          judge(null)
-        }}
-      >
-        {t("actions.clearJudgment")}
-      </Button>
-      <TooltipButton
-        variant="ghost"
-        size="icon-xs"
-        aria-label={t("bulk.playInOrder")}
-        tooltip={t("bulk.playInOrder")}
-        disabled={clips.length === 0}
-        onClick={() => {
-          playAll(clips)
-        }}
-      >
-        <icon.PlayerPlay />
-      </TooltipButton>
-      <TooltipButton
-        variant="ghost"
-        size="icon-xs"
-        className="ml-auto"
-        aria-label={t("bulk.clear")}
-        tooltip={t("bulk.clear")}
-        onClick={selection.clearChecked}
-      >
-        <icon.Close />
-      </TooltipButton>
+        <TooltipButton
+          variant="ghost"
+          size="icon-xs"
+          aria-label={t("actions.exclude")}
+          tooltip={t("actions.exclude")}
+          onClick={() => {
+            judge("excluded")
+          }}
+        >
+          <icon.EyeOff />
+        </TooltipButton>
+        {targets.some(skippedByRule) && (
+          <TooltipButton
+            variant="ghost"
+            size="icon-xs"
+            aria-label={t("actions.include")}
+            tooltip={t("actions.includeHint")}
+            onClick={() => {
+              judge("included")
+            }}
+          >
+            <icon.Eye />
+          </TooltipButton>
+        )}
+        <Button
+          variant="ghost"
+          size="xs"
+          disabled={!targets.some((item) => item.judgment !== null)}
+          onClick={() => {
+            judge(null)
+          }}
+        >
+          {t("actions.clearJudgment")}
+        </Button>
+        <TooltipButton
+          variant="ghost"
+          size="icon-xs"
+          aria-label={t("bulk.playInOrder")}
+          tooltip={t("bulk.playInOrder")}
+          disabled={clips.length === 0}
+          onClick={() => {
+            playAll(clips)
+          }}
+        >
+          <icon.PlayerPlay />
+        </TooltipButton>
+        <TooltipButton
+          variant="ghost"
+          size="icon-xs"
+          className="ml-auto"
+          aria-label={t("bulk.clear")}
+          tooltip={t("bulk.clear")}
+          onClick={selection.clearChecked}
+        >
+          <icon.Close />
+        </TooltipButton>
+      </div>
     </div>
   )
 }
@@ -324,11 +326,11 @@ export function SpineList({
       )}
 
       {rows.length === 0 ? (
-        <p className="text-muted-foreground rounded-lg border p-4 text-xs">
+        <p className="text-muted-foreground rounded-md border p-4 text-xs">
           {t("list.empty")}
         </p>
       ) : (
-        <div className="divide-border divide-y overflow-hidden rounded-lg border">
+        <div className="divide-border divide-y overflow-hidden rounded-md border">
           {rows.map((item) => {
             const isChecked = selection.checked.has(item.href)
             const isOpen = item.href === selection.openHref
@@ -348,11 +350,12 @@ export function SpineList({
                   selection.setOpenHref(item.href)
                 }}
                 style={
-                  item.judgment === null ? rowFillStyle(percent) : undefined
+                  item.judgment === null
+                    ? rowFillStyle(percent, itemTone(item))
+                    : undefined
                 }
                 className={cn(
                   "hover:bg-muted/40 focus-visible:ring-ring/30 grid cursor-pointer grid-cols-[1rem_1.25rem_minmax(0,1fr)_auto] items-center gap-2 bg-no-repeat px-2 py-1.5 text-xs outline-none focus-visible:ring-2",
-                  ROW_FILL,
                   isOpen && "bg-muted",
                   isChecked && "bg-primary/10",
                   (item.judgment === "excluded" ||

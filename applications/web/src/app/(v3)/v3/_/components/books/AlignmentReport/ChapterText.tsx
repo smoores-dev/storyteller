@@ -279,10 +279,12 @@ export function ChapterText({
   bookUuid,
   item,
   spans,
+  className,
 }: {
   bookUuid: UUID
   item: ViewSpineItem
   spans: ReportSpan[]
+  className?: string
 }) {
   const t = useTranslation("AlignmentReport")
   const notAligned = item.status !== "aligned"
@@ -411,7 +413,7 @@ export function ChapterText({
   const unavailable = !item.readHref || isError
 
   return (
-    <div className="flex min-h-0 flex-col gap-1.5">
+    <div className={cn("flex min-h-0 flex-col gap-1.5", className)}>
       {!notAligned && (
         <div className="flex items-center gap-1">
           <span className="text-muted-foreground min-w-0 flex-1 truncate text-[10px]">
@@ -467,8 +469,8 @@ export function ChapterText({
       <div
         ref={container}
         className={cn(
-          "max-h-[60vh] min-h-24 overflow-y-auto rounded-md border px-4 py-3 text-sm leading-relaxed",
-          "[&_[data-state=interpolated]]:decoration-moderate/70 [&_[data-state=interpolated]]:text-moderate/70 [&_*]:font-sans! [&_[data-state=dropped]]:line-through [&_[data-state=dropped]]:opacity-35 [&_[data-state=interpolated]]:underline [&_[data-state=interpolated]]:decoration-dotted [&_[data-state=interpolated]]:decoration-2 [&_[data-state=interpolated]]:underline-offset-4 [&_[data-state=unmatched]]:opacity-35 [&_h1]:text-lg [&_h1]:font-medium [&_h2]:text-base [&_h2]:font-medium [&_h3]:font-medium [&_p]:my-2",
+          "min-h-24 flex-1 overflow-y-auto rounded-md border px-4 py-3 text-[13px]/6",
+          "[&_[data-state=interpolated]]:decoration-moderate/70 [&_[data-state=interpolated]]:text-moderate/70 [&_*]:font-sans! [&_[data-state=dropped]]:line-through [&_[data-state=dropped]]:opacity-35 [&_[data-state=interpolated]]:underline [&_[data-state=interpolated]]:decoration-dotted [&_[data-state=interpolated]]:decoration-2 [&_[data-state=interpolated]]:underline-offset-4 [&_[data-state=unmatched]]:opacity-35 [&_h1]:text-base [&_h1]:font-medium [&_h2]:text-sm [&_h2]:font-medium [&_h3]:font-medium [&_p]:my-2",
           "[&_[data-match]]:bg-highlight-bg/70 [&_[data-match]]:border-highlight [&_[data-match]]:dark:bg-highlight/25 [&_[data-match]]:border-b [&_[data-match]]:box-decoration-clone",
           "[&_[data-readable]]:hover:bg-tint [&_[data-readable]]:cursor-pointer [&_[data-readable]]:rounded-xs [&_[data-readable]]:transition-colors [&_[data-readable]]:motion-reduce:transition-none",
           "[&_[data-reading]]:bg-tint-strong [&_[data-reading]]:shadow-tint-strong [&_[data-reading]]:text-foreground [&_[data-reading]]:box-decoration-clone [&_[data-reading]]:opacity-100 [&_[data-reading]]:shadow-[0_0_0_3px] [&_[data-reading]]:hover:bg-tint-strong",
