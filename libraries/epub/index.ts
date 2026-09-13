@@ -591,7 +591,7 @@ export class Epub {
 
   private manifest: Record<string, ManifestItem> | null = null
 
-  private spine: string[] | null = null
+  private spine: { itemRef: string; linear: boolean }[] | null = null
 
   private packageMutex = new Mutex()
 
@@ -2591,8 +2591,19 @@ export class Epub {
 
     this.spine = spine["spine"]
       .filter((node): node is XmlElement => !Epub.isXmlTextNode(node))
-      .map((itemref) => itemref[":@"]?.["@_idref"])
-      .filter((idref): idref is string => !!idref)
+      .map((itemref) => {
+        const idRef = itemref[":@"]?.["@_idref"]
+        const linear = itemref[":@"]?.["@_linear"]
+
+        return {
+          itemRef: idRef,
+          linear: linear === "no" ? false : true,
+        }
+      })
+      .filter(
+        (itemref): itemref is { itemRef: string; linear: boolean } =>
+          !!itemref.itemRef,
+      )
 
     return this.spine
   }
@@ -2609,7 +2620,15 @@ export class Epub {
     const spine = await this.getSpine()
     const manifest = await this.getManifest()
 
-    return spine.map((itemref) => manifest[itemref]).filter((entry) => !!entry)
+    const spineItems: (ManifestItem & { linear: boolean })[] = []
+
+    for (const itemref of spine) {
+      const item = manifest[itemref.itemRef]
+      if (!item) continue
+      spineItems.push({ ...item, linear: itemref.linear })
+    }
+
+    return spineItems
   }
 
   /**

@@ -64,6 +64,7 @@ import {
 import { slugify } from "../slugify.ts"
 
 import { type EmissionTimings, framesToSeconds } from "./emissions.ts"
+import { excludeChapter } from "./exclusions.ts"
 import {
   type TokenAlignment,
   ctcForcedAlign,
@@ -913,6 +914,9 @@ export class Aligner {
   ) {
     const chapterId = spineItem.id
     const title = this.titles.get(hrefStem(spineItem.href)) ?? null
+
+    if (excludeChapter(chapterId, manifest)) {
+    }
 
     if (manifest[chapterId]?.properties?.includes("nav")) {
       this.markSpine({
