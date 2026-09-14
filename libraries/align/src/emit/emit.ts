@@ -157,7 +157,8 @@ export async function emit(
         cachedIdentity.model === identity.model &&
         cachedIdentity.dtype === identity.dtype &&
         cachedIdentity.chunkSeconds === identity.chunkSeconds &&
-        cachedIdentity.track === identity.track
+        JSON.stringify(cachedIdentity.track ?? "") ===
+          JSON.stringify(identity.track ?? "")
           ? "cached"
           : "stale"
     }
