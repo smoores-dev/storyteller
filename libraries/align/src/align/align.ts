@@ -62,6 +62,7 @@ import {
   type SentenceRange,
   type StorytellerTranscription,
   type WordRange,
+  expandEmptyAudioRanges,
   expandEmptySentenceRanges,
   getChapterDuration,
   getSentenceRanges,
@@ -471,7 +472,7 @@ export class Aligner {
     }
 
     await this.addAudio([
-      ...sentenceRanges.map(({ audiofile }) => audiofile),
+      ...sentenceRanges.flatMap((range) => range.audiofiles),
       ...holes.map(({ audiofile }) => audiofile),
     ])
 
@@ -506,13 +507,8 @@ export class Aligner {
 
     const chapterDuration = getChapterDuration(
       [
-        ...sentenceRanges,
-        ...holes.map((hole) => ({
-          ...hole,
-          id: hole.sentenceId,
-          chapterId: chapter.id,
-          state: "unmatched" as const,
-        })),
+        ...sentenceRanges.flatMap((range) => range.audioRanges),
+        ...holes,
       ].toSorted(
         (a, b) =>
           this.audiofiles.indexOf(a.audiofile) -
@@ -839,13 +835,13 @@ export class Aligner {
       if (!firstRangeA) return 1
       if (!firstRangeB) return -1
       const firstAudiofileIndexA = this.audiofiles.indexOf(
-        firstRangeA.audiofile,
+        firstRangeA.first.audiofile,
       )
       const firstAudiofileIndexB = this.audiofiles.indexOf(
-        firstRangeB.audiofile,
+        firstRangeB.first.audiofile,
       )
       if (firstAudiofileIndexA === firstAudiofileIndexB) {
-        return firstRangeA.start - firstRangeB.start
+        return firstRangeA.first.start - firstRangeB.first.start
       }
       return firstAudiofileIndexA - firstAudiofileIndexB
     })
@@ -922,7 +918,7 @@ export class Aligner {
       )
       alignedChapter.sentenceRanges = finalSentenceRanges
       for (const [i, wordRanges] of enumerate(alignedChapter.wordRanges)) {
-        alignedChapter.wordRanges[i] = expandEmptySentenceRanges(wordRanges)
+        alignedChapter.wordRanges[i] = expandEmptyAudioRanges(wordRanges)
       }
       await this.writeAlignedChapter(
         alignedChapter,

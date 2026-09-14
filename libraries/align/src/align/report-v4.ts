@@ -221,13 +221,18 @@ export function buildChapterSpans(input: {
   while (runStart < states.length) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const head = states[runStart]!
-    const track = head.range ? input.trackIndex(head.range.audiofile) : -1
+    const track = head.range ? input.trackIndex(head.range.first.audiofile) : -1
     let runEnd = runStart
     while (runEnd + 1 < states.length) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const next = states[runEnd + 1]!
       if (next.state !== head.state) break
-      if (next.range && input.trackIndex(next.range.audiofile) !== track) break
+      if (
+        next.range &&
+        input.trackIndex(next.range.first.audiofile) !== track
+      ) {
+        break
+      }
       runEnd++
     }
 
@@ -244,15 +249,18 @@ export function buildChapterSpans(input: {
         audio: null,
       })
     } else {
-      let start = head.range.start
-      let end = head.range.end
+      let start = head.range.first.start
+      let end = head.range.first.end
       let scoreSum = 0
       let scoreCount = 0
       for (let id = runStart; id <= runEnd; id++) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const range = states[id]!.range!
-        start = Math.min(start, range.start)
-        end = Math.max(end, range.end)
+        for (const clip of range.audioRanges) {
+          if (input.trackIndex(clip.audiofile) !== track) continue
+          start = Math.min(start, clip.start)
+          end = Math.max(end, clip.end)
+        }
         const score = input.sentenceScore(id)
         if (score !== null) {
           scoreSum += score

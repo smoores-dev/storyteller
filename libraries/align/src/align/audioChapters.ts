@@ -98,18 +98,7 @@ export async function writeAudioChapters(
     await epub.addMetadata({
       type: "meta",
       properties: { property: "media:duration", refines: `#${overlayId}` },
-      value: Epub.formatSmilDuration(
-        getChapterDuration(
-          chapter.holes.map((hole) => ({
-            id: 0,
-            chapterId: id,
-            audiofile: hole.audiofile,
-            start: hole.start,
-            end: hole.end,
-            state: "unmatched",
-          })),
-        ),
-      ),
+      value: Epub.formatSmilDuration(getChapterDuration(chapter.holes)),
     })
 
     await insertNavEntry(epub, anchorItem, chapter.anchor.position, {

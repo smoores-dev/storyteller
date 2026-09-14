@@ -236,27 +236,32 @@ function createTextRangeSmallSequences(
       holes,
       "after",
     )
-    return [...before, sentenceElement(sentenceRange), ...after]
+    return [...before, ...sentenceElements(sentenceRange), ...after]
   })
 
-  function sentenceElement(sentenceRange: SentenceRange) {
+  function sentenceElements(sentenceRange: SentenceRange) {
     if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
-      return Epub.createXmlElement(
-        "par",
-        {
-          id: `${chapter.id}-s${sentenceRange.id}`,
-          "epub:type": stateType(sentenceRange.state),
-        },
-        [
-          Epub.createXmlElement("text", {
-            src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-          }),
-          Epub.createXmlElement("audio", {
-            src: `../Audio/${basename(sentenceRange.audiofile)}`,
-            clipBegin: `${sentenceRange.start.toFixed(3)}s`,
-            clipEnd: `${sentenceRange.end.toFixed(3)}s`,
-          }),
-        ],
+      return sentenceRange.audioRanges.map((range, index) =>
+        Epub.createXmlElement(
+          "par",
+          {
+            id:
+              index === 0
+                ? `${chapter.id}-s${sentenceRange.id}`
+                : `${chapter.id}-s${sentenceRange.id}-a${index}`,
+            "epub:type": stateType(sentenceRange.state),
+          },
+          [
+            Epub.createXmlElement("text", {
+              src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
+            }),
+            Epub.createXmlElement("audio", {
+              src: `../Audio/${basename(range.audiofile)}`,
+              clipBegin: `${range.start.toFixed(3)}s`,
+              clipEnd: `${range.end.toFixed(3)}s`,
+            }),
+          ],
+        ),
       )
     }
 
@@ -265,33 +270,35 @@ function createTextRangeSmallSequences(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
 
-    return Epub.createXmlElement(
-      "seq",
-      {
-        id: `${chapter.id}-s${sentenceRange.id}`,
-        "epub:type": `text-range-small ${stateType(sentenceRange.state)}`,
-        "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-      },
-      words.map((word) =>
-        Epub.createXmlElement(
-          "par",
-          {
-            id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
-            "epub:type": stateType(word.state),
-          },
-          [
-            Epub.createXmlElement("text", {
-              src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
-            }),
-            Epub.createXmlElement("audio", {
-              src: `../Audio/${basename(word.audiofile)}`,
-              clipBegin: `${word.start.toFixed(3)}s`,
-              clipEnd: `${word.end.toFixed(3)}s`,
-            }),
-          ],
+    return [
+      Epub.createXmlElement(
+        "seq",
+        {
+          id: `${chapter.id}-s${sentenceRange.id}`,
+          "epub:type": `text-range-small ${stateType(sentenceRange.state)}`,
+          "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
+        },
+        words.map((word) =>
+          Epub.createXmlElement(
+            "par",
+            {
+              id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
+              "epub:type": stateType(word.state),
+            },
+            [
+              Epub.createXmlElement("text", {
+                src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
+              }),
+              Epub.createXmlElement("audio", {
+                src: `../Audio/${basename(word.audiofile)}`,
+                clipBegin: `${word.start.toFixed(3)}s`,
+                clipEnd: `${word.end.toFixed(3)}s`,
+              }),
+            ],
+          ),
         ),
       ),
-    )
+    ]
   }
 }
 

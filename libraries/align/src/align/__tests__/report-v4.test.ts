@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
-import { type RangeState, type SentenceRange } from "../getSentenceRanges.ts"
+import { type RangeState, SentenceRange } from "../getSentenceRanges.ts"
 import { assembleReport, buildChapterSpans } from "../report-v4.ts"
 
 function range(
@@ -11,7 +11,7 @@ function range(
   audiofile = "a.mp3",
   state: RangeState = "matched",
 ): SentenceRange {
-  return { chapterId: "ch", id, start, end, audiofile, state }
+  return new SentenceRange(id, "ch", [{ start, end, audiofile }], state)
 }
 
 const tracks = ["a.mp3", "b.mp3"]

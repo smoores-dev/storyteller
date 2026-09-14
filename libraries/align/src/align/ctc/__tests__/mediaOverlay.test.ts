@@ -3,7 +3,7 @@ import { describe, it } from "node:test"
 
 import { Epub, type ManifestItem } from "@storyteller-platform/epub"
 
-import { type SentenceRange, type WordRange } from "../../getSentenceRanges.ts"
+import { SentenceRange, type WordRange } from "../../getSentenceRanges.ts"
 import { SMIL_PREFIX, createMediaOverlay } from "../mediaOverlay.ts"
 
 const chapter: ManifestItem = {
@@ -13,14 +13,12 @@ const chapter: ManifestItem = {
 }
 
 function range(id: number, state: SentenceRange["state"]): SentenceRange {
-  return {
+  return new SentenceRange(
     id,
-    chapterId: "ch1",
-    start: id * 2,
-    end: id * 2 + 2,
-    audiofile: "/tmp/track.mp4",
+    "ch1",
+    [{ start: id * 2, end: id * 2 + 2, audiofile: "/tmp/track.mp4" }],
     state,
-  }
+  )
 }
 
 function word(sentenceId: number, id: number, state: WordRange["state"]) {

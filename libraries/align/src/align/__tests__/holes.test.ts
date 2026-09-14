@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
-import { type RangeState, type SentenceRange } from "../getSentenceRanges.ts"
+import { type RangeState, SentenceRange } from "../getSentenceRanges.ts"
 import {
   LEGACY_RANGE_BEHAVIOUR,
   collapseRanges,
@@ -16,7 +16,7 @@ function sr(
   audiofile = "a.mp3",
   state: RangeState = "matched",
 ): SentenceRange {
-  return { chapterId, id, start, end, audiofile, state }
+  return new SentenceRange(id, chapterId, [{ start, end, audiofile }], state)
 }
 
 const behaviour = { gapSeconds: 2, audioChapterSeconds: 30, dropUnread: true }
@@ -30,7 +30,7 @@ void describe("collapseRanges", () => {
       LEGACY_RANGE_BEHAVIOUR,
     )
     assert.deepStrictEqual(
-      ranges.map((r) => [r.start, r.end]),
+      ranges.map((r) => [r.first.start, r.last.end]),
       [
         [0, 40],
         [40, 60],
@@ -47,7 +47,7 @@ void describe("collapseRanges", () => {
       behaviour,
     )
     assert.deepStrictEqual(
-      ranges.map((r) => [r.start, r.end]),
+      ranges.map((r) => [r.first.start, r.last.end]),
       [
         [5, 11],
         [11, 15],
@@ -125,8 +125,8 @@ void describe("collapseRanges", () => {
     assert.deepStrictEqual(
       ranges.map((r) => [
         r.id,
-        Math.round(r.start * 1000),
-        Math.round(r.end * 1000),
+        Math.round(r.first.start * 1000),
+        Math.round(r.last.end * 1000),
       ]),
       [
         [0, 0, 11999],
@@ -154,7 +154,10 @@ void describe("collapseRanges with dropped sentences", () => {
       [[0, 29998]],
     )
     assert.deepStrictEqual(
-      ranges.map((r) => [Math.round(r.start * 1000), Math.round(r.end * 1000)]),
+      ranges.map((r) => [
+        Math.round(r.first.start * 1000),
+        Math.round(r.last.end * 1000),
+      ]),
       [
         [29998, 29999],
         [29999, 30000],

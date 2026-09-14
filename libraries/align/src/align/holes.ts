@@ -1,4 +1,4 @@
-import { type SentenceRange } from "./getSentenceRanges.ts"
+import { type AudioRange, type SentenceRange } from "./getSentenceRanges.ts"
 import { slotKey } from "./interpolateSentenceRanges.ts"
 
 export type RangeBehaviour = {
@@ -70,6 +70,8 @@ function between(prev: SentenceRange | null, next: SentenceRange | null) {
   return `${prev ? slotKey(prev) : ""}|${next ? slotKey(next) : ""}`
 }
 
+type Clip = { owner: number; clip: AudioRange }
+
 export function collapseRanges(
   ranges: SentenceRange[],
   audiofiles: string[],
@@ -78,77 +80,87 @@ export function collapseRanges(
 ): { ranges: SentenceRange[]; holes: Hole[] } {
   const gap = behaviour.gapSeconds
   const holes: Hole[] = []
-  const out: SentenceRange[] = ranges.map((range) => ({ ...range }))
+  const out: AudioRange[][] = ranges.map((range) =>
+    range.audioRanges.map((clip) => ({ ...clip })),
+  )
 
   const flow: number[] = []
   for (const [i, range] of ranges.entries()) {
     if (!(behaviour.dropUnread && range.state === "dropped")) flow.push(i)
   }
+  const clips: Clip[] = flow.flatMap((owner) =>
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    out[owner]!.map((clip) => ({ owner, clip })),
+  )
 
   const duration = (file: string) => durations[file] ?? 0
   const isHole = (seconds: number) => gap !== null && seconds > gap
 
-  for (const [f, i] of flow.entries()) {
+  for (const [c, { owner, clip }] of clips.entries()) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const range = out[i]!
-    const prevIndex = flow[f - 1]
-    const nextIndex = flow[f + 1]
-    const prev = prevIndex === undefined ? null : (ranges[prevIndex] ?? null)
-    const next = nextIndex === undefined ? null : (ranges[nextIndex] ?? null)
+    const range = ranges[owner]!
+    const prev = clips[c - 1] ?? null
+    const next = clips[c + 1] ?? null
+    const prevRange =
+      prev && prev.owner !== owner ? (ranges[prev.owner] ?? null) : null
+    const nextRange =
+      next && next.owner !== owner ? (ranges[next.owner] ?? null) : null
+    const sameSentenceBefore = prev !== null && prev.owner === owner
+    const sameSentenceAfter = next !== null && next.owner === owner
 
-    if (!prev || prev.audiofile !== range.audiofile) {
-      if (isHole(range.start)) {
+    if (!prev || prev.clip.audiofile !== clip.audiofile) {
+      if (!sameSentenceBefore && isHole(clip.start)) {
         holes.push({
-          audiofile: range.audiofile,
+          audiofile: clip.audiofile,
           start: 0,
-          end: range.start,
+          end: clip.start,
           anchor: anchorBefore(range),
-          boundary: !prev || prev.chapterId !== range.chapterId,
-          between: between(prev, range),
+          boundary: !prevRange || prevRange.chapterId !== range.chapterId,
+          between: between(prevRange, range),
         })
       } else {
-        range.start = 0
+        clip.start = 0
       }
     }
 
-    if (!next || next.audiofile !== range.audiofile) {
-      const end = duration(range.audiofile)
-      if (isHole(end - range.end)) {
+    if (!next || next.clip.audiofile !== clip.audiofile) {
+      const end = duration(clip.audiofile)
+      if (!sameSentenceAfter && isHole(end - clip.end)) {
         holes.push({
-          audiofile: range.audiofile,
-          start: range.end,
+          audiofile: clip.audiofile,
+          start: clip.end,
           end,
           anchor: anchorAfter(range),
-          boundary: !next || next.chapterId !== range.chapterId,
-          between: between(range, next),
+          boundary: !nextRange || nextRange.chapterId !== range.chapterId,
+          between: between(range, nextRange),
         })
       } else {
-        range.end = end
+        clip.end = end
       }
-    } else if (isHole(next.start - range.end)) {
+    } else if (!sameSentenceAfter && isHole(next.clip.start - clip.end)) {
       holes.push({
-        audiofile: range.audiofile,
-        start: range.end,
-        end: next.start,
+        audiofile: clip.audiofile,
+        start: clip.end,
+        end: next.clip.start,
         anchor: anchorAfter(range),
-        boundary: next.chapterId !== range.chapterId,
-        between: between(range, next),
+        boundary: nextRange !== null && nextRange.chapterId !== range.chapterId,
+        between: between(range, nextRange),
       })
     } else {
-      range.end = next.start
+      clip.end = next.clip.start
     }
   }
 
   if (behaviour.dropUnread) placeDropped(out, ranges, flow, holes)
 
-  const referenced = new Set(ranges.map((range) => range.audiofile))
+  const referenced = new Set(ranges.flatMap((range) => range.audiofiles))
   const flowRanges = flow.map((i) => ranges[i]).filter((r) => r !== undefined)
   for (const [index, audiofile] of audiofiles.entries()) {
     if (referenced.has(audiofile) || duration(audiofile) <= 0) continue
     if (gap === null) continue
     const before = audiofiles.slice(0, index)
     const prev =
-      flowRanges.findLast((r) => before.includes(r.audiofile)) ?? null
+      flowRanges.findLast((r) => before.includes(r.last.audiofile)) ?? null
     const next = prev
       ? (flowRanges[flowRanges.indexOf(prev) + 1] ?? null)
       : (flowRanges[0] ?? null)
@@ -164,11 +176,15 @@ export function collapseRanges(
     })
   }
 
-  return { ranges: out, holes: sortHoles(holes, audiofiles) }
+  return {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    ranges: ranges.map((range, i) => range.withAudioRanges(out[i]!)),
+    holes: sortHoles(holes, audiofiles),
+  }
 }
 
 function placeDropped(
-  out: SentenceRange[],
+  out: AudioRange[][],
   ranges: SentenceRange[],
   flow: number[],
   holes: Hole[],
@@ -182,25 +198,27 @@ function placeDropped(
     }
     let j = i
     while (j < out.length && !flowSet.has(j)) j++
-    const cluster = out.slice(i, j)
     const prevIndex = flow.findLast((f) => f < i)
     const nextIndex = flow.find((f) => f > j - 1)
-    const prev = prevIndex === undefined ? null : (out[prevIndex] ?? null)
-    const next = nextIndex === undefined ? null : (out[nextIndex] ?? null)
+    const prevClip = prevIndex === undefined ? null : out[prevIndex]?.at(-1)
+    const nextClip = nextIndex === undefined ? null : out[nextIndex]?.[0]
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const file = ranges[i]!.audiofile
+    const file = ranges[i]!.first.audiofile
     const host =
-      next && next.audiofile === file
-        ? { file, end: next.start, shrink: null }
-        : prev && prev.audiofile === file
-          ? { file, end: prev.end, shrink: prev }
+      nextClip && nextClip.audiofile === file
+        ? { file, end: nextClip.start, shrink: null }
+        : prevClip && prevClip.audiofile === file
+          ? { file, end: prevClip.end, shrink: prevClip }
           : null
     if (host) {
-      const width = cluster.length * DROPPED_WIDTH
+      const width = (j - i) * DROPPED_WIDTH
       if (host.shrink)
         host.shrink.end = Math.max(host.shrink.start, host.end - width)
-      else if (prev && prev.audiofile === file) {
-        prev.end = Math.max(prev.start, Math.min(prev.end, host.end - width))
+      else if (prevClip && prevClip.audiofile === file) {
+        prevClip.end = Math.max(
+          prevClip.start,
+          Math.min(prevClip.end, host.end - width),
+        )
       }
       for (const hole of holes) {
         if (hole.audiofile === host.file && hole.end === host.end) {
@@ -208,10 +226,10 @@ function placeDropped(
         }
       }
       let cursor = host.end - width
-      for (const range of cluster) {
-        range.audiofile = host.file
-        range.start = cursor
-        range.end = cursor + DROPPED_WIDTH
+      for (let k = i; k < j; k++) {
+        out[k] = [
+          { audiofile: host.file, start: cursor, end: cursor + DROPPED_WIDTH },
+        ]
         cursor += DROPPED_WIDTH
       }
     }

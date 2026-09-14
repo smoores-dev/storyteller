@@ -558,4 +558,5 @@ async function main() {
 
 main().catch((e: unknown) => {
   console.error(e)
+  process.exitCode = 1
 })

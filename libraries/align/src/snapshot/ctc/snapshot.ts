@@ -140,6 +140,7 @@ export async function createAlignmentSnapshot(
     })
 
     let lastChapterSentence = -1
+    let lastTextSrc: string | null = null
     const chapterSentences = segmentation.filter((s) => s.text.match(/\S/))
     const pars = findAll("par", Epub.getXmlChildren(seq))
     for (const par of pars) {
@@ -151,28 +152,41 @@ export async function createAlignmentSnapshot(
 
       const textSrc = text[":@"]?.["@_src"]
       if (!textSrc) continue
-      const result =
-        textRef === "id-fragment"
-          ? getTextSentenceIndexByIdFragment(textSrc)
-          : getTextSentenceIndexByTextFragment(
-              textSrc,
-              chapterSentences,
-              lastChapterSentence,
-            )
 
-      if (result === null) continue
+      // A sentence cut across two audio files has one par per clip; render
+      // the clips on the sentence's single Audio line, separated by "|"
+      const continuation = textSrc === lastTextSrc
+      lastTextSrc = textSrc
 
-      const { fragment, sentenceId } = result
-      const textSentence = chapterSentences[sentenceId]?.text.replace(/\n/, "")
-      if (!textSentence) continue
+      if (continuation) {
+        newSnapshot = newSnapshot.slice(0, -1)
+      } else {
+        const result =
+          textRef === "id-fragment"
+            ? getTextSentenceIndexByIdFragment(textSrc)
+            : getTextSentenceIndexByTextFragment(
+                textSrc,
+                chapterSentences,
+                lastChapterSentence,
+              )
 
-      lastChapterSentence = sentenceId
+        if (result === null) continue
 
-      if (textRef === "text-fragment") {
-        newSnapshot += `${fragment}\n`
+        const { fragment, sentenceId } = result
+        const textSentence = chapterSentences[sentenceId]?.text.replace(
+          /\n/,
+          "",
+        )
+        if (!textSentence) continue
+
+        lastChapterSentence = sentenceId
+
+        if (textRef === "text-fragment") {
+          newSnapshot += `${fragment}\n`
+        }
+
+        newSnapshot += `Text:  ${transliterate ? (await slugify(textSentence, locale)).result : textSentence}\n`
       }
-
-      newSnapshot += `Text:  ${transliterate ? (await slugify(textSentence, locale)).result : textSentence}\n`
 
       const audioSrc = audio[":@"]?.["@_src"]
       if (!audioSrc) continue
@@ -207,7 +221,11 @@ export async function createAlignmentSnapshot(
         }
       }
 
-      newSnapshot += `Audio: ${decodedSentence}\n`
+      if (continuation) {
+        newSnapshot = `${newSnapshot.slice(0, -1)}|${decodedSentence}\n`
+      } else {
+        newSnapshot += `Audio: ${decodedSentence}\n`
+      }
     }
 
     newSnapshot += `\n`

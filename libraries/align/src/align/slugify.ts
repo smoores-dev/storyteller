@@ -1,6 +1,8 @@
+import { type WordEntry } from "@echogarden/text-segmentation"
 import { getCurrency } from "locale-currency"
 import { toWords } from "to-words"
 
+import { type Mapping } from "@storyteller-platform/mapping"
 import { slugify as transliterateSlugify } from "@storyteller-platform/transliteration"
 
 const replacerMap = new WeakMap<
@@ -159,4 +161,29 @@ export async function slugify(
   })
 
   return { result, mapping }
+}
+
+/**
+ * Map the offsets of `words` through `mapping` into inclusive character
+ * ranges of the slugified sentence, offset by `slugStart`.
+ */
+export function slugifiedWordRanges(
+  words: WordEntry[],
+  mapping: Mapping,
+  sentenceStart: number,
+  slugStart: number,
+): [number, number][] {
+  const cursor = mapping.cursor()
+
+  return words
+    .filter((word) => !word.isPunctuation)
+    .map<[number, number]>((word) => {
+      const start = cursor.map(word.startOffset - sentenceStart)
+      const end = Math.max(
+        cursor.map(word.endOffset - sentenceStart, "end") - 1,
+        start,
+      )
+
+      return [start + slugStart, end + slugStart]
+    })
 }
