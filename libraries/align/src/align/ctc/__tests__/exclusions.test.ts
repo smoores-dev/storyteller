@@ -243,6 +243,25 @@ const bodySpecials: SpineFixture[] = [
     expect: by("include", "content-type", "chapter"),
   },
   {
+    id: "untagged_footnotes",
+    href: "Text/untagged_footnotes.xhtml",
+    contents: page(
+      `${prose("The Weir")}<aside epub:type="footnote"><p>4. The weir was rebuilt in stone.</p></aside><aside epub:type="footnote"><p>5. Nobody fishes there now.</p></aside>`,
+    ),
+    because:
+      "footnote asides in an untagged chapter are a small part of its text",
+    expect: byDefault,
+  },
+  {
+    id: "notes_asides",
+    href: "Text/part0010.xhtml",
+    contents: page(
+      `<p>NOTES</p><aside epub:type="footnote"><p>1. The translation of the river chronicle used throughout is the 1954 edition.</p></aside><aside epub:type="footnote"><p>2. The parish records were consulted in the county archive in the spring.</p></aside>`,
+    ),
+    because: "a page made mostly of footnote asides is a notes page",
+    expect: by("exclude", "content-type", "footnote"),
+  },
+  {
     id: "pagebreaks",
     href: "Text/pagebreaks.xhtml",
     contents: page(

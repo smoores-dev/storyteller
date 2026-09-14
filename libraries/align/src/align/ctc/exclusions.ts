@@ -91,6 +91,8 @@ const ZONE_FRACTION = 0.15
 
 const ZONE_MIN_ITEMS = 6
 
+const CONTENT_TYPE_SHARE = 0.5
+
 const XHTML_TYPES = new Set(["application/xhtml+xml", "text/html"])
 
 export function spineZone(index: number, length: number): SpineZone {
@@ -135,17 +137,23 @@ function tokensInclude(tokens: string[], phrase: string): boolean {
   return haystack.includes(needle)
 }
 
-function outermostTypes(xml: ParsedXml, into: Set<string>) {
+function textLength(xml: ParsedXml): number {
+  return Epub.getXhtmlTextContent(xml).replace(/\s+/g, "").length
+}
+
+function outermostTypes(xml: ParsedXml, into: Map<string, number>) {
   for (const node of xml) {
     if (Epub.isXmlTextNode(node)) continue
+    const children = Epub.getXmlChildren(node)
     const type = Epub.getXmlAttributes(node)["epub:type"]
-    if (type) {
-      for (const value of type.trim().split(/\s+/)) {
-        if (value) into.add(value)
-      }
+    if (!type) {
+      outermostTypes(children, into)
       continue
     }
-    outermostTypes(Epub.getXmlChildren(node), into)
+    const length = textLength(children)
+    for (const value of type.trim().split(/\s+/)) {
+      if (value) into.set(value, (into.get(value) ?? 0) + length)
+    }
   }
 }
 
@@ -160,7 +168,12 @@ export function contentTypes(xml: ParsedXml): string[] {
       if (value) found.add(value)
     }
   }
-  outermostTypes(body["body"], found)
+  const typed = new Map<string, number>()
+  outermostTypes(body["body"], typed)
+  const total = textLength(body["body"])
+  for (const [type, length] of typed) {
+    if (total === 0 || length / total >= CONTENT_TYPE_SHARE) found.add(type)
+  }
   return [...found]
 }
 

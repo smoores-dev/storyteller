@@ -221,7 +221,10 @@ export const librarySections = {
     allFilter: GRADED_FILTER,
     compareItems: (a, b) =>
       (GRADE_RANK[b.name] ?? -1) - (GRADE_RANK[a.name] ?? -1),
-    itemColor: (key) => GRADE_COLORS[key] ?? null,
+    itemColor: (key) =>
+      key in GRADE_COLORS
+        ? GRADE_COLORS[key as keyof typeof GRADE_COLORS]
+        : null,
     sort: {
       field: "alignmentGrade",
       direction: "desc",
