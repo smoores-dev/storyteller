@@ -105,19 +105,23 @@ export interface Report {
 export function buildAudioFileContexts(
   sentenceRanges: SentenceRange[],
 ): AudioFileContext[] {
-  return sentenceRanges.reduce<AudioFileContext[]>((acc, range) => {
-    const existing = acc.find((context) => context.filepath === range.audiofile)
-    if (existing) {
-      existing.end = range.end
+  return sentenceRanges
+    .flatMap((sentenceRange) => sentenceRange.audioRanges)
+    .reduce<AudioFileContext[]>((acc, range) => {
+      const existing = acc.find(
+        (context) => context.filepath === range.audiofile,
+      )
+      if (existing) {
+        existing.end = range.end
+        return acc
+      }
+      acc.push({
+        filepath: range.audiofile,
+        start: range.start,
+        end: range.end,
+      })
       return acc
-    }
-    acc.push({
-      filepath: range.audiofile,
-      start: range.start,
-      end: range.end,
-    })
-    return acc
-  }, [])
+    }, [])
 }
 
 export function updateAudioFileReports(

@@ -111,58 +111,69 @@ function createTextRangeSmallSequences(
   sentenceIdToFragment: Map<number, string>,
   wordIdToFragment: Map<number, Map<number, string>>,
 ) {
-  return sentenceRanges.map((sentenceRange) => {
-    if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
-      return Epub.createXmlElement(
-        "par",
-        {
-          id: `${chapter.id}-s${sentenceRange.id}`,
-        },
-        [
-          Epub.createXmlElement("text", {
-            src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-          }),
-          Epub.createXmlElement("audio", {
-            src: `../Audio/${basename(sentenceRange.audiofile)}`,
-            clipBegin: `${sentenceRange.start.toFixed(3)}s`,
-            clipEnd: `${sentenceRange.end.toFixed(3)}s`,
-          }),
-        ],
-      )
-    }
+  return sentenceRanges
+    .map((sentenceRange) => {
+      if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
+        // A sentence cut across audio files gets one par per clip, all pointing
+        // at the same text fragment
+        return sentenceRange.audioRanges.map((range, index) =>
+          Epub.createXmlElement(
+            "par",
+            {
+              id:
+                index === 0
+                  ? `${chapter.id}-s${sentenceRange.id}`
+                  : `${chapter.id}-s${sentenceRange.id}-a${index}`,
+            },
+            [
+              Epub.createXmlElement("text", {
+                src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
+              }),
+              Epub.createXmlElement("audio", {
+                src: `../Audio/${basename(range.audiofile)}`,
+                clipBegin: `${range.start.toFixed(3)}s`,
+                clipEnd: `${range.end.toFixed(3)}s`,
+              }),
+            ],
+          ),
+        )
+      }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const words = wordRanges.get(sentenceRange.id)!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const words = wordRanges.get(sentenceRange.id)!
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
 
-    return Epub.createXmlElement(
-      "seq",
-      {
-        id: `${chapter.id}-s${sentenceRange.id}`,
-        "epub:type": "text-range-small",
-        "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-      },
-      words.map((word) =>
+      return [
         Epub.createXmlElement(
-          "par",
+          "seq",
           {
-            id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
+            id: `${chapter.id}-s${sentenceRange.id}`,
+            "epub:type": "text-range-small",
+            "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
           },
-          [
-            Epub.createXmlElement("text", {
-              src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
-            }),
-            Epub.createXmlElement("audio", {
-              src: `../Audio/${basename(word.audiofile)}`,
-              clipBegin: `${word.start.toFixed(3)}s`,
-              clipEnd: `${word.end.toFixed(3)}s`,
-            }),
-          ],
+          words.map((word) =>
+            Epub.createXmlElement(
+              "par",
+              {
+                id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
+              },
+              [
+                Epub.createXmlElement("text", {
+                  src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
+                }),
+                Epub.createXmlElement("audio", {
+                  src: `../Audio/${basename(word.audiofile)}`,
+                  clipBegin: `${word.start.toFixed(3)}s`,
+                  clipEnd: `${word.end.toFixed(3)}s`,
+                }),
+              ],
+            ),
+          ),
         ),
-      ),
-    )
-  })
+      ]
+    })
+    .flat()
 }
 
 export function buildFragmentMaps(

@@ -26,9 +26,12 @@ import { parseDom } from "../../markup/parseDom.ts"
 import { segmentChapter } from "../../markup/segmentation.ts"
 import { inlineFootnotes, liftText } from "../../markup/transform.ts"
 import {
-  type SentenceRange,
+  type AudioRange,
+  SentenceRange,
   type WordRange,
   collapseSentenceRangeGaps,
+  enforceMonotonicAudioRanges,
+  expandEmptyAudioRanges,
   expandEmptySentenceRanges,
   getChapterDuration,
 } from "../getSentenceRanges.ts"
@@ -37,7 +40,7 @@ import {
   interpolateSentenceRanges,
   slotKey,
 } from "../interpolateSentenceRanges.ts"
-import { slugify } from "../slugify.ts"
+import { slugify, slugifiedWordRanges } from "../slugify.ts"
 
 import { type EmissionTimings, framesToSeconds } from "./emissions.ts"
 import {
@@ -56,6 +59,14 @@ import { type Match, findCtcBoundaries } from "./search.ts"
 
 const MAX_SEARCH_LENGTH = 40_000
 
+/**
+ * Longest silence, in frames, tolerated between two consecutive characters of
+ * one sentence before the characters beyond it are treated as misplaced.
+ * Measured intra-sentence gaps top out around 100 frames (a 2 s dramatic
+ * pause); deferred tails start at ~250.
+ */
+const MAX_INTRA_SENTENCE_GAP_FRAMES = 150
+
 export interface AlignOptions {
   reportsPath?: string | null | undefined
   granularity?: "sentence" | "word" | null | undefined
@@ -64,6 +75,158 @@ export interface AlignOptions {
   primaryLocale?: Intl.Locale | null | undefined
   logger?: Logger | null | undefined
   onProgress?: ((progress: number) => void) | null | undefined
+}
+
+/**
+ * Audio files and emission files are paired by index, so both lists have to
+ * cover the same recordings. A file present on only one side shifts every
+ * pairing after it, which would silently align the rest of the book against
+ * the wrong audio, so report the offending files instead of reading past the
+ * end of the shorter list.
+ */
+export function checkAudioEmissionsPairing(
+  audiofiles: string[],
+  emissionFilepaths: string[],
+) {
+  if (audiofiles.length === emissionFilepaths.length) return
+
+  const audioIsLonger = audiofiles.length > emissionFilepaths.length
+
+  const unmatched = audioIsLonger
+    ? audiofiles.slice(emissionFilepaths.length)
+    : emissionFilepaths.slice(audiofiles.length)
+
+  throw new Error(
+    `Found ${audiofiles.length} audio files but ${emissionFilepaths.length} emission files. ` +
+      `Each audio file needs its own emissions. Missing ${
+        audioIsLonger ? "emissions for" : "audio file for"
+      }:\n${unmatched.map((filepath) => `  ${filepath}`).join("\n")}`,
+  )
+}
+
+/**
+ * Narrow a chapter's emission frame range to the largest stretch of frames no
+ * already aligned chapter has consumed.
+ *
+ * `matched` holds one consumption region per aligned chapter. Regions that
+ * overlap or touch are merged first, because the gaps between them are found by
+ * pairing consecutive endpoints: a nested region would otherwise pair an outer
+ * region's end with a smaller start that precedes it, yielding a gap that runs
+ * backwards and a narrowed range with `start` past `end`.
+ */
+export function narrowToAvailableBoundary(
+  matched: [number, number][],
+  boundary: { start: number; end: number },
+) {
+  const merged: [number, number][] = []
+  for (const [start, end] of matched.toSorted((a, b) => a[0] - b[0])) {
+    const previous = merged.at(-1)
+    if (previous && start <= previous[1]) {
+      previous[1] = Math.max(previous[1], end)
+    } else {
+      merged.push([start, end])
+    }
+  }
+
+  const available: number[] = [-1, ...merged.flat(), Infinity]
+
+  const withinBoundary: [number, number][] = []
+  for (let i = 0; i < available.length - 1; i += 2) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const [start, end] = [available[i]!, available[i + 1]!]
+    if (
+      (boundary.start <= start && boundary.end >= start) ||
+      (boundary.start <= end && boundary.end >= end)
+    ) {
+      const narrowed: [number, number] = [
+        Math.max(boundary.start, start + 1),
+        Math.min(boundary.end, end - 1),
+      ]
+      // A boundary that ends exactly on a junction between two consumption
+      // regions leaves nothing available on this side.
+      if (narrowed[0] <= narrowed[1]) withinBoundary.push(narrowed)
+    }
+  }
+
+  const largestBoundary = max(withinBoundary, ([start, end]) => end - start)
+
+  if (!largestBoundary) return { start: boundary.start, end: boundary.end }
+
+  return { start: largestBoundary[0], end: largestBoundary[1] }
+}
+
+/**
+ * Splits a sentence's character alignments into runs separated by gaps longer
+ * than `maxGapFrames` and returns the run with the most characters.
+ *
+ * Blanks over silence are free in the Viterbi path, so when a sentence's true
+ * tail is faint (or the window runs past it into the next chapter's speech)
+ * its last characters get deferred across the silence onto whatever matching
+ * letters come next; the same happens in reverse at a window head. No narrated
+ * sentence pauses that long, so the largest run is the sentence's real audio.
+ */
+export function findDominantRun(
+  alignments: TokenAlignment[],
+  startOffset: number,
+  endOffset: number,
+  maxGapFrames: number,
+): [number, number] {
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
+  let best: [number, number] = [startOffset, startOffset]
+  let runStart = startOffset
+  for (let k = startOffset + 1; k <= endOffset + 1; k++) {
+    const gap =
+      k <= endOffset
+        ? alignments[k]!.startFrame - alignments[k - 1]!.endFrame
+        : Infinity
+    if (gap > maxGapFrames) {
+      if (k - 1 - runStart > best[1] - best[0]) best = [runStart, k - 1]
+      runStart = k
+    }
+  }
+  return best
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
+}
+
+/**
+ * Frames for a sentence whose dominant run is [runStart, runEnd]. The
+ * characters outside the run were misplaced across a long gap, but they were
+ * (probably) still narrated right next to the run (their true frames were just
+ * too faint to win), so estimate the non-dominant runs by the dominant
+ * run's frame rate.
+ */
+export function extendDominantRun(
+  alignments: TokenAlignment[],
+  startOffset: number,
+  endOffset: number,
+  runStart: number,
+  runEnd: number,
+): [number, number] {
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
+  const runStartFrame = alignments[runStart]!.startFrame
+  const runEndFrame = alignments[runEnd]!.endFrame
+  const framesPerChar = (runEndFrame - runStartFrame) / (runEnd + 1 - runStart)
+
+  let startFrame = runStartFrame
+  if (runStart > startOffset) {
+    const gap = runStartFrame - alignments[runStart - 1]!.endFrame
+    startFrame -= Math.min(
+      Math.round((runStart - startOffset) * framesPerChar),
+      Math.max(gap - 1, 0),
+    )
+  }
+
+  let endFrame = runEndFrame
+  if (runEnd < endOffset) {
+    const gap = alignments[runEnd + 1]!.startFrame - runEndFrame
+    endFrame += Math.min(
+      Math.round((endOffset - runEnd) * framesPerChar),
+      Math.max(gap - 1, 0),
+    )
+  }
+
+  return [startFrame, endFrame]
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
 }
 
 export class Aligner {
@@ -101,6 +264,12 @@ export class Aligner {
   ) {
     this.audiofileFrames = new Map()
     this.audiofileEmissionTimings = new Map()
+
+    checkAudioEmissionsPairing(
+      audiofiles,
+      emissionsReader.frameMap.map(([filepath]) => filepath),
+    )
+
     for (const [i, audiofile] of enumerate(audiofiles)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const [, framesStart, framesEnd] = emissionsReader.frameMap[i]!
@@ -191,7 +360,9 @@ export class Aligner {
 
   private async addChapterAudio(sentenceRanges: SentenceRange[]) {
     const audiofiles = Array.from(
-      new Set(sentenceRanges.map(({ audiofile }) => audiofile)),
+      new Set(
+        sentenceRanges.flatMap((sentenceRange) => sentenceRange.audiofiles),
+      ),
     )
 
     await Promise.all(
@@ -355,10 +526,12 @@ export class Aligner {
     const {
       sentenceRanges,
       skippedSentences,
+      sentenceFrameSpans,
       firstFoundSentence,
       lastFoundSentence,
       firstConfirmedSentence,
-      lastConfirmedSentence,
+      firstConfirmedStartFrame,
+      lastConfirmedEndFrame,
     } = this.buildSentenceRanges(
       alignments,
       sentenceStarts,
@@ -377,10 +550,15 @@ export class Aligner {
       emissionsStart,
       WORD_PAD,
       skippedSentences,
+      sentenceFrameSpans,
       chapterId,
     )
 
-    if (firstFoundSentence === null || firstConfirmedSentence === null) {
+    if (
+      firstFoundSentence === null ||
+      firstConfirmedSentence === null ||
+      firstConfirmedStartFrame === null
+    ) {
       return {
         score,
         sentenceRanges: [],
@@ -396,12 +574,8 @@ export class Aligner {
       score,
       sentenceRanges,
       wordRanges,
-      alignedEmissionsStart:
-        alignments[sentenceStarts[firstConfirmedSentence]![0]]!.startFrame +
-        emissionsStart,
-      alignedEmissionsEnd:
-        alignments[sentenceStarts[lastConfirmedSentence]![1]]!.endFrame +
-        emissionsStart,
+      alignedEmissionsStart: firstConfirmedStartFrame + emissionsStart,
+      alignedEmissionsEnd: lastConfirmedEndFrame + emissionsStart,
       firstFoundSentence: sentenceIndexOffset + firstFoundSentence,
       lastFoundSentence: sentenceIndexOffset + lastFoundSentence,
     }
@@ -421,6 +595,8 @@ export class Aligner {
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
     const sentenceRanges: SentenceRange[] = []
     const skippedSentences = new Set<number>()
+    /** Window-relative [start, end] frames of each kept sentence's audio */
+    const sentenceFrameSpans = new Map<number, [number, number]>()
 
     let firstFoundSentence: null | number = null
     let lastFoundSentence = 0
@@ -428,6 +604,8 @@ export class Aligner {
 
     let firstConfirmedSentence: null | number = null
     let lastConfirmedSentence = 0
+    let firstConfirmedStartFrame: null | number = null
+    let lastConfirmedEndFrame = 0
 
     for (const [i, [startOffset, endOffset]] of enumerate(sentenceStarts)) {
       if (endOffset < startOffset) {
@@ -442,54 +620,73 @@ export class Aligner {
         continue
       }
 
+      // Trailing sentences dropped as squeezed have no alignments at all
+      if (endOffset >= alignments.length) {
+        skippedSentences.add(i)
+        continue
+      }
+
+      // Characters deferred across a long silence belong to whatever speech
+      // they landed on, not to this sentence; judge and time it by its
+      // dominant run only.
+      const [runStart, runEnd] = findDominantRun(
+        alignments,
+        startOffset,
+        endOffset,
+        MAX_INTRA_SENTENCE_GAP_FRAMES,
+      )
+      const runLength = runEnd + 1 - runStart
+
+      if (runLength < (endOffset + 1 - startOffset) / 2) {
+        skippedSentences.add(i)
+        continue
+      }
+
       const goodChars = alignments
-        .slice(startOffset, endOffset + 1)
+        .slice(runStart, runEnd + 1)
         .reduce((acc, a) => acc + (a.score > -4 ? 1 : 0), 0)
 
-      if (goodChars / (endOffset + 1 - startOffset) < 0.5) {
+      if (goodChars / runLength < 0.5) {
         skippedSentences.add(i)
         continue
       }
-
-      const sentenceLength = endOffset + 1 - startOffset
 
       const framesPerChar =
-        (alignments[endOffset]!.endFrame -
-          alignments[startOffset]!.startFrame) /
-        sentenceLength
+        (alignments[runEnd]!.endFrame - alignments[runStart]!.startFrame) /
+        runLength
 
-      if (sentenceLength > 8 && (framesPerChar < 2 || framesPerChar > 15)) {
+      if (runLength > 8 && (framesPerChar < 2 || framesPerChar > 15)) {
         skippedSentences.add(i)
         continue
       }
 
+      const [runStartFrame, runEndFrame] = extendDominantRun(
+        alignments,
+        startOffset,
+        endOffset,
+        runStart,
+        runEnd,
+      )
       const startFrame = this.refineStartFrame(
-        alignments[startOffset]!.startFrame,
+        runStartFrame,
         lastFoundSentenceEnd,
         padFrames,
         emissionsStart,
       )
+      const endFrame = Math.max(startFrame, runEndFrame)
 
       firstFoundSentence ??= i
       lastFoundSentence = i
-      lastFoundSentenceEnd = alignments[endOffset]!.endFrame
+      lastFoundSentenceEnd = endFrame
+      sentenceFrameSpans.set(i, [startFrame, endFrame])
 
-      const { position: start, audiofile } = this.frameToAudioPosition(
-        startFrame,
-        emissionsStart,
+      sentenceRanges.push(
+        new SentenceRange(
+          sentenceIndexOffset + i,
+          chapterId,
+          this.framesToAudioRanges(startFrame, endFrame, emissionsStart),
+        ),
       )
-      const { position: end } = this.frameToAudioPosition(
-        alignments[endOffset]!.endFrame,
-        emissionsStart,
-      )
-
-      sentenceRanges.push({
-        id: sentenceIndexOffset + i,
-        chapterId,
-        start,
-        end,
-        audiofile,
-      })
 
       if (
         startOffset <= unpaddedChapterBoundaries[1] &&
@@ -497,17 +694,22 @@ export class Aligner {
       ) {
         firstConfirmedSentence ??= i
         lastConfirmedSentence = i
+        firstConfirmedStartFrame ??= startFrame
+        lastConfirmedEndFrame = endFrame
       }
     }
 
     return {
       sentenceRanges,
       skippedSentences,
+      sentenceFrameSpans,
       firstFoundSentence,
       lastFoundSentence,
       lastFoundSentenceEnd,
       firstConfirmedSentence,
       lastConfirmedSentence,
+      firstConfirmedStartFrame,
+      lastConfirmedEndFrame,
     }
     /* eslint-enable @typescript-eslint/no-non-null-assertion */
   }
@@ -519,6 +721,7 @@ export class Aligner {
     emissionsStart: number,
     padFrames: number,
     skippedSentences: Set<number>,
+    sentenceFrameSpans: Map<number, [number, number]>,
     chapterId: string,
   ) {
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
@@ -527,6 +730,9 @@ export class Aligner {
 
     for (const [i, ws] of enumerate(wordStarts)) {
       if (skippedSentences.has(i)) continue
+      const span = sentenceFrameSpans.get(i)
+      if (!span) continue
+      const [spanStart, spanEnd] = span
 
       const ranges: WordRange[] = []
       for (const [j, [startOffset, endOffset]] of enumerate(ws)) {
@@ -540,22 +746,28 @@ export class Aligner {
           continue
         }
 
+        // Words the sentence's dominant run excluded collapse onto its edge
+        const clamp = (frame: number) =>
+          Math.min(Math.max(frame, spanStart), spanEnd)
+
         const startFrame = this.refineStartFrame(
-          alignments[startOffset]!.startFrame,
+          clamp(alignments[startOffset]!.startFrame),
           lastFoundWordEnd,
           padFrames,
           emissionsStart,
         )
-
-        lastFoundWordEnd = alignments[endOffset]!.endFrame
-
-        const { position: start, audiofile } = this.frameToAudioPosition(
+        const endFrame = Math.max(
           startFrame,
-          emissionsStart,
+          clamp(alignments[endOffset]!.endFrame),
         )
 
-        const { position: end } = this.frameToAudioPosition(
-          alignments[endOffset]!.endFrame,
+        lastFoundWordEnd = endFrame
+
+        // Word ranges stay single-clip: a word cut across two files keeps the
+        // part in the file it starts in
+        const [range] = this.framesToAudioRanges(
+          startFrame,
+          endFrame,
           emissionsStart,
         )
 
@@ -563,9 +775,7 @@ export class Aligner {
           id: j,
           sentenceId: sentenceIndexOffset + i,
           chapterId,
-          start,
-          end,
-          audiofile,
+          ...range!,
         })
       }
       if (ranges.length) wordRanges.push(ranges)
@@ -573,6 +783,45 @@ export class Aligner {
 
     return wordRanges
     /* eslint-enable @typescript-eslint/no-non-null-assertion */
+  }
+
+  /**
+   * Convert a window-relative frame span to clip positions, one clip per
+   * audio file the span crosses.
+   */
+  private framesToAudioRanges(
+    startFrame: number,
+    endFrame: number,
+    emissionsStart: number,
+  ): AudioRange[] {
+    const globalStart = startFrame + emissionsStart
+    const globalEnd = Math.max(globalStart, endFrame + emissionsStart)
+
+    const ranges: AudioRange[] = []
+    for (const [audiofile, [fileStart, fileEnd]] of this.audiofileFrames) {
+      if (fileEnd <= globalStart) continue
+      if (fileStart > globalEnd) break
+      const start = Math.max(globalStart, fileStart)
+      const end = Math.min(globalEnd, fileEnd)
+      // A span ending exactly on a file boundary contributes nothing to the
+      // next file
+      if (end === start && ranges.length > 0) break
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const timings = this.audiofileEmissionTimings.get(audiofile)!
+      ranges.push({
+        audiofile,
+        start: framesToSeconds(start - fileStart, timings),
+        end: framesToSeconds(end - fileStart, timings),
+      })
+    }
+
+    if (ranges.length === 0) {
+      throw new Error(
+        `Frames ${globalStart}-${globalEnd} are beyond the end of the emissions`,
+      )
+    }
+
+    return ranges
   }
 
   private frameToAudioPosition(
@@ -709,35 +958,6 @@ export class Aligner {
         startOffset,
         endOffset,
       ])
-  }
-
-  private narrowToAvailableBoundary(boundary: { start: number; end: number }) {
-    const available: number[] = [
-      -1,
-      ...this.getMatchedBoundaries().flat(),
-      Infinity,
-    ]
-
-    const withinBoundary: [number, number][] = []
-    for (let i = 0; i < available.length - 1; i += 2) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const [start, end] = [available[i]!, available[i + 1]!]
-      if (
-        (boundary.start <= start && boundary.end >= start) ||
-        (boundary.start <= end && boundary.end >= end)
-      ) {
-        withinBoundary.push([
-          Math.max(boundary.start, start + 1),
-          Math.min(boundary.end, end - 1),
-        ])
-      }
-    }
-
-    const largestBoundary = max(withinBoundary, ([start, end]) => end - start)
-
-    if (!largestBoundary) return { start: boundary.start, end: boundary.end }
-
-    return { start: largestBoundary[0], end: largestBoundary[1] }
   }
 
   async alignBook(onProgress?: ((progress: number) => void) | null) {
@@ -899,17 +1119,16 @@ export class Aligner {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const sent = chapterSentences[firstSentence + i]!
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const cursor = chapterMappings[firstSentence + i]!.cursor()
-        return sent.words.entries
-          .filter((word) => !word.isPunctuation)
-          .map<[number, number]>((word) => [
-            cursor.map(word.startOffset - sent.charRange.start) +
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              slugifiedChapterRanges[i]![0],
-            cursor.map(word.endOffset - 1 - sent.charRange.start) +
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              slugifiedChapterRanges[i]![0],
-          ])
+        const mapping = chapterMappings[firstSentence + i]!
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const [slugStart] = slugifiedChapterRanges[i]!
+
+        return slugifiedWordRanges(
+          sent.words.entries,
+          mapping,
+          sent.charRange.start,
+          slugStart,
+        )
       })
 
       const chunkString = chunkSentences.join("")
@@ -950,7 +1169,10 @@ export class Aligner {
         continue
       }
 
-      const { start, end } = this.narrowToAvailableBoundary(boundaries)
+      const { start, end } = narrowToAvailableBoundary(
+        this.getMatchedBoundaries(),
+        boundaries,
+      )
       if (start === end) {
         this.logger?.info(
           `Could not find chapter #${index} in the transcripton`,
@@ -1051,13 +1273,13 @@ export class Aligner {
       if (!firstRangeA) return 1
       if (!firstRangeB) return -1
       const firstAudiofileIndexA = this.audiofiles.indexOf(
-        firstRangeA.audiofile,
+        firstRangeA.first.audiofile,
       )
       const firstAudiofileIndexB = this.audiofiles.indexOf(
-        firstRangeB.audiofile,
+        firstRangeB.first.audiofile,
       )
       if (firstAudiofileIndexA === firstAudiofileIndexB) {
-        return firstRangeA.start - firstRangeB.start
+        return firstRangeA.first.start - firstRangeB.first.start
       }
       return firstAudiofileIndexA - firstAudiofileIndexB
     })
@@ -1081,7 +1303,7 @@ export class Aligner {
     }
 
     const interpolated = interpolateSentenceRanges(
-      sentenceRanges,
+      enforceMonotonicAudioRanges(sentenceRanges, this.audiofiles),
       chapterSentenceCounts,
       this.audioFileDurations,
       sentenceLengths,
@@ -1101,7 +1323,7 @@ export class Aligner {
       )
       alignedChapter.sentenceRanges = finalSentenceRanges
       for (const [i, wordRanges] of enumerate(alignedChapter.wordRanges)) {
-        alignedChapter.wordRanges[i] = expandEmptySentenceRanges(wordRanges)
+        alignedChapter.wordRanges[i] = expandEmptyAudioRanges(wordRanges)
       }
       await this.writeAlignedChapter(alignedChapter)
       collapsedStart += sentences.length

@@ -212,6 +212,41 @@ void describe("Mapping.appendMapping", () => {
     }
   })
 
+  void it("keeps a coalesced entry's span when it collapses to a no-op", () => {
+    // Stage 1 expands four single characters. Stage 2 then deletes a span that
+    // ends inside the last expansion, a character further inside that same
+    // expansion, and finally a long span that starts inside it. Coalescing the
+    // first deletion with the expansion it straddles collapses that entry to a
+    // no-op — but dropping it also drops its span, so the next deletion merges
+    // with an entry three characters too narrow while still carrying the full
+    // delta, and its size goes negative.
+    const mapping = new Mapping()
+    mapping.insertMap(61, 1, 2)
+    mapping.insertMap(62, 1, 3)
+    mapping.insertMap(66, 1, 3)
+    mapping.insertMap(70, 1, 5)
+
+    const deletions = new Mapping()
+    deletions.insertMap(72, 4, 0)
+    deletions.insertMap(77, 1, 0)
+    deletions.insertMap(79, 9, 0)
+
+    mapping.appendMapping(deletions)
+
+    // 80 characters in, 15 inserted by stage 1, 14 deleted by stage 2.
+    const cursor = mapping.cursor()
+    assert.strictEqual(cursor.map(0), 0)
+    assert.strictEqual(cursor.map(61), 61)
+    assert.strictEqual(cursor.map(80), 75)
+
+    let prev = -1
+    for (let p = 0; p <= 80; p++) {
+      const m = cursor.map(p)
+      assert.ok(m >= prev, `map(${p})=${m} decreased from ${prev}`)
+      prev = m
+    }
+  })
+
   void it("distributes positions inside a grown region instead of collapsing", () => {
     // A 4-character word expands to 12 characters (e.g. Chinese -> pinyin).
     // Positions inside the word must map to distinct, increasing offsets so a

@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
-import { type SentenceRange } from "../getSentenceRanges.ts"
+import { SentenceRange } from "../getSentenceRanges.ts"
 import {
   interpolateSentenceRanges,
   slotKey,
@@ -21,7 +21,7 @@ function sr(
   end: number,
   audiofile = "audio.mp3",
 ): SentenceRange {
-  return { chapterId, id, start, end, audiofile }
+  return new SentenceRange(id, chapterId, [{ start, end, audiofile }])
 }
 
 /** Assert that start/end times are monotonically non-decreasing within each
@@ -42,9 +42,9 @@ void describe("no gaps", () => {
       { "audio.mp3": 20 },
     )
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 5, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, start: 5, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 2, start: 10, end: 15, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 5, "audio.mp3"),
+      sr("ch1", 1, 5, 10, "audio.mp3"),
+      sr("ch1", 2, 10, 15, "audio.mp3"),
     ])
   })
 
@@ -61,10 +61,10 @@ void describe("no gaps", () => {
       { "audio.mp3": 50 },
     )
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, start: 10, end: 20, audiofile: "audio.mp3" },
-      { chapterId: "ch2", id: 0, start: 20, end: 30, audiofile: "audio.mp3" },
-      { chapterId: "ch2", id: 1, start: 30, end: 40, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 20, "audio.mp3"),
+      sr("ch2", 0, 20, 30, "audio.mp3"),
+      sr("ch2", 1, 30, 40, "audio.mp3"),
     ])
   })
 })
@@ -90,10 +90,10 @@ void describe("within-chapter gap (same audiofile)", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 25 },
-      { chapterId: "ch1", id: 2, audiofile: "audio.mp3", start: 25, end: 40 },
-      { chapterId: "ch1", id: 3, start: 40, end: 50, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 25, "audio.mp3"),
+      sr("ch1", 2, 25, 40, "audio.mp3"),
+      sr("ch1", 3, 40, 50, "audio.mp3"),
     ])
   })
 
@@ -106,9 +106,9 @@ void describe("within-chapter gap (same audiofile)", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 2, start: 20, end: 30, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 20, "audio.mp3"),
+      sr("ch1", 2, 20, 30, "audio.mp3"),
     ])
   })
 
@@ -126,11 +126,11 @@ void describe("within-chapter gap (same audiofile)", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 2, start: 20, end: 30, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 3, audiofile: "audio.mp3", start: 30, end: 40 },
-      { chapterId: "ch1", id: 4, start: 40, end: 50, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 20, "audio.mp3"),
+      sr("ch1", 2, 20, 30, "audio.mp3"),
+      sr("ch1", 3, 30, 40, "audio.mp3"),
+      sr("ch1", 4, 40, 50, "audio.mp3"),
     ])
   })
 })
@@ -148,9 +148,9 @@ void describe("leading gap (chapter starts at id > 0)", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, audiofile: "audio.mp3", start: 0, end: 10 },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 2, start: 20, end: 30, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 20, "audio.mp3"),
+      sr("ch1", 2, 20, 30, "audio.mp3"),
     ])
   })
 
@@ -162,8 +162,8 @@ void describe("leading gap (chapter starts at id > 0)", () => {
       { "audio.mp3": 40 },
     )
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, audiofile: "audio.mp3", start: 0, end: 15 },
-      { chapterId: "ch1", id: 1, start: 15, end: 30, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 15, "audio.mp3"),
+      sr("ch1", 1, 15, 30, "audio.mp3"),
     ])
   })
 })
@@ -181,9 +181,9 @@ void describe("trailing gap (chapter ends before total count)", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 25 },
-      { chapterId: "ch1", id: 2, audiofile: "audio.mp3", start: 25, end: 40 },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 25, "audio.mp3"),
+      sr("ch1", 2, 25, 40, "audio.mp3"),
     ])
   })
 
@@ -195,8 +195,8 @@ void describe("trailing gap (chapter ends before total count)", () => {
       { "audio.mp3": 40 },
     )
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 20, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 20, end: 40 },
+      sr("ch1", 0, 0, 20, "audio.mp3"),
+      sr("ch1", 1, 20, 40, "audio.mp3"),
     ])
   })
 })
@@ -216,12 +216,12 @@ void describe("gap spanning a chapter boundary (same audiofile)", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 2, audiofile: "audio.mp3", start: 20, end: 30 },
-      { chapterId: "ch2", id: 0, audiofile: "audio.mp3", start: 30, end: 40 },
-      { chapterId: "ch2", id: 1, audiofile: "audio.mp3", start: 40, end: 50 },
-      { chapterId: "ch2", id: 2, start: 50, end: 60, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 20, "audio.mp3"),
+      sr("ch1", 2, 20, 30, "audio.mp3"),
+      sr("ch2", 0, 30, 40, "audio.mp3"),
+      sr("ch2", 1, 40, 50, "audio.mp3"),
+      sr("ch2", 2, 50, 60, "audio.mp3"),
     ])
   })
 
@@ -238,11 +238,11 @@ void describe("gap spanning a chapter boundary (same audiofile)", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, start: 10, end: 20, audiofile: "audio.mp3" },
-      { chapterId: "ch2", id: 0, audiofile: "audio.mp3", start: 20, end: 30 },
-      { chapterId: "ch2", id: 1, audiofile: "audio.mp3", start: 30, end: 40 },
-      { chapterId: "ch2", id: 2, start: 40, end: 50, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 20, "audio.mp3"),
+      sr("ch2", 0, 20, 30, "audio.mp3"),
+      sr("ch2", 1, 30, 40, "audio.mp3"),
+      sr("ch2", 2, 40, 50, "audio.mp3"),
     ])
   })
 
@@ -255,10 +255,10 @@ void describe("gap spanning a chapter boundary (same audiofile)", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 2, audiofile: "audio.mp3", start: 20, end: 30 },
-      { chapterId: "ch2", id: 0, start: 30, end: 40, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 20, "audio.mp3"),
+      sr("ch1", 2, 20, 30, "audio.mp3"),
+      sr("ch2", 0, 30, 40, "audio.mp3"),
     ])
   })
 })
@@ -281,12 +281,12 @@ void describe("gap spanning an audiofile boundary", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 70, end: 80, audiofile: "file-a.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "file-a.mp3", start: 80, end: 90 },
-      { chapterId: "ch1", id: 2, audiofile: "file-a.mp3", start: 90, end: 100 },
-      { chapterId: "ch1", id: 3, audiofile: "file-b.mp3", start: 0, end: 10 },
-      { chapterId: "ch1", id: 4, audiofile: "file-b.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 5, start: 20, end: 30, audiofile: "file-b.mp3" },
+      sr("ch1", 0, 70, 80, "file-a.mp3"),
+      sr("ch1", 1, 80, 90, "file-a.mp3"),
+      sr("ch1", 2, 90, 100, "file-a.mp3"),
+      sr("ch1", 3, 0, 10, "file-b.mp3"),
+      sr("ch1", 4, 10, 20, "file-b.mp3"),
+      sr("ch1", 5, 20, 30, "file-b.mp3"),
     ])
   })
 
@@ -303,10 +303,10 @@ void describe("gap spanning an audiofile boundary", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 90, end: 100, audiofile: "file-a.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "file-b.mp3", start: 0, end: 15 },
-      { chapterId: "ch1", id: 2, audiofile: "file-b.mp3", start: 15, end: 30 },
-      { chapterId: "ch1", id: 3, start: 30, end: 40, audiofile: "file-b.mp3" },
+      sr("ch1", 0, 90, 100, "file-a.mp3"),
+      sr("ch1", 1, 0, 15, "file-b.mp3"),
+      sr("ch1", 2, 15, 30, "file-b.mp3"),
+      sr("ch1", 3, 30, 40, "file-b.mp3"),
     ])
   })
 
@@ -323,10 +323,10 @@ void describe("gap spanning an audiofile boundary", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 50, end: 60, audiofile: "file-a.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "file-a.mp3", start: 60, end: 80 },
-      { chapterId: "ch1", id: 2, audiofile: "file-a.mp3", start: 80, end: 100 },
-      { chapterId: "ch1", id: 3, start: 0, end: 10, audiofile: "file-b.mp3" },
+      sr("ch1", 0, 50, 60, "file-a.mp3"),
+      sr("ch1", 1, 60, 80, "file-a.mp3"),
+      sr("ch1", 2, 80, 100, "file-a.mp3"),
+      sr("ch1", 3, 0, 10, "file-b.mp3"),
     ])
   })
 
@@ -340,9 +340,9 @@ void describe("gap spanning an audiofile boundary", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, audiofile: "file-b.mp3", start: 0, end: 10 },
-      { chapterId: "ch1", id: 1, audiofile: "file-b.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 2, start: 20, end: 30, audiofile: "file-b.mp3" },
+      sr("ch1", 0, 0, 10, "file-b.mp3"),
+      sr("ch1", 1, 10, 20, "file-b.mp3"),
+      sr("ch1", 2, 20, 30, "file-b.mp3"),
     ])
   })
 
@@ -356,9 +356,9 @@ void describe("gap spanning an audiofile boundary", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 10, end: 20, audiofile: "file-a.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "file-a.mp3", start: 20, end: 35 },
-      { chapterId: "ch1", id: 2, audiofile: "file-a.mp3", start: 35, end: 50 },
+      sr("ch1", 0, 10, 20, "file-a.mp3"),
+      sr("ch1", 1, 20, 35, "file-a.mp3"),
+      sr("ch1", 2, 35, 50, "file-a.mp3"),
     ])
   })
 })
@@ -379,10 +379,10 @@ void describe("output ordering", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 5, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 5, end: 15 },
-      { chapterId: "ch1", id: 2, start: 15, end: 20, audiofile: "audio.mp3" },
-      { chapterId: "ch2", id: 0, start: 25, end: 30, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 5, "audio.mp3"),
+      sr("ch1", 1, 5, 15, "audio.mp3"),
+      sr("ch1", 2, 15, 20, "audio.mp3"),
+      sr("ch2", 0, 25, 30, "audio.mp3"),
     ])
   })
 
@@ -395,9 +395,9 @@ void describe("output ordering", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 1.5, end: 3.7, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 3.7, end: 7.1 },
-      { chapterId: "ch1", id: 2, start: 7.1, end: 9.9, audiofile: "audio.mp3" },
+      sr("ch1", 0, 1.5, 3.7, "audio.mp3"),
+      sr("ch1", 1, 3.7, 7.1, "audio.mp3"),
+      sr("ch1", 2, 7.1, 9.9, "audio.mp3"),
     ])
   })
 })
@@ -415,11 +415,11 @@ void describe("combined scenarios", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, audiofile: "audio.mp3", start: 0, end: 20 },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 20, end: 40 },
-      { chapterId: "ch1", id: 2, start: 40, end: 60, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 3, audiofile: "audio.mp3", start: 60, end: 80 },
-      { chapterId: "ch1", id: 4, audiofile: "audio.mp3", start: 80, end: 100 },
+      sr("ch1", 0, 0, 20, "audio.mp3"),
+      sr("ch1", 1, 20, 40, "audio.mp3"),
+      sr("ch1", 2, 40, 60, "audio.mp3"),
+      sr("ch1", 3, 60, 80, "audio.mp3"),
+      sr("ch1", 4, 80, 100, "audio.mp3"),
     ])
   })
 
@@ -440,14 +440,14 @@ void describe("combined scenarios", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 2, start: 20, end: 30, audiofile: "audio.mp3" },
-      { chapterId: "ch2", id: 0, audiofile: "audio.mp3", start: 30, end: 40 },
-      { chapterId: "ch2", id: 1, start: 40, end: 50, audiofile: "audio.mp3" },
-      { chapterId: "ch2", id: 2, audiofile: "audio.mp3", start: 50, end: 70 },
-      { chapterId: "ch3", id: 0, start: 70, end: 80, audiofile: "audio.mp3" },
-      { chapterId: "ch3", id: 1, audiofile: "audio.mp3", start: 80, end: 100 },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 20, "audio.mp3"),
+      sr("ch1", 2, 20, 30, "audio.mp3"),
+      sr("ch2", 0, 30, 40, "audio.mp3"),
+      sr("ch2", 1, 40, 50, "audio.mp3"),
+      sr("ch2", 2, 50, 70, "audio.mp3"),
+      sr("ch3", 0, 70, 80, "audio.mp3"),
+      sr("ch3", 1, 80, 100, "audio.mp3"),
     ])
   })
 
@@ -468,14 +468,14 @@ void describe("combined scenarios", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "1.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "1.mp3", start: 10, end: 20 },
-      { chapterId: "ch1", id: 2, start: 20, end: 30, audiofile: "1.mp3" },
-      { chapterId: "ch2", id: 0, audiofile: "2.mp3", start: 0, end: 40 },
-      { chapterId: "ch2", id: 1, start: 40, end: 50, audiofile: "2.mp3" },
-      { chapterId: "ch2", id: 2, audiofile: "2.mp3", start: 50, end: 60 },
-      { chapterId: "ch3", id: 0, start: 0, end: 80, audiofile: "3.mp3" },
-      { chapterId: "ch3", id: 1, audiofile: "3.mp3", start: 80, end: 100 },
+      sr("ch1", 0, 0, 10, "1.mp3"),
+      sr("ch1", 1, 10, 20, "1.mp3"),
+      sr("ch1", 2, 20, 30, "1.mp3"),
+      sr("ch2", 0, 0, 40, "2.mp3"),
+      sr("ch2", 1, 40, 50, "2.mp3"),
+      sr("ch2", 2, 50, 60, "2.mp3"),
+      sr("ch3", 0, 0, 80, "3.mp3"),
+      sr("ch3", 1, 80, 100, "3.mp3"),
     ])
   })
 })
@@ -492,10 +492,10 @@ void describe("sentence-length weighting", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 25 },
-      { chapterId: "ch1", id: 2, audiofile: "audio.mp3", start: 25, end: 40 },
-      { chapterId: "ch1", id: 3, start: 40, end: 50, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 25, "audio.mp3"),
+      sr("ch1", 2, 25, 40, "audio.mp3"),
+      sr("ch1", 3, 40, 50, "audio.mp3"),
     ])
   })
 
@@ -516,10 +516,10 @@ void describe("sentence-length weighting", () => {
     )
 
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 17.5 },
-      { chapterId: "ch1", id: 2, audiofile: "audio.mp3", start: 17.5, end: 40 },
-      { chapterId: "ch1", id: 3, start: 40, end: 50, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 17.5, "audio.mp3"),
+      sr("ch1", 2, 17.5, 40, "audio.mp3"),
+      sr("ch1", 3, 40, 50, "audio.mp3"),
     ])
   })
 
@@ -537,10 +537,72 @@ void describe("sentence-length weighting", () => {
 
     // Both weights fall back to 1, so this should match the even-division case.
     assert.deepStrictEqual(result, [
-      { chapterId: "ch1", id: 0, start: 0, end: 10, audiofile: "audio.mp3" },
-      { chapterId: "ch1", id: 1, audiofile: "audio.mp3", start: 10, end: 25 },
-      { chapterId: "ch1", id: 2, audiofile: "audio.mp3", start: 25, end: 40 },
-      { chapterId: "ch1", id: 3, start: 40, end: 50, audiofile: "audio.mp3" },
+      sr("ch1", 0, 0, 10, "audio.mp3"),
+      sr("ch1", 1, 10, 25, "audio.mp3"),
+      sr("ch1", 2, 25, 40, "audio.mp3"),
+      sr("ch1", 3, 40, 50, "audio.mp3"),
+    ])
+  })
+})
+
+// ─── multi-clip sentences and chapter boundaries across files ───────────────
+
+void describe("sentences spanning two audio files", () => {
+  void it("anchors following gaps on the last clip and preceding gaps on the first", () => {
+    // ch1#0 is cut across file-a/file-b; the gap after it must start in file-b
+    // where the sentence actually ended, not at the end of its first clip.
+    const straddler = new SentenceRange(0, "ch1", [
+      { start: 90, end: 100, audiofile: "file-a.mp3" },
+      { start: 0, end: 2, audiofile: "file-b.mp3" },
+    ])
+    const result = interpolateSentenceRanges(
+      [straddler, sr("ch1", 3, 12, 20, "file-b.mp3")],
+      { ch1: 4 },
+      { "file-a.mp3": 100, "file-b.mp3": 100 },
+    )
+
+    assert.deepStrictEqual(result, [
+      straddler,
+      sr("ch1", 1, 2, 7, "file-b.mp3"),
+      sr("ch1", 2, 7, 12, "file-b.mp3"),
+      sr("ch1", 3, 12, 20, "file-b.mp3"),
+    ])
+  })
+})
+
+void describe("gap spanning a chapter boundary and an audiofile boundary", () => {
+  void it("keeps each chapter's missing sentences in that chapter's file", () => {
+    // ch1's last known sentence ends 40s before file-a ends; ch2's first known
+    // sentence starts 10s into file-b. Proportional splitting would put ch2's
+    // heading and title in file-a's tail; they belong in file-b's head.
+    const result = interpolateSentenceRanges(
+      [sr("ch1", 0, 50, 60, "file-a.mp3"), sr("ch2", 2, 10, 20, "file-b.mp3")],
+      { ch1: 2, ch2: 3 },
+      { "file-a.mp3": 100, "file-b.mp3": 100 },
+    )
+
+    assert.deepStrictEqual(result, [
+      sr("ch1", 0, 50, 60, "file-a.mp3"),
+      sr("ch1", 1, 60, 100, "file-a.mp3"),
+      sr("ch2", 0, 0, 5, "file-b.mp3"),
+      sr("ch2", 1, 5, 10, "file-b.mp3"),
+      sr("ch2", 2, 10, 20, "file-b.mp3"),
+    ])
+  })
+
+  void it("falls back to the file with room when the other has none", () => {
+    // ch2's first known sentence starts at 0 in file-b, so its leading
+    // sentences can only go in file-a's tail.
+    const result = interpolateSentenceRanges(
+      [sr("ch1", 0, 50, 60, "file-a.mp3"), sr("ch2", 1, 0, 10, "file-b.mp3")],
+      { ch1: 1, ch2: 2 },
+      { "file-a.mp3": 100, "file-b.mp3": 100 },
+    )
+
+    assert.deepStrictEqual(result, [
+      sr("ch1", 0, 50, 60, "file-a.mp3"),
+      sr("ch2", 0, 60, 100, "file-a.mp3"),
+      sr("ch2", 1, 0, 10, "file-b.mp3"),
     ])
   })
 })

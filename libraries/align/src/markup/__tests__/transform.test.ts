@@ -310,4 +310,70 @@ void describe("inlineFootnotes/replaceFootnotes", () => {
 
     assert.deepStrictEqual(replaced, original)
   })
+
+  void it("should handle footnotes interleaved with later noterefs", () => {
+    const original = new Root([
+      new Node("h1", {}, [new TextNode("Chapter 1.")]),
+      new Node("p", {}, [
+        new TextNode("Hello, world!"),
+        new TextNode("1", [
+          new Mark("a", {
+            "epub:type": "noteref",
+            href: "#footnote1",
+          }),
+        ]),
+      ]),
+      new FootnoteNode("aside", { "epub:type": "footnote", id: "footnote1" }, [
+        new Node("p", {}, [new TextNode("Footnote one content")]),
+      ]),
+      new Node("p", {}, [
+        new TextNode("Goodbye, world!"),
+        new TextNode("2", [
+          new Mark("a", {
+            "epub:type": "noteref",
+            href: "#footnote2",
+          }),
+        ]),
+      ]),
+      new FootnoteNode("aside", { "epub:type": "footnote", id: "footnote2" }, [
+        new Node("p", {}, [new TextNode("Footnote two content")]),
+      ]),
+    ])
+
+    const inlined = inlineFootnotes(original)
+
+    assert.deepStrictEqual(
+      inlined.root,
+      new Root([
+        new Node("h1", {}, [new TextNode("Chapter 1.")]),
+        new Node("p", {}, [
+          new TextNode("Hello, world!"),
+          new FootnoteNode(
+            "aside",
+            { "epub:type": "footnote", id: "footnote1" },
+            [new Node("p", {}, [new TextNode("Footnote one content")])],
+          ),
+        ]),
+        new Node("aside"),
+        new Node("p", {}, [
+          new TextNode("Goodbye, world!"),
+          new FootnoteNode(
+            "aside",
+            { "epub:type": "footnote", id: "footnote2" },
+            [new Node("p", {}, [new TextNode("Footnote two content")])],
+          ),
+        ]),
+        new Node("aside"),
+      ]),
+    )
+
+    const replaced = replaceFootnotes(
+      original,
+      inlined.root,
+      inlined.footnotePairs,
+      inlined.mapping,
+    )
+
+    assert.deepStrictEqual(replaced, original)
+  })
 })

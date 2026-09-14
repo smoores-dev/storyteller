@@ -54,6 +54,7 @@ import {
   type StorytellerTranscription,
   type WordRange,
   collapseSentenceRangeGaps,
+  expandEmptyAudioRanges,
   expandEmptySentenceRanges,
   getChapterDuration,
   getSentenceRanges,
@@ -524,7 +525,9 @@ export class Aligner {
     }
 
     const audiofiles = Array.from(
-      new Set(sentenceRanges.map(({ audiofile }) => audiofile)),
+      new Set(
+        sentenceRanges.flatMap((sentenceRange) => sentenceRange.audiofiles),
+      ),
     )
 
     await Promise.all(
@@ -608,8 +611,9 @@ export class Aligner {
     endTranscriptionOffset: number,
     score: number,
   ) {
-    const audioFiles = sentenceRanges.reduce<AudioFileContext[]>(
-      (acc, range) => {
+    const audioFiles = sentenceRanges
+      .flatMap((sentenceRange) => sentenceRange.audioRanges)
+      .reduce<AudioFileContext[]>((acc, range) => {
         const existing = acc.find(
           (context) => context.filepath === range.audiofile,
         )
@@ -623,9 +627,7 @@ export class Aligner {
           end: range.end,
         })
         return acc
-      },
-      [],
-    )
+      }, [])
 
     const cursor = mapping.invert().cursor()
 
@@ -949,13 +951,13 @@ export class Aligner {
       if (!firstRangeA) return 1
       if (!firstRangeB) return -1
       const firstAudiofileIndexA = this.audiofiles.indexOf(
-        firstRangeA.audiofile,
+        firstRangeA.first.audiofile,
       )
       const firstAudiofileIndexB = this.audiofiles.indexOf(
-        firstRangeB.audiofile,
+        firstRangeB.first.audiofile,
       )
       if (firstAudiofileIndexA === firstAudiofileIndexB) {
-        return firstRangeA.start - firstRangeB.start
+        return firstRangeA.first.start - firstRangeB.first.start
       }
       return firstAudiofileIndexA - firstAudiofileIndexB
     })
@@ -999,7 +1001,7 @@ export class Aligner {
       )
       alignedChapter.sentenceRanges = finalSentenceRanges
       for (const [i, wordRanges] of enumerate(alignedChapter.wordRanges)) {
-        alignedChapter.wordRanges[i] = expandEmptySentenceRanges(wordRanges)
+        alignedChapter.wordRanges[i] = expandEmptyAudioRanges(wordRanges)
       }
       await this.writeAlignedChapter(alignedChapter)
       collapsedStart += sentences.length
@@ -1151,58 +1153,69 @@ function createTextRangeSmallSequences(
   sentenceIdToFragment: Map<number, string>,
   wordIdToFragment: Map<number, Map<number, string>>,
 ) {
-  return sentenceRanges.map((sentenceRange) => {
-    if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
-      return Epub.createXmlElement(
-        "par",
-        {
-          id: `${chapter.id}-s${sentenceRange.id}`,
-        },
-        [
-          Epub.createXmlElement("text", {
-            src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-          }),
-          Epub.createXmlElement("audio", {
-            src: `../Audio/${basename(sentenceRange.audiofile)}`,
-            clipBegin: `${sentenceRange.start.toFixed(3)}s`,
-            clipEnd: `${sentenceRange.end.toFixed(3)}s`,
-          }),
-        ],
-      )
-    }
+  return sentenceRanges
+    .map((sentenceRange) => {
+      if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
+        // A sentence cut across audio files gets one par per clip, all pointing
+        // at the same text fragment
+        return sentenceRange.audioRanges.map((range, index) =>
+          Epub.createXmlElement(
+            "par",
+            {
+              id:
+                index === 0
+                  ? `${chapter.id}-s${sentenceRange.id}`
+                  : `${chapter.id}-s${sentenceRange.id}-a${index}`,
+            },
+            [
+              Epub.createXmlElement("text", {
+                src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
+              }),
+              Epub.createXmlElement("audio", {
+                src: `../Audio/${basename(range.audiofile)}`,
+                clipBegin: `${range.start.toFixed(3)}s`,
+                clipEnd: `${range.end.toFixed(3)}s`,
+              }),
+            ],
+          ),
+        )
+      }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const words = wordRanges.get(sentenceRange.id)!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const words = wordRanges.get(sentenceRange.id)!
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
 
-    return Epub.createXmlElement(
-      "seq",
-      {
-        id: `${chapter.id}-s${sentenceRange.id}`,
-        "epub:type": "text-range-small",
-        "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-      },
-      words.map((word) =>
+      return [
         Epub.createXmlElement(
-          "par",
+          "seq",
           {
-            id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
+            id: `${chapter.id}-s${sentenceRange.id}`,
+            "epub:type": "text-range-small",
+            "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
           },
-          [
-            Epub.createXmlElement("text", {
-              src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
-            }),
-            Epub.createXmlElement("audio", {
-              src: `../Audio/${basename(word.audiofile)}`,
-              clipBegin: `${word.start.toFixed(3)}s`,
-              clipEnd: `${word.end.toFixed(3)}s`,
-            }),
-          ],
+          words.map((word) =>
+            Epub.createXmlElement(
+              "par",
+              {
+                id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
+              },
+              [
+                Epub.createXmlElement("text", {
+                  src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
+                }),
+                Epub.createXmlElement("audio", {
+                  src: `../Audio/${basename(word.audiofile)}`,
+                  clipBegin: `${word.start.toFixed(3)}s`,
+                  clipEnd: `${word.end.toFixed(3)}s`,
+                }),
+              ],
+            ),
+          ),
         ),
-      ),
-    )
-  })
+      ]
+    })
+    .flat()
 }
 
 export function concatTranscriptions(

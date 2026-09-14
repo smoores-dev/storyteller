@@ -141,6 +141,7 @@ export function inlineFootnotes(root: Root) {
       new Node(footnote.tagName),
     )
     mapping.insertMap(footnotePos, footnote.nodeSize, 1)
+    cursor = mapping.cursor()
   }
 
   return { root: transformed, footnotePairs, mapping }

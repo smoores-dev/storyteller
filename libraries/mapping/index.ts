@@ -164,12 +164,10 @@ export class Mapping {
 
       const oldSize = end - start
       const newSize = oldSize + delta
-      // Drop entries that collapse to a no-op after coalescing.
-      if (oldSize !== newSize) {
-        starts.push(start)
-        oldSizes.push(oldSize)
-        newSizes.push(newSize)
-      }
+      // Emit the entry even when it collapses to a no-op.
+      starts.push(start)
+      oldSizes.push(oldSize)
+      newSizes.push(newSize)
     }
 
     this.starts = starts

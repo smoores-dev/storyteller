@@ -11,139 +11,255 @@ Audio: thisisalebrvoxrecording
 
 #:~:text=you,org
 Text:  You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this ebook or online at www.gutenberg.org. 
-Audio: alllebrboxrecordingsareinthepu
+Audio: alllebrboxrecordingsareinthepublicdomai
 
 #:~:text=if,ebook
 Text:  If you are not located in the United States, you will have to check the laws of the country where you are located before using this eBook.
-Audio: blicdomainformoreinformation
+Audio: nformoreinformationortovolunte
 
 #:~:text=title,wendy
 Text:  Title: Peter and Wendy
-Audio: ortovo
+Audio: eer
 
 #:~:text=author,barrie
 Text:  Author: J. M. Barrie
-Audio: olunte
+Audio: pleasev
 
 #:~:text=illustrator,bedford
 Text:  Illustrator: F. D. Bedford
-Audio: er
+Audio: isitleb
 
 #:~:text=release,2021
 Text:  Release date: September 18, 2008 [eBook #26654]                 Most recently updated: January 4, 2021
-Audio: pleasevisitlebrvoxdoto
+Audio: rvoxdotorg
 
 #:~:text=language,english
 Text:  Language: English
-Audio: rg
+Audio: 
 
 #:~:text=credits,.net
 Text:  Credits: Produced by Chris Curnow, Lindy Walsh, Martin Pettit The         Internet Archive for help with the illustrations and the         Online Distributed Proofreading Team at https://www.pgdp.net
-Audio: recordingbymaridethhus
+Audio: recordingbymaridethhuspeterpa
 
 #:~:text=*,wendy
 Text:  *** START OF THE PROJECT GUTENBERG EBOOK PETER AND WENDY *** 
-Audio: peter
+Audio: nbyj
 
 #:~:text=peter,wendy
 Text:  PETER AND WENDY
-Audio: rpa
+Audio: m
 
 #:~:text=contents
 Text:  CONTENTS
-Audio: n
+Audio: ba
 
-#:~:text=chapter,through
-Text:  CHAPTER IPETER BREAKS THROUGH
-Audio: b
-
-#:~:text=chapter,shadow
-Text:  CHAPTER IITHE SHADOW
-Audio: byj
-
-#:~:text=chapter,%20come%20away
-Text:  CHAPTER IIICOME AWAY, COME AWAY!
-Audio: mba
-
-#:~:text=chapter,flight
-Text:  CHAPTER IVTHE FLIGHT
-Audio: arry
-
-#:~:text=chapter,true
-Text:  CHAPTER VTHE ISLAND COME TRUE
-Audio: 
-
-#:~:text=chapter,house
-Text:  CHAPTER VITHE LITTLE HOUSE
-Audio: 
-
-#:~:text=chapter,ground
-Text:  CHAPTER VIITHE HOME UNDER THE GROUND
-Audio: 
-
-#:~:text=chapter,lagoon
-Text:  CHAPTER VIIITHE MERMAIDS' LAGOON
-Audio: 
-
-#:~:text=chapter,bird
-Text:  CHAPTER IXTHE NEVER BIRD
-Audio: 
-
-#:~:text=chapter,home
-Text:  CHAPTER XTHE HAPPY HOME
-Audio: 
-
-#:~:text=chapter,story
-Text:  CHAPTER XIWENDY'S STORY
-Audio: pterb
-
-#:~:text=chapter,off
-Text:  CHAPTER XIITHE CHILDREN ARE CARRIED OFF
-Audio: rakes
-
-#:~:text=chapter,fairies
-Text:  CHAPTER XIIIDO YOU BELIEVE IN FAIRIES?
-Audio: 
-
-#:~:text=chapter,ship
-Text:  CHAPTER XIVTHE PIRATE SHIP
-Audio: 
-
-#:~:text=chapter,time
-Text:  CHAPTER XV'HOOK OR ME THIS TIME'
-Audio: 
-
-#:~:text=chapter,home
-Text:  CHAPTER XVITHE RETURN HOME
-Audio: al
-
-#:~:text=chapter,up
-Text:  CHAPTER XVIIWHEN WENDY GREW UP
-Audio: llchildre
-
-#:~:text=illustrations
-Text:  ILLUSTRATIONS
-Audio: n
-
-#:~:text=the,mine
-Text:  THE NEVER NEVER LAND TITLE PAGE PETER FLEW IN THE BIRDS WERE FLOWN LET HIM KEEP WHO CAN PETER ON GUARD SUMMER DAYS ON THE LAGOON "TO DIE WILL BE AN AWFULLY BIG ADVENTURE" WENDY'S STORY FLUNG LIKE BALES HOOK OR ME THIS TIME "THIS MAN IS MINE!" 
-Audio: exceptonegrowuptheysoonknowthattheywillgrowu
-
-#:~:text=peter%20and,i
-Text:  PETER AND JANECHAPTER I
-Audio: p
+#:~:text=chapter,i
+Text:  CHAPTER I
+Audio: rry
 
 #:~:text=peter,through
 Text:  PETER BREAKS THROUGH
-Audio: andtheway
+Audio: y
+
+#:~:text=chapter,ii
+Text:  CHAPTER II
+Audio: 
+
+#:~:text=the,shadow
+Text:  THE SHADOW
+Audio: 
+
+#:~:text=chapter,iii
+Text:  CHAPTER III
+Audio: 
+
+#:~:text=come,come%20away
+Text:  COME AWAY, COME AWAY!
+Audio: 
+
+#:~:text=chapter,iv
+Text:  CHAPTER IV
+Audio: 
+
+#:~:text=the,flight
+Text:  THE FLIGHT
+Audio: 
+
+#:~:text=chapter,v
+Text:  CHAPTER V
+Audio: 
+
+#:~:text=the,true
+Text:  THE ISLAND COME TRUE
+Audio: 
+
+#:~:text=chapter,vi
+Text:  CHAPTER VI
+Audio: 
+
+#:~:text=the,house
+Text:  THE LITTLE HOUSE
+Audio: 
+
+#:~:text=chapter,vii
+Text:  CHAPTER VII
+Audio: 
+
+#:~:text=the,ground
+Text:  THE HOME UNDER THE GROUND
+Audio: pterbra
+
+#:~:text=chapter,viii
+Text:  CHAPTER VIII
+Audio: kes
+
+#:~:text=the,lagoon
+Text:  THE MERMAIDS' LAGOON
+Audio: 
+
+#:~:text=chapter,ix
+Text:  CHAPTER IX
+Audio: 
+
+#:~:text=the,bird
+Text:  THE NEVER BIRD
+Audio: 
+
+#:~:text=chapter,x
+Text:  CHAPTER X
+Audio: 
+
+#:~:text=the,home
+Text:  THE HAPPY HOME
+Audio: 
+
+#:~:text=chapter,xi
+Text:  CHAPTER XI
+Audio: 
+
+#:~:text=wendy,story
+Text:  WENDY'S STORY
+Audio: 
+
+#:~:text=chapter,xii
+Text:  CHAPTER XII
+Audio: 
+
+#:~:text=the,off
+Text:  THE CHILDREN ARE CARRIED OFF
+Audio: al
+
+#:~:text=chapter,xiii
+Text:  CHAPTER XIII
+Audio: lch
+
+#:~:text=do,fairies
+Text:  DO YOU BELIEVE IN FAIRIES?
+Audio: ildren
+
+#:~:text=chapter,xiv
+Text:  CHAPTER XIV
+Audio: ex
+
+#:~:text=the,ship
+Text:  THE PIRATE SHIP
+Audio: cept
+
+#:~:text=chapter,xv
+Text:  CHAPTER XV
+Audio: o
+
+#:~:text='hook,time
+Text:  'HOOK OR ME THIS TIME'
+Audio: ne
+
+#:~:text=chapter,xvi
+Text:  CHAPTER XVI
+Audio: gro
+
+#:~:text=the,home
+Text:  THE RETURN HOME
+Audio: wup
+
+#:~:text=chapter,xvii
+Text:  CHAPTER XVII
+Audio: 
+
+#:~:text=when,up
+Text:  WHEN WENDY GREW UP
+Audio: 
+
+#:~:text=illustrations
+Text:  ILLUSTRATIONS
+Audio: 
+
+#:~:text=the,land
+Text:  THE NEVER NEVER LAND
+Audio: they
+
+#:~:text=title,page
+Text:  TITLE PAGE
+Audio: soonknowthattheywillgrowupandthe
+
+#:~:text=peter,in
+Text:  PETER FLEW IN
+Audio: ew
+
+#:~:text=the,flown
+Text:  THE BIRDS WERE FLOWN
+Audio: ay
+
+#:~:text=let,can
+Text:  LET HIM KEEP WHO CAN
+Audio: we
+
+#:~:text=peter,guard
+Text:  PETER ON GUARD
+Audio: n
+
+#:~:text=summer,lagoon
+Text:  SUMMER DAYS ON THE LAGOON
+Audio: dy
+
+#:~:text=%22to,adventure
+Text:  "TO DIE WILL BE AN AWFULLY BIG ADVENTURE"
+Audio: knew
+
+#:~:text=wendy,story
+Text:  WENDY'S STORY
+Audio: 
+
+#:~:text=flung,bales
+Text:  FLUNG LIKE BALES
+Audio: 
+
+#:~:text=hook,time
+Text:  HOOK OR ME THIS TIME
+Audio: wa
+
+#:~:text=%22this,mine
+Text:  "THIS MAN IS MINE!"
+Audio: sth
+
+#:~:text=peter,jane
+Text:  PETER AND JANE
+Audio: hi
+
+#:~:text=chapter,i
+Text:  CHAPTER I
+Audio: 
+
+#:~:text=peter,through
+Text:  PETER BREAKS THROUGH
+Audio: s
 
 #:~:text=all,up
 Text:  All children, except one, grow up. 
-Audio: wendyknew
+Audio: 
 
 #:~:text=they,this
 Text:  They soon know that they will grow up, and the way Wendy knew was this. 
-Audio: wasthis
+Audio: 
 
 #:~:text=one%20day,mother
 Text:  One day when she was two years old she was playing in a garden, and she plucked another flower and ran with it to her mother. 
@@ -747,19 +863,19 @@ Audio: hewasalovelyboycladandscelatanleavesandthejusesthatuseoutoftreesbutthemos
 
 #:~:text=when,her
 Text:  When he saw she was a grown-up, he gnashed the little pearls at her.
-Audio: whenhesawshewasagrownupheknashedthelittlepurlsatherendrecordedbymarydatuslittlecomptonverdislanddecember
+Audio: whenhesawshewasagrownupheknashedthelittlepurlsather
 
 #:~:text=chapter,ii
 Text:  CHAPTER II
-Audio: thisisaleabrevoxrecordingallleabrvoxrecordingsareinthepublicdomainformoreinfo
+Audio: endrecordedbymarydatuslittlecomptonverdislanddecember
 
 #:~:text=the,shadow
 Text:  THE SHADOW
-Audio: rmationortofindouthowyoucanvolunteerepleasevisitlebrvoxdagtorgrecordingbypeter
+Audio: thisisaleabrevoxrecordingallleabrvoxrecordingsareinthepublicdomainformoreinformationortofindouthowyoucanvolunteerepleasevisitlebrvoxdagtorgrecordingbypetereastmanjulipeterpanbyjmberry
 
 #:~:text=mrs,out
 Text:  Mrs. Darling screamed, and, as if in answer to a bell, the door opened, and Nana entered, returned from her evening out. 
-Audio: eastmanjulipeterpanbyjmberrymdarlingscreamedandasifinanswertoabelthedooropenedandnanaenteredreturnedfromhereveningout
+Audio: mdarlingscreamedandasifinanswertoabelthedooropenedandnanaenteredreturnedfromhereveningout
 
 #:~:text=she,window
 Text:  She growled and sprang at the boy, who leapt lightly through the window. 
@@ -3103,27 +3219,27 @@ Audio: michelwasupbythistimealsolookingassharpasanifewithsixbladesandasawbutpete
 
 #:~:text=their,world
 Text:  Their faces assumed the awful craftiness of children listening for sounds from the grown-up world. 
-Audio: theirfacesassumedtheaufalcraftinessofchildrenlisteningforsoundstegrnupwdallwasasstillassalttheneverythingwasrightnostopeverythingwaswrongnanawhohadbeenbarkingd
+Audio: theirfacesassumedtheaufalcraftinessofchildrenlisteningforsoundstegrnupwd
 
 #:~:text=all,salt
 Text:  All was as still as salt. 
-Audio: distress
+Audio: allwasasstillassalt
 
 #:~:text=then,right
 Text:  Then everything was right. 
-Audio: fullya
+Audio: theneverythingwasright
 
 #:~:text=no,stop
 Text:  No, stop! 
-Audio: alltheeveningwasquietnow
+Audio: nostop
 
 #:~:text=everything%20was%20wrong
 Text:  Everything was wrong. 
-Audio: w
+Audio: everythingwaswrong
 
 #:~:text=nana,now
 Text:  Nana, who had been barking distressfully all the evening, was quiet now. 
-Audio: 
+Audio: nanawhohadbeenbarkingdistressfullyalltheeveningwasquietnow
 
 #:~:text=it%20was,heard
 Text:  It was her silence they had heard.
@@ -3539,23 +3655,23 @@ Audio: msterandmssdarlingandnannarushedintothenerserytoolat
 
 #:~:text=the%20birds,flown
 Text:  The birds were flown.
-Audio: thebirdswereflon
+Audio: thebirdswerefloneend
 
 #:~:text=chapter,iv
 Text:  CHAPTER IV
-Audio: neendofchapter
+Audio: ofchapter
 
 #:~:text=the,flight
 Text:  THE FLIGHT
-Audio: panthisisalebevoxrecordingalllebrevoxrecordingsareinthepublicdomain
+Audio: panthisisalebevoxrecordingalllebrevoxrecordingsareinthepublicdomainformoreinformationortovolunteerpleasevisitlebrevoxdutorgwimchingpterpanbjmbrhfigh
 
 #:~:text='second,morning
 Text:  'Second to the right, and straight on till morning.
-Audio: nformoreinformationortovolunteerpleasevisitlebrevoxdutorgwimchingpterpanbjmbrhfightotherightandstrahtontilmorni
+Audio: totherightandstrahtontilmorning
 
 #:~:text=morning.-,'
 Text:  '
-Audio: ing
+Audio: 
 
 #:~:text=that,instructions
 Text:  That, Peter had told Wendy, was the way to the Neverland; but even birds, carrying maps and consulting them at windy corners, could not have sighted it with these instructions. 
@@ -4659,19 +4775,19 @@ Audio: shedidnotyetknowthattinkhatedherwiththefiarsehatredofaverywoman
 
 #:~:text=and%20so,doom
 Text:  And so, bewildered, and now staggering in her flight, she followed Tink to her doom.
-Audio: andsobewilderedandnowstageringinherflightshefollowedtinktoherdoomd
+Audio: andsobewilderedandnowstageringinherflightshefollowedtinktoherdoomdwamcheng
 
 #:~:text=chapter,v
 Text:  CHAPTER V
-Audio: wamcheng
+Audio: nthisisaleaberboxrecordingallleberb
 
 #:~:text=the,true
 Text:  THE ISLAND COME TRUE
-Audio: nthisisaleaberboxrecordingallleberboxrecordingsareinthepublicdomainformoreinformationortovolunte
+Audio: oxrecordingsareinthepublicdomainformoreinformationortovolunteerpleasevisitleaberboxdatorgthisrecordingisbymarksmithofsimpsonvillsouthcarolina
 
 #:~:text=feeling,life
 Text:  Feeling that Peter was on his way back, the Neverland had again woke into life. 
-Audio: eerpleasevisitleaberboxdatorgthisrecordingisbymarksmithofsimpsonvillsouthcarolinangthatpeterwasonhiswaybacktheneverlandhadagainwokentolife
+Audio: ngthatpeterwasonhiswaybacktheneverlandhadagainwokentolife
 
 #:~:text=we,peter
 Text:  We ought to use the pluperfect and say wakened, but woke is better and was always used by Peter.
@@ -5683,11 +5799,11 @@ Audio: chaptersxofpeterpan
 
 #:~:text=the,house
 Text:  THE LITTLE HOUSE
-Audio: thisisaleabrvoxrecordingallleabervoxrecordingsareinthepublicdomain
+Audio: thisisaleabrvoxrecordingallleabervoxrecordingsareinthepublicdomainformoreinformationortovolenteerpleasevisitlebrvoxdaghtorgrecordingbynealsudderlandpeterpanbyjmburrychtheliteh
 
 #:~:text=foolish,trees
 Text:  Foolish Tootles was standing like a conqueror over Wendy's body when the other boys sprang, armed, from their trees.
-Audio: formoreinformationortovolenteerpleasevisitlebrvoxdaghtorgrecordingbynealsudderlandpeterpanbyjmburrychthelitehankoreroverwentesebodywhentheotherboyssprangarmedfromtheirtrees
+Audio: ankoreroverwentesebodywhentheotherboyssprangarmedfromtheirtrees
 
 #:~:text='you,wendy
 Text:  'You are too late,' he cried proudly, 'I have shot the Wendy. 
@@ -6566,35 +6682,35 @@ Audio: theygirdledwithjoyatthisforbythegreatestgoodluckthebranchestheyhadbrought
 
 #:~:text='we,roof
 Text:  'We've built the little walls and roof
-Audio: s
+Audio: ebultthlittewasrut
 
 #:~:text=and,door
 Text:  And made a lovely door,
-Audio: sh
+Audio: andmadealovelydoor
 
 #:~:text=so,wendy
 Text:  So tell us, mother Wendy,
-Audio: h
+Audio: sotellusmotherweande
 
 #:~:text=what,more
 Text:  What are you wanting more?
-Audio: h
+Audio: whatareyouwantingmore
 
 #:~:text='
 Text:  '
-Audio: h
+Audio: e
 
 #:~:text=to,greedily
 Text:  To this she answered rather greedily:
-Audio: h
+Audio: 
 
 #:~:text='oh,have
 Text:  'Oh, really next I think I'll have
-Audio: 
+Audio: tothissheansweredgreedilyoreallynextithinkuhave
 
 #:~:text=gay,about
 Text:  Gay windows all about,
-Audio: eansweredgreedilyoreallynextithinkuhavegatewindowsallabout
+Audio: gatewindowsallabout
 
 #:~:text=with,know
 Text:  With roses peeping in, you know,
@@ -6890,19 +7006,19 @@ Audio: afteratimehefellasleepansomeunsteadyfarishadtoclimeoverhimonthirwayhomefr
 
 #:~:text=any%20of,on
 Text:  Any of the other boys obstructing the fairy path at night they would have mischiefed, but they just tweaked Peter's nose and passed on.
-Audio: 
+Audio: anyoftheotherboysubstructingthefarypathatnighttheywouldhavemisciftbuttheyjustweakedpeter'sknowseandpassedon
 
 #:~:text=chapter,vii
 Text:  CHAPTER VII
-Audio: 
+Audio: thisisalebrevoxrecordingalllebrevoxrecordingsareinthepublicdomainformoreinformationandtofindouthowyoucanvolunteerpleasevisitleabrevoxdotorgwredandrecordedbycatherineastminstanforddatedslashtildaseastminonmarchpeterpanbyjmburrych
 
 #:~:text=the,ground
 Text:  THE HOME UNDER THE GROUND
-Audio: anyoftheotherboysubstructingthefarypathatnighttheywouldhavemisciftbuttheyjustweakedpeter'sknowseandpassedon
+Audio: thehomeundertheground
 
 #:~:text=one,trees
 Text:  One of the first things Peter did next day was to measure Wendy and John and Michael for hollow trees. 
-Audio: thisisalebrevoxrecordingalllebrevoxrecordingsareinthepublicdomainformoreinformationandtofindouthowyoucanvolunteerpleasevisitleabrevoxdotorgwredandrecordedbycatherineastminstanforddatedslashtildaseastminonmarchpeterpanbyjmburrychthehomeunderthegroundoneofthefirstthingspeterdidnextdaywastomeasurewendyandjohnandmichaleforhollowtrees
+Audio: oneofthefirstthingspeterdidnextdaywastomeasurewendyandjohnandmichaleforhollowtrees
 
 #:~:text=hook,size
 Text:  Hook, you remember, had sneered at the boys for thinking they needed a tree apiece, but this was ignorance, for unless your tree fitted you it was difficult to go up and down, and no two of the boys were quite the same size. 
@@ -8970,11 +9086,11 @@ Audio: atthesamemomentthebiardfluttereddownuponthehatandoncemoresatsnugglyonhere
 
 #:~:text=she,cheering
 Text:  She drifted in one direction, and he was borne off in another, both cheering.
-Audio: shedriftedinonedirectionandhewasbornoffinanotherbothchearing
+Audio: shedriftedinonedirectionandhewasbornoffinanotherbothchearingofcorsewhenpeterlandedhebeachedhisbarksmallshipactually
 
 #:~:text=of,nest
 Text:  Of course when Peter landed he beached his barque in a place where the bird would easily find it; but the hat was such a great success that she abandoned the nest. 
-Audio: ofcorsewhenpeterlandedhebeachedhisbarksmallshipactuallytheneverbiardsnestinthisparticularcaseiniinaplacewherethebirdwouldeasilyfinditbutthehatwassuchagreatsuccessthatsheabandonedthenest
+Audio: theneverbiardsnestinthisparticularcaseiniinaplacewherethebirdwouldeasilyfinditbutthehatwassuchagreatsuccessthatsheabandonedthenest
 
 #:~:text=it%20drifted,hat
 Text:  It drifted about till it went to pieces, and often Starkey came to the shore of the lagoon, and with many bitter feelings watched the bird sitting on his hat. 
@@ -9830,15 +9946,15 @@ Audio: buttonightheremainedonhisstoolandweshallseewhathappened
 
 #:~:text=chapter,xi
 Text:  CHAPTER XI
-Audio: d
+Audio: hpnthisisalibreboxrecordingallibraboxrecordi
 
 #:~:text=wendy,story
 Text:  WENDY'S STORY
-Audio: hpnthisisalibreboxrecordingallibraboxrecordingsareinthepublicdomineformorinformationotovolontierplasevisitlibraboxdutogthisrei
+Audio: ingsareinthepublicdomineformorinformationotovolontierplasevisitlibraboxdutogthisreidingbylucyburgoinpadepanbyjmburr
 
 #:~:text='listen,bed
 Text:  'Listen, then,' said Wendy, settling down to her story, with Michael at her feet and seven boys in the bed. 
-Audio: idingbylucyburgoinpadepanbyjmburrlissenthensaidwendysetlandowntoherstorywithmarcoleterfateandsevenboysinthebead
+Audio: lissenthensaidwendysetlandowntoherstorywithmarcoleterfateandsevenboysinthebead
 
 #:~:text='there,gentleman
 Text:  'There was once a gentleman——'
@@ -10894,15 +11010,15 @@ Audio: allarmswereextendedtohimasifsuddenlybloignedinhisdirectiontheiwerebeseach
 
 #:~:text=as%20for,eye
 Text:  As for Peter, he seized his sword, the same he thought he had slain Barbecue with; and the lust of battle was in his eye.
-Audio: asforpatahesaisedhissordthesmehethoughthehadslinedbarbuciwithandthelustofbettlwasinhiseye
+Audio: asforpatahesaisedhissordthesmehethoughthehadslinedbarbuciwithandthelustofbettlwasinhiseyein
 
 #:~:text=chapter,xii
 Text:  CHAPTER XII
-Audio: ein
+Audio: |thisisalibrevoxrecordingallli
 
 #:~:text=the,off
 Text:  THE CHILDREN ARE CARRIED OFF
-Audio: thisisalibrevoxrecordingalllibrevoxrecordingsarinthepublicdomainformoreinformationortovolunteerpleasevisitlibrevoxtatorgrecordingbygenovivetokesaprlnewhavenconeicatprpnjmberyidrenrecarriedoff
+Audio: ibrevoxrecordingsarinthepublicdomainformoreinformationortovolunteerpleasevisitlibrevoxtatorgrecordingbygenovivetokesaprlnewhavenconeicatprpnjmberyidrenrecarriedoff
 
 #:~:text=the,man
 Text:  The pirate attack had been a complete surprise: a sure proof that the unscrupulous Hook had conducted it improperly, for to surprise redskins fairly is beyond the wit of the white man.
@@ -11038,23 +11154,23 @@ Audio: terleyandtheelsatianfogerty
 
 #:~:text=turley%20fell,tribe
 Text:  Turley fell to the tomahawk of the terrible Panther, who ultimately cut a way through the pirates with Tiger Lily and a small remnant of the tribe.
-Audio: turleyfelltothetomahakoftheterblpantherwhoultimatelycutawaythroughthepiratstowhatextenthookistoblamforhistecnicsonthisoccasionisforthehistoriantodecidehadhewaitedontherisinggroundtothepropalhourheandhismenwouldprobablyhavebeenbucheredandinjudginghimitisonlyfairetotakethisintoaccountwhathitsouldperhapshavedonewastoacquainthisoponensthatheproposedtofollowanewmethodalotherhandthisasdestroyingtheele
+Audio: turleyfelltothetomahakoftheterblpantherwhoultimatelycutawaythroughthepirats
 
 #:~:text=to,decide
 Text:  To what extent Hook is to blame for his tactics on this occasion is for the historian to decide. 
-Audio: e
+Audio: towhatextenthookistoblamforhistecnicsonthisoccasionisforthehistoriantodecide
 
 #:~:text=had,account
 Text:  Had he waited on the rising ground till the proper hour he and his men would probably have been butchered; and in judging him it is only fair to take this into account. 
-Audio: e
+Audio: hadhewaitedontherisinggroundtothepropalhourheandhismenwouldprobablyhavebeenbucheredandinjudginghimitisonlyfairetotakethisintoaccount
 
 #:~:text=what%20he,method
 Text:  What he should perhaps have done was to acquaint his opponents that he proposed to follow a new method. 
-Audio: e
+Audio: whathitsouldperhapshavedonewastoacquainthisoponensthatheproposedtofollowanewmethod
 
 #:~:text=on%20the%20other,difficulties
 Text:  On the other hand this, as destroying the element of surprise, would have made his strategy of no avail, so that the whole question is beset with difficulties. 
-Audio: ementofsurprisewoudhavemadehisstrategyofnoavailsothattheholequestionisbesetwithdifficulties
+Audio: alotherhandthisasdestroyingtheelementofsurprisewoudhavemadehisstrategyofnoavailsothattheholequestionisbesetwithdifficulties
 
 #:~:text=one%20cannot,out
 Text:  One cannot at least withhold a reluctant admiration for the wit that had conceived so bold a scheme, and the fell genius with which it was carried out.
@@ -11938,19 +12054,19 @@ Audio: nowhecralledforwardlikeasnakeandagainerecthedartedacrossthespaceonwhichth
 
 #:~:text=he%20was,happy
 Text:  He was frightfully happy.
-Audio: hewasfrightfullyhappy
+Audio: hewasfrightfullyhappyendofchaptr
 
 #:~:text=chapter,xiv
 Text:  CHAPTER XIV
-Audio: yendofchaptr
+Audio: |thisisaleabervoxrecordingalllebrv
 
 #:~:text=the,ship
 Text:  THE PIRATE SHIP
-Audio: thisisaleabervoxrecordingalllebrvoxrecordingsareinthepublicdomainformoreinformationortovolunteerpleasvisit
+Audio: voxrecordingsareinthepublicdomainformoreinformationortovolunteerpleasvisitlebrvoxdutorgrecordingbynathenwillardsomerbellmassachusetspeterpanvijmberrychaperrtship
 
 #:~:text=one,feathers
 Text:  One green light squinting over Kidd's Creek, which is near the mouth of the pirate river, marked where the brig, the Jolly Roger, lay, low in the water; a rakish-looking craft foul to the hull, every beam in her detestable like ground strewn with mangled feathers. 
-Audio: lebrvoxdutorgrecordingbynathenwillardsomerbellmassachusetspeterpanvijmberrychaperrtshipngreenlightsquintingoverkidscreekwhichisnearthemouththepiroterivermarkedwherethebrigthejalyrodgerlaylowinthewaterarickishlookingcraftfollowtothehaleverybeaminherdetestablelikegroundstreomedwithmanglefethers
+Audio: ngreenlightsquintingoverkidscreekwhichisnearthemouththepiroterivermarkedwherethebrigthejalyrodgerlaylowinthewaterarickishlookingcraftfollowtothehaleverybeaminherdetestablelikegroundstreomedwithmanglefethers
 
 #:~:text=she,name
 Text:  She was the cannibal of the seas, and scarce needed that watchful eye, for she floated immune in the horror of her name.
@@ -12702,11 +12818,11 @@ Audio: thenhewentontaking
 
 #:~:text=chapter,xv
 Text:  CHAPTER XV
-Audio: g
+Audio: thisisalebrewokrecordingalleabrewoksrecordingsareinthepublicdomainformodinformationotovolunterpleasewisitdotorgpeterpangmbr
 
 #:~:text='hook,time
 Text:  'HOOK OR ME THIS TIME'
-Audio: thisisalebrewokrecordingalleabrewoksrecordingsareinthepublicdomainformodinformationotovolunterpleasewisitdotorgpeterpangmbrormeetthistime
+Audio: ormeetthistime
 
 #:~:text=odd,happened
 Text:  Odd things happen to all of us on our way through life without our noticing for a time that they have happened. 
@@ -12794,51 +12910,51 @@ Audio: itwasatthismomentthateddainedthequartermasteremergedfromtheforcaslandcame
 
 #:~:text=now,watch
 Text:  Now, reader, time what happened by your watch. 
-Audio: nowreadertimewhathappenebyyourwatch
+Audio: knowreadertimewhathappe
 
 #:~:text=peter,deep
 Text:  Peter struck true and deep. 
-Audio: 
+Audio: nebyyourwatch
 
 #:~:text=john,groan
 Text:  John clapped his hands on the ill-fated pirate's mouth to stifle the dying groan. 
-Audio: clappedishandsontheillfatedbirat'smouthtostiflethediinggroon
+Audio: clappedishandsontheillfatedbirat'smouthtostiflethe
 
 #:~:text=he%20fell,forward
 Text:  He fell forward. 
-Audio: hefellforward
+Audio: diinggroon
 
 #:~:text=four,thud
 Text:  Four boys caught him to prevent the thud. 
-Audio: fourboyscoghtimtopreventthethud
+Audio: hefellforwardfourboyscoghtimtoprevent
 
 #:~:text=peter%20gave,overboard
 Text:  Peter gave the signal, and the carrion was cast overboard. 
-Audio: petergavethesignalandthecarionwascastoverboad
+Audio: tthethudpetergavethesignalandthecarionwascastoverboa
 
 #:~:text=there,silence
 Text:  There was a splash, and then silence. 
-Audio: therewasasplashandthensilence
+Audio: dtherewasasplashandthensilenc
 
 #:~:text=how,taken
 Text:  How long has it taken?
-Audio: howlonghasittaken
+Audio: cehowlonghasittake
 
 #:~:text='one
 Text:  'One!
-Audio: one
+Audio: en
 
 #:~:text='%20,count
 Text:  ' (Slightly had begun to count.)
-Audio: slightlyhadbegunetocount
+Audio: oneslightlyhad
 
 #:~:text=none,round
 Text:  None too soon, Peter, every inch of him on tiptoe, vanished into the cabin; for more than one pirate was screwing up his courage to look round. 
-Audio: everyinchofhimontiptovanishedintothecabernformorethanonepirotewasscrewinguphiscurragetolookaround
+Audio: begunetocounteveryinchofhimontiptovanishedintothecabernformorethanonepirotewasscrewinguphiscurra
 
 #:~:text=they,passed
 Text:  They could hear each other's distressed breathing now, which showed them that the more terrible sound had passed.
-Audio: theycouldheareachothersdistressedbreathingnowwhichshowedthemthatthemoreterriblesoundhadpassed
+Audio: getolookaroundtheycouldheareachothersdistressedbreathingnowwhichshowedthemthatthemoreterriblesoundhadpassed
 
 #:~:text='it,spectacles
 Text:  'It's gone, captain,' Smee said, wiping his spectacles. 
@@ -12846,15 +12962,15 @@ Audio: itsgoncaptainsmesaidwipingoffhisspectacles
 
 #:~:text='all,again
 Text:  'All's still again.
-Audio: allstillagain
+Audio: allstillagai
 
 #:~:text=again.-,'
 Text:  '
-Audio: n
+Audio: in
 
 #:~:text=slowly,tick
 Text:  Slowly Hook let his head emerge from his ruff, and listened so intently that he could have caught the echo of the tick. 
-Audio: solylethisheademergedfromhisrufandlistenedsointentlythathecouldhavecoughttheecoofthetick
+Audio: solylethisheademergedfromhisrufandlistenedsointentlythathecouldhavecoughttheecoofthetickt
 
 #:~:text=there,height
 Text:  There was not a sound, and he drew himself up firmly to his full height.
@@ -12862,7 +12978,7 @@ Audio: therewasnotasoundandhedrewhimselfupfirmlytohisfullheight
 
 #:~:text='then,unbend
 Text:  'Then here's to Johnny Plank,' he cried brazenly, hating the boys more than ever because they had seen him unbend. 
-Audio: thenherstoodjonnyplankhecriedprasinlyhatingtheboysmorethaneverbecausetheyhadseenhimunbend
+Audio: thenherstoodjonnyplankhecriedprasinlyhatingtheboysmorethaneverbecausetheyhadseenhimunbendhebrokeinto
 
 // 896097814813368718_26654-h-2.htm.xhtml
 
@@ -13649,15 +13765,15 @@ Audio: shegouhtthemtobetinthepitetsbonksprityquicklyyumaybeshureallbutpeterwhost
 
 #:~:text=he%20had,tight
 Text:  He had one of his dreams that night, and cried in his sleep for a long time, and Wendy held him tight.
-Audio: hehadoneofhisdreamsthatnightandcriedinasleepforalongtimeandwhendeheldhimtight
+Audio: hehadoneofhisdreamsthatnightandcriedinasleepforalongtimeandwhendeheldhimtightlybcrticrm
 
 #:~:text=chapter,xvi
 Text:  CHAPTER XVI
-Audio: tlybcrticrm
+Audio: hmthisisalibravoxrecordingalllibraboxrecordingsareinthepublicdomainformoreinformationortovolonterepleasevi
 
 #:~:text=the,home
 Text:  THE RETURN HOME
-Audio: hmthisisalibravoxrecordingalllibraboxrecordingsareinthepublicdomainformoreinformationortovolonterepleasevisitlibravoxdatorgurecordingbyclergojepanhom
+Audio: isitlibravoxdatorgurecordingbyclergojepanhom
 
 #:~:text=by,tobacco
 Text:  By two bells that morning they were all stirring their stumps; for there was a big sea running; and Tootles, the bo'sun, was among them, with a rope's end in his hand and chewing tobacco. 
@@ -14477,19 +14593,19 @@ Audio: therecouldnothavebeenaloveliersightbuttherewasnonetoseeitexceptalittleboy
 
 #:~:text=he%20had,barred
 Text:  He had ecstasies innumerable that other children can never know; but he was looking through the window at the one joy from which he must be for ever barred.
-Audio: 
+Audio: hehadhadextasiesinnumerablethatotherchildrencanneverknowbuthewaslookingthroughthewindowattheonejoyfromwhichhemustbeforeverbardendofchapter
 
 #:~:text=chapter,xvii
 Text:  CHAPTER XVII
-Audio: 
+Audio: thisisalebrevoxrecordingallleabrvoxrecordingsareinthepublicdomainformoreinformationorthevolonteerpleasevisitlebrevoxtatorgrecordingbyjohngarvenpeterpanbyjmberry
 
 #:~:text=when,up
 Text:  WHEN WENDY GREW UP
-Audio: hehadhadextasiesinnumerablethatotherchildrencanneverknowbuthewaslookingthroughthewindowattheonejoyfromwhichhemustbeforeverbardendofchapter
+Audio: wendygrewup
 
 #:~:text=i,boys
 Text:  I hope you want to know what became of the other boys. 
-Audio: thisisalebrevoxrecordingallleabrvoxrecordingsareinthepublicdomainformoreinformationorthevolonteerpleasevisitlebrevoxtatorgrecordingbyjohngarvenpeterpanbyjmberrywendygrewuphpyouwt
+Audio: hpyouwt
 
 #:~:text=they,up
 Text:  They were waiting below to give Wendy time to explain about them; and when they had counted five hundred they went up. 
@@ -15461,11 +15577,11 @@ Audio: janaskedoneevening
 
 #:~:text='it,crow
 Text:  'It was like this,' Wendy said, trying to imitate Peter's crow.
-Audio: itwaslikethiswhendesaidtryingtoimitatepeterscrow
+Audio: itwaslikethiswhendesaidtryingtoimitatepeterscrowknowitwasentjanesaidgravelyitwaslikethis
 
 #:~:text='no,mother
 Text:  'No, it wasn't,' Jane said gravely, 'it was like this'; and she did it ever so much better than her mother.
-Audio: knowitwasentjanesaidgravelyitwaslikethisandshediditeversomuchbetterthanhermother
+Audio: andshediditeversomuchbetterthanhermother
 
 #:~:text=wendy,startled
 Text:  Wendy was a little startled. 
