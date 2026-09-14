@@ -169,9 +169,8 @@ export function matchedPercent(item: ViewSpineItem): number | null {
 }
 
 export function itemTone(item: ViewSpineItem): ReportTone {
-  const judged = judgmentTone(item.judgment)
-  if (judged) {
-    return judged
+  if (item.judgment === "approved" || item.judgment === "excluded") {
+    return judgmentTone(item.judgment) ?? "muted"
   }
   if (item.status === "not-found") {
     return "poor"

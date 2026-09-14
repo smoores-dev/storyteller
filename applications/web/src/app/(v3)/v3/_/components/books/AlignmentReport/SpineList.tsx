@@ -36,7 +36,7 @@ import { type ReportSelection } from "./useReportSelection"
 function rowFillStyle(percent: number | null, tone: ReportTone) {
   if (percent === null || percent <= 0) return undefined
   const stop = `${Math.min(percent, 100).toFixed(1)}%`
-  const fill = `color-mix(in oklab, var(--color-${tone}) 22%, transparent)`
+  const fill = `color-mix(in oklab, var(--${tone}) 22%, transparent)`
   return {
     backgroundImage: `linear-gradient(to right, ${fill} ${stop}, transparent ${stop})`,
   }
@@ -336,90 +336,106 @@ export function SpineList({
             const isOpen = item.href === selection.openHref
             const percent = matchedPercent(item)
             return (
-              <div
-                key={item.href}
-                role="button"
-                tabIndex={0}
-                aria-current={isOpen}
-                onClick={() => {
-                  selection.setOpenHref(item.href)
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter" && event.key !== " ") return
-                  event.preventDefault()
-                  selection.setOpenHref(item.href)
-                }}
-                style={
-                  item.judgment === null
-                    ? rowFillStyle(percent, itemTone(item))
-                    : undefined
-                }
-                className={cn(
-                  "hover:bg-muted/40 focus-visible:ring-ring/30 grid cursor-pointer grid-cols-[1rem_1.25rem_minmax(0,1fr)_auto] items-center gap-2 bg-no-repeat px-2 py-1.5 text-xs outline-none focus-visible:ring-2",
-                  isOpen && "bg-muted",
-                  isChecked && "bg-primary/10",
-                  (item.judgment === "excluded" ||
-                    item.status === "excluded") &&
-                    "text-muted-foreground bg-muted",
-                )}
-              >
+              <div key={item.href} className="relative w-full">
+                {/* <div
+                  className={cn(
+                    "absolute top-0 left-0 h-full",
+                    item.judgment === null
+                      ? rowFillStyle(percent, itemTone(item))
+                      : undefined,
+                  )}
+                  style={{
+                    width: `${percent}%`,
+                  }}
+                /> */}
                 <Checkbox
                   checked={isChecked}
+                  className="absolute top-1/2 left-2 z-20 -translate-y-1/2"
                   aria-label={item.label}
                   onClick={(event) => {
                     event.stopPropagation()
+                    event.preventDefault()
                     selection.toggleChecked(item.href, event.shiftKey, order)
                   }}
                 />
-                <span className="text-muted-foreground text-right text-[10px] tabular-nums">
-                  {item.index >= 0 ? item.index : "—"}
-                </span>
-
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span
-                    className={cn(
-                      "truncate",
-                      item.status !== "aligned" && "text-muted-foreground",
-                    )}
-                  >
-                    {item.label}
+                <button
+                  role="button"
+                  tabIndex={0}
+                  aria-current={isOpen}
+                  onClick={() => {
+                    selection.setOpenHref(item.href)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") {
+                      return
+                    }
+                    event.preventDefault()
+                    selection.setOpenHref(item.href)
+                  }}
+                  style={
+                    item.judgment === null || item.judgment === "included"
+                      ? rowFillStyle(percent, itemTone(item))
+                      : undefined
+                  }
+                  className={cn(
+                    "hover:bg-muted/40 pl-12 w-full focus-visible:ring-ring/30 relative  grid cursor-pointer grid-cols-[1rem_1.25rem_minmax(0,1fr)_auto] items-center gap-2 bg-no-repeat px-2 py-1.5 text-xs outline-none focus-visible:ring-2",
+                    isOpen && "bg-muted",
+                    isChecked && "bg-primary/10",
+                    (item.judgment === "excluded" ||
+                      item.status === "excluded") &&
+                      "text-muted-foreground bg-muted",
+                  )}
+                >
+                  <span />
+                  <span className="text-muted-foreground text-right text-[10px] tabular-nums">
+                    {item.index >= 0 ? item.index : "—"}
                   </span>
-                  <JudgmentBadge judgment={item.judgment} />
-                  <ListenBadge item={item} />
-                  <PendingBadge item={item} />
-                </span>
-
-                <span className="flex items-center gap-2">
-                  {item.sentenceCount > 0 && (
+                  <span className="flex min-w-0 grow items-center gap-1.5">
                     <span
                       className={cn(
-                        "tabular-nums",
-                        (item.judgment !== null || item.status !== "aligned") &&
-                          "text-muted-foreground",
+                        "truncate",
+                        item.status !== "aligned" && "text-muted-foreground",
                       )}
                     >
-                      {t("list.sentences", {
-                        aligned: item.matchedSentenceCount,
-                        total: item.sentenceCount,
-                      })}
-                      {item.interpolatedSentenceCount > 0 && (
-                        <span className="text-muted-foreground/70 ml-0.5 text-[10px]">
-                          {t("list.interpolated", {
-                            count: item.interpolatedSentenceCount,
-                          })}
-                        </span>
-                      )}
+                      {item.label}
                     </span>
-                  )}
-                  {item.status === "aligned" ? (
-                    <span className="text-muted-foreground w-5 text-right text-[10px] tabular-nums">
-                      {item.score === null ? "—" : item.score.toFixed(0)}
-                    </span>
-                  ) : (
-                    <StatusBadge item={item} />
-                  )}
-                  <icon.ChevronRight className="text-muted-foreground size-3.5" />
-                </span>
+                    <JudgmentBadge judgment={item.judgment} />
+                    <ListenBadge item={item} />
+                    <PendingBadge item={item} />
+                  </span>
+
+                  <span className="flex items-center gap-2">
+                    {item.sentenceCount > 0 && (
+                      <span
+                        className={cn(
+                          "tabular-nums",
+                          (item.judgment !== null ||
+                            item.status !== "aligned") &&
+                            "text-muted-foreground",
+                        )}
+                      >
+                        {t("list.sentences", {
+                          aligned: item.matchedSentenceCount,
+                          total: item.sentenceCount,
+                        })}
+                        {item.interpolatedSentenceCount > 0 && (
+                          <span className="text-muted-foreground/70 ml-0.5 text-[10px]">
+                            {t("list.interpolated", {
+                              count: item.interpolatedSentenceCount,
+                            })}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {item.status === "aligned" ? null : (
+                      // <span className="text-muted-foreground w-5 text-right text-[10px] tabular-nums">
+                      //   {item.score === null ? "—" : item.score.toFixed(0)}
+                      // </span>
+                      <StatusBadge item={item} />
+                    )}
+                    <icon.ChevronRight className="text-muted-foreground size-3.5" />
+                  </span>
+                </button>
               </div>
             )
           })}

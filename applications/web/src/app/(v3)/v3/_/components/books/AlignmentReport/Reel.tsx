@@ -15,10 +15,9 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
+import { ButtonGroup } from "@/app/(v3)/v3/_/components/ui/button-group"
 import * as icon from "@/icons"
 import { type UUID } from "@/uuid"
-
-import { ButtonGroup } from "@/app/(v3)/v3/_/components/ui/button-group"
 
 import {
   GAP,
@@ -296,11 +295,18 @@ function buildSpineAxis(input: {
   const segments: Segment[] = []
   for (const item of input.items) {
     const offset = offsets.get(item.index)
-    if (offset === undefined) continue
+    if (offset === undefined) {
+      continue
+    }
+
     for (const span of spansByIndex.get(item.index) ?? []) {
-      if (!span.audio) continue
+      if (!span.audio) {
+        continue
+      }
       const track = input.tracks[span.audio.track]
-      if (!track) continue
+      if (!track) {
+        continue
+      }
       const start = offset + span.firstSentence
       const end = offset + span.lastSentence + 1
       const last = segments.at(-1)
@@ -331,7 +337,9 @@ function buildSpineAxis(input: {
   }
 
   const playhead = (playing: Playing | null) => {
-    if (!playing) return null
+    if (!playing) {
+      return null
+    }
     const { track, time } = playing
     const span = input.spans.find(
       (entry) =>
@@ -340,7 +348,9 @@ function buildSpineAxis(input: {
         time < entry.audio.end,
     )
     const offset = span ? offsets.get(span.spine) : undefined
-    if (!span?.audio || offset === undefined) return null
+    if (!span?.audio || offset === undefined) {
+      return null
+    }
     const length = span.audio.end - span.audio.start
     const fraction = length > 0 ? (time - span.audio.start) / length : 0
     return (
@@ -426,7 +436,10 @@ function Minimap({
       onPointerDown={(event) => {
         event.preventDefault()
         const fraction = fractionOf(event)
-        if (fraction === null) return
+        if (fraction === null) {
+          return
+        }
+
         const edge = (event.target as HTMLElement).dataset["edge"]
         if (edge === "left" || edge === "right") {
           drag.current = { mode: "resize", edge }
@@ -538,7 +551,9 @@ export function Reel({
 
   useLayoutEffect(() => {
     const element = scroller.current
-    if (!element) return
+    if (!element) {
+      return
+    }
     const observer = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width
       if (width !== undefined) setViewportWidth(width)
