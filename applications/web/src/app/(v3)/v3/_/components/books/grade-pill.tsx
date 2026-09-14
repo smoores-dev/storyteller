@@ -11,30 +11,50 @@ const GRADE_VAR: Record<AlignmentGrade, string> = {
   F: "grade-f",
 }
 
-function styles(
-  render: (token: string) => string,
-): Record<AlignmentGrade, string> {
-  return Object.fromEntries(
-    Object.entries(GRADE_VAR).map(([grade, token]) => [grade, render(token)]),
-  ) as Record<AlignmentGrade, string>
-}
+export const GRADE_TEXT = {
+  S: "text-(--grade-s)",
+  A: "text-(--grade-a)",
+  B: "text-(--grade-b)",
+  C: "text-(--grade-c)",
+  D: "text-(--grade-d)",
+  F: "text-(--grade-f)",
+} satisfies Record<AlignmentGrade, string>
 
-export const GRADE_TEXT = styles((token) => `text-[var(--${token})]`)
+export const GRADE_FILL = {
+  S: "bg-(--grade-s)",
+  A: "bg-(--grade-a)",
+  B: "bg-(--grade-b)",
+  C: "bg-(--grade-c)",
+  D: "bg-(--grade-d)",
+  F: "bg-(--grade-f)",
+} satisfies Record<AlignmentGrade, string>
 
-export const GRADE_FILL = styles((token) => `bg-[var(--${token})]`)
+export const GRADE_STYLES = {
+  S: "bg-(--grade-s-bg) text-(--grade-s)",
+  A: "bg-(--grade-a-bg) text-(--grade-a)",
+  B: "bg-(--grade-b-bg) text-(--grade-b)",
+  C: "bg-(--grade-c-bg) text-(--grade-c)",
+  D: "bg-(--grade-d-bg) text-(--grade-d)",
+  F: "bg-(--grade-f-bg) text-(--grade-f)",
+} satisfies Record<AlignmentGrade, string>
 
-export const GRADE_STYLES = styles(
-  (token) => `bg-[var(--${token}-bg)] text-[var(--${token})]`,
-)
+export const GRADE_TILE = {
+  S: "border-(--grade-s-line) bg-(--grade-s-bg) text-(--grade-s)",
+  A: "border-(--grade-a-line) bg-(--grade-a-bg) text-(--grade-a)",
+  B: "border-(--grade-b-line) bg-(--grade-b-bg) text-(--grade-b)",
+  C: "border-(--grade-c-line) bg-(--grade-c-bg) text-(--grade-c)",
+  D: "border-(--grade-d-line) bg-(--grade-d-bg) text-(--grade-d)",
+  F: "border-(--grade-f-line) bg-(--grade-f-bg) text-(--grade-f)",
+} satisfies Record<AlignmentGrade, string>
 
-export const GRADE_TILE = styles(
-  (token) =>
-    `border-[var(--${token}-line)] bg-[var(--${token}-bg)] text-[var(--${token})]`,
-)
-
-export const GRADE_COLORS: Record<string, string> = styles(
-  (token) => `var(--${token})`,
-)
+export const GRADE_COLORS = {
+  S: "var(--grade-s)",
+  A: "var(--grade-a)",
+  B: "var(--grade-b)",
+  C: "var(--grade-c)",
+  D: "var(--grade-d)",
+  F: "var(--grade-f)",
+} satisfies Record<AlignmentGrade, string>
 
 function isGrade(grade: string): grade is AlignmentGrade {
   return grade in GRADE_VAR
