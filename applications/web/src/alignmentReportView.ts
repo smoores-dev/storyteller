@@ -150,11 +150,25 @@ export function gradeForScore(
   const score =
     sentenceScore * SENTENCE_WEIGHT + audioScore * (1 - SENTENCE_WEIGHT)
 
-  if (sentenceScore >= 95 && audioScore >= 99) return graded("S", score)
-  if (sentenceScore >= 90 && audioScore >= 97) return graded("A", score)
-  if (audioScore >= 96) return graded("B", score)
-  if (sentenceScore >= 90) return graded("C", score)
-  if (sentenceScore <= 50 && audioScore <= 50) return graded("F", 0)
+  if (sentenceScore >= 94.5 && audioScore >= 98.5) {
+    return graded("S", score)
+  }
+
+  if (sentenceScore >= 89.5 && audioScore >= 96.5) {
+    return graded("A", score)
+  }
+
+  if (audioScore >= 96.5 && sentenceScore < 89.5) {
+    return graded("B", score)
+  }
+
+  if (sentenceScore >= 89.5 && audioScore < 96.5) {
+    return graded("C", score)
+  }
+
+  if (sentenceScore <= 50 && audioScore <= 50) {
+    return graded("F", 0)
+  }
   return graded("D", score)
 }
 
