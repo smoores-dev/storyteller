@@ -31,6 +31,7 @@ import { type DecisionEditor } from "./useDecisionEditor"
 
 export function ChapterDetail({
   bookUuid,
+  version,
   item,
   items,
   spans,
@@ -42,6 +43,7 @@ export function ChapterDetail({
   narrow,
 }: {
   bookUuid: UUID
+  version: string
   item: ViewSpineItem | null
   items: ViewSpineItem[]
   spans: ReportSpan[]
@@ -182,6 +184,7 @@ export function ChapterDetail({
 
       <ChapterBody
         bookUuid={bookUuid}
+        version={version}
         item={item}
         items={items}
         spans={spansOf(spans, item.index)}
@@ -291,6 +294,7 @@ function trackHulls(
 
 function ChapterBody({
   bookUuid,
+  version,
   item,
   items,
   spans,
@@ -300,6 +304,7 @@ function ChapterBody({
   narrow,
 }: {
   bookUuid: UUID
+  version: string
   item: ViewSpineItem
   items: ViewSpineItem[]
   spans: ReportSpan[]
@@ -529,6 +534,7 @@ function ChapterBody({
       {item.status !== "excluded" && (
         <ChapterText
           bookUuid={bookUuid}
+          version={version}
           item={item}
           spans={spans}
           className={narrow ? "max-h-[60vh]" : "min-h-0 flex-1"}

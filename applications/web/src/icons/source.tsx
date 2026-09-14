@@ -39,6 +39,7 @@ import {
   IconCircleCheck,
   IconClick,
   IconClock,
+  IconCode,
   IconColorPicker,
   IconColumns3,
   IconColumns,
@@ -159,6 +160,7 @@ import { IconReadaloud } from "@/components/icons/IconReadaloud"
 
 import { styled } from "./styled"
 
+export const Code = /*#__PURE__*/ styled(IconCode)
 export const Plus = /*#__PURE__*/ styled(IconPlus)
 export const Add = /*#__PURE__*/ styled(IconPlus)
 export const Minus = /*#__PURE__*/ styled(IconMinus)

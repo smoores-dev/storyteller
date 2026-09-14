@@ -4,20 +4,24 @@ import { GuidedNavigationDocument } from "@readium/shared"
 import { skipToken } from "@reduxjs/toolkit/query"
 import { useEffect, useMemo, useRef, useState } from "react"
 
+import { Tooltip, TooltipContent } from "@v3/_/components/ui/tooltip"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type ReportSpan, type ViewSpineItem } from "@/alignmentReportView"
 import { play, usePlayerSelector } from "@/app/(v3)/v3/_/components/audio"
+import { type SentenceAudit, auditChapterAudio } from "@/chapterAudio"
 import * as icon from "@/icons"
 import { sanitizeHtml } from "@/sanitizeHtml"
 import {
+  useGetBookChapterAudioQuery,
   useGetBookChapterGuidedNavigationQuery,
   useGetBookChapterTextQuery,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
 
+import { ChapterSourceDialog } from "./ChapterSourceDialog"
 import { readStored, store } from "./shared"
 
 const STRIP_SELECTOR = "script, style, link, img, svg, video, audio, iframe"
@@ -26,8 +30,21 @@ const STATE = "data-state"
 const MATCH = "data-match"
 const READABLE = "data-readable"
 const READING = "data-reading"
+const PACE = "data-pace"
+const DRIFT = "data-drift"
 const FOLLOW_KEY = "alignment-report:chapter-text:follow"
+const MODE_KEY = "alignment-report:chapter-text:mode"
 const PROBLEM_SELECTOR = `[${STATE}=interpolated], [${STATE}=dropped]`
+const HOVER_DELAY = 400
+const HOVER_LINGER = 150
+
+type Mode = "problems" | "pace" | "drift"
+
+const MARKS: Record<Mode, { selector: string; attribute: string }> = {
+  problems: { selector: PROBLEM_SELECTOR, attribute: STATE },
+  pace: { selector: `[${PACE}]`, attribute: PACE },
+  drift: { selector: `[${DRIFT}]`, attribute: DRIFT },
+}
 
 type Sentence = {
   fragmentId: string
@@ -216,8 +233,10 @@ function prepare(
   xhtml: string,
   item: ViewSpineItem,
   spans: ReportSpan[],
-): { html: string; marked: boolean } {
+): { html: string; marked: boolean; texts: Map<string, string> } {
+  console.log("xhtml", xhtml)
   const parsed = new DOMParser().parseFromString(xhtml, "application/xhtml+xml")
+
   const failed = parsed.querySelector("parsererror")
   const document = failed
     ? new DOMParser().parseFromString(xhtml, "text/html")
@@ -226,8 +245,14 @@ function prepare(
   for (const element of body.querySelectorAll(STRIP_SELECTOR)) {
     element.remove()
   }
+  const texts = new Map(
+    [...body.querySelectorAll("[id]")].map((element) => [
+      element.id,
+      element.textContent,
+    ]),
+  )
   const marked = markMatches(body, item, spans)
-  return { html: sanitizeHtml(body.innerHTML), marked }
+  return { html: sanitizeHtml(body.innerHTML), marked, texts }
 }
 
 function centeredTop(container: HTMLElement, target: Element): number {
@@ -248,13 +273,14 @@ function sentenceNumber(element: Element): number {
   return Number(/-s(\d+)$/.exec(element.id)?.[1] ?? Number.NaN)
 }
 
-function problemAreas(container: HTMLElement): Element[] {
+function problemAreas(container: HTMLElement, mode: Mode): Element[] {
+  const { selector, attribute } = MARKS[mode]
   const areas: Element[] = []
   let previous: Element | null = null
-  for (const element of container.querySelectorAll(PROBLEM_SELECTOR)) {
+  for (const element of container.querySelectorAll(selector)) {
     const continues =
       previous !== null &&
-      previous.getAttribute(STATE) === element.getAttribute(STATE) &&
+      previous.getAttribute(attribute) === element.getAttribute(attribute) &&
       sentenceNumber(previous) + 1 === sentenceNumber(element)
     if (!continues) areas.push(element)
     previous = element
@@ -262,9 +288,9 @@ function problemAreas(container: HTMLElement): Element[] {
   return areas
 }
 
-function stepProblem(container: HTMLElement, direction: 1 | -1) {
+function stepProblem(container: HTMLElement, mode: Mode, direction: 1 | -1) {
   const current = container.scrollTop
-  const tops = problemAreas(container).map((area) =>
+  const tops = problemAreas(container, mode).map((area) =>
     centeredTop(container, area),
   )
   const target =
@@ -275,13 +301,98 @@ function stepProblem(container: HTMLElement, direction: 1 | -1) {
   container.scrollTo({ top: target, behavior: "smooth" })
 }
 
+function clock(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  return `${minutes}:${(seconds - minutes * 60).toFixed(1).padStart(4, "0")}`
+}
+
+function SentenceDetails({
+  audit,
+  sentence,
+  text,
+  medianCps,
+  state,
+}: {
+  audit: SentenceAudit | null
+  sentence: Sentence | null
+  text: string
+  medianCps: number | null
+  state: string | null
+}) {
+  const t = useTranslation("AlignmentReport")
+  const start = audit?.start ?? sentence?.start
+  const end = audit?.end ?? sentence?.end
+  if (start === undefined || end === undefined) return null
+
+  const cps = audit
+    ? audit.cps
+    : sentence && end > start
+      ? text.trim().length / (end - start)
+      : null
+
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="tabular-nums">
+        {t("detail.hoverTiming", {
+          start: clock(start),
+          end: clock(end),
+          duration: (end - start).toFixed(1),
+          cps: cps === null ? "–" : cps.toFixed(1),
+        })}
+      </p>
+      {audit && audit.holeSeconds > 0.05 && (
+        <p>
+          {t("detail.hoverHoles", { seconds: audit.holeSeconds.toFixed(1) })}
+        </p>
+      )}
+      {audit?.pace && medianCps !== null && (
+        <p>
+          {audit.pace === "slow"
+            ? t("detail.hoverSlow", { median: medianCps.toFixed(1) })
+            : t("detail.hoverFast", { median: medianCps.toFixed(1) })}
+        </p>
+      )}
+      {state && <p>{state}</p>}
+      {audit?.flags.map((flag) => (
+        <p key={flag} className="font-medium">
+          {flag === "soundsLikeNext"
+            ? t("detail.hoverSoundsLikeNext")
+            : flag === "soundsLikePrevious"
+              ? t("detail.hoverSoundsLikePrevious")
+              : flag === "startsLate"
+                ? t("detail.hoverStartsLate")
+                : flag === "startsEarly"
+                  ? t("detail.hoverStartsEarly")
+                  : flag === "runsOn"
+                    ? t("detail.hoverRunsOn")
+                    : t("detail.hoverMismatch")}
+        </p>
+      ))}
+      {audit && audit.heard !== null && (
+        <div className="border-background/20 mt-1 border-t pt-1">
+          <p className="opacity-70">
+            {t("detail.hoverHeard", {
+              percent: String(Math.round((audit.match ?? 0) * 100)),
+            })}
+          </p>
+          <p className="line-clamp-6 break-words italic">
+            {audit.heard || t("detail.hoverNothingHeard")}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ChapterText({
   bookUuid,
+  version,
   item,
   spans,
   className,
 }: {
   bookUuid: UUID
+  version: string
   item: ViewSpineItem
   spans: ReportSpan[]
   className?: string
@@ -297,21 +408,28 @@ export function ChapterText({
     item.readHref
       ? {
           uuid: bookUuid,
-          updatedAt: new Date().toISOString(),
+          updatedAt: version,
           href: item.readHref,
         }
       : skipToken,
   )
+
   const { currentData: guidedNavigation } =
     useGetBookChapterGuidedNavigationQuery(
       item.readHref && !notAligned
         ? {
             uuid: bookUuid,
-            updatedAt: new Date().toISOString(),
+            updatedAt: version,
             href: item.readHref,
           }
         : skipToken,
     )
+
+  const { currentData: chapterAudio } = useGetBookChapterAudioQuery(
+    item.readHref && !notAligned
+      ? { bookUuid, version, href: item.readHref }
+      : skipToken,
+  )
 
   const prepared = useMemo(
     () => (data === undefined ? null : prepare(data, item, spans)),
@@ -323,6 +441,14 @@ export function ChapterText({
     [guidedNavigation],
   )
 
+  const audit = useMemo(() => {
+    if (!chapterAudio || !prepared) return null
+    return auditChapterAudio(
+      chapterAudio,
+      (fragment) => prepared.texts.get(fragment) ?? null,
+    )
+  }, [chapterAudio, prepared])
+
   const readingId = usePlayerSelector((state) => {
     const clip = state.clip
     if (!clip || clip.bookUuid !== bookUuid) return null
@@ -332,7 +458,22 @@ export function ChapterText({
   const [follow, setFollow] = useState(
     () => readStored(FOLLOW_KEY, (raw) => raw, "") === "1",
   )
+  const [mode, setMode] = useState<Mode>(() =>
+    readStored<Mode>(
+      MODE_KEY,
+      (raw) => (raw === "pace" || raw === "drift" ? raw : null),
+      "problems",
+    ),
+  )
   const [problemCount, setProblemCount] = useState(0)
+  const [sourceOpen, setSourceOpen] = useState(false)
+  const [hovered, setHovered] = useState<Element | null>(null)
+  const [hoverOpen, setHoverOpen] = useState(false)
+
+  function chooseMode(next: Mode) {
+    setMode(next)
+    store(MODE_KEY, next)
+  }
 
   useEffect(() => {
     if (notAligned) return
@@ -367,11 +508,12 @@ export function ChapterText({
       ) {
         const sentence = byFragment.get(node.id)
         if (!sentence) continue
+        const clip = audit?.sentences.get(node.id)
         play({
           bookUuid,
-          path: sentence.path,
-          name: sentence.path,
-          start: sentence.start,
+          path: clip?.audio ?? sentence.path,
+          name: clip?.audio ?? sentence.path,
+          start: clip?.start ?? sentence.start,
           label: item.label,
           sublabel: sentence.text,
         })
@@ -382,7 +524,75 @@ export function ChapterText({
     return () => {
       element.removeEventListener("click", onClick)
     }
-  }, [prepared, sentences, bookUuid, item.label])
+  }, [prepared, sentences, audit, bookUuid, item.label])
+
+  useEffect(() => {
+    const element = container.current
+    if (!element || !prepared) return
+    const controller = new AbortController()
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let current: Element | null = null
+
+    const settle = (target: Element | null, delay: number) => {
+      if (timer !== null) clearTimeout(timer)
+      timer = setTimeout(() => {
+        current = target
+        if (target) setHovered(target)
+        setHoverOpen(target !== null)
+      }, delay)
+    }
+
+    element.addEventListener(
+      "pointerover",
+      (event) => {
+        const found =
+          event.target instanceof Element
+            ? event.target.closest(`[${READABLE}]`)
+            : null
+        const target = found && element.contains(found) ? found : null
+        if (target === current) {
+          if (timer !== null) clearTimeout(timer)
+          return
+        }
+        settle(
+          target,
+          target === null ? HOVER_LINGER : current === null ? HOVER_DELAY : 0,
+        )
+      },
+      { signal: controller.signal },
+    )
+    element.addEventListener(
+      "pointerleave",
+      () => {
+        settle(null, 0)
+      },
+      { signal: controller.signal },
+    )
+
+    return () => {
+      controller.abort()
+      if (timer !== null) clearTimeout(timer)
+      setHoverOpen(false)
+    }
+  }, [prepared])
+
+  useEffect(() => {
+    const element = container.current
+    if (!element || !prepared || !audit || mode === "problems") return
+    const attribute = MARKS[mode].attribute
+    const marked: Element[] = []
+    for (const sentence of audit.sentences.values()) {
+      const value = mode === "pace" ? sentence.pace : sentence.flags[0]
+      if (!value) continue
+      const target = element.querySelector(`#${CSS.escape(sentence.fragment)}`)
+      if (!target) continue
+      target.setAttribute(attribute, value)
+      marked.push(target)
+    }
+    return () => {
+      for (const target of marked) target.removeAttribute(attribute)
+    }
+  }, [prepared, audit, mode])
 
   useEffect(() => {
     const element = container.current
@@ -407,10 +617,21 @@ export function ChapterText({
 
   useEffect(() => {
     const element = container.current
-    setProblemCount(element && prepared ? problemAreas(element).length : 0)
-  }, [prepared])
+    setProblemCount(
+      element && prepared ? problemAreas(element, mode).length : 0,
+    )
+  }, [prepared, audit, mode])
 
   const unavailable = !item.readHref || isError
+  const hoveredSentence = hovered
+    ? (sentences.find((sentence) => sentence.fragmentId === hovered.id) ?? null)
+    : null
+  const hoveredAudit = hovered
+    ? (audit?.sentences.get(hovered.id) ?? null)
+    : null
+  const hoveredState = hovered
+    ? (hovered.getAttribute("data-state") ?? null)
+    : null
 
   return (
     <div className={cn("flex min-h-0 flex-col gap-1.5", className)}>
@@ -421,9 +642,15 @@ export function ChapterText({
               ? t("detail.textUnavailable")
               : !prepared || isFetching
                 ? t("detail.loadingText")
-                : prepared.marked
-                  ? t("detail.textHint")
-                  : t("detail.textUnmarkedHint")}
+                : mode === "pace"
+                  ? t("detail.paceHint")
+                  : mode === "drift"
+                    ? chapterAudio?.source === null
+                      ? t("detail.driftUnavailable")
+                      : t("detail.driftHint")
+                    : prepared.marked
+                      ? t("detail.textHint")
+                      : t("detail.textUnmarkedHint")}
           </span>
           <TooltipButton
             variant="ghost"
@@ -443,11 +670,39 @@ export function ChapterText({
           <TooltipButton
             variant="ghost"
             size="icon-xs"
+            aria-label={t("detail.modePace")}
+            tooltip={t("detail.modePace")}
+            aria-pressed={mode === "pace"}
+            disabled={!audit}
+            className={cn(mode === "pace" && "bg-muted text-foreground")}
+            onClick={() => {
+              chooseMode(mode === "pace" ? "problems" : "pace")
+            }}
+          >
+            <icon.Clock />
+          </TooltipButton>
+          <TooltipButton
+            variant="ghost"
+            size="icon-xs"
+            aria-label={t("detail.modeDrift")}
+            tooltip={t("detail.modeDrift")}
+            aria-pressed={mode === "drift"}
+            disabled={!audit}
+            className={cn(mode === "drift" && "bg-muted text-foreground")}
+            onClick={() => {
+              chooseMode(mode === "drift" ? "problems" : "drift")
+            }}
+          >
+            <icon.Microphone />
+          </TooltipButton>
+          <TooltipButton
+            variant="ghost"
+            size="icon-xs"
             aria-label={t("detail.previousProblem")}
             tooltip={t("detail.previousProblem")}
             disabled={problemCount === 0}
             onClick={() => {
-              if (container.current) stepProblem(container.current, -1)
+              if (container.current) stepProblem(container.current, mode, -1)
             }}
           >
             <icon.ArrowUp />
@@ -459,20 +714,43 @@ export function ChapterText({
             tooltip={t("detail.nextProblem")}
             disabled={problemCount === 0}
             onClick={() => {
-              if (container.current) stepProblem(container.current, 1)
+              if (container.current) stepProblem(container.current, mode, 1)
             }}
           >
             <icon.ArrowDown />
           </TooltipButton>
+          <TooltipButton
+            variant="ghost"
+            size="icon-xs"
+            aria-label={t("detail.showSource")}
+            tooltip={t("detail.showSource")}
+            disabled={data === undefined}
+            onClick={() => {
+              setSourceOpen(true)
+            }}
+          >
+            <icon.Code />
+          </TooltipButton>
         </div>
+      )}
+      {item.readHref && data !== undefined && (
+        <ChapterSourceDialog
+          bookUuid={bookUuid}
+          href={item.readHref}
+          xhtml={data}
+          open={sourceOpen}
+          onOpenChange={setSourceOpen}
+        />
       )}
       <div
         ref={container}
         className={cn(
-          "min-h-24 flex-1 overflow-y-auto rounded-md border px-4 py-3 text-[13px]/6",
+          "bg-background min-h-24 flex-1 overflow-y-auto rounded-md border px-4 py-3 text-[13px]/6",
           "[&_[data-state=interpolated]]:decoration-moderate/70 [&_[data-state=interpolated]]:text-moderate/70 [&_*]:font-sans! [&_[data-state=dropped]]:line-through [&_[data-state=dropped]]:opacity-35 [&_[data-state=interpolated]]:underline [&_[data-state=interpolated]]:decoration-dotted [&_[data-state=interpolated]]:decoration-2 [&_[data-state=interpolated]]:underline-offset-4 [&_[data-state=unmatched]]:opacity-35 [&_h1]:text-base [&_h1]:font-medium [&_h2]:text-sm [&_h2]:font-medium [&_h3]:font-medium [&_p]:my-2",
           "[&_[data-match]]:bg-highlight-bg/70 [&_[data-match]]:border-highlight [&_[data-match]]:dark:bg-highlight/25 [&_[data-match]]:border-b [&_[data-match]]:box-decoration-clone",
           "[&_[data-readable]]:hover:bg-tint [&_[data-readable]]:cursor-pointer [&_[data-readable]]:rounded-xs [&_[data-readable]]:transition-colors [&_[data-readable]]:motion-reduce:transition-none",
+          "[&_[data-pace=slow]]:bg-moderate-bg [&_[data-pace=fast]]:bg-positive-bg [&_[data-pace]]:box-decoration-clone",
+          "[&_[data-drift]]:decoration-poor [&_[data-drift]]:underline [&_[data-drift]]:decoration-wavy [&_[data-drift]]:underline-offset-4",
           "[&_[data-reading]]:bg-tint-strong [&_[data-reading]]:shadow-tint-strong [&_[data-reading]]:text-foreground [&_[data-reading]]:box-decoration-clone [&_[data-reading]]:opacity-100 [&_[data-reading]]:shadow-[0_0_0_3px] [&_[data-reading]]:hover:bg-tint-strong",
           (unavailable || !prepared) && "text-muted-foreground",
         )}
@@ -480,6 +758,22 @@ export function ChapterText({
           prepared && !unavailable ? { __html: prepared.html } : undefined
         }
       />
+      <Tooltip open={hoverOpen}>
+        <TooltipContent
+          anchor={hovered}
+          className="max-w-sm text-left"
+          side="left"
+          sideOffset={10}
+        >
+          <SentenceDetails
+            audit={hoveredAudit}
+            sentence={hoveredSentence}
+            text={hovered?.textContent ?? ""}
+            medianCps={audit?.medianCps ?? null}
+            state={hoveredState}
+          />
+        </TooltipContent>
+      </Tooltip>
     </div>
   )
 }

@@ -1,5 +1,3 @@
-import { highlightHTML } from "@speed-highlight/core"
-
 import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
 
 import { withHasPermission } from "@/auth/auth"
@@ -34,9 +32,9 @@ export const GET = withHasPermission<Params>("bookUpdate")(async (
     asset.filepath,
   )
 
-  const highlighted = await highlightHTML(source, "xml", { block: true })
+  // const highlighted = await highlightHTML(source, "xml", { block: true })
 
-  return new Response(highlighted, {
+  return new Response(source, {
     headers: {
       "Content-Type": "application/oebps-package+xml; charset=utf-8",
     },

@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from "uuid"
 
 import { type JsColor } from "@storyteller-platform/okmain"
 
+import { type ChapterAudio } from "@/chapterAudio"
 import {
   type AlignmentDecisions,
   type AlignmentOverrides,
@@ -1970,6 +1971,14 @@ export const api = createApi({
         responseHandler: "text",
       }),
     }),
+    getBookMediaOverlay: build.query<string, { bookUuid: UUID; href: string }>(
+      {
+        query: ({ bookUuid, href }) => ({
+          url: `/books/${bookUuid}/debug/media-overlay?href=${encodeURIComponent(href)}`,
+          responseHandler: "text",
+        }),
+      },
+    ),
 
     getInfiniteChangelog: build.infiniteQuery<
       ChangelogEntry[],
@@ -2499,6 +2508,13 @@ export const api = createApi({
           .join("/")}&v=${new Date(updatedAt).getTime()}`,
       }),
     }),
+    getBookChapterAudio: build.query<
+      ChapterAudio,
+      { bookUuid: UUID; version: string; href: string }
+    >({
+      query: ({ bookUuid, version, href }) =>
+        `/books/${bookUuid}/debug/chapter-audio?href=${encodeURIComponent(href)}&v=${encodeURIComponent(version)}`,
+    }),
     getTranscodedAudio: build.query<TranscodedAudioFile[], { uuid: UUID }>({
       query: ({ uuid }) => `/books/${uuid}/transcoded-audio`,
       providesTags: (_result, _error, { uuid }) => [
@@ -2604,6 +2620,7 @@ export const {
   useGetBookAlignmentReportQuery,
   useGetBookChapterTextQuery,
   useGetBookChapterGuidedNavigationQuery,
+  useGetBookChapterAudioQuery,
   useGetTranscodedAudioQuery,
   useGetBookAlignmentDecisionsQuery,
   useUpdateBookAlignmentDecisionsMutation,
@@ -2694,6 +2711,7 @@ export const {
   useListBookIdentifiersQuery,
   useUpdateBookIdentifiersMutation,
   useGetBookOpfQuery,
+  useGetBookMediaOverlayQuery,
 } = api
 
 export function getDownloadUrl(

@@ -49,6 +49,10 @@
     "./exclusions": {
       "types": "./dist/align/ctc/exclusions.d.ts",
       "default": "./src/align/ctc/exclusions.ts"
+    },
+    "./emissions": {
+      "types": "./src/align/ctc/emissions.ts",
+      "default": "./src/align/ctc/emissions.ts"
     }
   },
   "scripts": {

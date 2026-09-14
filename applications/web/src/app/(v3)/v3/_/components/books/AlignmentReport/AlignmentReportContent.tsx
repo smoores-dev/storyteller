@@ -253,6 +253,7 @@ function ReportBody({
   const detail = (
     <ChapterDetail
       bookUuid={view.bookUuid}
+      version={view.createdAt}
       item={openItem}
       items={view.items}
       spans={view.spans}

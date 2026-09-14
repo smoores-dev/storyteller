@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 
+import { DynamicCode } from "@v3/_/components/code/DynamicCode"
 import { Button } from "@v3/_/components/ui/button"
 import {
   Dialog,
@@ -15,8 +16,6 @@ import {
 import * as icon from "@/icons"
 import { useGetBookOpfQuery } from "@/store/api"
 import { type UUID } from "@/uuid"
-
-import { Code } from "./Code"
 
 export function ShowOpfDialog({
   bookUuid,
@@ -55,7 +54,9 @@ export function ShowOpfDialog({
               : "Could not read the package document."}
           </p>
         ) : (
-          <Code code={data ?? ""} />
+          <div className="max-h-[60vh] overflow-auto rounded-md border p-3 font-mono text-xs break-words whitespace-pre-wrap">
+            <DynamicCode code={data ?? ""} language="xml" />
+          </div>
           // <pre
           //   className="bg-muted/30 max-h-[60vh] overflow-auto rounded-md border p-3 font-mono text-xs break-words whitespace-pre-wrap"
           //   dangerouslySetInnerHTML={{ __html: data ?? "" }}

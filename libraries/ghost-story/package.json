@@ -34,6 +34,7 @@
     "./vad": "./src/api/VoiceActivityDetection.ts",
     "./server": "./src/cli/whisper-server.ts",
     "./emission-server": "./src/server/emissionServer.ts",
+    "./emission-encoding": "./src/emission/encoding.ts",
     "./bin": "./src/cli/bin.ts",
     "./constants": "./src/constants.ts"
   },
@@ -90,6 +91,10 @@
       "./server": {
         "types": "./dist/cli/whisper-server.d.ts",
         "default": "./dist/cli/whisper-server.js"
+      },
+      "./emission-encoding": {
+        "types": "./dist/emission/encoding.d.ts",
+        "default": "./dist/emission/encoding.js"
       },
       "./emission-server": {
         "import": {

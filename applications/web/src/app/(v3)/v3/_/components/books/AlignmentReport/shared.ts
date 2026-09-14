@@ -31,13 +31,13 @@ export const TONE_FILL: Record<ReportTone, string> = {
   muted: "bg-muted-foreground/40",
 }
 
-export const TONE_STROKE: Record<ReportTone, string> = {
-  good: "stroke-good",
-  positive: "stroke-positive",
-  moderate: "stroke-moderate",
-  poor: "stroke-poor",
-  muted: "stroke-muted-foreground/40",
-}
+// export const TONE_STROKE: Record<ReportTone, string> = {
+//   good: "stroke-good",
+//   positive: "stroke-positive",
+//   moderate: "stroke-moderate",
+//   poor: "stroke-poor",
+//   muted: "stroke-muted-foreground/40",
+// }
 
 export const TONE_BADGE: Record<ReportTone, string> = {
   good: "bg-good-bg text-good",
@@ -47,13 +47,13 @@ export const TONE_BADGE: Record<ReportTone, string> = {
   muted: "bg-muted text-muted-foreground",
 }
 
-export const TONE_TILE: Record<ReportTone, string> = {
-  good: "border-good-border bg-good-bg text-good",
-  positive: "border-positive-border bg-positive-bg text-positive",
-  moderate: "border-moderate-border bg-moderate-bg text-moderate",
-  poor: "border-poor-border bg-poor-bg text-poor",
-  muted: "border-border bg-muted text-foreground",
-}
+// export const TONE_TILE: Record<ReportTone, string> = {
+//   good: "border-good-border bg-good-bg text-good",
+//   positive: "border-positive-border bg-positive-bg text-positive",
+//   moderate: "border-moderate-border bg-moderate-bg text-moderate",
+//   poor: "border-poor-border bg-poor-bg text-poor",
+//   muted: "border-border bg-muted text-foreground",
+// }
 
 export const GRADE_VERDICT = {
   S: "excellent",
@@ -170,18 +170,32 @@ export function matchedPercent(item: ViewSpineItem): number | null {
 
 export function itemTone(item: ViewSpineItem): ReportTone {
   const judged = judgmentTone(item.judgment)
-  if (judged) return judged
-  if (item.status === "not-found") return "poor"
-  if (item.status === "audio-only") return "moderate"
-  if (item.status !== "aligned") return "muted"
+  if (judged) {
+    return judged
+  }
+  if (item.status === "not-found") {
+    return "poor"
+  }
+  if (item.status === "audio-only") {
+    return "moderate"
+  }
+  if (item.status !== "aligned") {
+    return "muted"
+  }
   return percentTone(matchedPercent(item))
 }
 
 export function trackTone(track: Track): ReportTone {
-  if (track.excluded) return "muted"
-  if (track.duration <= 0) return "muted"
+  if (track.excluded) {
+    return "muted"
+  }
+  if (track.duration <= 0) {
+    return "muted"
+  }
   const placed = track.matchedSeconds + track.interpolatedSeconds
-  if (placed === 0) return "poor"
+  if (placed === 0) {
+    return "poor"
+  }
   return (placed / track.duration) * 100 > TRACK_PLACED_GOOD
     ? "good"
     : "moderate"
