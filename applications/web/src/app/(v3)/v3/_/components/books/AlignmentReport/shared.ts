@@ -204,7 +204,7 @@ export function engineLabel(config: ReportJob["config"]): string | null {
   if (!config) return null
   const parts =
     config.aligner === "ctc"
-      ? [config.ctcEngine]
+      ? [config.ctcEngine, config.ctcModel]
       : [config.transcriptionEngine, config.whisperModel]
   const label = parts.filter(Boolean).join(" ")
   return label || null
@@ -228,6 +228,7 @@ export function trackClip(
   range?: { start?: number; end?: number; label?: string | null },
 ): Clip | null {
   const label = range?.label ?? trackLabel(track)
+
   if (track.playback === "readaloud" && track.readaloudHref) {
     return {
       bookUuid,
@@ -240,7 +241,11 @@ export function trackClip(
       sublabel: track.name,
     }
   }
-  if (track.playback !== "original" || !track.source) return null
+
+  if (track.playback !== "original" || !track.source) {
+    return null
+  }
+
   const base = track.source.start
   return {
     bookUuid,

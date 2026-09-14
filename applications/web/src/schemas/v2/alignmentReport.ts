@@ -297,6 +297,7 @@ export const AlignmentReportJobSchemaV2 = z.object({
   config: RunConfigSchema.pick({
     aligner: true,
     ctcEngine: true,
+    ctcModel: true,
     transcriptionEngine: true,
     whisperModel: true,
     language: true,

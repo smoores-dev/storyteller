@@ -58,6 +58,7 @@ export type RunConfig = z.infer<typeof RunConfigSchema>
 export type RunConfigSummary = Pick<
   RunConfig,
   | "aligner"
+  | "ctcModel"
   | "ctcEngine"
   | "transcriptionEngine"
   | "whisperModel"
@@ -74,6 +75,7 @@ export function summarizeRunConfig(
   return {
     aligner: config.aligner,
     ctcEngine: config.ctcEngine,
+    ctcModel: config.ctcModel,
     transcriptionEngine: config.transcriptionEngine,
     whisperModel: config.whisperModel,
     language: config.language,
