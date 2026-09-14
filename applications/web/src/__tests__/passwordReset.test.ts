@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { setupTestDb } from "@/__tests__/harness/testDb"
 import { createAdminUser } from "@/database/users"
@@ -9,8 +10,8 @@ import {
   requestPasswordReset,
 } from "@/passwordReset"
 
-void describe("password reset tokens", () => {
-  void it("returns the email for a valid token and consumes it (single use)", async () => {
+describe("password reset tokens", () => {
+  it("returns the email for a valid token and consumes it (single use)", async () => {
     using _db = setupTestDb()
 
     const token = await createPasswordResetToken("user@example.com")
@@ -23,7 +24,7 @@ void describe("password reset tokens", () => {
     assert.strictEqual(again, null)
   })
 
-  void it("uses the default 60-minute expiry", async () => {
+  it("uses the default 60-minute expiry", async () => {
     using _db = setupTestDb()
 
     const before = Date.now()
@@ -42,13 +43,13 @@ void describe("password reset tokens", () => {
     )
   })
 
-  void it("returns null for an unknown token", async () => {
+  it("returns null for an unknown token", async () => {
     using _db = setupTestDb()
 
     assert.strictEqual(await consumePasswordResetToken("does-not-exist"), null)
   })
 
-  void it("returns null for an expired token and consumes it", async () => {
+  it("returns null for an expired token and consumes it", async () => {
     using _db = setupTestDb()
 
     await _db.db
@@ -70,7 +71,7 @@ void describe("password reset tokens", () => {
     assert.strictEqual(row, undefined, "expired token should be deleted")
   })
 
-  void it("ignores verification tokens that aren't password resets", async () => {
+  it("ignores verification tokens that aren't password resets", async () => {
     using _db = setupTestDb()
 
     await _db.db
@@ -94,8 +95,8 @@ void describe("password reset tokens", () => {
   })
 })
 
-void describe("requestPasswordReset", () => {
-  void it("creates a reset token for a matching account", async () => {
+describe("requestPasswordReset", () => {
+  it("creates a reset token for a matching account", async () => {
     using _db = setupTestDb()
     await createAdminUser("alice", "Alice", "alice@example.com", "hashed")
 
@@ -109,7 +110,7 @@ void describe("requestPasswordReset", () => {
     assert.strictEqual(rows.length, 1)
   })
 
-  void it("resolves a username to the account email", async () => {
+  it("resolves a username to the account email", async () => {
     using _db = setupTestDb()
     await createAdminUser("alice", "Alice", "alice@example.com", "hashed")
 
@@ -123,7 +124,7 @@ void describe("requestPasswordReset", () => {
     assert.strictEqual(rows.length, 1)
   })
 
-  void it("does nothing for an unknown account", async () => {
+  it("does nothing for an unknown account", async () => {
     using _db = setupTestDb()
     await createAdminUser("alice", "Alice", "alice@example.com", "hashed")
 
@@ -136,7 +137,7 @@ void describe("requestPasswordReset", () => {
     assert.strictEqual(rows.length, 0)
   })
 
-  void it("doesn't issue a second token while one is still valid (cooldown)", async () => {
+  it("doesn't issue a second token while one is still valid (cooldown)", async () => {
     using _db = setupTestDb()
     await createAdminUser("alice", "Alice", "alice@example.com", "hashed")
 

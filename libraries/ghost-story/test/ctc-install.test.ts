@@ -4,7 +4,8 @@ import { existsSync } from "node:fs"
 import { mkdtemp, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { after, before, describe, it } from "node:test"
+
+import { afterAll, beforeAll, describe, it } from "vitest"
 
 import { GITLAB_PROJECT_ID } from "../src/cli/config.ts"
 import {
@@ -92,15 +93,15 @@ function registryFetch(
   }
 }
 
-void describe("ctc models", () => {
-  void it("recognizes known variants", () => {
+describe("ctc models", () => {
+  it("recognizes known variants", () => {
     assert.ok(isCtcModel("fp32"))
     assert.ok(isCtcModel("fp16"))
     assert.ok(isCtcModel("mlx"))
     assert.ok(!isCtcModel("q8"))
   })
 
-  void it("builds download urls for files in subdirectories", () => {
+  it("builds download urls for files in subdirectories", () => {
     assert.equal(
       getModelPackageFileUrl(model, "onnx/model.onnx"),
       `https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/packages/ml_models/2/files/onnx/model.onnx`,
@@ -108,20 +109,20 @@ void describe("ctc models", () => {
   })
 })
 
-void describe("model packages", () => {
+describe("model packages", () => {
   const originalFetch = globalThis.fetch
   let modelDir = ""
 
-  before(async () => {
+  beforeAll(async () => {
     modelDir = await mkdtemp(path.join(tmpdir(), "ghost-story-model-packages-"))
   })
 
-  after(async () => {
+  afterAll(async () => {
     globalThis.fetch = originalFetch
     await rm(modelDir, { recursive: true, force: true })
   })
 
-  void it("lists files with decoded relative paths", async () => {
+  it("lists files with decoded relative paths", async () => {
     globalThis.fetch = registryFetch({ count: 0 })
 
     const files = await listModelPackageFiles(model)
@@ -134,7 +135,7 @@ void describe("model packages", () => {
     assert.equal(files[1]?.sha256, sha256(contents["onnx/model.onnx"]!))
   })
 
-  void it("rejects file names that escape the package directory", async () => {
+  it("rejects file names that escape the package directory", async () => {
     globalThis.fetch = (): Promise<Response> =>
       Promise.resolve(
         new Response(JSON.stringify([{ file_name: "%2E%2E%2Fevil", size: 1 }])),
@@ -146,7 +147,7 @@ void describe("model packages", () => {
     )
   })
 
-  void it("downloads every file into the model directory", async () => {
+  it("downloads every file into the model directory", async () => {
     const downloads = { count: 0 }
     globalThis.fetch = registryFetch(downloads)
 
@@ -164,7 +165,7 @@ void describe("model packages", () => {
     assert.ok(isModelPackageInstalled(model, modelDir))
   })
 
-  void it("skips files that are already up to date", async () => {
+  it("skips files that are already up to date", async () => {
     const downloads = { count: 0 }
     globalThis.fetch = registryFetch(downloads)
 
@@ -173,7 +174,7 @@ void describe("model packages", () => {
     assert.equal(downloads.count, 0)
   })
 
-  void it("removes files whose checksum does not match", async () => {
+  it("removes files whose checksum does not match", async () => {
     const destDir = getModelPackageDir(model, modelDir)
     await rm(path.join(destDir, "onnx/model.onnx"), { force: true })
 

@@ -1,6 +1,7 @@
 import assert from "node:assert"
 import { join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { setupTestDb } from "@/__tests__/harness/testDb"
 import { createTestLibrary, waitForWatcher } from "@/__tests__/harness/testFs"
@@ -9,8 +10,8 @@ import { Watcher } from "@/assets/library/scanner/triggers/watcher"
 import { getBooks } from "@/database/books"
 import { createImportRule } from "@/database/importRules"
 
-void describe("Watcher", () => {
-  void it("detects a new epub file added to a watched directory", async () => {
+describe("Watcher", () => {
+  it("detects a new epub file added to a watched directory", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-detect")
 
@@ -31,7 +32,7 @@ void describe("Watcher", () => {
     assert.strictEqual(books[0]?.title, "Moby Dick; Or, The Whale")
   })
 
-  void it("stops cleanly and ignores subsequent file additions", async () => {
+  it("stops cleanly and ignores subsequent file additions", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-stop")
 
@@ -51,7 +52,7 @@ void describe("Watcher", () => {
     assert.strictEqual(books.length, 0)
   })
 
-  void it("reloads and watches a newly added import rule", async () => {
+  it("reloads and watches a newly added import rule", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-reload")
 
@@ -78,7 +79,7 @@ void describe("Watcher", () => {
     assert.strictEqual(books[0]?.title, "Moby Dick; Or, The Whale")
   })
 
-  void it("detects multiple formats added sequentially to same book folder", async () => {
+  it("detects multiple formats added sequentially to same book folder", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-multi")
 
@@ -132,7 +133,7 @@ void describe("Watcher", () => {
     )
   })
 
-  void it("treats deeply nested folders as separate books", async () => {
+  it("treats deeply nested folders as separate books", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-nested")
 
@@ -163,7 +164,7 @@ void describe("Watcher", () => {
     ])
   })
 
-  void it("ignores writes inside internal data-dir folders that live under the watch root", async () => {
+  it("ignores writes inside internal data-dir folders that live under the watch root", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-internal")
 
@@ -193,7 +194,7 @@ void describe("Watcher", () => {
     )
   })
 
-  void it("ignores adding files to ignored paths", async () => {
+  it("ignores adding files to ignored paths", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-ignore")
 

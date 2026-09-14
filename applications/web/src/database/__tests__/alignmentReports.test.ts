@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { type Report } from "@storyteller-platform/align"
 
@@ -25,8 +26,8 @@ const makeReport = (): Report =>
     unalignedAudioFiles: [],
   }) as unknown as Report
 
-void describe("createAlignmentReport", () => {
-  void it("prunes the payload of superseded reports but keeps their summary", async () => {
+describe("createAlignmentReport", () => {
+  it("prunes the payload of superseded reports but keeps their summary", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [{ title: "Book" }]) as UUID[]
 
@@ -55,7 +56,7 @@ void describe("createAlignmentReport", () => {
     assert.strictEqual(secondRow?.pruned, 0)
   })
 
-  void it("returns the latest report with its payload intact", async () => {
+  it("returns the latest report with its payload intact", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [{ title: "Book" }]) as UUID[]
 

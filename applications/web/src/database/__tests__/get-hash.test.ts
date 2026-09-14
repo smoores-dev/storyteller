@@ -3,22 +3,23 @@ import { createHash } from "node:crypto"
 import { mkdir, open, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { cwd } from "node:process"
-import { after, before, describe, it } from "node:test"
+
+import { afterAll, beforeAll, describe, it } from "vitest"
 
 import { computeFileHash } from "@/assets/fs"
 
 const TEST_DIR = join(cwd(), "src", "__fixtures__", "__output__", "hash-tests")
 
-void describe("computeFileHash", () => {
-  before(async () => {
+describe("computeFileHash", () => {
+  beforeAll(async () => {
     await mkdir(TEST_DIR, { recursive: true })
   })
 
-  after(async () => {
+  afterAll(async () => {
     await rm(TEST_DIR, { recursive: true, force: true })
   })
 
-  void it("computes SHA-256 hash for a text file", async () => {
+  it("computes SHA-256 hash for a text file", async () => {
     const testFile = join(TEST_DIR, "test.txt")
     const content = "Hello, World!"
     await writeFile(testFile, content)
@@ -30,7 +31,7 @@ void describe("computeFileHash", () => {
     assert.strictEqual(hash.length, 64)
   })
 
-  void it("computes SHA-256 hash for a binary file", async () => {
+  it("computes SHA-256 hash for a binary file", async () => {
     const testFile = join(TEST_DIR, "test.bin")
     const content = Buffer.from([0x00, 0x01, 0x02, 0x03, 0xff, 0xfe, 0xfd])
     await writeFile(testFile, content)
@@ -41,7 +42,7 @@ void describe("computeFileHash", () => {
     assert.strictEqual(hash, expectedHash)
   })
 
-  void it("produces different hashes for different content", async () => {
+  it("produces different hashes for different content", async () => {
     const file1 = join(TEST_DIR, "file1.txt")
     const file2 = join(TEST_DIR, "file2.txt")
 
@@ -54,7 +55,7 @@ void describe("computeFileHash", () => {
     assert.notStrictEqual(hash1, hash2)
   })
 
-  void it("produces same hash for identical content", async () => {
+  it("produces same hash for identical content", async () => {
     const file1 = join(TEST_DIR, "identical1.txt")
     const file2 = join(TEST_DIR, "identical2.txt")
     const content = "Identical content"
@@ -68,7 +69,7 @@ void describe("computeFileHash", () => {
     assert.strictEqual(hash1, hash2)
   })
 
-  void it("computes hash for empty file", async () => {
+  it("computes hash for empty file", async () => {
     const testFile = join(TEST_DIR, "empty.txt")
     await writeFile(testFile, "")
 
@@ -82,7 +83,7 @@ void describe("computeFileHash", () => {
     )
   })
 
-  void it("computes hash for 3GB file", async () => {
+  it("computes hash for 3GB file", async () => {
     const testFile = join(TEST_DIR, "3gb.bin")
     const hash = createHash("sha256")
     const chunk = Buffer.alloc(1024 * 1024, "A")
@@ -104,7 +105,7 @@ void describe("computeFileHash", () => {
     assert.strictEqual(computedHash, expectedHash)
   })
 
-  void it("throws error for non-existent file", async () => {
+  it("throws error for non-existent file", async () => {
     const nonExistentFile = join(TEST_DIR, "does-not-exist.txt")
 
     await assert.rejects(computeFileHash(nonExistentFile), (err: Error) => {

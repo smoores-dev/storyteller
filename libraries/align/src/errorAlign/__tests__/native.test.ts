@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, test } from "node:test"
+
+import { describe, test } from "vitest"
 
 import { errorAlignBeamSearch as tsBeamSearch } from "../beamSearch.ts"
 import {
@@ -20,9 +21,9 @@ import {
   unpackRegexMatch,
 } from "../utils.ts"
 
-void describe("native C++ vs TypeScript implementations", () => {
-  void describe("Levenshtein distance matrix", () => {
-    void test("string input", () => {
+describe("native C++ vs TypeScript implementations", () => {
+  describe("Levenshtein distance matrix", () => {
+    test("string input", () => {
       const ref = "kitten"
       const hyp = "sitting"
 
@@ -32,7 +33,7 @@ void describe("native C++ vs TypeScript implementations", () => {
       assert.deepStrictEqual(nativeResult, tsResult)
     })
 
-    void test("string array input", () => {
+    test("string array input", () => {
       const ref = ["hello", "world"]
       const hyp = ["hello", "there"]
 
@@ -42,7 +43,7 @@ void describe("native C++ vs TypeScript implementations", () => {
       assert.deepStrictEqual(nativeResult, tsResult)
     })
 
-    void test("with backtrace", () => {
+    test("with backtrace", () => {
       const ref = "kitten"
       const hyp = "sitting"
 
@@ -53,8 +54,8 @@ void describe("native C++ vs TypeScript implementations", () => {
     })
   })
 
-  void describe("error align distance matrix", () => {
-    void test("string input", () => {
+  describe("error align distance matrix", () => {
+    test("string input", () => {
       const ref = "test"
       const hyp = "best"
 
@@ -64,7 +65,7 @@ void describe("native C++ vs TypeScript implementations", () => {
       assert.deepStrictEqual(nativeResult, tsResult)
     })
 
-    void test("with backtrace", () => {
+    test("with backtrace", () => {
       const ref = "test"
       const hyp = "best"
 
@@ -75,7 +76,7 @@ void describe("native C++ vs TypeScript implementations", () => {
     })
   })
 
-  void describe("beam search", () => {
+  describe("beam search", () => {
     function buildSubgraphMetadata(ref: string, hyp: string) {
       const tokenizer = basicTokenizer
       const normalizer = basicNormalizer
@@ -95,7 +96,7 @@ void describe("native C++ vs TypeScript implementations", () => {
       )
     }
 
-    void test("simple substitution", () => {
+    test("simple substitution", () => {
       const src = buildSubgraphMetadata("hello", "jello")
 
       const tsPath = tsBeamSearch(src)
@@ -107,7 +108,7 @@ void describe("native C++ vs TypeScript implementations", () => {
       assert.deepStrictEqual(nativeAlignments, tsAlignments)
     })
 
-    void test("multi-word alignment with all op types", () => {
+    test("multi-word alignment with all op types", () => {
       const ref = "This is a substitution test deleted."
       const hyp = "Inserted this is a contribution test."
 
@@ -122,7 +123,7 @@ void describe("native C++ vs TypeScript implementations", () => {
       assert.deepStrictEqual(nativeAlignments, tsAlignments)
     })
 
-    void test("identical strings", () => {
+    test("identical strings", () => {
       const src = buildSubgraphMetadata("test words", "test words")
 
       const tsPath = tsBeamSearch(src)

@@ -1,13 +1,14 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
 import { getBook, updateBook } from "@/database/books"
 import { mergeIdentifierTypes } from "@/database/identifiers"
 import { type UUID } from "@/uuid"
 
-void describe("extracted identifiers", () => {
-  void it("links identifiers from a file to the book's format row via updateBook", async () => {
+describe("extracted identifiers", () => {
+  it("links identifiers from a file to the book's format row via updateBook", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [
       { title: "Book", ebook: "/tmp/book.epub" },
@@ -38,7 +39,7 @@ void describe("extracted identifiers", () => {
     assert.ok(ebookIds.some((i) => i.value === "9781685891664"))
   })
 
-  void it("is idempotent and additive across re-scans", async () => {
+  it("is idempotent and additive across re-scans", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [
       { title: "Book", ebook: "/tmp/book.epub" },
@@ -60,7 +61,7 @@ void describe("extracted identifiers", () => {
     assert.deepStrictEqual(values, ["223855250", "B0DTN2CKDR"])
   })
 
-  void it("does not touch another format's identifiers", async () => {
+  it("does not touch another format's identifiers", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [
       { title: "Book", ebook: "/tmp/book.epub", audiobook: "/tmp/audio" },
@@ -91,7 +92,7 @@ void describe("extracted identifiers", () => {
     )
   })
 
-  void it("replace drops the format's stale identifiers but never wipes on an empty extraction", async () => {
+  it("replace drops the format's stale identifiers but never wipes on an empty extraction", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [
       { title: "Book", ebook: "/tmp/book.epub" },
@@ -124,8 +125,8 @@ void describe("extracted identifiers", () => {
   })
 })
 
-void describe("mergeIdentifierTypes", () => {
-  void it("reassigns identifiers to the target type and dedupes collisions", async () => {
+describe("mergeIdentifierTypes", () => {
+  it("reassigns identifiers to the target type and dedupes collisions", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [
       { title: "Book", ebook: "/tmp/book.epub" },

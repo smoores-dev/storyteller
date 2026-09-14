@@ -35,8 +35,8 @@
     "readme:toc": "markdown-toc --maxdepth=5 --append='\n- [API Docs](#api-docs)' --bullets='-' -i readme-stub.md",
     "readme:api": "typedoc",
     "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
-    "test": "tsx -C @storyteller --test \"**/*.test.ts\"",
-    "test:watch": "tsx -C @storyteller --test --watch \"**/*.test.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepack": "yarn build"
   },
   "devDependencies": {
@@ -53,7 +53,9 @@
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.6.3",
     "typedoc-plugin-remark": "^1.2.0",
-    "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "@readium/shared": "^2.2.0",

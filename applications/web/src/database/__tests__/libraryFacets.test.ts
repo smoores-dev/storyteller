@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
 import { getSectionFacets } from "@/database/libraryCounts"
@@ -7,8 +8,8 @@ import { type UUID } from "@/uuid"
 
 const userId = "11111111-1111-1111-1111-111111111111" as UUID
 
-void describe("getSectionFacets formats", () => {
-  void it("counts every canonical format value, overlapping", async () => {
+describe("getSectionFacets formats", () => {
+  it("counts every canonical format value, overlapping", async () => {
     using ctx = setupTestDb()
 
     seedBooks(ctx, [
@@ -34,7 +35,7 @@ void describe("getSectionFacets formats", () => {
     assert.strictEqual(byKey["no-media"], 1)
   })
 
-  void it("treats a non-aligned readaloud as missing-readaloud, not no-media", async () => {
+  it("treats a non-aligned readaloud as missing-readaloud, not no-media", async () => {
     using ctx = setupTestDb()
 
     const [uuid] = seedBooks(ctx, [
@@ -57,7 +58,7 @@ void describe("getSectionFacets formats", () => {
     assert.strictEqual(byKey["no-media"], 0)
   })
 
-  void it("counts a book with any missing asset file under missing-files", async () => {
+  it("counts a book with any missing asset file under missing-files", async () => {
     using ctx = setupTestDb()
 
     const [gone] = seedBooks(ctx, [

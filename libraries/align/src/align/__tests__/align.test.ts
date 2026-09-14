@@ -1,7 +1,8 @@
 import assert from "node:assert"
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it, type TestContext } from "vitest"
 
 import { Epub } from "@storyteller-platform/epub"
 import { MediaType } from "@storyteller-platform/media-types"
@@ -46,14 +47,14 @@ function getSafeFilepathSegment(name: string, suffix: string = "") {
 }
 
 async function assertAlignSnapshot(
-  context: it.TestContext,
+  context: TestContext,
   epub: Epub,
   emissionFilepaths: string[],
   textRef: "id-fragment" | "text-fragment",
   transliterate?: boolean,
 ) {
   const snapshotFilename = getSafeFilepathSegment(
-    `${context.fullName} ${textRef === "id-fragment" ? "[id-fragment]" : "[text-fragment]"}`,
+    `${context.task.fullTestName} ${textRef === "id-fragment" ? "[id-fragment]" : "[text-fragment]"}`,
     ".snapshot",
   )
   const snapshotFilepath = join(
@@ -106,7 +107,7 @@ async function assertAlignSnapshot(
 }
 
 async function testAlignBook(
-  context: it.TestContext,
+  context: TestContext,
   granularity: "sentence" | "word",
   epubPath: string,
   audiobookPath: string,
@@ -175,8 +176,8 @@ async function testAlignBook(
   )
 }
 
-void describe("align", () => {
-  void it("should align Peter and Wendy", async (context) => {
+describe("align", () => {
+  it("should align Peter and Wendy", async (context) => {
     await testAlignBook(
       context,
       "sentence",
@@ -193,7 +194,7 @@ void describe("align", () => {
     )
   })
 
-  void it.skip("should align Peter and Wendy (word-level)", async (context) => {
+  it.skip("should align Peter and Wendy (word-level)", async (context) => {
     await testAlignBook(
       context,
       "word",
@@ -212,7 +213,7 @@ void describe("align", () => {
 
   // These books are not public commons, so Shane runs these tests locally but the
   // books and snapshots aren't checked in
-  void itLocally("should align The Way of Kings", async (context) => {
+  itLocally("should align The Way of Kings", async (context) => {
     await testAlignBook(
       context,
       "sentence",
@@ -229,7 +230,7 @@ void describe("align", () => {
     )
   })
 
-  void itLocally("should align The Recitatif", async (context) => {
+  itLocally("should align The Recitatif", async (context) => {
     await testAlignBook(
       context,
       "sentence",
@@ -246,7 +247,7 @@ void describe("align", () => {
     )
   })
 
-  void itLocally("should align The Raven Scholar", async (context) => {
+  itLocally("should align The Raven Scholar", async (context) => {
     await testAlignBook(
       context,
       "sentence",
@@ -263,7 +264,7 @@ void describe("align", () => {
     )
   })
 
-  void itLocally("should align Night", async (context) => {
+  itLocally("should align Night", async (context) => {
     await testAlignBook(
       context,
       "sentence",
@@ -273,7 +274,7 @@ void describe("align", () => {
     )
   })
 
-  void itLocally("should align An Immense World", async (context) => {
+  itLocally("should align An Immense World", async (context) => {
     await testAlignBook(
       context,
       "sentence",
@@ -292,28 +293,25 @@ void describe("align", () => {
 
   // This fixture doesn't have CTC emissions yet; restore to a plain `it` once
   // they're generated and checked in
-  void itLocally(
-    "should align Why I Cant Sleep (mandarin)",
-    async (context) => {
-      await testAlignBook(
-        context,
-        "sentence",
-        join(
-          "src",
-          "align",
-          "__fixtures__",
-          "why-i-cant-sleep",
-          "text",
-          "why_i_cant_sleep_hanzi_only.epub",
-        ),
-        join("src", "align", "__fixtures__", "why-i-cant-sleep", "audio"),
-        join("src", "align", "__fixtures__", "why-i-cant-sleep", "emissions"),
-        true,
-      )
-    },
-  )
+  itLocally("should align Why I Cant Sleep (mandarin)", async (context) => {
+    await testAlignBook(
+      context,
+      "sentence",
+      join(
+        "src",
+        "align",
+        "__fixtures__",
+        "why-i-cant-sleep",
+        "text",
+        "why_i_cant_sleep_hanzi_only.epub",
+      ),
+      join("src", "align", "__fixtures__", "why-i-cant-sleep", "audio"),
+      join("src", "align", "__fixtures__", "why-i-cant-sleep", "emissions"),
+      true,
+    )
+  })
 
-  void itLocally("should align jp", async (context) => {
+  itLocally("should align jp", async (context) => {
     await testAlignBook(
       context,
       "sentence",

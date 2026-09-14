@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
 import {
@@ -11,8 +12,8 @@ import {
 } from "@/database/pathRewrite"
 import { DATA_DIR } from "@/directories"
 
-void describe("path rewrite", () => {
-  void it("previews matches per column without modifying anything", async () => {
+describe("path rewrite", () => {
+  it("previews matches per column without modifying anything", async () => {
     using ctx = setupTestDb()
     seedBooks(ctx, [
       { title: "A", ebook: "/old/data/assets/a/text/a.epub" },
@@ -47,7 +48,7 @@ void describe("path rewrite", () => {
     )
   })
 
-  void it("rewrites only paths under the prefix", async () => {
+  it("rewrites only paths under the prefix", async () => {
     using ctx = setupTestDb()
     seedBooks(ctx, [
       { title: "A", ebook: "/old/data/assets/a/text/a.epub" },
@@ -70,7 +71,7 @@ void describe("path rewrite", () => {
     ])
   })
 
-  void it("treats LIKE wildcards in the prefix literally", async () => {
+  it("treats LIKE wildcards in the prefix literally", async () => {
     using ctx = setupTestDb()
     seedBooks(ctx, [
       { title: "A", ebook: "/data_dir/a.epub" },
@@ -89,7 +90,7 @@ void describe("path rewrite", () => {
     assert.strictEqual(percent.totalMatches, 1)
   })
 
-  void it("claims and reports the data dir anchor", async () => {
+  it("claims and reports the data dir anchor", async () => {
     using ctx = setupTestDb()
     ctx.sqlite
       .prepare(`DELETE FROM settings WHERE name = 'dataDirAnchor'`)

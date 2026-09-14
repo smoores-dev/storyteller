@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import {
   SentenceRange,
@@ -19,8 +20,8 @@ function sr(
   )
 }
 
-void describe("enforceMonotonicAudioRanges", () => {
-  void it("leaves an already monotonic sequence unchanged", () => {
+describe("enforceMonotonicAudioRanges", () => {
+  it("leaves an already monotonic sequence unchanged", () => {
     const input = [
       sr(0, ["a.mp3", 0, 5]),
       sr(1, ["a.mp3", 5, 9], ["b.mp3", 0, 2]),
@@ -29,7 +30,7 @@ void describe("enforceMonotonicAudioRanges", () => {
     assert.deepStrictEqual(enforceMonotonicAudioRanges(input, files), input)
   })
 
-  void it("drops clips in an earlier file than the previous sentence's end and trims the overlap", () => {
+  it("drops clips in an earlier file than the previous sentence's end and trims the overlap", () => {
     // Chapter 7's straddling last sentence vs chapter 8's heading parked
     // 1.5 s before file a ends
     const input = [
@@ -44,7 +45,7 @@ void describe("enforceMonotonicAudioRanges", () => {
     ])
   })
 
-  void it("gives a sentence entirely behind the previous one a zero-length clip", () => {
+  it("gives a sentence entirely behind the previous one a zero-length clip", () => {
     const input = [sr(0, ["b.mp3", 10, 20]), sr(1, ["a.mp3", 0, 5])]
     assert.deepStrictEqual(enforceMonotonicAudioRanges(input, files), [
       sr(0, ["b.mp3", 10, 20]),
@@ -52,7 +53,7 @@ void describe("enforceMonotonicAudioRanges", () => {
     ])
   })
 
-  void it("trims a same-file overlap to start at the previous end", () => {
+  it("trims a same-file overlap to start at the previous end", () => {
     const input = [sr(0, ["a.mp3", 0, 10]), sr(1, ["a.mp3", 8, 12])]
     assert.deepStrictEqual(enforceMonotonicAudioRanges(input, files), [
       sr(0, ["a.mp3", 0, 10]),

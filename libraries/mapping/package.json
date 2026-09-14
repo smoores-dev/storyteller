@@ -23,15 +23,17 @@
   ],
   "scripts": {
     "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
-    "test": "tsx -C @storyteller --test \"**/*.test.ts\"",
-    "test:watch": "tsx -C @storyteller --test --watch \"**/*.test.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepack": "yarn build"
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",
     "@types/node": "^24.0.0",
     "tsx": "^4.19.2",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",

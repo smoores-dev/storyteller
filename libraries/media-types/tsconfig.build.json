@@ -15,5 +15,5 @@
   },
   // generate-json.ts is the table generator and index.test.ts is the stale-table guard;
   // neither ships.
-  "exclude": ["dist", "generate-json.ts", "index.test.ts"]
+  "exclude": ["dist", "generate-json.ts", "index.test.ts", "vitest.config.ts"]
 }

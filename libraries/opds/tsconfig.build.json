@@ -25,7 +25,8 @@
     "schemas/registry.generated.ts",
     "schemas/roots.generated.ts",
     "test-catalog.json.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "vitest.config.ts"
   ],
   "references": [{ "path": "../media-types" }]
 }

@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
 import { strict as assert } from "node:assert"
 import { spawn } from "node:child_process"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import {
   type RawAudio,
@@ -56,8 +57,8 @@ async function loadAudioFile(path: string): Promise<RawAudio> {
   })
 }
 
-void describe("ActiveGate VAD OG", () => {
-  void it("detects voice activity in audio file", async () => {
+describe("ActiveGate VAD OG", () => {
+  it("detects voice activity in audio file", async () => {
     const inputPath = new URL(
       "./test-data/poemsbywomen_01__64kb.mp3",
       import.meta.url,
@@ -83,8 +84,8 @@ void describe("ActiveGate VAD OG", () => {
   })
 })
 
-void describe("Silero VAD", () => {
-  void it("detects voice activity in audio file", async () => {
+describe("Silero VAD", () => {
+  it("detects voice activity in audio file", async () => {
     const inputPath = new URL(
       "./test-data/poemsbywomen_01__64kb.mp3",
       import.meta.url,
@@ -108,8 +109,8 @@ void describe("Silero VAD", () => {
   })
 })
 
-void describe("ActiveGate VAD", () => {
-  void it("detects voice activity in audio file", async () => {
+describe("ActiveGate VAD", () => {
+  it("detects voice activity in audio file", async () => {
     const inputPath = new URL(
       "./test-data/poemsbywomen_01__64kb.mp3",
       import.meta.url,
@@ -143,7 +144,7 @@ void describe("ActiveGate VAD", () => {
     console.log("first few segments:", segments.slice(0, 5))
   })
 
-  void it("streaming flush produces same results as batch", async () => {
+  it("streaming flush produces same results as batch", async () => {
     const inputPath = new URL(
       "./test-data/poemsbywomen_01__64kb.mp3",
       import.meta.url,
@@ -199,7 +200,7 @@ void describe("ActiveGate VAD", () => {
     }
   })
 
-  void it("vadFromStream processes ffmpeg output directly", async () => {
+  it("vadFromStream processes ffmpeg output directly", async () => {
     const inputPath = new URL(
       "./test-data/poemsbywomen_01__64kb.mp3",
       import.meta.url,
@@ -238,7 +239,7 @@ void describe("ActiveGate VAD", () => {
     )
   })
 
-  void it("handles empty audio", () => {
+  it("handles empty audio", () => {
     const audio: RawAudio = {
       audioChannels: [new Float32Array(0)],
       sampleRate: 16000,
@@ -248,7 +249,7 @@ void describe("ActiveGate VAD", () => {
     assert.deepStrictEqual(timeline, [])
   })
 
-  void it("handles silent audio", () => {
+  it("handles silent audio", () => {
     const audio: RawAudio = {
       audioChannels: [new Float32Array(16000)],
       sampleRate: 16000,
@@ -265,7 +266,7 @@ void describe("ActiveGate VAD", () => {
     )
   })
 
-  void it("reset clears all state", () => {
+  it("reset clears all state", () => {
     const vad = new StreamingVad(16000, 1)
 
     // process some loud samples
@@ -296,7 +297,7 @@ void describe("ActiveGate VAD", () => {
     )
   })
 
-  void it("memory is bounded during streaming", () => {
+  it("memory is bounded during streaming", () => {
     const vad = new StreamingVad(16000, 1)
 
     // process 10 seconds in 1-second chunks, flushing each time

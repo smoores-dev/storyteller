@@ -4,7 +4,8 @@ import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { cwd } from "node:process"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 const SCRIPT = join(cwd(), "..", "..", "docker-scripts", "run-server.sh")
 
@@ -77,8 +78,8 @@ function waitFor(run: Run, text: string) {
   })
 }
 
-void describe("run-server.sh", { skip: !canRun }, () => {
-  void it("captures output to the daily file and records the exit code", async () => {
+describe("run-server.sh", { skip: !canRun }, () => {
+  it("captures output to the daily file and records the exit code", async () => {
     const { dataDir, entry } = await setup(`
       process.stdout.write(JSON.stringify({ level: 30, time: Date.now(), msg: "hello" }) + "\\n")
       console.error("FATAL ERROR: something broke")
@@ -106,7 +107,7 @@ void describe("run-server.sh", { skip: !canRun }, () => {
     assert.match(run.stdout(), /exited with code 3/)
   })
 
-  void it("records a signal death", async () => {
+  it("records a signal death", async () => {
     const { dataDir, entry } = await setup(`
       process.stdout.write("ready\\n")
       process.kill(process.pid, "SIGSEGV")
@@ -124,7 +125,7 @@ void describe("run-server.sh", { skip: !canRun }, () => {
     assert.match(String(exit["msg"]), /killed by SIGSEGV/)
   })
 
-  void it("forwards SIGTERM and exits cleanly", async () => {
+  it("forwards SIGTERM and exits cleanly", async () => {
     const { dataDir, entry } = await setup(`
       process.on("SIGTERM", () => {
         process.stdout.write("bye\\n")

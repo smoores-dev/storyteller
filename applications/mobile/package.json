@@ -11,7 +11,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "rnr": "yarn cli",
-    "test": "tsx --test store/**/*.test.ts"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@expo-google-fonts/literata": "^0.2.3",
@@ -126,7 +127,9 @@
     "redux": "^5.0.1",
     "shadcn": "patch:shadcn@npm%3A3.2.1#~/.yarn/patches/shadcn-npm-3.2.1-ea66ef159b.patch",
     "tailwindcss": "^4.1.18",
-    "tsx": "^4.20.3"
+    "tsx": "^4.20.3",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "private": true,
   "installConfig": {

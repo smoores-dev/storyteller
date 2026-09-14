@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { getSetting, getSettings, updateSettings } from "@/database/settings"
 import { encryptSecret, isEncrypted } from "@/secrets"
@@ -14,8 +15,8 @@ function storedValue(ctx: ReturnType<typeof setupTestDb>, name: string) {
   return row ? (JSON.parse(row.value) as unknown) : undefined
 }
 
-void describe("settings encryption", () => {
-  void it("stores api keys encrypted but reads them back in the clear", async () => {
+describe("settings encryption", () => {
+  it("stores api keys encrypted but reads them back in the clear", async () => {
     using ctx = setupTestDb()
 
     const settings = await getSettings()
@@ -39,7 +40,7 @@ void describe("settings encryption", () => {
     assert.strictEqual(await getSetting("openAiApiKey"), "sk-test-value")
   })
 
-  void it("leaves non-secret settings in the clear", async () => {
+  it("leaves non-secret settings in the clear", async () => {
     using ctx = setupTestDb()
 
     const settings = await getSettings()
@@ -48,7 +49,7 @@ void describe("settings encryption", () => {
     assert.strictEqual(storedValue(ctx, "libraryName"), "The Library of Babel")
   })
 
-  void it("encrypts auth provider client secrets", async () => {
+  it("encrypts auth provider client secrets", async () => {
     using ctx = setupTestDb()
 
     const settings = await getSettings()
@@ -78,7 +79,7 @@ void describe("settings encryption", () => {
     assert.strictEqual(readBack.authProviders[0]?.clientSecret, "very-secret")
   })
 
-  void it("keeps an undecryptable secret intact across a stale save", async () => {
+  it("keeps an undecryptable secret intact across a stale save", async () => {
     using ctx = setupTestDb()
 
     const foreign = await encryptSecret("from-a-different-secret-key")
@@ -96,7 +97,7 @@ void describe("settings encryption", () => {
     assert.strictEqual(storedValue(ctx, "openAiApiKey"), tampered)
   })
 
-  void it("does not re-encrypt on an unchanged save", async () => {
+  it("does not re-encrypt on an unchanged save", async () => {
     using ctx = setupTestDb()
 
     const settings = await getSettings()

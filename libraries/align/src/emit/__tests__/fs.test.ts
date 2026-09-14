@@ -1,7 +1,8 @@
 import assert from "node:assert"
 import { join } from "node:path"
 import { cwd } from "node:process"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { EmissionsReader } from "../fs.ts"
 
@@ -30,8 +31,8 @@ const emissions = [
   [0, -1, -2, -3],
 ]
 
-void describe("EmissionsReader", () => {
-  void it("should read header data correctly", async () => {
+describe("EmissionsReader", () => {
+  it("should read header data correctly", async () => {
     const path = join(cwd(), "src", "emit", "__fixtures__")
     const reader = await EmissionsReader.from(path)
 
@@ -44,7 +45,7 @@ void describe("EmissionsReader", () => {
     })
   })
 
-  void it("should iterate over frames", async () => {
+  it("should iterate over frames", async () => {
     const path = join(cwd(), "src", "emit", "__fixtures__")
     const reader = await EmissionsReader.from(path)
 
@@ -55,7 +56,7 @@ void describe("EmissionsReader", () => {
     assert.equal(i, emissions.length)
   })
 
-  void it("should read chunks of frames", async () => {
+  it("should read chunks of frames", async () => {
     const path = join(cwd(), "src", "emit", "__fixtures__")
     const reader = await EmissionsReader.from(path)
 
@@ -63,7 +64,7 @@ void describe("EmissionsReader", () => {
     assert.deepEqual(frames, emissions.slice(1, 2))
   })
 
-  void it("should read chunks of frames across file boundaries", async () => {
+  it("should read chunks of frames across file boundaries", async () => {
     const path = join(cwd(), "src", "emit", "__fixtures__")
     const reader = await EmissionsReader.from(path)
 

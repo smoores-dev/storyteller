@@ -43,14 +43,16 @@
     "artifacts": "napi artifacts",
     "build": "napi build --dts-cache --platform --release",
     "build:debug": "napi build --platform",
-    "test": "node --test __test__/index.test.ts",
-    "test:update-snapshots": "node --test --test-update-snapshots __test__/index.test.ts ",
+    "test": "vitest run",
+    "test:update-snapshots": "vitest run -u",
     "prepublish": "napi prepublish -t npm"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.2.0",
     "@oxc-node/core": "^0.0.35",
-    "chalk": "^5.6.2"
+    "chalk": "^5.6.2",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public"

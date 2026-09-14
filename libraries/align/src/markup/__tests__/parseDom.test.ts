@@ -1,13 +1,14 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { Epub } from "@storyteller-platform/epub"
 
 import { FootnoteNode, Mark, Node, Root, TextNode } from "../model.ts"
 import { parseDom } from "../parseDom.ts"
 
-void describe("parseDom", () => {
-  void it("should parse hierarchical XML", () => {
+describe("parseDom", () => {
+  it("should parse hierarchical XML", () => {
     const result = parseDom([
       Epub.createXmlElement("p", {}, [
         Epub.createXmlElement("span", {}, [
@@ -24,7 +25,7 @@ void describe("parseDom", () => {
     )
   })
 
-  void it("should parse nested marks", () => {
+  it("should parse nested marks", () => {
     const result = parseDom([
       Epub.createXmlElement("p", {}, [
         Epub.createXmlElement("strong", {}, [
@@ -45,7 +46,7 @@ void describe("parseDom", () => {
     )
   })
 
-  void it("should preserve attributes", () => {
+  it("should preserve attributes", () => {
     const result = parseDom([
       Epub.createXmlElement("p", { id: "p1" }, [
         Epub.createXmlElement("span", { class: "red" }, [
@@ -64,7 +65,7 @@ void describe("parseDom", () => {
     )
   })
 
-  void it("should identify footnotes and noterefs", () => {
+  it("should identify footnotes and noterefs", () => {
     const result = parseDom([
       Epub.createXmlElement("p", { id: "p1" }, [
         Epub.createXmlTextNode("Hello, world!"),
@@ -119,7 +120,7 @@ void describe("parseDom", () => {
     )
   })
 
-  void it("should identify footnotes and noterefs when footnote role is missing", () => {
+  it("should identify footnotes and noterefs when footnote role is missing", () => {
     const result = parseDom([
       Epub.createXmlElement("p", { id: "p1" }, [
         Epub.createXmlTextNode("Hello, world!"),
@@ -170,7 +171,7 @@ void describe("parseDom", () => {
     )
   })
 
-  void it("should preserve leaf nodes", () => {
+  it("should preserve leaf nodes", () => {
     const result = parseDom([
       Epub.createXmlElement("p", {}, [
         Epub.createXmlElement("span", {}, [

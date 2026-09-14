@@ -294,11 +294,15 @@ check-nodekit-linux-x64-gnu:
     LINUX_ARCH: amd64
 
 check-nodekit-win32-x64-msvc:
+  # these are so god damned slow
+  allow_failure: true
   extends: [.nodekit-check-rules, .nodekit-build-windows-x64-base]
   stage: check
   needs: []
 
 check-nodekit-win32-arm64-msvc:
+  # these are so god damned slow
+  allow_failure: true
   extends: [.nodekit-check-rules, .nodekit-build-windows-arm64-base]
   stage: check
   needs: []

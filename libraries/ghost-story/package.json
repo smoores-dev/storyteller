@@ -39,7 +39,7 @@
   "scripts": {
     "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
     "prepack": "yarn build",
-    "test": "tsx -C @storyteller --test test/whisper-server.test.ts &&  tsx -C @storyteller --test test/whispercpp.test.ts &&  tsx -C @storyteller --test test/vad.test.ts &&  tsx -C @storyteller --test test/model-packages.test.ts"
+    "test": "vitest run test/whisper-server.test.ts test/whispercpp.test.ts test/vad.test.ts test/model-packages.test.ts"
   },
   "bin": "./dist/cli/bin.js",
   "dependencies": {
@@ -71,7 +71,9 @@
     "@types/node": "^24.0.0",
     "@types/tar": "^6.1.13",
     "tsx": "^4.19.2",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",

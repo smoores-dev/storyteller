@@ -1,9 +1,9 @@
 import { exec } from "child_process"
 import assert from "node:assert"
-import { before, describe, it } from "node:test"
 import { promisify } from "node:util"
 
 import { Manifest } from "@readium/shared"
+import { beforeAll, describe, it } from "vitest"
 
 import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
 import { MediaType } from "@storyteller-platform/media-types"
@@ -57,14 +57,14 @@ function flattenTocHrefs(
   return out.sort()
 }
 
-void describe("generateReadiumManifest", () => {
-  before(async () => {
+describe("generateReadiumManifest", () => {
+  beforeAll(async () => {
     await execPromise(
       `${new URL("../../../../../applications/web/install-readium-cli.sh", import.meta.url).pathname} 0.7.1`,
     )
   })
 
-  void it("matches the readium cli on moby-dick", async () => {
+  it("matches the readium cli on moby-dick", async () => {
     const outputPath = new URL(
       "../../__fixtures__/moby-dick.epub",
       import.meta.url,

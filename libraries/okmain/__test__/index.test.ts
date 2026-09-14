@@ -1,8 +1,8 @@
 import assert from "node:assert"
 import { readFile } from "node:fs/promises"
-import { test } from "node:test"
 
 import chalk, { supportsColor } from "chalk"
+import { expect, test } from "vitest"
 
 import { colors, colorsDetailed, InputImage } from "../index.js"
 
@@ -15,7 +15,7 @@ test("extracts colors from raw RGB buffer", () => {
   assert.ok(result[0]!.r > 150, "should be red")
 })
 
-test("extracts colors from a JPEG file", async (ctx) => {
+test("extracts colors from a JPEG file", async () => {
   const fixture = await readFile(
     new URL(
       "../../audiobook/src/__fixtures__/sleepy_hollow.jpg",
@@ -34,10 +34,10 @@ test("extracts colors from a JPEG file", async (ctx) => {
     console.log(outputColors)
   }
 
-  ctx.assert.snapshot(result)
+  expect(result).toMatchSnapshot()
 })
 
-test("extracts colors from a JPEG file w more info", async (ctx) => {
+test("extracts colors from a JPEG file w more info", async () => {
   const fixture = await readFile(
     new URL(
       "../../audiobook/src/__fixtures__/sleepy_hollow.jpg",
@@ -59,5 +59,5 @@ test("extracts colors from a JPEG file w more info", async (ctx) => {
     console.log(outputColors)
   }
 
-  ctx.assert.snapshot(result)
+  expect(result).toMatchSnapshot()
 })

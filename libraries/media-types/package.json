@@ -31,8 +31,8 @@
     "build": "rm -rf dist .tsbuild && yarn generate:json && tsc -b tsconfig.build.json",
     "generate:json": "tsx -C @storyteller generate-json.ts",
     "check:browser": "esbuild index.ts --bundle --platform=browser --format=esm --outfile=/dev/null",
-    "test": "tsx -C @storyteller --test \"**/*.test.ts\"",
-    "test:watch": "tsx -C @storyteller --test --watch \"**/*.test.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepack": "yarn build"
   },
   "dependencies": {
@@ -43,7 +43,9 @@
     "@types/node": "^24.0.0",
     "esbuild": "^0.27.3",
     "tsx": "^4.19.2",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",

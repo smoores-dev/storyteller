@@ -59,7 +59,9 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "typescript": "^7.0.2",
-    "typescript-plugin-css-modules": "^5.0.2"
+    "typescript-plugin-css-modules": "^5.0.2",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "resolutions": {
     "expo-file-system@npm:~19.0.11": "patch:expo-file-system@npm%3A19.0.11#~/.yarn/patches/expo-file-system-npm-19.0.11-1b623c597e.patch",

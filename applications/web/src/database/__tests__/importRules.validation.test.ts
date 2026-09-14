@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { type ImportRule } from "@/database/importRules"
 import {
@@ -16,30 +17,30 @@ function rule(
   return { uuid: uuid as UUID, kind, path }
 }
 
-void describe("normalizeRulePath", () => {
-  void it("strips trailing slashes", () => {
+describe("normalizeRulePath", () => {
+  it("strips trailing slashes", () => {
     assert.strictEqual(normalizeRulePath("/library/"), "/library")
   })
 
-  void it("collapses double slashes and dot segments", () => {
+  it("collapses double slashes and dot segments", () => {
     assert.strictEqual(normalizeRulePath("/library//a/./b"), "/library/a/b")
   })
 
-  void it("resolves parent segments", () => {
+  it("resolves parent segments", () => {
     assert.strictEqual(normalizeRulePath("/library/a/../b"), "/library/b")
   })
 
-  void it("keeps relative paths relative", () => {
+  it("keeps relative paths relative", () => {
     assert.strictEqual(normalizeRulePath("library/a"), "library/a")
   })
 
-  void it("normalizes backslashes to forward slashes", () => {
+  it("normalizes backslashes to forward slashes", () => {
     assert.strictEqual(normalizeRulePath("\\library\\a"), "/library/a")
   })
 })
 
-void describe("validateWatchRulePath", () => {
-  void it("accepts a brand-new path against an empty rule set", () => {
+describe("validateWatchRulePath", () => {
+  it("accepts a brand-new path against an empty rule set", () => {
     const result = validateWatchRulePath({
       path: "/library/a",
       existingRules: [],
@@ -47,7 +48,7 @@ void describe("validateWatchRulePath", () => {
     assert.deepStrictEqual(result, { ok: true })
   })
 
-  void it("rejects exact duplicates", () => {
+  it("rejects exact duplicates", () => {
     const result = validateWatchRulePath({
       path: "/library/a",
       existingRules: [rule("u1", "watch", "/library/a")],
@@ -57,7 +58,7 @@ void describe("validateWatchRulePath", () => {
     assert.strictEqual(result.conflictWith, "u1")
   })
 
-  void it("rejects a child of an existing watch rule", () => {
+  it("rejects a child of an existing watch rule", () => {
     const result = validateWatchRulePath({
       path: "/library/a/sub",
       existingRules: [rule("u1", "watch", "/library/a")],
@@ -67,7 +68,7 @@ void describe("validateWatchRulePath", () => {
     assert.strictEqual(result.conflictWith, "u1")
   })
 
-  void it("rejects a parent of an existing watch rule", () => {
+  it("rejects a parent of an existing watch rule", () => {
     const result = validateWatchRulePath({
       path: "/library",
       existingRules: [rule("u1", "watch", "/library/a")],
@@ -77,7 +78,7 @@ void describe("validateWatchRulePath", () => {
     assert.strictEqual(result.conflictWith, "u1")
   })
 
-  void it("allows sibling paths", () => {
+  it("allows sibling paths", () => {
     const result = validateWatchRulePath({
       path: "/library/b",
       existingRules: [rule("u1", "watch", "/library/a")],
@@ -85,7 +86,7 @@ void describe("validateWatchRulePath", () => {
     assert.deepStrictEqual(result, { ok: true })
   })
 
-  void it("ignores overlap with ignore rules", () => {
+  it("ignores overlap with ignore rules", () => {
     const result = validateWatchRulePath({
       path: "/library/a",
       existingRules: [rule("u1", "ignore", "/library")],
@@ -93,7 +94,7 @@ void describe("validateWatchRulePath", () => {
     assert.deepStrictEqual(result, { ok: true })
   })
 
-  void it("rejects a child of a forbidden root", () => {
+  it("rejects a child of a forbidden root", () => {
     const result = validateWatchRulePath({
       path: "/data/assets/books",
       existingRules: [],
@@ -103,7 +104,7 @@ void describe("validateWatchRulePath", () => {
     assert.strictEqual(result.error, "asset-folder")
   })
 
-  void it("rejects the forbidden root itself", () => {
+  it("rejects the forbidden root itself", () => {
     const result = validateWatchRulePath({
       path: "/data/assets",
       existingRules: [],
@@ -113,7 +114,7 @@ void describe("validateWatchRulePath", () => {
     assert.strictEqual(result.error, "asset-folder")
   })
 
-  void it("skips comparison against the rule under edit", () => {
+  it("skips comparison against the rule under edit", () => {
     const result = validateWatchRulePath({
       path: "/library/a",
       existingRules: [rule("u1", "watch", "/library/a")],
@@ -122,7 +123,7 @@ void describe("validateWatchRulePath", () => {
     assert.deepStrictEqual(result, { ok: true })
   })
 
-  void it("treats paths with trailing slashes as equal", () => {
+  it("treats paths with trailing slashes as equal", () => {
     const result = validateWatchRulePath({
       path: "/library/a/",
       existingRules: [rule("u1", "watch", "/library/a")],
@@ -131,7 +132,7 @@ void describe("validateWatchRulePath", () => {
     assert.strictEqual(result.error, "duplicate")
   })
 
-  void it("does not consider /library/abc a child of /library/ab", () => {
+  it("does not consider /library/abc a child of /library/ab", () => {
     // string-prefix bugs would falsely flag this. the validator must split
     // on the path separator.
     const result = validateWatchRulePath({

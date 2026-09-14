@@ -1,10 +1,11 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { Mapping } from "../index.ts"
 
-void describe("Mapping.map", () => {
-  void it("should map insertions forward", () => {
+describe("Mapping.map", () => {
+  it("should map insertions forward", () => {
     // a b c d e
     // aaa bbbb ccc dddd eee
     const mapping = new Mapping()
@@ -24,7 +25,7 @@ void describe("Mapping.map", () => {
     assert.strictEqual(cursor.map(5), 12)
   })
 
-  void it("handle out-of-order insertions", () => {
+  it("handle out-of-order insertions", () => {
     // a b c d e
     // aaa bbbb ccc dddd eee
     const mapping = new Mapping()
@@ -44,7 +45,7 @@ void describe("Mapping.map", () => {
     assert.strictEqual(cursor.map(5), 12)
   })
 
-  void it("handle mutations on the same position", () => {
+  it("handle mutations on the same position", () => {
     const mapping = new Mapping()
 
     mapping.insertMap(2, 6, 3)
@@ -73,7 +74,7 @@ void describe("Mapping.map", () => {
     assert.strictEqual(cursor.map(8), 9)
   })
 
-  void it("should map deletions forward", () => {
+  it("should map deletions forward", () => {
     // |a||b||c||d|
     // a b c d
     const mapping = new Mapping()
@@ -99,7 +100,7 @@ void describe("Mapping.map", () => {
     assert.strictEqual(cursor.map(11), 7)
   })
 
-  void it("should map insertions backward", () => {
+  it("should map insertions backward", () => {
     // aaa bbbb ccc dddd eee
     // a b c d e
     const mapping = new Mapping()
@@ -120,7 +121,7 @@ void describe("Mapping.map", () => {
     assert.strictEqual(cursor.map(12), 5)
   })
 
-  void it("should map deletions backward", () => {
+  it("should map deletions backward", () => {
     // a b c d
     // |a||b||c||d|
     const mapping = new Mapping()
@@ -144,8 +145,8 @@ void describe("Mapping.map", () => {
   })
 })
 
-void describe("Mapping.appendMapping", () => {
-  void it("composes a grow stage with a shrink stage", () => {
+describe("Mapping.appendMapping", () => {
+  it("composes a grow stage with a shrink stage", () => {
     // a—b   ('—' at 1)
     // a-b
     const mapping = new Mapping()
@@ -159,7 +160,7 @@ void describe("Mapping.appendMapping", () => {
     assert.strictEqual(cursor.map(2), 2) // 'b'
   })
 
-  void it("composes multiple stages that shift later content", () => {
+  it("composes multiple stages that shift later content", () => {
     // a1b2c   ('1' at 1, '2' at 3)
     // aXbYYc
     const mapping = new Mapping()
@@ -175,7 +176,7 @@ void describe("Mapping.appendMapping", () => {
     assert.strictEqual(cursor.map(4), 5) // 'c'
   })
 
-  void it("appends onto an empty mapping", () => {
+  it("appends onto an empty mapping", () => {
     // ab_c   (2-char span at 1 collapses to 1)
     // aXc
     const mapping = new Mapping()
@@ -188,7 +189,7 @@ void describe("Mapping.appendMapping", () => {
     assert.strictEqual(cursor.map(3), 2) // content after the shrink shifts left by 1
   })
 
-  void it("coalesces a later stage that collapses across an earlier deletion", () => {
+  it("coalesces a later stage that collapses across an earlier deletion", () => {
     // Models slugify: `a-- "b`
     //   --stage 2 (` "` -> `-`)-->  `a---b`
     //   --stage 3 (collapse `---` -> `-`)-->  `a-b`
@@ -212,7 +213,7 @@ void describe("Mapping.appendMapping", () => {
     }
   })
 
-  void it("keeps a coalesced entry's span when it collapses to a no-op", () => {
+  it("keeps a coalesced entry's span when it collapses to a no-op", () => {
     // Stage 1 expands four single characters. Stage 2 then deletes a span that
     // ends inside the last expansion, a character further inside that same
     // expansion, and finally a long span that starts inside it. Coalescing the
@@ -247,7 +248,7 @@ void describe("Mapping.appendMapping", () => {
     }
   })
 
-  void it("distributes positions inside a grown region instead of collapsing", () => {
+  it("distributes positions inside a grown region instead of collapsing", () => {
     // A 4-character word expands to 12 characters (e.g. Chinese -> pinyin).
     // Positions inside the word must map to distinct, increasing offsets so a
     // per-character timeline is not collapsed onto the word boundary.

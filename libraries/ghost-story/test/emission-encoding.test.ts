@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { decodeEmissions, encodeEmissions } from "../src/index.ts"
 
@@ -21,8 +22,8 @@ const emissions = [
   [0, -1, -2, -3],
 ]
 
-void describe("encodeEmissions", () => {
-  void it("should round-trip", async () => {
+describe("encodeEmissions", () => {
+  it("should round-trip", async () => {
     const [head, body] = encodeEmissions({
       vocab,
       blankIndex: blankId,
@@ -48,7 +49,7 @@ void describe("encodeEmissions", () => {
     assert.equal(data.numFrames, emissions.length)
   })
 
-  void it("should pack data", () => {
+  it("should pack data", () => {
     const [head, body] = encodeEmissions({
       vocab,
       blankIndex: blankId,
@@ -64,8 +65,8 @@ void describe("encodeEmissions", () => {
   })
 })
 
-void describe("decodeEmissions", () => {
-  void it("should only decode the requested bytes", async () => {
+describe("decodeEmissions", () => {
+  it("should only decode the requested bytes", async () => {
     const [head, body] = encodeEmissions({
       vocab,
       blankIndex: blankId,

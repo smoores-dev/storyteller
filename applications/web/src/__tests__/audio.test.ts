@@ -1,6 +1,7 @@
 import assert from "node:assert"
 import { join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import {
   getTrackDuration,
@@ -9,15 +10,15 @@ import {
   isZipArchive,
 } from "@/audio"
 
-void describe("getTrackInfo", () => {
-  void it("can get track duration from an mp3 file", async () => {
+describe("getTrackInfo", () => {
+  it("can get track duration from an mp3 file", async () => {
     const duration = await getTrackDuration(
       join("src", "__fixtures__", "mp3", "mobydick_001_002_melville.mp3"),
     )
     assert.strictEqual(Math.floor(duration), 1436)
   })
 
-  void it("can get track info from an mp4 file", async () => {
+  it("can get track info from an mp4 file", async () => {
     const duration = await getTrackDuration(
       join(
         "src",
@@ -30,8 +31,8 @@ void describe("getTrackInfo", () => {
   })
 })
 
-void describe("isAudioFile", () => {
-  void it("recognizes mp3, mp4, and opus formats", () => {
+describe("isAudioFile", () => {
+  it("recognizes mp3, mp4, and opus formats", () => {
     assert.ok(isAudioFile("track.mp3"))
     assert.ok(isAudioFile("track.m4a"))
     assert.ok(isAudioFile("track.m4b"))
@@ -42,12 +43,12 @@ void describe("isAudioFile", () => {
     assert.ok(isAudioFile("track.opus"))
   })
 
-  void it("recognizes file formats we don't use", () => {
+  it("recognizes file formats we don't use", () => {
     assert.ok(isAudioFile("track.flac"))
     assert.ok(isAudioFile("track.wav"))
   })
 
-  void it("does not recognize other formats", () => {
+  it("does not recognize other formats", () => {
     assert.ok(!isAudioFile("track.json"))
     assert.ok(!isAudioFile("track.epub"))
     assert.ok(!isAudioFile("track.html"))
@@ -55,7 +56,7 @@ void describe("isAudioFile", () => {
     assert.ok(!isAudioFile("track.txt"))
   })
 
-  void it("works with full file names", () => {
+  it("works with full file names", () => {
     assert.ok(isAudioFile("somefile.m4b"))
     assert.ok(isAudioFile("audiobook/chapter 1.mp3"))
     assert.ok(isAudioFile("audio.book/chapter.1.flac"))
@@ -64,7 +65,7 @@ void describe("isAudioFile", () => {
     assert.ok(!isAudioFile("README.txt"))
   })
 
-  void it("ignores extension casing, which rips from older tools vary", () => {
+  it("ignores extension casing, which rips from older tools vary", () => {
     // "Track 01.MP3" is the same audio as "Track 01.mp3"; a case-sensitive
     // check silently dropped every track of an uppercase rip, so the book
     // imported with no audio at all.
@@ -76,23 +77,23 @@ void describe("isAudioFile", () => {
   })
 })
 
-void describe("isZipArchive", () => {
-  void it("accepts .zip regardless of casing", () => {
+describe("isZipArchive", () => {
+  it("accepts .zip regardless of casing", () => {
     assert.ok(isZipArchive("book.zip"))
     assert.ok(isZipArchive("book.ZIP"))
     assert.ok(!isZipArchive("book.epub"))
   })
 })
 
-void describe("isHiddenFile", () => {
-  void it("catches hidden files, including ones that shadow real audio names", () => {
+describe("isHiddenFile", () => {
+  it("catches hidden files, including ones that shadow real audio names", () => {
     assert.ok(isHiddenFile("._Track 01.mp3"))
     assert.ok(isHiddenFile("/library/A Book/._Track 01.mp3"))
     assert.ok(isHiddenFile(".DS_Store"))
     assert.ok(isHiddenFile(".hidden.mp3"))
   })
 
-  void it("leaves visible files alone", () => {
+  it("leaves visible files alone", () => {
     assert.ok(!isHiddenFile("Track 01.mp3"))
     assert.ok(!isHiddenFile("/library/A Book/Track 01.mp3"))
     assert.ok(!isHiddenFile("_underscore name.mp3"))

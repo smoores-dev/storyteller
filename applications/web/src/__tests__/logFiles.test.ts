@@ -2,7 +2,8 @@ import assert from "node:assert"
 import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { listLogFiles, readLastLines } from "@/logFiles"
 
@@ -32,8 +33,8 @@ async function setup() {
   return { today, yesterday }
 }
 
-void describe("listLogFiles", () => {
-  void it("lists dated log files newest first", async () => {
+describe("listLogFiles", () => {
+  it("lists dated log files newest first", async () => {
     const { today, yesterday } = await setup()
 
     assert.strictEqual(today.date, "2026-09-04")
@@ -42,8 +43,8 @@ void describe("listLogFiles", () => {
   })
 })
 
-void describe("readLastLines", () => {
-  void it("wraps raw output as records and keeps file order", async () => {
+describe("readLastLines", () => {
+  it("wraps raw output as records and keeps file order", async () => {
     const { today } = await setup()
 
     const lines = await readLastLines(today, 100)
@@ -62,7 +63,7 @@ void describe("readLastLines", () => {
     )
   })
 
-  void it("gives raw lines the time of the record that follows them", async () => {
+  it("gives raw lines the time of the record that follows them", async () => {
     const { today } = await setup()
 
     const lines = await readLastLines(today, 100)
@@ -72,7 +73,7 @@ void describe("readLastLines", () => {
     assert.strictEqual(lines[5]?.time, 4000)
   })
 
-  void it("returns only the last matching lines", async () => {
+  it("returns only the last matching lines", async () => {
     const { today } = await setup()
 
     const lines = await readLastLines(today, 2, (line) => line.level >= 40)
@@ -83,7 +84,7 @@ void describe("readLastLines", () => {
     )
   })
 
-  void it("reads an empty file", async () => {
+  it("reads an empty file", async () => {
     const { yesterday } = await setup()
 
     assert.deepStrictEqual(await readLastLines(yesterday, 10), [])

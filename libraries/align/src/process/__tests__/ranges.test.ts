@@ -2,7 +2,8 @@ import assert from "node:assert"
 import { randomUUID } from "node:crypto"
 import { mkdir, rm } from "node:fs/promises"
 import { join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { Audiobook } from "@storyteller-platform/audiobook"
 import { detectVoiceActivity } from "@storyteller-platform/ghost-story/vad"
@@ -16,8 +17,8 @@ import {
 
 const itLocally = process.env["TEST_LOCAL_ONLY"] ? it : it.skip
 
-void describe("chooseChapterCut", () => {
-  void it("keeps a mark that already sits in a silence", () => {
+describe("chooseChapterCut", () => {
+  it("keeps a mark that already sits in a silence", () => {
     assert.deepStrictEqual(
       chooseChapterCut(100, [
         { start: 90, end: 91 },
@@ -27,7 +28,7 @@ void describe("chooseChapterCut", () => {
     )
   })
 
-  void it("moves a mark placed just after a word onset back into the preceding pause", () => {
+  it("moves a mark placed just after a word onset back into the preceding pause", () => {
     // Night.m4b: marks land 0.06–0.25 s into the chapter's first word
     assert.deepStrictEqual(
       chooseChapterCut(2570.19, [
@@ -38,7 +39,7 @@ void describe("chooseChapterCut", () => {
     )
   })
 
-  void it("moves a mark placed before the previous sentence finished forward into the following pause", () => {
+  it("moves a mark placed before the previous sentence finished forward into the following pause", () => {
     assert.deepStrictEqual(
       chooseChapterCut(100, [
         { start: 92, end: 94 },
@@ -48,7 +49,7 @@ void describe("chooseChapterCut", () => {
     )
   })
 
-  void it("measures distance to the nearest edge, not the midpoint", () => {
+  it("measures distance to the nearest edge, not the midpoint", () => {
     // The long pause before is closer than the short one after
     assert.deepStrictEqual(
       chooseChapterCut(100, [
@@ -59,7 +60,7 @@ void describe("chooseChapterCut", () => {
     )
   })
 
-  void it("ignores gaps too short to be sentence breaks", () => {
+  it("ignores gaps too short to be sentence breaks", () => {
     assert.deepStrictEqual(
       chooseChapterCut(100, [
         { start: 99.9, end: 100.1 },
@@ -69,7 +70,7 @@ void describe("chooseChapterCut", () => {
     )
   })
 
-  void it("keeps the mark when no silence is within reach", () => {
+  it("keeps the mark when no silence is within reach", () => {
     assert.deepStrictEqual(
       chooseChapterCut(100, [
         { start: 80, end: 82 },
@@ -119,8 +120,8 @@ const mobyDick = join(
   "MobyDickOrTheWhalePart1_librivox.m4b",
 )
 
-void describe("getSafeRanges", () => {
-  void it("cuts inside pauses", async () => {
+describe("getSafeRanges", () => {
+  it("cuts inside pauses", async () => {
     using audiobook = await Audiobook.from(mobyDick)
     const duration = await audiobook.getDuration()
 
@@ -137,8 +138,8 @@ void describe("getSafeRanges", () => {
   })
 })
 
-void describe("getSafeChapterRanges", () => {
-  void it("keeps chapter marks that already fall in pauses", async () => {
+describe("getSafeChapterRanges", () => {
+  it("keeps chapter marks that already fall in pauses", async () => {
     using audiobook = await Audiobook.from(mobyDick)
     const duration = await audiobook.getDuration()
     const chapters = await audiobook.getChapters()
@@ -158,28 +159,25 @@ void describe("getSafeChapterRanges", () => {
 
   // Night.m4b is a large local-only fixture whose chapter marks land inside
   // the chapter's first word
-  void itLocally(
-    "moves chapter marks that fall in speech to a pause",
-    async () => {
-      const night = join("src", "align", "__fixtures__", "night", "Night.m4b")
-      using audiobook = await Audiobook.from(night)
-      const duration = await audiobook.getDuration()
-      const chapters = await audiobook.getChapters()
+  itLocally("moves chapter marks that fall in speech to a pause", async () => {
+    const night = join("src", "align", "__fixtures__", "night", "Night.m4b")
+    using audiobook = await Audiobook.from(night)
+    const duration = await audiobook.getDuration()
+    const chapters = await audiobook.getChapters()
 
-      const ranges = await getSafeChapterRanges(
-        night,
-        duration,
-        chapters,
-        Infinity,
-      )
+    const ranges = await getSafeChapterRanges(
+      night,
+      duration,
+      chapters,
+      Infinity,
+    )
 
-      const moved = ranges.filter(
-        (r, i) => i > 0 && r.start !== (chapters[i]?.start ?? 0),
-      )
-      assert.ok(moved.length >= 8, `only ${moved.length} marks moved`)
-      for (const range of ranges.slice(1)) {
-        assertInSilence(await silencesAround(night, range.start, 5))
-      }
-    },
-  )
+    const moved = ranges.filter(
+      (r, i) => i > 0 && r.start !== (chapters[i]?.start ?? 0),
+    )
+    assert.ok(moved.length >= 8, `only ${moved.length} marks moved`)
+    for (const range of ranges.slice(1)) {
+      assertInSilence(await silencesAround(night, range.start, 5))
+    }
+  })
 })

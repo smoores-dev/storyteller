@@ -1,7 +1,8 @@
 import assert from "node:assert"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it, type TestContext } from "vitest"
 
 import { Epub, MemoryAdapter, type ParsedXml } from "@storyteller-platform/epub"
 
@@ -35,8 +36,11 @@ function getSafeFilepathSegment(name: string, suffix: string = "") {
   return truncate(sanitizeFilename(name), 150, suffix)
 }
 
-async function assertMarkupSnapshot(context: it.TestContext, output: string) {
-  const snapshotFilename = getSafeFilepathSegment(context.fullName, ".snapshot")
+async function assertMarkupSnapshot(context: TestContext, output: string) {
+  const snapshotFilename = getSafeFilepathSegment(
+    context.task.fullTestName,
+    ".snapshot",
+  )
   const snapshotFilepath = join(
     "src",
     "markup",
@@ -79,8 +83,8 @@ async function assertMarkupSnapshot(context: it.TestContext, output: string) {
   }
 }
 
-void describe("markupChapter", () => {
-  void it("can tag sentences", async (t) => {
+describe("markupChapter", () => {
+  it("can tag sentences", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -126,7 +130,7 @@ void describe("markupChapter", () => {
   })
 
   // timeout to ensure no regression in speed
-  void it(
+  it(
     "can tag words in a reasonable amount of time",
     { timeout: 6_000 },
     async (t) => {
@@ -148,7 +152,7 @@ void describe("markupChapter", () => {
     },
   )
 
-  void it("can tag sentences with formatting marks", async (t) => {
+  it("can tag sentences with formatting marks", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -178,7 +182,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can tag sentences with trailing atoms", async (t) => {
+  it("can tag sentences with trailing atoms", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -209,7 +213,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can tag sentences with formatting marks that overlap sentence boundaries", async (t) => {
+  it("can tag sentences with formatting marks that overlap sentence boundaries", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -239,7 +243,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can tag sentences with nested formatting marks", async (t) => {
+  it("can tag sentences with nested formatting marks", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -269,7 +273,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can tag sentences with atoms", async (t) => {
+  it("can tag sentences with atoms", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -299,7 +303,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can tag sentences in nested textblocks", async (t) => {
+  it("can tag sentences in nested textblocks", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE html>
@@ -339,7 +343,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can tag sentences that cross textblock boundaries", async (t) => {
+  it("can tag sentences that cross textblock boundaries", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <?xml version="1.0" encoding="UTF-8"?>
 
@@ -372,7 +376,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can handle soft page breaks", async (t) => {
+  it("can handle soft page breaks", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en-US" xml:lang="en-US">
   <head>
@@ -412,7 +416,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can handle footnotes", async (t) => {
+  it("can handle footnotes", async (t) => {
     const input = Epub.xhtmlParser.parse(/* xml */ `
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en-US" xml:lang="en-US">
   <head>
@@ -453,7 +457,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can handle boolean-like text values", async (t) => {
+  it("can handle boolean-like text values", async (t) => {
     const input = Epub.xhtmlParser.parse(`
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <head>
@@ -474,7 +478,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can handle number-like text values", async (t) => {
+  it("can handle number-like text values", async (t) => {
     const input = Epub.xhtmlParser.parse(`
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <head>
@@ -495,7 +499,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can handle null-like text values", async (t) => {
+  it("can handle null-like text values", async (t) => {
     const input = Epub.xhtmlParser.parse(`
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <head>
@@ -516,7 +520,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("can preserve nbsp entities", async (t) => {
+  it("can preserve nbsp entities", async (t) => {
     const input = Epub.xhtmlParser.parse(`
 <?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <head>
@@ -540,7 +544,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("preserves top level svgs", async (t) => {
+  it("preserves top level svgs", async (t) => {
     const input = Epub.xhtmlParser.parse(`
 <?xml version='1.0' encoding='utf-8'?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
@@ -563,7 +567,7 @@ void describe("markupChapter", () => {
     await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
   })
 
-  void it("correctly marks up ruby tags", async (t) => {
+  it("correctly marks up ruby tags", async (t) => {
     const input = Epub.xhtmlParser.parse(`
 <?xml version='1.0' encoding='utf-8'?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">

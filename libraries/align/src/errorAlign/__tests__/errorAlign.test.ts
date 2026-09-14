@@ -1,12 +1,13 @@
 import assert from "node:assert"
-import { describe, test } from "node:test"
+
+import { describe, test } from "vitest"
 
 import { computeLevenshteinDistanceMatrix } from "../editDistance.ts"
 import { errorAlign } from "../errorAlign.ts"
 import { categorizeChar } from "../utils.ts"
 
-void describe("errorAlign", () => {
-  void test("error alignment for an example including all substitution types", () => {
+describe("errorAlign", () => {
+  test("error alignment for an example including all substitution types", () => {
     const ref = "This is a substitution test deleted."
     const hyp = "Inserted this is a contribution test."
 
@@ -17,7 +18,7 @@ void describe("errorAlign", () => {
     )
   })
 
-  void test("error alignment for full match", () => {
+  test("error alignment for full match", () => {
     const ref = "This is a test."
     const hyp = "This is a test."
 
@@ -29,7 +30,7 @@ void describe("errorAlign", () => {
     )
   })
 
-  void test("error alignment for partial substitutions and insertions with compound markers", () => {
+  test("error alignment for partial substitutions and insertions with compound markers", () => {
     const ref = "test"
     const hyp = "testpartial"
 
@@ -45,14 +46,14 @@ void describe("errorAlign", () => {
   })
 })
 
-void test("character categorization", () => {
+test("character categorization", () => {
   assert.strictEqual(categorizeChar("<"), 0)
   assert.strictEqual(categorizeChar("b"), 1)
   assert.strictEqual(categorizeChar("a"), 2)
   assert.strictEqual(categorizeChar("'"), 3)
 })
 
-void test("string representation of alignment objects", () => {
+test("string representation of alignment objects", () => {
   const deleteAlignment = errorAlign("deleted", "")[0]
   assert.strictEqual(
     deleteAlignment?.toString(),
@@ -83,7 +84,7 @@ void test("string representation of alignment objects", () => {
   )
 })
 
-void test("Levenshtein distance matrix computation", () => {
+test("Levenshtein distance matrix computation", () => {
   const ref = "kitten"
   const hyp = "sitting"
 

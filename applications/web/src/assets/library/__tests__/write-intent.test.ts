@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import {
   isSuppressed,
@@ -9,8 +10,8 @@ import {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-void describe("write intent", () => {
-  void it("suppresses a path and everything under it", () => {
+describe("write intent", () => {
+  it("suppresses a path and everything under it", () => {
     suppressPrefix("/library/book")
 
     assert.ok(isSuppressed("/library/book"))
@@ -18,7 +19,7 @@ void describe("write intent", () => {
     assert.ok(!isSuppressed("/library/other"))
   })
 
-  void it("keeps a released path suppressed until the events it covers arrive", async () => {
+  it("keeps a released path suppressed until the events it covers arrive", async () => {
     suppressPrefix("/library/released.epub", 50)
     releasePrefixAfterSettle("/library/released.epub")
 
@@ -30,7 +31,7 @@ void describe("write intent", () => {
     )
   })
 
-  void it("releasing a path that was never suppressed does nothing", () => {
+  it("releasing a path that was never suppressed does nothing", () => {
     releasePrefixAfterSettle("/library/never-suppressed.epub")
 
     assert.ok(!isSuppressed("/library/never-suppressed.epub"))

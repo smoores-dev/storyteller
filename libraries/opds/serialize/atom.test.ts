@@ -1,7 +1,7 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
 
 import { XMLValidator } from "fast-xml-parser"
+import { describe, it } from "vitest"
 
 import { Feed } from "../index.ts"
 import rawCatalog from "../test-catalog.json.ts"
@@ -14,8 +14,8 @@ const parse = (json: unknown): Feed => {
   return result.value
 }
 
-void describe("toAtomXml", () => {
-  void it("renders the catalog as well-formed Atom", () => {
+describe("toAtomXml", () => {
+  it("renders the catalog as well-formed Atom", () => {
     const xml = toAtomXml(parse(rawCatalog))
 
     assert.strictEqual(XMLValidator.validate(xml), true)
@@ -24,7 +24,7 @@ void describe("toAtomXml", () => {
     assert.match(xml, /<entry>/)
   })
 
-  void it("projects OPDS2 features into OPDS1 and strips OPDS2-only ones", () => {
+  it("projects OPDS2 features into OPDS1 and strips OPDS2-only ones", () => {
     const feedJson = {
       metadata: { title: "Synthetic", numberOfItems: 1 },
       links: [{ rel: "self", href: "/feed", type: "application/opds+json" }],

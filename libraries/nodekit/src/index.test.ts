@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { resolve } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { asCoverProvider, asMetadataProvider } from "./index.ts"
 import {
@@ -68,13 +69,13 @@ async function withFakeAddon(
   }
 }
 
-void describe("asMetadataProvider", () => {
-  void it("passes through known providers", () => {
+describe("asMetadataProvider", () => {
+  it("passes through known providers", () => {
     assert.equal(asMetadataProvider("hardcover"), "hardcover")
     assert.equal(asMetadataProvider("audnexus"), "audnexus")
   })
 
-  void it("rejects anything else", () => {
+  it("rejects anything else", () => {
     assert.equal(asMetadataProvider("apple"), undefined)
     assert.equal(asMetadataProvider(""), undefined)
     assert.equal(asMetadataProvider(null), undefined)
@@ -82,13 +83,13 @@ void describe("asMetadataProvider", () => {
   })
 })
 
-void describe("asCoverProvider", () => {
-  void it("passes through known providers", () => {
+describe("asCoverProvider", () => {
+  it("passes through known providers", () => {
     assert.equal(asCoverProvider("apple"), "apple")
     assert.equal(asCoverProvider("hardcover"), "hardcover")
   })
 
-  void it("rejects anything else", () => {
+  it("rejects anything else", () => {
     assert.equal(asCoverProvider("audnexus"), undefined)
     assert.equal(asCoverProvider(null), undefined)
   })
@@ -120,22 +121,22 @@ function withEnv(
   }
 }
 
-void describe("resolveAddonPath", () => {
-  void it("prefers the env override", () => {
+describe("resolveAddonPath", () => {
+  it("prefers the env override", () => {
     withEnv({ STORYTELLER_NODEKIT_PATH: "/tmp/does-not-exist.node" }, () => {
       assert.equal(resolveAddonPath(), "/tmp/does-not-exist.node")
     })
   })
 
-  void it("throws NodeKitLoadError when the addon cannot be opened", () => {
+  it("throws NodeKitLoadError when the addon cannot be opened", () => {
     withEnv({ STORYTELLER_NODEKIT_PATH: "/tmp/does-not-exist.node" }, () => {
       assert.throws(loadAddon, NodeKitLoadError)
     })
   })
 })
 
-void describe("loadAddon", () => {
-  void it("dlopens the addon at most once", (t) => {
+describe("loadAddon", () => {
+  it("dlopens the addon at most once", (t) => {
     if (!resolveAddonPath()) {
       t.skip("no addon built for this platform")
       return
@@ -145,8 +146,8 @@ void describe("loadAddon", () => {
   })
 })
 
-void describe("StorytellerNodeKit constructor options", () => {
-  void it("configures once, before the first call", async () => {
+describe("StorytellerNodeKit constructor options", () => {
+  it("configures once, before the first call", async () => {
     const { addon, log } = fakeAddon()
 
     await withFakeAddon(addon, async () => {
@@ -162,7 +163,7 @@ void describe("StorytellerNodeKit constructor options", () => {
     })
   })
 
-  void it("does not configure when constructed without options", async () => {
+  it("does not configure when constructed without options", async () => {
     const { addon, log } = fakeAddon()
 
     await withFakeAddon(addon, async () => {
@@ -174,7 +175,7 @@ void describe("StorytellerNodeKit constructor options", () => {
     })
   })
 
-  void it("surfaces a failed constructor configure on the first call", async () => {
+  it("surfaces a failed constructor configure on the first call", async () => {
     const { addon } = fakeAddon(true)
 
     await withFakeAddon(addon, async () => {
@@ -187,7 +188,7 @@ void describe("StorytellerNodeKit constructor options", () => {
     })
   })
 
-  void it("recovers after a later successful configure", async () => {
+  it("recovers after a later successful configure", async () => {
     const { addon } = fakeAddon(true)
 
     await withFakeAddon(addon, async () => {
@@ -202,8 +203,8 @@ void describe("StorytellerNodeKit constructor options", () => {
   })
 })
 
-void describe("describeAddonResolution", () => {
-  void it("checks local before npm by default", () => {
+describe("describeAddonResolution", () => {
+  it("checks local before npm by default", () => {
     withEnv({}, () => {
       const { sources, candidates } = describeAddonResolution()
 
@@ -213,7 +214,7 @@ void describe("describeAddonResolution", () => {
     })
   })
 
-  void it("looks for a build next to the package", () => {
+  it("looks for a build next to the package", () => {
     withEnv({ STORYTELLER_NODEKIT_SOURCE: "local" }, () => {
       const { candidates, platform } = describeAddonResolution()
       const packageRelative = resolve(
@@ -229,7 +230,7 @@ void describe("describeAddonResolution", () => {
     })
   })
 
-  void it("restricts candidates to the requested source", () => {
+  it("restricts candidates to the requested source", () => {
     withEnv({ STORYTELLER_NODEKIT_SOURCE: "npm" }, () => {
       const { sources, candidates } = describeAddonResolution()
 
@@ -244,7 +245,7 @@ void describe("describeAddonResolution", () => {
     })
   })
 
-  void it("stops walking up at the repository root", () => {
+  it("stops walking up at the repository root", () => {
     withEnv({ STORYTELLER_NODEKIT_SOURCE: "local" }, () => {
       const { candidates } = describeAddonResolution()
 
@@ -255,7 +256,7 @@ void describe("describeAddonResolution", () => {
     })
   })
 
-  void it("rejects an unknown source", () => {
+  it("rejects an unknown source", () => {
     withEnv({ STORYTELLER_NODEKIT_SOURCE: "nope" }, () => {
       assert.throws(describeAddonResolution, NodeKitLoadError)
     })

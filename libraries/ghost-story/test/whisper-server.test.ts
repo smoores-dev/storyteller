@@ -1,8 +1,9 @@
 /* eslint-disable no-console */
 import assert from "node:assert"
 import type { ChildProcess } from "node:child_process"
-import { after, before, describe, it } from "node:test"
 import { setTimeout } from "node:timers/promises"
+
+import { afterAll, beforeAll, describe, it } from "vitest"
 
 import { spawnWhisperServer } from "../src/cli/whisper-server.js"
 import { recognize } from "../src/recognition/WhisperServerSTT.js"
@@ -35,7 +36,7 @@ async function tryFetch(
 }
 
 let server: ChildProcess | undefined
-before(async () => {
+beforeAll(async () => {
   server = await spawnWhisperServer({
     model: "tiny.en",
     port: 8081,
@@ -51,14 +52,14 @@ before(async () => {
   await Promise.race([tryFetch("http://0.0.0.0:8081"), setTimeout(10_000)])
 })
 
-after(() => {
+afterAll(() => {
   if (server) {
     server.kill()
   }
 })
 
-void describe("whisper-server", () => {
-  void it("should have started the server", { timeout: 120_000 }, async () => {
+describe("whisper-server", () => {
+  it("should have started the server", { timeout: 120_000 }, async () => {
     assert.ok(server !== undefined)
     const res = await fetch("http://localhost:8081")
     assert.ok(res.ok)
@@ -71,7 +72,7 @@ void describe("whisper-server", () => {
     )
   })
 
-  void it(
+  it(
     "should transcribe using local whisper server",
     { timeout: 120_000 },
     async () => {

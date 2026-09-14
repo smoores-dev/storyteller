@@ -19,8 +19,8 @@
     "readme:api": "typedoc",
     "readme": "yarn readme:api && yarn readme:toc && cat readme-stub.md > README.md && tail -n +2 gen/README.md >> README.md",
     "install-epubcheck": "tsx scripts/install-epubcheck.ts",
-    "test": "yarn install-epubcheck && tsx -C @storyteller --test *.test.ts",
-    "test:watch": "yarn install-epubcheck && tsx -C @storyteller --test --watch *.test.ts",
+    "test": "yarn install-epubcheck && vitest run",
+    "test:watch": "yarn install-epubcheck && vitest",
     "prepack": "yarn build"
   },
   "devDependencies": {
@@ -35,7 +35,9 @@
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.6.3",
     "typedoc-plugin-remark": "^1.2.0",
-    "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@readium/shared": "^2.2.0",
