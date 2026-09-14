@@ -271,7 +271,7 @@ export default async function processBook({
         let previousProgress = 0
         // prevent excessive progress updates
         const progressCallback = (progress: number) => {
-          if (progress > previousProgress) {
+          if (progress.toFixed(0) > previousProgress.toFixed(0)) {
             previousProgress = progress
             onProgress(progress)
           }
