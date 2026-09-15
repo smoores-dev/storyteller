@@ -7,7 +7,7 @@
     "audio",
     "epub"
   ],
-  "version": "0.2.0",
+  "version": "0.2.1",
   "repository": {
     "type": "git",
     "url": "https://gitlab.com/storyteller-platform/storyteller"
@@ -36,7 +36,7 @@
     "prepack": "yarn build"
   },
   "dependencies": {
-    "@storyteller-platform/path": "workspace:*"
+    "@storyteller-platform/path": "workspace:^"
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",

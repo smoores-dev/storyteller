@@ -15777,7 +15777,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/media-types@workspace:libraries/media-types"
   dependencies:
-    "@storyteller-platform/path": "workspace:*"
+    "@storyteller-platform/path": "workspace:^"
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/node": "npm:^24.0.0"
     esbuild: "npm:^0.27.3"
@@ -16064,7 +16064,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/path@workspace:*, @storyteller-platform/path@workspace:^, @storyteller-platform/path@workspace:libraries/path":
+"@storyteller-platform/path@workspace:^, @storyteller-platform/path@workspace:libraries/path":
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/path@workspace:libraries/path"
   dependencies:
