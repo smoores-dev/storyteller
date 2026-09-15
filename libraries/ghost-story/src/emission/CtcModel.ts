@@ -32,12 +32,6 @@ import { type EmissionTokenizer, type Emissions } from "./Emissions.ts"
 import { loadWav2Vec2OnnxModel } from "./Wav2Vec2Onnx.ts"
 import { readSentencePieceModel, unigramTokenizer } from "./sentencepiece.ts"
 
-/**
- * What every backend hands back once its weights are in memory. The
- * transformers.js wav2vec2 path, the ONNX convolutional path and the MLX
- * binding all reduce to this, so the emission loop never asks which one it
- * has.
- */
 export interface CtcBackend {
   vocab: Map<string, number>
   /** The precision the weights run in, which falls back to float32 when a package has no half precision file. */
@@ -63,11 +57,6 @@ export interface CtcRunOptions {
   buildVariant?: string | null | undefined
 }
 
-/**
- * Everything the family, language, device and precision settings pin down
- * before any weights load. The emissions cache keys on it, so it is resolved
- * once per run and shared by every file.
- */
 export interface CtcRun {
   family: CtcModelFamily
   architecture: CtcArchitecture
@@ -119,9 +108,7 @@ export interface LoadCtcModelOptions {
 }
 
 /**
- * Installs the package if needed and loads it on the run's device. The model
- * stays in memory until it is disposed, so callers with many files load once
- * and pass the result along.
+ * Installs the package if needed and loads it on the run's device
  */
 export async function loadCtcModel(
   run: CtcRun,
