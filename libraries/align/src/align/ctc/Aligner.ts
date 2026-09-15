@@ -1124,7 +1124,7 @@ export class Aligner {
     locale: Intl.Locale,
   ) {
     const spine = await this.epub.getSpineItems()
-    const classifications = await classifySpine(this.epub)
+    const classifications = await classifySpine(this.epub, { locale })
 
     for (let index = 0; index < spine.length; index++) {
       this.abortSignal?.throwIfAborted()

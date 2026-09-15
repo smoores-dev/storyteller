@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useState } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { type FieldErrors, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 import { LANGUAGES } from "@storyteller-platform/ghost-story/constants"
@@ -128,7 +128,10 @@ function RunConfigForm({
     control: form.control,
     name: "transcriptionEngine",
   })
-  const watchedModel = useWatch({ control: form.control, name: "whisperModel" })
+  const watchedModel = useWatch({
+    control: form.control,
+    name: "whisperModel",
+  })
   const watchedCtcEngine = useWatch({
     control: form.control,
     name: "ctcEngine",
@@ -149,6 +152,12 @@ function RunConfigForm({
     },
     { skip: !book.uuid },
   )
+
+  function reportInvalid(errors: FieldErrors<Settings>) {
+    toast.error(t("toastFailed"), {
+      description: Object.keys(errors).join(", "),
+    })
+  }
 
   async function start(values: Settings, saveAsDefaults: boolean) {
     const config: Partial<RunConfig> = {
@@ -186,7 +195,10 @@ function RunConfigForm({
       lockedSettings={new Set()}
     >
       <form
-        onSubmit={form.handleSubmit((values) => start(values, false))}
+        onSubmit={form.handleSubmit(
+          (values) => start(values, false),
+          reportInvalid,
+        )}
         className="relative flex min-h-0 flex-1 flex-col"
       >
         <div className="min-h-0 flex-1 overflow-y-auto px-px">
@@ -247,7 +259,10 @@ function RunConfigForm({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={() => {
-                    void form.handleSubmit((values) => start(values, true))()
+                    void form.handleSubmit(
+                      (values) => start(values, true),
+                      reportInvalid,
+                    )()
                   }}
                 >
                   {t("saveAsDefaults")}

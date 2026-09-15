@@ -39,6 +39,7 @@ export const EXCLUSION_SOURCES = [
   "landmark",
   "content-type",
   "guide",
+  "title",
   "filename",
   "no-text",
 ] as const

@@ -2197,6 +2197,7 @@
       "landmark": "landmark",
       "content-type": "epub type",
       "guide": "guide",
+      "title": "title",
       "filename": "file name",
       "no-text": "text"
     },

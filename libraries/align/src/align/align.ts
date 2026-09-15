@@ -679,7 +679,7 @@ export class Aligner {
     }
 
     const spine = await this.epub.getSpineItems()
-    const classifications = await classifySpine(this.epub)
+    const classifications = await classifySpine(this.epub, { locale })
     const { result: transcriptionText, mapping } = await slugify(
       this.transcription.transcript,
       locale,

@@ -53,7 +53,10 @@ import {
   PERMISSIONS_VALUES,
 } from "@/components/users/CreateInviteForm"
 import { type ImportRuleWithCollections } from "@/database/importRules"
-import { type ImportRuleInput } from "@/database/settingsTypes"
+import {
+  type ImportRuleInput,
+  SETTINGS_DEFAULTS,
+} from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useCancelScanMutation,
@@ -65,12 +68,6 @@ import {
   useUpdateSettingsMutation,
 } from "@/store/api"
 import { type UUID } from "@/uuid"
-import {
-  DEFAULT_AUDIO_CHAPTER_SECONDS,
-  DEFAULT_AUTO_EXCLUDE,
-  DEFAULT_DROP_UNREAD,
-  DEFAULT_GAP_SECONDS,
-} from "@/work/rangeBehaviour"
 
 import { AuthProviderInput } from "./AuthProviderInput"
 import { MetadataFieldOverridesEditor } from "./MetadataFieldOverridesEditor"

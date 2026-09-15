@@ -44,12 +44,6 @@ import {
   useGetMaxUploadChunkSizeQuery,
   useUpdateSettingsMutation,
 } from "@/store/api"
-import {
-  DEFAULT_AUDIO_CHAPTER_SECONDS,
-  DEFAULT_AUTO_EXCLUDE,
-  DEFAULT_DROP_UNREAD,
-  DEFAULT_GAP_SECONDS,
-} from "@/work/rangeBehaviour"
 
 import {
   type SettingsFormForm,
@@ -201,30 +195,16 @@ function settingsFormValues(settings: Settings) {
   return {
     ...settings,
     serverIconSha256: settings.serverIconSha256 ?? null,
-    aligner: settings.aligner ?? "whisper",
-    alignmentGranularity: settings.alignmentGranularity ?? "sentence",
-    alignmentGapSeconds: settings.alignmentGapSeconds ?? DEFAULT_GAP_SECONDS,
-    alignmentAudioChapterSeconds:
-      settings.alignmentAudioChapterSeconds ?? DEFAULT_AUDIO_CHAPTER_SECONDS,
-    alignmentDropUnread: settings.alignmentDropUnread ?? DEFAULT_DROP_UNREAD,
-    alignmentAutoExclude: settings.alignmentAutoExclude ?? DEFAULT_AUTO_EXCLUDE,
     // TODO: change, if we ever want to use a different CTC engine
     ctcEngine: "wav2vec-local" as const,
-    ctcDevice: settings.ctcDevice ?? null,
     ctcModel:
       settings.ctcModel && isCtcModelFamily(settings.ctcModel)
         ? settings.ctcModel
         : null,
-    ctcDtype: settings.ctcDtype ?? null,
-    ctcBatchSize: settings.ctcBatchSize ?? null,
     // ctcServerUrl: settings.ctcServerUrl ?? "",
     // ctcServerApiKey: settings.ctcServerApiKey ?? "",
-    transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
-    whisperModel: settings.whisperModel ?? "tiny",
-    whisperCpuFallback: settings.whisperCpuFallback ?? null,
     whisperServerUrl: settings.whisperServerUrl ?? "",
     whisperServerApiKey: settings.whisperServerApiKey ?? "",
-    maxTrackLength: settings.maxTrackLength ?? 2,
     codec: settings.codec ?? "",
     bitrate: settings.bitrate ?? "",
     googleCloudApiKey: settings.googleCloudApiKey ?? "",
@@ -240,7 +220,6 @@ function settingsFormValues(settings: Settings) {
     openAiBaseUrl: settings.openAiBaseUrl ?? "",
     openAiModelName: settings.openAiModelName ?? "",
     deepgramApiKey: settings.deepgramApiKey ?? "",
-    deepgramModel: settings.deepgramModel ?? "nova-3",
     disablePasswordLogin: settings.disablePasswordLogin,
     importRules: settings.importRules ?? [],
     autoIgnoreRules: settings.autoIgnoreRules ?? [],
