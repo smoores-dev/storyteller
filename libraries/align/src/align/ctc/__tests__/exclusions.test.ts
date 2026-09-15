@@ -15,6 +15,7 @@ import {
   type SpineClassification,
   type SpineZone,
   classifySpine,
+  titleSignals,
 } from "../exclusions.ts"
 
 interface Expectation {
@@ -34,6 +35,7 @@ interface SpineFixture {
   linear?: "no"
   landmark?: string
   guide?: string
+  toc?: string
 }
 
 function page(body: string, bodyType?: string) {
@@ -111,6 +113,23 @@ const front: SpineFixture[] = [
     ),
     because: "an untagged copyright filename in the front zone is trusted",
     expect: by("exclude", "filename", "copyright"),
+  },
+  {
+    id: "heading_copyright",
+    href: "Text/part0003.xhtml",
+    contents: page(
+      "<h2>Copyright</h2><p>Copyright 2026 by the author. All rights reserved.</p>",
+    ),
+    because: "a copyright heading is trusted when the filename says nothing",
+    expect: by("exclude", "title", "copyright-page"),
+  },
+  {
+    id: "toc_dedication",
+    href: "Text/part0004.xhtml",
+    contents: page("<p>For the ferryman, who waited.</p>"),
+    toc: "Dedication",
+    because: "the table of contents names a page that has no heading",
+    expect: by("review", "title", "dedication"),
   },
   {
     id: "legal",
@@ -193,8 +212,8 @@ const front: SpineFixture[] = [
     id: "preface",
     href: "Text/preface.xhtml",
     contents: page(prose("Preface")),
-    because: "an untagged preface in the front zone is flagged by filename",
-    expect: by("review", "filename", "preface"),
+    because: "a preface heading in the front zone flags it for review",
+    expect: by("review", "title", "preface"),
   },
   {
     id: "introduction",
@@ -260,6 +279,14 @@ const bodySpecials: SpineFixture[] = [
     ),
     because: "a page made mostly of footnote asides is a notes page",
     expect: by("exclude", "content-type", "footnote"),
+  },
+  {
+    id: "notes_story",
+    href: "Text/c16.xhtml",
+    contents: page(prose("Notes")),
+    toc: "Notes",
+    because: "a story called Notes in the middle of the book is not endnotes",
+    expect: byDefault,
   },
   {
     id: "pagebreaks",
@@ -368,8 +395,8 @@ const back: SpineFixture[] = [
     id: "appendix",
     href: "Text/appendix-a.xhtml",
     contents: page(prose("Appendix A")),
-    because: "an untagged appendix in the back zone flags for review",
-    expect: by("review", "filename", "appendix"),
+    because: "an appendix heading in the back zone flags for review",
+    expect: by("review", "title", "appendix"),
   },
   {
     id: "endnotes",
@@ -389,6 +416,15 @@ const back: SpineFixture[] = [
     ),
     because: "the deprecated rearnotes type still excludes",
     expect: by("exclude", "content-type", "rearnotes"),
+  },
+  {
+    id: "discussion",
+    href: "Text/back01.xhtml",
+    contents: page(
+      "<h1>Discussion Questions</h1><ol><li><p>Why does the river keep coming back?</p></li></ol>",
+    ),
+    because: "reading group questions are never narrated",
+    expect: by("exclude", "title", "discussion-questions"),
   },
   {
     id: "glossary",
@@ -536,6 +572,11 @@ function navDocument() {
     )
     .join("\n")
 
+  const toc = spine
+    .filter((item) => item.toc)
+    .map((item) => `<li><a href="../${item.href}">${item.toc}</a></li>`)
+    .join("\n")
+
   return `<?xml version="1.0" encoding="utf-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head><title>Navigation</title></head>
@@ -543,6 +584,7 @@ function navDocument() {
 <nav epub:type="toc"><h1>Contents</h1><ol>
 <li><a href="../Text/prologue.xhtml">Prologue</a></li>
 <li><a href="../Text/gaba_epub_c_r1.xhtml">Chapter 1</a></li>
+${toc}
 </ol></nav>
 <nav epub:type="landmarks" hidden=""><h2>Landmarks</h2><ol>
 ${landmarks}
@@ -733,5 +775,60 @@ void describe("classifySpine", () => {
     void it("prologue records its own content type under the landmark", () => {
       loses("prologue", "content-type", "prologue")
     })
+
+    void it("preface records the filename its heading overrode", () => {
+      loses("preface", "filename", "preface")
+    })
+  })
+})
+
+void describe("titleSignals", () => {
+  const matches = (title: string, zone: SpineZone, language = "en") =>
+    titleSignals(title, zone, language).map(
+      (signal) => `${signal.verdict}:${signal.value}`,
+    )
+
+  void it("matches whole titles, not words inside them", () => {
+    assert.deepStrictEqual(matches("Notes from Underground", "back"), [])
+    assert.deepStrictEqual(matches("Notes", "back"), ["exclude:endnotes"])
+  })
+
+  void it("ignores case, spacing, punctuation and curly apostrophes", () => {
+    assert.deepStrictEqual(matches("  ABOUT THE AUTHOR  ", "back"), [
+      "exclude:about-the-author",
+    ])
+    assert.deepStrictEqual(matches("Author’s Note", "front"), [
+      "review:authors-note",
+    ])
+  })
+
+  void it("keeps position-dependent titles to the edges of the book", () => {
+    assert.deepStrictEqual(matches("Notes", "body"), [])
+    assert.deepStrictEqual(matches("Acknowledgments", "body"), [])
+    assert.deepStrictEqual(matches("Discussion Questions", "body"), [
+      "exclude:discussion-questions",
+    ])
+  })
+
+  void it("reads the book's language and still knows English", () => {
+    assert.deepStrictEqual(matches("Over de auteur", "back", "nl"), [
+      "exclude:about-the-author",
+    ])
+    assert.deepStrictEqual(matches("Dankwoord", "front", "nl"), [
+      "review:acknowledgments",
+    ])
+    assert.deepStrictEqual(matches("Copyright", "front", "nl"), [
+      "exclude:copyright-page",
+    ])
+    assert.deepStrictEqual(matches("Remerciements", "back", "fr"), [
+      "review:acknowledgments",
+    ])
+    assert.deepStrictEqual(matches("Über den Autor", "back", "de"), [
+      "exclude:about-the-author",
+    ])
+  })
+
+  void it("does not borrow words from a language the book is not in", () => {
+    assert.deepStrictEqual(matches("Over de auteur", "back", "en"), [])
   })
 })

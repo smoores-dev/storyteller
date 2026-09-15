@@ -2,6 +2,7 @@ import {
   Epub,
   type EpubReader,
   type ManifestItem,
+  type NavigationList,
   type ParsedXml,
 } from "@storyteller-platform/epub"
 
@@ -10,8 +11,9 @@ import {
   FILENAME_TEMPLATES,
   type ExclusionRule,
 } from "./exclusionRules.ts"
+import { TITLE_RULES, type TitleRule } from "./titleRules.ts"
 
-export { EXCLUSION_RULES, type ExclusionRule }
+export { EXCLUSION_RULES, type ExclusionRule, TITLE_RULES, type TitleRule }
 
 export const EXCLUSION_SOURCES = [
   "linear",
@@ -20,6 +22,7 @@ export const EXCLUSION_SOURCES = [
   "landmark",
   "content-type",
   "guide",
+  "title",
   "filename",
   "no-text",
 ] as const
@@ -185,6 +188,60 @@ function hasText(xml: ParsedXml): boolean {
   }
 }
 
+const HEADINGS = new Set<string>(["h1", "h2", "h3"])
+
+function firstHeading(xml: ParsedXml): string | null {
+  for (const node of xml) {
+    if (Epub.isXmlTextNode(node)) {
+      continue
+    }
+    const children = Epub.getXmlChildren(node)
+    if (HEADINGS.has(Epub.getXmlElementName(node))) {
+      const text = Epub.getXhtmlTextContent(children).trim()
+      if (text) {
+        return text
+      }
+    }
+    const found = firstHeading(children)
+    if (found) {
+      return found
+    }
+  }
+  return null
+}
+
+export function normalizeTitle(title: string): string {
+  return title
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/['’ʼ]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+}
+
+export function titleSignals(
+  title: string,
+  zone: SpineZone,
+  language: string,
+  rules: TitleRule[] = TITLE_RULES,
+): ExclusionSignal[] {
+  const normalized = normalizeTitle(title)
+  if (!normalized) return []
+  const languages = language === "en" ? ["en"] : [language, "en"]
+  const signals: ExclusionSignal[] = []
+  for (const rule of rules) {
+    if (!rule.zones.includes(zone)) {
+      continue
+    }
+    const patterns = languages.flatMap((code) => rule.patterns[code] ?? [])
+    if (!patterns.some((pattern) => pattern.test(normalized))) {
+      continue
+    }
+    signals.push({ source: "title", value: rule.match, verdict: rule.verdict })
+  }
+  return signals
+}
+
 function ruleSignal(
   rules: ExclusionRule[],
   source: ExclusionRule["source"],
@@ -264,12 +321,36 @@ export function decide(signals: ExclusionSignal[]): ExclusionSignal | null {
 
 export async function classifySpine(
   epub: EpubReader,
-  rules: ExclusionRule[] = EXCLUSION_RULES,
+  {
+    locale = null,
+    rules = EXCLUSION_RULES,
+    titleRules = TITLE_RULES,
+  }: {
+    locale?: Intl.Locale | null
+    rules?: ExclusionRule[]
+    titleRules?: TitleRule[]
+  } = {},
 ): Promise<SpineClassification[]> {
   const spine: (ManifestItem & { linear: boolean })[] =
     await epub.getSpineItems()
   const landmarks = await epub.getLandmarks()
   const guide = await epub.getGuideEntries()
+  const toc = await epub.getTableOfContents()
+  const language = (locale ?? (await epub.getLanguage()))?.language ?? "en"
+
+  const tocTitles = new Map<string, string>()
+  const visitToc = (items: NavigationList) => {
+    for (const item of items) {
+      if (item.href) {
+        const key = normalizeHref(item.href)
+        if (!tocTitles.has(key)) {
+          tocTitles.set(key, item.title)
+        }
+      }
+      if (item.children) visitToc(item.children)
+    }
+  }
+  visitToc(toc?.children ?? [])
 
   const landmarkTypes = new Map<string, string[]>()
   const visit = (
@@ -282,9 +363,15 @@ export async function classifySpine(
         list.push(...item.type.split(/\s+/).filter(Boolean))
         landmarkTypes.set(key, list)
       }
-      if (Array.isArray(item.children)) visit(item.children as typeof items)
+
+      if (!Array.isArray(item.children)) {
+        continue
+      }
+
+      visit(item.children as typeof items)
     }
   }
+
   visit(landmarks?.children ?? [])
 
   const guideTypes = new Map<string, string[]>()
@@ -320,7 +407,9 @@ export async function classifySpine(
 
     for (const type of landmarkTypes.get(key) ?? []) {
       const signal = ruleSignal(rules, "landmark", type)
-      if (signal) signals.push(signal)
+      if (signal) {
+        signals.push(signal)
+      }
     }
 
     let xml: ParsedXml | null = null
@@ -335,19 +424,32 @@ export async function classifySpine(
     if (xml) {
       for (const type of contentTypes(xml)) {
         const signal = ruleSignal(rules, "content-type", type)
-        if (signal) signals.push(signal)
+        if (signal) {
+          signals.push(signal)
+        }
       }
     }
 
     for (const type of guideTypes.get(key) ?? []) {
       const signal = ruleSignal(rules, "guide", type)
-      if (signal) signals.push(signal)
+      if (signal) {
+        signals.push(signal)
+      }
+    }
+
+    const title = tocTitles.get(key) ?? (xml ? firstHeading(xml) : null)
+    if (title) {
+      signals.push(...titleSignals(title, zone, language, titleRules))
     }
 
     signals.push(...filenameSignals(rules, item.href, zone))
 
     if (xml && !hasText(xml)) {
-      signals.push({ source: "no-text", value: "", verdict: "exclude" })
+      signals.push({
+        source: "no-text",
+        value: "",
+        verdict: "exclude",
+      })
     }
 
     const decidedBy = decide(signals)
@@ -370,12 +472,18 @@ export function chapterAligned(
   decision: ChapterDecision | null | undefined,
   autoExclude: boolean,
 ): boolean {
-  if (decision === "excluded") return false
-  if (decision) return true
+  if (decision === "excluded") {
+    return false
+  }
+  if (decision) {
+    return true
+  }
   if (classification.verdict !== "exclude" || !classification.decidedBy) {
     return true
   }
-  if (autoExclude) return false
+  if (autoExclude) {
+    return false
+  }
   return !MECHANICAL_SOURCES.has(classification.decidedBy.source)
 }
 
