@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/path",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "types": "dist/index.d.ts",
   "exports": {
@@ -15,7 +15,8 @@
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.5",
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.2"
   },
   "publishConfig": {
     "access": "public",
