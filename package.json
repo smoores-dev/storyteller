@@ -34,6 +34,7 @@
     "test:media-types": "yarn workspace @storyteller-platform/media-types test",
     "test:mobile": "yarn workspace @storyteller-platform/mobile test",
     "test:nodekit": "yarn workspace @storyteller-platform/nodekit test",
+    "test:opds": "yarn workspace @storyteller-platform/opds test",
     "test:web": "yarn workspace @storyteller-platform/web test:all",
     "test:reader:browser": "playwright test --config libraries/StorytellerKit/Tests/Browser/playwright.config.ts",
     "test": "concurrently -P 'npm:test:*'",

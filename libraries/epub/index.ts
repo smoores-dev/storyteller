@@ -1,7 +1,8 @@
 import { cp, mkdir } from "node:fs/promises"
 
 import { Mutex } from "async-mutex"
-import { XMLBuilder, XMLParser } from "fast-xml-parser"
+import XMLBuilder from "fast-xml-builder"
+import { XMLParser } from "fast-xml-parser"
 import memoize from "mem"
 import { nanoid } from "nanoid"
 
@@ -357,9 +358,15 @@ export class Epub {
       alwaysCreateTextNode: true,
       preserveOrder: true,
       ignoreAttributes: false,
+      // oxlint-disable-next-line typescript/no-deprecated entityDecoder appears completely undocumented
       htmlEntities: true,
+      processEntities: {
+        enabled: true,
+        maxEntityCount: Infinity,
+        maxTotalExpansions: Infinity,
+      },
       trimValues: false,
-      stopNodes: ["*.pre", "*.script"],
+      stopNodes: ["*.script"],
       parseTagValue: false,
       updateTag(_tagName, _jPath, attrs) {
         // There's never an attribute called '/';
@@ -379,7 +386,9 @@ export class Epub {
     // fast-xml-parser's htmlEntities option seems to map &nbsp; to
     // regular space (U+0020) instead of non-breaking space (U+00A0).
     // Override the entity mapping to use the correct character.
+    // oxlint-disable-next-line typescript/no-deprecated entityDecoder appears completely undocumented
     parser.addEntity("nbsp", "\u00A0")
+    // oxlint-disable-next-line typescript/no-deprecated entityDecoder appears completely undocumented
     parser.addEntity("#160", "\u00A0")
     return parser
   })()
@@ -394,8 +403,9 @@ export class Epub {
   static xhtmlBuilder = new XMLBuilder({
     preserveOrder: true,
     ignoreAttributes: false,
-    stopNodes: ["*.pre", "*.script"],
+    stopNodes: ["*.script"],
     suppressEmptyNode: true,
+    processEntities: true,
   })
 
   /**
@@ -854,9 +864,9 @@ export class Epub {
 
       const produced = (await producer(packageElement)) as ParsedXml | undefined
 
-      const updatedPackageDocument = (await Epub.xmlBuilder.build(
+      const updatedPackageDocument = Epub.xmlBuilder.build(
         produced ?? packageDocument,
-      )) as string
+      )
 
       const rootfile = await this.getRootfile()
 
@@ -3111,11 +3121,7 @@ export class Epub {
    * @link https://www.w3.org/TR/epub-33/#sec-xhtml
    */
   async writeXhtmlItemContents(id: string, contents: ParsedXml): Promise<void> {
-    await this.writeItemContents(
-      id,
-      Epub.xhtmlBuilder.build(contents) as string,
-      "utf-8",
-    )
+    await this.writeItemContents(id, Epub.xhtmlBuilder.build(contents), "utf-8")
   }
 
   async removeManifestItem(id: string) {
@@ -3217,9 +3223,7 @@ export class Epub {
         ? new TextEncoder().encode(
             encoding === "utf-8"
               ? (contents as string)
-              : ((await Epub.xmlBuilder.build(
-                  contents as ParsedXml,
-                )) as string),
+              : Epub.xmlBuilder.build(contents as ParsedXml),
           )
         : (contents as Uint8Array)
     /* oxlint-enable typescript/no-unnecessary-type-assertion */

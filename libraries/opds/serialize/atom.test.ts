@@ -1,6 +1,6 @@
 import assert from "node:assert"
 
-import { XMLValidator } from "fast-xml-parser"
+import { SyntaxValidator } from "fast-xml-validator"
 import { describe, it } from "vitest"
 
 import { Feed } from "../index.ts"
@@ -18,7 +18,7 @@ describe("toAtomXml", () => {
   it("renders the catalog as well-formed Atom", () => {
     const xml = toAtomXml(parse(rawCatalog))
 
-    assert.strictEqual(XMLValidator.validate(xml), true)
+    assert.strictEqual(SyntaxValidator.validate(xml), true)
     assert.match(xml, /<feed[\s>]/)
     assert.match(xml, /xmlns="http:\/\/www\.w3\.org\/2005\/Atom"/)
     assert.match(xml, /<entry>/)
@@ -72,7 +72,7 @@ describe("toAtomXml", () => {
 
     const xml = toAtomXml(parse(feedJson))
 
-    assert.strictEqual(XMLValidator.validate(xml), true)
+    assert.strictEqual(SyntaxValidator.validate(xml), true)
     // facet -> feed-level link with the OPDS facet rel + group/count hints
     assert.match(xml, /rel="http:\/\/opds-spec\.org\/facet"/)
     assert.match(xml, /opds:facetGroup="Language"/)

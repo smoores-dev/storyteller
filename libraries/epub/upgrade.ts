@@ -577,7 +577,7 @@ export async function buildNavDocument(
   ]
 
   const navDoc = await epub.createXhtmlDocument(body, head)
-  return Epub.xhtmlBuilder.build(navDoc) as string
+  return Epub.xhtmlBuilder.build(navDoc)
 }
 
 export function setPackageVersion(pkg: PackageElement, version: string): void {

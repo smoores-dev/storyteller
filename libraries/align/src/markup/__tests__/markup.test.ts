@@ -126,7 +126,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   // timeout to ensure no regression in speed
@@ -148,7 +148,7 @@ describe("markupChapter", () => {
         new Intl.Locale("en-US"),
       )
 
-      await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+      await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
     },
   )
 
@@ -179,7 +179,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can tag sentences with trailing atoms", async (t) => {
@@ -210,7 +210,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can tag sentences with formatting marks that overlap sentence boundaries", async (t) => {
@@ -240,7 +240,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can tag sentences with nested formatting marks", async (t) => {
@@ -270,7 +270,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can tag sentences with atoms", async (t) => {
@@ -300,7 +300,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can tag sentences in nested textblocks", async (t) => {
@@ -340,7 +340,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can tag sentences that cross textblock boundaries", async (t) => {
@@ -373,7 +373,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can handle soft page breaks", async (t) => {
@@ -413,7 +413,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can handle footnotes", async (t) => {
@@ -454,7 +454,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can handle boolean-like text values", async (t) => {
@@ -475,7 +475,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can handle number-like text values", async (t) => {
@@ -496,7 +496,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can handle null-like text values", async (t) => {
@@ -517,7 +517,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("can preserve nbsp entities", async (t) => {
@@ -541,7 +541,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("preserves top level svgs", async (t) => {
@@ -564,7 +564,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 
   it("correctly marks up ruby tags", async (t) => {
@@ -590,6 +590,6 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output) as string)
+    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
   })
 })

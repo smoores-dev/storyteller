@@ -74,7 +74,7 @@ describe("chooseChapterCut", () => {
     assert.deepStrictEqual(
       chooseChapterCut(100, [
         { start: 80, end: 82 },
-        { start: 110, end: 112 },
+        { start: 115, end: 117 },
       ]),
       { cut: 100, reason: "no-silence-nearby" },
     )

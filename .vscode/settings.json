@@ -3,7 +3,7 @@
     "**/.yarn": true,
     "**/.pnp.*": true
   },
-  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "oxc.enable.oxlint": true,
   "oxc.enable.oxfmt": true,
@@ -29,7 +29,6 @@
   "[jsonc]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
-  "typescript.tsdk": "node_modules/typescript/lib",
   "cmake.configureOnOpen": false,
   "[nix]": {
     "editor.defaultFormatter": "jnoortheen.nix-ide"

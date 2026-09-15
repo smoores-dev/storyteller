@@ -24,7 +24,7 @@ describe("xhtml parsing", () => {
     const xmlString = `<script src="script.js"/>`
     const parsed = Epub.xhtmlParser.parse(xmlString) as ParsedXml
 
-    const built = Epub.xhtmlBuilder.build(parsed) as string
+    const built = Epub.xhtmlBuilder.build(parsed)
 
     assert.strictEqual(built, xmlString)
   })
