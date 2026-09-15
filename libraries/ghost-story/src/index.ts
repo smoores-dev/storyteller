@@ -65,7 +65,7 @@ export {
   getWhisperServerExecutablePath,
   isValidModel,
   resolveVariant,
-  resolveWav2Vec2Device,
+  resolveCtcDevice,
 } from "./cli/config.ts"
 export {
   type InstallBinaryOptions,
@@ -82,11 +82,19 @@ export {
 //   encodeEmissions,
 // } from "./emission/EmissionWire.ts"
 export {
-  type Wav2Vec2ModelBundle,
-  type Wav2Vec2Options,
-  type Wav2Vec2Result,
+  type CtcOptions,
+  type CtcResult,
   readAudioAsFloat32,
-} from "./emission/Wav2Vec2Emission.ts"
+} from "./emission/CtcEmission.ts"
+export {
+  type CtcBackend,
+  type CtcRun,
+  type CtcRunOptions,
+  type LoadCtcModelOptions,
+  type LoadedCtcModel,
+  loadCtcModel,
+  resolveCtcRun,
+} from "./emission/CtcModel.ts"
 // export { type Wav2Vec2ServerOptions } from "./emission/Wav2Vec2ServerEmission.ts"
 export {
   type ConversionMode,

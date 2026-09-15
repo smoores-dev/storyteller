@@ -5,9 +5,9 @@ import {
   CTC_MODEL_FAMILIES,
   LANGUAGES,
   RECOGNITION_ENGINES,
-  WAV2VEC2_DEVICES,
-  WAV2VEC2_DTYPES,
-  WAV2VEC_ENGINES,
+  CTC_DEVICES,
+  CTC_DTYPES,
+  CTC_ENGINES,
   WHISPER_MODELS,
 } from "@storyteller-platform/ghost-story/constants"
 
@@ -25,15 +25,15 @@ export const TranscriptionEngineSchema = z.enum(RECOGNITION_ENGINES)
 export const AlignerSchema = z.enum(ALIGNERS)
 export type Aligner = z.infer<typeof AlignerSchema>
 
-export const Wav2VecEngineSchema = z.enum(WAV2VEC_ENGINES)
-export type Wav2VecEngine = z.infer<typeof Wav2VecEngineSchema>
+export const CtcEngineSchema = z.enum(CTC_ENGINES)
+export type CtcEngine = z.infer<typeof CtcEngineSchema>
 
-export const Wav2Vec2DeviceSchema = z.enum(WAV2VEC2_DEVICES)
-export type Wav2Vec2Device = z.infer<typeof Wav2Vec2DeviceSchema>
+export const CtcDeviceSchema = z.enum(CTC_DEVICES)
+export type CtcDevice = z.infer<typeof CtcDeviceSchema>
 
-export const CtcModelSchema = z.enum(CTC_MODEL_FAMILIES)
-export const CtcDtypeSchema = z.enum(WAV2VEC2_DTYPES)
-export type CtcModel = z.infer<typeof CtcModelSchema>
+export const CtcModelFamilySchema = z.enum(CTC_MODEL_FAMILIES)
+export const CtcDtypeSchema = z.enum(CTC_DTYPES)
+export type CtcModelFamily = z.infer<typeof CtcModelFamilySchema>
 
 export const WhisperModelSchema = z.enum(WHISPER_MODELS)
 export type WhisperModel = z.infer<typeof WhisperModelSchema>
@@ -323,9 +323,9 @@ export const SettingsSchema = z.object({
   alignmentAudioChapterSeconds: z.coerce.number<number>().nullable(),
   alignmentDropUnread: z.boolean().nullable(),
   alignmentAutoExclude: z.boolean().nullable(),
-  ctcEngine: Wav2VecEngineSchema.nullable(),
-  ctcDevice: Wav2Vec2DeviceSchema.nullable(),
-  ctcModel: CtcModelSchema.nullable(),
+  ctcEngine: CtcEngineSchema.nullable(),
+  ctcDevice: CtcDeviceSchema.nullable(),
+  ctcModel: CtcModelFamilySchema.nullable(),
   ctcDtype: CtcDtypeSchema.nullable(),
   ctcBatchSize: z.coerce.number<number>().nullable(),
   // ctcServerUrl: z.string().nullable(),

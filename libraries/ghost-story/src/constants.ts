@@ -70,34 +70,26 @@ export const WHISPER_MODELS = [
 ] as const
 export type WhisperModel = (typeof WHISPER_MODELS)[number]
 
-export const WAV2VEC2_DEVICES = [
-  "auto",
-  "cpu",
-  "webgpu",
-  "cuda",
-  "mlx",
-] as const
-export type Wav2Vec2Device = (typeof WAV2VEC2_DEVICES)[number]
-export type ResolvedWav2Vec2Device = Exclude<Wav2Vec2Device, "auto">
+export const CTC_DEVICES = ["auto", "cpu", "webgpu", "cuda", "mlx"] as const
+export type CtcDevice = (typeof CTC_DEVICES)[number]
+export type ResolvedCtcDevice = Exclude<CtcDevice, "auto">
 
-export const WAV2VEC2_SECONDS_PER_CHUNK = 25
-export const QUARTZNET_SECONDS_PER_CHUNK = 38
 export const DEFAULT_CTC_BATCH_SIZE = 2
 
-export const WAV2VEC2_DTYPES = ["fp32", "fp16"] as const
-export type Wav2Vec2DataType = (typeof WAV2VEC2_DTYPES)[number]
+export const CTC_DTYPES = ["fp32", "fp16"] as const
+export type CtcDataType = (typeof CTC_DTYPES)[number]
 
 export const ALIGNERS = ["whisper", "ctc"] as const
 export type Aligner = (typeof ALIGNERS)[number]
 
-export const WAV2VEC_ENGINES = [
+export const CTC_ENGINES = [
   "wav2vec-local",
   // "wav2vec-server",
 ] as const
-export type Wav2VecEngine = (typeof WAV2VEC_ENGINES)[number]
+export type CtcEngine = (typeof CTC_ENGINES)[number]
 export const CTC_MODEL_VERSION = "1.0.0"
 
-export const CTC_MODELS = [
+export const CTC_MODEL_VARIANTS = [
   "fp32",
   "fp16",
   "mlx",
@@ -134,11 +126,27 @@ export const CTC_MODELS = [
   "citrinet1024_uk",
   "citrinet1024_zh",
 ] as const
-export type CtcModel = (typeof CTC_MODELS)[number]
+export type CtcModelVariant = (typeof CTC_MODEL_VARIANTS)[number]
 
-export function isCtcModel(model: string): model is CtcModel {
-  return CTC_MODELS.includes(model as CtcModel)
+export function isCtcModelVariant(variant: string): variant is CtcModelVariant {
+  return CTC_MODEL_VARIANTS.includes(variant as CtcModelVariant)
 }
+
+/**
+ * The pipeline a model runs through. wav2vec2 takes the raw waveform through
+ * the transformers.js feature extractor and a transformer encoder, the two
+ * convolutional architectures take mel features through an ONNX or MLX graph.
+ */
+export const CTC_ARCHITECTURES = ["wav2vec2", "quartznet", "citrinet"] as const
+export type CtcArchitecture = (typeof CTC_ARCHITECTURES)[number]
+
+/**
+ * How a model's vocabulary maps onto text. Character models emit one letter
+ * per class with `|` as the word boundary, sentencepiece models emit unigram
+ * pieces read from the package's tokenizer.spm.
+ */
+export const CTC_TOKENIZERS = ["characters", "sentencepiece"] as const
+export type CtcTokenizer = (typeof CTC_TOKENIZERS)[number]
 
 export const CTC_MODEL_FAMILIES = [
   "mms",
@@ -149,13 +157,11 @@ export const CTC_MODEL_FAMILIES = [
 ] as const
 export type CtcModelFamily = (typeof CTC_MODEL_FAMILIES)[number]
 
-export function isCtcModelFamily(family: string): family is CtcModelFamily {
-  return CTC_MODEL_FAMILIES.includes(family as CtcModelFamily)
-}
-
-export function ctcModelLanguages(family: CtcModelFamily): Language[] {
-  if (family === "mms") return [...LANGUAGES]
-  return LANGUAGES.filter((language) => isCtcModel(`${family}_${language}`))
+export interface CtcModelFamilyInfo {
+  architecture: CtcArchitecture
+  tokenizer: CtcTokenizer
+  /** How much audio goes through the model per call. */
+  chunkSeconds: number
 }
 
 /**
@@ -163,10 +169,44 @@ export function ctcModelLanguages(family: CtcModelFamily): Language[] {
  * two before its FFT, so throughput is a staircase in the chunk length: 20 to
  * 39 seconds all cost the same, and 38 seconds carries the most audio for it.
  */
-export function ctcChunkSeconds(family: CtcModelFamily): number {
-  return family === "quartznet15x5"
-    ? QUARTZNET_SECONDS_PER_CHUNK
-    : WAV2VEC2_SECONDS_PER_CHUNK
+export const CTC_MODEL_FAMILY_INFO: Record<CtcModelFamily, CtcModelFamilyInfo> =
+  {
+    mms: {
+      architecture: "wav2vec2",
+      tokenizer: "characters",
+      chunkSeconds: 25,
+    },
+    quartznet15x5: {
+      architecture: "quartznet",
+      tokenizer: "characters",
+      chunkSeconds: 38,
+    },
+    citrinet256: {
+      architecture: "citrinet",
+      tokenizer: "sentencepiece",
+      chunkSeconds: 25,
+    },
+    citrinet512: {
+      architecture: "citrinet",
+      tokenizer: "sentencepiece",
+      chunkSeconds: 25,
+    },
+    citrinet1024: {
+      architecture: "citrinet",
+      tokenizer: "sentencepiece",
+      chunkSeconds: 25,
+    },
+  }
+
+export function isCtcModelFamily(family: string): family is CtcModelFamily {
+  return CTC_MODEL_FAMILIES.includes(family as CtcModelFamily)
+}
+
+export function ctcModelLanguages(family: CtcModelFamily): Language[] {
+  if (family === "mms") return [...LANGUAGES]
+  return LANGUAGES.filter((language) =>
+    isCtcModelVariant(`${family}_${language}`),
+  )
 }
 
 /**
@@ -176,9 +216,9 @@ export function ctcChunkSeconds(family: CtcModelFamily): number {
  */
 export function resolveCtcDtype(
   family: CtcModelFamily,
-  device: ResolvedWav2Vec2Device,
-  requested: Wav2Vec2DataType | null | undefined,
-): Wav2Vec2DataType {
+  device: ResolvedCtcDevice,
+  requested: CtcDataType | null | undefined,
+): CtcDataType {
   if (device === "cpu") return "fp32"
   if (requested) return requested
   return family === "mms" ? "fp16" : "fp32"
@@ -190,19 +230,19 @@ export function resolveCtcDtype(
  * on a CPU the larger tensors only fall out of cache and slow the run down.
  */
 export function resolveCtcBatchSize(
-  device: ResolvedWav2Vec2Device,
+  device: ResolvedCtcDevice,
   requested: number | null | undefined,
 ): number {
   if (requested) return Math.max(1, Math.floor(requested))
   return device === "cpu" ? 1 : DEFAULT_CTC_BATCH_SIZE
 }
 
-export function resolveCtcModel(
+export function resolveCtcModelVariant(
   family: CtcModelFamily,
   language: string | null | undefined,
-  device: ResolvedWav2Vec2Device,
-  dtype?: Wav2Vec2DataType | null,
-): CtcModel {
+  device: ResolvedCtcDevice,
+  dtype?: CtcDataType | null,
+): CtcModelVariant {
   if (family === "mms") {
     if (device === "mlx") return "mlx"
     return resolveCtcDtype(family, device, dtype)
@@ -212,13 +252,13 @@ export function resolveCtcModel(
       `${family} needs a language, it handles ${ctcModelLanguages(family).join(", ")}`,
     )
   }
-  const model = `${family}_${language}`
-  if (!isCtcModel(model)) {
+  const variant = `${family}_${language}`
+  if (!isCtcModelVariant(variant)) {
     throw new Error(
       `${family} has no ${language} model, it handles ${ctcModelLanguages(family).join(", ")}`,
     )
   }
-  return model
+  return variant
 }
 
 export type CtcModelPackage = {
@@ -239,7 +279,7 @@ export type CtcModelPackage = {
  * `subdir` has to match what the loaders expect: transformers.js caches under
  * the huggingface repo id, the mlx loader takes a plain directory.
  */
-export const CTC_MODEL_PACKAGES: Record<CtcModel, CtcModelPackage> = {
+export const CTC_MODEL_PACKAGES: Record<CtcModelVariant, CtcModelPackage> = {
   fp32: {
     name: "mms-300m-1130-forced-aligner-ONNX",
     version: CTC_MODEL_VERSION,

@@ -15,22 +15,22 @@ import { path } from "@optique/run/valueparser"
 
 import {
   CTC_MODEL_FAMILIES,
-  WAV2VEC2_DEVICES,
-  WAV2VEC2_DTYPES,
-  WAV2VEC_ENGINES,
+  CTC_DEVICES,
+  CTC_DTYPES,
+  CTC_ENGINES,
 } from "@storyteller-platform/ghost-story/constants"
 
 import { languageParser, loggingParser } from "../common/parse.ts"
 
 export const emitParser = object({
   engine: withDefault(
-    option("--engine", choice(WAV2VEC_ENGINES, { metavar: "ENGINE" }), {
+    option("--engine", choice(CTC_ENGINES, { metavar: "ENGINE" }), {
       description: message`The wav2vec2 engine to generate emissions with`,
     }),
     "wav2vec-local",
   ),
   device: withDefault(
-    option("--device", "-d", choice(WAV2VEC2_DEVICES, { metavar: "DEVICE" }), {
+    option("--device", "-d", choice(CTC_DEVICES, { metavar: "DEVICE" }), {
       description: message`The device to run inference on`,
     }),
     "auto",
@@ -42,7 +42,7 @@ export const emitParser = object({
     "mms",
   ),
   dtype: optional(
-    option("--dtype", choice(WAV2VEC2_DTYPES, { metavar: "PRECISION" }), {
+    option("--dtype", choice(CTC_DTYPES, { metavar: "PRECISION" }), {
       description: message`The precision to run the model in on a GPU. CPU always runs fp32. Unset uses fp16 for mms and fp32 for the other families.`,
     }),
   ),

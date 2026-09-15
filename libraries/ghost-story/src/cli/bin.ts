@@ -17,12 +17,12 @@ import {
   CTC_MODEL_FAMILIES,
   CTC_MODEL_PACKAGES,
   RECOGNITION_ENGINES,
-  WAV2VEC2_DEVICES,
+  CTC_DEVICES,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
   ctcModelLanguages,
   isCtcModelFamily,
-  resolveCtcModel,
+  resolveCtcModelVariant,
 } from "../constants.ts"
 
 import {
@@ -30,7 +30,7 @@ import {
   getInstalledVariant,
   isValidModel,
   isValidVariant,
-  resolveWav2Vec2Device,
+  resolveCtcDevice,
 } from "./config.ts"
 import { installModelPackage } from "./ctc-install.ts"
 import {
@@ -48,7 +48,7 @@ const recognitionEngineSchema = z.enum(RECOGNITION_ENGINES)
 const whisperModelSchema = z.enum(WHISPER_MODELS)
 const buildVariantSchema = z.enum(BUILD_VARIANTS)
 // const wav2vec2ModelSchema = z.enum([WAV2VEC2_MODEL])
-const wav2vec2DeviceSchema = z.enum(WAV2VEC2_DEVICES)
+const wav2vec2DeviceSchema = z.enum(CTC_DEVICES)
 
 const INSTALL_TARGETS = ["binary", "model", "vad", "ctc-model", "all"] as const
 const installTargetSchema = z.enum(INSTALL_TARGETS)
@@ -191,8 +191,8 @@ Usage:
           }
           process.exit(1)
         }
-        const device = resolveWav2Vec2Device(options.device, null)
-        const variant = resolveCtcModel(family, options.language, device)
+        const device = resolveCtcDevice(options.device, null)
+        const variant = resolveCtcModelVariant(family, options.language, device)
         await installModelPackage(CTC_MODEL_PACKAGES[variant], {
           force,
           printOutput: true,
@@ -445,7 +445,7 @@ const serverCommand = defineCommand({
 //     const { startEmissionServer } = await import("../server/emissionServer.ts")
 
 //     const variant = getConfiguredVariant() ?? getInstalledVariant()
-//     const device = resolveWav2Vec2Device(options.device, variant)
+//     const device = resolveCtcDevice(options.device, variant)
 //     const dtype = options.dtype ?? resolveWav2Vec2Dtype(device)
 //     const apiKey = options.apiKey ?? process.env["GHOST_STORY_API_KEY"] ?? null
 

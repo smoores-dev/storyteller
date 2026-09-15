@@ -132,7 +132,7 @@ export const POST = withHasPermission<Params>("bookProcess")(async (
     config?: Partial<RunConfig>
   }
 
-  void enqueueBookAlign(bookUuid, restart, body.config)
+  await enqueueBookAlign(bookUuid, restart, body.config)
 
   return new Response(null, { status: 204 })
 })

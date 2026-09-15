@@ -4,8 +4,13 @@ import { join } from "node:path"
 
 import { InferenceSession, Tensor } from "onnxruntime-node"
 
-import { type Wav2Vec2DataType, type Wav2Vec2Device } from "../constants.ts"
+import {
+  type CtcDataType,
+  type CtcTokenizer,
+  type ResolvedCtcDevice,
+} from "../constants.ts"
 
+import { type CtcBackend } from "./CtcModel.ts"
 import { type Emissions } from "./Emissions.ts"
 import { MelFrontend, PRE_EMPHASIS } from "./melFrontend.ts"
 
@@ -23,36 +28,7 @@ interface ConvCtcConfig {
   samplesPerFrame: number
   blank: number
   classes: number
-  tokenizer?: "sentencepiece" | null
   frameOffsetSeconds?: number
-}
-
-export interface ConvCtcModel {
-  vocab: Map<string, number>
-  dtype: Wav2Vec2DataType
-  samplesPerFrame: number
-  minSamples: number
-  blankId: number
-  frameOffsetSeconds: number
-  tokenizer: "sentencepiece" | null
-  compute: (chunks: Float32Array[]) => Promise<Emissions[]>
-  [Symbol.asyncDispose]: () => Promise<void>
-}
-
-export function onnxExecutionProviders(
-  device: Wav2Vec2Device,
-): InferenceSession.ExecutionProviderConfig[] {
-  switch (device) {
-    case "cuda":
-      return ["cuda"]
-    case "webgpu":
-      return ["webgpu"]
-    case "cpu":
-    case "auto":
-      return ["cpu"]
-    case "mlx":
-      throw new Error("The mlx device does not run ONNX models")
-  }
 }
 
 async function readVocab(
@@ -114,18 +90,24 @@ function stack(rows: Float32Array[]): Float32Array {
   return stacked
 }
 
+/**
+ * The QuartzNet and Citrinet pipeline: mel features in, log probabilities out
+ * of one ONNX graph. The two differ in their vocabularies, QuartzNet emits
+ * characters with a space class that folds into the blank, Citrinet emits
+ * sentencepiece ids, and everything else comes from the package's config.
+ */
 export async function loadConvCtcOnnxModel(
   packageDir: string,
-  device: Wav2Vec2Device,
-  dtype: Wav2Vec2DataType,
-): Promise<ConvCtcModel> {
+  tokenizer: CtcTokenizer,
+  device: Exclude<ResolvedCtcDevice, "mlx">,
+  dtype: CtcDataType,
+): Promise<CtcBackend> {
   const config = JSON.parse(
     await readFile(join(packageDir, "config.json"), "utf8"),
   ) as ConvCtcConfig
-  const tokenizer = config.tokenizer ?? null
   const vocab = await readVocab(
     join(packageDir, "vocab.txt"),
-    tokenizer === null,
+    tokenizer === "characters",
   )
   const frontend = new MelFrontend({
     sampleRate: config.sampleRate,
@@ -136,7 +118,7 @@ export async function loadConvCtcOnnxModel(
   const useHalfPrecision = dtype === "fp16" && existsSync(halfPrecisionFile)
   const session = await InferenceSession.create(
     useHalfPrecision ? halfPrecisionFile : join(packageDir, CONV_CTC_ONNX_FILE),
-    { executionProviders: onnxExecutionProviders(device) },
+    { executionProviders: [device] },
   )
   const [firstInput, lengthInput] = session.inputNames
   const [outputName] = session.outputNames
@@ -148,7 +130,7 @@ export async function loadConvCtcOnnxModel(
   // Packages exported with the front end in the graph take the prepared
   // signal, older ones take features from the TypeScript front end.
   const graphHasFrontend = featuresInput === SIGNAL_INPUT
-  const space = tokenizer === null ? vocab.get("|") : undefined
+  const space = tokenizer === "characters" ? vocab.get("|") : undefined
 
   function feedsFor(chunks: Float32Array[]): Record<string, Tensor> {
     if (graphHasFrontend) {
@@ -229,7 +211,6 @@ export async function loadConvCtcOnnxModel(
     minSamples: frontend.minSamples,
     blankId: config.blank,
     frameOffsetSeconds: config.frameOffsetSeconds ?? 0,
-    tokenizer,
     compute,
     [Symbol.asyncDispose]: async () => {
       await session.release()

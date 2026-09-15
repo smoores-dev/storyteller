@@ -10,11 +10,11 @@ import {
   BUILD_VARIANTS,
   type BuildVariant,
   type Platform,
-  type ResolvedWav2Vec2Device,
+  type ResolvedCtcDevice,
   SILERO_VAD_VERSION,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
-  type Wav2Vec2Device,
+  type CtcDevice,
   type WhisperModel,
 } from "../constants.ts"
 import { getAppDataDir } from "../utilities/FileSystem.ts"
@@ -361,10 +361,10 @@ export function resolveVariant(requestedVariant?: BuildVariant): BuildVariant {
   return applyLegacyCpuFallback(detectPlatform())
 }
 
-export function resolveWav2Vec2Device(
-  requested: Wav2Vec2Device | null | undefined,
+export function resolveCtcDevice(
+  requested: CtcDevice | null | undefined,
   variant: string | null | undefined,
-): ResolvedWav2Vec2Device {
+): ResolvedCtcDevice {
   const webgpuAvailable = !(
     process.platform === "linux" && process.arch === "arm64"
   )

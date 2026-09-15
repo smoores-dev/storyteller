@@ -16,9 +16,9 @@ import { scratchPath } from "@storyteller-platform/fs"
 import {
   createTiming,
   formatSingleReport,
-  resolveWav2Vec2Device,
+  resolveCtcDevice,
 } from "@storyteller-platform/ghost-story"
-import { isCtcModel } from "@storyteller-platform/ghost-story/constants"
+import { isCtcModelVariant } from "@storyteller-platform/ghost-story/constants"
 
 import { getExtractedCover } from "@/assets/covers"
 import {
@@ -279,13 +279,14 @@ export default async function processBook({
 
         if (settings.aligner === "ctc") {
           logger.info("Generating emissions...")
-          const device = resolveWav2Vec2Device(
+          const device = resolveCtcDevice(
             settings.ctcDevice,
             env.STORYTELLER_WHISPER_VARIANT,
           )
           const family = settings.ctcModel ?? "mms"
           const model =
-            family === "mms" || isCtcModel(`${family}_${locale.language}`)
+            family === "mms" ||
+            isCtcModelVariant(`${family}_${locale.language}`)
               ? family
               : "mms"
           if (model !== family) {

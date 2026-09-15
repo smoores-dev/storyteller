@@ -14,23 +14,23 @@ import { type Logger } from "pino"
 
 import {
   type EmissionOptions,
+  type LoadedCtcModel,
   type TimingAggregator,
   audioSourceFromFile,
   createAggregator,
+  createTiming,
   emit as emitFile,
   formatSingleReport,
+  loadCtcModel,
   readAudioAsFloat32,
-  resolveWav2Vec2Device,
+  resolveCtcRun,
 } from "@storyteller-platform/ghost-story"
 import {
-  type CtcModel,
+  type CtcDataType,
+  type CtcDevice,
+  type CtcEngine,
   type CtcModelFamily,
-  type Wav2Vec2DataType,
-  type Wav2Vec2Device,
-  type Wav2VecEngine,
-  ctcChunkSeconds,
-  resolveCtcDtype,
-  resolveCtcModel,
+  type CtcModelVariant,
 } from "@storyteller-platform/ghost-story/constants"
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -47,10 +47,10 @@ const DECODE_LOOKAHEAD = 3
 export interface EmitOptions {
   onProgress?: ((progress: number) => void) | null | undefined
   signal?: AbortSignal | null | undefined
-  engine?: Wav2VecEngine | null | undefined
-  device?: Wav2Vec2Device | null | undefined
+  engine?: CtcEngine | null | undefined
+  device?: CtcDevice | null | undefined
   model?: CtcModelFamily | null | undefined
-  dtype?: Wav2Vec2DataType | null | undefined
+  dtype?: CtcDataType | null | undefined
   batchSize?: number | null | undefined
   language?: Intl.Locale | null | undefined
   // serverUrl?: string | null | undefined
@@ -59,9 +59,9 @@ export interface EmitOptions {
 }
 
 type Identity = {
-  engine: Wav2VecEngine
-  model: CtcModel
-  dtype: Wav2Vec2DataType
+  engine: CtcEngine
+  model: CtcModelVariant
+  dtype: CtcDataType
   chunkSeconds: number
   track: TrackSource | null
 }
@@ -101,15 +101,14 @@ export async function emit(
   await pruneStaleOutputs(output, filenames)
 
   const engine = options.engine ?? "wav2vec-local"
-  const device = resolveWav2Vec2Device(
-    options.device,
-    process.env["STORYTELLER_WHISPER_VARIANT"],
-  )
-  const family = options.model ?? "mms"
-  const language = options.language?.language ?? null
-  const dtype = resolveCtcDtype(family, device, options.dtype)
-  const model = resolveCtcModel(family, language, device, dtype)
-  const chunkSeconds = ctcChunkSeconds(family)
+  const run = resolveCtcRun({
+    device: options.device,
+    model: options.model,
+    language: options.language?.language ?? null,
+    dtype: options.dtype,
+    batchSize: options.batchSize,
+    buildVariant: process.env["STORYTELLER_WHISPER_VARIANT"],
+  })
   // const serverUrl = options.serverUrl ?? ""
   //
   // if (engine === "wav2vec-server" && !serverUrl) {
@@ -126,7 +125,7 @@ export async function emit(
 
   const planned: PlannedTrack[] = []
   for (const filename of filenames) {
-    if (aborted()) throw new Error("Aborted")
+    signal.throwIfAborted()
 
     const filepath = join(input, filename)
     const emissionName = basename(filename, extname(filename))
@@ -134,9 +133,9 @@ export async function emit(
     const identityFilepath = join(output, `${emissionName}.identity`)
     const identity = {
       engine,
-      model,
-      dtype,
-      chunkSeconds,
+      model: run.variant,
+      dtype: run.dtype,
+      chunkSeconds: run.chunkSeconds,
       track: await readTrackSource(filepath),
     }
 
@@ -192,108 +191,106 @@ export async function emit(
     return samples
   }
 
-  for (const [i, track] of enumerate(planned)) {
-    if (aborted()) throw new Error("Aborted")
+  // The model loads on the first track that needs it, so a run whose
+  // emissions are all cached never pays for it, and stays loaded for the rest.
+  let loaded: LoadedCtcModel | null = null
 
-    options.onProgress?.(i / planned.length)
+  try {
+    for (const [i, track] of enumerate(planned)) {
+      signal.throwIfAborted()
 
-    if (track.status === "cached") {
-      options.logger?.info(`Found existing emissions for ${track.filepath}`)
-      options.onProgress?.((i + 1) / planned.length)
-      continue
-    }
+      options.onProgress?.(i / planned.length)
 
-    if (track.status === "stale") {
-      options.logger?.warn(
-        `Existing emissions for ${track.filepath} came from a different engine, model, precision, chunk length or audio track, regenerating`,
-      )
-    }
-
-    if (aborted()) throw new Error("Aborted")
-
-    const samples = decode(i)
-    let ahead = 0
-
-    // try and look ahead a bit
-    // gives cpu something to do while gpu is busy
-    for (
-      let j = i + 1;
-      j < planned.length && ahead < DECODE_LOOKAHEAD && !aborted();
-      j++
-    ) {
-      if (decode(j)) {
-        ahead++
+      if (track.status === "cached") {
+        options.logger?.info(`Found existing emissions for ${track.filepath}`)
+        options.onProgress?.((i + 1) / planned.length)
+        continue
       }
+
+      if (track.status === "stale") {
+        options.logger?.warn(
+          `Existing emissions for ${track.filepath} came from a different engine, model, precision, chunk length or audio track, regenerating`,
+        )
+      }
+
+      signal.throwIfAborted()
+
+      const samples = decode(i)
+      let ahead = 0
+
+      // try and look ahead a bit
+      // gives cpu something to do while gpu is busy
+      for (
+        let j = i + 1;
+        j < planned.length && ahead < DECODE_LOOKAHEAD && !aborted();
+        j++
+      ) {
+        if (decode(j)) {
+          ahead++
+        }
+      }
+
+      decodes.delete(i)
+
+      // eslint-disable-next-line no-inner-declarations
+      function onFileProgress(progress: number) {
+        const updatedProgress = (i + progress) / planned.length
+        options.logger?.info(`Progress: ${Math.floor(updatedProgress * 100)}%`)
+        options.onProgress?.(updatedProgress)
+      }
+
+      if (loaded === null) {
+        const loadTiming = createTiming()
+        loaded = await loadCtcModel(run, { timing: loadTiming, signal })
+        options.logger?.info(
+          formatSingleReport(
+            loadTiming.summary(),
+            `Model load for ${run.variant} on ${run.device}`,
+          ),
+        )
+      }
+
+      const emissionOptions: EmissionOptions = {
+        signal,
+        engine,
+        options: {
+          loaded,
+          ...(samples && { samples: () => samples }),
+          onProgress: onFileProgress,
+        },
+      }
+
+      const result = await emitFile(track.filepath, emissionOptions)
+
+      options.logger?.info(
+        formatSingleReport(
+          result.timing,
+          `Transcription Timing Report for ${track.filepath}`,
+        ),
+      )
+      timing.add(result.timing)
+
+      const tmpFilepath = `${track.emissionFilepath}.tmp`
+      try {
+        await writeEmissionsFile(tmpFilepath, result, { signal })
+        await rm(track.identityFilepath, { force: true })
+        await rename(tmpFilepath, track.emissionFilepath)
+        await writeFile(
+          track.identityFilepath,
+          JSON.stringify(track.identity),
+          {
+            encoding: "utf-8",
+          },
+        )
+      } catch (err) {
+        await rm(tmpFilepath, { force: true })
+        throw err
+      }
+
+      options.onProgress?.((i + 1) / planned.length)
     }
-
-    decodes.delete(i)
-
-    // eslint-disable-next-line no-inner-declarations
-    function onFileProgress(progress: number) {
-      const updatedProgress = (i + progress) / planned.length
-      options.logger?.info(`Progress: ${Math.floor(updatedProgress * 100)}%`)
-      options.onProgress?.(updatedProgress)
-    }
-
-    const emissionOptions: EmissionOptions = {
-      signal,
-      engine,
-      options: {
-        device,
-        model: family,
-        dtype,
-        batchSize: options.batchSize ?? null,
-        language,
-        ...(samples && { samples: () => samples }),
-        onProgress: onFileProgress,
-      },
-    }
-    // const emissionOptions: EmissionOptions =
-    //   engine === "wav2vec-server"
-    //     ? {
-    //         signal,
-    //         engine,
-    //         options: {
-    //           baseURL: serverUrl,
-    //           ...(options.serverApiKey && { apiKey: options.serverApiKey }),
-    //           onProgress: onFileProgress,
-    //         },
-    //       }
-    //     : {
-    //         signal,
-    //         engine,
-    //         options: {
-    //           model: WAV2VEC2_MODEL,
-    //           ...(options.device && { device: options.device }),
-    //           ...(options.dtype && { dtype: options.dtype }),
-    //           onProgress: onFileProgress,
-    //         },
-    //       }
-
-    const result = await emitFile(track.filepath, emissionOptions)
-
-    options.logger?.info(
-      formatSingleReport(
-        result.timing,
-        `Transcription Timing Report for ${track.filepath}`,
-      ),
-    )
-    timing.add(result.timing)
-
-    const tmpFilepath = `${track.emissionFilepath}.tmp`
-    try {
-      await writeEmissionsFile(tmpFilepath, result, { signal })
-      await rm(track.identityFilepath, { force: true })
-      await rename(tmpFilepath, track.emissionFilepath)
-      await writeFile(track.identityFilepath, JSON.stringify(track.identity), {
-        encoding: "utf-8",
-      })
-    } catch (err) {
-      await rm(tmpFilepath, { force: true })
-      throw err
-    }
-
-    options.onProgress?.((i + 1) / planned.length)
+  } finally {
+    await loaded?.[Symbol.asyncDispose]()
   }
 
   return timing

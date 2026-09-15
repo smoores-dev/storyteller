@@ -1,9 +1,9 @@
 import { type AudioFormat } from "../audio/AudioFormat.ts"
+import { type CtcOptions } from "../emission/CtcEmission.ts"
 import {
   type EmissionTokenizer,
   type Emissions,
 } from "../emission/Emissions.ts"
-import { type Wav2Vec2Options } from "../emission/Wav2Vec2Emission.ts"
 // import { type Wav2Vec2ServerOptions } from "../emission/Wav2Vec2ServerEmission.ts"
 import { extendDeep } from "../utilities/ObjectUtilities.ts"
 import { type TimingSummary, createTiming } from "../utilities/Timing.ts"
@@ -43,7 +43,7 @@ export async function emit(
   switch (opts.engine) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     case "wav2vec-local": {
-      const Wav2Vec2Emission = await import("../emission/Wav2Vec2Emission.ts")
+      const Wav2Vec2Emission = await import("../emission/CtcEmission.ts")
 
       const result = await Wav2Vec2Emission.emit(
         source,
@@ -89,7 +89,7 @@ interface BaseEmissionOptions {
 
 export type EmissionOptions = BaseEmissionOptions & {
   engine: "wav2vec-local"
-  options: Wav2Vec2Options
+  options: CtcOptions
 }
 // | (BaseEmissionOptions & {
 //     engine: "wav2vec-server"

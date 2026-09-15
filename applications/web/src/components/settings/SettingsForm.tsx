@@ -1153,11 +1153,15 @@ export function SettingsForm({
     aligner: settings.aligner ?? "whisper",
     ctcEngine: settings.ctcEngine ?? "wav2vec-local",
     alignmentGranularity: settings.alignmentGranularity ?? "sentence",
-    alignmentGapSeconds: settings.alignmentGapSeconds ?? DEFAULT_GAP_SECONDS,
+    alignmentGapSeconds:
+      settings.alignmentGapSeconds ?? SETTINGS_DEFAULTS.alignmentGapSeconds,
     alignmentAudioChapterSeconds:
-      settings.alignmentAudioChapterSeconds ?? DEFAULT_AUDIO_CHAPTER_SECONDS,
-    alignmentDropUnread: settings.alignmentDropUnread ?? DEFAULT_DROP_UNREAD,
-    alignmentAutoExclude: settings.alignmentAutoExclude ?? DEFAULT_AUTO_EXCLUDE,
+      settings.alignmentAudioChapterSeconds ??
+      SETTINGS_DEFAULTS.alignmentAudioChapterSeconds,
+    alignmentDropUnread:
+      settings.alignmentDropUnread ?? SETTINGS_DEFAULTS.alignmentDropUnread,
+    alignmentAutoExclude:
+      settings.alignmentAutoExclude ?? SETTINGS_DEFAULTS.alignmentAutoExclude,
     ctcDevice: settings.ctcDevice ?? null,
     ctcModel:
       settings.ctcModel && isCtcModelFamily(settings.ctcModel)

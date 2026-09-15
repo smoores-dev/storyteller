@@ -8,8 +8,8 @@ import { toast } from "sonner"
 import {
   ALIGNERS,
   CTC_MODEL_FAMILIES,
-  WAV2VEC2_DEVICES,
-  WAV2VEC2_DTYPES,
+  CTC_DEVICES,
+  CTC_DTYPES,
   ctcModelLanguages,
 } from "@storyteller-platform/ghost-story/constants"
 
@@ -879,7 +879,7 @@ function Wav2VecLocalSettings() {
   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   const locale = useLocale()
 
-  const deviceOptions = WAV2VEC2_DEVICES.map((value) => ({
+  const deviceOptions = CTC_DEVICES.map((value) => ({
     value,
     label: t(`ctcDevices.${value}`),
   }))
@@ -889,9 +889,9 @@ function Wav2VecLocalSettings() {
     label: t(`ctcModels.${value}`),
   }))
 
-  const dtypeOptions = ["auto", ...WAV2VEC2_DTYPES].map((value) => ({
+  const dtypeOptions = ["auto", ...CTC_DTYPES].map((value) => ({
     value,
-    label: t(`ctcDtypes.${value as "auto" | (typeof WAV2VEC2_DTYPES)[number]}`),
+    label: t(`ctcDtypes.${value as "auto" | (typeof CTC_DTYPES)[number]}`),
   }))
 
   const languageNames = new Intl.DisplayNames([locale], { type: "language" })
