@@ -609,7 +609,7 @@ export async function findCtcBoundaries(
     excludedRanges,
     minSlope: 2,
     maxSlope: 15,
-    inlierTolerance: 2500,
+    inlierTolerance: query.length > 15000 ? 5000 : 2500,
   })
 
   if (!result) return null

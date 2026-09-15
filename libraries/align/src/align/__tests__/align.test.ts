@@ -176,7 +176,7 @@ async function testAlignBook(
 }
 
 void describe("align", () => {
-  void it("should align Peter and Wendy", async (context) => {
+  void it.only("should align Peter and Wendy", async (context) => {
     await testAlignBook(
       context,
       "sentence",

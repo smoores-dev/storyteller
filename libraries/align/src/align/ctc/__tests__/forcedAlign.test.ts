@@ -1,6 +1,8 @@
 import assert from "node:assert"
 import { describe, it } from "node:test"
 
+import { type Emissions } from "@storyteller-platform/ghost-story"
+
 import { ctcViterbiAlign } from "../forcedAlign.ts"
 
 /**
@@ -22,18 +24,16 @@ function buildEmissionsWithBlanks(
   blankId: number,
   highScore = 0,
   lowScore = -10,
-): number[][] {
-  const emissions: number[][] = []
+): Emissions {
+  const values = new Float32Array(numFrames * vocabSize).fill(lowScore)
   for (let t = 0; t < numFrames; t++) {
-    const row = new Array<number>(vocabSize).fill(lowScore)
-    row[blankId] = highScore
-    emissions.push(row)
+    values[t * vocabSize + blankId] = highScore
   }
   for (const { frame, token } of forced) {
-    emissions[frame]![token] = highScore
-    emissions[frame]![blankId] = lowScore
+    values[frame * vocabSize + token] = highScore
+    values[frame * vocabSize + blankId] = lowScore
   }
-  return emissions
+  return { values, frames: numFrames, classes: vocabSize }
 }
 
 void describe("ctcViterbiAlign", () => {
@@ -246,7 +246,7 @@ void describe("ctcViterbiAlign", () => {
 
   void it("returns empty array for empty emissions", () => {
     const result = ctcViterbiAlign(
-      [],
+      { values: new Float32Array(0), frames: 0, classes: 6 },
       [STAR, 1, 2, 3, STAR],
       BLANK,
       STAR,

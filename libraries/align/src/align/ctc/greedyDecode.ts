@@ -1,10 +1,10 @@
 import { type EmissionsReader } from "../../emit/fs.ts"
 
-export function argmax(vector: number[]) {
+export function argmax(values: Float32Array, offset: number, length: number) {
   let best = 0
-  for (let i = 1; i < vector.length; i++) {
+  for (let i = 1; i < length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    if (vector[i]! > vector[best]!) best = i
+    if (values[offset + i]! > values[offset + best]!) best = i
   }
 
   return best
@@ -29,18 +29,24 @@ export async function ctcGreedyDecode(
 
   let previous = -1
   let t = 0
-  for await (const row of emissionsReader.frames()) {
-    const best = argmax(row)
+  for await (const {
+    values,
+    frames: count,
+    classes,
+  } of emissionsReader.blocks()) {
+    for (let f = 0; f < count; f++) {
+      const best = argmax(values, f * classes, classes)
 
-    if (best !== previous) {
-      const char = charByToken.get(best)
-      if (char !== undefined) {
-        chars.push(char)
-        frames.push(t)
+      if (best !== previous) {
+        const char = charByToken.get(best)
+        if (char !== undefined) {
+          chars.push(char)
+          frames.push(t)
+        }
       }
+      previous = best
+      t++
     }
-    previous = best
-    t++
   }
 
   return { text: chars.join(""), frames }

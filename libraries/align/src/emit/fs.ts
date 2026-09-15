@@ -52,12 +52,6 @@ export async function readEmissionsFileHead(path: string) {
   return await readEmissionsFile(path, 0, 0)
 }
 
-function toRows({ values, frames, classes }: Emissions): number[][] {
-  return Array.from({ length: frames }, (_, f) =>
-    Array.from(values.subarray(f * classes, (f + 1) * classes)),
-  )
-}
-
 async function packJsonEmissionsFile(path: string) {
   const directory = dirname(path)
   const filebase = basename(path, extname(path))
@@ -121,19 +115,16 @@ export class EmissionsReader {
     return reader
   }
 
-  private isMasked(frame: number): boolean {
+  private mask({ values, frames, classes }: Emissions, firstFrame: number) {
     for (const [start, end] of this.masks) {
-      if (frame < start) return false
-      if (frame < end) return true
+      const from = Math.max(start, firstFrame)
+      const to = Math.min(end, firstFrame + frames)
+      for (let frame = from; frame < to; frame++) {
+        const row = (frame - firstFrame) * classes
+        values.fill(MASKED_LOG_PROB, row, row + classes)
+        values[row + this.blankId] = 0
+      }
     }
-    return false
-  }
-
-  private maskRow(row: number[], frame: number): number[] {
-    if (!this.isMasked(frame)) return row
-    const masked = new Array<number>(row.length).fill(MASKED_LOG_PROB)
-    masked[this.blankId] = 0
-    return masked
   }
 
   private static async getFilepaths(fileOrDirectory: string) {
@@ -198,7 +189,7 @@ export class EmissionsReader {
     return reader
   }
 
-  async *frames() {
+  async *blocks() {
     let fileIndex = 0
     let chunkFrom = 0
     let frameIndex = 0
@@ -208,10 +199,8 @@ export class EmissionsReader {
       const [path, framesStart, framesEnd] = this.frameMap[fileIndex]!
       const chunkTo = Math.min(chunkFrom + 1000, framesEnd - framesStart)
       const { emissions } = await readEmissionsFile(path, chunkFrom, chunkTo)
-      let frame = framesStart + chunkFrom
-      for (const row of toRows(emissions)) {
-        yield this.maskRow(row, frame++)
-      }
+      this.mask(emissions, framesStart + chunkFrom)
+      yield emissions
 
       frameIndex += chunkTo - chunkFrom
       if (chunkTo < chunkFrom + 1000) {
@@ -223,13 +212,14 @@ export class EmissionsReader {
     }
   }
 
-  async readFrames(framesFrom: number, framesTo: number) {
+  async readFrames(framesFrom: number, framesTo: number): Promise<Emissions> {
     const startFile = this.frameMap.findIndex(([, , end]) => end > framesFrom)
-    if (startFile === -1) return []
+    if (startFile === -1)
+      return { values: new Float32Array(0), frames: 0, classes: 0 }
     let endFile = this.frameMap.findLastIndex(([, start]) => start < framesTo)
     if (endFile === -1) endFile = this.frameMap.length - 1
 
-    const frames: number[][] = []
+    const blocks: Emissions[] = []
     for (let i = startFile; i <= endFile; i++) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const [path, from, to] = this.frameMap[i]!
@@ -239,13 +229,18 @@ export class EmissionsReader {
         Math.max(framesFrom, from) - from,
         Math.min(to, framesTo) - from,
       )
-
-      let frame = Math.max(framesFrom, from)
-      for (const row of toRows(emissions)) {
-        frames.push(this.maskRow(row, frame++))
-      }
+      this.mask(emissions, Math.max(framesFrom, from))
+      blocks.push(emissions)
     }
 
-    return frames
+    const classes = blocks[0]?.classes ?? 0
+    const frames = blocks.reduce((acc, block) => acc + block.frames, 0)
+    const values = new Float32Array(frames * classes)
+    let offset = 0
+    for (const block of blocks) {
+      values.set(block.values, offset)
+      offset += block.values.length
+    }
+    return { values, frames, classes }
   }
 }
