@@ -62,8 +62,13 @@ function logAddExp(a: number, b: number): number {
 }
 
 /**
- * Pre-emphasis and reflect padding are the only parts of the mel front end
- * that stay outside the graph, one pass over the samples each.
+ * This is part 1 and 2 of an MFCC pass onto the incoming audio
+ * See https://haythamfayek.com/2016/04/21/speech-processing-for-machine-learning.html
+ *
+ * The rest of the steps are handled inside of the ONNX graph
+ * where the GPU can handle it. This makes the ONNX path much closer
+ * to the MLX path {@link libraries/mlx-audio/Sources/StorytellerMLXAudioCore/MelFrontend.swift}
+ *
  */
 function prepareSignal(samples: Float32Array, pad: number): Float32Array {
   const padded = new Float32Array(samples.length + 2 * pad)
