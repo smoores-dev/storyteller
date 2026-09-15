@@ -42,6 +42,8 @@ import {
 
 import { writeEmissionsFile } from "./fs.ts"
 
+const DECODE_LOOKAHEAD = 3
+
 export interface EmitOptions {
   onProgress?: ((progress: number) => void) | null | undefined
   signal?: AbortSignal | null | undefined
@@ -176,11 +178,16 @@ export async function emit(
 
   function decode(index: number) {
     const track = planned[index]
-    if (!track || track.status === "cached") return
+    if (!track || track.status === "cached") {
+      return
+    }
     const existing = decodes.get(index)
-    if (existing) return existing
+    if (existing) {
+      return existing
+    }
     const samples = readAudioAsFloat32(audioSourceFromFile(track.filepath))
     samples.catch(() => {})
+
     decodes.set(index, samples)
     return samples
   }
@@ -205,9 +212,20 @@ export async function emit(
     if (aborted()) throw new Error("Aborted")
 
     const samples = decode(i)
-    for (let j = i + 1; j < planned.length && !aborted(); j++) {
-      if (decode(j)) break
+    let ahead = 0
+
+    // try and look ahead a bit
+    // gives cpu something to do while gpu is busy
+    for (
+      let j = i + 1;
+      j < planned.length && ahead < DECODE_LOOKAHEAD && !aborted();
+      j++
+    ) {
+      if (decode(j)) {
+        ahead++
+      }
     }
+
     decodes.delete(i)
 
     // eslint-disable-next-line no-inner-declarations
