@@ -17,6 +17,7 @@ import {
   type Timing,
   createAggregator,
   createTiming,
+  formatDuration,
 } from "@storyteller-platform/ghost-story"
 import { type Mapping } from "@storyteller-platform/mapping"
 import { MediaType } from "@storyteller-platform/media-types"
@@ -483,7 +484,18 @@ export class Aligner {
     anchors: Match[],
     paddedChapterBoundaries: [number, number],
     unpaddedChapterBoundaries: [number, number],
-  ) {
+    timing: Timing,
+  ): Promise<{
+    score: number
+    sentenceRanges: SentenceRange[]
+    wordRanges: WordRange[][]
+    alignedEmissionsStart: number
+    alignedEmissionsEnd: number
+    firstFoundSentence: number
+    lastFoundSentence: number
+    viterbiCells: number
+    segments: number
+  }> {
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
     // TODO: We should probably compute these with the emissionTimings
     const SENTENCE_PAD = 25
@@ -499,19 +511,48 @@ export class Aligner {
       )
       .map((a) => ({ ...a, position: a.position - emissionsStart }))
 
-    const alignments = ctcForcedAlign(
-      slugifiedChapter,
-      await this.emissionsReader.readFrames(emissionsStart, emissionsEnd),
-      windowAnchors,
-      this.emissionsReader.vocab,
-      this.emissionsReader.blankId,
-      (labelOffset, alignments) =>
-        sentenceStarts.filter(
-          ([s, e]) =>
-            s >= labelOffset &&
-            e < labelOffset + alignments.length &&
-            detectDroppedLabels(alignments, s - labelOffset, e - labelOffset),
-        ),
+    const emissions = await timing.timeAsync("read emissions", () =>
+      this.emissionsReader.readFrames(emissionsStart, emissionsEnd),
+    )
+
+    const segmentOffsets = [
+      0,
+      ...windowAnchors.map((a) => a.offset),
+      slugifiedChapter.length,
+    ]
+    const segmentPositions = [
+      0,
+      ...windowAnchors.map((a) => a.position),
+      emissions.frames,
+    ]
+    let viterbiCells = 0
+    for (let i = 1; i < segmentOffsets.length; i++) {
+      viterbiCells +=
+        (segmentPositions[i]! - segmentPositions[i - 1]!) *
+        (2 * (segmentOffsets[i]! - segmentOffsets[i - 1]!) + 1)
+    }
+
+    const alignments = timing.time("viterbi", () =>
+      ctcForcedAlign(
+        slugifiedChapter,
+        emissions,
+        windowAnchors,
+        this.emissionsReader.vocab,
+        this.emissionsReader.blankId,
+        (labelOffset, alignments) => {
+          const dropped: [number, number][] = []
+          for (const [s, e] of sentenceStarts) {
+            if (
+              s >= labelOffset &&
+              e < labelOffset + alignments.length &&
+              detectDroppedLabels(alignments, s - labelOffset, e - labelOffset)
+            ) {
+              dropped.push([s, e])
+            }
+          }
+          return dropped
+        },
+      ),
     )
 
     const finiteScores = alignments.filter(({ score }) => score !== -Infinity)
@@ -532,26 +573,30 @@ export class Aligner {
       firstConfirmedSentence,
       firstConfirmedStartFrame,
       lastConfirmedEndFrame,
-    } = this.buildSentenceRanges(
-      alignments,
-      sentenceStarts,
-      sentenceIndexOffset,
-      emissionsStart,
-      SENTENCE_PAD,
-      chapterId,
-      paddedChapterBoundaries,
-      unpaddedChapterBoundaries,
+    } = timing.time("ranges", () =>
+      this.buildSentenceRanges(
+        alignments,
+        sentenceStarts,
+        sentenceIndexOffset,
+        emissionsStart,
+        SENTENCE_PAD,
+        chapterId,
+        paddedChapterBoundaries,
+        unpaddedChapterBoundaries,
+      ),
     )
 
-    const wordRanges = this.buildWordRanges(
-      alignments,
-      wordStarts,
-      sentenceIndexOffset,
-      emissionsStart,
-      WORD_PAD,
-      skippedSentences,
-      sentenceFrameSpans,
-      chapterId,
+    const wordRanges = timing.time("ranges", () =>
+      this.buildWordRanges(
+        alignments,
+        wordStarts,
+        sentenceIndexOffset,
+        emissionsStart,
+        WORD_PAD,
+        skippedSentences,
+        sentenceFrameSpans,
+        chapterId,
+      ),
     )
 
     if (
@@ -567,6 +612,8 @@ export class Aligner {
         alignedEmissionsEnd: emissionsStart,
         firstFoundSentence: sentenceIndexOffset,
         lastFoundSentence: sentenceIndexOffset,
+        viterbiCells,
+        segments: windowAnchors.length + 1,
       }
     }
 
@@ -578,6 +625,8 @@ export class Aligner {
       alignedEmissionsEnd: lastConfirmedEndFrame + emissionsStart,
       firstFoundSentence: sentenceIndexOffset + firstFoundSentence,
       lastFoundSentence: sentenceIndexOffset + lastFoundSentence,
+      viterbiCells,
+      segments: windowAnchors.length + 1,
     }
     /* eslint-enable @typescript-eslint/no-non-null-assertion */
   }
@@ -874,10 +923,8 @@ export class Aligner {
     anchors: Match[],
     paddedChapterBoundaries: [number, number],
     unpaddedChapterBoundaries: [number, number],
+    timing: Timing,
   ) {
-    const timing = createTiming()
-
-    timing.start("read contents")
     const manifest = await this.epub.getManifest()
     const chapter = manifest[chapterId]
     if (!chapter)
@@ -886,7 +933,6 @@ export class Aligner {
       )
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
-    timing.start("align sentences")
     const {
       score,
       sentenceRanges,
@@ -895,6 +941,8 @@ export class Aligner {
       alignedEmissionsEnd,
       firstFoundSentence,
       lastFoundSentence,
+      viterbiCells,
+      segments,
     } = await this.getSentenceRanges(
       chapterId,
       slugifiedChapter,
@@ -906,8 +954,8 @@ export class Aligner {
       anchors,
       paddedChapterBoundaries,
       unpaddedChapterBoundaries,
+      timing,
     )
-    timing.end("align sentences")
 
     const storytellerStylesheetUrl = relative(
       dirname(chapter.href),
@@ -947,7 +995,8 @@ export class Aligner {
     return {
       lastSentenceRange: sentenceRanges.at(-1) ?? null,
       alignedEmissionsEnd,
-      timing,
+      viterbiCells,
+      segments,
     }
   }
 
@@ -996,15 +1045,17 @@ export class Aligner {
         `Aligning epub item #${index} : ${basename(spineItem.href)}`,
       )
 
-      const results = await this.processSpineItem(
-        index,
-        spineItem,
-        manifest,
-        locale,
-      )
-
-      results.forEach((result) => this.timing.add(result.timing.summary()))
+      await this.processSpineItem(index, spineItem, manifest, locale)
     }
+
+    const stats = this.timing.getStats()
+    const byPhase = [...stats.phaseStats.entries()]
+      .sort((a, b) => b[1].totalMs - a[1].totalMs)
+      .map(([name, phase]) => `${name} ${formatDuration(phase.totalMs)}`)
+      .join(", ")
+    this.logger?.info(
+      `Aligned ${stats.count} chapters in ${formatDuration(stats.wallClockMs)}: ${byPhase}`,
+    )
   }
 
   private async processSpineItem(
@@ -1013,6 +1064,8 @@ export class Aligner {
     manifest: Record<string, ManifestItem>,
     locale: Intl.Locale,
   ) {
+    const timing = createTiming()
+
     const chapterId = spineItem.id
     if (manifest[chapterId]?.properties?.includes("nav")) {
       this.report.unalignedChapters.push({
@@ -1022,12 +1075,15 @@ export class Aligner {
       return []
     }
 
-    const chapterSentences = await this.getChapterSentences(chapterId)
+    const chapterSentences = await timing.timeAsync("sentences", () =>
+      this.getChapterSentences(chapterId),
+    )
 
     const slugifiedChapterSentences: string[] = []
     const chapterMappings: Mapping[] = []
     let slugifiedChapterLength = 0
 
+    timing.start("slugify")
     for (const chapterSentence of chapterSentences) {
       const { result, mapping } = await slugify(
         chapterSentence.text,
@@ -1038,6 +1094,7 @@ export class Aligner {
       slugifiedChapterLength += result.length
       chapterMappings.push(mapping)
     }
+    timing.end("slugify")
 
     if (chapterSentences.length === 0 || slugifiedChapterLength === 0) {
       this.logger?.info(`Chapter #${index} has no text; skipping`)
@@ -1061,10 +1118,12 @@ export class Aligner {
       return []
     }
 
-    const boundaries = await findCtcBoundaries(
-      slugifiedChapterSentences.join(""),
-      this.emissionsReader,
-      this.getMatchedBoundaries(),
+    const boundaries = await timing.timeAsync("search", () =>
+      findCtcBoundaries(
+        slugifiedChapterSentences.join(""),
+        this.emissionsReader,
+        this.getMatchedBoundaries(),
+      ),
     )
 
     const evidenceRange = boundaries?.evidenceRange
@@ -1098,8 +1157,9 @@ export class Aligner {
 
     const results: {
       lastSentenceRange: SentenceRange | null
-      timing: Timing
       alignedEmissionsEnd: number
+      viterbiCells: number
+      segments: number
     }[] = []
 
     const firstAlignedChapterIndex = this.alignedChapters.length
@@ -1133,10 +1193,12 @@ export class Aligner {
 
       const chunkString = chunkSentences.join("")
 
-      const boundaries = await findCtcBoundaries(
-        chunkString,
-        this.emissionsReader,
-        this.getMatchedBoundaries(),
+      const boundaries = await timing.timeAsync("search", () =>
+        findCtcBoundaries(
+          chunkString,
+          this.emissionsReader,
+          this.getMatchedBoundaries(),
+        ),
       )
 
       if (!boundaries) {
@@ -1237,12 +1299,37 @@ export class Aligner {
         boundaries.anchors,
         [chunkEvidenceHead, chunkEvidenceTail],
         [chunkMatchedHead, chunkMatchedTail],
+        timing,
       )
 
       results.push(result)
     }
 
     const chunkEntries = this.alignedChapters.slice(firstAlignedChapterIndex)
+
+    const elapsed = timing.getElapsedMs()
+    const emissionTimings = this.emissionsReader.timings[0]
+    const audioSeconds = emissionTimings
+      ? framesToSeconds(
+          chunkEntries.reduce((acc, e) => acc + e.endOffset - e.startOffset, 0),
+          emissionTimings,
+        )
+      : 0
+    const segments = results.reduce((acc, r) => acc + r.segments, 0)
+    const cells = results.reduce((acc, r) => acc + r.viterbiCells, 0)
+    const phases = timing
+      .summary()
+      .phases.map(({ name, duration }) =>
+        name === "viterbi"
+          ? `viterbi ${formatDuration(duration)} (${segments} segments, ${Math.round(cells / 1e6)}M cells)`
+          : `${name} ${formatDuration(duration)}`,
+      )
+      .join(", ")
+    this.logger?.info(
+      `Chapter #${index} aligned ${slugifiedChapterLength} chars to ${Math.round(audioSeconds / 60)} min of audio in ${formatDuration(elapsed)} (${Math.round(audioSeconds / (elapsed / 1000))}x realtime): ${phases}`,
+    )
+    this.timing.add(timing.summary())
+
     if (chunkEntries.length > 1) {
       const claimed = chunkEntries.filter((e) => e.sentenceRanges.length > 0)
       const offsetSources = claimed.length > 0 ? claimed : chunkEntries

@@ -7,6 +7,7 @@ export {
 } from "./api/Recognition.ts"
 export {
   type EmissionData,
+  type Emissions,
   type EmissionOptions,
   type EmissionResult,
   decodeEmissions,

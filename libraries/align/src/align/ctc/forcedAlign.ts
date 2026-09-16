@@ -1,5 +1,7 @@
 import { enumerate, range } from "itertools"
 
+import { type Emissions } from "@storyteller-platform/ghost-story"
+
 import { type Match } from "./search.ts"
 
 export interface TokenAlignment {
@@ -11,76 +13,86 @@ export interface TokenAlignment {
 
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 function buildStateGraph(labels: number[], starId: number, blankId: number) {
-  const tokens = [blankId].concat(labels.flatMap((l) => [l, blankId]))
-  const skipLegal = tokens.map(
-    (t, i) => i >= 2 && (t !== tokens[i - 2] || t === starId),
-  )
+  const tokens = new Int32Array(2 * labels.length + 1).fill(blankId)
+  for (const [i, label] of labels.entries()) tokens[2 * i + 1] = label
+
+  const skipLegal = new Uint8Array(tokens.length)
+  for (let s = 2; s < tokens.length; s++) {
+    skipLegal[s] = tokens[s] !== tokens[s - 2] || tokens[s] === starId ? 1 : 0
+  }
   return { tokens, skipLegal }
 }
 
 export function ctcViterbiAlign(
-  emissions: number[][],
+  { values, frames: numFrames, classes }: Emissions,
   labels: number[],
   blankId: number,
   starId: number,
   starScore: number,
 ) {
   if (!labels.length) return []
-
-  function emitScore(row: number[], token: number) {
-    return token === starId ? starScore : row[token]!
-  }
-
-  const { tokens, skipLegal } = buildStateGraph(labels, starId, blankId)
-
-  const numStates = tokens.length
-  const numFrames = emissions.length
   if (!numFrames) return []
 
+  const { tokens, skipLegal } = buildStateGraph(labels, starId, blankId)
+  const numStates = tokens.length
+
+  const starColumn = classes
+  const columns = classes + 1
+  const scores = new Float32Array(numFrames * columns)
+  for (let t = 0; t < numFrames; t++) {
+    scores.set(values.subarray(t * classes, (t + 1) * classes), t * columns)
+    scores[t * columns + starColumn] = starScore
+  }
+  const stateColumn = new Int32Array(numStates)
+  for (let s = 0; s < numStates; s++) {
+    stateColumn[s] = tokens[s] === starId ? starColumn : tokens[s]!
+  }
+
   let prevScores = new Float32Array(numStates).fill(-Infinity)
+  let currScores = new Float32Array(numStates)
   const backpointers = new Uint8Array(numFrames * numStates)
 
-  prevScores[0] = emissions[0]![blankId]!
-  prevScores[1] = emitScore(emissions[0]!, tokens[1]!)
+  prevScores[0] = scores[stateColumn[0]!]!
+  prevScores[1] = scores[stateColumn[1]!]!
   // We want leading and trailing stars to be optional,
   // so if the labels start with a star, we also preload
   // the next label into the first frame's scores
   if (labels[0] === starId) {
-    prevScores[2] = emissions[0]![blankId]!
-    prevScores[3] = emitScore(emissions[0]!, tokens[3]!)
+    prevScores[2] = scores[stateColumn[2]!]!
+    prevScores[3] = scores[stateColumn[3]!]!
   }
 
   for (let t = 1; t < numFrames; t++) {
-    const row = emissions[t]!
-    const currScores = new Float32Array(numStates).fill(-Infinity)
+    const row = t * columns
+    const backpointerRow = t * numStates
 
     for (let s = 0; s < numStates; s++) {
-      const token = tokens[s]!
-
+      // be extremely careful in this loop
+      // this path is EXTREMELY HOT and every nanosecond counts
+      // (literally! this going from 6->4ns per cell almost halved alignment times!)
+      // be careful to do as few allocations as possible
+      // easy trap: make have a single expression need to conditinally
+      // do x = y ? number : array[index]
+      // this is very expensive for obscure v8 reasons
+      // this is why we do this weird stateColumn thing below
       let best = prevScores[s]!
       let bestOp = 0
 
-      if (s > 0) {
-        const move = prevScores[s - 1]!
-        if (move > best) {
-          best = move
-          bestOp = 1
-        }
+      if (s > 0 && prevScores[s - 1]! > best) {
+        best = prevScores[s - 1]!
+        bestOp = 1
       }
 
-      if (skipLegal[s]) {
-        const move = prevScores[s - 2]!
-        if (move > best) {
-          best = move
-          bestOp = 2
-        }
+      if (skipLegal[s] && prevScores[s - 2]! > best) {
+        best = prevScores[s - 2]!
+        bestOp = 2
       }
 
-      currScores[s] = emitScore(row, token) + best
-      backpointers[t * numStates + s] = bestOp
+      currScores[s] = scores[row + stateColumn[s]!]! + best
+      backpointers[backpointerRow + s] = bestOp
     }
 
-    prevScores = currScores
+    ;[prevScores, currScores] = [currScores, prevScores]
   }
 
   const terminalCandidates = [
@@ -123,9 +135,7 @@ export function ctcViterbiAlign(
     const s = path[t]!
     if (firstFrames[s] === -1) firstFrames[s] = t
     lastFrames[s] = t
-    const row = emissions[t]!
-    const token = tokens[s]!
-    scoreSums[s]! += emitScore(row, token)
+    scoreSums[s]! += scores[t * columns + stateColumn[s]!]!
     frameCounts[s]!++
   }
 
@@ -216,7 +226,7 @@ function removeLabelRanges(
 type Segment = {
   labels: number[]
   labelsStart: number
-  emissions: number[][]
+  emissions: Emissions
   emissionsStart: number
 }
 
@@ -224,7 +234,7 @@ const STAR_SCORE = -3
 
 export function ctcForcedAlign(
   baseline: string,
-  emissions: number[][],
+  emissions: Emissions,
   anchors: Match[],
   vocab: Map<string, number>,
   blankId: number,
@@ -239,14 +249,23 @@ export function ctcForcedAlign(
   for (let i = 0; i < anchors.length + 1; i++) {
     const prevAnchor = anchors[i - 1]
     const nextAnchor = anchors[i]
+    const framesFrom = prevAnchor?.position ?? 0
+    const framesTo = nextAnchor?.position ?? emissions.frames
     segments.push({
       labels: baseline
         .slice(prevAnchor?.offset, nextAnchor?.offset)
         .split("")
         .map((c) => vocab.get(c) ?? star),
       labelsStart: prevAnchor?.offset ?? 0,
-      emissions: emissions.slice(prevAnchor?.position, nextAnchor?.position),
-      emissionsStart: prevAnchor?.position ?? 0,
+      emissions: {
+        values: emissions.values.subarray(
+          framesFrom * emissions.classes,
+          framesTo * emissions.classes,
+        ),
+        frames: framesTo - framesFrom,
+        classes: emissions.classes,
+      },
+      emissionsStart: framesFrom,
     })
   }
 

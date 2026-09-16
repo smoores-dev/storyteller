@@ -11,6 +11,12 @@ export {
   encodeEmissions,
 } from "../emission/encoding.ts"
 
+export interface Emissions {
+  values: Float32Array
+  frames: number
+  classes: number
+}
+
 export async function emit(
   input: AudioInput,
   options: EmissionOptions,
@@ -61,7 +67,7 @@ const defaultEmissionOptions: Partial<EmissionOptions> = {
 }
 
 export interface EmissionResult {
-  emissions: number[][]
+  emissions: Emissions
   numFrames: number
   vocab: Map<string, number>
   blankIndex: number

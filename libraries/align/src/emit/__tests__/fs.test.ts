@@ -49,26 +49,31 @@ describe("EmissionsReader", () => {
     const path = join(cwd(), "src", "emit", "__fixtures__")
     const reader = await EmissionsReader.from(path)
 
-    let i = 0
-    for await (const frame of reader.frames()) {
-      assert.deepEqual(frame, emissions[i++])
+    const rows: number[][] = []
+    for await (const { values, frames, classes } of reader.blocks()) {
+      for (let f = 0; f < frames; f++) {
+        rows.push(Array.from(values.subarray(f * classes, (f + 1) * classes)))
+      }
     }
-    assert.equal(i, emissions.length)
+    assert.deepEqual(rows, emissions)
   })
 
   it("should read chunks of frames", async () => {
     const path = join(cwd(), "src", "emit", "__fixtures__")
     const reader = await EmissionsReader.from(path)
 
-    const frames = await reader.readFrames(1, 2)
-    assert.deepEqual(frames, emissions.slice(1, 2))
+    const { values, frames, classes } = await reader.readFrames(1, 2)
+    assert.equal(frames, 1)
+    assert.equal(classes, 4)
+    assert.deepEqual(Array.from(values), emissions.slice(1, 2).flat())
   })
 
   it("should read chunks of frames across file boundaries", async () => {
     const path = join(cwd(), "src", "emit", "__fixtures__")
     const reader = await EmissionsReader.from(path)
 
-    const frames = await reader.readFrames(2, 6)
-    assert.deepEqual(frames, emissions.slice(2, 6))
+    const { values, frames } = await reader.readFrames(2, 6)
+    assert.equal(frames, 4)
+    assert.deepEqual(Array.from(values), emissions.slice(2, 6).flat())
   })
 })

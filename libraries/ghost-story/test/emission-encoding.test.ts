@@ -14,13 +14,13 @@ const blankId = 0
 const secondsPerChunk = 25
 const secondsPerFrame = 0.02
 const framesPerChunk = 125
-const emissions = [
-  [0, -1, -2, -3],
-  [-1, 0, -2, -3],
-  [-2, -1, 0, -3],
-  [-3, -2, -1, 0],
-  [0, -1, -2, -3],
-]
+const emissions = {
+  values: new Float32Array([
+    0, -1, -2, -3, -1, 0, -2, -3, -2, -1, 0, -3, -3, -2, -1, 0, 0, -1, -2, -3,
+  ]),
+  frames: 5,
+  classes: 4,
+}
 
 describe("encodeEmissions", () => {
   it("should round-trip", async () => {
@@ -31,7 +31,7 @@ describe("encodeEmissions", () => {
       secondsPerFrame,
       framesPerChunk,
       emissions,
-      numFrames: emissions.length,
+      numFrames: emissions.frames,
     })
     const encoded = new Uint8Array(head.length + body.length)
     encoded.set(head)
@@ -46,7 +46,7 @@ describe("encodeEmissions", () => {
     assert.equal(data.framesPerChunk, framesPerChunk)
     assert.equal(data.secondsPerChunk, secondsPerChunk)
     assert.equal(data.secondsPerFrame, secondsPerFrame)
-    assert.equal(data.numFrames, emissions.length)
+    assert.equal(data.numFrames, emissions.frames)
   })
 
   it("should pack data", () => {
@@ -57,7 +57,7 @@ describe("encodeEmissions", () => {
       secondsPerFrame,
       framesPerChunk,
       emissions,
-      numFrames: emissions.length,
+      numFrames: emissions.frames,
     })
 
     assert.equal(head.length, 80)
@@ -74,7 +74,7 @@ describe("decodeEmissions", () => {
       secondsPerFrame,
       framesPerChunk,
       emissions,
-      numFrames: emissions.length,
+      numFrames: emissions.frames,
     })
     const encoded = new Uint8Array(head.length + body.length)
     encoded.set(head)

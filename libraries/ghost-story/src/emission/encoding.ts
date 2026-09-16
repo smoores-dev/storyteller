@@ -24,19 +24,24 @@ const OFFSETS = {
 
 export function encodeEmissions(data: EmissionData): [Uint8Array, Uint8Array] {
   const vocabSize = data.vocab.size
-  for (let i = 0; i < data.emissions.length; i++) {
-    const e = data.emissions[i]
-    if (e?.length === vocabSize) continue
+  for (let i = 0; i < data.emissions.frames; i++) {
+    const e = data.emissions.values.subarray(
+      i * data.emissions.classes,
+      (i + 1) * data.emissions.classes,
+    )
+    if (e.length === vocabSize) continue
 
     throw new Error(
-      `Failed to encode emissions; vector at index ${i} had length ${e?.length}; expected ${vocabSize} from vocab size`,
+      `Failed to encode emissions; vector at index ${i} had length ${e.length}; expected ${vocabSize} from vocab size`,
     )
   }
 
-  const emissionsFloats = new Float16Array(data.emissions.length * vocabSize)
-  for (let i = 0; i < data.emissions.length; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const e = data.emissions[i]!
+  const emissionsFloats = new Float16Array(data.emissions.frames * vocabSize)
+  for (let i = 0; i < data.emissions.frames; i++) {
+    const e = data.emissions.values.subarray(
+      i * data.emissions.classes,
+      (i + 1) * data.emissions.classes,
+    )
 
     if (e.length !== vocabSize) {
       throw new Error(
@@ -81,7 +86,7 @@ export function encodeEmissions(data: EmissionData): [Uint8Array, Uint8Array] {
   view.setUint16(OFFSETS.version, VERSION, true)
   view.setUint16(OFFSETS.encoding, ENCODING, true)
   view.setUint32(OFFSETS.vocabSize, vocabSize, true)
-  view.setUint32(OFFSETS.numFrames, data.emissions.length, true)
+  view.setUint32(OFFSETS.numFrames, data.emissions.frames, true)
   view.setUint32(OFFSETS.blankIndex, data.blankIndex, true)
   view.setFloat64(OFFSETS.secondsPerChunk, data.secondsPerChunk, true)
   view.setUint32(OFFSETS.framesPerChunk, data.framesPerChunk, true)
@@ -168,20 +173,23 @@ export async function decodeEmissions(
     framesOffset + framesTo * vocabSize * 2,
   )
 
-  const framesView = new DataView(framesData.buffer)
-
-  const rowLength = vocabSize * 2
-  const frames: number[][] = []
-  for (let i = 0; i < framesData.length; i += rowLength) {
-    const frame: number[] = []
-    for (let j = 0; j < vocabSize; j++) {
-      frame.push(framesView.getFloat16(i + j * 2, true))
-    }
-    frames.push(frame)
+  const framesView = new DataView(
+    framesData.buffer,
+    framesData.byteOffset,
+    framesData.byteLength,
+  )
+  const count = Math.floor(framesData.byteLength / 2 / vocabSize) * vocabSize
+  const values = new Float32Array(count)
+  for (let i = 0; i < count; i++) {
+    values[i] = framesView.getFloat16(i * 2, true)
   }
 
   return {
-    emissions: frames,
+    emissions: {
+      values,
+      frames: values.length / vocabSize,
+      classes: vocabSize,
+    },
     blankIndex,
     secondsPerChunk,
     secondsPerFrame,

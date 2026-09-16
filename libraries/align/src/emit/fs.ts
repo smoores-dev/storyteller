@@ -3,6 +3,7 @@ import { basename, dirname, extname, join } from "node:path"
 
 import {
   type EmissionData,
+  type Emissions,
   decodeEmissions,
   encodeEmissions,
 } from "@storyteller-platform/ghost-story"
@@ -59,12 +60,19 @@ async function packJsonEmissionsFile(path: string) {
   const jsonData = await readFile(path, { encoding: "utf-8" })
   const parsed = JSON.parse(jsonData) as Omit<
     EmissionData,
-    "vocab" | "numFrames"
-  > & { vocab: Record<string, number> }
+    "vocab" | "numFrames" | "emissions"
+  > & { vocab: Record<string, number>; emissions: number[][] }
+  const rows = parsed.emissions
+  const classes = rows[0]?.length ?? 0
+  const values = new Float32Array(rows.length * classes)
+  rows.forEach((row, i) => {
+    values.set(row, i * classes)
+  })
   await writeEmissionsFile(emissionsName, {
     ...parsed,
     vocab: new Map(Object.entries(parsed.vocab)),
-    numFrames: parsed.emissions.length,
+    emissions: { values, frames: rows.length, classes },
+    numFrames: rows.length,
   })
   await rm(path)
   return emissionsName
@@ -137,7 +145,7 @@ export class EmissionsReader {
     return reader
   }
 
-  async *frames() {
+  async *blocks() {
     let fileIndex = 0
     let chunkFrom = 0
     let frameIndex = 0
@@ -146,14 +154,8 @@ export class EmissionsReader {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const [path, framesStart, framesEnd] = this.frameMap[fileIndex]!
       const chunkTo = Math.min(chunkFrom + 1000, framesEnd - framesStart)
-      const { emissions: chunk } = await readEmissionsFile(
-        path,
-        chunkFrom,
-        chunkTo,
-      )
-      for (const e of chunk) {
-        yield e
-      }
+      const { emissions } = await readEmissionsFile(path, chunkFrom, chunkTo)
+      yield emissions
 
       frameIndex += chunkTo - chunkFrom
       if (chunkTo < chunkFrom + 1000) {
@@ -165,13 +167,14 @@ export class EmissionsReader {
     }
   }
 
-  async readFrames(framesFrom: number, framesTo: number) {
+  async readFrames(framesFrom: number, framesTo: number): Promise<Emissions> {
     const startFile = this.frameMap.findIndex(([, , end]) => end > framesFrom)
-    if (startFile === -1) return []
+    if (startFile === -1)
+      return { values: new Float32Array(0), frames: 0, classes: 0 }
     let endFile = this.frameMap.findLastIndex(([, start]) => start < framesTo)
     if (endFile === -1) endFile = this.frameMap.length - 1
 
-    const frames: number[][] = []
+    const blocks: Emissions[] = []
     for (let i = startFile; i <= endFile; i++) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const [path, from, to] = this.frameMap[i]!
@@ -181,12 +184,17 @@ export class EmissionsReader {
         Math.max(framesFrom, from) - from,
         Math.min(to, framesTo) - from,
       )
-
-      for (const e of emissions) {
-        frames.push(e)
-      }
+      blocks.push(emissions)
     }
 
-    return frames
+    const classes = blocks[0]?.classes ?? 0
+    const frames = blocks.reduce((acc, block) => acc + block.frames, 0)
+    const values = new Float32Array(frames * classes)
+    let offset = 0
+    for (const block of blocks) {
+      values.set(block.values, offset)
+      offset += block.values.length
+    }
+    return { values, frames, classes }
   }
 }

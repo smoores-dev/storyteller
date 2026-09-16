@@ -17,6 +17,7 @@ import { ensureDir } from "fs-extra"
 
 import { type ModelInfo as MlxModelInfo } from "@storyteller-platform/mlx-audio"
 
+import type { Emissions } from "../api/Emission.ts"
 import { type AudioFormat } from "../audio/AudioFormat.ts"
 import {
   type AudioSource,
@@ -57,7 +58,7 @@ export interface Wav2Vec2Options {
   inputFormat?: AudioFormat
   printOutput?: boolean
   onStart?: () => void
-  onCheckpoint?: (emissions: number[][]) => void
+  onCheckpoint?: (emissions: Emissions) => void
   onProgress?: (progress: number) => void
 }
 
@@ -125,14 +126,7 @@ export async function emit(
   }
 
   opts.onStart?.()
-  const {
-    emissions,
-    vocab,
-    blankIndex,
-    framesPerChunk,
-    secondsPerChunk,
-    secondsPerFrame,
-  } = await timing.timeAsync("transcription", async () => {
+  return timing.timeAsync("transcription", async () => {
     await using modelInfo = await loadWav2Vec2Model(
       opts.device,
       opts.dtype,
@@ -174,7 +168,7 @@ export async function emit(
       jump *= strides[i]!
     }
 
-    const emissions: number[][] = []
+    const chunks: Emissions[] = []
     let framesPerChunk: null | number = null
     let secondsPerChunk: null | number = null
 
@@ -185,17 +179,15 @@ export async function emit(
       // a crash
       if (chunk.length < minChunkSamples) continue
 
-      const logits = await computeWav2Vec2Logits(modelInfo, chunk)
+      const emissions = await computeWav2Vec2Logits(modelInfo, chunk)
 
       if (signal?.aborted) {
         throw signal.reason
       }
 
-      const logProbs = logits.map((frame) => log_softmax(frame))
-      emissions.push(...logProbs)
-
-      framesPerChunk ??= logProbs.length
+      framesPerChunk ??= emissions.frames
       secondsPerChunk ??= chunk.length / SAMPLE_RATE
+      chunks.push(emissions)
 
       opts.onCheckpoint?.(emissions)
 
@@ -220,8 +212,19 @@ export async function emit(
       throw new Error("Failed to process empty audio source")
     }
 
+    const classes = chunks[0]?.classes ?? 0
+    const totalFrames = chunks.reduce((acc, c) => acc + c.frames, 0)
+    const values = new Float32Array(totalFrames * classes)
+    let written = 0
+    for (const c of chunks) {
+      values.set(c.values.subarray(0, c.frames * classes), written)
+      written += c.frames * classes
+    }
+    const emissions: Emissions = { values, frames: totalFrames, classes }
+
     return {
       emissions,
+      numFrames: totalFrames,
       vocab,
       blankIndex,
       secondsPerChunk,
@@ -229,16 +232,6 @@ export async function emit(
       secondsPerFrame,
     }
   })
-
-  return {
-    emissions,
-    numFrames: emissions.length,
-    vocab,
-    blankIndex,
-    secondsPerChunk,
-    framesPerChunk,
-    secondsPerFrame,
-  }
 }
 
 /**
@@ -336,10 +329,17 @@ async function loadWav2Vec2Model(
 async function computeWav2Vec2Logits(
   modelInfo: HfModelInfo | MlxModelInfo,
   samples: Float32Array,
-): Promise<number[][]> {
+): Promise<Emissions> {
   if (!("tokenizer" in modelInfo)) {
     const { compute } = await import("@storyteller-platform/mlx-audio")
-    return compute(modelInfo, samples)
+    const rows = await compute(modelInfo, samples)
+    const classes = rows[0]?.length ?? 0
+
+    const values = new Float32Array(rows.length * classes)
+    rows.forEach((row, frame) => {
+      values.set(log_softmax(row), frame * classes)
+    })
+    return { values, frames: rows.length, classes: classes }
   }
 
   const { model, featureExtractor } = modelInfo
@@ -347,14 +347,18 @@ async function computeWav2Vec2Logits(
   const inputs = (await featureExtractor(samples)) as unknown
 
   const output = (await model.forward(inputs)) as { logits: Tensor }
+  const [rows] = output.logits.tolist() as [number[][]]
 
-  const logits = output.logits.tolist() as [number[][]]
-
-  return logits[0]
+  const classes = rows[0]?.length ?? 0
+  const values = new Float32Array(rows.length * classes)
+  rows.forEach((row, frame) => {
+    values.set(log_softmax(row), frame * classes)
+  })
+  return { values, frames: rows.length, classes }
 }
 
 export interface Wav2Vec2Result {
-  emissions: number[][]
+  emissions: Emissions
   numFrames: number
   vocab: Map<string, number>
   blankIndex: number
