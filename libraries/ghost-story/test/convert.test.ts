@@ -5,13 +5,13 @@ import { rm, stat } from "node:fs/promises"
 import { Server } from "node:http"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { after, before, describe, it } from "node:test"
 
 import { Converter } from "ffmpeg-stream"
+import { afterAll, beforeAll, describe, it } from "vitest"
 
 let basicServer: Server | undefined
 
-before(() => {
+beforeAll(() => {
   console.log("Starting server")
   basicServer = new Server((request, response) => {
     const outputPath = request.url?.split("?output=")[1]
@@ -34,8 +34,8 @@ before(() => {
   console.log("Server started")
 })
 
-void describe("testing i understand ffmpeg-stream", () => {
-  void it("should convert a file to wav", async () => {
+describe("testing i understand ffmpeg-stream", () => {
+  it("should convert a file to wav", async () => {
     const inputPath = new URL(
       "./test-data/poemsbywomen_01__64kb.mp3",
       import.meta.url,
@@ -57,7 +57,7 @@ void describe("testing i understand ffmpeg-stream", () => {
     await rm(outputPath)
   })
 
-  void it.only("should be able to stream a file to the server", async () => {
+  it("should be able to stream a file to the server", async () => {
     const inputPath = new URL(
       "./test-data/poemsbywomen_01__64kb.mp3",
       import.meta.url,
@@ -100,7 +100,7 @@ void describe("testing i understand ffmpeg-stream", () => {
   })
 
   // this seems a lot slower
-  void it.only("should be able to stream a conversion stream to a server", async () => {
+  it("should be able to stream a conversion stream to a server", async () => {
     const inputPath = new URL(
       "./test-data/poemsbywomen_01__64kb.mp3",
       import.meta.url,
@@ -139,7 +139,7 @@ void describe("testing i understand ffmpeg-stream", () => {
   })
 })
 
-after(() => {
+afterAll(() => {
   if (basicServer) {
     basicServer.close()
   }

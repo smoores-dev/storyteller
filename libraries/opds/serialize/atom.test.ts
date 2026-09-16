@@ -1,7 +1,7 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
 
-import { XMLValidator } from "fast-xml-parser"
+import { SyntaxValidator } from "fast-xml-validator"
+import { describe, it } from "vitest"
 
 import { Feed } from "../index.ts"
 import rawCatalog from "../test-catalog.json.ts"
@@ -14,17 +14,17 @@ const parse = (json: unknown): Feed => {
   return result.value
 }
 
-void describe("toAtomXml", () => {
-  void it("renders the catalog as well-formed Atom", () => {
+describe("toAtomXml", () => {
+  it("renders the catalog as well-formed Atom", () => {
     const xml = toAtomXml(parse(rawCatalog))
 
-    assert.strictEqual(XMLValidator.validate(xml), true)
+    assert.strictEqual(SyntaxValidator.validate(xml), true)
     assert.match(xml, /<feed[\s>]/)
     assert.match(xml, /xmlns="http:\/\/www\.w3\.org\/2005\/Atom"/)
     assert.match(xml, /<entry>/)
   })
 
-  void it("projects OPDS2 features into OPDS1 and strips OPDS2-only ones", () => {
+  it("projects OPDS2 features into OPDS1 and strips OPDS2-only ones", () => {
     const feedJson = {
       metadata: { title: "Synthetic", numberOfItems: 1 },
       links: [{ rel: "self", href: "/feed", type: "application/opds+json" }],
@@ -72,7 +72,7 @@ void describe("toAtomXml", () => {
 
     const xml = toAtomXml(parse(feedJson))
 
-    assert.strictEqual(XMLValidator.validate(xml), true)
+    assert.strictEqual(SyntaxValidator.validate(xml), true)
     // facet -> feed-level link with the OPDS facet rel + group/count hints
     assert.match(xml, /rel="http:\/\/opds-spec\.org\/facet"/)
     assert.match(xml, /opds:facetGroup="Language"/)

@@ -363,6 +363,152 @@ release-media-types:
         - name: "NPM package for @storyteller-platform/media-types"
           url: "https://npmjs.com/package/@storyteller-platform/media-types"
 
+publish-mapping:
+  image: node:24
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mapping-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
+  script:
+    - TAG=${CI_COMMIT_TAG##*-}
+    - |
+      case "$TAG" in
+        alpha*) TAG="alpha" ;;
+        beta*) TAG="beta" ;;
+        rc*) TAG="rc" ;;
+        experimental*) TAG="experimental" ;;
+        dev*) TAG="dev" ;;
+        test*) TAG="test" ;;
+        preview*) TAG="preview" ;;
+        *) TAG="latest" ;;
+      esac
+    - npm i -g corepack
+    - yarn workspaces focus @storyteller-platform/mapping
+    - yarn workspace @storyteller-platform/mapping npm publish --tag="$TAG"
+
+prerelease-mapping:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mapping-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/mapping-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-mapping"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-mapping:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-mapping
+      artifacts: true
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mapping-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "NPM package for @storyteller-platform/mapping"
+          url: "https://npmjs.com/package/@storyteller-platform/mapping"
+
+publish-mlx-audio:
+  image: node:24
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mlx-audio-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
+  script:
+    - TAG=${CI_COMMIT_TAG##*-}
+    - |
+      case "$TAG" in
+        alpha*) TAG="alpha" ;;
+        beta*) TAG="beta" ;;
+        rc*) TAG="rc" ;;
+        experimental*) TAG="experimental" ;;
+        dev*) TAG="dev" ;;
+        test*) TAG="test" ;;
+        preview*) TAG="preview" ;;
+        *) TAG="latest" ;;
+      esac
+    - npm i -g corepack
+    - yarn workspaces focus @storyteller-platform/mlx-audio
+    - yarn workspace @storyteller-platform/mlx-audio npm publish --tag="$TAG"
+
+prerelease-mlx-audio:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mlx-audio-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/mlx-audio-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-mlx-audio"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-mlx-audio:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-mlx-audio
+      artifacts: true
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^mlx-audio-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "NPM package for @storyteller-platform/mlx-audio"
+          url: "https://npmjs.com/package/@storyteller-platform/mlx-audio"
+
 publish-ghost-story:
   image: node:24
   stage: publish

@@ -2,10 +2,7 @@ import { Epub } from "@storyteller-platform/epub"
 
 import { readChapterAudio } from "@/assets/chapterAudio"
 import { findMediaOverlay } from "@/assets/mediaOverlay"
-import {
-  getEmissionsFilepath,
-  getTranscriptionsFilepath,
-} from "@/assets/paths"
+import { getEmissionsFilepath, getTranscriptionsFilepath } from "@/assets/paths"
 import { withHasPermission } from "@/auth/auth"
 import { getBook } from "@/database/books"
 import { type UUID } from "@/uuid"

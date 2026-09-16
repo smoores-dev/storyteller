@@ -1,46 +1,47 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { segmentChapter } from "../../markup/segmentation.ts"
 import { slugify, slugifiedWordRanges } from "../slugify.ts"
 
-void describe("slugify", () => {
-  void it("should slugify numbers", async () => {
+describe("slugify", () => {
+  it("should slugify numbers", async () => {
     const input = "There were 10 cars."
     const output = "there-were-ten-cars"
     const { result } = await slugify(input, new Intl.Locale("en"))
     assert.strictEqual(result, output)
   })
 
-  void it("should slugify numbers with decimals", async () => {
+  it("should slugify numbers with decimals", async () => {
     const input = "It was 74.6 degrees out."
     const output = "it-was-seventy-four-point-six-degrees-out"
     const { result } = await slugify(input, new Intl.Locale("en"))
     assert.strictEqual(result, output)
   })
 
-  void it("should slugify numbers with groupings", async () => {
+  it("should slugify numbers with groupings", async () => {
     const input = "It weighed over 1,000 pounds"
     const output = "it-weighed-over-one-thousand-pounds"
     const { result } = await slugify(input, new Intl.Locale("en"))
     assert.strictEqual(result, output)
   })
 
-  void it("should slugify currency", async () => {
+  it("should slugify currency", async () => {
     const input = "It costs $5,500.50."
     const output = "it-costs-five-thousand-five-hundred-dollars-and-fifty-cents"
     const { result } = await slugify(input, new Intl.Locale("en"))
     assert.strictEqual(result, output)
   })
 
-  void it("should slugify German currency", async () => {
+  it("should slugify German currency", async () => {
     const input = "Es kostet 5.500,50 €"
     const output = "es-kostet-funf-tausend-funf-hundert-euro-und-funfzig-cent"
     const { result } = await slugify(input, new Intl.Locale("de"))
     assert.strictEqual(result, output)
   })
 
-  void it("should slugify Chinese currency", async () => {
+  it("should slugify Chinese currency", async () => {
     const input = "价格为 ¥5,500.50"
     const output = "jia-ge-wei-wu-qian-wu-bai-yuan-wu-shi-fen"
     const { result } = await slugify(input, new Intl.Locale("zh"))
@@ -78,8 +79,8 @@ async function wordRanges(sentence: string) {
   }
 }
 
-void describe("slugifiedWordRanges", () => {
-  void it("maps a word ending in dropped punctuation onto its own characters", async () => {
+describe("slugifiedWordRanges", () => {
+  it("maps a word ending in dropped punctuation onto its own characters", async () => {
     const { words } = await wordRanges(
       "Mr. Tumnus met Mrs. Beaver at the stop.\n",
     )
@@ -99,7 +100,7 @@ void describe("slugifiedWordRanges", () => {
     )
   })
 
-  void it("maps a word whose characters expand to several characters", async () => {
+  it("maps a word whose characters expand to several characters", async () => {
     const { words } = await wordRanges("The 1 was next to the 2\n")
 
     assert.deepStrictEqual(
@@ -116,7 +117,7 @@ void describe("slugifiedWordRanges", () => {
     )
   })
 
-  void it.only("stays inside the slugified text for a final abbreviation", async () => {
+  it.only("stays inside the slugified text for a final abbreviation", async () => {
     const { slug, words } = await wordRanges(
       "She said Bridget went up and down, and I said, Yes, so did I.\n",
     )
@@ -128,7 +129,7 @@ void describe("slugifiedWordRanges", () => {
     ])
   })
 
-  void it("stays inside the slugified text for a single word sentence", async () => {
+  it("stays inside the slugified text for a single word sentence", async () => {
     const { slug, words } = await wordRanges("M.\n")
 
     assert.deepStrictEqual(
@@ -138,7 +139,7 @@ void describe("slugifiedWordRanges", () => {
     assert.ok(words[0]!.range[1] < slug.length)
   })
 
-  void it("never maps a word outside its sentence's slugified characters", async () => {
+  it("never maps a word outside its sentence's slugified characters", async () => {
     const sentences = [
       "She said Bridget went up and down, and I said, Yes, so did I.\n",
       "M.\n",

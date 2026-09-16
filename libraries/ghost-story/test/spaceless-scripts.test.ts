@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { type Language } from "../src/constants.ts"
 import { createTiming } from "../src/index.ts"
@@ -86,9 +87,9 @@ function assertMonotonicOffsets(timeline: Timeline) {
   }
 }
 
-void describe("spaceless script transcription", () => {
+describe("spaceless script transcription", () => {
   for (const sample of samples) {
-    void it(
+    it(
       `should produce granular timeline entries for ${sample.language}`,
       { timeout: 120_000 },
       async () => {

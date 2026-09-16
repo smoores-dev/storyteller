@@ -1,8 +1,8 @@
 import assert from "node:assert"
 import { randomUUID } from "node:crypto"
-import { describe, it } from "node:test"
 
 import { Feed as OpdsTsFeed } from "opds-ts/v1.2"
+import { describe, it } from "vitest"
 
 import { toAtomXml } from "@storyteller-platform/opds"
 import { parseFeed } from "@storyteller-platform/opds/validate"
@@ -258,8 +258,8 @@ const assertPreserved = (label: string, oldXml: string, nextXml: string) => {
   }
 }
 
-void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
-  void it("root catalog", async () => {
+describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
+  it("root catalog", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -268,7 +268,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assertPreserved("root", oldXml, newXml)
   })
 
-  void it("all books", async () => {
+  it("all books", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -279,7 +279,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assertPreserved("books", oldXml, newXml)
   })
 
-  void it("series navigation", async () => {
+  it("series navigation", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -288,7 +288,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assertPreserved("series-nav", oldXml, newXml)
   })
 
-  void it("series books", async () => {
+  it("series books", async () => {
     using ctx = setupTestDb()
     const { seriesUuid } = seedLibrary(ctx)
 
@@ -305,7 +305,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assertPreserved("series-books", oldXml, newXml)
   })
 
-  void it("tags navigation", async () => {
+  it("tags navigation", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -314,7 +314,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assertPreserved("tags-nav", oldXml, newXml)
   })
 
-  void it("tag books", async () => {
+  it("tag books", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -327,7 +327,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assertPreserved("tag-books", oldXml, newXml)
   })
 
-  void it("collections navigation", async () => {
+  it("collections navigation", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -338,7 +338,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assertPreserved("collections-nav", oldXml, newXml)
   })
 
-  void it("collection books", async () => {
+  it("collection books", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -353,7 +353,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assertPreserved("collection-books", oldXml, newXml)
   })
 
-  void it("search results", async () => {
+  it("search results", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -365,7 +365,7 @@ void describe("OPDS v1 parity (old feed.ts vs new builders)", () => {
     assert.strictEqual(norm.pubs.size, 1, "search matched exactly one book")
   })
 
-  void it("v2 JSON validates against the OPDS2 schema", async () => {
+  it("v2 JSON validates against the OPDS2 schema", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -392,8 +392,8 @@ const formatsByTitle = (xml: string): Map<string, Set<string>> => {
   return out
 }
 
-void describe("OPDS format setting", () => {
-  void it("readaloud (default): prefers read-aloud, audiobook always served", async () => {
+describe("OPDS format setting", () => {
+  it("readaloud (default): prefers read-aloud, audiobook always served", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -411,7 +411,7 @@ void describe("OPDS format setting", () => {
     ])
   })
 
-  void it("ebook: prefers the plain ebook, audiobook always served", async () => {
+  it("ebook: prefers the plain ebook, audiobook always served", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
@@ -428,7 +428,7 @@ void describe("OPDS format setting", () => {
     assert.deepStrictEqual([...(f.get("Gamma") ?? [])], ["audiobook-rpf"])
   })
 
-  void it("both: serves read-aloud and ebook together", async () => {
+  it("both: serves read-aloud and ebook together", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 

@@ -1,13 +1,14 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { Epub } from "@storyteller-platform/epub"
 
 import { Mark, Node, Root, TextNode } from "../model.ts"
 import { serializeDom } from "../serializeDom.ts"
 
-void describe("serializeDom", () => {
-  void it("should serialize nested DOM", () => {
+describe("serializeDom", () => {
+  it("should serialize nested DOM", () => {
     const result = serializeDom(
       new Root([new Node("p", {}, [new TextNode("Hello, world!")])]),
     )
@@ -17,7 +18,7 @@ void describe("serializeDom", () => {
     ])
   })
 
-  void it("should serialize nested marks", () => {
+  it("should serialize nested marks", () => {
     const result = serializeDom(
       new Root([
         new Node("p", {}, [
@@ -37,7 +38,7 @@ void describe("serializeDom", () => {
     ])
   })
 
-  void it("should join adjacent marks", () => {
+  it("should join adjacent marks", () => {
     const result = serializeDom(
       new Root([
         new Node("p", {}, [
@@ -57,7 +58,7 @@ void describe("serializeDom", () => {
     ])
   })
 
-  void it("should preserve attributes", () => {
+  it("should preserve attributes", () => {
     const result = serializeDom(
       new Root([
         new Node("p", { id: "p1" }, [
@@ -75,7 +76,7 @@ void describe("serializeDom", () => {
     ])
   })
 
-  void it("should preserve leaf nodes", () => {
+  it("should preserve leaf nodes", () => {
     const result = serializeDom(
       new Root([
         new Node("p", {}, [

@@ -1,7 +1,7 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
 
 import { type Database } from "better-sqlite3"
+import { describe, it } from "vitest"
 
 import { type TestDbContext, setupTestDb } from "@/__tests__/harness/testDb"
 import {
@@ -79,8 +79,8 @@ async function setShelvesGroupHidden(hidden: boolean) {
   )
 }
 
-void describe("sidebar section visibility", () => {
-  void it("hides a section without touching the items' own hidden flags", async () => {
+describe("sidebar section visibility", () => {
+  it("hides a section without touching the items' own hidden flags", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -104,7 +104,7 @@ void describe("sidebar section visibility", () => {
     )
   })
 
-  void it("brings the section back when a new shelf appears, restoring only the items the user never hid", async () => {
+  it("brings the section back when a new shelf appears, restoring only the items the user never hid", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -132,7 +132,7 @@ void describe("sidebar section visibility", () => {
     )
   })
 
-  void it("leaves a hidden section alone when nothing new was added", async () => {
+  it("leaves a hidden section alone when nothing new was added", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 

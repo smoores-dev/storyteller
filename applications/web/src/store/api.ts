@@ -10,7 +10,6 @@ import { v4 as uuidv4 } from "uuid"
 
 import { type JsColor } from "@storyteller-platform/okmain"
 
-import { type ChapterAudio } from "@/chapterAudio"
 import {
   type AlignmentDecisions,
   type AlignmentOverrides,
@@ -25,6 +24,7 @@ import {
 } from "@/apiModels"
 import { type UpgradeResult } from "@/app/api/v2/books/[bookId]/upgrade-epub/route"
 import { type BackupInfo } from "@/backups"
+import { type ChapterAudio } from "@/chapterAudio"
 import { type Role } from "@/components/books/edit/marcRelators"
 import {
   type BookRelationsUpdate,
@@ -1971,14 +1971,12 @@ export const api = createApi({
         responseHandler: "text",
       }),
     }),
-    getBookMediaOverlay: build.query<string, { bookUuid: UUID; href: string }>(
-      {
-        query: ({ bookUuid, href }) => ({
-          url: `/books/${bookUuid}/debug/media-overlay?href=${encodeURIComponent(href)}`,
-          responseHandler: "text",
-        }),
-      },
-    ),
+    getBookMediaOverlay: build.query<string, { bookUuid: UUID; href: string }>({
+      query: ({ bookUuid, href }) => ({
+        url: `/books/${bookUuid}/debug/media-overlay?href=${encodeURIComponent(href)}`,
+        responseHandler: "text",
+      }),
+    }),
 
     getInfiniteChangelog: build.infiniteQuery<
       ChangelogEntry[],

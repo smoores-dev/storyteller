@@ -11,7 +11,7 @@ import {
   processAudiobook,
   transcribe,
 } from "@storyteller-platform/align"
-import { Epub } from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
 import {
   createTiming,
@@ -362,6 +362,15 @@ export default async function processBook({
           const readaloudDirectory = dirname(readaloudFilepath)
           await mkdir(readaloudDirectory, { recursive: true })
 
+          using epub = await Epub.using(MemoryAdapter).from(
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            book.ebook!.filepath,
+          )
+          const runLanguage = config?.language ?? book.language
+          const locale = runLanguage
+            ? new Intl.Locale(runLanguage)
+            : ((await epub.getLanguage()) ?? new Intl.Locale("en-US"))
+
           const reportFilepath = getAlignmentReportFilepath(book)
           try {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -371,6 +380,7 @@ export default async function processBook({
               },
               logger,
               granularity: settings.alignmentGranularity ?? "sentence",
+              primaryLocale: locale,
             })
 
             signal.throwIfAborted()
@@ -466,17 +476,17 @@ export default async function processBook({
             `Writing metadata to aligned readaloud file (title: ${book.title})`,
           )
 
-          using epub = await Epub.from(readaloudFilepath)
-          await writeMetadataToEpub(book, epub, {
+          using readaloudEpub = await Epub.from(readaloudFilepath)
+          await writeMetadataToEpub(book, readaloudEpub, {
             includeAlignmentMetadata: true,
             ...(audioCover && { audioCover }),
             format: "readaloud",
           })
           logger.info(
-            `Successfully wrote metadata to file (title: ${await epub.getTitle(true)})`,
+            `Successfully wrote metadata to file (title: ${await readaloudEpub.getTitle(true)})`,
           )
 
-          await epub.saveAndClose()
+          await readaloudEpub.saveAndClose()
 
           const shouldCleanCache = await getSetting("cleanCacheAfterReadaloud")
 

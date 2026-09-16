@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
 import { countBooks } from "@/database/books"
@@ -19,8 +20,8 @@ function seedUser(sqlite: import("better-sqlite3").Database) {
     .run(userId, "22222222-2222-2222-2222-222222222222", "t@example.com")
 }
 
-void describe("getSectionFacets show-all", () => {
-  void it("ratings: shows all 6 buckets, empty ones at 0", async () => {
+describe("getSectionFacets show-all", () => {
+  it("ratings: shows all 6 buckets, empty ones at 0", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -49,7 +50,7 @@ void describe("getSectionFacets show-all", () => {
     assert.strictEqual(byKey["3.5-4.49"], 0)
   })
 
-  void it("formats: shows all canonical buckets even when empty", async () => {
+  it("formats: shows all canonical buckets even when empty", async () => {
     using ctx = setupTestDb()
 
     seedBooks(ctx, [
@@ -72,7 +73,7 @@ void describe("getSectionFacets show-all", () => {
     assert.strictEqual(byKey["no-media"], 0)
   })
 
-  void it("grades: shows all 8 grades in A+…F order, empty ones at 0", async () => {
+  it("grades: shows all 8 grades in A+…F order, empty ones at 0", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -103,7 +104,7 @@ void describe("getSectionFacets show-all", () => {
     )
   })
 
-  void it("statuses: shows every status even with zero books", async () => {
+  it("statuses: shows every status even with zero books", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -126,7 +127,7 @@ void describe("getSectionFacets show-all", () => {
     assert.strictEqual(byName["Read"], 0)
   })
 
-  void it("shelves: counts manual and smart shelves", async () => {
+  it("shelves: counts manual and smart shelves", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -169,8 +170,8 @@ void describe("getSectionFacets show-all", () => {
   })
 })
 
-void describe("book totals", () => {
-  void it("getLibraryCounts.books and countBooks agree with the catalog", async () => {
+describe("book totals", () => {
+  it("getLibraryCounts.books and countBooks agree with the catalog", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 

@@ -14,7 +14,7 @@
     "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
   },
   // scripts/install-epubcheck.ts downloads the vendored epubcheck; it never ships.
-  "exclude": ["dist", "scripts", "**/*.test.ts"],
+  "exclude": ["dist", "scripts", "**/*.test.ts", "vitest.config.ts"],
   "references": [
     { "path": "../fs" },
     { "path": "../path" },

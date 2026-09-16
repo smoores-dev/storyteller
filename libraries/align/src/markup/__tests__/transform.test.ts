@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { FootnoteNode, Mark, Node, Root, TextNode } from "../model.ts"
 import {
@@ -9,8 +10,8 @@ import {
   replaceFootnotes,
 } from "../transform.ts"
 
-void describe("addMark", () => {
-  void it("should add a mark", () => {
+describe("addMark", () => {
+  it("should add a mark", () => {
     const result = addMark(
       new Root([new Node("p", {}, [new TextNode("Hello, world!")])]),
       1,
@@ -28,7 +29,7 @@ void describe("addMark", () => {
     )
   })
 
-  void it("should add a mark at the start of a text node", () => {
+  it("should add a mark at the start of a text node", () => {
     const result = addMark(
       new Root([new Node("p", {}, [new TextNode("Hello, world!")])]),
       1,
@@ -47,7 +48,7 @@ void describe("addMark", () => {
     )
   })
 
-  void it("should add a mark at the end of a text node", () => {
+  it("should add a mark at the end of a text node", () => {
     const result = addMark(
       new Root([new Node("p", {}, [new TextNode("Hello, world!")])]),
       7,
@@ -66,7 +67,7 @@ void describe("addMark", () => {
     )
   })
 
-  void it("should add a mark within a text node", () => {
+  it("should add a mark within a text node", () => {
     const result = addMark(
       new Root([new Node("p", {}, [new TextNode("Hello, world!")])]),
       4,
@@ -86,7 +87,7 @@ void describe("addMark", () => {
     )
   })
 
-  void it("should preserve existing marks", () => {
+  it("should preserve existing marks", () => {
     const result = addMark(
       new Root([
         new Node("p", {}, [
@@ -114,8 +115,8 @@ void describe("addMark", () => {
   })
 })
 
-void describe("liftText", () => {
-  void it("should lift test out of nested docs", () => {
+describe("liftText", () => {
+  it("should lift test out of nested docs", () => {
     const { result } = liftText(
       new Root([
         new Node("div", {}, [
@@ -132,7 +133,7 @@ void describe("liftText", () => {
     )
   })
 
-  void it("should produce a valid mapping", () => {
+  it("should produce a valid mapping", () => {
     const { mapping } = liftText(
       new Root([
         new Node("div", {}, [
@@ -156,7 +157,7 @@ void describe("liftText", () => {
     assert.deepStrictEqual(cursor.map(51), 45)
   })
 
-  void it("should insert newlines with trailing atoms", () => {
+  it("should insert newlines with trailing atoms", () => {
     const { result } = liftText(
       new Root([
         new Node("h1", {}, [
@@ -170,7 +171,7 @@ void describe("liftText", () => {
     assert.deepStrictEqual(result, "Chapter 1.\n")
   })
 
-  void it("should handle inter-block whitespace", () => {
+  it("should handle inter-block whitespace", () => {
     const { result, mapping } = liftText(
       new Root([
         new Node("p", {}, [new TextNode("\n    This is a sentence.\n")]),
@@ -192,8 +193,8 @@ void describe("liftText", () => {
   })
 })
 
-void describe("inlineFootnotes/replaceFootnotes", () => {
-  void it("should handle a round trip", () => {
+describe("inlineFootnotes/replaceFootnotes", () => {
+  it("should handle a round trip", () => {
     const original = new Root([
       new Node("h1", {}, [new TextNode("Chapter 1.")]),
       new Node("p", {}, [
@@ -240,7 +241,7 @@ void describe("inlineFootnotes/replaceFootnotes", () => {
     assert.deepStrictEqual(replaced, original)
   })
 
-  void it("should handle multiple footnotes", () => {
+  it("should handle multiple footnotes", () => {
     const original = new Root([
       new Node("h1", {}, [new TextNode("Chapter 1.")]),
       new Node("p", {}, [
@@ -311,7 +312,7 @@ void describe("inlineFootnotes/replaceFootnotes", () => {
     assert.deepStrictEqual(replaced, original)
   })
 
-  void it("should handle footnotes interleaved with later noterefs", () => {
+  it("should handle footnotes interleaved with later noterefs", () => {
     const original = new Root([
       new Node("h1", {}, [new TextNode("Chapter 1.")]),
       new Node("p", {}, [

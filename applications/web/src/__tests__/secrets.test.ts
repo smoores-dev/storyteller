@@ -1,10 +1,11 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { decryptSecret, encryptSecret, isEncrypted } from "@/secrets"
 
-void describe("secret encryption", () => {
-  void it("round trips a secret", async () => {
+describe("secret encryption", () => {
+  it("round trips a secret", async () => {
     const encrypted = await encryptSecret("hunter2")
 
     assert.ok(isEncrypted(encrypted))
@@ -12,7 +13,7 @@ void describe("secret encryption", () => {
     assert.strictEqual(await decryptSecret(encrypted), "hunter2")
   })
 
-  void it("produces a different ciphertext each time", async () => {
+  it("produces a different ciphertext each time", async () => {
     const a = await encryptSecret("hunter2")
     const b = await encryptSecret("hunter2")
 
@@ -20,22 +21,22 @@ void describe("secret encryption", () => {
     assert.strictEqual(await decryptSecret(a), await decryptSecret(b))
   })
 
-  void it("passes through values that are not encrypted", async () => {
+  it("passes through values that are not encrypted", async () => {
     assert.strictEqual(await decryptSecret("plaintext"), "plaintext")
     assert.strictEqual(await encryptSecret(""), "")
   })
 
-  void it("does not double encrypt", async () => {
+  it("does not double encrypt", async () => {
     const once = await encryptSecret("hunter2")
     assert.strictEqual(await encryptSecret(once), once)
   })
 
-  void it("round trips unicode and long values", async () => {
+  it("round trips unicode and long values", async () => {
     const value = `${"🔐".repeat(64)} ${"a".repeat(4096)}`
     assert.strictEqual(await decryptSecret(await encryptSecret(value)), value)
   })
 
-  void it("rejects a tampered ciphertext instead of returning garbage", async () => {
+  it("rejects a tampered ciphertext instead of returning garbage", async () => {
     const encrypted = await encryptSecret("hunter2")
     const [iv, tag, ciphertext] = encrypted.slice("enc:v1:".length).split(":")
 
@@ -48,7 +49,7 @@ void describe("secret encryption", () => {
     assert.strictEqual(await decryptSecret(tampered), null)
   })
 
-  void it("returns null for a malformed value", async () => {
+  it("returns null for a malformed value", async () => {
     assert.strictEqual(await decryptSecret("enc:v1:nope"), null)
   })
 })

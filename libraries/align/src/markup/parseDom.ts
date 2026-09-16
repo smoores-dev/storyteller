@@ -48,11 +48,6 @@ class Parser {
 
     const tagName = Epub.getXmlElementName(xmlNode)
     const attrs = Epub.getXmlAttributes(xmlNode)
-    const blockChildren = this.parseDomChildren(
-      Epub.getXmlChildren(xmlNode),
-      pos + 1,
-    )
-
     if (tagName === "a" && attrs["epub:type"] === "noteref") {
       const href = attrs["href"]
       const fragment = href?.split("#")[1]
@@ -68,6 +63,11 @@ class Parser {
         // correct role
         this.footnoteIds.has(attrs["id"]))
     ) {
+      const blockChildren = this.parseDomChildren(
+        Epub.getXmlChildren(xmlNode),
+        pos + 1,
+      )
+
       const footnoteNode = new FootnoteNode(
         tagName,
         {
@@ -84,6 +84,11 @@ class Parser {
     }
 
     if (BLOCKS.includes(tagName)) {
+      const blockChildren = this.parseDomChildren(
+        Epub.getXmlChildren(xmlNode),
+        pos + 1,
+      )
+
       return new Node(tagName, attrs, blockChildren, marks)
     }
 

@@ -2,7 +2,8 @@ import assert from "node:assert"
 import { mkdtemp, readdir, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { pruneLogs } from "@/logRetention"
 
@@ -28,8 +29,8 @@ async function setupLogDir() {
   return dir
 }
 
-void describe("pruneLogs", () => {
-  void it("deletes files older than the retention window", async () => {
+describe("pruneLogs", () => {
+  it("deletes files older than the retention window", async () => {
     const dir = await setupLogDir()
 
     await pruneLogs(14, dir, TODAY)
@@ -43,7 +44,7 @@ void describe("pruneLogs", () => {
     ])
   })
 
-  void it("keeps everything within a long window", async () => {
+  it("keeps everything within a long window", async () => {
     const dir = await setupLogDir()
 
     await pruneLogs(365, dir, TODAY)

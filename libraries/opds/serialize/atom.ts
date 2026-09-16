@@ -5,7 +5,7 @@ import {
   Price,
   type Subject,
 } from "@readium/shared"
-import { XMLBuilder } from "fast-xml-parser"
+import XMLBuilder from "fast-xml-builder"
 
 import { type Facet } from "../model/Facet.ts"
 import { type Feed } from "../model/Feed.ts"
@@ -208,6 +208,6 @@ export const toAtomXml = (
     format: options.pretty ?? true,
     suppressEmptyNode: true,
   })
-  const body = builder.build({ feed: root }) as string
+  const body = builder.build({ feed: root })
   return `<?xml version="1.0" encoding="UTF-8"?>\n${body}`
 }

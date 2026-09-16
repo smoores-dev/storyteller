@@ -1,6 +1,7 @@
 import assert from "node:assert"
 import { join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
 import { deleteBook } from "@/database/books"
@@ -14,8 +15,8 @@ import {
 import { ASSETS_DIR } from "@/directories"
 import { type UUID } from "@/uuid"
 
-void describe("import rule attribution", () => {
-  void it("addIgnoreRule defaults to source=user with null bookUuid", async () => {
+describe("import rule attribution", () => {
+  it("addIgnoreRule defaults to source=user with null bookUuid", async () => {
     using _db = setupTestDb()
     await addIgnoreRule("/user/path")
 
@@ -25,7 +26,7 @@ void describe("import rule attribution", () => {
     assert.strictEqual(rules[0]!.bookUuid, null)
   })
 
-  void it("addIgnoreRule records attribution when supplied", async () => {
+  it("addIgnoreRule records attribution when supplied", async () => {
     using _db = setupTestDb()
     const [bookUuid] = seedBooks(_db, [{ title: "Book A" }])
     await addIgnoreRule("/relocate/source.epub", {
@@ -38,7 +39,7 @@ void describe("import rule attribution", () => {
     assert.strictEqual(rules[0]!.bookUuid, bookUuid)
   })
 
-  void it("getUserImportRules filters out auto-created rules", async () => {
+  it("getUserImportRules filters out auto-created rules", async () => {
     using _db = setupTestDb()
     const [bookUuid] = seedBooks(_db, [{ title: "Book A" }])
     await createImportRule({ kind: "watch", path: "/library" })
@@ -53,7 +54,7 @@ void describe("import rule attribution", () => {
     assert.deepStrictEqual(paths, ["/library", "/user-explicit"])
   })
 
-  void it("getIgnorePaths includes auto-created rules (scanner still needs them)", async () => {
+  it("getIgnorePaths includes auto-created rules (scanner still needs them)", async () => {
     using _db = setupTestDb()
     const [bookUuid] = seedBooks(_db, [{ title: "Book A" }])
     await addIgnoreRule("/visible-to-scanner", {
@@ -65,7 +66,7 @@ void describe("import rule attribution", () => {
     assert.deepStrictEqual(paths, ["/visible-to-scanner"])
   })
 
-  void it("deleting a book cascades its auto-rules", async () => {
+  it("deleting a book cascades its auto-rules", async () => {
     using _db = setupTestDb()
     const [bookUuid] = seedBooks(_db, [{ title: "Book A" }])
     await addIgnoreRule("/relocate-source.epub", {
@@ -83,7 +84,7 @@ void describe("import rule attribution", () => {
     )
   })
 
-  void it("getImportRules populates bookTitle for linked books", async () => {
+  it("getImportRules populates bookTitle for linked books", async () => {
     using _db = setupTestDb()
     const [bookUuid] = seedBooks(_db, [{ title: "Linked Title" }])
     await addIgnoreRule("/with-book", {
@@ -98,7 +99,7 @@ void describe("import rule attribution", () => {
     assert.strictEqual(byPath["/without-book"]!.bookTitle, null)
   })
 
-  void it("prevent-reimport rules survive book deletion (bookUuid null)", async () => {
+  it("prevent-reimport rules survive book deletion (bookUuid null)", async () => {
     using _db = setupTestDb()
     const [bookUuid] = seedBooks(_db, [
       { title: "Book A", ebook: "/original/path.epub" },
@@ -113,7 +114,7 @@ void describe("import rule attribution", () => {
     assert.strictEqual(remaining[0]!.path, "/original/path.epub")
   })
 
-  void it("relocated book + preventReImport → only the converted source-path rule remains (library-owned path needs no rule)", async () => {
+  it("relocated book + preventReImport → only the converted source-path rule remains (library-owned path needs no rule)", async () => {
     using _db = setupTestDb()
     const internalEbook = join(ASSETS_DIR, "text", "abc", "book.epub")
     const [bookUuid] = seedBooks(_db, [
@@ -134,7 +135,7 @@ void describe("import rule attribution", () => {
     assert.strictEqual(remaining[0]!.bookUuid, null)
   })
 
-  void it("reference-mode book + preventReImport → inserts rule for the external source path", async () => {
+  it("reference-mode book + preventReImport → inserts rule for the external source path", async () => {
     using _db = setupTestDb()
     const [bookUuid] = seedBooks(_db, [
       { title: "Book A", ebook: "/watch/folder/reference-book.epub" },

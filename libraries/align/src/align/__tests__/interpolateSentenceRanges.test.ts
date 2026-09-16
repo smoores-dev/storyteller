@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { SentenceRange } from "../getSentenceRanges.ts"
 import {
@@ -37,8 +38,8 @@ function run(
 
 // ─── basic cases ────────────────────────────────────────────────────────────
 
-void describe("no gaps", () => {
-  void it("returns input unchanged when the chapter is complete", () => {
+describe("no gaps", () => {
+  it("returns input unchanged when the chapter is complete", () => {
     const input = [
       sr("ch1", 0, 0, 5),
       sr("ch1", 1, 5, 10),
@@ -52,7 +53,7 @@ void describe("no gaps", () => {
     ])
   })
 
-  void it("handles multiple complete chapters with no gaps", () => {
+  it("handles multiple complete chapters with no gaps", () => {
     const input = [
       sr("ch1", 0, 0, 10),
       sr("ch1", 1, 10, 20),
@@ -69,8 +70,8 @@ void describe("no gaps", () => {
   })
 })
 
-void describe("empty input", () => {
-  void it("returns an empty array", () => {
+describe("empty input", () => {
+  it("returns an empty array", () => {
     const result = run([], {}, {})
     assert.deepStrictEqual(result, [])
   })
@@ -78,8 +79,8 @@ void describe("empty input", () => {
 
 // ─── within-chapter gaps ────────────────────────────────────────────────────
 
-void describe("within-chapter gap (same audiofile)", () => {
-  void it("fills a gap of 2 sentences between two known sentences", () => {
+describe("within-chapter gap (same audiofile)", () => {
+  it("fills a gap of 2 sentences between two known sentences", () => {
     // Known: #0 ends at t=10, #3 starts at t=40
     // Missing: #1, #2 → should occupy [10, 40] evenly
     const input = [sr("ch1", 0, 0, 10), sr("ch1", 3, 40, 50)]
@@ -93,7 +94,7 @@ void describe("within-chapter gap (same audiofile)", () => {
     ])
   })
 
-  void it("fills a single missing sentence", () => {
+  it("fills a single missing sentence", () => {
     const input = [sr("ch1", 0, 0, 10), sr("ch1", 2, 20, 30)]
     const result = run(input, { ch1: 3 }, { "audio.mp3": 40 })
 
@@ -104,7 +105,7 @@ void describe("within-chapter gap (same audiofile)", () => {
     ])
   })
 
-  void it("fills multiple disjoint gaps within a chapter", () => {
+  it("fills multiple disjoint gaps within a chapter", () => {
     // Known: #0, #2, #4  →  missing #1, #3
     const input = [
       sr("ch1", 0, 0, 10),
@@ -125,8 +126,8 @@ void describe("within-chapter gap (same audiofile)", () => {
 
 // ─── leading-gap cases ──────────────────────────────────────────────────────
 
-void describe("leading gap (chapter starts at id > 0)", () => {
-  void it("fills missing sentences before the first known sentence", () => {
+describe("leading gap (chapter starts at id > 0)", () => {
+  it("fills missing sentences before the first known sentence", () => {
     // First known is #2; need to interpolate #0 and #1 from t=0 to t=20
     const input = [sr("ch1", 2, 20, 30)]
     const result = run(input, { ch1: 3 }, { "audio.mp3": 40 })
@@ -138,7 +139,7 @@ void describe("leading gap (chapter starts at id > 0)", () => {
     ])
   })
 
-  void it("fills a single missing leading sentence", () => {
+  it("fills a single missing leading sentence", () => {
     const input = [sr("ch1", 1, 15, 30)]
     const result = run(input, { ch1: 2 }, { "audio.mp3": 40 })
     assert.deepStrictEqual(result, [
@@ -150,8 +151,8 @@ void describe("leading gap (chapter starts at id > 0)", () => {
 
 // ─── trailing-gap cases ─────────────────────────────────────────────────────
 
-void describe("trailing gap (chapter ends before total count)", () => {
-  void it("fills missing sentences after the last known sentence", () => {
+describe("trailing gap (chapter ends before total count)", () => {
+  it("fills missing sentences after the last known sentence", () => {
     // Last known is #0 ending at t=10; chapter has 3 sentences; file runs to t=40
     const input = [sr("ch1", 0, 0, 10)]
     const result = run(input, { ch1: 3 }, { "audio.mp3": 40 })
@@ -163,7 +164,7 @@ void describe("trailing gap (chapter ends before total count)", () => {
     ])
   })
 
-  void it("fills a single missing trailing sentence", () => {
+  it("fills a single missing trailing sentence", () => {
     const input = [sr("ch1", 0, 0, 20)]
     const result = run(input, { ch1: 2 }, { "audio.mp3": 40 })
     assert.deepStrictEqual(result, [
@@ -175,8 +176,8 @@ void describe("trailing gap (chapter ends before total count)", () => {
 
 // ─── chapter-boundary gaps ──────────────────────────────────────────────────
 
-void describe("gap spanning a chapter boundary (same audiofile)", () => {
-  void it("fills trailing gap of ch1 and leading gap of ch2", () => {
+describe("gap spanning a chapter boundary (same audiofile)", () => {
+  it("fills trailing gap of ch1 and leading gap of ch2", () => {
     // ch1: only sentence #0 known; needs #1, #2
     // ch2: only sentence #2 known; needs #0, #1
     // Both in the same file; ch1#0 ends at t=10, ch2#2 starts at t=50
@@ -193,7 +194,7 @@ void describe("gap spanning a chapter boundary (same audiofile)", () => {
     ])
   })
 
-  void it("handles no trailing gap in ch1 but a leading gap in ch2", () => {
+  it("handles no trailing gap in ch1 but a leading gap in ch2", () => {
     const input = [
       sr("ch1", 0, 0, 10),
       sr("ch1", 1, 10, 20),
@@ -210,7 +211,7 @@ void describe("gap spanning a chapter boundary (same audiofile)", () => {
     ])
   })
 
-  void it("handles a trailing gap in ch1 but no leading gap in ch2", () => {
+  it("handles a trailing gap in ch1 but no leading gap in ch2", () => {
     const input = [sr("ch1", 0, 0, 10), sr("ch2", 0, 30, 40)]
     const result = run(input, { ch1: 3, ch2: 1 }, { "audio.mp3": 50 })
 
@@ -225,8 +226,8 @@ void describe("gap spanning a chapter boundary (same audiofile)", () => {
 
 // ─── cross-file gaps ────────────────────────────────────────────────────────
 
-void describe("gap spanning an audiofile boundary", () => {
-  void it("splits interpolated sentences proportionally across two files", () => {
+describe("gap spanning an audiofile boundary", () => {
+  it("splits interpolated sentences proportionally across two files", () => {
     // file-a.mp3 runs 0–100s; known sentence ends at t=80 (20s remaining)
     // file-b.mp3 runs 0–100s; next known sentence starts at t=20 (20s available)
     // 4 missing sentences → should split 2 in file-a, 2 in file-b (equal proportion)
@@ -250,7 +251,7 @@ void describe("gap spanning an audiofile boundary", () => {
     ])
   })
 
-  void it("assigns all sentences to the latter file when prior file has no remaining time", () => {
+  it("assigns all sentences to the latter file when prior file has no remaining time", () => {
     // Sentence ends exactly at the end of file-a; all gap goes to file-b
     const input = [
       sr("ch1", 0, 90, 100, "file-a.mp3"),
@@ -270,7 +271,7 @@ void describe("gap spanning an audiofile boundary", () => {
     ])
   })
 
-  void it("assigns all sentences to the prior file when the latter file starts at 0", () => {
+  it("assigns all sentences to the prior file when the latter file starts at 0", () => {
     // Next known sentence starts at t=0 in file-b (no available time in file-b before it)
     const input = [
       sr("ch1", 0, 50, 60, "file-a.mp3"),
@@ -290,7 +291,7 @@ void describe("gap spanning an audiofile boundary", () => {
     ])
   })
 
-  void it("handles a cross-file leading gap (first sentence is in a later file)", () => {
+  it("handles a cross-file leading gap (first sentence is in a later file)", () => {
     // First known sentence is #2 in file-b; #0 and #1 must be in file-b as well
     const input = [sr("ch1", 2, 20, 30, "file-b.mp3")]
     const result = run(
@@ -306,7 +307,7 @@ void describe("gap spanning an audiofile boundary", () => {
     ])
   })
 
-  void it("handles a cross-file trailing gap (last sentence is in an earlier file)", () => {
+  it("handles a cross-file trailing gap (last sentence is in an earlier file)", () => {
     // Last known sentence in ch1 is #0 in file-a; trailing sentences must be in file-a
     const input = [sr("ch1", 0, 10, 20, "file-a.mp3")]
     const result = run(
@@ -325,8 +326,8 @@ void describe("gap spanning an audiofile boundary", () => {
 
 // ─── ordering guarantees ────────────────────────────────────────────────────
 
-void describe("output ordering", () => {
-  void it("preserves overall playback order through multiple chapters", () => {
+describe("output ordering", () => {
+  it("preserves overall playback order through multiple chapters", () => {
     const input = [
       sr("ch1", 0, 0, 5),
       sr("ch1", 2, 15, 20),
@@ -342,7 +343,7 @@ void describe("output ordering", () => {
     ])
   })
 
-  void it("known sentences retain their original start/end/audiofile values", () => {
+  it("known sentences retain their original start/end/audiofile values", () => {
     const input = [sr("ch1", 0, 1.5, 3.7), sr("ch1", 2, 7.1, 9.9)]
     const result = run(input, { ch1: 3 }, { "audio.mp3": 15 })
 
@@ -356,8 +357,8 @@ void describe("output ordering", () => {
 
 // ─── combined / realistic cases ─────────────────────────────────────────────
 
-void describe("combined scenarios", () => {
-  void it("handles both a leading and a trailing gap in the same chapter", () => {
+describe("combined scenarios", () => {
+  it("handles both a leading and a trailing gap in the same chapter", () => {
     // Only sentence #2 is known in a 5-sentence chapter
     const input = [sr("ch1", 2, 40, 60)]
     const result = run(input, { ch1: 5 }, { "audio.mp3": 100 })
@@ -371,7 +372,7 @@ void describe("combined scenarios", () => {
     ])
   })
 
-  void it("handles three chapters with various gap types", () => {
+  it("handles three chapters with various gap types", () => {
     // ch1: has #0 and #2 (3 total) – gap between them
     // ch2: has #1 only (3 total) – leading + trailing gap
     // ch3: has #0 (2 total) – trailing gap
@@ -395,7 +396,7 @@ void describe("combined scenarios", () => {
     ])
   })
 
-  void it("handles three chapters with separate audio files", () => {
+  it("handles three chapters with separate audio files", () => {
     // ch1: has #0 and #2 (3 total) – gap between them
     // ch2: has #1 only (3 total) – leading + trailing gap
     // ch3: has #0 (2 total) – trailing gap
@@ -426,8 +427,8 @@ void describe("combined scenarios", () => {
 
 // ─── sentence-length weighting ──────────────────────────────────────────────
 
-void describe("sentence-length weighting", () => {
-  void it("falls back to even division when no lengths are provided", () => {
+describe("sentence-length weighting", () => {
+  it("falls back to even division when no lengths are provided", () => {
     const input = [sr("ch1", 0, 0, 10), sr("ch1", 3, 40, 50)]
     const result = run(input, { ch1: 4 }, { "audio.mp3": 60 })
 
@@ -439,7 +440,7 @@ void describe("sentence-length weighting", () => {
     ])
   })
 
-  void it("splits a gap proportionally to sentence length instead of evenly", () => {
+  it("splits a gap proportionally to sentence length instead of evenly", () => {
     // Known: #0 ends at t=10, #3 starts at t=40 → 30s to split across #1, #2.
     // #1 is a short sentence (10 chars), #2 is three times as long (30 chars),
     // so #2 should get three times as much of the 30s as #1 (7.5s vs 22.5s),
@@ -463,7 +464,7 @@ void describe("sentence-length weighting", () => {
     ])
   })
 
-  void it("treats a missing or non-positive length as weight 1", () => {
+  it("treats a missing or non-positive length as weight 1", () => {
     const input = [sr("ch1", 0, 0, 10), sr("ch1", 3, 40, 50)]
     const result = run(
       input,
@@ -487,8 +488,8 @@ void describe("sentence-length weighting", () => {
 
 // ─── multi-clip sentences and chapter boundaries across files ───────────────
 
-void describe("sentences spanning two audio files", () => {
-  void it("anchors following gaps on the last clip and preceding gaps on the first", () => {
+describe("sentences spanning two audio files", () => {
+  it("anchors following gaps on the last clip and preceding gaps on the first", () => {
     // ch1#0 is cut across file-a/file-b; the gap after it must start in file-b
     // where the sentence actually ended, not at the end of its first clip.
     const straddler = new SentenceRange(0, "ch1", [
@@ -510,8 +511,8 @@ void describe("sentences spanning two audio files", () => {
   })
 })
 
-void describe("gap spanning a chapter boundary and an audiofile boundary", () => {
-  void it("keeps each chapter's missing sentences in that chapter's file", () => {
+describe("gap spanning a chapter boundary and an audiofile boundary", () => {
+  it("keeps each chapter's missing sentences in that chapter's file", () => {
     // ch1's last known sentence ends 40s before file-a ends; ch2's first known
     // sentence starts 10s into file-b. Proportional splitting would put ch2's
     // heading and title in file-a's tail; they belong in file-b's head.
@@ -530,7 +531,7 @@ void describe("gap spanning a chapter boundary and an audiofile boundary", () =>
     ])
   })
 
-  void it("falls back to the file with room when the other has none", () => {
+  it("falls back to the file with room when the other has none", () => {
     // ch2's first known sentence starts at 0 in file-b, so its leading
     // sentences can only go in file-a's tail.
     const result = run(
@@ -547,8 +548,8 @@ void describe("gap spanning a chapter boundary and an audiofile boundary", () =>
   })
 })
 
-void describe("range states", () => {
-  void it("interpolates between matches and extrapolates at the edges", () => {
+describe("range states", () => {
+  it("interpolates between matches and extrapolates at the edges", () => {
     const result = interpolateSentenceRanges(
       [sr("ch1", 1, 5, 10), sr("ch1", 3, 20, 25)],
       { ch1: 5 },
@@ -566,7 +567,7 @@ void describe("range states", () => {
     )
   })
 
-  void it("treats a chapter boundary as an edge", () => {
+  it("treats a chapter boundary as an edge", () => {
     const result = interpolateSentenceRanges(
       [sr("ch1", 0, 0, 10), sr("ch2", 1, 30, 40)],
       { ch1: 2, ch2: 2 },
@@ -583,7 +584,7 @@ void describe("range states", () => {
     )
   })
 
-  void it("marks dropped slots wherever they fall", () => {
+  it("marks dropped slots wherever they fall", () => {
     const result = interpolateSentenceRanges(
       [sr("ch1", 1, 5, 10), sr("ch1", 3, 20, 25)],
       { ch1: 5 },

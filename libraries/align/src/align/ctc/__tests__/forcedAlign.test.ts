@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { type Emissions } from "@storyteller-platform/ghost-story"
 
@@ -36,7 +37,7 @@ function buildEmissionsWithBlanks(
   return { values, frames: numFrames, classes: vocabSize }
 }
 
-void describe("ctcViterbiAlign", () => {
+describe("ctcViterbiAlign", () => {
   // Vocab layout for most tests:
   //   0 = blank
   //   1 = 'a'
@@ -48,7 +49,7 @@ void describe("ctcViterbiAlign", () => {
   const STAR = 5
   const STAR_SCORE = -1
 
-  void it("recovers a simple single-character label", () => {
+  it("recovers a simple single-character label", () => {
     // 'a' at frames 2-3, with enough trailing blank frames for the path
     // to reach the termination state (state 6 = trailing blank).
     // Labels [STAR, 1, STAR] → 7 states, termination at state 6.
@@ -78,7 +79,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[1]!.endFrame, 3)
   })
 
-  void it("recovers a multi-character label sequence", () => {
+  it("recovers a multi-character label sequence", () => {
     // "abc": a at frames 2-3, b at frames 5-6, c at frames 8-9
     // With 4 trailing blank frames for termination.
     const emissions = buildEmissionsWithBlanks(
@@ -117,7 +118,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[3]!.endFrame, 9)
   })
 
-  void it("handles repeated letters with the mandatory-blank rule", () => {
+  it("handles repeated letters with the mandatory-blank rule", () => {
     // "aa": a at frames 2-3, blank at frame 4 (mandatory), a at frames 5-6
     // With 3 trailing blank frames for termination.
     const emissions = buildEmissionsWithBlanks(
@@ -150,7 +151,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[2]!.endFrame, 6)
   })
 
-  void it("squeezes second label when no blank separates repeated letters", () => {
+  it("squeezes second label when no blank separates repeated letters", () => {
     // If 'a' dominates frames 2-5 with no blank gap, the mandatory blank
     // in the state graph means Viterbi must transition through a blank state.
     // Without a blank emission at that position, the second 'a' may be
@@ -183,7 +184,7 @@ void describe("ctcViterbiAlign", () => {
     )
   })
 
-  void it("leading star absorbs junk frames before the first label", () => {
+  it("leading star absorbs junk frames before the first label", () => {
     // Frames 0-1: junk (high on token 3, which isn't in the label)
     // Frames 2-3: 'a'
     // With 4 trailing blank frames for termination.
@@ -214,7 +215,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[1]!.endFrame, 3)
   })
 
-  void it("trailing star absorbs junk frames after the last label", () => {
+  it("trailing star absorbs junk frames after the last label", () => {
     // Frames 0-1: 'a'
     // Frames 2-3: junk (high on token 3)
     // Frames 4-5: blank (trailing)
@@ -244,7 +245,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[1]!.endFrame, 1)
   })
 
-  void it("returns empty array for empty emissions", () => {
+  it("returns empty array for empty emissions", () => {
     const result = ctcViterbiAlign(
       { values: new Float32Array(0), frames: 0, classes: 6 },
       [STAR, 1, 2, 3, STAR],
@@ -255,13 +256,13 @@ void describe("ctcViterbiAlign", () => {
     assert.deepEqual(result, [])
   })
 
-  void it("returns empty array for empty labels", () => {
+  it("returns empty array for empty labels", () => {
     const emissions = buildEmissionsWithBlanks([], 10, 6, BLANK)
     const result = ctcViterbiAlign(emissions, [], BLANK, STAR, STAR_SCORE)
     assert.deepEqual(result, [])
   })
 
-  void it("detects squeezed text when labels outnumber available frames", () => {
+  it("detects squeezed text when labels outnumber available frames", () => {
     // 5 labels but only 3 frames with actual label emissions — at most 3 labels can be occupied
     const emissions = buildEmissionsWithBlanks(
       [
@@ -291,7 +292,7 @@ void describe("ctcViterbiAlign", () => {
     )
   })
 
-  void it("computes per-token mean score correctly", () => {
+  it("computes per-token mean score correctly", () => {
     // 'a' at frames 2-3 with highScore=0, so mean score should be ~0
     const emissions = buildEmissionsWithBlanks(
       [
@@ -321,7 +322,7 @@ void describe("ctcViterbiAlign", () => {
     )
   })
 
-  void it("prefers star over a label when the label emission is weak", () => {
+  it("prefers star over a label when the label emission is weak", () => {
     // 'a' is present but with a weak score, while star absorbs most frames
     const emissions = buildEmissionsWithBlanks(
       [{ frame: 2, token: 1 }],
@@ -346,7 +347,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[1]!.endFrame, 2)
   })
 
-  void it("aligns a longer sequence with blanks between characters", () => {
+  it("aligns a longer sequence with blanks between characters", () => {
     // "abcd" with blanks between each character
     // With 4 trailing blank frames for termination.
     const emissions = buildEmissionsWithBlanks(
@@ -384,7 +385,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[4]!.endFrame, 11)
   })
 
-  void it("handles three consecutive identical letters", () => {
+  it("handles three consecutive identical letters", () => {
     // "aaa": a at frames 2-3, blank at 4, a at 5-6, blank at 7, a at 8-9
     // With 3 trailing blank frames for termination.
     const emissions = buildEmissionsWithBlanks(
@@ -418,7 +419,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[3]!.endFrame, 9)
   })
 
-  void it("returns label tokens in the alignment results", () => {
+  it("returns label tokens in the alignment results", () => {
     // Verify that the label field in each TokenAlignment matches the input
     const emissions = buildEmissionsWithBlanks(
       [
@@ -445,7 +446,7 @@ void describe("ctcViterbiAlign", () => {
     assert.equal(result[2]!.label, 2)
   })
 
-  void it("handles a single label with no trailing blank frames", () => {
+  it("handles a single label with no trailing blank frames", () => {
     // The termination requires reaching the last state. With just enough
     // frames, the label should still be found.
     // Labels [STAR, 1, STAR] → 7 states. Termination at state 6.

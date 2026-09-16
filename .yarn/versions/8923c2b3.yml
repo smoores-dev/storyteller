@@ -1,16 +1,7 @@
 releases:
-  "@storyteller-platform/align": minor
-  "@storyteller-platform/audiobook": minor
-  "@storyteller-platform/epub": minor
-  "@storyteller-platform/fs": minor
-  "@storyteller-platform/ghost-story": minor
-  "@storyteller-platform/mapping": minor
-  "@storyteller-platform/media-types": minor
-  "@storyteller-platform/mlx-audio": minor
   "@storyteller-platform/nodekit": minor
   "@storyteller-platform/okmain": minor
   "@storyteller-platform/opds": minor
-  "@storyteller-platform/path": minor
 
 declined:
   - "@storyteller-platform/docs"

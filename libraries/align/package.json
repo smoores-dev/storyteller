@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/align",
-  "version": "0.1.59-experimental.0",
+  "version": "0.2.1",
   "description": "A library and CLI for automatically aligning audiobooks and EPUBs to produce Media Overlays",
   "author": "Shane Friedman",
   "license": "MIT",
@@ -60,7 +60,8 @@
     "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
     "install": "node-gyp-build",
     "prepack": "yarn build",
-    "test": "yarn tsx --test"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "bin": "./dist/cli/bin.js",
   "dependencies": {
@@ -104,7 +105,9 @@
     "node-gyp": "^11.2.0",
     "prebuildify": "^6.0.1",
     "tsx": "^4.19.2",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",

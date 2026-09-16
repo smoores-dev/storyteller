@@ -3,9 +3,9 @@ import { randomUUID } from "node:crypto"
 import { mkdir, readFile, readdir } from "node:fs/promises"
 import { availableParallelism } from "node:os"
 import { join } from "node:path"
-import { describe, it } from "node:test"
 
 import { AsyncSemaphore } from "@esfx/async-semaphore"
+import { describe, it } from "vitest"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -16,8 +16,8 @@ function createTestLogger() {
   return createLogger(process.env["CI"] ? "silent" : "info")
 }
 
-void describe("processFile", () => {
-  void it("can process mpeg4 files", async () => {
+describe("processFile", () => {
+  it("can process mpeg4 files", async () => {
     const input = join(
       "src",
       "__fixtures__",
@@ -58,7 +58,7 @@ void describe("processFile", () => {
     assert.ok(source.sourceSize > 0)
   })
 
-  void it("can process mp3 files", async () => {
+  it("can process mp3 files", async () => {
     const input = join(
       "src",
       "__fixtures__",
@@ -89,7 +89,7 @@ void describe("processFile", () => {
     ])
   })
 
-  void it("can process opus files", async () => {
+  it("can process opus files", async () => {
     const input = join(
       "src",
       "__fixtures__",
@@ -120,7 +120,7 @@ void describe("processFile", () => {
     ])
   })
 
-  void it("can handle nonstandard audio file", async () => {
+  it("can handle nonstandard audio file", async () => {
     const input = join("src", "__fixtures__", "flac", "mobydick.flac")
     const outDir = join("src", "__fixtures__", "__output__", randomUUID())
     await mkdir(outDir, { recursive: true })
@@ -135,7 +135,7 @@ void describe("processFile", () => {
   })
 
   // This takes a long time to run
-  void it("can transcode nonstandard audio file", async () => {
+  it("can transcode nonstandard audio file", async () => {
     const input = join("src", "__fixtures__", "flac", "mobydick.flac")
     const outDir = join("src", "__fixtures__", "__output__", randomUUID())
     await mkdir(outDir, { recursive: true })
@@ -150,7 +150,7 @@ void describe("processFile", () => {
     assert.deepStrictEqual(outFiles, ["00000-00001.mp4"])
   })
 
-  void it("can process zip files", async () => {
+  it("can process zip files", async () => {
     const input = join("src", "__fixtures__", "zip", "moby-dick-1-7-audio.zip")
     const outDir = join("src", "__fixtures__", "__output__", randomUUID())
     await mkdir(outDir, { recursive: true })
@@ -168,7 +168,7 @@ void describe("processFile", () => {
     ])
   })
 
-  void it("splits files longer than the max length", async () => {
+  it("splits files longer than the max length", async () => {
     const input = join("src", "__fixtures__", "zip", "moby-dick-1-7-audio.zip")
     const outDir = join("src", "__fixtures__", "__output__", randomUUID())
     await mkdir(outDir, { recursive: true })
@@ -201,7 +201,7 @@ void describe("processFile", () => {
     ])
   })
 
-  void it("splits files longer than the max length, even if they have chapters", async () => {
+  it("splits files longer than the max length, even if they have chapters", async () => {
     const input = join(
       "src",
       "__fixtures__",

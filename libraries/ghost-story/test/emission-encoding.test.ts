@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { decodeEmissions, encodeEmissions } from "../src/index.ts"
 
@@ -26,8 +27,8 @@ const emissions = {
   classes: 4,
 }
 
-void describe("encodeEmissions", () => {
-  void it("should round-trip", async () => {
+describe("encodeEmissions", () => {
+  it("should round-trip", async () => {
     const [head, body] = encodeEmissions({
       vocab,
       blankIndex: blankId,
@@ -55,7 +56,7 @@ void describe("encodeEmissions", () => {
     assert.equal(data.numFrames, emissions.frames)
   })
 
-  void it("should pack data", () => {
+  it("should pack data", () => {
     const [head, body] = encodeEmissions({
       vocab,
       blankIndex: blankId,
@@ -72,7 +73,7 @@ void describe("encodeEmissions", () => {
     assert.equal(body.length, 40)
   })
 
-  void it("should round-trip a tokenizer and frame offset", async () => {
+  it("should round-trip a tokenizer and frame offset", async () => {
     const tokenizer = {
       kind: "unigram" as const,
       scores: Float32Array.from([0, -1.5, -2.25, 0]),
@@ -103,7 +104,7 @@ void describe("encodeEmissions", () => {
     assert.equal(data.frameOffsetSeconds, -0.14)
   })
 
-  void it("should keep the top 16 of a wide vocabulary and floor the rest", async () => {
+  it("should keep the top 16 of a wide vocabulary and floor the rest", async () => {
     const classes = 200
     const frames = 3
     const wideVocab = new Map<string, number>()
@@ -149,8 +150,8 @@ void describe("encodeEmissions", () => {
   })
 })
 
-void describe("decodeEmissions", () => {
-  void it("should only decode the requested bytes", async () => {
+describe("decodeEmissions", () => {
+  it("should only decode the requested bytes", async () => {
     const [head, body] = encodeEmissions({
       vocab,
       blankIndex: blankId,

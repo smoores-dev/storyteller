@@ -219,7 +219,7 @@ To get started with developing in the Storyteller monorepo, check out the
 
 ## Epub
 
-Defined in: libraries/epub/index.ts:347
+Defined in: libraries/epub/index.ts:349
 
 A single EPUB instance.
 
@@ -260,7 +260,7 @@ https://www.w3.org/TR/epub-33/
 
 > **new Epub**(`adapterClass`, `adapter`, `inputPath`, `readonlyOverride`): [`Epub`](#epub)
 
-Defined in: libraries/epub/index.ts:613
+Defined in: libraries/epub/index.ts:624
 
 Prefer the static factories ([Epub.using](#using), [Epub.from](#from),
 [Epub.create](#create), [Epub.upgrade](#upgrade)) over calling this constructor
@@ -286,31 +286,31 @@ else should need to.
 
 > `protected` **adapter**: [`EpubStorageAdapter`](#epubstorageadapter)
 
-Defined in: libraries/epub/index.ts:615
+Defined in: libraries/epub/index.ts:626
 
 #### adapterClass
 
 > `protected` **adapterClass**: [`EpubStorageAdapterClass`](#epubstorageadapterclass)
 
-Defined in: libraries/epub/index.ts:614
+Defined in: libraries/epub/index.ts:625
 
 #### inputPath
 
 > `protected` **inputPath**: `string` \| `undefined`
 
-Defined in: libraries/epub/index.ts:616
+Defined in: libraries/epub/index.ts:627
 
 #### readonlyOverride
 
 > `protected` **readonlyOverride**: `boolean` = `false`
 
-Defined in: libraries/epub/index.ts:617
+Defined in: libraries/epub/index.ts:628
 
 #### storage
 
 > `readonly` **storage**: [`EpubStorageKind`](#epubstoragekind)
 
-Defined in: libraries/epub/index.ts:605
+Defined in: libraries/epub/index.ts:616
 
 Storage backend kind in use for this instance
 
@@ -322,25 +322,25 @@ and the adapter's capability bag)
 
 > `static` **xhtmlBuilder**: `XMLBuilder`
 
-Defined in: libraries/epub/index.ts:395
+Defined in: libraries/epub/index.ts:405
 
 #### xhtmlParser
 
 > `static` **xhtmlParser**: `XMLParser`
 
-Defined in: libraries/epub/index.ts:355
+Defined in: libraries/epub/index.ts:357
 
 #### xmlBuilder
 
 > `static` **xmlBuilder**: `XMLBuilder`
 
-Defined in: libraries/epub/index.ts:388
+Defined in: libraries/epub/index.ts:398
 
 #### xmlParser
 
 > `static` **xmlParser**: `XMLParser`
 
-Defined in: libraries/epub/index.ts:348
+Defined in: libraries/epub/index.ts:350
 
 ### Methods
 
@@ -348,7 +348,7 @@ Defined in: libraries/epub/index.ts:348
 
 > **\[dispose\]**(): `void`
 
-Defined in: libraries/epub/index.ts:3584
+Defined in: libraries/epub/index.ts:3608
 
 ##### Returns
 
@@ -358,7 +358,7 @@ Defined in: libraries/epub/index.ts:3584
 
 > **addCollection**(`collection`, `index?`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2228
+Defined in: libraries/epub/index.ts:2239
 
 Add a collection to the EPUB metadata.
 
@@ -381,7 +381,7 @@ will be added to the end of the list.
 
 > **addContributor**(`contributor`, `index?`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2573
+Defined in: libraries/epub/index.ts:2584
 
 Add a contributor to the EPUB metadata.
 
@@ -411,7 +411,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **addCreator**(`creator`, `index?`, `type?`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2418
+Defined in: libraries/epub/index.ts:2429
 
 Add a creator to the EPUB metadata.
 
@@ -441,7 +441,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **addManifestItem**(`item`, `contents`, `encoding`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3169
+Defined in: libraries/epub/index.ts:3195
 
 Create a new manifest item and write its contents to a
 new entry.
@@ -470,7 +470,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **addManifestItem**(`item`, `contents`, `encoding`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3174
+Defined in: libraries/epub/index.ts:3200
 
 Create a new manifest item and write its contents to a
 new entry.
@@ -499,7 +499,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **addManifestItem**(`item`, `contents`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3179
+Defined in: libraries/epub/index.ts:3205
 
 Create a new manifest item and write its contents to a
 new entry.
@@ -527,7 +527,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **addMetadata**(`entry`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3292
+Defined in: libraries/epub/index.ts:3316
 
 Add a new metadata entry to the Epub.
 
@@ -554,7 +554,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
 > **addSpineItem**(`manifestId`, `index?`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2627
+Defined in: libraries/epub/index.ts:2657
 
 Add an item to the spine of the EPUB.
 
@@ -584,7 +584,7 @@ https://www.w3.org/TR/epub-33/#sec-spine-elem
 
 > **addSubject**(`subject`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1757
+Defined in: libraries/epub/index.ts:1768
 
 Add a subject to the EPUB metadata.
 
@@ -606,7 +606,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsubject
 
 > **copy**(`path?`): `Promise`\<[`Epub`](#epub)\>
 
-Defined in: libraries/epub/index.ts:710
+Defined in: libraries/epub/index.ts:721
 
 ##### Parameters
 
@@ -622,7 +622,7 @@ Defined in: libraries/epub/index.ts:710
 
 > **createXhtmlDocument**(`body`, `head?`, `language?`): `Promise`\<([`XmlElement`](#xmlelement)\<`"?xml"`\> \| [`XmlElement`](#xmlelement)\<`"html"`\>)[]\>
 
-Defined in: libraries/epub/index.ts:2986
+Defined in: libraries/epub/index.ts:3016
 
 Create a new XHTML document with the given body
 and head.
@@ -643,7 +643,7 @@ and head.
 
 > **discardAndClose**(): `void`
 
-Defined in: libraries/epub/index.ts:3534
+Defined in: libraries/epub/index.ts:3558
 
 ##### Returns
 
@@ -653,7 +653,7 @@ Defined in: libraries/epub/index.ts:3534
 
 > **findAllMetadataItems**(`predicate`): `Promise`\<`object`[]\>
 
-Defined in: libraries/epub/index.ts:964
+Defined in: libraries/epub/index.ts:975
 
 Returns the item in the metadata element's children array
 that matches the provided predicate.
@@ -672,7 +672,7 @@ that matches the provided predicate.
 
 > **findMetadataItem**(`predicate`): `Promise`\<\{ `id`: `string` \| `undefined`; `properties`: \{[`k`: `string`]: `string`; \}; `type`: `` `r${string}` `` \| `` `a${string}` `` \| `` `b${string}` `` \| `` `c${string}` `` \| `` `d${string}` `` \| `` `e${string}` `` \| `` `f${string}` `` \| `` `g${string}` `` \| `` `h${string}` `` \| `` `i${string}` `` \| `` `j${string}` `` \| `` `k${string}` `` \| `` `l${string}` `` \| `` `m${string}` `` \| `` `n${string}` `` \| `` `o${string}` `` \| `` `p${string}` `` \| `` `q${string}` `` \| `` `s${string}` `` \| `` `t${string}` `` \| `` `u${string}` `` \| `` `v${string}` `` \| `` `w${string}` `` \| `` `x${string}` `` \| `` `y${string}` `` \| `` `z${string}` `` \| `` `R${string}` `` \| `` `A${string}` `` \| `` `B${string}` `` \| `` `C${string}` `` \| `` `D${string}` `` \| `` `E${string}` `` \| `` `F${string}` `` \| `` `G${string}` `` \| `` `H${string}` `` \| `` `I${string}` `` \| `` `J${string}` `` \| `` `K${string}` `` \| `` `L${string}` `` \| `` `M${string}` `` \| `` `N${string}` `` \| `` `O${string}` `` \| `` `P${string}` `` \| `` `Q${string}` `` \| `` `S${string}` `` \| `` `T${string}` `` \| `` `U${string}` `` \| `` `V${string}` `` \| `` `W${string}` `` \| `` `X${string}` `` \| `` `Y${string}` `` \| `` `Z${string}` `` \| `` `?${string}` ``; `value`: `string` \| `undefined`; \} \| `null`\>
 
-Defined in: libraries/epub/index.ts:955
+Defined in: libraries/epub/index.ts:966
 
 Returns the item in the metadata element's children array
 that matches the provided predicate.
@@ -691,7 +691,7 @@ that matches the provided predicate.
 
 > **getBaseDirection**(): `Promise`\<`"auto"` \| `"rtl"` \| `"ltr"`\>
 
-Defined in: libraries/epub/index.ts:1711
+Defined in: libraries/epub/index.ts:1722
 
 Retrieve the base direction from the package element.
 
@@ -710,7 +710,7 @@ https://www.w3.org/TR/epub-33/#attrdef-dir
 
 > **getCollections**(): `Promise`\<[`Collection`](#collection)[]\>
 
-Defined in: libraries/epub/index.ts:2188
+Defined in: libraries/epub/index.ts:2199
 
 Retrieve the list of collections.
 
@@ -722,7 +722,7 @@ Retrieve the list of collections.
 
 > **getContributors**(): `Promise`\<[`DcCreator`](#dccreator)[]\>
 
-Defined in: libraries/epub/index.ts:2405
+Defined in: libraries/epub/index.ts:2416
 
 Retrieve the list of contributors.
 
@@ -741,7 +741,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccontributor
 
 > **getCoverImage**(): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\> \| `null`\>
 
-Defined in: libraries/epub/index.ts:1607
+Defined in: libraries/epub/index.ts:1618
 
 Retrieve the cover image data as a byte array.
 
@@ -761,7 +761,7 @@ https://www.w3.org/TR/epub-33/#sec-cover-image
 
 > **getCoverImageItem**(): `Promise`\<[`ManifestItem`](#manifestitem) \| `null`\>
 
-Defined in: libraries/epub/index.ts:1588
+Defined in: libraries/epub/index.ts:1599
 
 Retrieve the cover image manifest item.
 
@@ -782,7 +782,7 @@ https://www.w3.org/TR/epub-33/#sec-cover-image
 
 > **getCreators**(`type`): `Promise`\<[`DcCreator`](#dccreator)[]\>
 
-Defined in: libraries/epub/index.ts:2341
+Defined in: libraries/epub/index.ts:2352
 
 Retrieve the list of creators.
 
@@ -804,7 +804,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **getDescription**(): `Promise`\<`string` \| `null`\>
 
-Defined in: libraries/epub/index.ts:2039
+Defined in: libraries/epub/index.ts:2050
 
 Retrieve the Epub's description as specified in its
 package document metadata.
@@ -819,9 +819,9 @@ include HTML markup.
 
 #### getGuideEntries()
 
-> **getGuideEntries**(): `Promise`\<`GuideItem`[]\>
+> **getGuideEntries**(): `Promise`\<[`GuideItem`](#guideitem)[]\>
 
-Defined in: libraries/epub/index.ts:3511
+Defined in: libraries/epub/index.ts:3535
 
 Retrieve the guide entries from the package document.
 
@@ -830,13 +830,13 @@ the landmarks nav, but many publications still include it.
 
 ##### Returns
 
-`Promise`\<`GuideItem`[]\>
+`Promise`\<[`GuideItem`](#guideitem)[]\>
 
 #### ~~getIdentifier()~~
 
 > **getIdentifier**(): `Promise`\<`string` \| `null`\>
 
-Defined in: libraries/epub/index.ts:1062
+Defined in: libraries/epub/index.ts:1073
 
 Retrieve the first identifier from the dc:identifier element
 in the EPUB metadata.
@@ -860,7 +860,7 @@ or [getIdentifiers](#getidentifiers) to get all identifiers.
 
 > **getIdentifiers**(): `Promise`\<[`EpubIdentifier`](#epubidentifier)[]\>
 
-Defined in: libraries/epub/index.ts:1237
+Defined in: libraries/epub/index.ts:1248
 
 Retrieve every `dc:identifier` entry, returned as found.
 
@@ -881,7 +881,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **getItemArchiveLength**(`id`): `Promise`\<`number`\>
 
-Defined in: libraries/epub/index.ts:736
+Defined in: libraries/epub/index.ts:747
 
 Length of the underlying archive entry for a manifest item, in bytes
 Necessary to compute the readium page count which is for COMPRESSED content
@@ -904,7 +904,7 @@ Necessary to compute the readium page count which is for COMPRESSED content
 
 > **getLandmarks**(`__namedParameters`): `Promise`\<[`Navigation`](#navigation) \| `null`\>
 
-Defined in: libraries/epub/index.ts:2806
+Defined in: libraries/epub/index.ts:2836
 
 Returns the structured landmarks navigation document
 as a Navigation object
@@ -928,7 +928,7 @@ https://www.w3.org/TR/epub-33/#sec-nav-landmarks
 
 > **getLanguage**(): `Promise`\<`Locale` \| `null`\>
 
-Defined in: libraries/epub/index.ts:1876
+Defined in: libraries/epub/index.ts:1887
 
 Retrieve the Epub's language as specified in its
 package document metadata.
@@ -948,7 +948,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dclanguage
 
 > **getLayout**(): `Promise`\<`"pre-paginated"` \| `"reflowable"`\>
 
-Defined in: libraries/epub/index.ts:1692
+Defined in: libraries/epub/index.ts:1703
 
 Retrieve the layout from the rendition:layout meta element
 in the EPUB metadata.
@@ -967,7 +967,7 @@ https://www.w3.org/TR/epub-33/#layout
 
 > **getManifest**(): `Promise`\<`Record`\<`string`, [`ManifestItem`](#manifestitem)\>\>
 
-Defined in: libraries/epub/index.ts:880
+Defined in: libraries/epub/index.ts:891
 
 Retrieve the manifest for the Epub.
 
@@ -986,7 +986,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
 > **getMetadata**(): `Promise`\<[`EpubMetadata`](#epubmetadata)\>
 
-Defined in: libraries/epub/index.ts:1031
+Defined in: libraries/epub/index.ts:1042
 
 Retrieve the metadata entries for the Epub.
 
@@ -1008,7 +1008,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
 > **getModifiedDate**(): `Promise`\<`Date` \| `null`\>
 
-Defined in: libraries/epub/index.ts:1675
+Defined in: libraries/epub/index.ts:1686
 
 Retrieve the modified date from the dcterms:modified metadata
 in the EPUB metadata as a Date object.
@@ -1027,7 +1027,7 @@ https://www.w3.org/TR/epub-33/#sec-metadata-last-modified
 
 > **getNcxTableOfContents**(): `Promise`\<[`NavigationList`](#navigationlist)\>
 
-Defined in: libraries/epub/index.ts:3417
+Defined in: libraries/epub/index.ts:3441
 
 Parse the NCX table of contents, if one exists, and return
 a tree of TocEntry nodes.
@@ -1044,7 +1044,7 @@ NCX for backwards compatibility.
 
 > **getPackageDocumentSource**(): `Promise`\<`string`\>
 
-Defined in: libraries/epub/index.ts:795
+Defined in: libraries/epub/index.ts:806
 
 ##### Returns
 
@@ -1054,7 +1054,7 @@ Defined in: libraries/epub/index.ts:795
 
 > **getPackageElement**(): `Promise`\<[`XmlElement`](#xmlelement)\<`"package"`\>\>
 
-Defined in: libraries/epub/index.ts:815
+Defined in: libraries/epub/index.ts:826
 
 ##### Returns
 
@@ -1064,7 +1064,7 @@ Defined in: libraries/epub/index.ts:815
 
 > **getPackageVocabularyPrefixes**(): `Promise`\<`Record`\<`string`, `string`\>\>
 
-Defined in: libraries/epub/index.ts:2056
+Defined in: libraries/epub/index.ts:2067
 
 Return the set of custom vocabulary prefixes set on this publication's
 root package element.
@@ -1083,7 +1083,7 @@ https://www.w3.org/TR/epub-33/#sec-prefix-attr
 
 > **getPageBreakSource**(): `Promise`\<[`EpubSource`](#epubsource) \| `null`\>
 
-Defined in: libraries/epub/index.ts:1274
+Defined in: libraries/epub/index.ts:1285
 
 Retrieve the `pageBreakSource` property (EPUB 3.4, spec D.2.9), the
 publication-level source for the source of its page break markers.
@@ -1104,7 +1104,7 @@ https://www.w3.org/TR/epub/#pageBreakSource
 
 > **getPageList**(`__namedParameters`): `Promise`\<[`Navigation`](#navigation) \| `null`\>
 
-Defined in: libraries/epub/index.ts:2818
+Defined in: libraries/epub/index.ts:2848
 
 Returns the structured page list navigation document
 as a Navigation object
@@ -1128,7 +1128,7 @@ https://www.w3.org/TR/epub-33/#sec-nav-landmarks
 
 > **getPublicationDate**(): `Promise`\<`Date` \| `null`\>
 
-Defined in: libraries/epub/index.ts:1644
+Defined in: libraries/epub/index.ts:1655
 
 Retrieve the publication date from the dc:date element
 in the EPUB metadata as a Date object.
@@ -1147,7 +1147,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcdate
 
 > **getRootfile**(): `Promise`\<`string`\>
 
-Defined in: libraries/epub/index.ts:747
+Defined in: libraries/epub/index.ts:758
 
 ##### Returns
 
@@ -1157,7 +1157,7 @@ Defined in: libraries/epub/index.ts:747
 
 > **getSources**(): `Promise`\<[`EpubSource`](#epubsource)[]\>
 
-Defined in: libraries/epub/index.ts:1251
+Defined in: libraries/epub/index.ts:1262
 
 Retrieve every `dc:source` entry, returned as found.
 
@@ -1175,9 +1175,9 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsource
 
 #### getSpineItems()
 
-> **getSpineItems**(): `Promise`\<[`ManifestItem`](#manifestitem)[]\>
+> **getSpineItems**(): `Promise`\<[`ManifestItem`](#manifestitem) & `object`[]\>
 
-Defined in: libraries/epub/index.ts:2608
+Defined in: libraries/epub/index.ts:2630
 
 Retrieve the manifest items that make up the Epub's spine.
 
@@ -1186,7 +1186,7 @@ should be displayed to users by default.
 
 ##### Returns
 
-`Promise`\<[`ManifestItem`](#manifestitem)[]\>
+`Promise`\<[`ManifestItem`](#manifestitem) & `object`[]\>
 
 ##### Link
 
@@ -1196,7 +1196,7 @@ https://www.w3.org/TR/epub-33/#sec-spine-elem
 
 > **getSubjects**(): `Promise`\<(`string` \| [`DcSubject`](#dcsubject))[]\>
 
-Defined in: libraries/epub/index.ts:1831
+Defined in: libraries/epub/index.ts:1842
 
 Retrieve the list of subjects for this EPUB.
 
@@ -1217,7 +1217,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsubject
 
 > **getSubtitle**(): `Promise`\<`string` \| `null`\>
 
-Defined in: libraries/epub/index.ts:1946
+Defined in: libraries/epub/index.ts:1957
 
 Retrieve the subtitle of the Epub, if it exists.
 
@@ -1233,7 +1233,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
 > **getTableOfContents**(`__namedParameters`): `Promise`\<[`Navigation`](#navigation) \| `null`\>
 
-Defined in: libraries/epub/index.ts:2789
+Defined in: libraries/epub/index.ts:2819
 
 Returns the structured table of contents navigation document
 as a Navigation object.
@@ -1257,7 +1257,7 @@ https://www.w3.org/TR/epub-33/#sec-nav-toc
 
 > **getTitle**(`expanded`): `Promise`\<`string` \| `null`\>
 
-Defined in: libraries/epub/index.ts:1922
+Defined in: libraries/epub/index.ts:1933
 
 Retrieve the title of the Epub.
 
@@ -1279,7 +1279,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
 > **getTitles**(): `Promise`\<`object`[]\>
 
-Defined in: libraries/epub/index.ts:1958
+Defined in: libraries/epub/index.ts:1969
 
 Retrieve all title entries of the Epub.
 
@@ -1295,7 +1295,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
 > **getType**(): `Promise`\<[`MetadataEntry`](#metadataentry) \| `null`\>
 
-Defined in: libraries/epub/index.ts:1744
+Defined in: libraries/epub/index.ts:1755
 
 Retrieve the publication type from the dc:type element
 in the EPUB metadata.
@@ -1314,7 +1314,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctype
 
 > **getUniqueIdentifier**(): `Promise`\<`string` \| `null`\>
 
-Defined in: libraries/epub/index.ts:1094
+Defined in: libraries/epub/index.ts:1105
 
 Retrieve the identifier with the unique identifier id
 in the EPUB metadata.
@@ -1333,7 +1333,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **getUniqueIdentifierId**(): `Promise`\<`string` \| `null`\>
 
-Defined in: libraries/epub/index.ts:1175
+Defined in: libraries/epub/index.ts:1186
 
 Retrieve the id of the publication's unique identifier, as declared by the
 package element's `unique-identifier` attribute.
@@ -1350,7 +1350,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **getVersion**(): `Promise`\<`string`\>
 
-Defined in: libraries/epub/index.ts:3404
+Defined in: libraries/epub/index.ts:3428
 
 Returns the EPUB version declared on the package element.
 
@@ -1364,7 +1364,7 @@ Returns the EPUB version declared on the package element.
 
 > **readFileContents**(`href`, `relativeTo?`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
-Defined in: libraries/epub/index.ts:2925
+Defined in: libraries/epub/index.ts:2955
 
 Retrieve the contents of a file, given its href.
 
@@ -1386,7 +1386,7 @@ and an encoding parameter.
 
 > **readFileContents**(`href`, `relativeTo`, `encoding`): `Promise`\<`string`\>
 
-Defined in: libraries/epub/index.ts:2926
+Defined in: libraries/epub/index.ts:2956
 
 Retrieve the contents of a file, given its href.
 
@@ -1411,7 +1411,7 @@ and an encoding parameter.
 
 > **readItemContents**(`id`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
-Defined in: libraries/epub/index.ts:2958
+Defined in: libraries/epub/index.ts:2988
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -1433,7 +1433,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **readItemContents**(`id`, `encoding`): `Promise`\<`string`\>
 
-Defined in: libraries/epub/index.ts:2959
+Defined in: libraries/epub/index.ts:2989
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -1458,7 +1458,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **readXhtmlItemContents**(`id`, `as?`): `Promise`\<[`ParsedXml`](#parsedxml)\>
 
-Defined in: libraries/epub/index.ts:3021
+Defined in: libraries/epub/index.ts:3051
 
 Retrieves the contents of an XHTML item, given its manifest id.
 
@@ -1481,7 +1481,7 @@ https://www.w3.org/TR/epub-33/#sec-xhtml
 
 > **readXhtmlItemContents**(`id`, `as`): `Promise`\<`string`\>
 
-Defined in: libraries/epub/index.ts:3022
+Defined in: libraries/epub/index.ts:3052
 
 Retrieves the contents of an XHTML item, given its manifest id.
 
@@ -1504,7 +1504,7 @@ https://www.w3.org/TR/epub-33/#sec-xhtml
 
 > **removeCollection**(`index`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2297
+Defined in: libraries/epub/index.ts:2308
 
 Remove a collection from the EPUB metadata.
 
@@ -1525,7 +1525,7 @@ refers to the array returned by `epub.getCollections()`.
 
 > **removeContributor**(`index`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2557
+Defined in: libraries/epub/index.ts:2568
 
 Remove a contributor from the EPUB metadata.
 
@@ -1553,7 +1553,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **removeCreator**(`index`, `type`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2505
+Defined in: libraries/epub/index.ts:2516
 
 Remove a creator from the EPUB metadata.
 
@@ -1579,7 +1579,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **removeManifestItem**(`id`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3126
+Defined in: libraries/epub/index.ts:3152
 
 ##### Parameters
 
@@ -1595,7 +1595,7 @@ Defined in: libraries/epub/index.ts:3126
 
 > **removeMetadata**(`predicate`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3376
+Defined in: libraries/epub/index.ts:3400
 
 Remove one or more metadata entries.
 
@@ -1621,7 +1621,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
 > **removeSpineItem**(`index`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2663
+Defined in: libraries/epub/index.ts:2693
 
 Remove the spine item at the specified index.
 
@@ -1643,7 +1643,7 @@ https://www.w3.org/TR/epub-33/#sec-spine-elem
 
 > **removeSubject**(`index`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1794
+Defined in: libraries/epub/index.ts:1805
 
 Remove a subject from the EPUB metadata.
 
@@ -1668,7 +1668,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **replaceMetadata**(`predicate`, `entry`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3331
+Defined in: libraries/epub/index.ts:3355
 
 Replace a metadata entry with a new one.
 
@@ -1695,7 +1695,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
 > **resolveHref**(`href`, `relativeTo?`, `__namedParameters?`): `Promise`\<`string`\>
 
-Defined in: libraries/epub/index.ts:2881
+Defined in: libraries/epub/index.ts:2911
 
 Returns a path-relative-scheme-less URL, relative to the
 container root.
@@ -1720,7 +1720,7 @@ a navigation document, is handed back unchanged.
 
 > **saveAndClose**(): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3549
+Defined in: libraries/epub/index.ts:3573
 
 Write the current contents of the Epub to a new
 EPUB archive on disk.
@@ -1737,7 +1737,7 @@ timestamp.
 
 > **setCoverImage**(`href`, `data`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1621
+Defined in: libraries/epub/index.ts:1632
 
 Set the cover image for the EPUB.
 
@@ -1760,7 +1760,7 @@ the provided href within the publication.
 
 > **setDescription**(`description`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2023
+Defined in: libraries/epub/index.ts:2034
 
 Update the Epub's description metadata entry.
 
@@ -1782,7 +1782,7 @@ Otherwise creates a new element. Any non-ASCII symbols,
 
 > **setIdentifier**(`identifier`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1078
+Defined in: libraries/epub/index.ts:1089
 
 Set the dc:identifier metadata element with the provided string.
 
@@ -1811,7 +1811,7 @@ Use [setUniqueIdentifier](#setuniqueidentifier) instead.
 
 > **setIdentifiers**(`identifiers`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1343
+Defined in: libraries/epub/index.ts:1354
 
 Replace the publication's `dc:identifier` entries.
 
@@ -1848,7 +1848,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **setLanguage**(`locale`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1905
+Defined in: libraries/epub/index.ts:1916
 
 Update the Epub's language metadata entry.
 
@@ -1873,7 +1873,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dclanguage
 
 > **setPackageVocabularyPrefix**(`prefix`, `uri`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2074
+Defined in: libraries/epub/index.ts:2085
 
 Set a custom vocabulary prefix on the root package element.
 
@@ -1896,7 +1896,7 @@ https://www.w3.org/TR/epub-33/#sec-prefix-attr
 
 > **setPageBreakSource**(`value`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1310
+Defined in: libraries/epub/index.ts:1321
 
 Set the `pageBreakSource` property (EPUB 3.4, spec D.2.9), or remove it when
 passed null. Replaces an existing `pageBreakSource` meta if present.
@@ -1921,7 +1921,7 @@ https://www.w3.org/TR/epub/#pageBreakSource
 
 > **setPublicationDate**(`date`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1659
+Defined in: libraries/epub/index.ts:1670
 
 Set the dc:date metadata element with the provided date.
 
@@ -1946,7 +1946,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcdate
 
 > **setSources**(`sources`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1461
+Defined in: libraries/epub/index.ts:1472
 
 Replace the publication's `dc:source` entries.
 
@@ -1977,7 +1977,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsource
 
 > **setTitle**(`title`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2098
+Defined in: libraries/epub/index.ts:2109
 
 Set the title of the Epub.
 
@@ -2004,7 +2004,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
 > **setTitles**(`entries`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:2126
+Defined in: libraries/epub/index.ts:2137
 
 ##### Parameters
 
@@ -2020,7 +2020,7 @@ Defined in: libraries/epub/index.ts:2126
 
 > **setType**(`type`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1728
+Defined in: libraries/epub/index.ts:1739
 
 Set the dc:type metadata element.
 
@@ -2045,7 +2045,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctype
 
 > **setUniqueIdentifier**(`identifier`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:1119
+Defined in: libraries/epub/index.ts:1130
 
 Set the unique identifier id for the EPUB.
 
@@ -2072,7 +2072,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **updateManifestItem**(`id`, `newItem`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3243
+Defined in: libraries/epub/index.ts:3267
 
 Update the manifest entry for an existing item.
 
@@ -2098,7 +2098,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
 > **withPackage**(`producer`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:841
+Defined in: libraries/epub/index.ts:852
 
 Safely modify the package document, without race conditions.
 
@@ -2123,7 +2123,7 @@ method uses a mutex to ensure that each update runs exclusively.
 
 > **writeItemContents**(`id`, `contents`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3078
+Defined in: libraries/epub/index.ts:3108
 
 Write new contents for an existing manifest item,
 specified by its id.
@@ -2150,7 +2150,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **writeItemContents**(`id`, `contents`, `encoding`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3079
+Defined in: libraries/epub/index.ts:3109
 
 Write new contents for an existing manifest item,
 specified by its id.
@@ -2178,7 +2178,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **writeXhtmlItemContents**(`id`, `contents`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:3118
+Defined in: libraries/epub/index.ts:3148
 
 Write new contents for an existing XHTML item,
 specified by its id.
@@ -2205,7 +2205,7 @@ https://www.w3.org/TR/epub-33/#sec-xhtml
 
 > `static` **addLinkToXhtmlHead**(`xml`, `link`): `void`
 
-Defined in: libraries/epub/index.ts:425
+Defined in: libraries/epub/index.ts:436
 
 Given an XML structure representing a complete XHTML document,
 add a `link` element to the `head` of the document.
@@ -2230,7 +2230,7 @@ This method modifies the provided XML structure.
 
 > `static` **assertEpub3**(`epub`): `Promise`\<`void`\>
 
-Defined in: libraries/epub/index.ts:700
+Defined in: libraries/epub/index.ts:711
 
 ##### Parameters
 
@@ -2246,7 +2246,7 @@ Defined in: libraries/epub/index.ts:700
 
 > `static` **create**(`path`, `dublinCore`, `additionalMetadata`): `Promise`\<[`Epub`](#epub)\>
 
-Defined in: libraries/epub/index.ts:648
+Defined in: libraries/epub/index.ts:659
 
 Construct a new EPUB on a writable backend, optionally seeded
 with the provided metadata. Equivalent to
@@ -2268,7 +2268,7 @@ with the provided metadata. Equivalent to
 
 > `static` **createXmlElement**\<`Name`\>(`name`, `properties`, `children`): [`XmlElement`](#xmlelement)\<`Name`\>
 
-Defined in: libraries/epub/index.ts:460
+Defined in: libraries/epub/index.ts:471
 
 ##### Type Parameters
 
@@ -2292,7 +2292,7 @@ Defined in: libraries/epub/index.ts:460
 
 > `static` **createXmlTextNode**(`text`): [`XmlTextNode`](#xmltextnode)
 
-Defined in: libraries/epub/index.ts:473
+Defined in: libraries/epub/index.ts:484
 
 ##### Parameters
 
@@ -2308,7 +2308,7 @@ Defined in: libraries/epub/index.ts:473
 
 > `static` **findXmlChildByName**\<`Name`\>(`name`, `xml`, `filter?`): [`XmlElement`](#xmlelement)\<`Name`\> \| `undefined`
 
-Defined in: libraries/epub/index.ts:546
+Defined in: libraries/epub/index.ts:557
 
 Given an XML structure, find the first child matching
 the provided name and optional filter.
@@ -2335,7 +2335,7 @@ the provided name and optional filter.
 
 > `static` **findXmlDescendantByName**\<`Name`\>(`name`, `xml`, `filter?`): [`XmlElement`](#xmlelement)\<`Name`\> \| `undefined`
 
-Defined in: libraries/epub/index.ts:564
+Defined in: libraries/epub/index.ts:575
 
 Given an XML structure, find the first descendant matching
 the provided name and optional filter.
@@ -2365,7 +2365,7 @@ the highest element in the tree matching the name and filter.
 
 > `static` **formatSmilDuration**(`duration`): `string`
 
-Defined in: libraries/epub/index.ts:408
+Defined in: libraries/epub/index.ts:419
 
 Format a duration, provided as a number of seconds, as
 a SMIL clock value, to be used for Media Overlays.
@@ -2390,7 +2390,7 @@ https://www.w3.org/TR/epub-33/#sec-duration
 
 > `static` **from**(`pathOrData`): `Promise`\<[`Epub`](#epub)\>
 
-Defined in: libraries/epub/index.ts:684
+Defined in: libraries/epub/index.ts:695
 
 Open an existing EPUB publication, extracting it to a temp directory
 so writes can mutate the unpacked tree and rezip with `saveAndClose`.
@@ -2418,7 +2418,7 @@ when the archive is not a valid EPUB 3
 
 > `static` **from**(`pathOrData`, `options`): `Promise`\<[`EpubReader`](#epubreader)\>
 
-Defined in: libraries/epub/index.ts:685
+Defined in: libraries/epub/index.ts:696
 
 Open an existing EPUB publication, extracting it to a temp directory
 so writes can mutate the unpacked tree and rezip with `saveAndClose`.
@@ -2447,7 +2447,7 @@ when the archive is not a valid EPUB 3
 
 > `static` **from**(`pathOrData`, `options?`): `Promise`\<[`Epub`](#epub) \| [`EpubReader`](#epubreader)\>
 
-Defined in: libraries/epub/index.ts:689
+Defined in: libraries/epub/index.ts:700
 
 Open an existing EPUB publication, extracting it to a temp directory
 so writes can mutate the unpacked tree and rezip with `saveAndClose`.
@@ -2476,7 +2476,7 @@ when the archive is not a valid EPUB 3
 
 > `static` **getXhtmlBody**(`xml`): [`ParsedXml`](#parsedxml)
 
-Defined in: libraries/epub/index.ts:450
+Defined in: libraries/epub/index.ts:461
 
 Given an XML structure representing a complete XHTML document,
 return the sub-structure representing the children of the
@@ -2496,7 +2496,7 @@ document's body element.
 
 > `static` **getXhtmlTextContent**(`xml`): `string`
 
-Defined in: libraries/epub/index.ts:482
+Defined in: libraries/epub/index.ts:493
 
 Given an XML structure representing a complete XHTML document,
 return a string representing the concatenation of all text nodes
@@ -2516,7 +2516,7 @@ in the document.
 
 > `static` **getXmlAttributes**(`element`): `Record`\<`string`, `string`\>
 
-Defined in: libraries/epub/index.ts:499
+Defined in: libraries/epub/index.ts:510
 
 Given an XMLElement, return its attributes.
 
@@ -2534,7 +2534,7 @@ Given an XMLElement, return its attributes.
 
 > `static` **getXmlChildren**\<`Name`\>(`element`): [`ParsedXml`](#parsedxml)
 
-Defined in: libraries/epub/index.ts:526
+Defined in: libraries/epub/index.ts:537
 
 Given an XMLElement, return a list of its children
 
@@ -2558,7 +2558,7 @@ Given an XMLElement, return a list of its children
 
 > `static` **getXmlElementName**\<`Name`\>(`element`): `Name`
 
-Defined in: libraries/epub/index.ts:511
+Defined in: libraries/epub/index.ts:522
 
 Given an XMLElement, return its tag name.
 
@@ -2582,7 +2582,7 @@ Given an XMLElement, return its tag name.
 
 > `static` **isXmlTextNode**(`node`): `node is XmlTextNode`
 
-Defined in: libraries/epub/index.ts:586
+Defined in: libraries/epub/index.ts:597
 
 Given an XMLNode, determine whether it represents
 a text node or an XML element.
@@ -2601,7 +2601,7 @@ a text node or an XML element.
 
 > `static` **replaceXmlChildren**\<`Name`\>(`element`, `children`): `void`
 
-Defined in: libraries/epub/index.ts:534
+Defined in: libraries/epub/index.ts:545
 
 ##### Type Parameters
 
@@ -2624,7 +2624,7 @@ Defined in: libraries/epub/index.ts:534
 
 > `static` **upgrade**(`path`, `options`): `Promise`\<[`Epub`](#epub)\>
 
-Defined in: libraries/epub/index.ts:3577
+Defined in: libraries/epub/index.ts:3601
 
 Upgrade an EPUB 2 publication to EPUB 3 in place, returning a new,
 valid Epub 3 instance. Equivalent to
@@ -2645,7 +2645,7 @@ valid Epub 3 instance. Equivalent to
 
 > `static` **using**\<`A`\>(`adapterClass`): [`EpubFactory`](#epubfactory)\<`A`\>
 
-Defined in: libraries/epub/index.ts:668
+Defined in: libraries/epub/index.ts:679
 
 Specify the storage backend to use for the EPUB
 
@@ -2679,7 +2679,7 @@ using reader = await Epub.using(MemoryAdapter).from(buffer, { cache: false });
 
 ## EpubFactory\<A\>
 
-Defined in: libraries/epub/index.ts:3606
+Defined in: libraries/epub/index.ts:3630
 
 Adapter-bound factory returned by [Epub.using](#using).
 
@@ -2700,7 +2700,7 @@ gracefully when the adapter doesn't support the operation: `create` and
 
 > **new EpubFactory**\<`A`\>(`adapterClass`): [`EpubFactory`](#epubfactory)\<`A`\>
 
-Defined in: libraries/epub/index.ts:3607
+Defined in: libraries/epub/index.ts:3631
 
 ##### Parameters
 
@@ -2718,7 +2718,7 @@ Defined in: libraries/epub/index.ts:3607
 
 > `readonly` **adapterClass**: `A`
 
-Defined in: libraries/epub/index.ts:3607
+Defined in: libraries/epub/index.ts:3631
 
 ### Methods
 
@@ -2726,7 +2726,7 @@ Defined in: libraries/epub/index.ts:3607
 
 > **create**(`path`, `__namedParameters`, `additionalMetadata`): `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\>\>
 
-Defined in: libraries/epub/index.ts:3687
+Defined in: libraries/epub/index.ts:3711
 
 Construct a new EPUB on this factory's adapter, optionally seeded
 with the provided metadata. Requires a writable adapter that
@@ -2754,7 +2754,7 @@ when the adapter is read-only or does not implement initEmpty
 
 > **from**(`source`, `options`): `Promise`\<`Pick`\<[`Epub`](#epub), `"storage"` \| `"getItemArchiveLength"` \| `"getRootfile"` \| `"getPackageDocumentSource"` \| `"getPackageElement"` \| `"getManifest"` \| `"findMetadataItem"` \| `"findAllMetadataItems"` \| `"getMetadata"` \| `"getIdentifier"` \| `"getUniqueIdentifier"` \| `"getUniqueIdentifierId"` \| `"getIdentifiers"` \| `"getSources"` \| `"getPageBreakSource"` \| `"getCoverImageItem"` \| `"getCoverImage"` \| `"getPublicationDate"` \| `"getModifiedDate"` \| `"getLayout"` \| `"getBaseDirection"` \| `"getType"` \| `"getSubjects"` \| `"getLanguage"` \| `"getTitle"` \| `"getSubtitle"` \| `"getTitles"` \| `"getDescription"` \| `"getPackageVocabularyPrefixes"` \| `"getCollections"` \| `"getCreators"` \| `"getContributors"` \| `"getSpineItems"` \| `"getTableOfContents"` \| `"getLandmarks"` \| `"getPageList"` \| `"resolveHref"` \| `"readFileContents"` \| `"readItemContents"` \| `"readXhtmlItemContents"` \| `"getVersion"` \| `"getNcxTableOfContents"` \| `"getGuideEntries"` \| `"discardAndClose"`\> & `Disposable` & `object`\>
 
-Defined in: libraries/epub/index.ts:3614
+Defined in: libraries/epub/index.ts:3638
 
 Open an existing EPUB through this factory's adapter
 
@@ -2777,7 +2777,7 @@ when the archive is not a valid EPUB 3
 
 > **from**(`source`, `options?`): `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\> & `object`\>
 
-Defined in: libraries/epub/index.ts:3618
+Defined in: libraries/epub/index.ts:3642
 
 Open an existing EPUB through this factory's adapter
 
@@ -2800,7 +2800,7 @@ when the archive is not a valid EPUB 3
 
 > **readPackageDocumentSource**(`source`, `options`): `Promise`\<`string`\>
 
-Defined in: libraries/epub/index.ts:3661
+Defined in: libraries/epub/index.ts:3685
 
 ##### Parameters
 
@@ -2817,7 +2817,7 @@ Defined in: libraries/epub/index.ts:3661
 
 > **upgrade**(`path`, `options`): `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\>\>
 
-Defined in: libraries/epub/index.ts:3794
+Defined in: libraries/epub/index.ts:3818
 
 Upgrade an EPUB 2 publication to EPUB 3 in place using this
 factory's adapter, returning a new, valid Epub 3 instance.
@@ -2855,7 +2855,7 @@ when the adapter is read-only
 
 ## EpubReadOnlyError
 
-Defined in: libraries/epub/index.ts:234
+Defined in: libraries/epub/index.ts:236
 
 ### Extends
 
@@ -3084,7 +3084,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ## EpubVersionError
 
-Defined in: libraries/epub/index.ts:233
+Defined in: libraries/epub/index.ts:235
 
 ### Extends
 
@@ -3759,7 +3759,7 @@ Defined in: libraries/epub/adapters/tmpfs.ts:88
 
 ## AlternateScript
 
-Defined in: libraries/epub/index.ts:150
+Defined in: libraries/epub/index.ts:151
 
 ### Properties
 
@@ -3767,19 +3767,19 @@ Defined in: libraries/epub/index.ts:150
 
 > **locale**: `Locale`
 
-Defined in: libraries/epub/index.ts:152
+Defined in: libraries/epub/index.ts:153
 
 #### name
 
 > **name**: `string`
 
-Defined in: libraries/epub/index.ts:151
+Defined in: libraries/epub/index.ts:152
 
 ---
 
 ## Collection
 
-Defined in: libraries/epub/index.ts:174
+Defined in: libraries/epub/index.ts:175
 
 ### Properties
 
@@ -3787,25 +3787,25 @@ Defined in: libraries/epub/index.ts:174
 
 > **name**: `string`
 
-Defined in: libraries/epub/index.ts:175
+Defined in: libraries/epub/index.ts:176
 
 #### position?
 
 > `optional` **position**: `string`
 
-Defined in: libraries/epub/index.ts:177
+Defined in: libraries/epub/index.ts:178
 
 #### type?
 
 > `optional` **type**: `string`
 
-Defined in: libraries/epub/index.ts:176
+Defined in: libraries/epub/index.ts:177
 
 ---
 
 ## DcCreator
 
-Defined in: libraries/epub/index.ts:155
+Defined in: libraries/epub/index.ts:156
 
 ### Properties
 
@@ -3813,37 +3813,37 @@ Defined in: libraries/epub/index.ts:155
 
 > `optional` **alternateScripts**: [`AlternateScript`](#alternatescript)[]
 
-Defined in: libraries/epub/index.ts:160
+Defined in: libraries/epub/index.ts:161
 
 #### fileAs?
 
 > `optional` **fileAs**: `string`
 
-Defined in: libraries/epub/index.ts:159
+Defined in: libraries/epub/index.ts:160
 
 #### name
 
 > **name**: `string`
 
-Defined in: libraries/epub/index.ts:156
+Defined in: libraries/epub/index.ts:157
 
 #### role?
 
 > `optional` **role**: `string`
 
-Defined in: libraries/epub/index.ts:157
+Defined in: libraries/epub/index.ts:158
 
 #### roleScheme?
 
 > `optional` **roleScheme**: `string`
 
-Defined in: libraries/epub/index.ts:158
+Defined in: libraries/epub/index.ts:159
 
 ---
 
 ## DcSubject
 
-Defined in: libraries/epub/index.ts:117
+Defined in: libraries/epub/index.ts:118
 
 ### Properties
 
@@ -3851,25 +3851,25 @@ Defined in: libraries/epub/index.ts:117
 
 > **authority**: `string`
 
-Defined in: libraries/epub/index.ts:119
+Defined in: libraries/epub/index.ts:120
 
 #### term
 
 > **term**: `string`
 
-Defined in: libraries/epub/index.ts:120
+Defined in: libraries/epub/index.ts:121
 
 #### value
 
 > **value**: `string`
 
-Defined in: libraries/epub/index.ts:118
+Defined in: libraries/epub/index.ts:119
 
 ---
 
 ## DublinCore
 
-Defined in: libraries/epub/index.ts:163
+Defined in: libraries/epub/index.ts:164
 
 ### Properties
 
@@ -3877,49 +3877,49 @@ Defined in: libraries/epub/index.ts:163
 
 > `optional` **contributors**: [`DcCreator`](#dccreator)[]
 
-Defined in: libraries/epub/index.ts:170
+Defined in: libraries/epub/index.ts:171
 
 #### creators?
 
 > `optional` **creators**: [`DcCreator`](#dccreator)[]
 
-Defined in: libraries/epub/index.ts:169
+Defined in: libraries/epub/index.ts:170
 
 #### date?
 
 > `optional` **date**: `Date`
 
-Defined in: libraries/epub/index.ts:167
+Defined in: libraries/epub/index.ts:168
 
 #### identifier
 
 > **identifier**: `string`
 
-Defined in: libraries/epub/index.ts:166
+Defined in: libraries/epub/index.ts:167
 
 #### language
 
 > **language**: `Locale`
 
-Defined in: libraries/epub/index.ts:165
+Defined in: libraries/epub/index.ts:166
 
 #### subjects?
 
 > `optional` **subjects**: (`string` \| [`DcSubject`](#dcsubject))[]
 
-Defined in: libraries/epub/index.ts:168
+Defined in: libraries/epub/index.ts:169
 
 #### title
 
 > **title**: `string`
 
-Defined in: libraries/epub/index.ts:164
+Defined in: libraries/epub/index.ts:165
 
 #### type?
 
 > `optional` **type**: `string`
 
-Defined in: libraries/epub/index.ts:171
+Defined in: libraries/epub/index.ts:172
 
 ---
 
@@ -3949,7 +3949,7 @@ Whether to remove the NCX file, as it's technically optional in EPUB 3.
 
 ## EpubIdentifier
 
-Defined in: libraries/epub/index.ts:123
+Defined in: libraries/epub/index.ts:124
 
 ### Properties
 
@@ -3957,13 +3957,13 @@ Defined in: libraries/epub/index.ts:123
 
 > `optional` **id**: `string`
 
-Defined in: libraries/epub/index.ts:125
+Defined in: libraries/epub/index.ts:126
 
 #### identifierType?
 
 > `optional` **identifierType**: `string`
 
-Defined in: libraries/epub/index.ts:127
+Defined in: libraries/epub/index.ts:128
 
 the value of a refining `identifier-type` meta, if present
 
@@ -3971,7 +3971,7 @@ the value of a refining `identifier-type` meta, if present
 
 > `optional` **scheme**: `string`
 
-Defined in: libraries/epub/index.ts:129
+Defined in: libraries/epub/index.ts:130
 
 the `scheme` of a refining `identifier-type` meta, or a legacy `opf:scheme` attribute
 
@@ -3979,7 +3979,7 @@ the `scheme` of a refining `identifier-type` meta, or a legacy `opf:scheme` attr
 
 > **value**: `string`
 
-Defined in: libraries/epub/index.ts:124
+Defined in: libraries/epub/index.ts:125
 
 ---
 
@@ -4009,7 +4009,7 @@ the entry name, as it appears in the archive
 
 ## EpubSource
 
-Defined in: libraries/epub/index.ts:132
+Defined in: libraries/epub/index.ts:133
 
 ### Properties
 
@@ -4017,13 +4017,13 @@ Defined in: libraries/epub/index.ts:132
 
 > `optional` **id**: `string`
 
-Defined in: libraries/epub/index.ts:134
+Defined in: libraries/epub/index.ts:135
 
 #### identifierType?
 
 > `optional` **identifierType**: `string`
 
-Defined in: libraries/epub/index.ts:136
+Defined in: libraries/epub/index.ts:137
 
 the value of a refining `identifier-type` meta, if present
 
@@ -4031,7 +4031,7 @@ the value of a refining `identifier-type` meta, if present
 
 > `optional` **isPageBreakSource**: `boolean`
 
-Defined in: libraries/epub/index.ts:147
+Defined in: libraries/epub/index.ts:148
 
 whether this source has a `source-of="pagination"` refinement
 or of a `<meta property="pageBreakSource">` element
@@ -4044,7 +4044,7 @@ be sure to get the source of pagination, use [Epub.getPageBreakSource](#getpageb
 
 > `optional` **scheme**: `string`
 
-Defined in: libraries/epub/index.ts:138
+Defined in: libraries/epub/index.ts:139
 
 the `scheme` of a refining `identifier-type` meta, or a legacy `opf:scheme` attribute
 
@@ -4052,7 +4052,7 @@ the `scheme` of a refining `identifier-type` meta, or a legacy `opf:scheme` attr
 
 > **value**: `string`
 
-Defined in: libraries/epub/index.ts:133
+Defined in: libraries/epub/index.ts:134
 
 ---
 
@@ -4344,7 +4344,7 @@ when false, the Epub class refuses every mutation method at runtime
 
 ## FromOptions
 
-Defined in: libraries/epub/index.ts:201
+Defined in: libraries/epub/index.ts:203
 
 ### Properties
 
@@ -4352,7 +4352,7 @@ Defined in: libraries/epub/index.ts:201
 
 > `optional` **readonly**: `boolean`
 
-Defined in: libraries/epub/index.ts:206
+Defined in: libraries/epub/index.ts:208
 
 when true, mutation methods throw [EpubReadOnlyError](#epubreadonlyerror) at runtime
 
@@ -4361,6 +4361,32 @@ when true, mutation methods throw [EpubReadOnlyError](#epubreadonlyerror) at run
 ```ts
 false;
 ```
+
+---
+
+## GuideItem
+
+Defined in: libraries/epub/index.ts:195
+
+### Properties
+
+#### href
+
+> **href**: `string`
+
+Defined in: libraries/epub/index.ts:196
+
+#### title
+
+> **title**: `string`
+
+Defined in: libraries/epub/index.ts:197
+
+#### type
+
+> **type**: `string`
+
+Defined in: libraries/epub/index.ts:198
 
 ---
 
@@ -4422,7 +4448,7 @@ Defined in: libraries/epub/adapters/memory.ts:18
 
 ## Navigation
 
-Defined in: libraries/epub/index.ts:188
+Defined in: libraries/epub/index.ts:190
 
 ### Properties
 
@@ -4430,19 +4456,19 @@ Defined in: libraries/epub/index.ts:188
 
 > **children**: [`NavigationList`](#navigationlist)
 
-Defined in: libraries/epub/index.ts:190
+Defined in: libraries/epub/index.ts:192
 
 #### title?
 
 > `optional` **title**: `string`
 
-Defined in: libraries/epub/index.ts:189
+Defined in: libraries/epub/index.ts:191
 
 ---
 
 ## NavigationItem
 
-Defined in: libraries/epub/index.ts:180
+Defined in: libraries/epub/index.ts:181
 
 ### Properties
 
@@ -4450,19 +4476,25 @@ Defined in: libraries/epub/index.ts:180
 
 > `optional` **children**: [`NavigationList`](#navigationlist)
 
-Defined in: libraries/epub/index.ts:183
+Defined in: libraries/epub/index.ts:185
 
 #### href?
 
 > `optional` **href**: `string`
 
-Defined in: libraries/epub/index.ts:182
+Defined in: libraries/epub/index.ts:183
 
 #### title
 
 > **title**: `string`
 
-Defined in: libraries/epub/index.ts:181
+Defined in: libraries/epub/index.ts:182
+
+#### type?
+
+> `optional` **type**: `string`
+
+Defined in: libraries/epub/index.ts:184
 
 ---
 
@@ -4484,7 +4516,7 @@ Defined in: libraries/epub/adapters/interface.ts:88
 
 > **ElementName** = \`$\{Letter \| Uppercase\<Letter\> \| QuestionMark\}$\{string\}\`
 
-Defined in: libraries/epub/index.ts:77
+Defined in: libraries/epub/index.ts:78
 
 A valid name for an XML element (must start with a letter)
 
@@ -4494,7 +4526,7 @@ A valid name for an XML element (must start with a letter)
 
 > **EpubInstanceFor**\<`A`\> = `A`\[`"capabilities"`\]\[`"writable"`\] _extends_ `true` ? [`Epub`](#epub) : [`EpubReader`](#epubreader)
 
-Defined in: libraries/epub/index.ts:3595
+Defined in: libraries/epub/index.ts:3619
 
 Resolves to [Epub](#epub) for writable adapters, [EpubReader](#epubreader) for read-only ones.
 
@@ -4513,7 +4545,7 @@ The conditional pivots on `capabilities.writable`, which must be a literal
 
 > **EpubMetadata** = [`MetadataEntry`](#metadataentry)[]
 
-Defined in: libraries/epub/index.ts:115
+Defined in: libraries/epub/index.ts:116
 
 ---
 
@@ -4521,7 +4553,7 @@ Defined in: libraries/epub/index.ts:115
 
 > **EpubReader** = `Pick`\<[`Epub`](#epub), `"storage"` \| `"findMetadataItem"` \| `"findAllMetadataItems"` \| `"resolveHref"` \| `"readFileContents"` \| `"readItemContents"` \| `"readXhtmlItemContents"` \| `"discardAndClose"` \| `Extract`\<keyof [`Epub`](#epub), `` `get${string}` ``\>\> & `Disposable`
 
-Defined in: libraries/epub/index.ts:213
+Defined in: libraries/epub/index.ts:215
 
 Read-only view of an EPUB
 Returned by Epub.using(MemoryAdapter).from(...) and by Epub.from(path, { readonly: true })
@@ -4549,7 +4581,7 @@ Built-in adapters:
 
 > **InMemoryEpubReader** = [`EpubReader`](#epubreader) & `object`
 
-Defined in: libraries/epub/index.ts:231
+Defined in: libraries/epub/index.ts:233
 
 Readonly Epub-instance backed by an in-memory zip handle
 Returned by `Epub.using(MemoryAdapter).from(...)`
@@ -4566,7 +4598,7 @@ Returned by `Epub.using(MemoryAdapter).from(...)`
 
 > **ManifestItem** = `object`
 
-Defined in: libraries/epub/index.ts:98
+Defined in: libraries/epub/index.ts:99
 
 ### Properties
 
@@ -4574,43 +4606,43 @@ Defined in: libraries/epub/index.ts:98
 
 > `optional` **fallback**: `string`
 
-Defined in: libraries/epub/index.ts:103
+Defined in: libraries/epub/index.ts:104
 
 #### href
 
 > **href**: `string`
 
-Defined in: libraries/epub/index.ts:100
+Defined in: libraries/epub/index.ts:101
 
 #### id
 
 > **id**: `string`
 
-Defined in: libraries/epub/index.ts:99
+Defined in: libraries/epub/index.ts:100
 
 #### mediaOverlay?
 
 > `optional` **mediaOverlay**: `string`
 
-Defined in: libraries/epub/index.ts:104
+Defined in: libraries/epub/index.ts:105
 
 #### mediaType?
 
 > `optional` **mediaType**: `string`
 
-Defined in: libraries/epub/index.ts:102
+Defined in: libraries/epub/index.ts:103
 
 #### properties?
 
 > `optional` **properties**: `string`[]
 
-Defined in: libraries/epub/index.ts:105
+Defined in: libraries/epub/index.ts:106
 
 #### title?
 
 > `optional` **title**: `string`
 
-Defined in: libraries/epub/index.ts:101
+Defined in: libraries/epub/index.ts:102
 
 ---
 
@@ -4618,7 +4650,7 @@ Defined in: libraries/epub/index.ts:101
 
 > **MetadataEntry** = `object`
 
-Defined in: libraries/epub/index.ts:108
+Defined in: libraries/epub/index.ts:109
 
 ### Properties
 
@@ -4626,25 +4658,25 @@ Defined in: libraries/epub/index.ts:108
 
 > `optional` **id**: `string`
 
-Defined in: libraries/epub/index.ts:109
+Defined in: libraries/epub/index.ts:110
 
 #### properties
 
 > **properties**: `Record`\<`string`, `string`\>
 
-Defined in: libraries/epub/index.ts:111
+Defined in: libraries/epub/index.ts:112
 
 #### type
 
 > **type**: [`ElementName`](#elementname)
 
-Defined in: libraries/epub/index.ts:110
+Defined in: libraries/epub/index.ts:111
 
 #### value
 
 > **value**: `string` \| `undefined`
 
-Defined in: libraries/epub/index.ts:112
+Defined in: libraries/epub/index.ts:113
 
 ---
 
@@ -4652,7 +4684,7 @@ Defined in: libraries/epub/index.ts:112
 
 > **NavigationList** = [`NavigationItem`](#navigationitem)[]
 
-Defined in: libraries/epub/index.ts:186
+Defined in: libraries/epub/index.ts:188
 
 ---
 
@@ -4660,7 +4692,7 @@ Defined in: libraries/epub/index.ts:186
 
 > **PackageElement** = [`XmlElement`](#xmlelement)\<`"package"`\>
 
-Defined in: libraries/epub/index.ts:199
+Defined in: libraries/epub/index.ts:201
 
 ---
 
@@ -4668,7 +4700,7 @@ Defined in: libraries/epub/index.ts:199
 
 > **ParsedXml** = [`XmlNode`](#xmlnode)[]
 
-Defined in: libraries/epub/index.ts:96
+Defined in: libraries/epub/index.ts:97
 
 An XML structure
 
@@ -4678,7 +4710,7 @@ An XML structure
 
 > **XmlElement**\<`Name`\> = `object` & `{ [key in Name]: ParsedXml }`
 
-Defined in: libraries/epub/index.ts:83
+Defined in: libraries/epub/index.ts:84
 
 An XML element
 
@@ -4700,7 +4732,7 @@ An XML element
 
 > **XmlNode** = [`XmlElement`](#xmlelement) \| [`XmlTextNode`](#xmltextnode)
 
-Defined in: libraries/epub/index.ts:93
+Defined in: libraries/epub/index.ts:94
 
 A valid XML node. May be either an element or a text node.
 
@@ -4710,7 +4742,7 @@ A valid XML node. May be either an element or a text node.
 
 > **XmlTextNode** = `object`
 
-Defined in: libraries/epub/index.ts:90
+Defined in: libraries/epub/index.ts:91
 
 A text node in an XML document
 
@@ -4720,4 +4752,4 @@ A text node in an XML document
 
 > **#text**: `string`
 
-Defined in: libraries/epub/index.ts:90
+Defined in: libraries/epub/index.ts:91

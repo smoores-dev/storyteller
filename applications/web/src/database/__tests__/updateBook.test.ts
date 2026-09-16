@@ -2,8 +2,9 @@ import assert from "node:assert"
 import { randomUUID } from "node:crypto"
 import { mkdir, rm, stat, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { describe, it } from "node:test"
 import { setTimeout } from "node:timers/promises"
+
+import { describe, it } from "vitest"
 
 import {
   type TestDbContext,
@@ -53,8 +54,8 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-void describe("updateBook auto-rename", () => {
-  void it("moves the asset folder when title changes", async () => {
+describe("updateBook auto-rename", () => {
+  it("moves the asset folder when title changes", async () => {
     using _db = setupTestDb()
     await rm(ASSETS_DIR, { recursive: true, force: true })
     await mkdir(ASSETS_DIR, { recursive: true })
@@ -84,7 +85,7 @@ void describe("updateBook auto-rename", () => {
     )
   })
 
-  void it("leaves the asset folder alone when title is unchanged", async () => {
+  it("leaves the asset folder alone when title is unchanged", async () => {
     using _db = setupTestDb()
     await rm(ASSETS_DIR, { recursive: true, force: true })
     await mkdir(ASSETS_DIR, { recursive: true })
@@ -105,8 +106,8 @@ void describe("updateBook auto-rename", () => {
   })
 })
 
-void describe("updateBook merge positions", () => {
-  void it("keeps the most recent position per user across merged books", async () => {
+describe("updateBook merge positions", () => {
+  it("keeps the most recent position per user across merged books", async () => {
     using db = setupTestDb()
     const userId = seedUser(db)
     const userId2 = seedUser(db)
@@ -151,7 +152,7 @@ void describe("updateBook merge positions", () => {
     )
   })
 
-  void it("promotes the merged position when target has none", async () => {
+  it("promotes the merged position when target has none", async () => {
     using db = setupTestDb()
     const userId = seedUser(db)
     const [targetUuid, mergedUuid] = seedBooks(db, [
@@ -170,7 +171,7 @@ void describe("updateBook merge positions", () => {
     assert.deepStrictEqual(book.position.locator, { href: "only" })
   })
 
-  void it("does not crash when only target book has a position", async () => {
+  it("does not crash when only target book has a position", async () => {
     using db = setupTestDb()
     const userId = seedUser(db)
     const [targetUuid, mergedUuid] = seedBooks(db, [

@@ -1,12 +1,13 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
 import { fromLegacyLocator } from "@/database/positions"
 
-void describe("getTrackInfo", () => {
-  void it("can migrate a locator", () => {
+describe("getTrackInfo", () => {
+  it("can migrate a locator", () => {
     const locator = {
       href: "/test",
       locations: {
@@ -19,7 +20,7 @@ void describe("getTrackInfo", () => {
     assert.strictEqual(migratedLocator.href, "test")
   })
 
-  void it("can migrate a locator with special characters", () => {
+  it("can migrate a locator with special characters", () => {
     const locator = {
       href: "/dir/my chapter.html",
       locations: {
@@ -33,7 +34,7 @@ void describe("getTrackInfo", () => {
     assert.strictEqual(migratedLocator.href, "dir/my%20chapter.html")
   })
 
-  void it("can migrate a locator that already was encoded", () => {
+  it("can migrate a locator that already was encoded", () => {
     const locator = {
       href: "/dir/my%20chapter.html",
       locations: {
@@ -47,7 +48,7 @@ void describe("getTrackInfo", () => {
     assert.strictEqual(migratedLocator.href, "dir/my%20chapter.html")
   })
 
-  void it("will ignore an href with an absolute path", () => {
+  it("will ignore an href with an absolute path", () => {
     const locator = {
       href: "http://example.com/dir/my%20chapter.html",
       locations: {

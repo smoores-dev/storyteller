@@ -1,12 +1,12 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
 
 import { segmentText } from "@echogarden/text-segmentation"
+import { describe, it } from "vitest"
 
 import { TextFragmentFactory } from "../textFragments.ts"
 
-void describe("findMinimalFragment", () => {
-  void it("should find a minimal fragment when there are no overlaps", async () => {
+describe("findMinimalFragment", () => {
+  it("should find a minimal fragment when there are no overlaps", async () => {
     const { sentences } = await segmentText(
       "This is a short snippet of text. It has several sentences. None of them have the same initial or final word.",
       {
@@ -21,7 +21,7 @@ void describe("findMinimalFragment", () => {
     assert.strictEqual(factory.findMinimalFragment(2), ":~:text=none,word")
   })
 
-  void it("should find a unique fragment when there are overlaps", async () => {
+  it("should find a unique fragment when there are overlaps", async () => {
     const { sentences } = await segmentText(
       "This is a sentence with some words. This is another sentence with more words.",
       {
@@ -38,7 +38,7 @@ void describe("findMinimalFragment", () => {
     )
   })
 
-  void it("should find a unique fragment when there are mid-sentence overlaps", async () => {
+  it("should find a unique fragment when there are mid-sentence overlaps", async () => {
     const { sentences } = await segmentText(
       "There is a man named John McClane. John McClane is unequivocally a badass.",
       {
@@ -55,7 +55,7 @@ void describe("findMinimalFragment", () => {
     )
   })
 
-  void it("should find a unique fragment when there are equivalent sentences", async () => {
+  it("should find a unique fragment when there are equivalent sentences", async () => {
     const { sentences } = await segmentText(
       "This is a simple sentence. This is a slightly more complex sentence. This is a simple sentence.",
       {
@@ -72,7 +72,7 @@ void describe("findMinimalFragment", () => {
     )
   })
 
-  void it("should find a unique fragment when there are equivalent sentences with partially equivalent prefixes", async () => {
+  it("should find a unique fragment when there are equivalent sentences with partially equivalent prefixes", async () => {
     const { sentences } = await segmentText(
       "This is a sentence at the beginning. This is a simple sentence. This is a slightly more complex sentence. This is a simple sentence. This is a sentence at the end.",
       {

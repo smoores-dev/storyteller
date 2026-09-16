@@ -1,16 +1,17 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { Feed } from "./index.ts"
 import rawCatalog from "./test-catalog.json.ts"
 import { parseFeed, validateFeed } from "./validate/index.ts"
 
-void describe("OPDS", () => {
-  void it("validates a OPDS 2.0 catalog", () => {
+describe("OPDS", () => {
+  it("validates a OPDS 2.0 catalog", () => {
     assert.strictEqual(validateFeed(rawCatalog), null)
   })
 
-  void it("parses a catalog into a Feed and round-trips it", () => {
+  it("parses a catalog into a Feed and round-trips it", () => {
     const result = parseFeed(rawCatalog)
     assert.ok(result.ok, "expected a valid parse")
 
@@ -19,7 +20,7 @@ void describe("OPDS", () => {
     assert.strictEqual(validateFeed(result.value.serialize()), null)
   })
 
-  void it("reports located errors instead of returning undefined", () => {
+  it("reports located errors instead of returning undefined", () => {
     const broken = structuredClone(rawCatalog) as { links: { href: string }[] }
     // drop the required href on the first link
     delete (broken.links[0] as Partial<{ href: string }>).href
@@ -34,7 +35,7 @@ void describe("OPDS", () => {
     )
   })
 
-  void it("skips validation when no validator is passed", () => {
+  it("skips validation when no validator is passed", () => {
     // construction-only path: trusts the input, never touches AJV
     const result = Feed.deserialize(rawCatalog)
     assert.ok(result.ok)

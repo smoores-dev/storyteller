@@ -1,12 +1,13 @@
 import assert from "assert"
-import { describe, it } from "node:test"
 import { join } from "path"
+
+import { describe, it } from "vitest"
 
 import { epubcheck } from "./epubcheck.ts"
 import { Epub, type XmlTextNode } from "./index.ts"
 
-void describe("upgradeToEpub3", () => {
-  void it("can upgrade an epub 2 to epub 3", async () => {
+describe("upgradeToEpub3", () => {
+  it("can upgrade an epub 2 to epub 3", async () => {
     const inputFilepath = join("__fixtures__", "epub-2.epub")
     const outputFilepath = join(
       "__fixtures__",

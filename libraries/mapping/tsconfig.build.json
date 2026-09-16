@@ -13,5 +13,5 @@
     "rootDir": ".",
     "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
   },
-  "exclude": ["dist", "__tests__", "**/*.test.ts"]
+  "exclude": ["dist", "__tests__", "**/*.test.ts", "vitest.config.ts"]
 }

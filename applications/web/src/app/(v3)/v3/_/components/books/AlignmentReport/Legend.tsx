@@ -2,25 +2,10 @@
 
 import { type ReactNode } from "react"
 
-import { Button } from "@v3/_/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@v3/_/components/ui/popover"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
-import * as icon from "@/icons"
-
-import {
-  GAP,
-  type ReportTone,
-  SENTENCE_LADDER,
-  STRIPES,
-  TONE_FILL,
-  TRACK_PLACED_GOOD,
-} from "./shared"
+import { GAP, SENTENCE_LADDER, STRIPES, TONE_FILL } from "./shared"
 
 function Swatch({ className }: { className: string }) {
   return (
@@ -47,18 +32,6 @@ const FILLS = [
   { key: "gap", swatch: GAP },
   { key: "dimmed", swatch: cn(TONE_FILL.good, "opacity-30") },
 ] as const
-
-const TRACK_TONES = [
-  "moderate",
-  "poor",
-  "muted",
-] as const satisfies readonly ReportTone[]
-
-const TRACK_LABEL = {
-  moderate: "trackModerate",
-  poor: "trackPoor",
-  muted: "trackMuted",
-} as const
 
 export function Legend({ className }: { className?: string }) {
   const t = useTranslation("AlignmentReport")

@@ -1,7 +1,8 @@
 import assert from "node:assert"
 import { cp, mkdir, mkdtemp, rm, stat } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { setupTestDb } from "@/__tests__/harness/testDb"
 import { createTestLibrary, waitForWatcher } from "@/__tests__/harness/testFs"
@@ -58,8 +59,8 @@ async function createSameDeviceLibrary(prefix: string) {
   }
 }
 
-void describe("scanner import modes", () => {
-  void it("reference mode leaves the file at the source path", async () => {
+describe("scanner import modes", () => {
+  it("reference mode leaves the file at the source path", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("import-mode-reference")
 
@@ -86,7 +87,7 @@ void describe("scanner import modes", () => {
     assert.ok(await exists(source), "source file should still exist")
   })
 
-  void it("copy mode duplicates the file and leaves the source intact", async () => {
+  it("copy mode duplicates the file and leaves the source intact", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("import-mode-copy")
 
@@ -121,7 +122,7 @@ void describe("scanner import modes", () => {
     )
   })
 
-  void it("hardlink mode links the file to the assets dir", async () => {
+  it("hardlink mode links the file to the assets dir", async () => {
     using _db = setupTestDb()
     await using library = await createSameDeviceLibrary("hardlink")
 
@@ -165,7 +166,7 @@ void describe("scanner import modes", () => {
     )
   })
 
-  void it("move mode relocates the file and removes the source", async () => {
+  it("move mode relocates the file and removes the source", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("import-mode-move")
 
@@ -193,7 +194,7 @@ void describe("scanner import modes", () => {
     )
   })
 
-  void it("two rules with different modes do not bleed into each other", async () => {
+  it("two rules with different modes do not bleed into each other", async () => {
     using _db = setupTestDb()
     await using libCopy = await createTestLibrary("import-mode-bleed-copy")
     await using libMove = await createTestLibrary("import-mode-bleed-move")
@@ -238,7 +239,7 @@ void describe("scanner import modes", () => {
     )
   })
 
-  void it("audiobook import respects the rule's mode", async () => {
+  it("audiobook import respects the rule's mode", async () => {
     using _db = setupTestDb()
     await using library = await createSameDeviceLibrary("audiobook-hardlink")
 
@@ -280,7 +281,7 @@ void describe("scanner import modes", () => {
     )
   })
 
-  void it.skip("copy mode does not re-import via the asset-folder watcher", async () => {
+  it.skip("copy mode does not re-import via the asset-folder watcher", async () => {
     using _db = setupTestDb()
     // asset-folder watcher's bootstrap scans ASSETS_DIR. leftovers from
     // earlier tests in this run would inflate the book count, so wipe it
@@ -312,7 +313,7 @@ void describe("scanner import modes", () => {
     assert.ok(book?.ebook?.filepath.startsWith(ASSETS_DIR))
   })
 
-  void it("two same-title books in reference mode get distinct asset folders", async () => {
+  it("two same-title books in reference mode get distinct asset folders", async () => {
     using _db = setupTestDb()
     // wipe ASSETS_DIR so leftovers from earlier tests don't influence the
     // collision check we're about to make.
@@ -354,7 +355,7 @@ void describe("scanner import modes", () => {
     )
   })
 
-  void it("candidates request without an explicit mode uses the scan default", async () => {
+  it("candidates request without an explicit mode uses the scan default", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("import-mode-candidates")
 

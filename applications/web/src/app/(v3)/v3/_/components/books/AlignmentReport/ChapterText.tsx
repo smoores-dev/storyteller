@@ -234,7 +234,6 @@ function prepare(
   item: ViewSpineItem,
   spans: ReportSpan[],
 ): { html: string; marked: boolean; texts: Map<string, string> } {
-  console.log("xhtml", xhtml)
   const parsed = new DOMParser().parseFromString(xhtml, "application/xhtml+xml")
 
   const failed = parsed.querySelector("parsererror")

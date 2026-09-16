@@ -1,7 +1,7 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
 
 import { type Database } from "better-sqlite3"
+import { describe, it } from "vitest"
 
 import {
   type TestDbContext,
@@ -59,8 +59,8 @@ function setPosition(ctx: TestDbContext, bookUuid: string, timestamp: number) {
     .run(bookUuid, userId, timestamp)
 }
 
-void describe("getNextUpInSeries", () => {
-  void it("returns the lowest unread position above the highest read one", async () => {
+describe("getNextUpInSeries", () => {
+  it("returns the lowest unread position above the highest read one", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -88,7 +88,7 @@ void describe("getNextUpInSeries", () => {
     )
   })
 
-  void it("skips a book being read and shows the next to-be-read one", async () => {
+  it("skips a book being read and shows the next to-be-read one", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -113,7 +113,7 @@ void describe("getNextUpInSeries", () => {
     )
   })
 
-  void it("does not surface series without any read book, or fully read ones", async () => {
+  it("does not surface series without any read book, or fully read ones", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -140,7 +140,7 @@ void describe("getNextUpInSeries", () => {
     assert.deepStrictEqual(books, [])
   })
 
-  void it("accepts explicit To read status but not custom statuses", async () => {
+  it("accepts explicit To read status but not custom statuses", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
     ctx.sqlite
@@ -168,7 +168,7 @@ void describe("getNextUpInSeries", () => {
     )
   })
 
-  void it("ignores a book with no status of its own", async () => {
+  it("ignores a book with no status of its own", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -192,7 +192,7 @@ void describe("getNextUpInSeries", () => {
     )
   })
 
-  void it("orders series by most recent reading activity", async () => {
+  it("orders series by most recent reading activity", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -224,7 +224,7 @@ void describe("getNextUpInSeries", () => {
     )
   })
 
-  void it("returns a shared book once even when it is next in two series", async () => {
+  it("returns a shared book once even when it is next in two series", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 

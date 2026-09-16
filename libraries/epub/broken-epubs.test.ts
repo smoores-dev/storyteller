@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto"
 import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { describe, it } from "node:test"
 
+import { describe, it } from "vitest"
 import { ZipFile } from "yazl"
 
 import { Epub, EpubVersionError, MemoryAdapter } from "./index.ts"
@@ -88,8 +88,8 @@ async function buildPrefixedEpub2(): Promise<Buffer> {
   })
 }
 
-void describe("zips with trailing junk after the end of central directory record", () => {
-  void it("opens an epub 3 buffer with trailing junk", async () => {
+describe("zips with trailing junk after the end of central directory record", () => {
+  it("opens an epub 3 buffer with trailing junk", async () => {
     const intact = await readFile(join("__fixtures__", "moby-dick.epub"))
     const junked = Buffer.concat([intact, Buffer.from([0x3c, 0x34])])
 
@@ -102,7 +102,7 @@ void describe("zips with trailing junk after the end of central directory record
     assert.strictEqual(await epub.getTitle(), "Moby Dick; Or, The Whale")
   })
 
-  void it("opens an epub file on disk with trailing junk", async () => {
+  it("opens an epub file on disk with trailing junk", async () => {
     const intact = await readFile(join("__fixtures__", "moby-dick.epub"))
     const junked = Buffer.concat([intact, Buffer.from("junk")])
     const dir = await mkdtemp(join(tmpdir(), "epub-junk-test-"))
@@ -113,7 +113,7 @@ void describe("zips with trailing junk after the end of central directory record
     assert.strictEqual(await epub.getTitle(), "Moby Dick; Or, The Whale")
   })
 
-  void it("survives trailing junk that contains a fake end record signature", async () => {
+  it("survives trailing junk that contains a fake end record signature", async () => {
     const intact = await readFile(join("__fixtures__", "moby-dick.epub"))
     const fakeRecord = Buffer.concat([
       Buffer.from([0x50, 0x4b, 0x05, 0x06]),
@@ -128,7 +128,7 @@ void describe("zips with trailing junk after the end of central directory record
     assert.strictEqual(await epub.getTitle(), "Moby Dick; Or, The Whale")
   })
 
-  void it("reports an epub 2 with trailing junk as a version error, not a zip error", async () => {
+  it("reports an epub 2 with trailing junk as a version error, not a zip error", async () => {
     const intact = await readFile(join("__fixtures__", "epub-2.epub"))
     const junked = Buffer.concat([intact, Buffer.from([0x00, 0x00])])
 
@@ -139,13 +139,13 @@ void describe("zips with trailing junk after the end of central directory record
   })
 })
 
-void describe("opf documents with a prefixed package namespace", () => {
-  void it("recognizes a prefixed epub 2 as epub 2 instead of failing to parse", async () => {
+describe("opf documents with a prefixed package namespace", () => {
+  it("recognizes a prefixed epub 2 as epub 2 instead of failing to parse", async () => {
     const data = await buildPrefixedEpub2()
     await assert.rejects(Epub.using(MemoryAdapter).from(data), EpubVersionError)
   })
 
-  void it("upgrades a prefixed epub 2 and preserves its metadata", async () => {
+  it("upgrades a prefixed epub 2 and preserves its metadata", async () => {
     const dir = await mkdtemp(join(tmpdir(), "epub-prefixed-test-"))
     const inputPath = join(dir, "prefixed.epub")
     const outputPath = join(dir, "prefixed-epub3.epub")
@@ -221,8 +221,8 @@ const ENCODED_HREF_NAV = `<?xml version="1.0" encoding="utf-8"?>
 </html>
 `
 
-void describe("hrefs pointing at entries whose names need percent encoding", () => {
-  void it("reads an entry stored under the decoded name", async () => {
+describe("hrefs pointing at entries whose names need percent encoding", () => {
+  it("reads an entry stored under the decoded name", async () => {
     const data = await buildZip({
       "META-INF/container.xml": CONTAINER_XML,
       "content.opf": encodedHrefOpf("3.0"),
@@ -242,7 +242,7 @@ void describe("hrefs pointing at entries whose names need percent encoding", () 
     )
   })
 
-  void it("falls back to the name as written when the entry is stored encoded", async () => {
+  it("falls back to the name as written when the entry is stored encoded", async () => {
     const data = await buildZip({
       "META-INF/container.xml": CONTAINER_XML,
       "content.opf": encodedHrefOpf("3.0"),
@@ -256,7 +256,7 @@ void describe("hrefs pointing at entries whose names need percent encoding", () 
     assert.match(contents, /Chapter One/)
   })
 
-  void it("reports an archive length for an entry stored encoded", async () => {
+  it("reports an archive length for an entry stored encoded", async () => {
     const data = await buildZip({
       "META-INF/container.xml": CONTAINER_XML,
       "content.opf": encodedHrefOpf("3.0"),
@@ -269,7 +269,7 @@ void describe("hrefs pointing at entries whose names need percent encoding", () 
     assert.ok((await epub.getItemArchiveLength("chapter")) > 0)
   })
 
-  void it("reads an entry whose stored name encodes a character encodeURIComponent leaves bare", async () => {
+  it("reads an entry whose stored name encodes a character encodeURIComponent leaves bare", async () => {
     const name = "chapter%2Done.xhtml"
     const data = await buildZip({
       "META-INF/container.xml": CONTAINER_XML,
@@ -284,7 +284,7 @@ void describe("hrefs pointing at entries whose names need percent encoding", () 
     assert.ok((await epub.getItemArchiveLength("chapter")) > 0)
   })
 
-  void it("upgrades an epub 2 whose hrefs are percent encoded", async () => {
+  it("upgrades an epub 2 whose hrefs are percent encoded", async () => {
     const dir = await mkdtemp(join(tmpdir(), "epub-encoded-href-test-"))
     const inputPath = join(dir, "encoded.epub")
     const outputPath = join(dir, "encoded-epub3.epub")
@@ -321,7 +321,7 @@ void describe("hrefs pointing at entries whose names need percent encoding", () 
   })
 })
 
-void describe("hrefs that address entries outside the container", () => {
+describe("hrefs that address entries outside the container", () => {
   const NESTED_CONTAINER_XML = `<?xml version="1.0"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
   <rootfiles>
@@ -330,7 +330,7 @@ void describe("hrefs that address entries outside the container", () => {
 </container>
 `
 
-  void it("climbs on %2E%2E the way the URL standard does", async () => {
+  it("climbs on %2E%2E the way the URL standard does", async () => {
     const data = await buildZip({
       "META-INF/container.xml": NESTED_CONTAINER_XML,
       "OEBPS/content.opf": encodedHrefOpf("3.0", "%2E%2E/outside.xhtml"),
@@ -347,7 +347,7 @@ void describe("hrefs that address entries outside the container", () => {
     )
   })
 
-  void it("hands back an href that leaves the publication unchanged", async () => {
+  it("hands back an href that leaves the publication unchanged", async () => {
     const data = await buildZip({
       "META-INF/container.xml": NESTED_CONTAINER_XML,
       "OEBPS/content.opf": encodedHrefOpf("3.0"),
@@ -365,7 +365,7 @@ void describe("hrefs that address entries outside the container", () => {
     }
   })
 
-  void it("clamps a climb above the container root instead of escaping it", async () => {
+  it("clamps a climb above the container root instead of escaping it", async () => {
     const data = await buildZip({
       "META-INF/container.xml": NESTED_CONTAINER_XML,
       "OEBPS/content.opf": encodedHrefOpf("3.0", "../../../outside.xhtml"),
@@ -385,8 +385,8 @@ void describe("hrefs that address entries outside the container", () => {
   })
 })
 
-void describe("failed upgrades", () => {
-  void it("does not leave extracted temp directories behind", async () => {
+describe("failed upgrades", () => {
+  it("does not leave extracted temp directories behind", async () => {
     const canary = `leak-canary-${randomUUID()}.txt`
     const broken = await buildZip({
       "META-INF/container.xml": CONTAINER_XML,

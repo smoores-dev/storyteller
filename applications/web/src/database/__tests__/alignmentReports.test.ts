@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
 import {
@@ -26,8 +27,8 @@ const makeReport = (): LegacyReport =>
     unalignedAudioFiles: [],
   }) as unknown as LegacyReport
 
-void describe("createAlignmentReport", () => {
-  void it("prunes all but the two newest payloads and keeps every summary", async () => {
+describe("createAlignmentReport", () => {
+  it("prunes the payload of superseded reports but keeps their summary", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [{ title: "Book" }]) as UUID[]
 
@@ -63,7 +64,7 @@ void describe("createAlignmentReport", () => {
     assert.strictEqual(thirdRow?.pruned, 0)
   })
 
-  void it("returns the latest report with its payload intact", async () => {
+  it("returns the latest report with its payload intact", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [{ title: "Book" }]) as UUID[]
 
@@ -84,8 +85,8 @@ void describe("createAlignmentReport", () => {
   })
 })
 
-void describe("applyAlignmentOverrides", () => {
-  void it("re-grades the stored summary when a chapter is ignored", async () => {
+describe("applyAlignmentOverrides", () => {
+  it("re-grades the stored summary when a chapter is ignored", async () => {
     using ctx = setupTestDb()
     const [bookUuid] = seedBooks(ctx, [{ title: "Book" }]) as UUID[]
 
@@ -166,8 +167,8 @@ void describe("applyAlignmentOverrides", () => {
   })
 })
 
-void describe("115_alignment_overrides_ignored", () => {
-  void it("folds every old flag into ignored", () => {
+describe("115_alignment_overrides_ignored", () => {
+  it("folds every old flag into ignored", () => {
     assert.deepStrictEqual(
       migrateOverrides({
         chapters: {
@@ -190,7 +191,7 @@ void describe("115_alignment_overrides_ignored", () => {
     )
   })
 
-  void it("leaves already migrated overrides alone", () => {
+  it("leaves already migrated overrides alone", () => {
     const overrides = {
       chapters: { "ch1.xhtml": { ignored: true } },
       unalignedChapters: undefined,

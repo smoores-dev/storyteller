@@ -65,7 +65,9 @@ export function ChapterSourceDialog({
         >
           <TabsList>
             <TabsTrigger value="xhtml">{t("detail.xhtml")}</TabsTrigger>
-            <TabsTrigger value="overlay">{t("detail.mediaOverlay")}</TabsTrigger>
+            <TabsTrigger value="overlay">
+              {t("detail.mediaOverlay")}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="xhtml">
             <div className={FRAME}>

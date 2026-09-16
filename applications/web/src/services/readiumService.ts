@@ -277,7 +277,11 @@ export class ReadiumService {
     const resolvedPath = resolve(fullBookPath)
     const { mtimeMs, size } = await stat(resolvedPath).catch(
       (error: unknown) => {
-        if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+        if (
+          error instanceof Error &&
+          "code" in error &&
+          error.code === "ENOENT"
+        ) {
           throw new ReadiumServiceError(
             "Book file not found on disk",
             "file_not_found",

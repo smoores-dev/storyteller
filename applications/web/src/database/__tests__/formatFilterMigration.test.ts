@@ -1,13 +1,14 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import {
   type LegacyFilterNode,
   rewrite,
 } from "@/database/migrations/107_unify_format_filter.sql"
 
-void describe("107_unify_format_filter rewrite", () => {
-  void it("renames a mediaType condition and its synced value", () => {
+describe("107_unify_format_filter rewrite", () => {
+  it("renames a mediaType condition and its synced value", () => {
     const filter: LegacyFilterNode = {
       type: "condition",
       field: "mediaType",
@@ -19,7 +20,7 @@ void describe("107_unify_format_filter rewrite", () => {
     assert.strictEqual(filter.value, "readaloud")
   })
 
-  void it("maps synced inside isAnyOf arrays and walks nested groups", () => {
+  it("maps synced inside isAnyOf arrays and walks nested groups", () => {
     const filter: LegacyFilterNode = {
       type: "and",
       children: [
@@ -43,7 +44,7 @@ void describe("107_unify_format_filter rewrite", () => {
     assert.strictEqual(filter.children?.[1]?.value, "synced")
   })
 
-  void it("reports untouched filters as unchanged", () => {
+  it("reports untouched filters as unchanged", () => {
     const filter: LegacyFilterNode = {
       type: "condition",
       field: "tags",

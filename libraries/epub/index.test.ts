@@ -2,7 +2,8 @@ import assert from "node:assert"
 import { cp, readdir, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { streamFile } from "@storyteller-platform/fs"
 import { MediaType } from "@storyteller-platform/media-types"
@@ -18,19 +19,19 @@ import {
   type XmlTextNode,
 } from "./index.js"
 
-void describe("xhtml parsing", () => {
-  void it("can handle self-closing stop nodes", () => {
+describe("xhtml parsing", () => {
+  it("can handle self-closing stop nodes", () => {
     const xmlString = `<script src="script.js"/>`
     const parsed = Epub.xhtmlParser.parse(xmlString) as ParsedXml
 
-    const built = Epub.xhtmlBuilder.build(parsed) as string
+    const built = Epub.xhtmlBuilder.build(parsed)
 
     assert.strictEqual(built, xmlString)
   })
 })
 
-void describe("Epub", () => {
-  void it("can be created from scratch", async () => {
+describe("Epub", () => {
+  it("can be created from scratch", async () => {
     const outputPath = join("__fixtures__", "__output__", "created.epub")
     using epub = await Epub.using(TmpFsAdapter).create(outputPath, {
       title: "Title",
@@ -44,7 +45,7 @@ void describe("Epub", () => {
     assert.ok(info.isFile())
   })
 
-  void it("strips leading and trailing whitespace from metadata values", async () => {
+  it("strips leading and trailing whitespace from metadata values", async () => {
     const outputPath = join("__fixtures__", "__output__", "strip.epub")
     using epub = await Epub.using(TmpFsAdapter).create(outputPath, {
       title: "\n  Title\n",
@@ -55,7 +56,7 @@ void describe("Epub", () => {
     assert.equal(title, "Title")
   })
 
-  void it("collapses internal whitespace from metadata values", async () => {
+  it("collapses internal whitespace from metadata values", async () => {
     const outputPath = join("__fixtures__", "__output__", "collapse.epub")
     using epub = await Epub.create(outputPath, {
       title: "Test  \tTitle",
@@ -66,27 +67,27 @@ void describe("Epub", () => {
     assert.equal(title, "Test Title")
   })
 
-  void it("can read from an archived .epub file", async () => {
+  it("can read from an archived .epub file", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     using epub = await Epub.using(TmpFsAdapter).from(filepath)
     assert.ok(epub instanceof Epub)
   })
 
-  void it("can read from a data array representing a .epub file", async () => {
+  it("can read from a data array representing a .epub file", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     const data = await streamFile(filepath)
     using epub = await Epub.using(TmpFsAdapter).from(data)
     assert.ok(epub instanceof Epub)
   })
 
-  void it("can parse the spine correctly", async () => {
+  it("can parse the spine correctly", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     using epub = await Epub.using(TmpFsAdapter).from(filepath)
     const spineItems = await epub.getSpineItems()
     assert.strictEqual(spineItems.length, 12)
   })
 
-  void it.only("can locate spine items", async () => {
+  it("can locate spine items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
@@ -97,7 +98,7 @@ void describe("Epub", () => {
     assert.ok(coverPageData.startsWith("\n<!DOCTYPE html>"))
   })
 
-  void it.only("can parse xhtml spine items", async () => {
+  it("can parse xhtml spine items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
@@ -112,7 +113,7 @@ void describe("Epub", () => {
     assert.strictEqual(titleText, '"Cover"')
   })
 
-  void it("can produce text content for xhtml items", async () => {
+  it("can produce text content for xhtml items", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
@@ -127,7 +128,7 @@ void describe("Epub", () => {
     )
   })
 
-  void it("can parse void xhtml tags", async () => {
+  it("can parse void xhtml tags", async () => {
     const filepath = join("__fixtures__", "moby-dick.epub")
     using epub = await Epub.using(TmpFsAdapter).from(filepath)
     const spineItems = await epub.getSpineItems()
@@ -141,7 +142,7 @@ void describe("Epub", () => {
     assert.strictEqual(meta[":@"]?.["@_charset"], "utf-8")
   })
 
-  void it("can add metadata", async () => {
+  it("can add metadata", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
     using epub = await Epub.from(inputFilepath)
 
@@ -155,7 +156,7 @@ void describe("Epub", () => {
     assert.deepEqual(newItem, (await epub.getMetadata()).at(-1))
   })
 
-  void it("replaces the correct metadata entry", async () => {
+  it("replaces the correct metadata entry", async () => {
     // This is to test a regression for !106.  There is still a related issue for malformed epubs.
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
     using epub = await Epub.using(TmpFsAdapter).from(inputFilepath)
@@ -179,7 +180,7 @@ void describe("Epub", () => {
     assert.deepEqual(secondValue, (await epub.getMetadata()).at(-1))
   })
 
-  void it("can write the epub to a file", async () => {
+  it("can write the epub to a file", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
 
     const outputFilepath = join(
@@ -196,7 +197,7 @@ void describe("Epub", () => {
     assert.ok(info.isFile())
   })
 
-  void it("writes the last modified time correctly", async () => {
+  it("writes the last modified time correctly", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
     const outputFilepath = join("__fixtures__", "__output__", "moby-dick.epub")
     await cp(inputFilepath, outputFilepath, { force: true })
@@ -226,7 +227,7 @@ void describe("Epub", () => {
     )
   })
 
-  void it("can modify an xhtml item", async () => {
+  it("can modify an xhtml item", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
     const outputFilepath = join("__fixtures__", "__output__", "moby-dick.epub")
     await cp(inputFilepath, outputFilepath, { force: true })
@@ -273,7 +274,7 @@ void describe("Epub", () => {
     assert.strictEqual(updatedTitleText, "Test title")
   })
 
-  void it("can add a new manifest item", async () => {
+  it("can add a new manifest item", async () => {
     const inputFilepath = join("__fixtures__", "moby-dick.epub")
     const outputFilepath = join("__fixtures__", "__output__", "moby-dick.epub")
     await cp(inputFilepath, outputFilepath, { force: true })
@@ -315,7 +316,7 @@ void describe("Epub", () => {
     )
   })
 
-  void it("correctly persists and then reads creator roles and file-as", async () => {
+  it("correctly persists and then reads creator roles and file-as", async () => {
     const outputPath = join("__fixtures__", "__output__", "creatorRoles.epub")
     using epub = await Epub.create(outputPath, {
       title: "Title",
@@ -360,7 +361,7 @@ void describe("Epub", () => {
     ])
   })
 
-  void it("can remove a creator", async () => {
+  it("can remove a creator", async () => {
     const outputPath = join("__fixtures__", "__output__", "removeCreator.epub")
     using epub = await Epub.create(outputPath, {
       title: "Title",
@@ -391,7 +392,7 @@ void describe("Epub", () => {
     })
   })
 
-  void it("can remove the first creator", async () => {
+  it("can remove the first creator", async () => {
     const outputPath = join(
       "__fixtures__",
       "__output__",
@@ -426,7 +427,7 @@ void describe("Epub", () => {
     })
   })
 
-  void it("can remove the first collection", async () => {
+  it("can remove the first collection", async () => {
     const outputPath = join(
       "__fixtures__",
       "__output__",
@@ -468,7 +469,7 @@ void describe("Epub", () => {
     })
   })
 
-  void it("can handle simultaneous package document updates", async () => {
+  it("can handle simultaneous package document updates", async () => {
     const outputPath = join(
       "__fixtures__",
       "__output__",
@@ -491,7 +492,7 @@ void describe("Epub", () => {
     assert.deepStrictEqual(await epub.getCreators(), [{ name: "Creator" }])
   })
 
-  void it("can set various title types", async () => {
+  it("can set various title types", async () => {
     const outputPath = join("__fixtures__", "__output__", "titleTypes.epub")
     using epub = await Epub.create(outputPath, {
       title: "Title",
@@ -518,7 +519,7 @@ void describe("Epub", () => {
     ])
   })
 
-  void it("can set series/collections", async () => {
+  it("can set series/collections", async () => {
     const outputPath = join("__fixtures__", "__output__", "series.epub")
     using epub = await Epub.create(outputPath, {
       title: "Title",
@@ -542,7 +543,7 @@ void describe("Epub", () => {
     assert.strictEqual(collections[0].type, "series")
   })
 
-  void it("writes and reads back identifiers", async () => {
+  it("writes and reads back identifiers", async () => {
     const outputPath = join("__fixtures__", "__output__", "identifiers.epub")
     using epub = await Epub.create(outputPath, {
       title: "Title",
@@ -595,7 +596,7 @@ void describe("Epub", () => {
     assert.strictEqual(custom.identifierType, undefined)
   })
 
-  void it("identifiers can be replaced", async () => {
+  it("identifiers can be replaced", async () => {
     const outputPath = join(
       "__fixtures__",
       "__output__",
@@ -643,7 +644,7 @@ void describe("Epub", () => {
     assert.ok(identifiers2.some((i) => i.value === "goodreads:223855250"))
   })
 
-  void it("writes and reads back sources ", async () => {
+  it("writes and reads back sources ", async () => {
     const outputPath = join("__fixtures__", "__output__", "sources.epub")
     using epub = await Epub.create(outputPath, {
       title: "Title",
@@ -691,7 +692,7 @@ void describe("Epub", () => {
     )
   })
 
-  void it("writes, reads and clears the pageBreakSource property", async () => {
+  it("writes, reads and clears the pageBreakSource property", async () => {
     const outputPath = join(
       "__fixtures__",
       "__output__",
@@ -766,10 +767,10 @@ void describe("Epub", () => {
   })
 })
 
-void describe("Epub.using(MemoryAdapter) (read-only, in-memory)", () => {
+describe("Epub.using(MemoryAdapter) (read-only, in-memory)", () => {
   const fixture = join("__fixtures__", "moby-dick.epub")
 
-  void it("reads metadata and content from an in-memory zip", async () => {
+  it("reads metadata and content from an in-memory zip", async () => {
     using epub = await Epub.using(MemoryAdapter).from(fixture)
     assert.strictEqual(epub.storage, "in-memory")
     const title = await epub.getTitle()
@@ -778,7 +779,7 @@ void describe("Epub.using(MemoryAdapter) (read-only, in-memory)", () => {
     assert.ok(spine.length > 0)
   })
 
-  void it("refuses mutations with EpubReadOnlyError", async () => {
+  it("refuses mutations with EpubReadOnlyError", async () => {
     using reader = await Epub.using(MemoryAdapter).from(fixture)
     const asWriter = reader as unknown as Epub
 
@@ -799,7 +800,7 @@ void describe("Epub.using(MemoryAdapter) (read-only, in-memory)", () => {
     )
   })
 
-  void it("does not leave a temp directory on disk", async () => {
+  it("does not leave a temp directory on disk", async () => {
     // the virtualRoot path is constructed for href anchoring but never written
     const prefix = "storyteller-platform-epub-zip-"
     const before = (await readdir(tmpdir())).filter((n) => n.startsWith(prefix))
@@ -825,7 +826,7 @@ void describe("Epub.using(MemoryAdapter) (read-only, in-memory)", () => {
     )
   })
 
-  void it("clears the entry index on dispose", async () => {
+  it("clears the entry index on dispose", async () => {
     const epub = await Epub.using(MemoryAdapter).from(fixture)
     await epub.getTitle()
     epub.discardAndClose()
@@ -836,7 +837,7 @@ void describe("Epub.using(MemoryAdapter) (read-only, in-memory)", () => {
     )
   })
 
-  void it("respects cache: false (repeated reads still work)", async () => {
+  it("respects cache: false (repeated reads still work)", async () => {
     using epub = await Epub.using(MemoryAdapter).from(fixture, {
       cache: false,
     })
@@ -857,7 +858,7 @@ void describe("Epub.using(MemoryAdapter) (read-only, in-memory)", () => {
     )
   })
 
-  void it("aborts when the signal is already triggered", async () => {
+  it("aborts when the signal is already triggered", async () => {
     const controller = new AbortController()
     controller.abort()
     await assert.rejects(
@@ -867,10 +868,10 @@ void describe("Epub.using(MemoryAdapter) (read-only, in-memory)", () => {
   })
 })
 
-void describe("Epub.from (read-only, extracted-dir)", () => {
+describe("Epub.from (read-only, extracted-dir)", () => {
   const fixture = join("__fixtures__", "moby-dick.epub")
 
-  void it("reads metadata with { readonly: true }", async () => {
+  it("reads metadata with { readonly: true }", async () => {
     using epub = await Epub.from(fixture, { readonly: true })
     // storage remains extracted-dir; only mutations are gated
     assert.strictEqual(epub.storage, "extracted-dir")
@@ -878,7 +879,7 @@ void describe("Epub.from (read-only, extracted-dir)", () => {
     assert.ok(title && title.length > 0)
   })
 
-  void it("refuses mutations with EpubReadOnlyError", async () => {
+  it("refuses mutations with EpubReadOnlyError", async () => {
     // cast through Epub so we can call mutators that EpubReader hides
     // at the type level. the runtime guard should still trigger.
     using reader = await Epub.from(fixture, { readonly: true })
@@ -901,7 +902,7 @@ void describe("Epub.from (read-only, extracted-dir)", () => {
     )
   })
 
-  void it("Epub.from without readonly still allows mutations", async () => {
+  it("Epub.from without readonly still allows mutations", async () => {
     using epub = await Epub.from(fixture)
     // we're not actually saving; this just verifies the writer path
     // doesn't have the runtime guard tripped
