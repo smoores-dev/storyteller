@@ -1933,10 +1933,10 @@ export const api = createApi({
         description: string | null
         releasedAt: string
       } | null,
-      { component?: string; beta?: boolean }
+      { component?: string }
     >({
-      query: ({ component = "web", beta = false }) =>
-        `/changelog/latest?component=${component}&beta=${beta}`,
+      query: ({ component = "web" }) =>
+        `/changelog/latest?component=${component}`,
     }),
 
     // shelves

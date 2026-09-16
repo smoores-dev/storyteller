@@ -66,7 +66,7 @@ import {
   uiSettingsSlice,
 } from "@/store/slices/uiSettingsSlice"
 import { extractEmojiIcon } from "@/strings"
-import { BETA_TAGS, compareVersions } from "@/versions"
+import { compareVersions } from "@/versions"
 
 import { CreateCollectionDialog } from "./books/CreateCollectionDialog"
 import { CommandSearch, useCommandSearch } from "./command-search"
@@ -169,7 +169,6 @@ export function AppSidebar({
   const { data: latestChangelog } = useGetLatestChangelogQuery(
     {
       component: "web",
-      beta: BETA_TAGS.some((tag) => currentVersion.includes(tag)),
     },
     { pollingInterval: THIRTY_MINUTES },
   )

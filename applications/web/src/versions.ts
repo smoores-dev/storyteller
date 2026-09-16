@@ -21,6 +21,13 @@ export const BETA_TAGS = [
   "test",
 ]
 
+export function releaseChannelTags(version: string): string[] {
+  const tag = version.match(/-([a-z]+)/i)?.[1]
+  if (!tag) return []
+  const index = BETA_TAGS.indexOf(tag)
+  return index === -1 ? BETA_TAGS : BETA_TAGS.slice(0, index + 1)
+}
+
 export function compareVersions(version1: string, version2: string) {
   const [_, v1Version, beta1] = version1.match(/(.*?)(?:-(\w*\.\d+))?$/) ?? []
   const [__, v2Version, beta2] = version2.match(/(.*?)(?:-(\w*\.\d+))?$/) ?? []

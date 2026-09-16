@@ -3,6 +3,7 @@ import { Agent } from "undici"
 import { MediaType } from "@storyteller-platform/media-types"
 
 import { logger } from "@/logging"
+import { releaseChannelTags } from "@/versions"
 
 import { db } from "./connection"
 
@@ -176,13 +177,19 @@ export async function getChangelog(
 
 export async function getLatestChangelog(
   component: string,
-  options?: { beta?: boolean },
+  currentVersion: string,
 ) {
+  const tags = releaseChannelTags(currentVersion)
   const row = await db
     .selectFrom("changelog")
     .select(["version", "changelog.description", "releasedAt"])
     .where("component", "=", component)
-    .$if(!options?.beta, (qb) => qb.where("version", "not like", "%-%"))
+    .where((eb) =>
+      eb.or([
+        eb("version", "not like", "%-%"),
+        ...tags.map((tag) => eb("version", "like", `%-${tag}%`)),
+      ]),
+    )
     .orderBy("releasedAt", "desc")
     .limit(1)
     .executeTakeFirst()
