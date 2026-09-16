@@ -67,6 +67,14 @@ export function ctcViterbiAlign(
     const backpointerRow = t * numStates
 
     for (let s = 0; s < numStates; s++) {
+      // be extremely careful in this loop
+      // this path is EXTREMELY HOT and every nanosecond counts
+      // (literally! this going from 6->4ns per cell almost halved alignment times!)
+      // be careful to do as few allocations as possible
+      // easy trap: make have a single expression need to conditinally
+      // do x = y ? number : array[index]
+      // this is very expensive for obscure v8 reasons
+      // this is why we do this weird stateColumn thing below
       let best = prevScores[s]!
       let bestOp = 0
 
