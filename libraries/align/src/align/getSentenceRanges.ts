@@ -475,20 +475,35 @@ export async function getSentenceRanges(
 }
 
 /**
- * Consecutive sentences must not run backwards through the audio. Drop clips that
- * end before the previous sentence's last clip and trim clips that overlap
- * it.
+ * A clip may run this far back past the previous sentence's end before it is
+ * treated as an audiobook narrating text out of order rather than as an
+ * overlap. Overlaps come from a chapter's search pad and a straddling
+ * sentence's extrapolated tail, so they stay within a few seconds.
+ */
+const MAX_OVERLAP_SECONDS = 30
+
+/**
+ * Consecutive sentences must not run backwards through the audio by a small
+ * amount. Drop clips that end just before the previous sentence's last clip
+ * and trim clips that overlap it.
+ *
+ * A clip that jumps back further than MAX_OVERLAP_SECONDS is not an overlap
+ * but a block the audiobook narrates out of text order. Those are kept as
+ * they are and the sequence restarts from them.
  */
 export function enforceMonotonicAudioRanges(
   sentenceRanges: SentenceRange[],
   audiofiles: string[],
+  audioFileDurations: Record<string, number>,
 ) {
-  const fileIndex = new Map(audiofiles.map((audiofile, i) => [audiofile, i]))
-  const position = (range: AudioRange, time: number) =>
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    [fileIndex.get(range.audiofile)!, time] as const
-  const before = (a: readonly [number, number], b: readonly [number, number]) =>
-    a[0] < b[0] || (a[0] === b[0] && a[1] < b[1])
+  const fileOffsets = new Map<string, number>()
+  let offset = 0
+  for (const audiofile of audiofiles) {
+    fileOffsets.set(audiofile, offset)
+    offset += audioFileDurations[audiofile] ?? 0
+  }
+  const global = (audiofile: string, time: number) =>
+    (fileOffsets.get(audiofile) ?? 0) + time
 
   let floor: AudioRange | null = null
   return sentenceRanges.map((sentenceRange) => {
@@ -496,15 +511,24 @@ export function enforceMonotonicAudioRanges(
       floor = sentenceRange.last
       return sentenceRange
     }
-    const floorEnd = position(floor, floor.end)
+    const floorEnd = global(floor.audiofile, floor.end)
     const kept: AudioRange[] = []
     for (const range of sentenceRange.audioRanges) {
-      if (!before(floorEnd, position(range, range.end))) continue
+      const start = global(range.audiofile, range.start)
+      const end = global(range.audiofile, range.end)
+      if (floorEnd - start > MAX_OVERLAP_SECONDS) {
+        // Narrated out of order: keep, and measure what follows from here
+        kept.push(range)
+        floor = range
+        continue
+      }
+      if (end <= floorEnd) continue
       kept.push(
-        before(position(range, range.start), floorEnd)
+        start < floorEnd
           ? { ...range, start: floor.end, audiofile: floor.audiofile }
           : range,
       )
+      floor = range
     }
     if (kept.length === 0) {
       kept.push({

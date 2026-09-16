@@ -1268,21 +1268,27 @@ export class Aligner {
       const lastChunkSlugStart = slugifiedChapterLength - chunkString.length
 
       const chunkEvidenceHead =
-        chunkIndex === 0
-          ? (evidenceRange?.[0] ?? boundaries.evidenceRange[0])
+        chunkIndex === 0 && evidenceRange
+          ? Math.min(evidenceRange[0], boundaries.evidenceRange[0])
           : boundaries.evidenceRange[0]
       const chunkEvidenceTail =
         chunkIndex === chunks.length - 1 && evidenceRange
-          ? evidenceRange[1] - lastChunkSlugStart
+          ? Math.max(
+              evidenceRange[1] - lastChunkSlugStart,
+              boundaries.evidenceRange[1],
+            )
           : boundaries.evidenceRange[1]
 
       const chunkMatchedHead =
-        chunkIndex === 0
-          ? (matchedRange?.[0] ?? boundaries.matchedRange[0])
+        chunkIndex === 0 && matchedRange
+          ? Math.min(matchedRange[0], boundaries.matchedRange[0])
           : boundaries.matchedRange[0]
       const chunkMatchedTail =
         chunkIndex === chunks.length - 1 && matchedRange
-          ? matchedRange[1] - lastChunkSlugStart
+          ? Math.max(
+              matchedRange[1] - lastChunkSlugStart,
+              boundaries.matchedRange[1],
+            )
           : boundaries.matchedRange[1]
 
       const result = await this.alignChapter(
@@ -1390,7 +1396,11 @@ export class Aligner {
     }
 
     const interpolated = interpolateSentenceRanges(
-      enforceMonotonicAudioRanges(sentenceRanges, this.audiofiles),
+      enforceMonotonicAudioRanges(
+        sentenceRanges,
+        this.audiofiles,
+        this.audioFileDurations,
+      ),
       chapterSentenceCounts,
       this.audioFileDurations,
       sentenceLengths,
