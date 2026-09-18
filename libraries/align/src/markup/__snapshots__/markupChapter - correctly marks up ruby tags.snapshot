@@ -1,12 +1,12 @@
 
-<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="storyteller: https://storyteller-platform.dev/docs/vocabulary">
 <head>
 <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
 <title>c0</title>
 </head>
 <body>
 <p>
-  <span id="chapter_one-s0">Some <ruby> 明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp> </ruby> ruby tags.
+  <span id="chapter_one-s0" epub:type="storyteller:sentence-span">Some <ruby> 明日 <rp>(</rp><rt>Ashita</rt><rp>)</rp> </ruby> ruby tags.
 </span></p>
 </body>
 </html>

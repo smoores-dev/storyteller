@@ -4,7 +4,11 @@ import { basename } from "node:path/posix"
 
 import { type Logger } from "pino"
 
-import { Epub, type ParsedXml } from "@storyteller-platform/epub"
+import {
+  Epub,
+  type ParsedXml,
+  type XmlElement,
+} from "@storyteller-platform/epub"
 import {
   type TimingAggregator,
   createAggregator,
@@ -131,7 +135,10 @@ export async function markupChapter(
                 wordPos + word.text.replace(/\n$/, "").length,
                 "start",
               ),
-              new Mark("span", { id: `${chapterId}-s${i}-w${j}` }),
+              new Mark("span", {
+                id: `${chapterId}-s${i}-w${j}`,
+                "epub:type": "storyteller:word-span",
+              }),
             )
             j++
           }
@@ -144,7 +151,10 @@ export async function markupChapter(
           root,
           cursor.map(pos, "end"),
           cursor.map(pos + sentence.text.replace(/\n$/, "").length, "start"),
-          new Mark("span", { id: `${chapterId}-s${i}` }),
+          new Mark("span", {
+            id: `${chapterId}-s${i}`,
+            "epub:type": "storyteller:sentence-span",
+          }),
         )
         i++
       }
@@ -160,7 +170,37 @@ export async function markupChapter(
     taggedBody["body"] = serializeDom(replaced)
   })
 
+  addStorytellerPrefix(taggedHtml)
+
   return { markedUp: chapterXml, timing }
+}
+
+function addStorytellerPrefix(html: XmlElement) {
+  html[":@"] ??= {}
+  html[":@"]["@_xmlns:epub"] = "http://www.idpf.org/2007/ops"
+
+  const existingPrefixValue = html[":@"]["@_epub:prefix"]
+  if (!existingPrefixValue) {
+    html[":@"]["@_epub:prefix"] =
+      "storyteller: https://storyteller-platform.dev/docs/vocabulary"
+    return
+  }
+
+  const matches = existingPrefixValue.matchAll(/(?:([a-z]+): +(\S+)\s*)/gs)
+  const existingPrefixes = Array.from(matches).reduce<Record<string, string>>(
+    (acc, match) =>
+      match[1] && match[2] ? { ...acc, [match[1]]: match[2] } : acc,
+    {},
+  )
+
+  const prefixes = {
+    ...existingPrefixes,
+    storyteller: "https://storyteller-platform.dev/docs/vocabulary",
+  }
+
+  html[":@"]["@_epub:prefix"] = Object.entries(prefixes)
+    .map(([p, u]) => `${p}: ${u}`)
+    .join("\n    ")
 }
 
 function clearBodyElement(xml: ParsedXml) {

@@ -2,7 +2,7 @@
 sidebar_position: 113
 ---
 
-# Storyteller Metadata Vocabulary
+# Storyteller EPUB Vocabulary
 
 ## Status of this document
 
@@ -13,8 +13,8 @@ never be removed, but may be deprecated.
 
 ### 1.1 Purpose and Scope
 
-This vocabulary defines a set of properties for describing Storyteller-aligned
-publications.
+This vocabulary defines a set of properties for describing and annotating
+Storyteller-aligned publications.
 
 ## 2. Metadata Properties Vocabulary
 
@@ -54,3 +54,21 @@ publications.
 | Name        | audio-cover-image                                                                                                    |
 | Description | Indicates that a manifest item is to be used as the cover art when presenting the audio to the user.                 |
 | Example     | `<item id="audio-cover" href="audio cover.png" properties="storyteller:audio-cover-image" media-type="image/png" />` |
+
+## 4. Text Segmentation
+
+### 4.1 sentence-span
+
+|             |                                                                                                    |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| Name        | sentence-span                                                                                      |
+| Description | Indicates a `span` element automatically inserted by Storyteller to denote a sentence in the text. |
+| Example     | `<span id="ch1-s1" epub:type="storyteller:sentence-span">This is a complete sentence.</span>`      |
+
+### 4.2 word-span
+
+|             |                                                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| Name        | word-span                                                                                      |
+| Description | Indicates a `span` element automatically inserted by Storyteller to denote a word in the text. |
+| Example     | `<span id="ch1-s1-w1" epub:type="storyteller:word-span">This</span>`                           |

@@ -1,5 +1,5 @@
 
-<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="z3998: http://www.daisy.org/z3998/2012/vocab/structure/#" lang="en" xml:lang="en">
+<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="storyteller: https://storyteller-platform.dev/docs/vocabulary" lang="en" xml:lang="en">
 
   <head>
     <link href="../styles/9781534431010.css" rel="stylesheet" type="text/css"/>
@@ -10,14 +10,14 @@
   <body>
     <blockquote class="blockquotelet">
       <p class="blockno"><span aria-label="page 7" id="page_7" role="doc-pagebreak"/></p>
-      <p class="blockno"><span id="chapter_one-s0">Look on my works, ye mighty, and despair!</span></p>
-      <p class="blockno1"><span id="chapter_one-s1">A little joke.</span></p>
+      <p class="blockno"><span id="chapter_one-s0" epub:type="storyteller:sentence-span">Look on my works, ye mighty, and despair!</span></p>
+      <p class="blockno1"><span id="chapter_one-s1" epub:type="storyteller:sentence-span">A little joke.</span></p>
       <p class="blockno1"> </p>
-      <p class="blockno1"><span id="chapter_one-s2">Trust that I have accounted for all variables of irony.</span></p>
+      <p class="blockno1"><span id="chapter_one-s2" epub:type="storyteller:sentence-span">Trust that I have accounted for all variables of irony.</span></p>
       <p class="blockno1"> </p>
-      <p class="blockno1"><span id="chapter_one-s3">Though I suppose if you’re unfamiliar with overanthologized works of the early Strand 6
+      <p class="blockno1"><span id="chapter_one-s3" epub:type="storyteller:sentence-span">Though I suppose if you’re unfamiliar with overanthologized works of the early Strand 6
         nineteenth century, the joke’s on me.</span></p>
-      <p class="blockin"><span id="chapter_one-s4">I hoped you’d come.</span></p>
+      <p class="blockin"><span id="chapter_one-s4" epub:type="storyteller:sentence-span">I hoped you’d come.</span></p>
     </blockquote>
   </body>
 

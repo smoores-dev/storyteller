@@ -1,12 +1,12 @@
 
-<?xml version="1.0" encoding="UTF-8"?><html>
+<?xml version="1.0" encoding="UTF-8"?><html xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="storyteller: https://storyteller-platform.dev/docs/vocabulary">
   <head>
     <meta charset="utf-8"/>
     <title>The Project Gutenberg eBook of Moby Dick; Or the Whale, by Herman Melville</title>
   </head>
   <body>
     <p>
-        <span id="chapter_one-s0">Call me <strong>Ishmael. </strong></span><span id="chapter_one-s1"><strong>Some years ago</strong>—never mind how long precisely—having
+        <span id="chapter_one-s0" epub:type="storyteller:sentence-span">Call me <strong>Ishmael. </strong></span><span id="chapter_one-s1" epub:type="storyteller:sentence-span"><strong>Some years ago</strong>—never mind how long precisely—having
         little or no money in my purse, and nothing particular to interest me on
         shore, I thought I would sail about a little and see the watery part of
         the world.</span>

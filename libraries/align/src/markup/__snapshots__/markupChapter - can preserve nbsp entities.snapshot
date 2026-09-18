@@ -1,11 +1,11 @@
 
-<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="storyteller: https://storyteller-platform.dev/docs/vocabulary">
 <head>
 </head>
 <body>
-<p><span id="chapter_one-s0">First paragraph.</span></p>
+<p><span id="chapter_one-s0" epub:type="storyteller:sentence-span">First paragraph.</span></p>
 <p> </p>
 <p> </p>
-<p><span id="chapter_one-s1">Second paragraph.</span></p>
+<p><span id="chapter_one-s1" epub:type="storyteller:sentence-span">Second paragraph.</span></p>
 </body>
 </html>
