@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-table"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { Reorder, useDragControls } from "motion/react"
+import { useQueryState } from "nuqs"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
@@ -41,6 +42,7 @@ import {
   SelectionCheckbox,
 } from "@/app/(v3)/v3/_/components/books/SelectionCheckbox"
 import { BOOK_COLLECTION_ID } from "@/app/(v3)/v3/_/components/books/keyboard-nav"
+import { SearchHighlight } from "@/app/(v3)/v3/_/components/books/search-highlight"
 import {
   TableBody,
   TableCell,
@@ -139,6 +141,8 @@ export function BookTable({
   const tSel = useTranslation("SelectionToolbar")
   const dispatch = useAppDispatch()
   const menu = useBookActionMenu(books, "bulk")
+
+  const [search] = useQueryState("search")
 
   const showReadaloudBadge = useAppSelector(selectShowReadaloudBadge)
   const showProcessingBadge = useAppSelector(selectShowProcessingBadge)
@@ -600,6 +604,7 @@ export function BookTable({
                 <BookRow
                   key={book.uuid}
                   book={book}
+                  search={search}
                   isBookSelected={isBookSelected}
                   selectedBookUuid={selectedBookUuid}
                   rowHeight={rowHeight}
@@ -924,6 +929,7 @@ function BookTableHeader({
 
 function BookRow({
   book,
+  search,
   isBookSelected,
   selectedBookUuid,
   rowHeight,
@@ -943,6 +949,7 @@ function BookRow({
   handleOpenMenu,
 }: {
   book: BookWithRelations
+  search?: string | null
   isBookSelected: boolean
   selectedBookUuid?: string | null
   rowHeight: number
@@ -1095,7 +1102,25 @@ function BookRow({
               <span
                 className={cn(showThumbnail ? "line-clamp-2" : "line-clamp-1")}
               >
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                {(() => {
+                  switch (field) {
+                    case "title": {
+                      return search ? (
+                        <SearchHighlight term={search}>
+                          {book.title}
+                        </SearchHighlight>
+                      ) : (
+                        book.title
+                      )
+                    }
+                    default:
+                      return flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )
+                  }
+                })()}
+                {/* {flexRender(cell.column.columnDef.cell, cell.getContext())} */}
               </span>
             </div>
           </TableCell>

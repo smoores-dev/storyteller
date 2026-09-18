@@ -6,6 +6,13 @@ import { type ReactNode, useCallback, useMemo, useState } from "react"
 
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
+import {
+  SearchHighlight,
+  type SearchMatch,
+  SearchMatchLine,
+  computeSearchMatches,
+  computeSearchOverrides,
+} from "@/app/(v3)/v3/_/components/books/search-highlight"
 import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-provider"
 import { useVersionBasePath } from "@/app/(v3)/v3/_/components/version-context"
 import { useDebounce } from "@/app/(v3)/v3/_/hooks/use-debounce"
@@ -16,6 +23,7 @@ import { type BookWithRelations } from "@/database/books"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
 import { type StyledIcon } from "@/icons"
+import { type DisplayField } from "@/sort"
 import { api } from "@/store/api"
 
 import { Cover } from "./books/Cover"
@@ -103,13 +111,31 @@ const rowClassName = "gap-3 rounded-lg px-2 py-1.5"
 
 function BookRow({
   book,
+  search,
   onSelect,
 }: {
   book: BookWithRelations
+  search?: string
   onSelect: (book: BookWithRelations, modifiers?: ActivationModifiers) => void
 }) {
   const isSynced = book.readaloud?.status === "ALIGNED"
   const authors = book.authors.map((a) => a.name).join(", ")
+
+  const matches = useMemo(
+    () => (search ? computeSearchMatches(book, search) : []),
+    [book, search],
+  )
+
+  const { overrides } = useMemo(
+    () =>
+      search
+        ? computeSearchOverrides(["authors", "title"], matches)
+        : { overrides: new Map() as Map<DisplayField, SearchMatch> },
+    [search, matches],
+  )
+
+  const authorOverride = overrides.get("authors")
+  const hasVisibleTitleMatch = matches.some((m) => m.category === "title")
 
   return (
     <FilterableMenuItem
@@ -125,12 +151,25 @@ function BookRow({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="font-heading truncate text-sm">{book.title}</div>
-        {authors && (
+        <div className="font-heading truncate text-sm">
+          {search && hasVisibleTitleMatch ? (
+            <SearchHighlight term={search}>{book.title}</SearchHighlight>
+          ) : (
+            book.title
+          )}
+        </div>
+
+        {authorOverride && search ? (
+          <SearchMatchLine match={authorOverride} term={search} />
+        ) : authors ? (
           <div className="text-muted-foreground truncate text-xs">
-            {authors}
+            {search ? (
+              <SearchHighlight term={search}>{authors}</SearchHighlight>
+            ) : (
+              authors
+            )}
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="text-muted-foreground flex shrink-0 items-center gap-1.5">
@@ -308,7 +347,12 @@ function PaletteResults({
           </div>
         ) : (
           books.map((book) => (
-            <BookRow key={book.uuid} book={book} onSelect={openBook} />
+            <BookRow
+              key={book.uuid}
+              book={book}
+              search={debouncedSearch || undefined}
+              onSelect={openBook}
+            />
           ))
         )}
       </FilterableMenuGroup>

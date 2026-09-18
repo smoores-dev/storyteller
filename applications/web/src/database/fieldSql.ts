@@ -946,6 +946,38 @@ export function buildBookSearchExpression(
   ])
 }
 
+/**
+ * returns a numeric relevance score for ordering search results.
+ * lower = better match. title exact > title starts-with > title contains >
+ * subtitle > creator > series > description.
+ */
+export function buildBookSearchRelevance(term: string): RawBuilder<number> {
+  const lower = term.toLowerCase()
+  const startsWith = `${lower}%`
+  const contains = `%${lower}%`
+
+  return sql<number>`(case
+    when lower(book.title) = ${lower} then 0
+    when lower(book.title) like ${startsWith} then 1
+    when lower(book.title) like ${contains} then 2
+    when lower(book.subtitle) like ${contains} then 3
+    when exists (
+      select 1 from creator
+      inner join book_to_creator on book_to_creator.creator_uuid = creator.uuid
+      where book_to_creator.book_uuid = book.uuid
+        and lower(creator.name) like ${contains}
+    ) then 4
+    when exists (
+      select 1 from series
+      inner join book_to_series on book_to_series.series_uuid = series.uuid
+      where book_to_series.book_uuid = book.uuid
+        and lower(series.name) like ${contains}
+    ) then 5
+    when lower(book.description) like ${contains} then 6
+    else 7
+  end)`
+}
+
 const search: FieldSqlImpl = {
   isEmpty: (eb) => eb.lit(true),
   compare: (eb, _operator, value) => {

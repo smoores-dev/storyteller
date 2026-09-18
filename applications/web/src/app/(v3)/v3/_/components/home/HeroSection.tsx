@@ -4,6 +4,7 @@ import { Book3D } from "@v3/_/components/books/Book3D"
 import { useCoverScope } from "@v3/_/components/books/CoverScope"
 import { Button } from "@v3/_/components/ui/button"
 import { Skeleton } from "@v3/_/components/ui/skeleton"
+import { useUserPreferences } from "@v3/_/components/user-preferences-provider"
 import { V3Link } from "@v3/_/components/v3-link"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
@@ -104,6 +105,7 @@ function HeroSkeleton() {
 
 function Hero({ book }: { book: BookWithRelations }) {
   const t = useTranslation("HomePage")
+  const { bookDetail3dView, bookDetail3dViewAudio } = useUserPreferences()
   const scope = useCoverScope(book)
 
   const progress = book.position?.locator.locations?.totalProgression ?? 0
@@ -193,7 +195,14 @@ function Hero({ book }: { book: BookWithRelations }) {
           </div>
         </div>
         <div className="flex w-full justify-center @xl/main:w-auto">
-          <Book3D book={book} width={200} />
+          <Book3D
+            book={book}
+            width={200}
+            initialViews={{
+              audiobook: bookDetail3dViewAudio ?? undefined,
+              ebook: bookDetail3dView ?? undefined,
+            }}
+          />
         </div>
       </div>
     </section>

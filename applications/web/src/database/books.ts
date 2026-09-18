@@ -43,6 +43,7 @@ import type { NewSeries } from "./series"
 import {
   bookVisibleTo,
   buildBookSearchExpression,
+  buildBookSearchRelevance,
   buildFilterExpression,
   buildSortExpression,
 } from "./shelfFilter"
@@ -1044,15 +1045,21 @@ export async function getBooks(
       ? [{ field: opts.orderBy, direction: opts.orderDirection ?? "desc" }]
       : [])
 
-  for (const { field, direction } of sort) {
-    query = query.orderBy(
-      buildSortExpression(field, { userId, seriesContext: opts?.series }),
-      direction,
-    )
-  }
+  if (opts?.search) {
+    query = query
+      .clearOrderBy()
+      .orderBy(buildBookSearchRelevance(opts.search), "asc")
+  } else {
+    for (const { field, direction } of sort) {
+      query = query.orderBy(
+        buildSortExpression(field, { userId, seriesContext: opts?.series }),
+        direction,
+      )
+    }
 
-  if (sort.length > 0 && sort[sort.length - 1]?.field !== "createdAt") {
-    query = query.orderBy(sql`book.created_at`, "desc")
+    if (sort.length > 0 && sort[sort.length - 1]?.field !== "createdAt") {
+      query = query.orderBy(sql`book.created_at`, "desc")
+    }
   }
 
   const rows = await query.execute()

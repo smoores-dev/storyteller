@@ -90,7 +90,7 @@ export function HomeSections({
 
   if (!sections || sections.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 py-12">
+      <div className="flex flex-col items-center gap-8 py-2">
         <p className="text-muted-foreground text-sm">{t("sections.empty")}</p>
         <ShelfManager />
       </div>

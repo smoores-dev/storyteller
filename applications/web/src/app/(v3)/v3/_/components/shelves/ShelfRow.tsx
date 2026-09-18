@@ -71,7 +71,7 @@ export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
 
   if (isLoading) {
     return (
-      <div className={cn("flex flex-col gap-2", className)}>
+      <div className={cn("flex flex-col gap-2 px-2", className)}>
         <div className="flex items-center justify-between px-4">
           <h2 className="font-heading text-lg font-medium">{displayName}</h2>
         </div>

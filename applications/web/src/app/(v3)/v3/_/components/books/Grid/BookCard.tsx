@@ -1,5 +1,6 @@
 import { Popover } from "@base-ui/react/popover"
 import { useFormatter, useLocale } from "next-intl"
+import { useQueryState } from "nuqs"
 import { Fragment, memo, useCallback, useMemo } from "react"
 
 import { useIsMobile } from "@v3/_/hooks/use-mobile"
@@ -21,11 +22,16 @@ import {
 import { SelectionCheckbox } from "@/app/(v3)/v3/_/components/books/SelectionCheckbox"
 import { GradePill } from "@/app/(v3)/v3/_/components/books/grade-pill"
 import { bookItemDomId } from "@/app/(v3)/v3/_/components/books/keyboard-nav"
+import {
+  SearchHighlight,
+  SearchMatchLine,
+  isCreatorDisplayField,
+  useSearchMatches,
+} from "@/app/(v3)/v3/_/components/books/search-highlight"
 import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-provider"
 import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations } from "@/database/books"
-import { getFieldDef } from "@/fields"
 import * as icon from "@/icons"
 import {
   type CreatorDisplayField,
@@ -83,11 +89,13 @@ export function SecondaryText({
   field,
   ctx,
   compact = false,
+  search,
 }: {
   book: BookWithRelations
   field: DisplayField
   ctx: SortContext | undefined
   compact?: boolean
+  search?: string | null
 }): React.ReactNode {
   const { dateTime, relativeTime } = useFormatter()
   const { ratingIcon } = useUserPreferences()
@@ -125,7 +133,12 @@ export function SecondaryText({
       return (
         // TODO: localize
         <span>
-          #{series.position} in {series.name}
+          #{series.position} in{" "}
+          {search ? (
+            <SearchHighlight term={search}>{series.name}</SearchHighlight>
+          ) : (
+            series.name
+          )}
         </span>
       )
     }
@@ -266,9 +279,11 @@ const CREATOR_LINK_BASE: Record<CreatorDisplayField, string | null> = {
 export function CreatorsLine({
   book,
   field,
+  search,
 }: {
   book: BookWithRelations
   field: CreatorDisplayField
+  search?: string | null
 }) {
   const people = creatorsFor(book, field)
   if (people.length === 0) return null
@@ -279,29 +294,37 @@ export function CreatorsLine({
 
   return (
     <p className="text-muted-foreground line-clamp-1 text-xs">
-      {visible.map((person, index) => (
-        <Fragment key={person.uuid}>
-          {linkBase ? (
-            <V3Link
-              className="hover:text-tinted-strong relative z-20 hover:underline"
-              prefetch={false}
-              href={`${linkBase}?item=${person.uuid}`}
-              onClick={(e) => {
-                e.stopPropagation()
-              }}
-            >
-              {person.name}
-            </V3Link>
-          ) : (
-            person.name
-          )}
-          {/* the mixed-role row disambiguates each person by their marc code */}
-          {field === "creators" && person.role && (
-            <span className="text-muted-foreground/60"> ({person.role})</span>
-          )}
-          {index < visible.length - 1 && ", "}
-        </Fragment>
-      ))}
+      {visible.map((person, index) => {
+        const name = search ? (
+          <SearchHighlight term={search}>{person.name}</SearchHighlight>
+        ) : (
+          person.name
+        )
+
+        return (
+          <Fragment key={person.uuid}>
+            {linkBase ? (
+              <V3Link
+                className="hover:text-tinted-strong relative z-20 hover:underline"
+                prefetch={false}
+                href={`${linkBase}?item=${person.uuid}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+              >
+                {name}
+              </V3Link>
+            ) : (
+              name
+            )}
+            {/* the mixed-role row disambiguates each person by their marc code */}
+            {field === "creators" && person.role && (
+              <span className="text-muted-foreground/60"> ({person.role})</span>
+            )}
+            {index < visible.length - 1 && ", "}
+          </Fragment>
+        )
+      })}
       {hiddenCount > 0 && ` +${hiddenCount}`}
       {field === "translators" && (
         <span className="text-muted-foreground/60"> (trl)</span>
@@ -311,11 +334,7 @@ export function CreatorsLine({
 }
 
 function isCreatorField(field: DisplayField): field is CreatorDisplayField {
-  if (field === "seriesPosition") {
-    return false
-  }
-  const fieldDef = getFieldDef(field)
-  return fieldDef.group === "creators"
+  return isCreatorDisplayField(field)
 }
 
 export const BookCard = memo(function BookCard({
@@ -361,6 +380,14 @@ export const BookCard = memo(function BookCard({
   const progress = getReadingProgress(book)
 
   const scope = useCoverScope(book)
+
+  const [search] = useQueryState("search")
+
+  const { visibleCategories, overrides } = useSearchMatches(
+    book,
+    search,
+    displayFields,
+  )
 
   const cardContent = (
     <>
@@ -478,14 +505,35 @@ export const BookCard = memo(function BookCard({
                     )}
                     style={{ height: TITLE_HEIGHT }}
                   >
-                    {book.title}
+                    {search && visibleCategories.has("title") ? (
+                      <SearchHighlight term={search}>
+                        {book.title}
+                      </SearchHighlight>
+                    ) : (
+                      book.title
+                    )}
                   </h3>
                 </V3Link>
               )
             }
 
             if (isCreatorField(field)) {
-              return <CreatorsLine key={field} book={book} field={field} />
+              const override = overrides.get(field)
+
+              if (override && search) {
+                return (
+                  <SearchMatchLine key={field} match={override} term={search} />
+                )
+              }
+
+              return (
+                <CreatorsLine
+                  key={field}
+                  book={book}
+                  field={field}
+                  search={search}
+                />
+              )
             }
 
             const hasPill = row.includes("alignmentGrade")
@@ -512,6 +560,7 @@ export const BookCard = memo(function BookCard({
                       field={f}
                       ctx={displayContext}
                       compact
+                      search={search}
                     />
                   </Fragment>
                 ))}

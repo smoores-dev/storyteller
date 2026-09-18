@@ -26,6 +26,7 @@ import {
   type FilterExpression,
   assetNumericExpr,
   buildBookSearchExpression,
+  buildBookSearchRelevance,
   formatPredicate,
   numericExprComparison,
 } from "./fieldSql"
@@ -34,6 +35,7 @@ export {
   type EB,
   type FilterExpression,
   buildBookSearchExpression,
+  buildBookSearchRelevance,
   formatPredicate,
 }
 
