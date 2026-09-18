@@ -265,7 +265,7 @@ export function AppSidebar({
     {
       custom: (
         <SidebarMenuItem>
-          <Tooltip delay={500}>
+          <Tooltip>
             <TooltipTrigger
               render={
                 <SidebarMenuButton
@@ -745,11 +745,7 @@ function SidebarNavItem({
       }}
       onPointerLeave={onPrefetchLeave}
     >
-      <Tooltip
-        open={tooltipOpen || isAltHeld}
-        delay={500}
-        onOpenChange={setTooltipOpen}
-      >
+      <Tooltip open={tooltipOpen || isAltHeld} onOpenChange={setTooltipOpen}>
         <TooltipTrigger
           render={
             <SidebarMenuButton

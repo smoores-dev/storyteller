@@ -1,4 +1,3 @@
-import { type FrameManager } from "@readium/navigator"
 import {
   createContext,
   useCallback,
@@ -54,10 +53,10 @@ export const useNavigatorEvents = () => {
 export const NavigatorEventsProvider = ({
   children,
   listeners,
-  activeFrame,
+  activeFrameKey,
 }: {
   children: React.ReactNode
-  activeFrame: FrameManager | null
+  activeFrameKey: string | null
   listeners?: {
     clickOrTap?: { handler: NavigatorClickHandler; priority?: number }[]
     mouseMove?: { handler: NavigatorMouseMoveHandler; priority?: number }[]
@@ -123,7 +122,7 @@ export const NavigatorEventsProvider = ({
   const startTimeRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!activeFrame) return
+    if (!activeFrameKey) return
 
     const tapThreshold = 10 // max pixels of movement allowed to still count as a tap
     const tapTimeThresholdMs = 300
@@ -221,7 +220,7 @@ export const NavigatorEventsProvider = ({
         console.warn("Error removing click handler:", error)
       }
     }
-  }, [activeFrame, registeredHandlers, listeners])
+  }, [activeFrameKey, registeredHandlers, listeners])
 
   return (
     <NavigatorEventsContext.Provider

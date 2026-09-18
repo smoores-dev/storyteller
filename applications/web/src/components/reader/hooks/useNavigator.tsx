@@ -1,4 +1,8 @@
-import { EpubNavigator, type FrameManager } from "@readium/navigator"
+import {
+  EpubNavigator,
+  EpubPreferences,
+  type FrameManager,
+} from "@readium/navigator"
 import { Locator } from "@readium/shared"
 import { useCallback, useEffect, useRef, useState } from "react"
 
@@ -6,6 +10,10 @@ import {
   getLocatorWithClosestPositionAsync,
   translateLocator,
 } from "@/components/reader/BookService"
+import {
+  isScrollingLayout,
+  isVerticalPublication,
+} from "@/components/reader/helpers"
 import { type BookWithRelations } from "@/database/books"
 import { syncPosition } from "@/store/actions"
 import { useGetPositionQuery } from "@/store/api"
@@ -16,9 +24,10 @@ import {
   registerNavigator,
 } from "@/store/readerRegistry"
 import {
-  applyThemeToDocument,
+  applyFrameTheme,
+  readReaderTokens,
+  readiumIfyPreferences,
   selectBookPreferences,
-  selectEpubPreferences,
 } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
@@ -26,6 +35,8 @@ import {
   selectIsSyncing,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
+
+const VERTICAL_OVERFLOW_STYLE_ID = "reader-vertical-overflow"
 
 type UseNavigatorOptions = {
   book: BookWithRelations
@@ -53,11 +64,6 @@ export const useNavigator = ({
   const { data: initialPosition, isLoading: initialPositionLoading } =
     useGetPositionQuery({ uuid: book.uuid })
 
-  const epubPreferences = useAppSelector((state) =>
-    selectEpubPreferences(state, book.uuid),
-  )
-  const epubPreferencesRef = useRef(epubPreferences)
-  epubPreferencesRef.current = epubPreferences
   const preferences = useAppSelector((state) =>
     selectBookPreferences(state, book.uuid),
   )
@@ -65,6 +71,11 @@ export const useNavigator = ({
   preferencesRef.current = preferences
 
   const publicationLoading = useAppSelector(selectIsLoadingPublication)
+
+  const epubPreferences = useCallback(
+    () => readiumIfyPreferences(preferencesRef.current, readReaderTokens()),
+    [],
+  )
 
   const dispatch = useAppDispatch()
   const mode = useAppSelector(selectReadingMode)
@@ -114,13 +125,26 @@ export const useNavigator = ({
                 if (!frameManager) return
 
                 if (frameManager.msg) {
+                  const frameDocument =
+                    frameManager.iframe.contentWindow?.document
                   // faster to do it here
-                  applyThemeToDocument(
+                  applyFrameTheme(
                     preferencesRef.current,
-                    frameManager.iframe.contentWindow?.document,
+                    readReaderTokens(),
+                    frameDocument,
                   )
+                  if (
+                    frameDocument &&
+                    isVerticalPublication(publication) &&
+                    !frameDocument.getElementById(VERTICAL_OVERFLOW_STYLE_ID)
+                  ) {
+                    const style = frameDocument.createElement("style")
+                    style.id = VERTICAL_OVERFLOW_STYLE_ID
+                    style.textContent = "body { overflow: visible !important; }"
+                    frameDocument.head.appendChild(style)
+                  }
                   void navigatorRef.current?.submitPreferences(
-                    epubPreferencesRef.current,
+                    new EpubPreferences(epubPreferences()),
                   )
                   dispatch(
                     readingSessionSlice.actions.setActiveFrame(
@@ -136,7 +160,7 @@ export const useNavigator = ({
             positionChanged(locator) {
               if (
                 mode === "epub" &&
-                preferencesRef.current.layout === "scrollable"
+                isScrollingLayout(preferencesRef.current.layout)
               ) {
                 dispatch(
                   syncPosition({
@@ -174,12 +198,24 @@ export const useNavigator = ({
             textSelected() {
               return true
             },
+            timelineItemChanged() {
+              return true
+            },
+            contentProtection() {
+              return true
+            },
+            contextMenu() {
+              return true
+            },
+            peripheral() {
+              return true
+            },
           },
           positions,
           initialLocator ?? undefined,
           {
-            defaults: epubPreferencesRef.current,
-            preferences: epubPreferencesRef.current,
+            defaults: epubPreferences(),
+            preferences: epubPreferences(),
           },
         )
 
@@ -219,6 +255,7 @@ export const useNavigator = ({
       book.uuid,
       containerRef,
       dispatch,
+      epubPreferences,
       initialPositionLoading,
       mode,
       navigatorRef,
@@ -241,7 +278,25 @@ export const useNavigator = ({
 
     if (!isLoadingRef.current) return
 
-    void loadNavigator(translatedLocator)
+    // failsafe
+    if (document.visibilityState === "visible") {
+      void loadNavigator(translatedLocator)
+      return
+    }
+
+    const controller = new AbortController()
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (document.visibilityState !== "visible") return
+        controller.abort()
+        void loadNavigator(translatedLocator)
+      },
+      { signal: controller.signal },
+    )
+    return () => {
+      controller.abort()
+    }
   }, [
     initialPositionLoading,
     isLoadingRef,

@@ -14,19 +14,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/cn"
 import { AudiobookCoverImage } from "@/components/books/BookThumbnailImage"
 import type { BookWithRelations } from "@/database/books"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import { nextPagePressed, previousPagePressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
-import { getActiveFrame } from "@/store/readerRegistry"
 import {
-  applyThemeToDocument,
+  applyReaderTheme,
   getInitialHydratedPreferences,
-  removeThemeFromDocument,
+  removeReaderTheme,
   selectPreference,
 } from "@/store/slices/preferencesSlice"
 import {
   type ReadingMode,
   readingSessionSlice,
+  selectActiveFrameUrl,
   selectCurrentBook,
   selectCurrentLocator,
   selectIsLoadingPublication,
@@ -38,6 +38,7 @@ import {
 import { usePiPWindow } from "./PipProvider"
 import { MINI_PLAYER_HEIGHT, MINI_PLAYER_WIDTH } from "./constants"
 import { withActiveFrame } from "./frameUtils"
+import { isVerticalPublication } from "./helpers"
 import { getClientXY } from "./hooks/mouseHelpers"
 import { useNavigator } from "./hooks/useNavigator"
 import { NavigatorEventsProvider } from "./hooks/useNavigatorEvents"
@@ -65,7 +66,7 @@ const ReaderComponent = ({
   if (!isThemeApplied.current) {
     const preferences = getInitialHydratedPreferences(book.uuid)
 
-    applyThemeToDocument(preferences, document)
+    applyReaderTheme(preferences, book, document)
     isThemeApplied.current = true
   }
 
@@ -75,7 +76,7 @@ const ReaderComponent = ({
         dispatch(readingSessionSlice.actions.closeBook())
       }
 
-      removeThemeFromDocument(document)
+      removeReaderTheme(document)
       isThemeApplied.current = false
     }
   }, [dispatch, actualMode])
@@ -147,12 +148,16 @@ const ReaderComponent = ({
     }
 
     if (documentVisibility === "hidden") {
-      AudioPlayer.setUpdateInterval(5_000)
-      if (!pipWindow) {
+      readerPlayer().setUpdateInterval(5_000)
+      const shouldShowPip =
+        (mode === "readaloud" || mode === "audiobook") &&
+        !pipWindow &&
+        readerPlayer().getState().playing
+      if (shouldShowPip) {
         void requestPipWindow(MINI_PLAYER_WIDTH, MINI_PLAYER_HEIGHT)
       }
     } else {
-      AudioPlayer.setUpdateInterval(200)
+      readerPlayer().setUpdateInterval(200)
       // technically superfluous bc it should happen in useWakeLock above, but just in case
       void acquireWakeLock()
 
@@ -178,6 +183,7 @@ const ReaderComponent = ({
     requestPipWindow,
     acquireWakeLock,
     currentLocator,
+    mode,
   ])
 
   const memoizedContainerRef = useMemo(() => {
@@ -217,9 +223,8 @@ const ReaderComponent = ({
   useReaderKeyboard(book.uuid)
 
   const layout = useAppSelector((state) => selectPreference(state, "layout"))
-
-  // this can stay for now, will be removed in future pr
-  const activeFrame = getActiveFrame()
+  const activeFrameUrl = useAppSelector(selectActiveFrameUrl)
+  const scrollsVertically = layout === "scrollable" && !isVerticalPublication()
 
   const [hideUi, setHideUi] = useState(false)
   const toggleUI = useCallback((event: MouseEvent | TouchEvent) => {
@@ -273,7 +278,10 @@ const ReaderComponent = ({
 
   return (
     <>
-      <NavigatorEventsProvider activeFrame={activeFrame} listeners={listeners}>
+      <NavigatorEventsProvider
+        activeFrameKey={activeFrameUrl}
+        listeners={listeners}
+      >
         <div className="bg-reader-bg text-reader-text relative flex h-full max-h-screen w-full max-w-[100vw] flex-col overflow-clip">
           <ReaderHeader
             book={book}
@@ -285,7 +293,7 @@ const ReaderComponent = ({
           <div
             className={classNames(
               "relative mx-auto h-full w-full flex-1 touch-manipulation md:touch-auto",
-              layout === "paginated" ? "my-4" : "-mt-14 -mb-20",
+              scrollsVertically ? "-mt-14 -mb-20" : "my-4",
             )}
           >
             {memoizedContainerRef}

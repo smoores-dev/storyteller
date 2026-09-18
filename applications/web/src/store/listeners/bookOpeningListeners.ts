@@ -18,7 +18,7 @@ import {
   traverseToc,
 } from "@/components/reader/BookService"
 import type { BookWithRelations } from "@/database/books"
-import { AudioPlayer, type AudioTrack } from "@/services/AudioPlayerService"
+import { type AudioTrack, readerPlayer } from "@/services/AudioPlayerService"
 import { syncPosition } from "@/store/actions"
 import { api, getCoverUrl } from "@/store/api"
 import {
@@ -44,6 +44,7 @@ import {
 import { createCacheBustingFetch } from "@/utils/cacheBustingFetch"
 import type { UUID } from "@/uuid"
 
+import { findNearestGuide } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"
 
 async function registerMaps(
@@ -330,8 +331,10 @@ function generateTracksForAudiobook(
       album: bookTitle,
       duration: item.duration ?? 0,
       type: item.type ?? MediaType.OCTET_STREAM.mime,
-      start: item.properties?.otherProperties["start"] ?? 0,
-      end: item.properties?.otherProperties["end"] ?? item.duration ?? 0,
+      start: Number(item.properties?.otherProperties["start"] ?? 0),
+      end: Number(
+        item.properties?.otherProperties["end"] ?? item.duration ?? 0,
+      ),
     } satisfies AudioTrack
   })
 }
@@ -410,7 +413,7 @@ async function generateTracksForReadaloud(
         album: bookTitle,
         artwork: new URL(
           getCoverUrl(bookUuid, {
-            audio: true,
+            audio: false,
             height: 64,
             width: 64,
             updatedAt: updatedAt,
@@ -572,7 +575,8 @@ startAppListening({
             return
           }
 
-          const guide = await publication.guideForLink(link)
+          const nearest = await findNearestGuide(publication, link)
+          const guide = nearest?.guide ?? null
 
           listenerApi.dispatch(
             syncPosition({
@@ -597,7 +601,12 @@ startAppListening({
 
           registerGuide(guide)
 
-          const clip = getClip(guide, correctLocator)
+          const clip =
+            nearest?.link.href === link.href
+              ? getClip(guide, correctLocator)
+              : (guide.guided
+                  ?.flatMap((item) => item.children ?? [])
+                  .find((child) => child.clip?.audioResource)?.clip ?? null)
 
           if (!clip) {
             console.error("No clip found, starting at beginning")
@@ -630,7 +639,7 @@ startAppListening({
           await initializeAudioPlayer({
             tracks,
             startTrackIndex: clipIndex,
-            startPosition: clip.start,
+            startPosition: clip.start ?? 0,
             playbackSpeed,
             volume,
           })
@@ -696,7 +705,7 @@ async function initializeAudioPlayer({
   playbackSpeed: number
   volume: number
 }) {
-  await AudioPlayer.replacePlaylist(tracks, startTrackIndex, startPosition)
-  AudioPlayer.setPlaybackRate(playbackSpeed)
-  AudioPlayer.setVolume(volume)
+  await readerPlayer().replacePlaylist(tracks, startTrackIndex, startPosition)
+  readerPlayer().setPlaybackRate(playbackSpeed)
+  readerPlayer().setVolume(volume)
 }

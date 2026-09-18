@@ -1,6 +1,6 @@
 import { isPast } from "date-fns"
 
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import { playerPositionUpdated } from "@/store/actions"
 import {
   readingSessionSlice,
@@ -16,7 +16,7 @@ startAppListening({
     if (sleepTimer === null) return
 
     if (isPast(sleepTimer)) {
-      AudioPlayer.pause()
+      readerPlayer().pause()
       listenerApi.dispatch(readingSessionSlice.actions.sleepTimerExpired())
     }
   },

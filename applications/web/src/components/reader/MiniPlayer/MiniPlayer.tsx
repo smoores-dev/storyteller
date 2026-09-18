@@ -38,7 +38,7 @@ import {
 import { HoldButton } from "@/components/reader/preferenceItems/HoldButton"
 import { ScrollingTitle } from "@/components/reader/preferenceItems/ScrollingTitle"
 import { ToolbarIcon } from "@/components/reader/preferenceItems/ToolbarIcon"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   closeMiniPlayer,
   pauseButtonPressed,
@@ -56,7 +56,7 @@ import {
 } from "@/store/slices/audioPlayerSlice"
 import {
   preferencesSlice,
-  removeThemeFromDocument,
+  removeReaderTheme,
   selectPreference,
 } from "@/store/slices/preferencesSlice"
 import {
@@ -141,7 +141,7 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
     dispatch(readingSessionSlice.actions.setSyncing(false))
 
     if (context === "pip" && isOnReadPage) return
-    removeThemeFromDocument(document)
+    removeReaderTheme(document)
   }, [context, isOnReadPage, dispatch])
 
   const isVisible = useDocumentVisibility()
@@ -151,7 +151,7 @@ function MiniPlayerInner({ context }: { context: "pip" | "miniplayer" }) {
     if (context === "pip" || !isSupported) return
 
     if (previousDocumentVisibility === isVisible) return
-    if (isVisible === "hidden" && AudioPlayer.getState().playing) {
+    if (isVisible === "hidden" && readerPlayer().getState().playing) {
       void requestPipWindow(MINI_PLAYER_WIDTH, MINI_PLAYER_CARD_HEIGHT)
     }
   }, [

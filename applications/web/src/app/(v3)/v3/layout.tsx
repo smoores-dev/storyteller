@@ -6,14 +6,18 @@ import { cookies, headers } from "next/headers"
 import Script from "next/script"
 import { NuqsAdapter } from "nuqs/adapters/next"
 
+import { PiPProvider } from "@v3/_/components/reader/PipProvider"
+import { ReaderAudioProvider } from "@v3/_/components/reader/ReaderAudioProvider"
 import { TauriTitlebarSync } from "@v3/_/components/tauri-titlebar-sync"
 import { ThemeProvider } from "@v3/_/components/theme-provider"
 import { Toaster } from "@v3/_/components/ui/sonner"
+import {
+  BASE_TOOLTIP_DELAY,
+  TooltipProvider,
+} from "@v3/_/components/ui/tooltip"
 import { VersionProvider } from "@v3/_/components/version-context"
 
 import StoreProvider from "@/components/StoreProvider"
-import { AudioProviderRedux } from "@/components/reader/AudioProviderRedux"
-import { PiPProvider } from "@/components/reader/PipProvider"
 import { getSetting } from "@/database/settings"
 import { env } from "@/env"
 import {
@@ -120,8 +124,8 @@ export default async function RootLayout({
         {/* <TweaksPanel /> */}
         <VersionProvider basePath={basePath}>
           <NextIntlClientProvider>
-            <StoreProvider initialUISettings={initialUISettings}>
-              <AudioProviderRedux>
+            <ReaderAudioProvider>
+              <StoreProvider initialUISettings={initialUISettings}>
                 <PiPProvider>
                   <ThemeProvider
                     attribute="class"
@@ -129,15 +133,17 @@ export default async function RootLayout({
                     enableSystem
                     themes={["light", "dark", "system"]}
                   >
-                    <NuqsAdapter>
-                      {children}
-                      <Toaster />
-                      <TauriTitlebarSync />
-                    </NuqsAdapter>
+                    <TooltipProvider delay={BASE_TOOLTIP_DELAY}>
+                      <NuqsAdapter>
+                        {children}
+                        <Toaster />
+                        <TauriTitlebarSync />
+                      </NuqsAdapter>
+                    </TooltipProvider>
                   </ThemeProvider>
                 </PiPProvider>
-              </AudioProviderRedux>
-            </StoreProvider>
+              </StoreProvider>
+            </ReaderAudioProvider>
           </NextIntlClientProvider>
         </VersionProvider>
       </body>

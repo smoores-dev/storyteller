@@ -1,6 +1,6 @@
 import { type HotkeyItem, useHotkeys } from "@mantine/hooks"
 
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   nextPagePressed,
   pauseShortCutPressed,
@@ -57,7 +57,7 @@ export const getReaderKeyboardHotkeys = (
         if (mode === "epub") {
           return
         }
-        if (AudioPlayer.getState().playing) {
+        if (readerPlayer().getState().playing) {
           dispatch(pauseShortCutPressed())
         } else {
           dispatch(playShortCutPressed())
@@ -67,7 +67,9 @@ export const getReaderKeyboardHotkeys = (
     [
       ".",
       () => {
-        AudioPlayer.setPlaybackRate(AudioPlayer.getState().playbackRate + 0.25)
+        readerPlayer().setPlaybackRate(
+          readerPlayer().getState().playbackRate + 0.25,
+        )
         dispatch(
           preferencesSlice.actions.incrementPlaybackRate({
             target: bookId,
@@ -79,7 +81,9 @@ export const getReaderKeyboardHotkeys = (
     [
       ",",
       () => {
-        AudioPlayer.setPlaybackRate(AudioPlayer.getState().playbackRate - 0.25)
+        readerPlayer().setPlaybackRate(
+          readerPlayer().getState().playbackRate - 0.25,
+        )
         dispatch(
           preferencesSlice.actions.incrementPlaybackRate({
             target: bookId,

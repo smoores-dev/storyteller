@@ -1015,65 +1015,70 @@ const HighlightColorPicker = ({
       <div className="grid grid-cols-6 justify-items-center gap-1">
         {highlightColors.map((color) => (
           <Fragment key={color.value}>
-            {color.value === "custom" ? (
-              <Popover withinPortal={false} withArrow trapFocus>
-                <Popover.Target>
-                  <button
-                    key={color.value}
-                    className={classNames(
-                      `h-8 w-8 rounded-full border text-center transition-all ${color.className}`,
-                      {
-                        "ring-reader-accent ring-2 ring-offset-1":
-                          highlightColor === color.value,
-                      },
-                    )}
-                    onClick={() => {
-                      dispatch(
-                        preferencesSlice.actions.updatePreference({
-                          key: "highlightColor",
-                          value:
-                            "custom" as ReadingPreferences["highlightColor"],
-                          target: scope,
-                        }),
-                      )
-                    }}
-                  >
-                    <span className="text-reader-text sr-only">
-                      {color.label}
-                    </span>
-                  </button>
-                </Popover.Target>
-                <Popover.Dropdown className="border-reader-border bg-reader-surface border-0 p-0">
-                  <CustomHighlightColorPicker
-                    highlightColor={customHighlightColor}
-                    scope={scope}
-                  />
-                </Popover.Dropdown>
-              </Popover>
-            ) : (
-              <button
-                key={color.value}
-                className={classNames(
-                  `h-8 w-8 rounded-full border text-center transition-all ${color.className}`,
-                  {
-                    "ring-reader-accent ring-2 ring-offset-1":
-                      highlightColor === color.value,
-                  },
-                )}
-                onClick={() => {
-                  dispatch(
-                    preferencesSlice.actions.updatePreference({
-                      key: "highlightColor",
-                      value:
-                        color.value as ReadingPreferences["highlightColor"],
-                      target: scope,
-                    }),
-                  )
-                }}
-              >
-                <span className="text-reader-text sr-only">{color.label}</span>
-              </button>
-            )}
+            {
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+              color.value === "custom" ? (
+                <Popover withinPortal={false} withArrow trapFocus>
+                  <Popover.Target>
+                    <button
+                      key={color.value}
+                      className={classNames(
+                        `h-8 w-8 rounded-full border text-center transition-all ${color.className}`,
+                        {
+                          "ring-reader-accent ring-2 ring-offset-1":
+                            highlightColor === color.value,
+                        },
+                      )}
+                      onClick={() => {
+                        dispatch(
+                          preferencesSlice.actions.updatePreference({
+                            key: "highlightColor",
+                            value:
+                              "custom" as ReadingPreferences["highlightColor"],
+                            target: scope,
+                          }),
+                        )
+                      }}
+                    >
+                      <span className="text-reader-text sr-only">
+                        {color.label}
+                      </span>
+                    </button>
+                  </Popover.Target>
+                  <Popover.Dropdown className="border-reader-border bg-reader-surface border-0 p-0">
+                    <CustomHighlightColorPicker
+                      highlightColor={customHighlightColor}
+                      scope={scope}
+                    />
+                  </Popover.Dropdown>
+                </Popover>
+              ) : (
+                <button
+                  key={color.value}
+                  className={classNames(
+                    `h-8 w-8 rounded-full border text-center transition-all ${color.className}`,
+                    {
+                      "ring-reader-accent ring-2 ring-offset-1":
+                        highlightColor === color.value,
+                    },
+                  )}
+                  onClick={() => {
+                    dispatch(
+                      preferencesSlice.actions.updatePreference({
+                        key: "highlightColor",
+                        value:
+                          color.value as ReadingPreferences["highlightColor"],
+                        target: scope,
+                      }),
+                    )
+                  }}
+                >
+                  <span className="text-reader-text sr-only">
+                    {color.label}
+                  </span>
+                </button>
+              )
+            }
           </Fragment>
         ))}
       </div>

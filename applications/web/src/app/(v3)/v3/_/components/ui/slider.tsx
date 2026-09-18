@@ -9,13 +9,21 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
 function Slider({
   className,
   secondThumb = false,
+  children,
+  marks,
+  restrictToMarks: _restrictToMarks = false,
   ...props
-}: SliderPrimitive.Root.Props & { className?: string; secondThumb?: boolean }) {
+}: SliderPrimitive.Root.Props & {
+  className?: string
+  secondThumb?: boolean
+  marks?: { value: number; label: string; className?: string }[]
+  restrictToMarks?: boolean
+}) {
   return (
     <SliderPrimitive.Root data-slot="slider" {...props}>
       <SliderPrimitive.Control
         className={cn(
-          "flex w-full touch-none items-center py-2 select-none",
+          "flex w-full touch-none flex-col items-center py-2 select-none",
           className,
         )}
       >
@@ -46,6 +54,36 @@ function Slider({
             </Tooltip>
           ))}
         </SliderPrimitive.Track>
+        <div className="relative h-4 w-full" data-slot="slider-marks">
+          {marks &&
+            marks.map((mark) => (
+              <div
+                key={mark.value}
+                className={cn(
+                  "absolute top-3 text-xs",
+                  mark.value === (props.max ?? 100)
+                    ? "-translate-x-full"
+                    : mark.value === (props.min ?? 0)
+                      ? "left-0"
+                      : "-translate-x-1/2",
+                  mark.className,
+                  // "after:bg-foreground after:relative after:-top-7 after:block after:h-3 after:w-px after:text-xs after:content-['']",
+                  // mark.value === (props.max ?? 100)
+                  //   ? "after:left-full"
+                  //   : mark.value === (props.min ?? 0)
+                  //     ? "after:left-0"
+                  //     : "after:left-1/2",
+                )}
+                data-slot="slider-mark"
+                data-value={mark.value}
+                style={{
+                  left: `${((mark.value - (props.min ?? 0)) / ((props.max ?? 100) - (props.min ?? 0))) * 100}%`,
+                }}
+              >
+                <span>{mark.label}</span>
+              </div>
+            ))}
+        </div>
       </SliderPrimitive.Control>
     </SliderPrimitive.Root>
   )

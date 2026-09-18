@@ -308,7 +308,7 @@ export async function getFragmentForClip(
   const node = findNodeFromClip(relativeClipUrl, position, guide.guided ?? [])
 
   if (!node?.textref) {
-    console.warn("NO TEXTREF", node, {
+    console.warn("No guide node references this audio clip", {
       clipUrl,
       position,
     })
@@ -499,29 +499,37 @@ function findNodeFromClip(
   position: number,
   nodes: GuidedNavigationObject[],
 ): GuidedNavigationObject | null {
-  for (const node of nodes) {
-    if (node.role?.has("section") || node.role?.has("chapter")) {
-      const found = findNodeFromClip(clipUrl, position, node.children ?? [])
-      if (found !== null) {
-        return found
+  let preceding = null as GuidedNavigationObject | null
+  let precedingStart = -Infinity
+  let first = null as GuidedNavigationObject | null
+  let firstStart = Infinity
+
+  const visit = (items: GuidedNavigationObject[]) => {
+    for (const node of items) {
+      if (node.role?.has("section") || node.role?.has("chapter")) {
+        visit(node.children ?? [])
+      }
+
+      const clip = node.clip
+      if (!clip || clip.audioResource !== clipUrl || clip.start === undefined) {
+        continue
+      }
+
+      if (clip.start < firstStart) {
+        first = node
+        firstStart = clip.start
+      }
+
+      if (clip.start <= position && clip.start >= precedingStart) {
+        preceding = node
+        precedingStart = clip.start
       }
     }
-
-    const clip = node.clip
-    const start = clip?.start
-    const end = clip?.end
-
-    if (
-      start !== undefined &&
-      end !== undefined &&
-      clip?.audioResource === clipUrl &&
-      start <= position &&
-      end > position
-    ) {
-      return node
-    }
   }
-  return null
+
+  visit(nodes)
+
+  return preceding ?? first
 }
 
 /**

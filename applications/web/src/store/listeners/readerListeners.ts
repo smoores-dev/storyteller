@@ -1,4 +1,3 @@
-import { getHotkeyHandler } from "@mantine/hooks"
 import { type FrameComms, type FrameManager } from "@readium/navigator"
 import { type Locator, LocatorLocations } from "@readium/shared"
 import { type ListenerEffectAPI, isAnyOf } from "@reduxjs/toolkit"
@@ -11,11 +10,11 @@ import { withActiveFrame } from "@/components/reader/frameUtils"
 import {
   findFirstVisibleLocator,
   isLocatorWithinViewport,
+  isScrollingLayout,
   scrollToLocator,
 } from "@/components/reader/helpers"
-import { getReaderKeyboardHotkeys } from "@/components/reader/hooks/useReaderKeyboard"
 import { isSameLocator } from "@/components/reader/locators"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   bookLocatorChanged,
   nextPagePressed,
@@ -31,11 +30,15 @@ import {
   getPositions,
   getPublication,
 } from "@/store/readerRegistry"
-import { selectPreference } from "@/store/slices/preferencesSlice"
+import { selectIsPlaying } from "@/store/slices/audioPlayerSlice"
+import {
+  applyFrameDim,
+  selectBookPreferences,
+  selectPreference,
+} from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectCurrentBook,
-  selectCurrentToCLocator,
   selectCurrentlyHighlightedFragment,
   selectDoubleClickTimeout,
   selectIsSyncing,
@@ -45,7 +48,6 @@ import {
 import {
   getGuidesForText,
   getHrefFromActiveFrame,
-  handleChapterSkip,
   highlightFragment,
 } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"
@@ -60,8 +62,9 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
   const nav = getNavigator()
   if (!nav) return false
 
-  const isScrolling =
-    selectPreference(listenerApi.getState(), "layout") === "scrollable"
+  const isScrolling = isScrollingLayout(
+    selectPreference(listenerApi.getState(), "layout"),
+  )
 
   if (isSameLocator(locator, nav.currentLocator)) {
     return false
@@ -133,6 +136,8 @@ function navigateToLocator(locator: Locator, listenerApi: ListenerApi) {
 
 const matchPageTurned = isAnyOf(nextPagePressed, previousPagePressed)
 
+let resumeOnNextAudioPage = false
+
 // page turn - use readium navigator to find next page
 // (calculating next page locator manually is complex, so we let readium handle it by manually calling the navigator)
 startAppListening({
@@ -148,45 +153,30 @@ startAppListening({
     if (!currentBook) return
 
     const isSyncing = selectIsSyncing(listenerApi.getState())
-    const scrolling =
-      selectPreference(listenerApi.getState(), "layout") === "scrollable"
-    const currentTocItem = selectCurrentToCLocator(listenerApi.getState())
+    const layout = selectPreference(listenerApi.getState(), "layout")
+    const scrolling = isScrollingLayout(layout)
     const mode = selectReadingMode(listenerApi.getState())
     const skipOnTurnPage = selectPreference(
       listenerApi.getState(),
       "skipOnTurnPage",
     )
-
-    if (scrolling && mode === "readaloud" && currentTocItem) {
-      handleChapterSkip(
-        action.type === nextPagePressed.type ? "next" : "previous",
-        currentTocItem,
-        (locator) => {
-          listenerApi.dispatch(userRequestedTextNavigation({ locator }))
-        },
-      )
-      return
-    }
+    const direction = action.type === nextPagePressed.type ? "next" : "previous"
 
     const method =
-      action.type === nextPagePressed.type
-        ? nav.goForward.bind(nav)
-        : nav.goBackward.bind(nav)
+      direction === "next" ? nav.goForward.bind(nav) : nav.goBackward.bind(nav)
 
     const progressions = nav.viewport.progressions.get(nav.currentLocator.href)
 
     const isAtEndOfChapter =
-      nextPagePressed.type === action.type
-        ? progressions?.end === 1
-        : progressions?.start === 0
+      direction === "next" ? progressions?.end === 1 : progressions?.start === 0
 
-    const shouldPause = (scrolling || isAtEndOfChapter) && isSyncing
+    const movesAudio = mode === "readaloud" && isSyncing && skipOnTurnPage
 
-    const wasPlaying = AudioPlayer.getState().playing
+    const wasPlaying = readerPlayer().getState().playing
 
-    if (shouldPause && wasPlaying) {
+    if (movesAudio && wasPlaying && (scrolling || isAtEndOfChapter)) {
       // pause if we are skipping chapters, or we scrolling
-      AudioPlayer.pause()
+      readerPlayer().pause()
     }
 
     await new Promise<void>((resolve) => {
@@ -203,22 +193,14 @@ startAppListening({
           return
         }
 
-        if (!isSyncing) {
+        if (!movesAudio) {
           listenerApi.dispatch(
             syncPosition({
               locator: nav.currentLocator,
               timestamp: Date.now(),
               bookUuid: currentBook.uuid,
-              // if not syncing and readaloud, it means we have syncing toggled off, so we don't want to update the position
-              // otherwise this is in epub mode, so we do want to update the position
-              noServer: mode === "readaloud",
             }),
           )
-          resolve()
-          return
-        }
-
-        if (!skipOnTurnPage) {
           resolve()
           return
         }
@@ -236,7 +218,17 @@ startAppListening({
           nav.currentLocator.href,
         )
         if (!guides || !guides[0]) {
-          console.warn("No guides found")
+          if (wasPlaying) {
+            readerPlayer().pause()
+            resumeOnNextAudioPage = true
+          }
+          listenerApi.dispatch(
+            syncPosition({
+              locator: nav.currentLocator,
+              timestamp: Date.now(),
+              bookUuid: currentBook.uuid,
+            }),
+          )
           resolve()
           return
         }
@@ -265,16 +257,14 @@ startAppListening({
             bookUuid: currentBook.uuid,
             locator: locator,
             timestamp: Date.now(),
+            resumePlayback: wasPlaying || resumeOnNextAudioPage,
           }),
         )
+        resumeOnNextAudioPage = false
 
         resolve()
       })
     })
-
-    if (isSyncing && wasPlaying) {
-      await AudioPlayer.play()
-    }
   },
 })
 
@@ -322,6 +312,7 @@ startAppListening({
           bookUuid: currentBook.uuid,
           locator: fullLocator,
           timestamp: Date.now(),
+          resumePlayback: action.payload.resumePlayback,
         }),
       )
     }
@@ -361,10 +352,7 @@ startAppListening({
 
     const isReadaloud =
       selectReadingMode(listenerApi.getState()) === "readaloud"
-    if (!isReadaloud) {
-      console.error("Not syncing")
-      return
-    }
+    if (!isReadaloud) return
 
     const resourceHref = getHrefFromActiveFrame(_action.payload ?? undefined)
     if (!resourceHref) {
@@ -391,10 +379,7 @@ startAppListening({
       return
     }
     const firstGuide = guide?.[0]
-    if (!firstGuide) {
-      console.error("No guide found")
-      return
-    }
+    if (!firstGuide) return
 
     withActiveFrame((activeFrame) => {
       for (const clip of firstGuide.guided?.[0]?.children ?? []) {
@@ -506,7 +491,7 @@ startAppListening({
       highlightFragment(
         activeFrame as FrameManager & { msg: FrameComms },
         locator,
-        true,
+        selectBookPreferences(listenerApi.getState(), null),
       )
       /* oxlint-enable typescript/no-unnecessary-type-assertion */
       listenerApi.dispatch(
@@ -516,29 +501,57 @@ startAppListening({
   },
 })
 
-// stopgap until we move to better frame management
-// setup keyboard listeners
+const dimActive = (state: RootState) => {
+  if (!selectCurrentBook(state)) return false
+  if (!selectIsPlaying(state)) return false
+  if (!selectIsSyncing(state)) return false
+
+  return selectBookPreferences(state, null).dimWhilePlaying
+}
+
 startAppListening({
-  matcher: isAnyOf(readingSessionSlice.actions.setActiveFrame),
-  effect: (_, listenerApi) => {
-    listenerApi.unsubscribe()
+  predicate: (action, currentState, previousState) =>
+    readingSessionSlice.actions.setActiveFrame.match(action) ||
+    dimActive(currentState) !== dimActive(previousState),
+  effect: (_action, listenerApi) => {
+    const dim = dimActive(listenerApi.getState())
 
-    try {
-      const mode = selectReadingMode(listenerApi.getState())
-      const bookId = selectCurrentBook(listenerApi.getState())?.uuid
-      if (!bookId) return
+    withActiveFrame((frame) => {
+      applyFrameDim(frame.iframe.contentDocument, dim)
+    })
+  },
+})
 
-      const handler = getHotkeyHandler(
-        getReaderKeyboardHotkeys(listenerApi.dispatch, mode, bookId),
-      )
+const forwardedFrameDocuments = new WeakSet<Document>()
 
-      withActiveFrame((activeFrame) => {
-        const document = activeFrame.iframe.contentWindow.document
-        document.removeEventListener("keydown", handler)
-        document.addEventListener("keydown", handler)
-      })
-    } finally {
-      listenerApi.subscribe()
-    }
+function forwardKeyEvent(event: KeyboardEvent) {
+  const forwarded = new KeyboardEvent(event.type, {
+    key: event.key,
+    code: event.code,
+    location: event.location,
+    ctrlKey: event.ctrlKey,
+    shiftKey: event.shiftKey,
+    altKey: event.altKey,
+    metaKey: event.metaKey,
+    repeat: event.repeat,
+    bubbles: true,
+    cancelable: true,
+  })
+  if (!document.documentElement.dispatchEvent(forwarded)) {
+    event.preventDefault()
+  }
+}
+
+startAppListening({
+  actionCreator: readingSessionSlice.actions.setActiveFrame,
+  effect: (action) => {
+    withActiveFrame((activeFrame) => {
+      const frameDocument = activeFrame.iframe.contentWindow.document
+      if (forwardedFrameDocuments.has(frameDocument)) return
+      forwardedFrameDocuments.add(frameDocument)
+
+      frameDocument.addEventListener("keydown", forwardKeyEvent)
+      frameDocument.addEventListener("keyup", forwardKeyEvent)
+    }, action.payload ?? undefined)
   },
 })

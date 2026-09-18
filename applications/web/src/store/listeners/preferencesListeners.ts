@@ -1,23 +1,36 @@
+import { EpubPreferences } from "@readium/navigator"
 import { isAnyOf } from "@reduxjs/toolkit"
 
 import { withActiveFrame } from "@/components/reader/frameUtils"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import { closeMiniPlayer } from "@/store/actions"
 import { getNavigator } from "@/store/readerRegistry"
 import {
-  applyThemeToDocument,
+  applyFrameTheme,
+  applyReaderTheme,
+  clearPerBookPreferencesInStorage,
   preferencesSlice,
+  readReaderTokens,
+  readiumIfyPreferences,
   selectBookPreferences,
-  selectEpubPreferences,
   storePreferencesInStorage,
-  syncAutoTheme,
 } from "@/store/slices/preferencesSlice"
 import {
   readingSessionSlice,
   selectCurrentBook,
+  selectCurrentLocator,
+  selectCurrentlyHighlightedFragment,
 } from "@/store/slices/readingSessionSlice"
 
+import { highlightFragment } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"
+
+const HIGHLIGHT_APPEARANCE_KEYS = new Set([
+  "highlightStyle",
+  "highlightColor",
+  "customHighlightColor",
+  "theme",
+])
 
 startAppListening({
   matcher: isAnyOf(
@@ -25,13 +38,19 @@ startAppListening({
     preferencesSlice.actions.resetPreference,
     preferencesSlice.actions.incrementPlaybackRate,
     preferencesSlice.actions.toggleBookDetailView,
+    preferencesSlice.actions.applyBookPreferencesToAllBooks,
   ),
-  effect: (_action, listenerApi) => {
+  effect: (action, listenerApi) => {
     if (typeof window === "undefined") return
 
     const preferences = listenerApi.getState().preferences
 
     try {
+      if (
+        preferencesSlice.actions.applyBookPreferencesToAllBooks.match(action)
+      ) {
+        clearPerBookPreferencesInStorage()
+      }
       storePreferencesInStorage(preferences)
     } catch (error) {
       console.error("failed to save preferences to localStorage:", error)
@@ -43,45 +62,63 @@ startAppListening({
   matcher: isAnyOf(
     preferencesSlice.actions.updatePreference,
     preferencesSlice.actions.resetPreference,
-    syncAutoTheme,
+    preferencesSlice.actions.initBookPreferences,
+    readingSessionSlice.actions.startBook,
     readingSessionSlice.actions.setActiveFrame,
   ),
-  effect: async (_action, listenerApi) => {
-    const target = selectCurrentBook(listenerApi.getState())?.uuid
-    if (!target) return
+  effect: async (action, listenerApi) => {
+    const book = selectCurrentBook(listenerApi.getState())
+    if (!book) return
 
-    const preferences = selectBookPreferences(listenerApi.getState(), target)
+    const preferences = selectBookPreferences(listenerApi.getState(), book.uuid)
 
-    if (window.location.pathname.includes("/read")) {
-      applyThemeToDocument(preferences)
+    if (
+      window.location.pathname.includes("/read") ||
+      window.location.pathname.includes("/book")
+    ) {
+      applyReaderTheme(preferences, book)
     }
 
-    // apply theme to iframe, returns null if frame unavailable
+    if (window.documentPictureInPicture?.window) {
+      applyReaderTheme(
+        preferences,
+        book,
+        window.documentPictureInPicture.window.document,
+      )
+    }
+
+    const tokens = readReaderTokens()
+
     const applied = withActiveFrame((frame) => {
-      applyThemeToDocument(preferences, frame.iframe.contentWindow.document)
+      applyFrameTheme(preferences, tokens, frame.iframe.contentWindow.document)
       return true
     })
 
-    // don't continue if no active frame
     if (!applied) return
 
-    if (window.documentPictureInPicture?.window) {
-      applyThemeToDocument(
-        preferences,
-        window.documentPictureInPicture.window.document,
-      )
+    const appearanceChanged =
+      (preferencesSlice.actions.updatePreference.match(action) ||
+        preferencesSlice.actions.resetPreference.match(action)) &&
+      HIGHLIGHT_APPEARANCE_KEYS.has(action.payload.key)
+
+    const highlighted = selectCurrentlyHighlightedFragment(
+      listenerApi.getState(),
+    )
+    const locator = selectCurrentLocator(listenerApi.getState())
+
+    if (appearanceChanged && highlighted && locator) {
+      withActiveFrame((frame) => {
+        highlightFragment(frame, locator, preferences)
+      })
     }
 
     const nav = getNavigator()
     if (!nav) return
 
-    const readiumPreferences = selectEpubPreferences(
-      listenerApi.getState(),
-      target,
-    )
-
     await withActiveFrame(async () => {
-      await nav.submitPreferences(readiumPreferences)
+      await nav.submitPreferences(
+        new EpubPreferences(readiumIfyPreferences(preferences, tokens)),
+      )
     })
   },
 })
@@ -97,7 +134,7 @@ startAppListening({
       }),
     )
     listenerApi.dispatch(readingSessionSlice.actions.closeBook())
-    AudioPlayer.pause()
-    await AudioPlayer.replacePlaylist([])
+    readerPlayer().pause()
+    await readerPlayer().replacePlaylist([])
   },
 })

@@ -10,7 +10,6 @@ import {
   NavLink,
   Text,
   Title,
-  useComputedColorScheme,
   useMantineColorScheme,
 } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
@@ -45,7 +44,6 @@ import {
   useListCollectionsQuery,
 } from "@/store/api"
 import { useAppDispatch } from "@/store/appState"
-import { syncAutoTheme } from "@/store/slices/preferencesSlice"
 import { emojiRegex } from "@/strings"
 
 import { CreateCollectionModal } from "./collections/CreateCollectionModal"
@@ -95,7 +93,6 @@ export function StorytellerAppShell({
   const collections = liveCollections ?? initialCollections
 
   const { colorScheme, setColorScheme } = useMantineColorScheme()
-  const computedColorScheme = useComputedColorScheme("light")
 
   const ColorSchemeIcon =
     colorScheme === "light"
@@ -120,10 +117,6 @@ export function StorytellerAppShell({
           : "light"
     setColorScheme(next)
   }
-
-  useEffect(() => {
-    dispatch(syncAutoTheme())
-  }, [computedColorScheme, dispatch])
 
   return (
     <IntersectionObserverProvider

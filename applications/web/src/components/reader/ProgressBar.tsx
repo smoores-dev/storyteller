@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 
 import { cn } from "@/cn"
 import { type BookWithRelations } from "@/database/books"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   playerPositionSeeked,
   playerTrackChanged,
@@ -386,6 +387,8 @@ export const ProgressBar = ({
       if (detailView.mode === "text") {
         const locator = getCorrespondingMark(marks ?? null, value)?.locator
         if (locator) {
+          // FIXME: hack bc im bad at readux
+          readerPlayer().pause()
           dispatch(userRequestedTextNavigation({ locator }))
         }
         setTimeout(() => {

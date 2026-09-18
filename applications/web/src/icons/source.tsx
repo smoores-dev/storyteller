@@ -5,6 +5,7 @@ import {
   IconAlertOctagon,
   IconAlertTriangle,
   IconAlignLeft,
+  IconArrowAutofitDown,
   IconArrowAutofitWidth,
   IconArrowBack,
   IconArrowDown,
@@ -38,6 +39,7 @@ import {
   IconCircleCheck,
   IconClick,
   IconClock,
+  IconCode,
   IconColorPicker,
   IconColumns3,
   IconColumns,
@@ -75,6 +77,7 @@ import {
   IconLayoutGrid,
   IconLayoutList,
   IconLayoutSidebar,
+  IconLetterCase,
   IconLibrary,
   IconLink,
   IconLinkOff,
@@ -91,13 +94,18 @@ import {
   IconMinimize,
   IconMinus,
   IconMoon,
+  IconOutbound,
   IconPalette,
   IconPencil,
   IconPhoto,
   IconPin,
   IconPinFilled,
   IconPlayerPause,
+  IconPlayerPauseFilled,
   IconPlayerPlay,
+  IconPlayerPlayFilled,
+  IconPlayerSkipBack,
+  IconPlayerSkipForward,
   IconPlus,
   IconPointer,
   IconProgress,
@@ -105,6 +113,10 @@ import {
   IconReload,
   IconReplace,
   IconReportAnalytics,
+  IconRewindBackward10,
+  IconRewindBackward15,
+  IconRewindForward10,
+  IconRewindForward15,
   IconRotate2,
   IconRss,
   IconScan,
@@ -132,6 +144,7 @@ import {
   IconTagPlus,
   IconTags,
   IconTextCaption,
+  IconTextGrammar,
   IconTextWrap,
   IconTrash,
   IconUpload,
@@ -147,6 +160,7 @@ import { IconReadaloud } from "@/components/icons/IconReadaloud"
 
 import { styled } from "./styled"
 
+export const Code = /*#__PURE__*/ styled(IconCode)
 export const Plus = /*#__PURE__*/ styled(IconPlus)
 export const Add = /*#__PURE__*/ styled(IconPlus)
 export const Minus = /*#__PURE__*/ styled(IconMinus)
@@ -180,6 +194,7 @@ export const Pointer = /*#__PURE__*/ styled(IconPointer)
 export const Logout = /*#__PURE__*/ styled(IconLogout)
 export const ArrowBack = /*#__PURE__*/ styled(IconArrowBack)
 export const Rotate2 = /*#__PURE__*/ styled(IconRotate2)
+export const ArrowAutofitDown = /*#__PURE__*/ styled(IconArrowAutofitDown)
 export const ArrowAutofitWidth = /*#__PURE__*/ styled(IconArrowAutofitWidth)
 
 export const ArrowLeft = /*#__PURE__*/ styled(IconArrowLeft)
@@ -320,3 +335,16 @@ export const LightMode = /*#__PURE__*/ styled(IconSun)
 export const System = /*#__PURE__*/ styled(IconDeviceLaptop)
 export const Star = /*#__PURE__*/ styled(IconStar)
 export const LibraryDefault = /*#__PURE__*/ styled(IconHomeCog)
+
+export const PlayerTrackForward = /*#__PURE__*/ styled(IconPlayerSkipForward)
+export const PlayerTrackBack = /*#__PURE__*/ styled(IconPlayerSkipBack)
+export const PlayerSkipForward10 = /*#__PURE__*/ styled(IconRewindForward10)
+export const PlayerSkipBack10 = /*#__PURE__*/ styled(IconRewindBackward10)
+export const PlayerPlayFilled = /*#__PURE__*/ styled(IconPlayerPlayFilled)
+export const PlayerPauseFilled = /*#__PURE__*/ styled(IconPlayerPauseFilled)
+export const RewindBackward15 = /*#__PURE__*/ styled(IconRewindBackward15)
+export const RewindForward15 = /*#__PURE__*/ styled(IconRewindForward15)
+
+export const Aa = /*#__PURE__*/ styled(IconLetterCase)
+export const Outbound = /*#__PURE__*/ styled(IconOutbound)
+export const TextGrammar = /*#__PURE__*/ styled(IconTextGrammar)

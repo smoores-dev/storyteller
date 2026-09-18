@@ -4,8 +4,8 @@ import localFont from "next/font/local"
 import Script from "next/script"
 
 import StoreProvider from "@/components/StoreProvider"
-import { AudioProviderRedux } from "@/components/reader/AudioProviderRedux"
 import { PiPProvider } from "@/components/reader/PipProvider"
+import { ReaderAudioProvider } from "@/components/reader/ReaderAudioProvider"
 import { env } from "@/env"
 import { theme } from "@/theme/theme"
 
@@ -59,15 +59,15 @@ export default function RootLayout({
         )}
       </head>
       <body className="h-dvh" suppressHydrationWarning>
-        <StoreProvider>
-          <AudioProviderRedux>
+        <ReaderAudioProvider>
+          <StoreProvider>
             <PiPProvider>
               <MantineProvider theme={theme} defaultColorScheme="auto">
                 {children}
               </MantineProvider>
             </PiPProvider>
-          </AudioProviderRedux>
-        </StoreProvider>
+          </StoreProvider>
+        </ReaderAudioProvider>
       </body>
     </html>
   )

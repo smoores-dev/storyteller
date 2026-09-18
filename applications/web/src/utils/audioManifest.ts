@@ -110,6 +110,10 @@ export function getChapterIdFromFilename(filename: string): number {
   return parseInt(id ?? "0", 10)
 }
 
+export function isChapterFilename(filename: string): boolean {
+  return /^\d{5}-00001\.[A-Za-z0-9]+$/.test(basename(filename))
+}
+
 /**
  * create readium manifest for m4b audiobook file
  */

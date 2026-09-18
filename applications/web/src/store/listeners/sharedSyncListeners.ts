@@ -4,7 +4,7 @@ import { type Locator } from "@readium/shared"
 import { isAnyOf } from "@reduxjs/toolkit"
 
 import { getApiUrlFromResourceHref } from "@/components/reader/BookService"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   type SkipPartButtonPayload,
   navItemPressed,
@@ -33,23 +33,25 @@ startAppListening({
     if (!currentBook) return
 
     if (mode === "audiobook") {
-      const currentTrackIndex = AudioPlayer.getQueue().findIndex(
-        (track) =>
-          track.url ===
-          getApiUrlFromResourceHref(
-            currentBook.uuid,
-            action.payload.locator.href,
-            "listen",
-          ),
-      )
+      const currentTrackIndex = readerPlayer()
+        .getQueue()
+        .findIndex(
+          (track) =>
+            track.url ===
+            getApiUrlFromResourceHref(
+              currentBook.uuid,
+              action.payload.locator.href,
+              "listen",
+            ),
+        )
 
       const time = action.payload.locator.locations.fragments[0]?.split("=")[1]
       const position = time ? parseFloat(time) : 0
-      await AudioPlayer.skip(currentTrackIndex, position)
+      await readerPlayer().skip(currentTrackIndex, position)
       return
     }
 
-    AudioPlayer.pause()
+    readerPlayer().pause()
     listenerApi.dispatch(
       userRequestedTextNavigation({ locator: action.payload.locator }),
     )
@@ -74,15 +76,15 @@ startAppListening({
     if (context === "miniplayer" || mode === "audiobook") {
       if (isPressed) {
         const seekAmount = direction === "next" ? 15 : -15
-        AudioPlayer.seekBy(seekAmount)
+        readerPlayer().seekBy(seekAmount)
         return
       }
 
       if (isHeld) {
         if (direction === "next") {
-          await AudioPlayer.skipToNext()
+          await readerPlayer().skipToNext()
         } else {
-          await AudioPlayer.skipToPrevious()
+          await readerPlayer().skipToPrevious()
         }
         return
       }

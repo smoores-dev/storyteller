@@ -7,7 +7,7 @@ import {
 } from "@/components/reader/BookService"
 import { withActiveFrame } from "@/components/reader/frameUtils"
 import { isSameLocator } from "@/components/reader/locators"
-import { AudioPlayer } from "@/services/AudioPlayerService"
+import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   bookLocatorChanged,
   pauseButtonPressed,
@@ -38,7 +38,6 @@ import {
   getGuideForTrack,
 } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"
-
 const matchBookLocatorUpdate = isAnyOf(bookLocatorChanged)
 
 startAppListening({
@@ -58,14 +57,17 @@ startAppListening({
 
     if (!clip) return
 
-    const tracks = AudioPlayer.getQueue()
+    const tracks = readerPlayer().getQueue()
     const trackIndex = tracks.findIndex(
       (track) => track.relativeUrl === clip.audioResource,
     )
 
     if (trackIndex !== -1) {
-      await AudioPlayer.skip(trackIndex, clip.start)
-      await AudioPlayer.play()
+      const wasPlaying = readerPlayer().getState().playing
+      await readerPlayer().skip(trackIndex, clip.start)
+      if (wasPlaying || action.payload.resumePlayback) {
+        await readerPlayer().play()
+      }
     }
   },
 })
@@ -87,7 +89,7 @@ startAppListening({
         let skipTo = progress
         let nextTrack = null
 
-        const tracks = AudioPlayer.getQueue()
+        const tracks = readerPlayer().getQueue()
 
         let acc = 0
         for (let i = 0; i < tracks.length; i++) {
@@ -100,17 +102,17 @@ startAppListening({
         }
         if (nextTrack === null) return
 
-        await AudioPlayer.skip(nextTrack, skipTo)
+        await readerPlayer().skip(nextTrack, skipTo)
         break
       }
       case playerPositionSeeked.type: {
         const { progress } = action.payload
-        AudioPlayer.seekTo(progress)
+        readerPlayer().seekTo(progress)
         break
       }
       case playerTrackChanged.type: {
         const { index } = action.payload
-        await AudioPlayer.skip(index)
+        await readerPlayer().skip(index)
         break
       }
     }
@@ -142,7 +144,7 @@ startAppListening({
       })
 
     try {
-      const currentTrack = AudioPlayer.getActiveTrack()
+      const currentTrack = readerPlayer().getActiveTrack()
       const mode = selectReadingMode(listenerApi.getState())
 
       if (!currentTrack) return
@@ -150,7 +152,7 @@ startAppListening({
       const currentBook = selectCurrentBook(listenerApi.getState())
       if (!currentBook) return
 
-      const { position: rawPosition } = AudioPlayer.getProgress()
+      const { position: rawPosition } = readerPlayer().getProgress()
       const offset = selectPreference(listenerApi.getState(), "syncOffset")
       const position = rawPosition + offset
 
@@ -160,8 +162,8 @@ startAppListening({
       if (mode === "audiobook") {
         const locator = getAudiobookLocator(
           position,
-          AudioPlayer.getState().trackIndex,
-          AudioPlayer.getQueue(),
+          readerPlayer().getState().trackIndex,
+          readerPlayer().getQueue(),
         )
         if (!locator) return
         listenerApi.dispatch(
@@ -191,24 +193,16 @@ startAppListening({
         )
       ).filter((fragment) => fragment != null)
 
-      if (fragments.length === 0) {
-        console.error(
-          "No fragments found for audio track:",
+      const fragment = fragments[0]
+      if (!fragment) {
+        console.warn(
+          "No guide fragment for audio position",
           currentTrack.relativeUrl,
+          position,
         )
         return
       }
-
-      // TODO: properly handle multiple texts per audio track
-      if (fragments.length > 1) {
-        console.error(
-          "Multiple fragments found for audio track:",
-          currentTrack.relativeUrl,
-        )
-      }
-
-      const fragment = fragments[0]
-      if (!fragment || !fragment.locator) return
+      if (!fragment.locator) return
 
       const isSyncing = selectIsSyncing(listenerApi.getState())
 
@@ -276,10 +270,10 @@ const matchTogglePlay = isAnyOf(
 startAppListening({
   matcher: matchTogglePlay,
   effect: async (_) => {
-    if (AudioPlayer.getState().playing) {
-      AudioPlayer.pause()
+    if (readerPlayer().getState().playing) {
+      readerPlayer().pause()
     } else {
-      await AudioPlayer.play()
+      await readerPlayer().play()
     }
   },
 })

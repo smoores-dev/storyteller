@@ -17,44 +17,6 @@
   --color-st-orange-800: var(--st-orange-8);
   --color-st-orange-900: var(--st-orange-9);
 
-  --color-reader-bg: hsl(var(--reader-ui-bg, 0 0% 100%));
-  --color-reader-surface: hsl(var(--reader-ui-surface, 0 0% 100%));
-  --color-reader-surface-hover: hsl(var(--reader-ui-surface-hover, 0 0% 96.1%));
-  --color-reader-border: hsl(var(--reader-ui-border, 0 0% 89.8%));
-  --color-reader-text: hsl(var(--reader-ui-text, 0 0% 0%));
-  --color-reader-text-secondary: hsl(
-    var(--reader-ui-text-secondary, 0 0% 32.2%)
-  );
-  --color-reader-text-muted: hsl(var(--reader-ui-text-muted, 0 0% 45.1%));
-  --color-reader-accent: hsl(var(--reader-ui-accent, 24.6 95% 53.1%));
-  --color-reader-accent-hover: hsl(
-    var(--reader-ui-accent-hover, 20.5 90.2% 48.2%)
-  );
-  --color-reader-highlight-color-yellow: var(
-    --reader-highlight-color-yellow,
-    #ffff0088
-  );
-  --color-reader-highlight-color-red: var(
-    --reader-highlight-color-red,
-    #ff000088
-  );
-  --color-reader-highlight-color-green: var(
-    --reader-highlight-color-green,
-    #00ff0088
-  );
-  --color-reader-highlight-color-blue: var(
-    --reader-highlight-color-blue,
-    #0000ff88
-  );
-  --color-reader-highlight-color-magenta: var(
-    --reader-highlight-color-magenta,
-    #ff00ff88
-  );
-  --color-reader-highlight-color-custom: var(
-    --reader-highlight-color-custom,
-    #ffffff88
-  );
-
   @keyframes swap-right {
     0% {
       transform: translateX(15%) scale(70%);
@@ -669,4 +631,384 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 */
 .big-link {
   @apply after:absolute after:top-0 after:right-0 after:bottom-0 after:left-0 after:z-0 after:block after:content-[''];
+}
+
+@theme inline {
+  --color-reader-bg: var(--reader-bg);
+  --color-reader-surface: var(--reader-surface);
+  --color-reader-surface-hover: var(--reader-surface-hover);
+  --color-reader-border: var(--reader-border);
+  --color-reader-text: var(--reader-text);
+  --color-reader-text-secondary: var(--reader-text-secondary);
+  --color-reader-text-muted: var(--reader-text-muted);
+  --color-reader-accent: var(--reader-accent);
+  --color-reader-accent-hover: var(--reader-accent-hover);
+  --color-reader-accent-text: var(--reader-accent-text);
+  --color-reader-selection: var(--reader-selection-bg);
+  --color-reader-selection-text: var(--reader-selection-text);
+  --color-reader-highlight: var(--reader-highlight);
+  --color-reader-highlight-mid: var(--reader-highlight-mid);
+  --color-reader-highlight-strong: var(--reader-highlight-strong);
+  --color-reader-highlight-yellow: var(--reader-highlight-yellow);
+  --color-reader-highlight-red: var(--reader-highlight-red);
+  --color-reader-highlight-green: var(--reader-highlight-green);
+  --color-reader-highlight-blue: var(--reader-highlight-blue);
+  --color-reader-highlight-magenta: var(--reader-highlight-magenta);
+  --color-reader-highlight-cover: var(--reader-highlight-cover);
+  --color-reader-highlight-custom: var(--reader-highlight-custom);
+  --color-reader-highlight-color-yellow: var(--reader-highlight-yellow);
+  --color-reader-highlight-color-red: var(--reader-highlight-red);
+  --color-reader-highlight-color-green: var(--reader-highlight-green);
+  --color-reader-highlight-color-blue: var(--reader-highlight-blue);
+  --color-reader-highlight-color-magenta: var(--reader-highlight-magenta);
+  --color-reader-highlight-color-cover: var(--reader-highlight-cover);
+  --color-reader-highlight-color-custom: var(--reader-highlight-custom);
+}
+
+/* registered so getComputedStyle hands back a resolved color, including for the
+   oklch(from var(--cover-1) ...) cover themes that the frame and ReadiumCSS read */
+@property --reader-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+@property --reader-text {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #000000;
+}
+@property --reader-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e8651a;
+}
+@property --reader-selection-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e8651a;
+}
+@property --reader-selection-text {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+@property --reader-highlight {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f3e08a;
+}
+@property --reader-highlight-yellow {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f3e08a;
+}
+@property --reader-highlight-red {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f4c9c4;
+}
+@property --reader-highlight-green {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #c8e8c4;
+}
+@property --reader-highlight-blue {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #c8dcf3;
+}
+@property --reader-highlight-magenta {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ebd0ec;
+}
+@property --reader-highlight-custom {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f3e08a;
+}
+@property --reader-highlight-cover {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #f3e08a;
+}
+@property --reader-highlight-mid {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b28b1f;
+}
+@property --reader-highlight-strong {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #6d5510;
+}
+
+/* outside the reader route the reader tokens are just the app tokens, so the
+   mini player needs no theming of its own */
+:root {
+  --reader-scheme: light;
+  --reader-cover-fallback: oklch(0.62 0.175 42);
+
+  --reader-bg: var(--background);
+  --reader-surface: var(--card);
+  --reader-surface-hover: var(--accent);
+  --reader-border: var(--border);
+  --reader-text: var(--foreground);
+  --reader-text-secondary: var(--muted-foreground);
+  --reader-text-muted: var(--muted-foreground);
+  --reader-accent: var(--primary);
+  --reader-accent-hover: var(--primary);
+  --reader-accent-text: var(--primary-foreground);
+  --reader-selection-bg: var(--primary);
+  --reader-selection-text: var(--primary-foreground);
+
+  --reader-highlight-yellow: oklch(0.91 0.125 96);
+  --reader-highlight-red: oklch(0.85 0.085 25);
+  --reader-highlight-green: oklch(0.89 0.095 148);
+  --reader-highlight-blue: oklch(0.87 0.075 242);
+  --reader-highlight-magenta: oklch(0.86 0.085 328);
+  --reader-highlight-custom: oklch(0.9 0.08 200);
+  --reader-highlight: var(--reader-highlight-yellow);
+}
+
+.dark {
+  --reader-scheme: dark;
+  --reader-highlight-yellow: oklch(0.5 0.1 92);
+  --reader-highlight-red: oklch(0.46 0.12 25);
+  --reader-highlight-green: oklch(0.46 0.09 148);
+  --reader-highlight-blue: oklch(0.46 0.1 250);
+  --reader-highlight-magenta: oklch(0.47 0.11 330);
+}
+
+[data-reader-theme="light"] {
+  --reader-scheme: light;
+  color-scheme: light;
+  --reader-bg: hsl(0 0% 100%);
+  --reader-surface: hsl(0 0% 100%);
+  --reader-surface-hover: hsl(0 0% 96.1%);
+  --reader-border: hsl(0 0% 89.8%);
+  --reader-text: hsl(0 0% 0%);
+  --reader-text-secondary: hsl(0 0% 32.2%);
+  --reader-text-muted: hsl(0 0% 45.1%);
+  --reader-accent: hsl(24.6 95% 53.1%);
+  --reader-accent-hover: hsl(20.5 90.2% 48.2%);
+  --reader-accent-text: hsl(0 0% 100%);
+  --reader-selection-bg: hsl(20.5 90.2% 48.2%);
+  --reader-selection-text: hsl(0 0% 100%);
+  --reader-highlight-yellow: oklch(0.91 0.125 96);
+  --reader-highlight-red: oklch(0.85 0.085 25);
+  --reader-highlight-green: oklch(0.89 0.095 148);
+  --reader-highlight-blue: oklch(0.87 0.075 242);
+  --reader-highlight-magenta: oklch(0.86 0.085 328);
+}
+
+[data-reader-theme="paper"] {
+  --reader-scheme: light;
+  color-scheme: light;
+  --reader-bg: hsl(40 23.1% 97.5%);
+  --reader-surface: hsl(48 20% 95.1%);
+  --reader-surface-hover: hsl(46.7 22% 92%);
+  --reader-border: hsl(45 16.2% 85.5%);
+  --reader-text: hsl(0 0% 10.2%);
+  --reader-text-secondary: hsl(0 0% 29%);
+  --reader-text-muted: hsl(0 0% 47.8%);
+  --reader-accent: hsl(17.5 88.3% 40.4%);
+  --reader-accent-hover: hsl(15 79.1% 33.7%);
+  --reader-accent-text: hsl(40 23.1% 97.5%);
+  --reader-selection-bg: hsl(240 21.3% 12%);
+  --reader-selection-text: hsl(40 23.1% 97.5%);
+  --reader-highlight-yellow: oklch(0.9 0.12 92);
+  --reader-highlight-red: oklch(0.84 0.085 27);
+  --reader-highlight-green: oklch(0.88 0.09 142);
+  --reader-highlight-blue: oklch(0.86 0.07 238);
+  --reader-highlight-magenta: oklch(0.85 0.08 330);
+}
+
+[data-reader-theme="sepia"] {
+  --reader-scheme: light;
+  color-scheme: light;
+  --reader-bg: hsl(42 31.3% 93.7%);
+  --reader-surface: hsl(42 35.7% 89%);
+  --reader-surface-hover: hsl(40 37.5% 84.3%);
+  --reader-border: hsl(38.2 33.8% 74.5%);
+  --reader-text: hsl(0 0% 17.6%);
+  --reader-text-secondary: hsl(0 0% 36.5%);
+  --reader-text-muted: hsl(0 0% 55.3%);
+  --reader-accent: hsl(26 90.5% 37.1%);
+  --reader-accent-hover: hsl(22.7 82.5% 31.4%);
+  --reader-accent-text: hsl(42 31.3% 93.7%);
+  --reader-selection-bg: hsl(26 90.5% 37.1%);
+  --reader-selection-text: hsl(42 31.3% 93.7%);
+  --reader-highlight-yellow: oklch(0.88 0.12 88);
+  --reader-highlight-red: oklch(0.82 0.095 28);
+  --reader-highlight-green: oklch(0.86 0.09 138);
+  --reader-highlight-blue: oklch(0.84 0.07 234);
+  --reader-highlight-magenta: oklch(0.83 0.08 334);
+}
+
+[data-reader-theme="dark"] {
+  --reader-scheme: dark;
+  color-scheme: dark;
+  --reader-bg: hsl(0 0% 5.9%);
+  --reader-surface: hsl(0 0% 10.2%);
+  --reader-surface-hover: hsl(0 0% 14.9%);
+  --reader-border: hsl(0 0% 20%);
+  --reader-text: hsl(0 0% 91%);
+  --reader-text-secondary: hsl(0 0% 63.9%);
+  --reader-text-muted: hsl(0 0% 45.1%);
+  --reader-accent: hsl(24.6 95% 53.1%);
+  --reader-accent-hover: hsl(20.5 90.2% 48.2%);
+  --reader-accent-text: hsl(0 0% 100%);
+  --reader-selection-bg: hsl(20.5 90.2% 48.2%);
+  --reader-selection-text: hsl(0 0% 100%);
+  --reader-highlight-yellow: oklch(0.5 0.1 92);
+  --reader-highlight-red: oklch(0.46 0.12 25);
+  --reader-highlight-green: oklch(0.46 0.09 148);
+  --reader-highlight-blue: oklch(0.46 0.1 250);
+  --reader-highlight-magenta: oklch(0.47 0.11 330);
+}
+
+[data-reader-theme="catppuccin"] {
+  --reader-scheme: dark;
+  color-scheme: dark;
+  --reader-bg: hsl(240 21.3% 12%);
+  --reader-surface: hsl(240 21% 15%);
+  --reader-surface-hover: hsl(237 16% 23%);
+  --reader-border: hsl(230.3 12.4% 49.2%);
+  --reader-text: hsl(227.4 68.3% 87.6%);
+  --reader-text-secondary: hsl(228 39.2% 80%);
+  --reader-text-muted: hsl(227.4 26.8% 72.2%);
+  --reader-accent: hsl(266.5 82.7% 79.6%);
+  --reader-accent-hover: hsl(266.5 82.7% 85%);
+  --reader-accent-text: hsl(240 21.3% 12%);
+  --reader-selection-bg: hsl(227.4 68.3% 87.6%);
+  --reader-selection-text: hsl(240 21.3% 12%);
+  --reader-highlight-yellow: oklch(0.54 0.095 82);
+  --reader-highlight-red: oklch(0.5 0.11 15);
+  --reader-highlight-green: oklch(0.51 0.09 142);
+  --reader-highlight-blue: oklch(0.51 0.085 236);
+  --reader-highlight-magenta: oklch(0.52 0.1 330);
+}
+
+/* cover themes reuse the pinned-L ladder from [data-cover]; --cover-1 is written
+   inline on the root by applyReaderTheme and falls back to the brand orange */
+[data-reader-theme^="cover-"] {
+  --cover-1: var(--reader-cover-fallback);
+}
+
+[data-reader-theme="cover-light"] {
+  --reader-scheme: light;
+  color-scheme: light;
+  --reader-bg: oklch(from var(--cover-1) 0.995 min(calc(c * 0.1), 0.01) h);
+  --reader-surface: oklch(from var(--cover-1) 0.975 min(calc(c * 0.1), 0.03) h);
+  --reader-surface-hover: oklch(
+    from var(--cover-1) 0.92 min(calc(c * 0.35), 0.06) h
+  );
+  --reader-border: oklch(from var(--cover-1) 0.86 min(calc(c * 0.6), 0.08) h);
+  --reader-text: oklch(from var(--cover-1) 0.22 min(calc(c * 0.5), 0.025) h);
+  --reader-text-secondary: oklch(
+    from var(--cover-1) 0.4 min(calc(c * 0.6), 0.08) h
+  );
+  --reader-text-muted: oklch(
+    from var(--cover-1) 0.55 min(calc(c * 0.6), 0.08) h
+  );
+  --reader-accent: oklch(from var(--cover-1) 0.47 min(c, 0.14) h);
+  --reader-accent-hover: oklch(from var(--cover-1) 0.4 min(c, 0.14) h);
+  --reader-accent-text: oklch(0.985 0.005 60);
+  --reader-selection-bg: oklch(from var(--cover-1) 0.85 min(c, 0.12) h);
+  --reader-selection-text: oklch(
+    from var(--cover-1) 0.2 min(calc(c * 0.5), 0.05) h
+  );
+  --reader-highlight-yellow: oklch(0.91 0.125 96);
+  --reader-highlight-red: oklch(0.85 0.085 25);
+  --reader-highlight-green: oklch(0.89 0.095 148);
+  --reader-highlight-blue: oklch(0.87 0.075 242);
+  --reader-highlight-magenta: oklch(0.86 0.085 328);
+}
+
+[data-reader-theme="cover-dark"] {
+  --reader-scheme: dark;
+  color-scheme: dark;
+  --reader-bg: oklch(from var(--cover-1) 0.17 min(calc(c * 0.05), 0.02) h);
+  --reader-surface: oklch(from var(--cover-1) 0.21 min(calc(c * 0.1), 0.02) h);
+  --reader-surface-hover: oklch(
+    from var(--cover-1) 0.26 min(calc(c * 0.7), 0.05) h
+  );
+  --reader-border: oklch(from var(--cover-1) 0.32 min(calc(c * 0.7), 0.06) h);
+  --reader-text: oklch(
+    from var(--cover-1) 0.92 clamp(0.01, calc(c * 0.3), 0.02) h
+  );
+  --reader-text-secondary: oklch(
+    from var(--cover-1) 0.75 min(calc(c * 0.5), 0.06) h
+  );
+  --reader-text-muted: oklch(
+    from var(--cover-1) 0.6 min(calc(c * 0.5), 0.06) h
+  );
+  --reader-accent: oklch(from var(--cover-1) 0.74 min(c, 0.13) h);
+  --reader-accent-hover: oklch(from var(--cover-1) 0.8 min(c, 0.13) h);
+  --reader-accent-text: oklch(0.17 0.004 49);
+  --reader-selection-bg: oklch(from var(--cover-1) 0.4 min(c, 0.1) h);
+  --reader-selection-text: oklch(
+    from var(--cover-1) 0.95 min(calc(c * 0.3), 0.03) h
+  );
+  --reader-highlight-yellow: oklch(0.5 0.1 92);
+  --reader-highlight-red: oklch(0.46 0.12 25);
+  --reader-highlight-green: oklch(0.46 0.09 148);
+  --reader-highlight-blue: oklch(0.46 0.1 250);
+  --reader-highlight-magenta: oklch(0.47 0.11 330);
+}
+
+/* the cover highlight follows the cover hue at a lightness that suits the scheme */
+:root,
+[data-reader-theme="light"],
+[data-reader-theme="paper"],
+[data-reader-theme="sepia"],
+[data-reader-theme="cover-light"] {
+  --reader-highlight-cover: oklch(
+    from var(--cover-1, var(--reader-cover-fallback)) 0.88
+      min(calc(c * 0.85), 0.13) h
+  );
+  --reader-highlight-mid: oklch(
+    from var(--reader-highlight) 0.6 calc(c * 1.5) h
+  );
+  --reader-highlight-strong: oklch(
+    from var(--reader-highlight) 0.42 calc(c * 1.6) h
+  );
+}
+.dark,
+[data-reader-theme="dark"],
+[data-reader-theme="catppuccin"],
+[data-reader-theme="cover-dark"] {
+  --reader-highlight-cover: oklch(
+    from var(--cover-1, var(--reader-cover-fallback)) 0.5 min(c, 0.12) h
+  );
+  --reader-highlight-mid: oklch(
+    from var(--reader-highlight) 0.68 calc(c * 1.2) h
+  );
+  --reader-highlight-strong: oklch(
+    from var(--reader-highlight) 0.8 calc(c * 1.1) h
+  );
+}
+.dark [data-reader-theme="light"],
+.dark[data-reader-theme="light"],
+.dark[data-reader-theme="paper"],
+.dark[data-reader-theme="sepia"],
+.dark[data-reader-theme="cover-light"] {
+  --reader-highlight-cover: oklch(
+    from var(--cover-1, var(--reader-cover-fallback)) 0.88
+      min(calc(c * 0.85), 0.13) h
+  );
+  --reader-highlight-mid: oklch(
+    from var(--reader-highlight) 0.6 calc(c * 1.5) h
+  );
+  --reader-highlight-strong: oklch(
+    from var(--reader-highlight) 0.42 calc(c * 1.6) h
+  );
+}
+
+[data-reader-highlight="cover"] {
+  --reader-highlight: var(--reader-highlight-cover);
+}
+[data-reader-highlight="custom"] {
+  --reader-highlight: var(--reader-highlight-custom);
 }

@@ -24,6 +24,13 @@ type Params = {
   path: string[]
 }
 
+const FORWARDED_REQUEST_HEADERS = [
+  "accept",
+  "accept-language",
+  "range",
+  "if-range",
+]
+
 const ONE_SECOND = 1_000
 const ONE_MINUTE = 60 * ONE_SECOND
 const ONE_HOUR = 60 * ONE_MINUTE
@@ -203,7 +210,11 @@ export const GET = async (
 
   const cacheRule = getCacheRule(path)
 
-  const newHeaders = new Headers(request.headers)
+  const newHeaders = new Headers()
+  for (const name of FORWARDED_REQUEST_HEADERS) {
+    const value = request.headers.get(name)
+    if (value) newHeaders.set(name, value)
+  }
   // we don't want readium to compress the response
   newHeaders.set("Accept-Encoding", "identity")
 

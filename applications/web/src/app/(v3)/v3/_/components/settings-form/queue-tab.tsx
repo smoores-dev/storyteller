@@ -437,7 +437,6 @@ function JobItem({
               className="size-7"
               aria-label={t("actions.moveUp")}
               tooltip={t("actions.moveUp")}
-              delay={500}
               disabled={isFirst}
               onClick={() => {
                 move(job, -1)
@@ -451,7 +450,6 @@ function JobItem({
               className="size-7"
               aria-label={t("actions.moveDown")}
               tooltip={t("actions.moveDown")}
-              delay={500}
               disabled={isLast}
               onClick={() => {
                 move(job, 1)

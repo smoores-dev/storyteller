@@ -1843,5 +1843,178 @@
       "failed": "{title} kon niet worden verwerkt",
       "aBook": "Een boek"
     }
+  },
+  "Player": {
+    "label": "Audiospeler",
+    "play": "Afspelen",
+    "pause": "Pauzeren",
+    "back10": "10 seconden terug",
+    "forward10": "10 seconden vooruit",
+    "wholeFile": "Hele bestand",
+    "speed": "Afspeelsnelheid",
+    "close": "Speler sluiten"
+  },
+  "Reader": {
+    "toolbar": {
+      "tableOfContents": "Inhoudsopgave",
+      "noTableOfContents": "Geen inhoudsopgave beschikbaar",
+      "sleepTimer": "Slaaptimer",
+      "sleepTimerOff": "Uit",
+      "readerSettings": "Leesinstellingen",
+      "backToBook": "Terug naar het boek",
+      "readAlongOn": "Meelezen: aan",
+      "readAlongOff": "Meelezen: uit",
+      "play": "Afspelen",
+      "pause": "Pauzeren",
+      "buffering": "Bufferen",
+      "previousPage": "Vorige pagina",
+      "nextPage": "Volgende pagina",
+      "previousFragment": "Vorig fragment",
+      "nextFragment": "Volgend fragment",
+      "skipBackward": "15 seconden terug",
+      "skipForward": "15 seconden vooruit",
+      "previousChapter": "Naar het vorige hoofdstuk",
+      "nextChapter": "Naar het volgende hoofdstuk"
+    },
+    "readerSettings": {
+      "title": "Leesinstellingen",
+      "applyToAllBooks": "Op alle boeken toepassen",
+      "applyToAllBooksHint": "Elk boek gebruikt vanaf nu de instellingen van dit boek",
+      "setForThisBookOnly": "Alleen voor dit boek ingesteld",
+      "followAllBooks": "De instellingen voor alle boeken volgen",
+      "theme": {
+        "title": "Thema",
+        "schemeLight": "Licht",
+        "schemeDark": "Donker",
+        "light": "Licht",
+        "paper": "Papier",
+        "sepia": "Sepia",
+        "dark": "Donker",
+        "catppuccin": "Catppuccin",
+        "cover-light": "Omslag",
+        "cover-dark": "Omslag"
+      },
+      "text": {
+        "title": "Tekst",
+        "font": "Lettertype",
+        "publisher": "Lettertype van de uitgever",
+        "serif": "Schreef",
+        "sans-serif": "Schreefloos",
+        "monospace": "Vaste breedte",
+        "Literata": "Literata",
+        "OpenDyslexic": "OpenDyslexic",
+        "fontCustom": "Aangepast",
+        "fontCustomNamed": "Aangepast ({name})",
+        "fontNamePlaceholder": "Naam van het lettertype",
+        "fontUrlPlaceholder": "URL van de stylesheet",
+        "fontUrlHint": "Een stylesheet die het lettertype definieert, bijvoorbeeld een link van Google Fonts",
+        "fontSize": "Grootte",
+        "fontWeight": "Dikte",
+        "letterSpacing": "Letterafstand",
+        "default": "Standaard",
+        "tight": "Krap",
+        "balanced": "Gebalanceerd",
+        "loose": "Ruim",
+        "alignment": "Uitlijning",
+        "alignmentLeft": "Links",
+        "alignmentJustified": "Uitgevuld",
+        "hyphens": "Woorden afbreken",
+        "lineHeight": "Regelafstand",
+        "paragraphSpacing": "Alinea-afstand",
+        "lineLength": "Regellengte",
+        "lineLengthCharacters": "{count, number} tekens"
+      },
+      "layout": {
+        "title": "Indeling",
+        "paginated": "Pagina's",
+        "scrolling": "Scrollen",
+        "columns": "Kolommen",
+        "columnsAuto": "Automatisch",
+        "columnsOne": "1",
+        "columnsTwo": "2",
+        "footerWidth": "Breedte van de onderbalk",
+        "footerWidthWide": "Breed",
+        "footerWidthNarrow": "Smal",
+        "footerWidthFitToText": "Even breed als de tekst"
+      },
+      "highlights": {
+        "title": "Markeringen",
+        "style": "Stijl",
+        "styleHighlight": "Achtergrond",
+        "styleHighlightUnderline": "Achtergrond + onderstreping",
+        "styleUnderline": "Onderstreping",
+        "styleTextColor": "Tekstkleur",
+        "yellow": "Geel",
+        "red": "Rood",
+        "green": "Groen",
+        "blue": "Blauw",
+        "magenta": "Magenta",
+        "cover": "Omslag",
+        "custom": "Aangepast",
+        "customUse": "Gebruiken",
+        "customUsePlaceholder": "Elke CSS-kleur",
+        "dim": "Rest dimmen tijdens afspelen",
+        "dimHint": "Vervaagt alles behalve de zin die wordt voorgelezen.",
+        "syncOffset": "Tijdsverschuiving"
+      },
+      "behavior": {
+        "title": "Gedrag",
+        "skipAudioWhenTurningPages": "Audio overslaan bij het omslaan van pagina's",
+        "openFloating": "Een zwevende minispeler openen als je van tabblad wisselt",
+        "openFloatingHint": "Alleen in browsers op basis van Chromium. In het zwevende venster kun je het afspelen bedienen en pagina's omslaan terwijl Storyteller op de achtergrond staat.",
+        "scrolling": "Scrollen",
+        "scrollingSmooth": "Vloeiend",
+        "scrollingInstant": "Direct",
+        "scrollEngine": "Scrollmethode",
+        "scrollEngineCustom": "Eigen",
+        "scrollEngineNative": "Van de browser",
+        "scrollEngineCustomHint": "Meestal vloeiender en je kunt de snelheid instellen",
+        "scrollEngineNativeHint": "Probeer dit als het scrollen zich vreemd gedraagt",
+        "scrollSpeed": "Scrolsnelheid"
+      }
+    },
+    "progress": {
+      "pageOfTotal": "Pagina {page} van {total}",
+      "page": "Pagina {page}",
+      "trackOfTotal": "Track {index} van {total}",
+      "timeLeft": "Nog {time}",
+      "showChapterProgress": "Voortgang in het hoofdstuk tonen",
+      "showBookProgress": "Voortgang in het boek tonen",
+      "playbackPosition": "Afspeelpositie"
+    },
+    "error": {
+      "book_not_found": "Boek niet gevonden",
+      "resource_not_found": "Een deel van dit boek ontbreekt",
+      "service_unavailable": "De server is niet bereikbaar",
+      "internal_error": "Het boek kon niet worden geopend",
+      "tryAgain": "Opnieuw proberen",
+      "goBack": "Terug"
+    },
+    "miniPlayer": {
+      "open": "De speler openen",
+      "collapse": "Inklappen",
+      "collapseAria": "De speler inklappen",
+      "backToBook": "Terug naar het boek",
+      "stopListening": "Stoppen met luisteren",
+      "positionInTrack": "Positie in deze track",
+      "backToApp": "Terug naar de app",
+      "playbackError": "Fout bij het afspelen",
+      "previousChapter": "Vorig hoofdstuk",
+      "nextChapter": "Volgend hoofdstuk",
+      "back15": "15 seconden terug",
+      "forward15": "15 seconden vooruit"
+    },
+    "playbackSpeed": {
+      "title": "Afspeelsnelheid",
+      "slower": "Langzamer",
+      "faster": "Sneller"
+    },
+    "volume": {
+      "title": "Volume"
+    },
+    "fullscreen": {
+      "title": "Volledig scherm",
+      "exitFullscreen": "Volledig scherm sluiten"
+    }
   }
 }
