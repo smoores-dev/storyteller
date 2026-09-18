@@ -3,7 +3,7 @@ import {
   EpubPreferences,
   type FrameManager,
 } from "@readium/navigator"
-import { Locator } from "@readium/shared"
+import { Locator, getHtmlId } from "@readium/shared"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import {
@@ -35,6 +35,7 @@ import {
   selectIsLoadingPublication,
   selectIsSyncing,
   selectReadingMode,
+  selectStartLocator,
 } from "@/store/slices/readingSessionSlice"
 
 const VERTICAL_OVERFLOW_STYLE_ID = "reader-vertical-overflow"
@@ -83,6 +84,7 @@ export const useNavigator = ({
   preferencesRef.current = preferences
 
   const publicationLoading = useAppSelector(selectIsLoadingPublication)
+  const startLocator = useAppSelector(selectStartLocator)
 
   const epubPreferences = useCallback(
     () => readiumIfyPreferences(preferencesRef.current, readReaderTokens()),
@@ -266,7 +268,11 @@ export const useNavigator = ({
           return
         }
 
-        if (initialLocator && isVerticalPublication(publication)) {
+        if (
+          initialLocator &&
+          (isVerticalPublication(publication) ||
+            getHtmlId(initialLocator.locations))
+        ) {
           await new Promise<void>((resolve) => {
             navigator.go(initialLocator, false, () => {
               resolve()
@@ -328,9 +334,11 @@ export const useNavigator = ({
       return
     }
 
-    const initialLocator = initialPosition?.locator
-      ? (Locator.deserialize(initialPosition.locator) ?? null)
-      : null
+    const initialLocator =
+      startLocator ??
+      (initialPosition?.locator
+        ? (Locator.deserialize(initialPosition.locator) ?? null)
+        : null)
 
     const translatedLocator = initialLocator
       ? translateLocator(initialLocator, mode)
@@ -364,6 +372,7 @@ export const useNavigator = ({
     containerRef,
     syncing,
     initialPosition?.locator,
+    startLocator,
     navigatorRef,
     publicationLoading,
     dispatch,

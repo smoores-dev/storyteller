@@ -1,13 +1,22 @@
 import { type FrameComms, type FrameManager } from "@readium/navigator"
 import { type DecoratorRequest } from "@readium/navigator-html-injectables"
-import { Link, type Locator, type Publication } from "@readium/shared"
+import {
+  Link,
+  Locator,
+  LocatorLocations,
+  type Publication,
+  getTime,
+} from "@readium/shared"
 
 import {
   type AudioClip,
   type TocItem,
+  getAudiobookLocator,
   getClip,
+  getFragmentForClip,
   getFragmentNavigation,
   getLocatorForFragment,
+  getLocatorWithClosestPositionAsync,
   getResourceHrefFromApiUrl,
 } from "@/components/reader/BookService"
 import { withActiveFrame } from "@/components/reader/frameUtils"
@@ -27,6 +36,7 @@ import {
   highlightTint,
   readReaderTokens,
 } from "@/store/slices/preferencesSlice"
+import { type ReadingMode } from "@/store/slices/readingSessionSlice"
 
 const HIGHLIGHT_GROUP = "highlight"
 
@@ -441,4 +451,71 @@ export function handleChapterSkip(
   const wasPlaying = readerPlayer().getState().playing
   readerPlayer().pause()
   requestTextNavigation(nextTocItem.locator, wasPlaying)
+}
+
+export async function resolveHrefLocator(
+  href: string,
+  mode: ReadingMode,
+  positions: Locator[],
+): Promise<Locator | null> {
+  const publication = getPublication()
+  if (!publication) return null
+
+  const hashIndex = href.indexOf("#")
+  const normalize = (value: string) =>
+    decodeURIComponent(value).replace(/^\/+/, "")
+  const path = normalize(hashIndex === -1 ? href : href.slice(0, hashIndex))
+  const fragment =
+    hashIndex === -1 ? null : decodeURIComponent(href.slice(hashIndex + 1))
+
+  const link = [
+    ...publication.readingOrder.items,
+    ...(publication.resources?.items ?? []),
+  ].find((candidate) => {
+    const candidateHref = normalize(candidate.href.split("#")[0] ?? "")
+    return (
+      candidateHref === path ||
+      candidateHref.endsWith(`/${path}`) ||
+      path.endsWith(`/${candidateHref}`)
+    )
+  })
+  if (!link) return null
+
+  if (!link.type?.startsWith("audio/")) {
+    return getLocatorWithClosestPositionAsync(
+      new Locator({
+        href: link.href,
+        type: link.type ?? "application/xhtml+xml",
+        locations: new LocatorLocations({
+          fragments: fragment ? [fragment] : [],
+        }),
+      }),
+      positions,
+    )
+  }
+
+  const time =
+    getTime(new LocatorLocations({ fragments: fragment ? [fragment] : [] })) ??
+    0
+
+  if (mode === "audiobook") {
+    const tracks = publication.readingOrder.items
+      .filter((item) => item.type?.startsWith("audio/"))
+      .map((item) => ({
+        duration: item.duration ?? 0,
+        type: item.type ?? "",
+        url: item.href,
+      }))
+    return getAudiobookLocator(
+      time,
+      tracks.findIndex((track) => track.url === link.href),
+      tracks,
+    )
+  }
+
+  const [guide] = (await getGuideForTrack(publication, link.href, time)) ?? []
+  if (!guide) return null
+
+  const textFragment = await getFragmentForClip(guide, link.href, time)
+  return textFragment?.locator ?? null
 }

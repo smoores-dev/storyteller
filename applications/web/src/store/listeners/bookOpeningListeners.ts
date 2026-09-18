@@ -25,6 +25,8 @@ import {
   type AudioTextMap,
   type TextAudioMap,
   clearRegistry,
+  getAudioToTextMap,
+  getTextToAudioMap,
   registerAudioToTextMap,
   registerGuide,
   registerPositions,
@@ -44,7 +46,7 @@ import {
 import { createCacheBustingFetch } from "@/utils/cacheBustingFetch"
 import type { UUID } from "@/uuid"
 
-import { findNearestGuide } from "./helpers"
+import { findNearestGuide, resolveHrefLocator } from "./helpers"
 import { startAppListening } from "./listenerMiddleware"
 
 async function registerMaps(
@@ -346,7 +348,15 @@ async function generateTracksForReadaloud(
   authors: string,
   updatedAt: Date,
 ): Promise<AudioTrack[]> {
-  const { textToAudioMap, audioToTextMap } = await registerMaps(publication)
+  const registeredTextToAudioMap = getTextToAudioMap()
+  const registeredAudioToTextMap = getAudioToTextMap()
+  const { textToAudioMap, audioToTextMap } =
+    registeredTextToAudioMap && registeredAudioToTextMap
+      ? {
+          textToAudioMap: registeredTextToAudioMap,
+          audioToTextMap: registeredAudioToTextMap,
+        }
+      : await registerMaps(publication)
 
   const audioHrefToChapterTitle = new Map<
     string,
@@ -461,6 +471,26 @@ startAppListening({
       registerPublication(publication)
       registerPositions(positions)
       registerTocItems(tocItems)
+
+      if (action.payload.startHref && mode === "readaloud") {
+        await registerMaps(publication)
+      }
+      const startLocator = action.payload.startHref
+        ? await resolveHrefLocator(action.payload.startHref, mode, positions)
+        : null
+      listenerApi.dispatch(
+        readingSessionSlice.actions.setStartLocator(startLocator),
+      )
+      if (startLocator) {
+        listenerApi.dispatch(
+          syncPosition({
+            locator: startLocator,
+            timestamp: Date.now(),
+            bookUuid: book.uuid,
+          }),
+        )
+      }
+
       listenerApi.dispatch(
         readingSessionSlice.actions.setPublicationLoading(false),
       )
@@ -490,13 +520,15 @@ startAppListening({
           return
         }
 
-        const savedPosition = await listenerApi
-          .dispatch(api.endpoints.getPosition.initiate({ uuid: book.uuid }))
-          .unwrap()
-          .catch((error: unknown) => {
-            console.error("Failed to get saved position:", error)
-            return null
-          })
+        const savedPosition = startLocator
+          ? null
+          : await listenerApi
+              .dispatch(api.endpoints.getPosition.initiate({ uuid: book.uuid }))
+              .unwrap()
+              .catch((error: unknown) => {
+                console.error("Failed to get saved position:", error)
+                return null
+              })
 
         const playbackSpeed = selectPreference(
           listenerApi.getState(),
@@ -505,9 +537,9 @@ startAppListening({
         const volume = selectPreference(listenerApi.getState(), "volume")
 
         if (mode === "audiobook") {
-          const savedLocator = savedPosition
-            ? Locator.deserialize(savedPosition.locator)
-            : null
+          const savedLocator =
+            startLocator ??
+            (savedPosition ? Locator.deserialize(savedPosition.locator) : null)
           if (!savedLocator) {
             await initializeAudioPlayer({
               tracks,
@@ -546,9 +578,11 @@ startAppListening({
         }
         // readaloud or epub
         else {
-          const locator = savedPosition?.locator
-            ? Locator.deserialize(savedPosition.locator) || null
-            : null
+          const locator =
+            startLocator ??
+            (savedPosition?.locator
+              ? Locator.deserialize(savedPosition.locator) || null
+              : null)
 
           const translatedLocator = locator
             ? translateLocator(locator, mode)

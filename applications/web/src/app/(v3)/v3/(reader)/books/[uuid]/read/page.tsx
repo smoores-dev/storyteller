@@ -22,6 +22,7 @@ type Props = {
   }>
   searchParams: Promise<{
     mode?: string
+    href?: string
   }>
 }
 
@@ -42,7 +43,7 @@ export const generateMetadata = async ({
 }
 
 export default async function BookReadPage({ params, searchParams }: Props) {
-  const [{ uuid }, { mode }] = await Promise.all([params, searchParams])
+  const [{ uuid }, { mode, href }] = await Promise.all([params, searchParams])
   const book = await getBook(uuid)
 
   if (!book) {
@@ -51,7 +52,7 @@ export default async function BookReadPage({ params, searchParams }: Props) {
 
   return (
     <main className="bg-reader-bg absolute inset-0">
-      <Reader book={book} mode={parseMode(mode)} />
+      <Reader book={book} mode={parseMode(mode)} startHref={href} />
     </main>
   )
 }

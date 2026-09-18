@@ -54,9 +54,11 @@ const EDGE_BUTTON_CLASS =
 const ReaderComponent = ({
   book,
   mode,
+  startHref,
 }: {
   book: BookWithRelations
   mode?: ReadingMode | undefined
+  startHref?: string | undefined
 }) => {
   const dispatch = useAppDispatch()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -89,8 +91,19 @@ const ReaderComponent = ({
   const readerError = useAppSelector(selectReaderError)
   const readerErrorMessage = useAppSelector(selectReaderErrorMessage)
 
+  const appliedStartHrefRef = useRef<string | null>(null)
+
   useEffect(() => {
-    if (currentReadingBook?.uuid === book.uuid) {
+    const requestedHref =
+      startHref && !startHref.includes("#") && window.location.hash
+        ? `${startHref}${window.location.hash}`
+        : startHref
+    const pendingStartHref =
+      requestedHref && appliedStartHrefRef.current !== requestedHref
+        ? requestedHref
+        : undefined
+
+    if (currentReadingBook?.uuid === book.uuid && !pendingStartHref) {
       dispatch(
         readingSessionSlice.actions.setSyncing(actualMode === "readaloud"),
       )
@@ -105,9 +118,19 @@ const ReaderComponent = ({
       readingSessionSlice.actions.startBook({
         book,
         requestedMode: mode ?? "epub",
+        startHref: pendingStartHref,
       }),
     )
+
+    if (pendingStartHref) {
+      appliedStartHrefRef.current = pendingStartHref
+      const url = new URL(window.location.href)
+      url.searchParams.delete("href")
+      url.hash = ""
+      window.history.replaceState(null, "", url)
+    }
   }, [
+    startHref,
     book,
     currentReadingBook?.uuid,
     dispatch,
