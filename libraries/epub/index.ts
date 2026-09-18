@@ -180,6 +180,7 @@ export interface Collection {
 export interface NavigationItem {
   title: string
   href?: string
+  role?: string
   children?: NavigationList
 }
 
@@ -187,6 +188,7 @@ export type NavigationList = NavigationItem[]
 
 export interface Navigation {
   title?: string
+  role: string
   children: NavigationList
 }
 
@@ -2722,6 +2724,14 @@ export class Epub {
               { toRoot: resolveToRoot },
             ),
           }),
+        ...(Epub.getXmlElementName(firstChild) === "a" &&
+          firstChild[":@"]?.["@_epub:type"] && {
+            role: await this.resolveHref(
+              firstChild[":@"]["@_epub:type"],
+              undefined,
+              { toRoot: resolveToRoot },
+            ),
+          }),
         ...(secondChild &&
           Epub.getXmlElementName(secondChild) === "ol" && {
             children: await this.getNavigationChildren(secondChild, navHref, {
@@ -2781,6 +2791,7 @@ export class Epub {
 
     return {
       ...(title && { title }),
+      role,
       children,
     }
   }
@@ -2798,6 +2809,7 @@ export class Epub {
     if (navigationToc) return navigationToc
     const ncxToc = await this.getNcxTableOfContents()
     return {
+      role: "toc",
       children: ncxToc,
     }
   }
