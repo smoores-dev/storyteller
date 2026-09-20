@@ -29,9 +29,9 @@ async function getFileGitLogs(filePath: string): Promise<GitLog[]> {
       filePath,
     ])
 
-    if (!stdout.trim()) {
-      throw new Error(`No git log output from file: ${filePath}`)
-    }
+    // a file that is not committed yet (new page, fresh checkout of a
+    // versioned copy) simply has no authors
+    if (!stdout.trim()) return []
 
     const gitLogs: GitLog[] = []
 

@@ -1,0 +1,415 @@
+@font-face {
+  font-family: "Literata";
+  src: url("/fonts/Literata.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Literata";
+  src: url("/fonts/Literata-Italic.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans.woff2") format("woff2");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Italic.woff2") format("woff2");
+  font-weight: 100 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+html.docs-v3 {
+  --st-background: oklch(0.992 0.005 67.78);
+  --st-foreground: oklch(0.215 0.014 52);
+  --st-card: oklch(0.9876 0.0085 67.73);
+  --st-popover: oklch(0.993 0.004 80);
+  --st-primary: oklch(0.62 0.175 42);
+  --st-primary-foreground: oklch(0.982 0.014 74);
+  --st-secondary: oklch(0.945 0.015 72);
+  --st-muted: oklch(0.955 0.012 74);
+  --st-muted-foreground: oklch(0.49 0.024 56);
+  --st-accent: oklch(0.94 0.02 68);
+  --st-border: oklch(0.89 0.012 72);
+  --st-ring: oklch(0.7 0.06 46);
+
+  --st-sidebar: oklch(0.958 0.014 73);
+  --st-sidebar-foreground: oklch(0.34 0.024 52);
+  --st-sidebar-border: oklch(0.882 0.018 72);
+  --st-sidebar-accent: color-mix(
+    in oklab,
+    var(--st-primary) 20%,
+    var(--st-sidebar)
+  );
+  --st-sidebar-accent-foreground: color-mix(
+    in oklab,
+    var(--st-primary) 72%,
+    var(--st-foreground)
+  );
+
+  --st-highlight-wash: oklch(0.91 0.06 80);
+  --st-highlight-edge: oklch(0.78 0.11 72);
+
+  --st-code-bg: var(--st-muted);
+  --st-code-plain: var(--st-foreground);
+  --st-code-comment: oklch(0.58 0.02 60);
+  --st-code-punctuation: oklch(0.52 0.02 58);
+  --st-code-operator: oklch(0.47 0.04 50);
+  --st-code-keyword: oklch(0.48 0.15 30);
+  --st-code-string: oklch(0.44 0.09 150);
+  --st-code-number: oklch(0.5 0.12 65);
+  --st-code-function: oklch(0.44 0.09 215);
+  --st-code-variable: oklch(0.5 0.14 45);
+
+  --st-radius: 0.75rem;
+  --st-radius-sm: calc(var(--st-radius) - 6px);
+  --st-radius-lg: calc(var(--st-radius) + 4px);
+
+  --st-shadow-card:
+    0 1px 2px oklch(0.35 0.04 65 / 0.04),
+    0 8px 24px -12px oklch(0.35 0.04 65 / 0.14);
+
+  --st-adm-surface: oklch(0.962 0.011 74);
+  --st-adm-note: oklch(0.5 0.02 60);
+  --st-adm-tip: oklch(0.48 0.09 150);
+  --st-adm-info: oklch(0.5 0.07 230);
+  --st-adm-warning: oklch(0.52 0.11 70);
+  --st-adm-danger: oklch(0.5 0.15 32);
+
+  --ifm-color-primary: oklch(0.62 0.175 42);
+  --ifm-color-primary-dark: oklch(0.575 0.168 42);
+  --ifm-color-primary-darker: oklch(0.545 0.16 42);
+  --ifm-color-primary-darkest: oklch(0.475 0.14 42);
+  --ifm-color-primary-light: oklch(0.665 0.172 43);
+  --ifm-color-primary-lighter: oklch(0.695 0.165 44);
+  --ifm-color-primary-lightest: oklch(0.755 0.13 46);
+
+  --ifm-font-family-base: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --ifm-heading-font-family: "Literata", Georgia, serif;
+  --ifm-font-family-monospace:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+
+  --ifm-background-color: var(--st-background);
+  --ifm-background-surface-color: var(--st-card);
+  --ifm-font-color-base: var(--st-foreground);
+  --ifm-heading-color: var(--st-foreground);
+
+  --ifm-navbar-background-color: var(--st-sidebar);
+  --ifm-navbar-shadow: none;
+  --ifm-navbar-link-color: var(--st-sidebar-foreground);
+  --ifm-navbar-link-hover-color: var(--st-primary);
+  --ifm-navbar-search-input-placeholder-color: var(--st-muted-foreground);
+
+  --ifm-footer-background-color: var(--st-sidebar);
+  --ifm-footer-color: var(--st-sidebar-foreground);
+  --ifm-footer-link-color: var(--st-muted-foreground);
+  --ifm-footer-title-color: var(--st-foreground);
+
+  --ifm-toc-border-color: var(--st-border);
+  --ifm-hr-border-color: var(--st-border);
+  --ifm-table-border-color: var(--st-border);
+  --ifm-blockquote-color: var(--st-muted-foreground);
+  --ifm-blockquote-border-color: var(--st-border);
+
+  --ifm-code-background: var(--st-muted);
+  --ifm-code-font-size: 90%;
+  --ifm-code-padding-vertical: 0.15rem;
+  --ifm-code-padding-horizontal: 0.3rem;
+  --ifm-pre-background: var(--st-muted);
+
+  --ifm-menu-color: var(--st-sidebar-foreground);
+  --ifm-menu-color-active: var(--st-sidebar-accent-foreground);
+  --ifm-menu-color-background-active: transparent;
+  --ifm-menu-color-background-hover: color-mix(
+    in oklab,
+    var(--st-foreground) 6%,
+    transparent
+  );
+
+  --ifm-global-radius: 0.5rem;
+  --ifm-code-border-radius: 0.5rem;
+  --ifm-button-border-radius: var(--st-radius-sm);
+
+  --ifm-link-color: var(--st-primary);
+  --ifm-link-hover-color: var(--st-primary);
+
+  --docusaurus-highlighted-code-line-bg: color-mix(
+    in oklab,
+    var(--st-primary) 14%,
+    transparent
+  );
+
+  --ifm-color-emphasis-0: var(--st-background);
+  --ifm-color-emphasis-100: var(--st-muted);
+  --ifm-color-emphasis-200: var(--st-secondary);
+  --ifm-color-emphasis-300: var(--st-border);
+  --ifm-color-emphasis-400: color-mix(
+    in oklab,
+    var(--st-foreground) 22%,
+    transparent
+  );
+  --ifm-color-emphasis-600: var(--st-muted-foreground);
+  --ifm-color-emphasis-700: var(--st-muted-foreground);
+  --ifm-color-emphasis-800: color-mix(
+    in oklab,
+    var(--st-foreground) 82%,
+    transparent
+  );
+  --ifm-color-emphasis-900: var(--st-foreground);
+  --ifm-color-emphasis-1000: var(--st-foreground);
+
+  --ifm-color-secondary-contrast-background: var(--st-adm-surface);
+  --ifm-color-secondary-contrast-foreground: var(--st-foreground);
+  --ifm-color-secondary-dark: var(--st-adm-note);
+  --ifm-color-success-contrast-background: var(--st-adm-surface);
+  --ifm-color-success-contrast-foreground: var(--st-adm-tip);
+  --ifm-color-success-dark: var(--st-adm-tip);
+  --ifm-color-info-contrast-background: var(--st-adm-surface);
+  --ifm-color-info-contrast-foreground: var(--st-adm-info);
+  --ifm-color-info-dark: var(--st-adm-info);
+  --ifm-color-warning-contrast-background: var(--st-adm-surface);
+  --ifm-color-warning-contrast-foreground: var(--st-adm-warning);
+  --ifm-color-warning-dark: var(--st-adm-warning);
+  --ifm-color-danger-contrast-background: var(--st-adm-surface);
+  --ifm-color-danger-contrast-foreground: var(--st-adm-danger);
+  --ifm-color-danger-dark: var(--st-adm-danger);
+
+  &[data-theme="dark"] {
+    --st-background: oklch(0.19 0.004 48);
+    --st-foreground: oklch(0.985 0.005 60);
+    --st-card: oklch(0.205 0.005 50);
+    --st-popover: oklch(0.205 0.004 50);
+    --st-primary: oklch(0.705 0.213 47.604);
+    --st-primary-foreground: oklch(0.98 0.016 73.684);
+    --st-secondary: oklch(0.274 0.01 50);
+    --st-muted: oklch(0.269 0.004 50);
+    --st-muted-foreground: oklch(0.708 0.004 55);
+    --st-accent: oklch(0.371 0.01 50);
+    --st-border: oklch(1 0.003 60 / 10%);
+    --st-ring: oklch(0.556 0.008 50);
+
+    --st-sidebar: oklch(0.215 0.005 48);
+    --st-sidebar-foreground: oklch(0.88 0.01 60);
+    --st-sidebar-border: oklch(1 0.005 60 / 10%);
+    --st-sidebar-accent: oklch(0.53 0.1212 48.08 / 0.3);
+    --st-sidebar-accent-foreground: oklch(0.82 0.145 50);
+
+    --st-highlight-wash: oklch(0.46 0.09 62);
+    --st-highlight-edge: oklch(0.62 0.13 58);
+
+    --st-code-comment: oklch(0.62 0.015 55);
+    --st-code-punctuation: oklch(0.68 0.012 55);
+    --st-code-operator: oklch(0.75 0.03 55);
+    --st-code-keyword: oklch(0.76 0.13 28);
+    --st-code-string: oklch(0.8 0.1 150);
+    --st-code-number: oklch(0.84 0.12 72);
+    --st-code-function: oklch(0.8 0.09 215);
+    --st-code-variable: oklch(0.82 0.13 50);
+
+    --st-shadow-card:
+      0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -12px oklch(0 0 0 / 0.5);
+
+    --st-adm-surface: oklch(0.245 0.006 52);
+    --st-adm-note: oklch(0.75 0.02 60);
+    --st-adm-tip: oklch(0.8 0.1 150);
+    --st-adm-info: oklch(0.78 0.08 230);
+    --st-adm-warning: oklch(0.85 0.12 78);
+    --st-adm-danger: oklch(0.75 0.14 34);
+
+    --ifm-color-primary: oklch(0.705 0.213 47.604);
+    --ifm-color-primary-dark: oklch(0.665 0.203 47);
+    --ifm-color-primary-darker: oklch(0.64 0.195 46);
+    --ifm-color-primary-darkest: oklch(0.565 0.172 45);
+    --ifm-color-primary-light: oklch(0.75 0.19 50);
+    --ifm-color-primary-lighter: oklch(0.785 0.16 52);
+    --ifm-color-primary-lightest: oklch(0.84 0.12 56);
+
+    --docusaurus-highlighted-code-line-bg: color-mix(
+      in oklab,
+      var(--st-primary) 20%,
+      transparent
+    );
+  }
+
+  body {
+    font-family: var(--ifm-font-family-base);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--ifm-heading-font-family);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .navbar__title,
+  .hero__title {
+    font-family: "Young Serif";
+  }
+
+  .navbar {
+    border-bottom: 1px solid var(--st-sidebar-border);
+  }
+
+  .navbar__link,
+  .navbar__brand {
+    font-size: 1rem;
+  }
+
+  .navbar-sidebar {
+    background-color: var(--st-sidebar);
+  }
+
+  .navbar__search > input {
+    background-color: var(--st-card);
+    border: 1px solid var(--st-border);
+    color: var(--st-foreground);
+  }
+
+  .theme-doc-sidebar-container {
+    background-color: var(--st-sidebar);
+    border-right: 1px solid var(--st-sidebar-border) !important;
+  }
+
+  .theme-doc-sidebar-container .menu {
+    font-size: 1rem;
+  }
+
+  .menu__link,
+  .menu__caret,
+  .menu__list-item-collapsible {
+    border-radius: var(--st-radius-sm);
+  }
+
+  .menu__link--sublist-caret::after,
+  .menu__caret::before {
+    width: 1rem;
+    height: 1rem;
+    background: var(--ifm-menu-link-sublist-icon) 50% / 1.5rem 1.5rem;
+  }
+
+  .menu__link--active:not(.menu__link--sublist) {
+    font-weight: 500;
+  }
+
+  .menu {
+    font-weight: 400;
+  }
+
+  .table-of-contents {
+    font-size: 0.8125rem;
+  }
+
+  .table-of-contents__link:hover,
+  .table-of-contents__link--active {
+    color: var(--st-primary);
+  }
+
+  .pagination-nav__link {
+    border-color: var(--st-border);
+    background-color: var(--st-card);
+  }
+
+  .pagination-nav__link:hover {
+    border-color: var(--st-primary);
+  }
+
+  .footer {
+    border-top: 1px solid var(--st-sidebar-border);
+  }
+
+  .footer--dark {
+    --ifm-footer-background-color: var(--st-sidebar);
+    --ifm-footer-color: var(--st-muted-foreground);
+    --ifm-footer-link-color: var(--st-muted-foreground);
+    --ifm-footer-title-color: var(--st-foreground);
+  }
+
+  .footer__link-item:hover {
+    color: var(--st-primary);
+  }
+
+  .markdown > h1 {
+    font-size: 2.25rem;
+  }
+
+  .markdown > h2 {
+    font-size: 1.6rem;
+    margin-top: 2.5rem;
+  }
+
+  .markdown > h3 {
+    font-size: 1.25rem;
+  }
+
+  .markdown img {
+    border-radius: var(--st-radius-sm);
+    border: 1px solid var(--st-border);
+  }
+
+  code {
+    border-color: var(--st-border);
+  }
+
+  .theme-code-block {
+    box-shadow: none !important;
+    border: 1px solid var(--st-border);
+  }
+
+  .theme-admonition {
+    border-radius: var(--st-radius);
+    border: 1px solid
+      color-mix(in oklab, var(--ifm-alert-border-color) 28%, transparent);
+    border-left: 3px solid var(--ifm-alert-border-color);
+  }
+
+  .theme-admonition [class*="admonitionContent"] {
+    color: var(--st-foreground);
+  }
+
+  div[class^="admonitionHeading"] {
+    font-family: var(--ifm-font-family-base);
+  }
+
+  details.alert {
+    --ifm-alert-background-color: var(--st-card);
+    --ifm-alert-background-color-highlight: transparent;
+    --ifm-alert-border-color: var(--st-border);
+    --ifm-alert-foreground-color: var(--st-foreground);
+    --docusaurus-details-decoration-color: var(--st-muted-foreground);
+    border-radius: var(--st-radius);
+  }
+
+  .card {
+    border-radius: var(--st-radius-lg);
+    background-color: var(--st-card);
+    box-shadow: none;
+    border: 1px solid var(--st-border);
+  }
+
+  .navbar-gitlab-link:before,
+  .navbar-discord-link:before {
+    background-color: var(--st-sidebar-foreground);
+  }
+
+  .breadcrumbs__item--active > span {
+    background-color: var(--ifm-code-background);
+  }
+}

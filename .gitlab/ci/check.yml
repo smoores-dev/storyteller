@@ -34,7 +34,7 @@ check-docs:
         ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
         "main" && $CI_COMMIT_TAG == null))
       changes:
-        - docs/**/*
+        - applications/docs/**/*
   script:
     - npm i -g corepack
     - yarn

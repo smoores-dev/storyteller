@@ -1,0 +1,162 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" source(none);
+@source "../../";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --color-ink: var(--studio-ink, #1c1e21);
+  --color-muted: var(--studio-muted, #606770);
+  --color-faint: var(--studio-faint, #8d949e);
+  --color-surface: var(--studio-surface, #ffffff);
+  --color-raised: var(--studio-raised, #f5f6f7);
+  --color-line: var(--studio-line, #dadde1);
+  --color-line-strong: var(--studio-line-strong, #ccd0d5);
+  --color-primary: var(--studio-primary, #b74c0f);
+  --color-primary-soft: var(--studio-primary-soft, #e98349);
+  --color-on-primary: var(--studio-on-primary, #ffffff);
+  --color-hover: var(--studio-hover, rgba(0, 0, 0, 0.05));
+  --color-danger: var(--studio-danger, #e13238);
+  --color-warn: var(--studio-warn, #b8860b);
+  --color-success: var(--studio-success, #00a400);
+  --color-added: var(--studio-added, rgba(0, 164, 0, 0.12));
+  --color-removed: var(--studio-removed, rgba(225, 50, 56, 0.12));
+  --font-mono: var(
+    --studio-font-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace
+  );
+  --font-heading: var(--studio-font-heading, inherit);
+}
+
+@layer base {
+  .studio-root button,
+  .studio-root input,
+  .studio-root select,
+  .studio-root textarea {
+    font: inherit;
+    color: inherit;
+    margin: 0;
+  }
+
+  .studio-root button {
+    background: none;
+    border: 0;
+    padding: 0;
+    text-align: inherit;
+    border-radius: 0;
+  }
+
+  .studio-root select {
+    background-color: transparent;
+  }
+
+  .studio-root fieldset,
+  .studio-root legend {
+    margin: 0;
+  }
+
+  .studio-root fieldset {
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+}
+
+.studio-root {
+  font-size: 14px;
+  color: var(--studio-ink, #1c1e21);
+  height: calc(100vh - var(--studio-navbar-height, 60px));
+}
+
+.studio-root .studio-editor-host,
+.studio-root .studio-editor-host .cm-editor {
+  height: 100%;
+  min-height: 0;
+}
+
+.studio-root .studio-changed {
+  background: var(--studio-added, rgba(0, 164, 0, 0.12));
+  outline: 2px solid var(--studio-success, #00a400);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.studio-root .studio-preview-error {
+  margin: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--studio-danger, #e13238);
+  color: var(--studio-danger, #e13238);
+  font-family: var(--studio-font-mono, monospace);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.studio-root .studio-missing-image {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px dashed var(--studio-line-strong, #ccd0d5);
+  border-radius: 4px;
+  color: var(--studio-faint, #8d949e);
+  font-size: 12px;
+}
+
+.studio-root table.studio-diff {
+  display: table;
+  width: 100%;
+  margin: 0;
+  border: 0;
+}
+
+.studio-root .studio-diff tr,
+.studio-root .studio-diff tr:nth-child(2n) {
+  background: transparent;
+  border: 0;
+}
+
+.studio-root .studio-diff td {
+  padding: 0 8px 0 0;
+  border: 0;
+  vertical-align: top;
+}
+
+.studio-root .studio-diff tr[data-kind="added"] {
+  background: var(--studio-added, rgba(0, 164, 0, 0.12));
+}
+
+.studio-root .studio-diff tr[data-kind="removed"] {
+  background: var(--studio-removed, rgba(225, 50, 56, 0.12));
+}
+
+.studio-root .studio-diff tr[data-kind="skip"] {
+  background: var(--studio-raised, #f5f6f7);
+}
+
+.studio-root .studio-reading > article {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.studio-root .studio-blame-gutter {
+  border-right: 1px solid var(--studio-line);
+  color: var(--studio-muted);
+  font-size: 11px;
+  padding: 0 6px 0 4px;
+  min-width: 150px;
+  max-width: 190px;
+}
+
+.studio-root .studio-blame {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studio-root .studio-blame-first {
+  border-top: 1px solid var(--studio-line);
+  width: 100%;
+}

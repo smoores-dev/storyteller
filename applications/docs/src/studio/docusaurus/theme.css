@@ -1,0 +1,24 @@
+.studio-root {
+  --studio-ink: var(--ifm-font-color-base);
+  --studio-muted: var(--ifm-color-emphasis-700);
+  --studio-faint: var(--ifm-color-emphasis-500);
+  --studio-surface: var(--ifm-background-color);
+  --studio-raised: var(--ifm-background-surface-color);
+  --studio-line: var(--ifm-color-emphasis-200);
+  --studio-line-strong: var(--ifm-color-emphasis-300);
+  --studio-primary: var(--ifm-color-primary);
+  --studio-primary-soft: var(--ifm-color-primary-lightest);
+  --studio-on-primary: var(--ifm-color-white);
+  --studio-hover: var(--ifm-hover-overlay);
+  --studio-danger: var(--ifm-color-danger);
+  --studio-warn: var(--ifm-color-warning-darkest);
+  --studio-success: var(--ifm-color-success);
+  --studio-font-mono: var(--ifm-font-family-monospace);
+  --studio-font-heading: var(--ifm-heading-font-family);
+  --studio-navbar-height: var(--ifm-navbar-height, 60px);
+}
+
+[data-theme="dark"] .studio-root {
+  --studio-added: rgba(0, 164, 0, 0.25);
+  --studio-removed: rgba(225, 50, 56, 0.25);
+}

@@ -8,6 +8,7 @@
     // `baseUrl` is deprecated in TypeScript 6 and not supported by Oxlint's
     // type-aware linter, so clear the value inherited from @tsconfig/docusaurus
     // and anchor the `@site` alias with ${configDir} instead.
+    "lib": ["dom", "dom.iterable", "es2022"],
     "baseUrl": null,
     "paths": {
       "@site/*": ["${configDir}/*"]

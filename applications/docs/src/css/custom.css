@@ -89,3 +89,29 @@ code {
     background-color: white;
   }
 }
+
+:root {
+  --st-code-bg: #f6f8fa;
+  --st-code-plain: #393a34;
+  --st-code-comment: #999988;
+  --st-code-punctuation: #393a34;
+  --st-code-operator: #393a34;
+  --st-code-keyword: #00a4db;
+  --st-code-string: #e3116c;
+  --st-code-number: #36acaa;
+  --st-code-function: #d73a49;
+  --st-code-variable: #36acaa;
+}
+
+[data-theme="dark"] {
+  --st-code-bg: #282a36;
+  --st-code-plain: #f8f8f2;
+  --st-code-comment: #6272a4;
+  --st-code-punctuation: #f8f8f2;
+  --st-code-operator: #f8f8f2;
+  --st-code-keyword: #ff79c6;
+  --st-code-string: #f1fa8c;
+  --st-code-number: #bd93f9;
+  --st-code-function: #50fa7b;
+  --st-code-variable: #8be9fd;
+}

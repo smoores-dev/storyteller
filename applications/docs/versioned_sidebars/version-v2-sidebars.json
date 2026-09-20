@@ -1,0 +1,79 @@
+{
+  "sidebar": [
+    "welcome",
+    {
+      "type": "category",
+      "label": "Installation",
+      "collapsed": false,
+      "items": [
+        "installation/resources",
+        "installation/self-hosting",
+        "installation/gpu-configuration"
+      ]
+    },
+    "settings",
+    {
+      "type": "category",
+      "label": "Managing your library",
+      "collapsed": false,
+      "items": ["managing/adding", "managing/aligning", "managing/organizing"]
+    },
+    {
+      "type": "category",
+      "label": "Reading and Listening",
+      "collapsed": false,
+      "items": [
+        "reading/playing-readalouds",
+        "reading/storyteller-apps",
+        "reading/web-reader",
+        "reading/opds"
+      ]
+    },
+    "sharing",
+    {
+      "type": "category",
+      "label": "Tutorials",
+      "link": {
+        "type": "generated-index",
+        "description": "Here are some support tutorials: Basic user instructions. An introduction to Docker. Detailed instructions on GPU acceration. More to come."
+      },
+      "items": [
+        "tutorials/basic-user",
+        "tutorials/docker",
+        "tutorials/gpu-unraid",
+        "tutorials/offloading-transcription"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Community Guides",
+      "link": {
+        "type": "generated-index",
+        "description": "Storyteller’s goal is to work right out of the box for as many users as possible. But there are a lot of ways to run Storyteller, and everyone’s setup is different! These guides are submitted by Storyteller users and include instructions on how to use Storyteller and other tools to meet different needs across the Storyteller community."
+      },
+      "items": [
+        "community-guides/remote-transcription-compiled-whisper",
+        "community-guides/tailscale"
+      ]
+    },
+    "the-algorithm",
+    {
+      "type": "category",
+      "label": "Upgrade Guides",
+      "link": {
+        "type": "generated-index",
+        "description": "When updating across major versions, you may need to make changes to your server configuration. These docs outline the necessary changes for each major version."
+      },
+      "items": [
+        "migrations/from-v0.1-to-v0.2",
+        "migrations/from-v0.2-to-v0.3",
+        "migrations/from-v0.3-to-v0.4",
+        "migrations/from-v0.4-to-v1",
+        "migrations/from-v1-to-v2"
+      ]
+    },
+    "say-hi",
+    "privacy-policy",
+    "vocabulary"
+  ]
+}

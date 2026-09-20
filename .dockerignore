@@ -1,6 +1,7 @@
 *
-
+!/.git
 !/package.json
+!/nginx.conf
 !/yarn.lock
 !/.yarnrc.yml
 !/.yarn
