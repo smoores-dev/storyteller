@@ -57,12 +57,23 @@ export function useFormatDuration() {
 
   return useCallback(
     (
-      seconds: number,
-      options?: { approximate?: boolean; compact?: boolean },
+      totalSeconds: number,
+      options?: { approximate?: boolean; compact?: boolean; full?: boolean },
     ): string => {
-      const totalMinutes = Math.round(seconds / 60)
+      const totalMinutes = Math.round(totalSeconds / 60)
 
-      if (totalMinutes < 1) {
+      if (options?.full) {
+        return t("mostCompact", {
+          hours: String(Math.floor(totalSeconds / 3600)).padStart(2, "0"),
+          minutes: String(Math.floor((totalSeconds % 3600) / 60)).padStart(
+            2,
+            "0",
+          ),
+          seconds: String(Math.floor(totalSeconds % 60)).padStart(2, "0"),
+        })
+      }
+
+      if (totalMinutes < 1 && options?.full) {
         return t("lessThanAMinute")
       }
 

@@ -99,6 +99,7 @@ export type ParsedXml = Array<XmlNode>
 export type ManifestItem = {
   id: string
   href: string
+  title?: string | undefined
   mediaType?: string | undefined
   fallback?: string | undefined
   mediaOverlay?: string | undefined
@@ -192,7 +193,7 @@ export interface Navigation {
   children: NavigationList
 }
 
-interface GuideItem {
+export interface GuideItem {
   href: string
   title: string
   type: string
@@ -602,7 +603,7 @@ export class Epub {
 
   private manifest: Record<string, ManifestItem> | null = null
 
-  private spine: string[] | null = null
+  private spine: { itemRef: string; linear: boolean }[] | null = null
 
   private packageMutex = new Mutex()
 
@@ -803,7 +804,7 @@ export class Epub {
     return this.rootfile
   }
 
-  private async getPackageDocument() {
+  async getPackageDocumentSource(): Promise<string> {
     const rootfile = await this.getRootfile()
     const packageDocumentString = await this.adapter.read(rootfile, "utf-8")
 
@@ -812,8 +813,12 @@ export class Epub {
         `Failed to parse EPUB: could not find package document at ${rootfile}`,
       )
 
+    return packageDocumentString
+  }
+
+  private async getPackageDocument() {
     const packageDocument = Epub.xmlParser.parse(
-      packageDocumentString,
+      await this.getPackageDocumentSource(),
     ) as ParsedXml
 
     return normalizeOpfNamespacePrefixes(packageDocument)
@@ -2598,8 +2603,19 @@ export class Epub {
 
     this.spine = spine["spine"]
       .filter((node): node is XmlElement => !Epub.isXmlTextNode(node))
-      .map((itemref) => itemref[":@"]?.["@_idref"])
-      .filter((idref): idref is string => !!idref)
+      .map((itemref) => {
+        const idRef = itemref[":@"]?.["@_idref"]
+        const linear = itemref[":@"]?.["@_linear"]
+
+        return {
+          itemRef: idRef,
+          linear: linear === "no" ? false : true,
+        }
+      })
+      .filter(
+        (itemref): itemref is { itemRef: string; linear: boolean } =>
+          !!itemref.itemRef,
+      )
 
     return this.spine
   }
@@ -2616,7 +2632,15 @@ export class Epub {
     const spine = await this.getSpine()
     const manifest = await this.getManifest()
 
-    return spine.map((itemref) => manifest[itemref]).filter((entry) => !!entry)
+    const spineItems: (ManifestItem & { linear: boolean })[] = []
+
+    for (const itemref of spine) {
+      const item = manifest[itemref.itemRef]
+      if (!item) continue
+      spineItems.push({ ...item, linear: itemref.linear })
+    }
+
+    return spineItems
   }
 
   /**
@@ -2714,24 +2738,16 @@ export class Epub {
         continue
       }
 
+      const role = firstChild[":@"]?.["@_epub:type"]?.trim()
       children.push({
         title: Epub.getXhtmlTextContent(Epub.getXmlChildren(firstChild)),
         ...(Epub.getXmlElementName(firstChild) === "a" &&
           firstChild[":@"]?.["@_href"] && {
-            href: await this.resolveHref(
-              firstChild[":@"]["@_href"],
-              undefined,
-              { toRoot: resolveToRoot },
-            ),
+            href: await this.resolveHref(firstChild[":@"]["@_href"], navHref, {
+              toRoot: resolveToRoot,
+            }),
           }),
-        ...(Epub.getXmlElementName(firstChild) === "a" &&
-          firstChild[":@"]?.["@_epub:type"] && {
-            role: await this.resolveHref(
-              firstChild[":@"]["@_epub:type"],
-              undefined,
-              { toRoot: resolveToRoot },
-            ),
-          }),
+        ...(role && { role }),
         ...(secondChild &&
           Epub.getXmlElementName(secondChild) === "ol" && {
             children: await this.getNavigationChildren(secondChild, navHref, {
@@ -3667,6 +3683,25 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       throw error
     }
     return epub
+  }
+
+  async readPackageDocumentSource(
+    source: string | Uint8Array,
+    options: AdapterOptions<A> = {} as AdapterOptions<A>,
+  ): Promise<string> {
+    const adapter = await this.adapterClass.init(source, options)
+    const epub = new Epub(
+      this.adapterClass,
+      adapter,
+      typeof source === "string" ? source : undefined,
+      true,
+    )
+
+    try {
+      return await epub.getPackageDocumentSource()
+    } finally {
+      epub.discardAndClose()
+    }
   }
 
   /**

@@ -3,6 +3,8 @@ ARG BASE_TAG=main
 # WHISPER_VARIANT is the whisper.cpp build to pre-install (e.g., linux-x64-cuda-12.9.0)
 # declared at top level so it's available in all stages
 ARG WHISPER_VARIANT=""
+# TARGETARCH is declared globally so it can be used in a FROM line
+ARG TARGETARCH
 FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS builder
 
 WORKDIR /app
@@ -25,13 +27,30 @@ COPY libraries/ghost-story/package.json ./libraries/ghost-story/package.json
 COPY libraries/opds/package.json ./libraries/opds/package.json
 COPY libraries/nodekit/package.json ./libraries/nodekit/package.json
 COPY libraries/media-types/package.json ./libraries/media-types/package.json
-COPY config/tsup/package.json ./config/tsup/package.json
+COPY libraries/mlx-audio/package.json ./libraries/mlx-audio/package.json
 
 # prevent onnxruntime from installing shit, almost always hangs
 ENV ONNXRUNTIME_NODE_INSTALL=skip
 # --inline-builds streams native build-script output so a hang during the
 # link step names the offending package instead of freezing silently
 RUN yarn install --inline-builds
+
+# manualy reproducing that stupid onnxruntime install step
+ARG BASE_TAG
+RUN case "$BASE_TAG" in \
+      cuda-12*) ORT_CUDA=cuda12 ;; \
+      cuda-13*) ORT_CUDA=cuda13 ;; \
+      *) ORT_CUDA= ;; \
+    esac && \
+    if [ -n "$ORT_CUDA" ]; then \
+      ORT_VERSION=$(node -p "require('./node_modules/onnxruntime-node/package.json').version") && \
+      ORT_DIST="onnxruntime-linux-x64-gpu_$ORT_CUDA-$ORT_VERSION" && \
+      curl -fL --retry 5 --retry-all-errors --retry-delay 15 --connect-timeout 30 --speed-limit 10000 --speed-time 60 \
+        -o /tmp/ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/$ORT_DIST.tgz" && \
+      tar -xzf /tmp/ort.tgz --strip-components=2 -C node_modules/onnxruntime-node/bin/napi-v6/linux/x64 \
+        "$ORT_DIST/lib/libonnxruntime_providers_cuda.so" "$ORT_DIST/lib/libonnxruntime_providers_shared.so" && \
+      rm /tmp/ort.tgz; \
+    fi
 
 COPY docker-scripts/ ./scripts/
 
@@ -66,12 +85,25 @@ RUN if [ -z "$WHISPER_VARIANT" ]; then \
         install binary linux-x64-cpu-legacy; \
     fi
 
+# The whisper variant defaults per architecture, and ENV cannot branch, so the
+# runner picks an arch-specific base that carries the right default.
 ARG BASE_TAG=main
-FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS runner
+FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS runner-base-amd64
+ARG WHISPER_VARIANT
+ENV STORYTELLER_WHISPER_VARIANT=${WHISPER_VARIANT:-linux-x64-cpu}
+
+ARG BASE_TAG=main
+FROM registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:${BASE_TAG} AS runner-base-arm64
+ARG WHISPER_VARIANT
+ENV STORYTELLER_WHISPER_VARIANT=${WHISPER_VARIANT:-linux-arm64-cpu}
+
+FROM runner-base-${TARGETARCH} AS runner
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 apache2-utils \
+# libvulkan1 and the mesa ICDs back onnxruntime's WebGPU provider on AMD and
+# Intel GPUs, NVIDIA mounts its own ICD through the container toolkit
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 libvulkan1 mesa-vulkan-drivers apache2-utils \
     && rm -rf /var/lib/apt/lists/*
 
 RUN  (userdel -r ubuntu || true) \
@@ -79,7 +111,7 @@ RUN  (userdel -r ubuntu || true) \
     && useradd -u 1000 -g storyteller -m storyteller \
     && (usermod -aG render,video storyteller 2>/dev/null || true)
 
-COPY --from=ghcr.io/readium/readium:0.6.5 /opt/readium /opt/readium
+COPY --from=ghcr.io/readium/readium:0.9.1 /opt/readium /opt/readium
 RUN ln -sf /opt/readium /usr/local/bin/readium
 
 
@@ -106,19 +138,6 @@ COPY --from=builder /app/libraries/align/prebuilds/linux-arm64 ./.next/standalon
 # Echogarden tries to naively resolve its own wasm builds
 COPY --from=builder /app/node_modules/@echogarden/icu-segmentation-wasm/wasm/*.wasm ./.next/standalone/applications/web/work-dist/
 
-# @parcel/watcher native binaries are loaded dynamically at runtime and
-# not traced by next.js into the standalone output
-COPY --from=builder /app/node_modules/@parcel ./.next/standalone/node_modules/@parcel
-
-# better-sqlite3 v13+ ships platform prebuilds that are loaded dynamically
-COPY --from=builder /app/node_modules/better-sqlite3/prebuilds ./.next/standalone/node_modules/better-sqlite3/prebuilds
-
-# kuromoji package: the bundled kuroshiro-analyzer-kuromoji still calls
-# require.resolve("kuromoji") at runtime to locate its dict/ directory, so the
-# package must exist on disk in a location reachable from web/work-dist/.
-COPY --from=builder /app/node_modules/kuromoji ./.next/standalone/node_modules/kuromoji
-
-
 # Copy pre-installed whisper binaries and models from builder
 COPY --from=builder --chown=storyteller:storyteller /root/.local/share/ghost-story /home/storyteller/.local/share/ghost-story
 
@@ -133,16 +152,11 @@ ENV HOSTNAME=0.0.0.0
 ENV STORYTELLER_DATA_DIR=/data
 ENV READIUM_PORT=9000
 ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 
 ENV ERROR_ALIGN_NATIVE_BINDING=/app/.next/standalone/applications/web/work-dist/@storyteller-platform/align/
 ENV STORYTELLER_WORKER=worker.mjs
 ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.mjs
-
-# set the whisper variant that was pre-installed in this image
-# this tells the runtime which binary to use without needing detection
-ARG WHISPER_VARIANT
-ENV STORYTELLER_WHISPER_VARIANT=${WHISPER_VARIANT}
 
 WORKDIR /app/.next/standalone/applications/web
 

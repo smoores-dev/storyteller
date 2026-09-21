@@ -40,7 +40,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@readium/shared": "^2.2.0",
+    "@readium/shared": "catalog:",
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/media-types": "workspace:^",
     "@storyteller-platform/path": "workspace:^",

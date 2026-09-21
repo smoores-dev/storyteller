@@ -27,9 +27,22 @@ export interface Account {
   userId: string
 }
 
+export interface AlignmentDecision {
+  bookUuid: import("@/uuid").UUID
+  createdAt: Generated<string>
+  decision: import("@/alignmentReportView").ChapterDecision
+  endSeconds: number | null
+  key: string
+  kind: "chapter" | "audio"
+  startSeconds: number | null
+  uuid: Generated<import("@/uuid").UUID>
+}
+
 export interface AlignmentReport {
+  audioCoverage: number | null
   bookUuid: import("@/uuid").UUID | null
   chapters: number | null
+  confidence: number | null
   createdAt: Generated<string>
   failedChapters: number | null
   grade: import("@/shelves").AlignmentGrade
@@ -38,11 +51,12 @@ export interface AlignmentReport {
   mutedChapters: number | null
   overrides: string | null
   report: ColumnType<
-    import("@storyteller-platform/align").Report | null,
+    import("@/alignmentReportView").AnyReport | null,
     string | null,
     string | null
   >
   score: number | null
+  sentenceCoverage: number | null
   unalignedAudio: number | null
   uuid: Generated<import("@/uuid").UUID>
 }
@@ -342,7 +356,7 @@ export interface Job {
   stage: "SPLIT_TRACKS" | "TRANSCRIBE_CHAPTERS" | "SYNC_CHAPTERS" | null
   startedAt: string | null
   stats: ColumnType<import("@/work/jobStats").JobStats, string, string> | null
-  status: Generated<import("@/database/jobs").JobStatus>
+  status: Generated<import("@/jobEvents").JobStatus>
   type: import("@/database/jobs").JobType
   updatedAt: Generated<string>
   uuid: Generated<import("@/uuid").UUID>
@@ -598,6 +612,7 @@ export interface VerificationToken {
 
 export interface DB {
   account: Account
+  alignmentDecision: AlignmentDecision
   alignmentReport: AlignmentReport
   audiobook: Audiobook
   book: Book

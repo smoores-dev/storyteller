@@ -31,7 +31,7 @@
     "@lezer/highlight": "^1",
     "@mdx-js/mdx": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
-    "@readium/shared": "^2.2.3",
+    "@readium/shared": "catalog:",
     "@slorber/remark-comment": "^1.0.0",
     "@storyteller-platform/opds": "workspace:*",
     "@urql/core": "^6.0.1",

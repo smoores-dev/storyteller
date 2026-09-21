@@ -20,8 +20,10 @@ import {
   generateGuidedNavigationDocuments,
   generateGuidedNavigationManifest,
 } from "../../readium/guidedNavigation.ts"
+import { rangeBehaviour } from "../holes.ts"
 
 import { type AlignOptions, Aligner } from "./Aligner.ts"
+import { NO_DECISIONS } from "./exclusions.ts"
 
 export async function ctcAlign(
   input: string,
@@ -66,6 +68,11 @@ export async function ctcAlign(
   using epub = await Epub.from(epubPath)
 
   const emissions = await EmissionsReader.from(emissionsDir)
+  if (emissions.tokenizer !== null) {
+    throw new Error(
+      "These emissions come from a model with a subword vocabulary, which the aligner does not support yet. Use the quartznet15x5 or mms model.",
+    )
+  }
 
   const aligner = new Aligner(
     epub,
@@ -75,6 +82,12 @@ export async function ctcAlign(
     options.textRef,
     options.primaryLocale,
     options.logger,
+    options.signal,
+    rangeBehaviour(options),
+    {
+      decisions: options.decisions ?? NO_DECISIONS,
+      autoExclude: options.autoExclude ?? true,
+    },
   )
 
   const timing = await aligner.alignBook(options.onProgress)

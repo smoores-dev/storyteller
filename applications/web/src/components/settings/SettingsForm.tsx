@@ -36,6 +36,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
+import { isCtcModelFamily } from "@storyteller-platform/ghost-story/constants"
+
 import type { Settings } from "@/apiModels"
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import {
@@ -51,7 +53,10 @@ import {
   PERMISSIONS_VALUES,
 } from "@/components/users/CreateInviteForm"
 import { type ImportRuleWithCollections } from "@/database/importRules"
-import { type ImportRuleInput } from "@/database/settingsTypes"
+import {
+  type ImportRuleInput,
+  SETTINGS_DEFAULTS,
+} from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useCancelScanMutation,
@@ -1142,6 +1147,20 @@ export function SettingsForm({
     maxTrackLength: settings.maxTrackLength ?? 2,
     codec: settings.codec ?? "",
     bitrate: settings.bitrate ?? "",
+    aligner: settings.aligner ?? "whisper",
+    ctcEngine: settings.ctcEngine ?? "ctc-local",
+    alignmentGranularity: settings.alignmentGranularity ?? "sentence",
+    alignmentAutoExclude:
+      settings.alignmentAutoExclude ?? SETTINGS_DEFAULTS.alignmentAutoExclude,
+    ctcDevice: settings.ctcDevice ?? null,
+    ctcModel:
+      settings.ctcModel && isCtcModelFamily(settings.ctcModel)
+        ? settings.ctcModel
+        : null,
+    ctcDtype: settings.ctcDtype ?? null,
+    ctcBatchSize: settings.ctcBatchSize ?? null,
+    // ctcServerUrl: settings.ctcServerUrl ?? "",
+    // ctcServerApiKey: settings.ctcServerApiKey ?? "",
     transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
     whisperModel: settings.whisperModel ?? "tiny",
     whisperThreads: settings.whisperThreads,

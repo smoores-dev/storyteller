@@ -36,11 +36,22 @@ export const CREATOR_DISPLAY_FIELDS: readonly CreatorDisplayField[] =
     .filter(([, def]) => def.group === "creators" && !def.sortable)
     .map(([field]) => field) as CreatorDisplayField[]
 
-export type DisplayField = SortField | CreatorDisplayField
+export type DisplayOnlyField = AcceptedKeys<
+  typeof FIELD_REGISTRY,
+  { displayOnly: true }
+>
+export const DISPLAY_ONLY_FIELDS: readonly DisplayOnlyField[] = Object.entries(
+  FIELD_REGISTRY,
+)
+  .filter(([, def]) => "displayOnly" in def)
+  .map(([field]) => field) as DisplayOnlyField[]
+
+export type DisplayField = SortField | CreatorDisplayField | DisplayOnlyField
 
 export const DISPLAY_FIELDS = [
   ...SORTABLE_FIELDS,
   ...CREATOR_DISPLAY_FIELDS,
+  ...DISPLAY_ONLY_FIELDS,
 ] as const
 
 const NEUTRAL_DISPLAY_FIELDS: readonly SortField[] = [
@@ -89,10 +100,11 @@ const COMPACT_DISPLAY_FIELDS: ReadonlySet<DisplayField> = new Set([
   "fileSize",
   "publicationDate",
   "userRating",
-  "alignmentScore",
+  "alignmentConfidence",
   "alignmentGrade",
-  "alignmentMissingSentences",
-  "alignmentMutedChapters",
+  "alignmentPreviousGrade",
+  "alignmentSentenceCoverage",
+  "alignmentAudioCoverage",
 ])
 
 const MAX_COMPACT_PER_ROW = 3
@@ -158,16 +170,16 @@ function sortValue(
       return book.ebook?.fileSize ?? book.audiobook?.fileSize ?? null
     case "authors":
       return book.authors.map((a) => a.name).join(", ")
-    case "alignmentScore":
-      return book.alignmentSummary?.score ?? null
+    case "alignmentConfidence":
+      return book.alignmentSummary?.confidence ?? null
     case "alignmentGrade":
       return book.alignmentSummary?.grade
         ? (GRADE_RANK[book.alignmentSummary.grade] ?? null)
         : null
-    case "alignmentMissingSentences":
-      return book.alignmentSummary?.missingSentences ?? null
-    case "alignmentMutedChapters":
-      return book.alignmentSummary?.mutedChapters ?? null
+    case "alignmentSentenceCoverage":
+      return book.alignmentSummary?.sentenceCoverage ?? null
+    case "alignmentAudioCoverage":
+      return book.alignmentSummary?.audioCoverage ?? null
     case "alignedAt":
       return book.alignedAt
     case "lastRead":

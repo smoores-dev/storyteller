@@ -5,6 +5,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useCommon } from "@v3/_/hooks/use-translation"
 
 import { cn } from "@/cn"
+import { useSanitizedHtml } from "@/sanitizeHtml"
 
 type CollapsibleTextProps = {
   children?: ReactNode
@@ -25,6 +26,7 @@ export function CollapsibleText({
 }: CollapsibleTextProps) {
   const c = useCommon()
   const contentRef = useRef<HTMLDivElement>(null)
+  const safeHtml = useSanitizedHtml(html)
   const [expanded, setExpanded] = useState(false)
   const [isOverflowing, setIsOverflowing] = useState(false)
 
@@ -79,7 +81,7 @@ export function CollapsibleText({
             : collapsedHeight,
         }}
         {...(html !== undefined
-          ? { dangerouslySetInnerHTML: { __html: html } }
+          ? { dangerouslySetInnerHTML: { __html: safeHtml ?? "" } }
           : { children })}
       />
 

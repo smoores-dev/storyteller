@@ -41,6 +41,18 @@
     "./readium": {
       "types": "./src/readium/index.ts",
       "default": "./src/readium/index.ts"
+    },
+    "./report": {
+      "types": "./dist/align/report-v4.d.ts",
+      "default": "./src/align/report-v4.ts"
+    },
+    "./exclusions": {
+      "types": "./dist/align/ctc/exclusions.d.ts",
+      "default": "./src/align/ctc/exclusions.ts"
+    },
+    "./emissions": {
+      "types": "./src/align/ctc/emissions.ts",
+      "default": "./src/align/ctc/emissions.ts"
     }
   },
   "scripts": {
@@ -58,7 +70,7 @@
     "@esfx/async-semaphore": "^1.0.0",
     "@optique/core": "^0.10.7",
     "@optique/run": "^0.10.7",
-    "@readium/shared": "^2.2.0",
+    "@readium/shared": "catalog:",
     "@storyteller-platform/audiobook": "workspace:^",
     "@storyteller-platform/epub": "workspace:^",
     "@storyteller-platform/fs": "workspace:^",

@@ -12,11 +12,10 @@ import {
   getModelPackageDir,
   getModelPackageFileUrl,
   installModelPackage,
-  isCtcModel,
   isModelPackageInstalled,
   listModelPackageFiles,
 } from "../src/cli/ctc-install.ts"
-import { type CtcModelPackage } from "../src/constants.ts"
+import { type CtcModelPackage, isCtcModelVariant } from "../src/constants.ts"
 
 const model: CtcModelPackage = {
   name: "test-model",
@@ -95,10 +94,10 @@ function registryFetch(
 
 describe("ctc models", () => {
   it("recognizes known variants", () => {
-    assert.ok(isCtcModel("fp32"))
-    assert.ok(isCtcModel("fp16"))
-    assert.ok(isCtcModel("mlx"))
-    assert.ok(!isCtcModel("q8"))
+    assert.ok(isCtcModelVariant("fp32"))
+    assert.ok(isCtcModelVariant("fp16"))
+    assert.ok(isCtcModelVariant("mlx"))
+    assert.ok(!isCtcModelVariant("q8"))
   })
 
   it("builds download urls for files in subdirectories", () => {

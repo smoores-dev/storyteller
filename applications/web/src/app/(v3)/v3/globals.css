@@ -6,6 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  --radius-cover: calc(var(--radius) - 6px);
+
   --color-st-orange-50: var(--st-orange-0);
   --color-st-orange-100: var(--st-orange-1);
   --color-st-orange-200: var(--st-orange-2);
@@ -45,6 +47,36 @@
 }
 
 @theme inline {
+  --color-reader-bg: var(--reader-bg);
+  --color-reader-surface: var(--reader-surface);
+  --color-reader-surface-hover: var(--reader-surface-hover);
+  --color-reader-border: var(--reader-border);
+  --color-reader-text: var(--reader-text);
+  --color-reader-text-secondary: var(--reader-text-secondary);
+  --color-reader-text-muted: var(--reader-text-muted);
+  --color-reader-accent: var(--reader-accent);
+  --color-reader-accent-hover: var(--reader-accent-hover);
+  --color-reader-accent-text: var(--reader-accent-text);
+  --color-reader-selection: var(--reader-selection-bg);
+  --color-reader-selection-text: var(--reader-selection-text);
+  --color-reader-highlight: var(--reader-highlight);
+  --color-reader-highlight-mid: var(--reader-highlight-mid);
+  --color-reader-highlight-strong: var(--reader-highlight-strong);
+  --color-reader-highlight-yellow: var(--reader-highlight-yellow);
+  --color-reader-highlight-red: var(--reader-highlight-red);
+  --color-reader-highlight-green: var(--reader-highlight-green);
+  --color-reader-highlight-blue: var(--reader-highlight-blue);
+  --color-reader-highlight-magenta: var(--reader-highlight-magenta);
+  --color-reader-highlight-cover: var(--reader-highlight-cover);
+  --color-reader-highlight-custom: var(--reader-highlight-custom);
+  --color-reader-highlight-color-yellow: var(--reader-highlight-yellow);
+  --color-reader-highlight-color-red: var(--reader-highlight-red);
+  --color-reader-highlight-color-green: var(--reader-highlight-green);
+  --color-reader-highlight-color-blue: var(--reader-highlight-blue);
+  --color-reader-highlight-color-magenta: var(--reader-highlight-magenta);
+  --color-reader-highlight-color-cover: var(--reader-highlight-cover);
+  --color-reader-highlight-color-custom: var(--reader-highlight-custom);
+
   --font-sans:
     var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -102,14 +134,13 @@
 
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 6px);
-  --radius-lg: calc(var(--radius) + 4px);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 4px);
-  --radius-3xl: calc(var(--radius) + 4px);
-  --radius-4xl: calc(var(--radius) + 4px);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 2px);
+  --radius-2xl: calc(var(--radius) + 2px);
+  --radius-3xl: calc(var(--radius) + 2px);
+  --radius-4xl: calc(var(--radius) + 2px);
 
-  --radius-card: calc(var(--radius) + 4px);
-  --radius-cover: calc(var(--radius) - 6px);
+  --radius-card: calc(var(--radius) + 2px);
 
   --color-positive: var(--positive);
   --color-positive-bg: var(--positive-bg);
@@ -238,25 +269,45 @@
   --st-orange-800: oklch(0.556 0.155 43.9);
   --st-orange-900: oklch(0.502 0.143 44);
 
-  /* ===== sage ===== */
-  --positive: oklch(0.5 0.075 150);
-  --positive-bg: oklch(0.955 0.03 150);
-  --positive-line: oklch(0.86 0.055 150);
-
   /* ===== teal ===== */
-  --good: oklch(0.52 0.065 215);
-  --good-bg: oklch(0.955 0.028 215);
-  --good-line: oklch(0.86 0.05 215);
+  --good: oklch(0.6 0.13 205);
+  --good-bg: oklch(0.95 0.035 205);
+  --good-line: oklch(0.84 0.07 205);
 
-  /* ===== ochre ===== */
-  --moderate: oklch(0.56 0.1 72);
-  --moderate-bg: oklch(0.955 0.045 78);
-  --moderate-line: oklch(0.85 0.08 78);
+  /* ===== green ===== */
+  --positive: oklch(0.6 0.16 145);
+  --positive-bg: oklch(0.95 0.04 145);
+  --positive-line: oklch(0.84 0.08 145);
 
-  /* ===== brick ===== */
-  --poor: oklch(0.51 0.13 32);
-  --poor-bg: oklch(0.955 0.035 40);
-  --poor-line: oklch(0.86 0.07 40);
+  /* ===== amber ===== */
+  --moderate: oklch(0.7 0.16 75);
+  --moderate-bg: oklch(0.955 0.05 80);
+  --moderate-line: oklch(0.86 0.1 80);
+
+  /* ===== red ===== */
+  --poor: oklch(0.58 0.2 28);
+  --poor-bg: oklch(0.95 0.035 28);
+  --poor-line: oklch(0.85 0.08 28);
+
+  /* ===== grades: blue, green, gold, orange, red, dark red ===== */
+  --grade-s: oklch(0.56 0.16 245);
+  --grade-s-bg: oklch(0.95 0.03 245);
+  --grade-s-line: oklch(0.84 0.07 245);
+  --grade-a: oklch(0.6 0.16 145);
+  --grade-a-bg: oklch(0.95 0.04 145);
+  --grade-a-line: oklch(0.84 0.08 145);
+  --grade-b: oklch(0.68 0.15 88);
+  --grade-b-bg: oklch(0.955 0.05 88);
+  --grade-b-line: oklch(0.86 0.1 88);
+  --grade-c: oklch(0.66 0.18 52);
+  --grade-c-bg: oklch(0.955 0.045 52);
+  --grade-c-line: oklch(0.86 0.1 52);
+  --grade-d: oklch(0.58 0.2 28);
+  --grade-d-bg: oklch(0.95 0.035 28);
+  --grade-d-line: oklch(0.85 0.08 28);
+  --grade-f: oklch(0.44 0.17 20);
+  --grade-f-bg: oklch(0.94 0.035 20);
+  --grade-f-line: oklch(0.8 0.09 20);
 
   --highlight-wash: oklch(0.91 0.06 80);
   --highlight-edge: oklch(0.78 0.11 72);
@@ -316,16 +367,6 @@
     --text-5xl--line-height: 1;
     --text-7xl: 4.5rem;
     --text-7xl--line-height: 1; */
-}
-
-.rounded-full:not(#id#id#id) {
-  border-radius: var(--radius-lg);
-}
-
-.small-caps {
-  font-size: 12px;
-  /* letter-spacing: 0.18em; */
-  text-transform: uppercase;
 }
 
 /* the spine shell dresses the frame in dark leather: the rail and the gutter
@@ -399,6 +440,36 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 
   --shell-inset-shadow: none;
   --shell-main-edge: none;
+  --good: oklch(0.74 0.12 205);
+  --good-bg: oklch(0.28 0.04 205);
+  --good-line: oklch(0.4 0.07 205);
+  --positive: oklch(0.74 0.15 145);
+  --positive-bg: oklch(0.28 0.045 145);
+  --positive-line: oklch(0.4 0.08 145);
+  --moderate: oklch(0.8 0.15 80);
+  --moderate-bg: oklch(0.3 0.05 80);
+  --moderate-line: oklch(0.42 0.09 80);
+  --poor: oklch(0.72 0.17 28);
+  --poor-bg: oklch(0.29 0.05 28);
+  --poor-line: oklch(0.42 0.09 28);
+  --grade-s: oklch(0.72 0.14 245);
+  --grade-s-bg: oklch(0.28 0.04 245);
+  --grade-s-line: oklch(0.4 0.07 245);
+  --grade-a: oklch(0.74 0.15 145);
+  --grade-a-bg: oklch(0.28 0.045 145);
+  --grade-a-line: oklch(0.4 0.08 145);
+  --grade-b: oklch(0.8 0.15 88);
+  --grade-b-bg: oklch(0.3 0.05 88);
+  --grade-b-line: oklch(0.42 0.09 88);
+  --grade-c: oklch(0.76 0.17 52);
+  --grade-c-bg: oklch(0.3 0.05 52);
+  --grade-c-line: oklch(0.42 0.09 52);
+  --grade-d: oklch(0.72 0.17 28);
+  --grade-d-bg: oklch(0.29 0.05 28);
+  --grade-d-line: oklch(0.42 0.09 28);
+  --grade-f: oklch(0.66 0.17 20);
+  --grade-f-bg: oklch(0.27 0.05 20);
+  --grade-f-line: oklch(0.4 0.09 20);
 }
 
 @media (min-width: 768px) {
@@ -631,38 +702,6 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 */
 .big-link {
   @apply after:absolute after:top-0 after:right-0 after:bottom-0 after:left-0 after:z-0 after:block after:content-[''];
-}
-
-@theme inline {
-  --color-reader-bg: var(--reader-bg);
-  --color-reader-surface: var(--reader-surface);
-  --color-reader-surface-hover: var(--reader-surface-hover);
-  --color-reader-border: var(--reader-border);
-  --color-reader-text: var(--reader-text);
-  --color-reader-text-secondary: var(--reader-text-secondary);
-  --color-reader-text-muted: var(--reader-text-muted);
-  --color-reader-accent: var(--reader-accent);
-  --color-reader-accent-hover: var(--reader-accent-hover);
-  --color-reader-accent-text: var(--reader-accent-text);
-  --color-reader-selection: var(--reader-selection-bg);
-  --color-reader-selection-text: var(--reader-selection-text);
-  --color-reader-highlight: var(--reader-highlight);
-  --color-reader-highlight-mid: var(--reader-highlight-mid);
-  --color-reader-highlight-strong: var(--reader-highlight-strong);
-  --color-reader-highlight-yellow: var(--reader-highlight-yellow);
-  --color-reader-highlight-red: var(--reader-highlight-red);
-  --color-reader-highlight-green: var(--reader-highlight-green);
-  --color-reader-highlight-blue: var(--reader-highlight-blue);
-  --color-reader-highlight-magenta: var(--reader-highlight-magenta);
-  --color-reader-highlight-cover: var(--reader-highlight-cover);
-  --color-reader-highlight-custom: var(--reader-highlight-custom);
-  --color-reader-highlight-color-yellow: var(--reader-highlight-yellow);
-  --color-reader-highlight-color-red: var(--reader-highlight-red);
-  --color-reader-highlight-color-green: var(--reader-highlight-green);
-  --color-reader-highlight-color-blue: var(--reader-highlight-blue);
-  --color-reader-highlight-color-magenta: var(--reader-highlight-magenta);
-  --color-reader-highlight-color-cover: var(--reader-highlight-cover);
-  --color-reader-highlight-color-custom: var(--reader-highlight-custom);
 }
 
 /* registered so getComputedStyle hands back a resolved color, including for the
@@ -1011,4 +1050,72 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
 }
 [data-reader-highlight="custom"] {
   --reader-highlight: var(--reader-highlight-custom);
+}
+
+/* copied from @speed-highlight/core/themes/github-light.css */
+.shj-syn-cmnt {
+  font-style: italic;
+}
+.shj-numbers:empty {
+  display: none;
+}
+
+.shj-syn-deleted,
+.shj-syn-err,
+.shj-syn-kwd {
+  color: #cf222e;
+}
+.shj-syn-class {
+  color: #953800;
+}
+.shj-numbers,
+.shj-syn-cmnt {
+  color: #6e7781;
+}
+.shj-syn-type,
+.shj-syn-oper,
+.shj-syn-num,
+.shj-syn-section,
+.shj-syn-var,
+.shj-syn-bool {
+  color: #0550ae;
+}
+.shj-syn-str {
+  color: #0a3069;
+}
+.shj-syn-func {
+  color: #8250df;
+}
+
+/* copied from @speed-highlight/core/themes/github-dark.css */
+.dark {
+  .shj-syn-insert {
+    color: #98c379;
+  }
+  .shj-syn-deleted,
+  .shj-syn-err,
+  .shj-syn-kwd {
+    color: #ff7b72;
+  }
+  .shj-syn-class {
+    color: #ffa657;
+  }
+  .shj-numbers,
+  .shj-syn-cmnt {
+    color: #8b949e;
+  }
+  .shj-syn-type,
+  .shj-syn-oper,
+  .shj-syn-num,
+  .shj-syn-section,
+  .shj-syn-var,
+  .shj-syn-bool {
+    color: #79c0ff;
+  }
+  .shj-syn-str {
+    color: #a5d6ff;
+  }
+  .shj-syn-func {
+    color: #d2a8ff;
+  }
 }

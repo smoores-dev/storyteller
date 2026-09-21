@@ -1,60 +1,44 @@
 import { NextResponse } from "next/server"
 
 import { withHasPermission } from "@/auth/auth"
-import {
-  ACTIVE_JOB_STATUSES,
-  type JobSort,
-  TERMINAL_JOB_STATUSES,
-  getDisplayJobs,
-} from "@/database/jobs"
-import type { UUID } from "@/uuid"
+import { getDisplayJobs } from "@/database/jobs"
+import { JobsReorderRequestSchemaV2 } from "@/schemas/v2/job"
 import { reorderJobs } from "@/work/distributor"
+
+import { parseJobsQuery } from "./parseJobsQuery"
 
 export const dynamic = "force-dynamic"
 
 /**
  * @summary List processing jobs
- * @desc Active (queued/running/paused) jobs by default; pass `all=true` for history.
- *       Run config is summarized (no secrets) before returning.
+ * @desc Every job by default, or a status set via `type` or `statuses`. Without a sort
+ *       the queue comes back in run order. Run config is summarized (no secrets).
+ * @query JobsQuerySchemaV2
+ * @response JobSchemaV2[]
  */
 export const GET = withHasPermission("bookProcess")(async (request) => {
-  const params = request.nextUrl.searchParams
-  const type = params.get("type")
-  const limit = params.get("limit")
-  const offset = params.get("offset")
-  const search = params.get("search")
-  const sort = params.get("sort")
-  const order = params.get("order")
-  const bookUuid = params.get("bookUuid")
-  const jobs = await getDisplayJobs({
-    ...(type
-      ? {
-          statuses:
-            type === "active"
-              ? ACTIVE_JOB_STATUSES
-              : type === "finished"
-                ? TERMINAL_JOB_STATUSES
-                : undefined,
-        }
-      : {}),
-    ...(bookUuid ? { bookUuid: bookUuid as UUID } : {}),
-    ...(search ? { search } : {}),
-    ...(sort ? { sort: sort as JobSort } : {}),
-    ...(order === "asc" || order === "desc" ? { order } : {}),
-    ...(limit ? { limit: parseInt(limit) } : {}),
-    ...(offset ? { offset: parseInt(offset) } : {}),
-  })
+  const parsed = parseJobsQuery(request.nextUrl.searchParams)
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+
+  const jobs = await getDisplayJobs(parsed.query)
   return NextResponse.json(jobs)
 })
 
 /**
  * @summary Reorder the queue
- * @desc Body `{ order: jobUuid[] }`. Only queued jobs move; a running job keeps its slot.
+ * @desc Body `{ order: jobUuid[] }` covering every active job. Moving a queued job ahead of
+ *       the running one sends the running job back to the queue so the new head starts next.
+ * @body JobsReorderRequestSchemaV2
  */
 export const PATCH = withHasPermission("bookProcess")(async (request) => {
-  const body = (await request.json().catch(() => ({}))) as {
-    order?: string[]
+  const body: unknown = await request.json().catch(() => null)
+  const parsed = JobsReorderRequestSchemaV2.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.message }, { status: 400 })
   }
-  if (body.order) await reorderJobs(body.order as UUID[])
+
+  await reorderJobs(parsed.data.order)
   return new Response(null, { status: 204 })
 })

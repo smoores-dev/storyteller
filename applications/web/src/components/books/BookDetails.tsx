@@ -38,6 +38,7 @@ import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import { type BookWithRelations } from "@/database/books"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useSanitizedHtml } from "@/sanitizeHtml"
 import {
   getDownloadUrl,
   useCancelProcessingMutation,
@@ -306,6 +307,7 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
   const permissions = usePermissions()
 
   const { data: book } = useGetBookQuery({ uuid: bookUuid })
+  const description = useSanitizedHtml(book?.description)
   const { data: statuses = [] } = useListStatusesQuery()
   const [updateStatus] = useUpdateStatusMutation()
   const [cancelProcessing] = useCancelProcessingMutation()
@@ -494,14 +496,14 @@ export function BookDetails({ bookUuid, hideReadButton = false }: Props) {
                 ))}
               </Group>
             )}
-            {book.description && (
+            {description && (
               <Spoiler
                 className="max-w-prose"
                 maxHeight={70}
                 showLabel="Show more"
                 hideLabel="Hide"
               >
-                <div dangerouslySetInnerHTML={{ __html: book.description }} />
+                <div dangerouslySetInnerHTML={{ __html: description }} />
               </Spoiler>
             )}
           </Stack>

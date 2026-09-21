@@ -42,22 +42,25 @@ type UseBookFiltersOptions = {
   defaultSort?: BookSort[number]
 }
 
-type Sort = { field: SortField; direction: SortDirection }
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+export const createSortParser = <Field extends string>() => {
+  return createParser<{ field: Field; direction: SortDirection }>({
+    parse(queryValue) {
+      const [field, direction] = queryValue.split(":")
+      if (!field) return null
+      if (direction !== "asc" && direction !== "desc") return null
+      return { field: field as Field, direction }
+    },
+    serialize(value) {
+      return `${value.field}:${value.direction}`
+    },
+    eq(a, b) {
+      return a.field === b.field && a.direction === b.direction
+    },
+  }).withOptions({ shallow: true, history: "replace" })
+}
 
-const sortParser = createParser<Sort>({
-  parse(queryValue) {
-    const [field, direction] = queryValue.split(":")
-    if (!field) return null
-    if (direction !== "asc" && direction !== "desc") return null
-    return { field: field as SortField, direction }
-  },
-  serialize(value) {
-    return `${value.field}:${value.direction}`
-  },
-  eq(a, b) {
-    return a.field === b.field && a.direction === b.direction
-  },
-}).withOptions({ shallow: true, history: "replace" })
+const sortParser = createSortParser<SortField>()
 
 const EMPTY_FILTER: ShelfFilterAnd = createAndBlock([])
 

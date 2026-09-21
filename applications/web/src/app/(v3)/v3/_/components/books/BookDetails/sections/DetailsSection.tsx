@@ -10,7 +10,7 @@ import { cn } from "@/cn"
 
 import { CollapsibleSection } from "./CollapsibleSection"
 
-function DetailRow({
+export function DetailRow({
   label,
   children,
 }: {

@@ -1,0 +1,69 @@
+INSERT INTO
+  settings (name, value)
+SELECT
+  'aligner',
+  '"whisper"'
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      settings
+    WHERE
+      name = 'aligner'
+  );
+
+DELETE FROM settings
+WHERE
+  name = 'ctcEngine';
+
+INSERT INTO
+  settings (name, value)
+SELECT
+  'ctcEngine',
+  '"wav2vec-local"'
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      settings
+    WHERE
+      name = 'ctcEngine'
+  );
+
+INSERT INTO
+  settings (name, value)
+SELECT
+  'ctcDevice',
+  '"webgpu"'
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      settings
+    WHERE
+      name = 'ctcDevice'
+  );
+
+-- delete existing setting
+DELETE FROM settings
+WHERE
+  name = 'alignmentGranularity';
+
+-- add new setting
+INSERT INTO
+  settings (name, value)
+SELECT
+  'alignmentGranularity',
+  '"sentence"'
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      settings
+    WHERE
+      name = 'alignmentGranularity'
+  );

@@ -1,4 +1,4 @@
-import { type PublicJob } from "@/database/jobs"
+import { type DisplayJob } from "@/database/jobs"
 
 export const STAGE_SEQUENCE = [
   "SPLIT_TRACKS",
@@ -38,7 +38,7 @@ function normalizeStatus(status: string): ProcessingStatus {
 }
 
 export function jobToView(
-  job: Pick<PublicJob, "status" | "stage" | "progress">,
+  job: Pick<DisplayJob, "status" | "stage" | "progress">,
 ): ProcessingView {
   return {
     stage: job.stage,

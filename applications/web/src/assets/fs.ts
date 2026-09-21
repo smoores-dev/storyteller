@@ -26,6 +26,7 @@ import {
 import {
   getCoverImageCacheDirectory,
   getDefaultSuffix,
+  getEmissionsFilepath,
   getInternalAudioDirectory,
   getInternalBookDirectory,
   getInternalEpubDirectory,
@@ -591,6 +592,17 @@ export async function deleteTranscriptions(book: BookWithRelations) {
     force: true,
   })
   releasePrefixAfterSettle(transcriptionsDir)
+  await deleteEmissions(book)
+}
+
+export async function deleteEmissions(book: BookWithRelations) {
+  const emissionsDir = getEmissionsFilepath(book)
+  suppressPrefix(emissionsDir)
+  await rm(emissionsDir, {
+    recursive: true,
+    force: true,
+  })
+  releasePrefixAfterSettle(emissionsDir)
 }
 
 export async function deleteProcessedAudio(book: BookWithRelations) {

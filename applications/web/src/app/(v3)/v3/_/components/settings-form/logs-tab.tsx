@@ -295,6 +295,17 @@ export function LogsTab() {
     wasFollowingRef.current = true
   }, [updatePrefs])
 
+  const hasMountedRef = useRef(false)
+  // scroll to bottom when the component mounts
+  useEffect(() => {
+    if (!scrollRef.current || hasMountedRef.current) return
+
+    if (!isLoading && lines.length > 0) {
+      handleScrollToBottom()
+    }
+    hasMountedRef.current = true
+  }, [handleScrollToBottom, isLoading, lines.length])
+
   const availableDates = data?.availableDates ?? []
   const today = data?.today
 

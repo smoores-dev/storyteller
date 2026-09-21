@@ -244,13 +244,13 @@ function BookDetailsContentInner({
           <div
             className={cn(
               "flex flex-col gap-4 transition-[height]",
-              !compact && "mx-auto max-w-3xl",
+              !compact && (showReport ? "px-8" : "mx-auto max-w-3xl"),
             )}
           >
             {showReport ? (
               <DynamicAlignmentReport
                 uuid={book.uuid}
-                compact
+                compact={compact}
                 embedded
                 onBack={() => void setReportMode(false)}
               />

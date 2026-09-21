@@ -1,27 +1,17 @@
 "use client"
 
+import { CollisionPriority } from "@dnd-kit/abstract"
+import { PointerActivationConstraints, PointerSensor } from "@dnd-kit/dom"
+import { move } from "@dnd-kit/helpers"
 import {
-  type CollisionDetection,
-  DndContext,
+  DragDropProvider,
   type DragEndEvent,
   type DragOverEvent,
   DragOverlay,
-  type DragStartEvent,
-  PointerSensor,
-  closestCenter,
-  closestCorners,
   useDroppable,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core"
-import {
-  SortableContext,
-  arrayMove,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { useState } from "react"
+} from "@dnd-kit/react"
+import { useSortable } from "@dnd-kit/react/sortable"
+import { useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 
 import { ShelfEditor } from "@v3/_/components/shelves/ShelfEditor"
@@ -91,10 +81,8 @@ type ManagerState = {
 
 const HIDDEN_CONTAINER_ID = "__hidden__"
 
-const GROUP_PREFIX = "group:"
-const groupSortableId = (groupId: string) => `${GROUP_PREFIX}${groupId}`
-const isGroupSortableId = (id: string) => id.startsWith(GROUP_PREFIX)
-const groupIdFromSortable = (id: string) => id.slice(GROUP_PREFIX.length)
+const SECTION_TYPE = "section"
+const ITEM_TYPE = "item"
 
 function cleanName(name: string | null | undefined): string {
   return extractEmojiIcon(name ?? "").label || (name ?? "")
@@ -182,8 +170,7 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
     ),
   }))
 
-  const [activeItem, setActiveItem] = useState<LocalItem | null>(null)
-  const [activeGroup, setActiveGroup] = useState<LocalGroup | null>(null)
+  const previousState = useRef(state)
 
   const canSee = (item: LocalItem) => {
     if (item.kind !== "builtin" || !item.builtinKey) return true
@@ -191,17 +178,7 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
     return !builtin?.permission || !!permissions?.[builtin.permission]
   }
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  )
-
   const findContainer = (s: ManagerState, id: string): string | null => {
-    if (id === HIDDEN_CONTAINER_ID) return HIDDEN_CONTAINER_ID
-    if (isGroupSortableId(id)) {
-      const groupId = groupIdFromSortable(id)
-      return s.groups.some((g) => g.id === groupId) ? groupId : null
-    }
-    if (s.groups.some((g) => g.id === id)) return id
     if (s.hidden.some((i) => i.id === id)) return HIDDEN_CONTAINER_ID
     return s.groups.find((g) => g.items.some((i) => i.id === id))?.id ?? null
   }
@@ -211,115 +188,52 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
     s.groups.flatMap((g) => g.items).find((i) => i.id === id) ??
     null
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const activeId = String(event.active.id)
-    if (isGroupSortableId(activeId)) {
-      const groupId = groupIdFromSortable(activeId)
-      setActiveGroup(state.groups.find((g) => g.id === groupId) ?? null)
-      return
-    }
-    setActiveItem(findItem(state, activeId))
-  }
-
-  const clearDrag = () => {
-    setActiveItem(null)
-    setActiveGroup(null)
-  }
-
-  const collisionDetection: CollisionDetection = (args) => {
-    if (!isGroupSortableId(String(args.active.id))) return closestCorners(args)
-
-    return closestCenter({
-      ...args,
-      droppableContainers: args.droppableContainers.filter((container) =>
-        isGroupSortableId(String(container.id)),
-      ),
-    })
+  const handleDragStart = () => {
+    previousState.current = state
   }
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event
-    if (!over) return
-    const activeId = String(active.id)
-    const overId = String(over.id)
-
-    if (isGroupSortableId(activeId)) {
-      const fromId = groupIdFromSortable(activeId)
-      const toId = isGroupSortableId(overId)
-        ? groupIdFromSortable(overId)
-        : null
-      if (!toId || toId === fromId) return
-
-      setState((prev) => {
-        const oldIndex = prev.groups.findIndex((g) => g.id === fromId)
-        const newIndex = prev.groups.findIndex((g) => g.id === toId)
-        if (oldIndex < 0 || newIndex < 0) return prev
-
-        return { ...prev, groups: arrayMove(prev.groups, oldIndex, newIndex) }
-      })
-      return
-    }
+    if (event.operation.source?.type === SECTION_TYPE) return
 
     setState((prev) => {
-      const from = findContainer(prev, activeId)
-      const to = findContainer(prev, overId)
-      if (!from || !to || from === to) return prev
-
-      const item = findItem(prev, activeId)
-      if (!item) return prev
-
-      const withoutItem: ManagerState = {
-        groups: prev.groups.map((g) => ({
-          ...g,
-          items: g.items.filter((i) => i.id !== activeId),
-        })),
-        hidden: prev.hidden.filter((i) => i.id !== activeId),
-      }
-
-      if (to === HIDDEN_CONTAINER_ID) {
-        return {
-          ...withoutItem,
-          hidden: [...withoutItem.hidden, item],
-        }
-      }
+      const containers = Object.fromEntries([
+        ...prev.groups.map((g) => [g.id, g.items] as const),
+        [HIDDEN_CONTAINER_ID, prev.hidden] as const,
+      ])
+      const moved = move(containers, event)
 
       return {
-        ...withoutItem,
-        groups: withoutItem.groups.map((g) => {
-          if (g.id !== to) return g
-          const overIndex = g.items.findIndex((i) => i.id === overId)
-          const insertAt = overIndex >= 0 ? overIndex : g.items.length
-          const items = [...g.items]
-          items.splice(insertAt, 0, item)
-          return { ...g, items }
-        }),
+        groups: prev.groups.map((g) => ({
+          ...g,
+          items: moved[g.id] ?? g.items,
+        })),
+        hidden: moved[HIDDEN_CONTAINER_ID] ?? prev.hidden,
       }
     })
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    clearDrag()
-    if (!over) return
-    const activeId = String(active.id)
-    const overId = String(over.id)
+    if (event.canceled) {
+      setState(previousState.current)
+      return
+    }
 
-    if (isGroupSortableId(activeId)) return
+    if (event.operation.source?.type !== SECTION_TYPE) return
 
     setState((prev) => {
-      const container = findContainer(prev, activeId)
-      if (!container || container !== findContainer(prev, overId)) return prev
-      if (container === HIDDEN_CONTAINER_ID) return prev
+      const order = move(
+        prev.groups.filter((g) => !g.hidden).map((g) => g.id),
+        event,
+      )
+      const byId = new Map(prev.groups.map((g) => [g.id, g]))
+      const reordered = order.flatMap((id) => byId.get(id) ?? [])
+      let next = 0
 
       return {
         ...prev,
-        groups: prev.groups.map((g) => {
-          if (g.id !== container) return g
-          const oldIndex = g.items.findIndex((i) => i.id === activeId)
-          const newIndex = g.items.findIndex((i) => i.id === overId)
-          if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return g
-          return { ...g, items: arrayMove(g.items, oldIndex, newIndex) }
-        }),
+        groups: prev.groups.map((g) =>
+          g.hidden ? g : (reordered[next++] ?? g),
+        ),
       }
     })
   }
@@ -521,47 +435,48 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
         </SidebarGroupLabel>
 
         <SidebarGroupContent>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={collisionDetection}
+          <DragDropProvider
+            sensors={(defaults) => [
+              ...defaults.filter((sensor) => sensor !== PointerSensor),
+              PointerSensor.configure({
+                activationConstraints: [
+                  new PointerActivationConstraints.Distance({ value: 5 }),
+                ],
+              }),
+            ]}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
-            onDragCancel={clearDrag}
           >
             <div className="flex flex-col gap-3 px-1">
-              <SortableContext
-                items={visibleGroups.map((g) => groupSortableId(g.id))}
-                strategy={verticalListSortingStrategy}
-              >
-                {visibleGroups.map((group) => (
-                  <EditableGroup
-                    key={group.id}
-                    group={group}
-                    items={group.items.filter(canSee)}
-                    onRename={(name) => {
-                      renameGroup(group.id, name)
-                    }}
-                    onRemoveGroup={
-                      group.kind
-                        ? undefined
-                        : () => {
-                            removeGroup(group.id)
-                          }
+              {visibleGroups.map((group, index) => (
+                <EditableGroup
+                  key={group.id}
+                  group={group}
+                  index={index}
+                  items={group.items.filter(canSee)}
+                  onRename={(name) => {
+                    renameGroup(group.id, name)
+                  }}
+                  onRemoveGroup={
+                    group.kind
+                      ? undefined
+                      : () => {
+                          removeGroup(group.id)
+                        }
+                  }
+                  onHideGroup={() => {
+                    setGroupHidden(group.id, true)
+                  }}
+                  onHideItem={hideItem}
+                  onEditItem={(item) => {
+                    if (item.kind === "shelf" && item.shelfUuid) {
+                      setShelfEditorState(item.shelfUuid)
                     }
-                    onHideGroup={() => {
-                      setGroupHidden(group.id, true)
-                    }}
-                    onHideItem={hideItem}
-                    onEditItem={(item) => {
-                      if (item.kind === "shelf" && item.shelfUuid) {
-                        setShelfEditorState(item.shelfUuid)
-                      }
-                    }}
-                    t={t as unknown as (key: string) => string}
-                  />
-                ))}
-              </SortableContext>
+                  }}
+                  t={t as unknown as (key: string) => string}
+                />
+              ))}
 
               {hiddenGroups.length > 0 && (
                 <div className="flex flex-col gap-1">
@@ -639,21 +554,23 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
             </div>
 
             <DragOverlay>
-              {activeItem || activeGroup ? (
-                <div className="bg-sidebar-accent text-sidebar-accent-foreground flex items-center gap-1.5 rounded px-1 py-1.5 shadow-md">
-                  <icon.GripVertical className="text-muted-foreground size-3.5" />
-                  <span
-                    className={cn(
-                      "truncate text-xs",
-                      activeGroup && "font-medium",
-                    )}
-                  >
-                    {activeItem?.name ?? activeGroup?.name}
-                  </span>
-                </div>
-              ) : null}
+              {(source) => {
+                const id = String(source.id)
+                const group = state.groups.find((g) => g.id === id)
+
+                return (
+                  <div className="bg-sidebar-accent text-sidebar-accent-foreground flex items-center gap-1.5 rounded px-1 py-1.5 shadow-md">
+                    <icon.GripVertical className="text-muted-foreground size-3.5" />
+                    <span
+                      className={cn("truncate text-xs", group && "font-medium")}
+                    >
+                      {group?.name ?? findItem(state, id)?.name}
+                    </span>
+                  </div>
+                )
+              }}
             </DragOverlay>
-          </DndContext>
+          </DragDropProvider>
         </SidebarGroupContent>
       </SidebarGroup>
 
@@ -677,6 +594,7 @@ export function SidebarManager({ groups, onClose }: SidebarManagerProps) {
 
 type EditableGroupProps = {
   group: LocalGroup
+  index: number
   items: LocalItem[]
   onRename: (name: string) => void
   onRemoveGroup?: () => void
@@ -688,6 +606,7 @@ type EditableGroupProps = {
 
 function EditableGroup({
   group,
+  index,
   items,
   onRename,
   onRemoveGroup,
@@ -696,20 +615,17 @@ function EditableGroup({
   onEditItem,
   t,
 }: EditableGroupProps) {
-  const { setNodeRef: setDropRef } = useDroppable({ id: group.id })
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setSortRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: groupSortableId(group.id) })
+  const { ref, handleRef, isDragging } = useSortable({
+    id: group.id,
+    index,
+    type: SECTION_TYPE,
+    accept: [SECTION_TYPE, ITEM_TYPE],
+    collisionPriority: CollisionPriority.Low,
+  })
 
   return (
     <div
-      ref={setSortRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      ref={ref}
       className={cn(
         "flex flex-col gap-1",
         isDragging &&
@@ -718,9 +634,8 @@ function EditableGroup({
     >
       <div className="group/section-header flex items-center gap-1">
         <button
+          ref={handleRef}
           type="button"
-          {...attributes}
-          {...listeners}
           className="text-muted-foreground hover:text-foreground flex size-5 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
           title={t("moveSection")}
         >
@@ -758,30 +673,27 @@ function EditableGroup({
         )}
       </div>
 
-      <SortableContext
-        items={items.map((i) => i.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        <ul ref={setDropRef} className="flex min-h-6 flex-col gap-0 rounded">
-          {items.map((item) => (
-            <EditableItem
-              key={item.id}
-              item={item}
-              onHide={() => {
-                onHideItem(item.id)
-              }}
-              onEdit={
-                item.kind === "shelf" && item.shelfUuid
-                  ? () => {
-                      onEditItem(item)
-                    }
-                  : undefined
-              }
-              t={t}
-            />
-          ))}
-        </ul>
-      </SortableContext>
+      <ul className="flex min-h-6 flex-col gap-0 rounded">
+        {items.map((item, itemIndex) => (
+          <EditableItem
+            key={item.id}
+            item={item}
+            index={itemIndex}
+            container={group.id}
+            onHide={() => {
+              onHideItem(item.id)
+            }}
+            onEdit={
+              item.kind === "shelf" && item.shelfUuid
+                ? () => {
+                    onEditItem(item)
+                  }
+                : undefined
+            }
+            t={t}
+          />
+        ))}
+      </ul>
     </div>
   )
 }
@@ -795,7 +707,12 @@ function HiddenPool({
   onRestoreItem: (itemId: string) => void
   t: (key: string) => string
 }) {
-  const { setNodeRef } = useDroppable({ id: HIDDEN_CONTAINER_ID })
+  const { ref } = useDroppable({
+    id: HIDDEN_CONTAINER_ID,
+    type: HIDDEN_CONTAINER_ID,
+    accept: ITEM_TYPE,
+    collisionPriority: CollisionPriority.Low,
+  })
 
   return (
     <div className="flex flex-col gap-1">
@@ -803,41 +720,40 @@ function HiddenPool({
         {t("hidden")}
       </span>
 
-      <SortableContext
-        items={items.map((i) => i.id)}
-        strategy={verticalListSortingStrategy}
+      <ul
+        ref={ref}
+        className={cn(
+          "border-sidebar-border flex min-h-8 flex-col gap-0.5 rounded border border-dashed p-0.5",
+          items.length === 0 && "items-center justify-center",
+        )}
       >
-        <ul
-          ref={setNodeRef}
-          className={cn(
-            "border-sidebar-border flex min-h-8 flex-col gap-0.5 rounded border border-dashed p-0.5",
-            items.length === 0 && "items-center justify-center",
-          )}
-        >
-          {items.length === 0 && (
-            <span className="text-muted-foreground/60 text-[10px]">
-              {t("hiddenEmpty")}
-            </span>
-          )}
-          {items.map((item) => (
-            <EditableItem
-              key={item.id}
-              item={item}
-              hidden
-              onRestore={() => {
-                onRestoreItem(item.id)
-              }}
-              t={t}
-            />
-          ))}
-        </ul>
-      </SortableContext>
+        {items.length === 0 && (
+          <span className="text-muted-foreground/60 text-[10px]">
+            {t("hiddenEmpty")}
+          </span>
+        )}
+        {items.map((item, index) => (
+          <EditableItem
+            key={item.id}
+            item={item}
+            index={index}
+            container={HIDDEN_CONTAINER_ID}
+            hidden
+            onRestore={() => {
+              onRestoreItem(item.id)
+            }}
+            t={t}
+          />
+        ))}
+      </ul>
     </div>
   )
 }
 
 type EditableItemProps = {
   item: LocalItem
+  index: number
+  container: string
   hidden?: boolean
   onHide?: () => void
   onRestore?: () => void
@@ -847,28 +763,25 @@ type EditableItemProps = {
 
 function EditableItem({
   item,
+  index,
+  container,
   hidden = false,
   onHide,
   onRestore,
   onEdit,
   t,
 }: EditableItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id })
+  const { ref, handleRef, isDragging } = useSortable({
+    id: item.id,
+    index,
+    type: ITEM_TYPE,
+    accept: ITEM_TYPE,
+    group: container,
+  })
 
   return (
     <li
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
+      ref={ref}
       className={cn(
         "flex items-center gap-1 rounded px-0.5 py-1",
         isDragging && "bg-sidebar-accent opacity-50",
@@ -876,9 +789,8 @@ function EditableItem({
       )}
     >
       <button
+        ref={handleRef}
         type="button"
-        {...attributes}
-        {...listeners}
         className="text-muted-foreground hover:text-foreground hover:text-sidebar-accent flex h-6 w-5 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
       >
         <icon.GripVertical className="size-3.5" />

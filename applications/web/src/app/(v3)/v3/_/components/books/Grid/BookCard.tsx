@@ -220,9 +220,9 @@ export function SecondaryText({
     case "translators":
     case "creators":
       return null
-    case "alignmentScore":
-      return book.alignmentSummary?.score != null ? (
-        <span>{Math.round(book.alignmentSummary.score)}%</span>
+    case "alignmentConfidence":
+      return book.alignmentSummary?.confidence != null ? (
+        <span>{Math.round(book.alignmentSummary.confidence)}%</span>
       ) : (
         none
       )
@@ -232,15 +232,24 @@ export function SecondaryText({
       ) : (
         none
       )
-    case "alignmentMissingSentences":
-      return book.alignmentSummary?.missingSentences != null ? (
-        <span>{book.alignmentSummary.missingSentences}</span>
+    case "alignmentPreviousGrade":
+      return book.alignmentSummary?.previousGrade ? (
+        <GradePill
+          grade={book.alignmentSummary.previousGrade}
+          className="opacity-60"
+        />
       ) : (
         none
       )
-    case "alignmentMutedChapters":
-      return book.alignmentSummary?.mutedChapters != null ? (
-        <span>{book.alignmentSummary.mutedChapters}</span>
+    case "alignmentSentenceCoverage":
+      return book.alignmentSummary?.sentenceCoverage != null ? (
+        <span>{Math.round(book.alignmentSummary.sentenceCoverage)}%</span>
+      ) : (
+        none
+      )
+    case "alignmentAudioCoverage":
+      return book.alignmentSummary?.audioCoverage != null ? (
+        <span>{Math.round(book.alignmentSummary.audioCoverage)}%</span>
       ) : (
         none
       )
@@ -365,9 +374,10 @@ export const BookCard = memo(function BookCard({
   const isSynced =
     hasReadaloud && book.readaloud?.status === "ALIGNED" && showReadaloudBadge
   const isProcessing =
-    (book.readaloud?.status === "PROCESSING" ||
-      book.readaloud?.status === "QUEUED") &&
-    showProcessingBadge
+    book.readaloud?.status === "PROCESSING" && showProcessingBadge
+
+  const isQueued = book.readaloud?.status === "QUEUED" && showProcessingBadge
+
   const isMissing = showMissingBadge && hasMissingMedia(book)
   const { gridCoverDisplay } = useUserPreferences()
   const fillCover = gridCoverDisplay !== "auto"
@@ -406,7 +416,7 @@ export const BookCard = memo(function BookCard({
             />
           )}
 
-          {isProcessing && (
+          {(isProcessing || isQueued) && (
             <ProcessingIndicator
               book={book}
               size={22}
@@ -452,7 +462,7 @@ export const BookCard = memo(function BookCard({
           </div>
         )}
 
-        {isMissing && (
+        {!isQueued && !isProcessing && isMissing && (
           <MissingBadge
             book={book}
             className="absolute right-1.5 bottom-1.5 z-20 size-5!"
@@ -536,7 +546,9 @@ export const BookCard = memo(function BookCard({
               )
             }
 
-            const hasPill = row.includes("alignmentGrade")
+            const hasPill =
+              row.includes("alignmentGrade") ||
+              row.includes("alignmentPreviousGrade")
 
             return (
               <div

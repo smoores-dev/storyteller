@@ -118,6 +118,7 @@ export const Tile = memo(function Tile({
     >
       {load && (
         <img
+          draggable={false}
           key={image.sha256}
           src={getImageUrl(image.sha256, size)}
           srcSet={`${getImageUrl(image.sha256, size)} 1x, ${getImageUrl(image.sha256, size * 2)} 2x`}

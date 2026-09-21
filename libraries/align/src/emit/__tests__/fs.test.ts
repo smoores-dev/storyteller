@@ -42,6 +42,8 @@ describe("EmissionsReader", () => {
       secondsPerChunk,
       secondsPerFrame,
       framesPerChunk,
+      startOffsetSeconds: 0,
+      endOffsetSeconds: 0,
     })
   })
 

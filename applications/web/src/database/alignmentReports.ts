@@ -1,137 +1,94 @@
 import { type Selectable, sql } from "kysely"
 
-import { type Report } from "@storyteller-platform/align"
-
-import { type AlignmentFacets } from "@/alignmentReportView"
-import { type AlignmentGrade } from "@/shelves"
+import {
+  type AlignmentDecisions,
+  type AlignmentFacets,
+  type AlignmentOverrides,
+  type AnyReport,
+  type LegacyReport,
+  type ReportV4,
+  gradeForScore,
+  itemDecision,
+  normalizeReport,
+  overridesToDecisions,
+  summarizeReport as summarizeReportView,
+} from "@/alignmentReportView"
 import type { UUID } from "@/uuid"
+import { type AlignmentJobSummary } from "@/work/jobStats"
 
+import {
+  getAlignmentDecisions,
+  replaceAlignmentDecisions,
+} from "./alignmentDecisions"
 import { db } from "./connection"
 import { type DB } from "./schema"
 
-export type { Report }
+export type {
+  AlignmentDecisions,
+  AlignmentOverrides,
+  AnyReport,
+  LegacyReport,
+  ReportV4,
+}
 
-type ChapterReport = Report["chapters"][number]
-
-export interface AlignmentSummary {
-  grade: AlignmentGrade
-  /* 0-100 */
-  score: number | null
-  chapters: number
+export interface AlignmentSummary extends AlignmentJobSummary {
+  band: number
+  confidence: number | null
   missingSentences: number
   mutedChapters: number
   failedChapters: number
   unalignedAudio: number
-}
-
-export interface AlignmentChapterOverride {
-  excludeFromScore?: boolean
-  markedOk?: boolean
-}
-
-export interface AlignmentOverrides {
-  chapters?: Record<string, AlignmentChapterOverride>
-  unalignedChapters?: Record<string, { intended?: boolean }>
-  audioFiles?: Record<string, { excluded?: boolean }>
-}
-
-function chapterExcluded(
-  href: string,
-  overrides?: AlignmentOverrides,
-): boolean {
-  const o = overrides?.chapters?.[href]
-  return !!(o?.excludeFromScore || o?.markedOk)
+  pending: number
 }
 
 export function summarizeReport(
-  report: Omit<
-    Report,
-    "unalignedChapters" | "audioFiles" | "unalignedAudioFiles"
-  > &
-    Partial<
-      Pick<Report, "unalignedChapters" | "audioFiles" | "unalignedAudioFiles">
-    >,
-  overrides?: AlignmentOverrides | null,
+  report: AnyReport,
+  decisions?: AlignmentDecisions | null,
+  audiobookDuration?: number | null,
 ): AlignmentSummary {
-  const chapters = report.chapters
-  const scored = chapters.filter(
-    (ch) => !chapterExcluded(ch.href, overrides ?? undefined),
-  )
+  const normalized = normalizeReport(report)
+  const summary = summarizeReportView(normalized, decisions, audiobookDuration)
 
-  let totalSents = 0
-  let totalAligned = 0
-  let missingSentences = 0
-  for (const ch of scored) {
-    const total = ch.chapterSentenceCount || 0
-    if (total > 0) {
-      const al = ch.alignedSentenceCount
-      totalSents += total
-      totalAligned += al
-      missingSentences += Math.max(total - al, 0)
-    }
+  let mutedChapters = 0
+  for (const item of normalized.spine) {
+    if (item.status !== "aligned") continue
+    if (itemDecision(decisions, item.href) === "excluded") continue
+    if (item.matchedSeconds + item.interpolatedSeconds === 0) mutedChapters += 1
   }
-  const score =
-    totalSents > 0 ? Math.round((totalAligned / totalSents) * 100) : null
-
-  const mutedChapters = chapters.filter(
-    (ch) =>
-      !overrides?.chapters?.[ch.href]?.markedOk &&
-      ch.audioFiles.length === 0 &&
-      (ch.chapterSentenceCount || 0) > 2,
-  ).length
-
-  const notFound = (report.unalignedChapters ?? []).filter(
-    (c) =>
-      c.reason === "not-found" &&
-      !overrides?.unalignedChapters?.[c.href]?.intended,
-  ).length
-  const noMatch = chapters.filter(
-    (ch) =>
-      !overrides?.chapters?.[ch.href]?.markedOk &&
-      (ch.chapterSentenceCount || 0) > 0 &&
-      ch.alignedSentenceCount === 0,
-  ).length
-
-  const unalignedAudio = (report.unalignedAudioFiles ?? []).filter(
-    (uaf) => !overrides?.audioFiles?.[uaf.filepath]?.excluded,
-  ).length
 
   return {
-    grade: computeGrade(score, scored),
-    score,
-    chapters: chapters.length,
-    missingSentences,
+    grade: summary.grade,
+    band: summary.band,
+    score: summary.score,
+    confidence: summary.confidence,
+    sentenceCoverage: summary.sentenceCoverage,
+    audioCoverage: summary.audioCoverage,
+    chapters: summary.chapters,
+    missingSentences: summary.sentencesTotal - summary.sentencesMatched,
     mutedChapters,
-    failedChapters: notFound + noMatch,
-    unalignedAudio,
+    excluded: summary.excluded,
+    excludedByRule: summary.excludedByRule,
+    review: summary.review,
+    pending: summary.pending,
+    failed: summary.failed,
+    failedChapters: summary.failed,
+    unalignedAudio: summary.looseAudio,
   }
 }
 
-function computeGrade(
-  score: number | null,
-  chapters: ChapterReport[],
-): AlignmentGrade {
-  if (chapters.length === 0) return "F"
-  if (score == null || score < 80) return "F"
-  if (score < 90) return "D"
-  if (score < 95) return "C"
-  if (score >= 99) return "A+"
-
-  const sig = chapters.filter((ch) => {
-    const cnt = ch.chapterSentenceCount || 0
-    if (cnt === 0) return false
-    const al = ch.alignedSentenceCount
-    return cnt - al > 5 && (al / cnt) * 100 < 95
-  }).length
-  const severe = chapters.filter((ch) => {
-    const cnt = ch.chapterSentenceCount || 0
-    if (cnt === 0) return false
-    const al = ch.alignedSentenceCount
-    return cnt - al > 10 && (al / cnt) * 100 < 90
-  }).length
-
-  if (score >= 97) return sig >= 3 ? "A-" : "A"
-  return severe >= 3 ? "B-" : "B"
+function summaryColumns(s: AlignmentSummary) {
+  return {
+    grade: s.grade,
+    score: s.score,
+    confidence: s.confidence,
+    sentenceCoverage: s.sentenceCoverage,
+    audioCoverage: s.audioCoverage,
+    chapters: s.chapters,
+    missingSentences: s.missingSentences,
+    mutedChapters: s.mutedChapters,
+    failedChapters: s.failedChapters,
+    unalignedAudio: s.unalignedAudio,
+  }
 }
 
 type AlignmentReportRow = Selectable<DB["alignmentReport"]>
@@ -143,35 +100,50 @@ export type AlignmentReport = Omit<
   uuid: UUID
   jobUuid: UUID | null
   bookUuid: UUID | null
-  // null on old reports
-  report: Report | null
+  report: AnyReport | null
 }
 
-function parseAlignmentReport(row: AlignmentReportRow): AlignmentReport {
-  return { ...row }
+export async function getAudiobookDuration(
+  bookUuid: UUID | null,
+): Promise<number | null> {
+  if (!bookUuid) return null
+  const row = await db
+    .selectFrom("audiobook")
+    .select("duration")
+    .where("bookUuid", "=", bookUuid)
+    .executeTakeFirst()
+  return row?.duration ?? null
 }
 
 export async function createAlignmentReport(input: {
   jobUuid: UUID | null
   bookUuid: UUID | null
-  report: Report
-}): Promise<AlignmentReport> {
-  const s = summarizeReport(input.report)
+  report: AnyReport
+}): Promise<{ report: AlignmentReport; summary: AlignmentSummary }> {
+  const report = normalizeReport(input.report)
+  const s = summarizeReport(
+    report,
+    input.bookUuid ? await getAlignmentDecisions(input.bookUuid) : null,
+    await getAudiobookDuration(input.bookUuid),
+  )
 
   const row = await db.transaction().execute(async (tr) => {
+    const lastOne = await tr
+      .selectFrom("alignmentReport")
+      .selectAll()
+      .where("bookUuid", "=", input.bookUuid)
+      .orderBy("createdAt", "desc")
+      .orderBy(sql`rowid`, "desc")
+      .limit(1)
+      .executeTakeFirst()
+
     const inserted = await tr
       .insertInto("alignmentReport")
       .values({
         jobUuid: input.jobUuid,
         bookUuid: input.bookUuid,
-        report: JSON.stringify(input.report),
-        grade: s.grade,
-        score: s.score,
-        chapters: s.chapters,
-        missingSentences: s.missingSentences,
-        mutedChapters: s.mutedChapters,
-        failedChapters: s.failedChapters,
-        unalignedAudio: s.unalignedAudio,
+        report: JSON.stringify(report),
+        ...summaryColumns(s),
       })
       .returningAll()
       .executeTakeFirstOrThrow()
@@ -182,17 +154,23 @@ export async function createAlignmentReport(input: {
         .set({ report: null })
         .where("bookUuid", "=", input.bookUuid)
         .where("uuid", "!=", inserted.uuid)
+
+        .$if(!!lastOne, (qb) =>
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          qb.where("uuid", "!=", lastOne!.uuid),
+        )
         .execute()
     }
 
     return inserted
   })
 
-  return parseAlignmentReport(row)
+  return { report: row, summary: s }
 }
 
 export async function getAlignmentReportForBook(
   bookUuid: UUID,
+  reportUuid?: UUID,
 ): Promise<AlignmentReport | null> {
   const row = await db
     .selectFrom("alignmentReport")
@@ -200,47 +178,148 @@ export async function getAlignmentReportForBook(
     .where("bookUuid", "=", bookUuid)
     .orderBy("createdAt", "desc")
     .orderBy(sql`rowid`, "desc")
+    .$if(!!reportUuid, (qb) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      qb.where("uuid", "=", reportUuid!),
+    )
     .limit(1)
     .executeTakeFirst()
 
   return row ?? null
 }
 
-export async function updateAlignmentOverrides(
-  reportUuid: UUID,
-  overrides: AlignmentOverrides,
-): Promise<AlignmentReport> {
-  const existing = await db
+export async function listAlignmentReportSummaries(bookUuid: UUID) {
+  return db
     .selectFrom("alignmentReport")
-    .selectAll()
-    .where("uuid", "=", reportUuid)
-    .executeTakeFirstOrThrow()
+    .select([
+      "uuid",
+      "jobUuid",
+      "createdAt",
+      "grade",
+      "score",
+      "confidence",
+      "sentenceCoverage",
+      "audioCoverage",
+      "chapters",
+      "failedChapters",
+      "unalignedAudio",
+      sql<number>`report is not null`.as("hasReport"),
+    ])
+    .where("bookUuid", "=", bookUuid)
+    .orderBy("createdAt", "desc")
+    .orderBy(sql`rowid`, "desc")
+    .execute()
+}
 
-  if (!existing.report) {
-    throw new Error(
-      `Alignment report ${reportUuid} has been superseded and its payload pruned; overrides can only be set on the latest report`,
+export async function resummarizeLatestReport(
+  bookUuid: UUID,
+): Promise<AlignmentSummary | null> {
+  const latest = await getAlignmentReportForBook(bookUuid)
+  if (!latest?.report) return null
+  const s = summarizeReport(
+    latest.report,
+    await getAlignmentDecisions(bookUuid),
+    await getAudiobookDuration(bookUuid),
+  )
+  await db
+    .updateTable("alignmentReport")
+    .set(summaryColumns(s))
+    .where("uuid", "=", latest.uuid)
+    .execute()
+  return s
+}
+
+export async function updateAlignmentDecisions(
+  bookUuid: UUID,
+  decisions: AlignmentDecisions,
+): Promise<AlignmentDecisions> {
+  const stored = await replaceAlignmentDecisions(bookUuid, decisions)
+  await resummarizeLatestReport(bookUuid)
+  return stored
+}
+
+export async function applyAlignmentOverrides(
+  bookUuid: UUID,
+  overrides: AlignmentOverrides,
+): Promise<AlignmentDecisions> {
+  const current = await getAlignmentDecisions(bookUuid)
+  const incoming = overridesToDecisions(overrides)
+  return updateAlignmentDecisions(bookUuid, {
+    chapters: incoming.chapters,
+    audio: [
+      ...current.audio.filter(
+        (exclusion) => exclusion.start !== null || exclusion.end !== null,
+      ),
+      ...incoming.audio,
+    ],
+  })
+}
+
+export async function recomputeAlignmentSummaries(
+  bookUuids: UUID[] | null,
+): Promise<number> {
+  const rows = await db
+    .selectFrom("alignmentReport")
+    .leftJoin("audiobook", "audiobook.bookUuid", "alignmentReport.bookUuid")
+    .select([
+      "alignmentReport.uuid",
+      "alignmentReport.bookUuid",
+      "alignmentReport.report",
+      "audiobook.duration",
+    ])
+    .where("alignmentReport.report", "is not", null)
+    .$if(bookUuids !== null, (qb) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      qb.where("alignmentReport.bookUuid", "in", bookUuids!),
     )
+    .execute()
+
+  let count = 0
+  for (const row of rows) {
+    if (!row.report) continue
+    const decisions = row.bookUuid
+      ? await getAlignmentDecisions(row.bookUuid)
+      : null
+    const s = summarizeReport(row.report, decisions, row.duration)
+    await db
+      .updateTable("alignmentReport")
+      .set(summaryColumns(s))
+      .where("uuid", "=", row.uuid)
+      .execute()
+    count++
   }
 
-  const s = summarizeReport(existing.report, overrides)
+  const oldReports = await db
+    .selectFrom("alignmentReport")
+    .select([
+      "uuid",
+      "bookUuid",
+      "confidence",
+      "sentenceCoverage",
+      "audioCoverage",
+    ])
+    .where("report", "is", null)
+    .$if(bookUuids !== null, (qb) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      qb.where("alignmentReport.bookUuid", "in", bookUuids!),
+    )
+    .execute()
 
-  const row = await db
-    .updateTable("alignmentReport")
-    .set({
-      overrides: JSON.stringify(overrides),
-      grade: s.grade,
-      score: s.score,
-      chapters: s.chapters,
-      missingSentences: s.missingSentences,
-      mutedChapters: s.mutedChapters,
-      failedChapters: s.failedChapters,
-      unalignedAudio: s.unalignedAudio,
-    })
-    .where("uuid", "=", reportUuid)
-    .returningAll()
-    .executeTakeFirstOrThrow()
+  for (const report of oldReports) {
+    const s = gradeForScore(report.sentenceCoverage, report.audioCoverage)
 
-  return parseAlignmentReport(row)
+    await db
+      .updateTable("alignmentReport")
+      .set({
+        grade: s.grade,
+        score: s.score,
+      })
+      .where("uuid", "=", report.uuid)
+      .execute()
+    count++
+  }
+
+  return count
 }
 
 export async function getAlignmentFacets(): Promise<AlignmentFacets> {

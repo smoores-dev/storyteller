@@ -1,6 +1,6 @@
 "use client"
 
-import { type ElementType, useRef } from "react"
+import { useRef } from "react"
 import { Controller, type FieldPath, useWatch } from "react-hook-form"
 
 import { Field, FieldError } from "@v3/_/components/ui/field"
@@ -18,7 +18,7 @@ export const SEAMLESS_BOX =
 type EditableTextProps = {
   name: FieldPath<BookFormValues>
   className?: string
-  as?: ElementType
+  as?: "span" | "p" | "div" | "h1" | "h2" | "h3"
   placeholder?: string
   type?: "text" | "date" | "number"
   multiline?: boolean

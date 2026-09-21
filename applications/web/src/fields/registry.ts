@@ -1,17 +1,13 @@
 import { type AcceptedKeys } from "@/app/(v3)/v3/_/lib/mapping"
 
-import { type DatePreset, type FieldDef, type FieldType } from "./types"
+import {
+  type DatePreset,
+  type FieldDef,
+  type FieldType,
+  type RetiredFieldDef,
+} from "./types"
 
-export const ALIGNMENT_GRADES = [
-  "A+",
-  "A",
-  "A-",
-  "B",
-  "B-",
-  "C",
-  "D",
-  "F",
-] as const
+export const ALIGNMENT_GRADES = ["S", "A", "B", "C", "D", "F"] as const
 
 export const RECENCY_DATE_PRESETS: DatePreset[] = [
   { label: "Last 24 hours", days: 1 },
@@ -375,35 +371,49 @@ export const FIELD_REGISTRY = {
     group: "alignment",
     type: "enum",
   },
-  alignmentScore: {
-    control: "number-range",
-    sortable: true,
-    quick: true,
-    scale: { min: 0, max: 100, unit: "count" },
-    token: "score",
-    labelKey: "alignmentScore",
+  alignmentPreviousGrade: {
+    control: "enum",
+    sortable: false,
+    displayOnly: true,
+    quick: false,
+    token: "previousGrade",
+    options: [...ALIGNMENT_GRADES],
+    labelKey: "alignmentPreviousGrade",
     group: "alignment",
-    type: "number",
+    type: "enum",
   },
-  alignmentMissingSentences: {
+  alignmentConfidence: {
     control: "number-range",
     sortable: true,
     quick: true,
-    scale: { min: 0, unit: "count" },
-    token: "missing",
-    labelKey: "alignmentMissingSentences",
-    group: "alignment",
     type: "number",
+    scale: { min: 0, max: 100, unit: "percent" },
+    token: "confidence",
+    labelKey: "alignmentConfidence",
+    group: "alignment",
+    defaultOperator: "greaterOrEqual",
   },
-  alignmentMutedChapters: {
+  alignmentSentenceCoverage: {
     control: "number-range",
     sortable: true,
     quick: true,
-    scale: { min: 0, unit: "count" },
-    token: "muted",
-    labelKey: "alignmentMutedChapters",
-    group: "alignment",
     type: "number",
+    token: "sentences",
+    labelKey: "alignmentSentenceCoverage",
+    scale: { min: 0, max: 100, unit: "percent" },
+    group: "alignment",
+    defaultOperator: "greaterOrEqual",
+  },
+  alignmentAudioCoverage: {
+    control: "number-range",
+    sortable: true,
+    quick: true,
+    type: "number",
+    token: "audio",
+    labelKey: "alignmentAudioCoverage",
+    scale: { min: 0, max: 100, unit: "percent" },
+    group: "alignment",
+    defaultOperator: "greaterOrEqual",
   },
   alignedAt: {
     control: "date-range",
@@ -523,4 +533,32 @@ export function isDistinctFacetField(
   value: string,
 ): value is DistinctFacetField {
   return (DISTINCT_FACET_FIELDS as string[]).includes(value)
+}
+
+export const RETIRED_FIELDS = {
+  alignmentScore: {
+    labelKey: "alignmentScore",
+    replacedBy: "alignmentConfidence",
+  },
+  alignmentMissingSentences: {
+    labelKey: "alignmentMissingSentences",
+    replacedBy: "alignmentSentenceCoverage",
+  },
+  alignmentMutedChapters: {
+    labelKey: "alignmentMutedChapters",
+    replacedBy: "alignmentAudioCoverage",
+  },
+} as const satisfies Record<
+  string,
+  RetiredFieldDef & { replacedBy: Field | null }
+>
+
+export type RetiredField = keyof typeof RETIRED_FIELDS
+
+export function isField(value: string): value is Field {
+  return value in FIELD_REGISTRY
+}
+
+export function isRetiredField(value: string): value is RetiredField {
+  return value in RETIRED_FIELDS
 }

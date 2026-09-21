@@ -71,6 +71,13 @@ __tests__
 /libraries/media-types/node_modules
 /libraries/media-types/dist
 
+!/libraries/mlx-audio
+/libraries/mlx-audio/node_modules
+/libraries/mlx-audio/build
+/libraries/mlx-audio/.build
+
+
+!/types
 
 /docker
 

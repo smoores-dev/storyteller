@@ -21,6 +21,8 @@ export type StorytellerTranscription = {
   timeline: StorytellerTimelineEntry[]
 }
 
+export type RangeState = "matched" | "interpolated" | "unmatched" | "dropped"
+
 export type AudioRange = {
   start: number
   end: number
@@ -32,6 +34,7 @@ export class SentenceRange {
     public readonly id: number,
     public readonly chapterId: string,
     public readonly audioRanges: AudioRange[],
+    public readonly state: RangeState = "matched",
   ) {
     if (audioRanges.length === 0) {
       throw new Error(
@@ -55,7 +58,7 @@ export class SentenceRange {
   }
 
   withAudioRanges(audioRanges: AudioRange[]) {
-    return new SentenceRange(this.id, this.chapterId, audioRanges)
+    return new SentenceRange(this.id, this.chapterId, audioRanges, this.state)
   }
 }
 
@@ -66,6 +69,7 @@ export type WordRange = {
   start: number
   end: number
   audiofile: string
+  state: RangeState
 }
 
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
@@ -412,6 +416,7 @@ export async function getSentenceRanges(
                 start: end.audiofile === start.audiofile ? start.start : 0,
                 audiofile: end.audiofile,
                 end: end.end,
+                state: "matched",
               })
             }
 
@@ -625,20 +630,18 @@ export async function collapseSentenceRangeGaps(
   return mapAudioRanges(sentenceRanges, () => collapsed)
 }
 
-export function getChapterDuration(sentenceRanges: SentenceRange[]) {
+export function getChapterDuration(ranges: AudioRange[]) {
   let duration = 0
   let audiofile: string | null = null
   let start = 0
   let end = 0
-  for (const sentenceRange of sentenceRanges) {
-    for (const range of sentenceRange.audioRanges) {
-      if (range.audiofile !== audiofile) {
-        duration += end - start
-        start = range.start
-        audiofile = range.audiofile
-      }
-      end = range.end
+  for (const range of ranges) {
+    if (range.audiofile !== audiofile) {
+      duration += end - start
+      start = range.start
+      audiofile = range.audiofile
     }
+    end = range.end
   }
   duration += end - start
   return duration

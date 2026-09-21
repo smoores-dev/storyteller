@@ -10,6 +10,9 @@ import {
   // oxlint-disable-next-line storyteller/no-next-intl-use-translations
   useTranslations,
 } from "next-intl"
+import { Children, type ReactNode } from "react"
+
+import { FieldChip } from "@v3/_/components/field-chip"
 
 type IntlMessages = Record<string, any>
 // taken from next-intl
@@ -35,6 +38,21 @@ type NamespacedMessageKeys<
     >
   >
 >
+
+function chunkText(chunks: ReactNode): string {
+  return Children.toArray(chunks)
+    .filter((chunk): chunk is string => typeof chunk === "string")
+    .join("")
+}
+
+export const richTags = {
+  em: (chunks: ReactNode) => <em>{chunks}</em>,
+  field: (chunks: ReactNode) => <FieldChip field={chunkText(chunks)} />,
+}
+
+function withRichTags(values: unknown) {
+  return { ...richTags, ...(values as Record<string, unknown> | undefined) }
+}
 
 export function MissingMessageFallback({
   result,
@@ -77,10 +95,9 @@ export function useTranslation<
   const fn = (<TargetKey extends NamespacedMessageKeys<Messages, NestedKey>>(
     ...args: Parameters<typeof t<TargetKey>>
   ) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const result = (t as any).rich(...args, {
-      em: (text: string) => <em>{text}</em>,
-    })
+    const [key, values, formats] = args
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const result = (t as any).rich(key, withRichTags(values), formats)
 
     if (typeof result === "string" && result.includes("__fallback__")) {
       const [_key, ...rest] = result.split("__fallback__")
@@ -99,7 +116,11 @@ export function useTranslation<
   }) as unknown as T
 
   return Object.assign(fn, {
-    rich: t.rich.bind(fn),
+    rich: (...args: Parameters<typeof t.rich>) => {
+      const [key, values, formats] = args
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      return (t as any).rich(key, withRichTags(values), formats)
+    },
     markup: t.markup.bind(fn),
     raw: t.raw.bind(fn),
     has: t.has.bind(fn),

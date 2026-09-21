@@ -14,9 +14,9 @@ import {
   type XmlElement,
 } from "@storyteller-platform/epub"
 import { type EmissionResult } from "@storyteller-platform/ghost-story"
+import { transliterate as romanize } from "@storyteller-platform/transliteration"
 
 import { ctcGreedyDecode } from "../../align/ctc/greedyDecode.ts"
-import { slugify } from "../../align/slugify.ts"
 import { EmissionsReader } from "../../emit/fs.ts"
 import { parseDom } from "../../markup/parseDom.ts"
 import { segmentChapter } from "../../markup/segmentation.ts"
@@ -101,6 +101,11 @@ export async function createAlignmentSnapshot(
   }
 
   const locale = (await epub.getLanguage()) ?? new Intl.Locale("en-US")
+  async function romanized(text: string) {
+    return transliterate
+      ? `       ${(await romanize(text, { locale })).result}\n`
+      : ""
+  }
   const spine = await epub.getSpineItems()
   const manifest = await epub.getManifest()
   const mediaOverlayItems = spine
@@ -141,6 +146,8 @@ export async function createAlignmentSnapshot(
 
     let lastChapterSentence = -1
     let lastTextSrc: string | null = null
+    let audioClips: string[] = []
+    let audioOffset = 0
     const chapterSentences = segmentation.filter((s) => s.text.match(/\S/))
     const pars = findAll("par", Epub.getXmlChildren(seq))
     for (const par of pars) {
@@ -185,7 +192,7 @@ export async function createAlignmentSnapshot(
           newSnapshot += `${fragment}\n`
         }
 
-        newSnapshot += `Text:  ${transliterate ? (await slugify(textSentence, locale)).result : textSentence}\n`
+        newSnapshot += `Text:  ${textSentence}\n${await romanized(textSentence)}`
       }
 
       const audioSrc = audio[":@"]?.["@_src"]
@@ -222,10 +229,14 @@ export async function createAlignmentSnapshot(
       }
 
       if (continuation) {
-        newSnapshot = `${newSnapshot.slice(0, -1)}|${decodedSentence}\n`
+        audioClips.push(decodedSentence)
+        newSnapshot = newSnapshot.slice(0, audioOffset)
       } else {
-        newSnapshot += `Audio: ${decodedSentence}\n`
+        audioClips = [decodedSentence]
+        audioOffset = newSnapshot.length
       }
+      const audioText = audioClips.join("|")
+      newSnapshot += `Audio: ${audioText}\n${await romanized(audioText)}`
     }
 
     newSnapshot += `\n`

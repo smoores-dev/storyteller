@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server"
 
+import {
+  invalidFilterResponse,
+  validateFilter,
+} from "@/app/api/v2/shelves/validateFilter"
 import { withHasPermission } from "@/auth/auth"
 import { type GetShelfBooksOptions, getShelfBooks } from "@/database/shelves"
-import { type ShelfFilter } from "@/shelves"
+import { ShelfFilterInvalidError } from "@/shelves"
 import { type SortField } from "@/sort"
 import { type UUID } from "@/uuid"
 
@@ -52,12 +56,24 @@ export const GET = withHasPermission<Params>("bookList")(async (
 
   const filterParam = request.nextUrl.searchParams.get("filter")
   if (filterParam) {
+    let raw: unknown
     try {
-      opts.filter = JSON.parse(filterParam) as ShelfFilter
-    } catch {}
+      raw = JSON.parse(filterParam)
+    } catch {
+      return invalidFilterResponse([{ kind: "unparseable" }])
+    }
+    const validated = validateFilter(raw)
+    if (!validated.ok) return validated.response
+    opts.filter = validated.filter
   }
 
-  const books = await getShelfBooks(uuid, user.id, opts)
-
-  return NextResponse.json(books)
+  try {
+    const books = await getShelfBooks(uuid, user.id, opts)
+    return NextResponse.json(books)
+  } catch (error) {
+    if (error instanceof ShelfFilterInvalidError) {
+      return invalidFilterResponse(error.issues)
+    }
+    throw error
+  }
 })

@@ -8,6 +8,7 @@ import { type NextRequest } from "next/server"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
+import { importDebugBundle, isDebugBundle } from "@/assets/debugBundle"
 import { move } from "@/assets/fs"
 import { scan } from "@/assets/library/scanner/scan"
 import { type Candidate } from "@/assets/library/scanner/types"
@@ -96,6 +97,15 @@ const server = new Server({
 
       const newUploadPath = join(uuidDir, filename)
       await move(uploadPath, newUploadPath)
+
+      if (isZipArchive(filename) && (await isDebugBundle(newUploadPath))) {
+        await importDebugBundle({
+          zipPath: newUploadPath,
+          bookUuid,
+          collectionUuid,
+        })
+        return {}
+      }
 
       const totalFiles = parseCount(upload.metadata["totalFiles"]) ?? 1
       let claimedScan = false

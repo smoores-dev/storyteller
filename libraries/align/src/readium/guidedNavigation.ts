@@ -9,7 +9,6 @@ import {
   type Profile,
   Properties,
 } from "@readium/shared"
-import { camelCase } from "change-case"
 import { enumerate } from "itertools"
 import clockvalue from "smil-clockvalue"
 
@@ -219,20 +218,20 @@ async function parseGuidedNavigationObjects(
       const clipBeginSeconds = clockvalue(clipBegin) / 1000
       const clipEndSeconds = clockvalue(clipEnd) / 1000
 
+      const role = parseRoles(Epub.getXmlAttributes(element)["epub:type"])
+
       guidedNavObjects.push(
         new GuidedNavigationObject({
-          // Slice off the leading slash
           textref: textref,
           audioref: `${audioref}#t=${clipBeginSeconds},${clipEndSeconds}`,
+          ...(role && { role }),
         }),
       )
     }
 
     if (Epub.getXmlElementName(element) === "seq") {
       const attrs = Epub.getXmlAttributes(element)
-      const epubType = attrs["epub:type"]
-
-      const role = epubType && camelCase(epubType)
+      const role = parseRoles(attrs["epub:type"])
 
       const textref = attrs["epub:textref"]
 
@@ -249,7 +248,7 @@ async function parseGuidedNavigationObjects(
           textref: await epub.resolveHref(textref, overlayHref, {
             toRoot: true,
           }),
-          ...(role && { role: new Set([role]) }),
+          ...(role && { role }),
           children,
         }),
       )
@@ -257,6 +256,11 @@ async function parseGuidedNavigationObjects(
   }
 
   return guidedNavObjects
+}
+
+function parseRoles(epubType: string | undefined): Set<string> | null {
+  const roles = (epubType ?? "").split(/\s+/).filter((r) => r.length > 0)
+  return roles.length > 0 ? new Set(roles) : null
 }
 
 function flatten(input: GuidedNavigationObject[]): GuidedNavigationObject[] {

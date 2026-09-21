@@ -291,6 +291,86 @@ describe("align", () => {
     )
   })
 
+  // One chapter of a Traditional Chinese LibriVox reading against a zh-TW
+  // Gutenberg epub, emissions from quartznet15x5_zh, whose vocabulary is
+  // Simplified. Generate emissions with scripts/prepare-fixture.ts.
+  it("should align 朝花夕拾 chapter 1 (traditional chinese)", async (context) => {
+    await testAlignBook(
+      context,
+      "sentence",
+      join(
+        "src",
+        "align",
+        "__fixtures__",
+        "chaohuasishe",
+        "text",
+        "朝花夕拾.epub",
+      ),
+      join("src", "align", "__fixtures__", "chaohuasishe", "audio"),
+      join("src", "align", "__fixtures__", "chaohuasishe", "emissions"),
+      true,
+    )
+  })
+
+  // First LibriVox section of Masamune Hakucho's 何処へ against the Gutenberg
+  // epub, which keeps the pre-war orthography (入つて, 來, 步). Emissions from
+  // quartznet15x5_ja, converted from kinouchi/japanese-quartznet-large.
+  it("should align 何処へ section 1 (japanese)", async (context) => {
+    await testAlignBook(
+      context,
+      "sentence",
+      join("src", "align", "__fixtures__", "dokoe", "text", "何処へ.epub"),
+      join("src", "align", "__fixtures__", "dokoe", "audio"),
+      join("src", "align", "__fixtures__", "dokoe", "emissions"),
+      true,
+    )
+  })
+
+  // LibriVox chapter 1 of Fouqué's Undine against the Projekt Gutenberg text,
+  // emissions from quartznet15x5_de
+  it("should align Undine chapter 1 (german)", async (context) => {
+    await testAlignBook(
+      context,
+      "sentence",
+      join("src", "align", "__fixtures__", "undine", "text", "Undine.epub"),
+      join("src", "align", "__fixtures__", "undine", "audio"),
+      join("src", "align", "__fixtures__", "undine", "emissions"),
+    )
+  })
+
+  // LibriVox chapter 1 of Tolstoy's Детство against the Wikisource text,
+  // emissions from quartznet15x5_ru
+  it("should align Детство chapter 1 (russian)", async (context) => {
+    await testAlignBook(
+      context,
+      "sentence",
+      join("src", "align", "__fixtures__", "detstvo", "text", "Детство.epub"),
+      join("src", "align", "__fixtures__", "detstvo", "audio"),
+      join("src", "align", "__fixtures__", "detstvo", "emissions"),
+      true,
+    )
+  })
+
+  // LibriVox preface (مقدمة) of al-Kawakibi's طبائع الاستبداد against the
+  // Wikisource text, which carries diacritics, emissions from quartznet15x5_ar
+  it("should align طبائع الاستبداد preface (arabic)", async (context) => {
+    await testAlignBook(
+      context,
+      "sentence",
+      join(
+        "src",
+        "align",
+        "__fixtures__",
+        "tabai-al-istibdad",
+        "text",
+        "طبائع الاستبداد.epub",
+      ),
+      join("src", "align", "__fixtures__", "tabai-al-istibdad", "audio"),
+      join("src", "align", "__fixtures__", "tabai-al-istibdad", "emissions"),
+      true,
+    )
+  })
+
   // This fixture doesn't have CTC emissions yet; restore to a plain `it` once
   // they're generated and checked in
   itLocally("should align Why I Cant Sleep (mandarin)", async (context) => {

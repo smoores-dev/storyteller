@@ -1045,6 +1045,7 @@ fn spawn_server(
                     | "NODE_OPTIONS"
                     | "READIUM_PORT"
                     | "ERROR_ALIGN_NATIVE_BINDING"
+                    | "MLX_AUDIO_NATIVE_BINDING"
             )
         {
             cmd.env_remove(key);
@@ -1071,6 +1072,13 @@ fn spawn_server(
                 .join("work-dist")
                 .join("@storyteller-platform")
                 .join("align"),
+        )
+        .env(
+            "MLX_AUDIO_NATIVE_BINDING",
+            web_dir
+                .join("work-dist")
+                .join("@storyteller-platform")
+                .join("mlx-audio"),
         )
         .stdin(Stdio::null())
         .stdout(writer.try_clone()?)

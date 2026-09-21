@@ -5,7 +5,7 @@ import { AppSidebar } from "@v3/_/components/app-sidebar"
 import { FloatingBookPanelProvider } from "@v3/_/components/books/FloatingBookPanel"
 import { FloatingDock } from "@v3/_/components/floating/FloatingDock"
 import { PathMismatchBanner } from "@v3/_/components/path-mismatch-banner"
-import { ProcessingToast } from "@v3/_/components/processing/ProcessingToast"
+import { ProcessingWidget } from "@v3/_/components/processing/ProcessingWidget"
 import { MiniPlayer } from "@v3/_/components/reader/MiniPlayer/MiniPlayer"
 import { SidebarInset, SidebarProvider } from "@v3/_/components/ui/sidebar"
 import { UserPreferencesProvider } from "@v3/_/components/user-preferences-provider"
@@ -34,21 +34,24 @@ export default async function AppLayout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
   await ensureSidebarDefaults(user.id)
 
-  const [sidebarGroups, preferenceDefaults, pendingAnnouncements, pathAnchor] =
-    await Promise.all([
-      getSidebarGroups(user.id),
-      getPreferenceDefaults(),
-      getPendingAnnouncements(user.id),
-      user.permissions.settingsUpdate ? getDataDirAnchor() : null,
-    ])
+  const [
+    sidebarGroups,
+    preferenceDefaults,
+    pendingAnnouncements,
+    pathAnchor,
+    userSettings,
+  ] = await Promise.all([
+    getSidebarGroups(user.id),
+    getPreferenceDefaults(),
+    getPendingAnnouncements(user),
+    user.permissions.settingsUpdate ? getDataDirAnchor() : null,
+    getUserSettings(user.id),
+  ])
 
   const pathMismatch =
     pathAnchor !== null && pathAnchor !== DATA_DIR ? pathAnchor : null
 
-  const preferences = resolveUserPreferences(
-    await getUserSettings(user.id),
-    preferenceDefaults,
-  )
+  const preferences = resolveUserPreferences(userSettings, preferenceDefaults)
 
   return (
     <UserPreferencesProvider
@@ -83,13 +86,13 @@ export default async function AppLayout({
                   currentDataDir={DATA_DIR}
                 />
               )}
-              {children}
+              <div className="flex min-h-0 flex-1 flex-col">{children}</div>
             </SidebarInset>
           </FloatingBookPanelProvider>
         </EscapeCascadeProvider>
-        {user.permissions.bookProcess && <ProcessingToast />}
         <AnnouncementModal pending={pendingAnnouncements} />
         <FloatingDock>
+          {user.permissions.bookProcess && <ProcessingWidget />}
           <MiniPlayer />
         </FloatingDock>
       </SidebarProvider>

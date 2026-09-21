@@ -5,8 +5,110 @@ import { enumerate } from "itertools"
 
 import { Epub, type ManifestItem } from "@storyteller-platform/epub"
 
-import { type SentenceRange, type WordRange } from "../getSentenceRanges.ts"
+import {
+  type RangeState,
+  type SentenceRange,
+  type WordRange,
+} from "../getSentenceRanges.ts"
 import { TextFragmentFactory } from "../textFragments.ts"
+
+export const STORYTELLER_VOCABULARY =
+  "https://storyteller-platform.gitlab.io/storyteller/docs/vocabulary"
+
+export const SMIL_PREFIX = `storyteller: ${STORYTELLER_VOCABULARY}`
+
+export function stateType(state: RangeState): string {
+  return `storyteller:${state}`
+}
+
+export const AUDIO_ONLY_TYPE = "storyteller:audio-only"
+
+export type ChapterHole = {
+  sentenceId: number
+  position: "before" | "after"
+  audiofile: string
+  start: number
+  end: number
+}
+
+function holePar(
+  chapter: ManifestItem,
+  fragment: string,
+  id: string,
+  hole: { audiofile: string; start: number; end: number },
+) {
+  return Epub.createXmlElement(
+    "par",
+    {
+      id,
+      "epub:type": AUDIO_ONLY_TYPE,
+    },
+    [
+      Epub.createXmlElement("text", {
+        src: `../${chapter.href}#${fragment}`,
+      }),
+      Epub.createXmlElement("audio", {
+        src: `../Audio/${basename(hole.audiofile)}`,
+        clipBegin: `${hole.start.toFixed(3)}s`,
+        clipEnd: `${hole.end.toFixed(3)}s`,
+      }),
+    ],
+  )
+}
+
+function holesAround(
+  chapter: ManifestItem,
+  sentenceId: number,
+  fragment: string,
+  holes: ChapterHole[],
+  position: "before" | "after",
+) {
+  return holes
+    .filter(
+      (hole) => hole.sentenceId === sentenceId && hole.position === position,
+    )
+    .map((hole, index) =>
+      holePar(
+        chapter,
+        fragment,
+        `${chapter.id}-s${sentenceId}-${position}${index}`,
+        hole,
+      ),
+    )
+}
+
+export function createAudioChapterOverlay(
+  chapter: ManifestItem,
+  headingId: string,
+  holes: { audiofile: string; start: number; end: number }[],
+) {
+  return [
+    Epub.createXmlElement(
+      "smil",
+      {
+        xmlns: "http://www.w3.org/ns/SMIL",
+        "xmlns:epub": "http://www.idpf.org/2007/ops",
+        version: "3.0",
+        "epub:prefix": SMIL_PREFIX,
+      },
+      [
+        Epub.createXmlElement("body", {}, [
+          Epub.createXmlElement(
+            "seq",
+            {
+              id: `${chapter.id}_overlay`,
+              "epub:textref": `../${chapter.href}`,
+              "epub:type": "chapter",
+            },
+            holes.map((hole, index) =>
+              holePar(chapter, headingId, `${chapter.id}-a${index}`, hole),
+            ),
+          ),
+        ]),
+      ],
+    ),
+  ]
+}
 
 export function createMediaOverlay(
   chapter: ManifestItem,
@@ -16,6 +118,7 @@ export function createMediaOverlay(
   sentenceIdToBlockFragment: Map<number, string> | null,
   sentenceIdToFragment: Map<number, string>,
   wordIdToFragment: Map<number, Map<number, string>>,
+  holes: ChapterHole[] = [],
 ) {
   const subSequences = sentenceIdToBlockFragment
     ? createTextRangeLargeSequences(
@@ -26,6 +129,7 @@ export function createMediaOverlay(
         sentenceIdToBlockFragment,
         sentenceIdToFragment,
         wordIdToFragment,
+        holes,
       )
     : createTextRangeSmallSequences(
         chapter,
@@ -34,6 +138,7 @@ export function createMediaOverlay(
         wordRanges,
         sentenceIdToFragment,
         wordIdToFragment,
+        holes,
       )
 
   return [
@@ -43,6 +148,7 @@ export function createMediaOverlay(
         xmlns: "http://www.w3.org/ns/SMIL",
         "xmlns:epub": "http://www.idpf.org/2007/ops",
         version: "3.0",
+        "epub:prefix": SMIL_PREFIX,
       },
       [
         Epub.createXmlElement("body", {}, [
@@ -69,6 +175,7 @@ function createTextRangeLargeSequences(
   sentenceIdToBlockFragment: Map<number, string>,
   sentenceIdToFragment: Map<number, string>,
   wordIdToFragment: Map<number, Map<number, string>>,
+  holes: ChapterHole[],
 ) {
   const blockStarts = sentenceIdToBlockFragment
     .entries()
@@ -98,6 +205,7 @@ function createTextRangeLargeSequences(
         wordRanges,
         sentenceIdToFragment,
         wordIdToFragment,
+        holes,
       ),
     )
   })
@@ -110,70 +218,88 @@ function createTextRangeSmallSequences(
   wordRanges: Map<number, WordRange[]>,
   sentenceIdToFragment: Map<number, string>,
   wordIdToFragment: Map<number, Map<number, string>>,
+  holes: ChapterHole[],
 ) {
-  return sentenceRanges
-    .map((sentenceRange) => {
-      if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
-        // A sentence cut across audio files gets one par per clip, all pointing
-        // at the same text fragment
-        return sentenceRange.audioRanges.map((range, index) =>
+  return sentenceRanges.flatMap((sentenceRange) => {
+    const fragment = sentenceIdToFragment.get(sentenceRange.id) ?? ""
+    const before = holesAround(
+      chapter,
+      sentenceRange.id,
+      fragment,
+      holes,
+      "before",
+    )
+    const after = holesAround(
+      chapter,
+      sentenceRange.id,
+      fragment,
+      holes,
+      "after",
+    )
+    return [...before, ...sentenceElements(sentenceRange), ...after]
+  })
+
+  function sentenceElements(sentenceRange: SentenceRange) {
+    if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
+      return sentenceRange.audioRanges.map((range, index) =>
+        Epub.createXmlElement(
+          "par",
+          {
+            id:
+              index === 0
+                ? `${chapter.id}-s${sentenceRange.id}`
+                : `${chapter.id}-s${sentenceRange.id}-a${index}`,
+            "epub:type": stateType(sentenceRange.state),
+          },
+          [
+            Epub.createXmlElement("text", {
+              src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
+            }),
+            Epub.createXmlElement("audio", {
+              src: `../Audio/${basename(range.audiofile)}`,
+              clipBegin: `${range.start.toFixed(3)}s`,
+              clipEnd: `${range.end.toFixed(3)}s`,
+            }),
+          ],
+        ),
+      )
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const words = wordRanges.get(sentenceRange.id)!
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
+
+    return [
+      Epub.createXmlElement(
+        "seq",
+        {
+          id: `${chapter.id}-s${sentenceRange.id}`,
+          "epub:type": `text-range-small ${stateType(sentenceRange.state)}`,
+          "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
+        },
+        words.map((word) =>
           Epub.createXmlElement(
             "par",
             {
-              id:
-                index === 0
-                  ? `${chapter.id}-s${sentenceRange.id}`
-                  : `${chapter.id}-s${sentenceRange.id}-a${index}`,
+              id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
+              "epub:type": stateType(word.state),
             },
             [
               Epub.createXmlElement("text", {
-                src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
+                src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
               }),
               Epub.createXmlElement("audio", {
-                src: `../Audio/${basename(range.audiofile)}`,
-                clipBegin: `${range.start.toFixed(3)}s`,
-                clipEnd: `${range.end.toFixed(3)}s`,
+                src: `../Audio/${basename(word.audiofile)}`,
+                clipBegin: `${word.start.toFixed(3)}s`,
+                clipEnd: `${word.end.toFixed(3)}s`,
               }),
             ],
           ),
-        )
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const words = wordRanges.get(sentenceRange.id)!
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
-
-      return [
-        Epub.createXmlElement(
-          "seq",
-          {
-            id: `${chapter.id}-s${sentenceRange.id}`,
-            "epub:type": "text-range-small",
-            "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-          },
-          words.map((word) =>
-            Epub.createXmlElement(
-              "par",
-              {
-                id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
-              },
-              [
-                Epub.createXmlElement("text", {
-                  src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
-                }),
-                Epub.createXmlElement("audio", {
-                  src: `../Audio/${basename(word.audiofile)}`,
-                  clipBegin: `${word.start.toFixed(3)}s`,
-                  clipEnd: `${word.end.toFixed(3)}s`,
-                }),
-              ],
-            ),
-          ),
         ),
-      ]
-    })
-    .flat()
+      ),
+    ]
+  }
 }
 
 export function buildFragmentMaps(

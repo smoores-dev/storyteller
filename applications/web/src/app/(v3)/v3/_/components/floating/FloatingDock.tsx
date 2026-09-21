@@ -10,6 +10,7 @@ import {
   type MiniPlayerCorner,
   selectPreference,
 } from "@/store/slices/preferencesSlice"
+import { selectProcessingToastCollapsed } from "@/store/slices/uiSettingsSlice"
 
 type FloatingDockContextValue = {
   corner: MiniPlayerCorner
@@ -34,6 +35,7 @@ export function FloatingDock({ children }: { children: React.ReactNode }) {
   const miniPlayerCollapsed = useAppSelector((state) =>
     selectPreference(state, "minimizedMiniPlayer"),
   )
+  const processingCollapsed = useAppSelector(selectProcessingToastCollapsed)
   const sidebar = useSidebarMaybe()
   const boundsRef = useRef<HTMLDivElement>(null)
 
@@ -43,7 +45,7 @@ export function FloatingDock({ children }: { children: React.ReactNode }) {
   ]
   const clearsSidebar = !!sidebar && !sidebar.isMobile
 
-  const layoutKey = `${miniPlayerCollapsed}`
+  const layoutKey = `${miniPlayerCollapsed}:${processingCollapsed}`
 
   return (
     <FloatingDockContext.Provider value={{ corner, boundsRef, layoutKey }}>

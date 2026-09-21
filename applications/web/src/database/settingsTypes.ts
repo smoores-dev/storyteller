@@ -1,8 +1,13 @@
 import { z } from "zod"
 
 import {
+  ALIGNERS,
+  CTC_MODEL_FAMILIES,
   LANGUAGES,
   RECOGNITION_ENGINES,
+  CTC_DEVICES,
+  CTC_DTYPES,
+  CTC_ENGINES,
   WHISPER_MODELS,
 } from "@storyteller-platform/ghost-story/constants"
 
@@ -16,6 +21,19 @@ import { PreferenceDefaultsSchema } from "@/database/userPreferencesTypes"
 import { type UUID } from "@/uuid"
 
 export const TranscriptionEngineSchema = z.enum(RECOGNITION_ENGINES)
+
+export const AlignerSchema = z.enum(ALIGNERS)
+export type Aligner = z.infer<typeof AlignerSchema>
+
+export const CtcEngineSchema = z.enum(CTC_ENGINES)
+export type CtcEngine = z.infer<typeof CtcEngineSchema>
+
+export const CtcDeviceSchema = z.enum(CTC_DEVICES)
+export type CtcDevice = z.infer<typeof CtcDeviceSchema>
+
+export const CtcModelFamilySchema = z.enum(CTC_MODEL_FAMILIES)
+export const CtcDtypeSchema = z.enum(CTC_DTYPES)
+export type CtcModelFamily = z.infer<typeof CtcModelFamilySchema>
 
 export const WhisperModelSchema = z.enum(WHISPER_MODELS)
 export type WhisperModel = z.infer<typeof WhisperModelSchema>
@@ -67,20 +85,26 @@ export function defaultMetadataFieldOverrides(
   ) as MetadataFieldOverrides
 }
 
-export const ReadaloudLocationTypeSchema = z.enum([
+export const READALOUD_LOCATION_TYPES = [
   "SUFFIX",
   "SIBLING_FOLDER",
   "INTERNAL",
   "CUSTOM_FOLDER",
-])
+] as const
 
-export const Epub2ImportStrategySchema = z.enum([
+export type ReadaloudLocationType = (typeof READALOUD_LOCATION_TYPES)[number]
+
+export const ReadaloudLocationTypeSchema = z.enum(READALOUD_LOCATION_TYPES)
+
+export const EPUB2_IMPORT_STRATEGIES = [
   "backup-and-convert",
   "convert-alongside",
   "replace",
   "skip",
-])
-export type Epub2ImportStrategy = z.infer<typeof Epub2ImportStrategySchema>
+] as const
+export type Epub2ImportStrategy = (typeof EPUB2_IMPORT_STRATEGIES)[number]
+
+export const Epub2ImportStrategySchema = z.enum(EPUB2_IMPORT_STRATEGIES)
 
 export const EPUB_VERSION_PLACEHOLDER = "{version}"
 
@@ -257,7 +281,12 @@ export const ENCRYPTED_SETTING_KEYS = [
   "amazonTranscribeSecretAccessKey",
   "openAiApiKey",
   "deepgramApiKey",
+  // "ctcServerApiKey",
 ] as const
+
+export const ALIGNMENT_GRANULARITY_OPTIONS = ["word", "sentence"] as const
+export type AlignmentGranularity =
+  (typeof ALIGNMENT_GRANULARITY_OPTIONS)[number]
 
 export type EncryptedSettingKey = (typeof ENCRYPTED_SETTING_KEYS)[number]
 
@@ -287,7 +316,17 @@ export const SettingsSchema = z.object({
   // Audio settings
   codec: z.string().nullable(),
   bitrate: z.string().nullable(),
-  maxTrackLength: z.coerce.number().nullable(),
+  maxTrackLength: z.coerce.number<number>().nullable(),
+  aligner: AlignerSchema.nullable(),
+  alignmentGranularity: z.enum(ALIGNMENT_GRANULARITY_OPTIONS).nullable(),
+  alignmentAutoExclude: z.boolean().nullable(),
+  ctcEngine: CtcEngineSchema.nullable(),
+  ctcDevice: CtcDeviceSchema.nullable(),
+  ctcModel: CtcModelFamilySchema.nullable(),
+  ctcDtype: CtcDtypeSchema.nullable(),
+  ctcBatchSize: z.coerce.number<number>().nullable(),
+  // ctcServerUrl: z.string().nullable(),
+  // ctcServerApiKey: z.string().nullable(),
   // Transcription settings
   transcriptionEngine: TranscriptionEngineSchema.nullable(),
   whisperModel: WhisperModelSchema.nullable(),
@@ -355,6 +394,68 @@ export const SettingsSchema = z.object({
   preferenceDefaults: PreferenceDefaultsSchema.optional(),
 })
 export type Settings = z.infer<typeof SettingsSchema>
+
+export const SETTINGS_DEFAULTS = {
+  smtpHost: "",
+  smtpPort: 587,
+  smtpUsername: "",
+  smtpPassword: "",
+  smtpFrom: "",
+  smtpSsl: true,
+  smtpRejectUnauthorized: true,
+  libraryName: "",
+  webUrl: "",
+  importMode: "reference",
+  codec: null,
+  bitrate: null,
+  maxTrackLength: 2,
+  aligner: "whisper",
+  alignmentGranularity: "sentence",
+  alignmentAutoExclude: true,
+  ctcEngine: "ctc-local",
+  ctcDevice: null,
+  ctcModel: "quartznet15x5",
+  ctcDtype: null,
+  ctcBatchSize: null,
+  transcriptionEngine: "whisper.cpp",
+  whisperModel: "tiny",
+  whisperThreads: 1,
+  autoDetectLanguage: false,
+  whisperCpuFallback: null,
+  whisperServerUrl: null,
+  whisperServerApiKey: null,
+  googleCloudApiKey: null,
+  azureSubscriptionKey: null,
+  azureServiceRegion: null,
+  amazonTranscribeRegion: null,
+  amazonTranscribeAccessKeyId: null,
+  amazonTranscribeSecretAccessKey: null,
+  amazonTranscribeBucketName: null,
+  openAiApiKey: null,
+  openAiOrganization: null,
+  openAiBaseUrl: null,
+  openAiModelName: null,
+  deepgramApiKey: null,
+  deepgramModel: "nova-3",
+  parallelTranscodes: 1,
+  parallelTranscribes: 1,
+  authProviders: [],
+  disablePasswordLogin: false,
+  readaloudLocationType: "SUFFIX",
+  readaloudLocation: " (readaloud)",
+  maxUploadChunkSize: null,
+  opdsEnabled: true,
+  opdsPageSize: 50,
+  opdsFormat: null,
+  scanCronExpression: null,
+  backupCronExpression: null,
+  backupRetentionCount: null,
+  logRetentionDays: null,
+  metadataFieldOverrides: defaultMetadataFieldOverrides(),
+  epub2ImportStrategy: "backup-and-convert",
+  epub2BackupSuffix: DEFAULT_EPUB_SUFFIX_TEMPLATE,
+  cleanCacheAfterReadaloud: false,
+} satisfies Settings
 
 // settings-only schema for config file validation;
 // importRules / importPath are extracted before this runs

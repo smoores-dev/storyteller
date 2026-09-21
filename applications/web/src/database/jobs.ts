@@ -1,6 +1,13 @@
-import { type Selectable, sql } from "kysely"
+import { type Selectable } from "kysely"
+import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
-import { JobEvents } from "@/jobEvents"
+import {
+  ACTIVE_JOB_STATUSES,
+  type JobEvent,
+  JobEvents,
+  type JobStatus,
+} from "@/jobEvents"
+import { type JobListFilter, jobListStatuses } from "@/jobList"
 import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
 import type { RestartMode } from "@/work/distributor"
@@ -17,50 +24,41 @@ import { type DB } from "./schema"
 
 export type JobType = "book_align"
 
-export const JOB_STATUSES = [
-  "QUEUED",
-  "RUNNING",
-  "PAUSED",
-  "DONE",
-  "ERROR",
-  "CANCELED",
-] as const
-
-export type JobStatus = (typeof JOB_STATUSES)[number]
-
-export const ACTIVE_JOB_STATUSES = [
-  "QUEUED",
-  "RUNNING",
-  "PAUSED",
-] as const satisfies JobStatus[]
-export const TERMINAL_JOB_STATUSES = [
-  "DONE",
-  "ERROR",
-  "CANCELED",
-] as const satisfies JobStatus[]
-
 type JobRow = Selectable<DB["job"]>
 
 export type Job = JobRow
 
-export type PublicJob = Omit<Job, "config"> & {
+export type DisplayJob = Omit<Job, "config"> & {
   config: RunConfigSummary | null
   bookTitle: string | null
   alignmentGrade: AlignmentGrade | null
-  alignmentScore: number | null
+  // alignmentScore: number | null
+  alignmentReportUuid: UUID | null
+  alignmentSentenceCoverage: number | null
+  alignmentAudioCoverage: number | null
 }
 
-export function toPublicJob(
+export function toDisplayJob(
   job: Job,
   bookTitle: string | null = null,
-  alignment?: { grade: AlignmentGrade | null; score: number | null },
-): PublicJob {
+  alignment?: {
+    grade: AlignmentGrade | null
+    score: number | null
+    sentenceCoverage: number | null
+    audioCoverage: number | null
+    reportUuid: UUID | null
+    hasReport: boolean
+  },
+): DisplayJob {
   return {
     ...job,
     config: summarizeRunConfig(job.config),
     bookTitle,
     alignmentGrade: alignment?.grade ?? null,
-    alignmentScore: alignment?.score ?? null,
+    // alignmentScore: alignment?.score ?? null,
+    alignmentSentenceCoverage: alignment?.sentenceCoverage ?? null,
+    alignmentAudioCoverage: alignment?.audioCoverage ?? null,
+    alignmentReportUuid: alignment?.reportUuid ?? null,
   }
 }
 
@@ -83,11 +81,11 @@ export type JobUpdate = Partial<{
   stats: JobStats
 }>
 
-function emit(type: "jobUpdated" | "jobCreated" | "jobDeleted", jobUuid: UUID) {
-  JobEvents.emit("message", { type, jobUuid })
+function emit(event: JobEvent) {
+  JobEvents.emit("message", event)
 }
 
-export async function createJob(job: NewJob): Promise<Job> {
+export async function createJob(job: NewJob): Promise<DisplayJob> {
   const row = await db
     .insertInto("job")
     .values({
@@ -98,11 +96,15 @@ export async function createJob(job: NewJob): Promise<Job> {
       position: job.position,
       status: "QUEUED",
     })
-    .returningAll()
+    .returning("uuid")
     .executeTakeFirstOrThrow()
 
-  emit("jobCreated", row.uuid)
-  return row
+  const createdJob = await getDisplayJob(row.uuid)
+  if (!createdJob) {
+    throw new Error("Job not found")
+  }
+  emit({ type: "jobCreated", jobUuid: row.uuid, payload: createdJob })
+  return createdJob
 }
 
 export async function getJob(uuid: UUID): Promise<Job | null> {
@@ -131,41 +133,61 @@ export async function getJobs(filter?: {
   return rows
 }
 
-export type JobSort = "finishedAt" | "title" | "status"
-
-export async function getDisplayJobs(filter?: {
-  statuses?: readonly JobStatus[]
-  bookUuid?: UUID
-  search?: string
-  sort?: JobSort
-  order?: "asc" | "desc"
-  limit?: number
-  offset?: number
-}): Promise<PublicJob[]> {
-  let query = db
+function getDisplayJobBase() {
+  return db
     .selectFrom("job")
     .leftJoin("book", "book.uuid", "job.bookUuid")
     .selectAll("job")
     .select("book.title as bookTitle")
-    .select((eb) => [
-      eb
-        .selectFrom("alignmentReport")
-        .select("grade")
-        .whereRef("alignmentReport.jobUuid", "=", "job.uuid")
-        .orderBy("createdAt", "desc")
-        .limit(1)
-        .as("alignmentGrade"),
-      eb
-        .selectFrom("alignmentReport")
-        .select("score")
-        .whereRef("alignmentReport.jobUuid", "=", "job.uuid")
-        .orderBy("createdAt", "desc")
-        .limit(1)
-        .as("alignmentScore"),
-    ])
+    .select((eb) =>
+      jsonObjectFrom(
+        eb
+          .selectFrom("alignmentReport")
+          .select((eb) => [
+            "uuid",
+            "grade",
+            "sentenceCoverage",
+            "audioCoverage",
+            eb
+              .case()
+              .when("report", "is not", null)
+              .then(true)
+              .else(false)
+              .end()
+              .as("hasReport"),
+          ])
+          .whereRef("alignmentReport.jobUuid", "=", "job.uuid")
+          .orderBy("createdAt", "desc"),
+      ).as("alignment"),
+    )
+}
 
-  if (filter?.statuses?.length) {
-    query = query.where("job.status", "in", filter.statuses)
+export async function getDisplayJob(uuid: UUID): Promise<DisplayJob | null> {
+  const row = await getDisplayJobBase()
+    .where("job.uuid", "=", uuid)
+    .executeTakeFirst()
+  if (!row) {
+    return null
+  }
+  const { bookTitle, alignment, ...job } = row
+  return toDisplayJob(job, bookTitle ?? null, {
+    grade: alignment?.grade ?? null,
+    sentenceCoverage: alignment?.sentenceCoverage ?? null,
+    audioCoverage: alignment?.audioCoverage ?? null,
+    reportUuid: alignment?.hasReport ? (alignment.uuid ?? null) : null,
+    hasReport: alignment?.hasReport ?? false,
+    score: null,
+  })
+}
+
+export async function getDisplayJobs(
+  filter?: JobListFilter,
+): Promise<DisplayJob[]> {
+  let query = getDisplayJobBase()
+
+  const statuses = jobListStatuses(filter)
+  if (statuses) {
+    query = query.where("job.status", "in", statuses)
   }
   if (filter?.bookUuid) {
     query = query.where("job.bookUuid", "=", filter.bookUuid)
@@ -182,39 +204,51 @@ export async function getDisplayJobs(filter?: {
   } else if (filter?.sort === "finishedAt") {
     query = query.orderBy("job.finishedAt", order)
   } else {
-    query = query
-      .orderBy(
-        sql<number>`case job.status when 'RUNNING' then 0 when 'PAUSED' then 1 else 2 end`,
-      )
-      .orderBy("job.position", "asc")
-      .orderBy("job.createdAt", "asc")
+    query = query.orderBy("job.position", "asc")
   }
+  query = query.orderBy("job.createdAt", "asc").orderBy("job.uuid", "asc")
 
+  const limit = filter?.limit
+  const offset = filter?.offset
   const rows = await query
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    .$if(!!filter?.limit, (qb) => qb.limit(filter!.limit!))
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    .$if(!!filter?.offset, (qb) => qb.offset(filter!.offset!))
+    .$if(limit !== undefined, (qb) => qb.limit(limit ?? 0))
+    .$if(offset !== undefined, (qb) => qb.offset(offset ?? 0))
     .execute()
 
-  return rows.map(({ bookTitle, alignmentGrade, alignmentScore, ...row }) =>
-    toPublicJob(row, bookTitle ?? null, {
-      grade: alignmentGrade ?? null,
-      score: alignmentScore ?? null,
+  return rows.map(({ bookTitle, alignment, ...row }) =>
+    toDisplayJob(row, bookTitle ?? null, {
+      grade: alignment?.grade ?? null,
+      score: null,
+      sentenceCoverage: alignment?.sentenceCoverage ?? null,
+      audioCoverage: alignment?.audioCoverage ?? null,
+      reportUuid: alignment?.hasReport ? (alignment.uuid ?? null) : null,
+      hasReport: alignment?.hasReport ?? false,
     }),
   )
 }
 
-export async function getActiveJobForBook(bookUuid: UUID): Promise<Job | null> {
+export async function getActiveJobForBook(
+  bookUuid: UUID,
+): Promise<DisplayJob | null> {
   const row = await db
     .selectFrom("job")
-    .selectAll()
+    .select("uuid")
     .where("bookUuid", "=", bookUuid)
     .where("status", "in", ACTIVE_JOB_STATUSES)
     .orderBy("createdAt", "desc")
     .limit(1)
     .executeTakeFirst()
-  return row ?? null
+
+  if (!row) {
+    return null
+  }
+
+  const job = await getDisplayJob(row.uuid)
+  if (!job) {
+    return null
+  }
+
+  return job
 }
 
 export async function updateJob(uuid: UUID, patch: JobUpdate): Promise<Job> {
@@ -230,7 +264,10 @@ export async function updateJob(uuid: UUID, patch: JobUpdate): Promise<Job> {
     .returningAll()
     .executeTakeFirstOrThrow()
 
-  emit("jobUpdated", row.uuid)
+  const display = await getDisplayJob(row.uuid)
+  if (display) {
+    emit({ type: "jobUpdated", jobUuid: row.uuid, payload: display })
+  }
 
   return row
 }
@@ -246,18 +283,22 @@ export async function getNextJobPosition(): Promise<number> {
   return (row?.position ?? -1) + 1
 }
 
-export async function reorderQueuedJobs(orderedUuids: UUID[]): Promise<void> {
+export async function reorderActiveJobs(orderedUuids: UUID[]): Promise<void> {
   await db.transaction().execute(async (tr) => {
     for (const [index, uuid] of orderedUuids.entries()) {
       await tr
         .updateTable("job")
         .set({ position: index })
         .where("uuid", "=", uuid)
-        .where("status", "=", "QUEUED")
+        .where("status", "in", ACTIVE_JOB_STATUSES)
         .execute()
     }
   })
-  for (const uuid of orderedUuids) emit("jobUpdated", uuid)
+  const reordered = await getDisplayJobs({ statuses: ACTIVE_JOB_STATUSES })
+  for (const job of reordered) {
+    if (!orderedUuids.includes(job.uuid)) continue
+    emit({ type: "jobUpdated", jobUuid: job.uuid, payload: job })
+  }
 }
 
 export async function getFinishedJobStats(

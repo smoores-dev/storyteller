@@ -8,6 +8,13 @@
       "p3": "We welcome suggestions, but we're already trying to contain our own scope-creep impulses. New features are unlikely to be added until after v3 is official.",
       "p4": "That said, we are very eager for bug reports, input on ergonomics, and feedback about what is confusing.",
       "p5": "We're very happy to entertain merge requests, but please first raise them as a feature request on Discord or GitLab so we can discuss it. Things are changing very rapidly behind the scenes and we want to avoid duplicated effort."
+    },
+    "ctc-aligner": {
+      "title": "Try the new CTC aligner",
+      "p1": "Storyteller can now align a book by matching its text straight to the audio, without transcribing the narration first.",
+      "p2": "It is more accurate and gives better word timings. You can switch now, or change it later under Settings, Processing.",
+      "keep": "Keep Whisper",
+      "switch": "Switch to CTC"
     }
   },
   "Layout": {
@@ -429,12 +436,15 @@
     "setStatus": "Set status",
     "upgradeEpub": "Upgrade EPUB",
     "clearCache": "Clear cache",
+    "recomputeAlignmentReports": "Recompute alignment report",
+    "recomputeAlignmentReportsDone": "Recomputed {count, number} alignment report(s)",
+    "recomputeAlignmentReportsFailed": "Failed to recompute alignment reports",
     "merge": "Merge books",
     "mergeInto": "Merge into",
     "deleteTitle": "Delete {count, number} book(s)?",
     "deleteDescription": "Files in your assets folder will be deleted. This cannot be undone.",
     "clearCacheTitle": "Clear cache for {count, number} book(s)?",
-    "clearCacheDescription": "Deletes processed audio and transcription cache files. Source files are kept.",
+    "clearCacheDescription": "Deletes processed audio, transcripts and alignment data from the cache. Source files are kept.",
     "processTitle": "Begin processing {count, number} book(s)?",
     "processDescription": "Starts the audiobook processing pipeline for the selected books.",
     "upgradeTitle": "Upgrade EPUB for {count, number} book(s)?",
@@ -485,6 +495,10 @@
     "condition": "Condition",
     "andGroup": "AND group",
     "orGroup": "OR group",
+    "addCondition": "Add condition",
+    "add": "Add",
+    "and": "AND",
+    "or": "OR",
     "not": "NOT",
     "allMatch": "all match",
     "anyMatch": "any match",
@@ -579,6 +593,20 @@
     },
     "selectValues": "Search values..."
   },
+  "ShelfFilterIssues": {
+    "retiredField": "<field>{old}</field> is no longer available. Use <field>{new}</field> instead.",
+    "retiredFieldNoReplacement": "<field>{old}</field> is no longer available.",
+    "unknownField": "{field} is not a field this version of Storyteller knows.",
+    "invalidCondition": "The condition on <field>{field}</field> is no longer valid: {message}",
+    "unparseable": "The stored filter could not be read.",
+    "retiredFieldShort": "is no longer available.",
+    "unknownFieldShort": "is not a field this version of Storyteller knows.",
+    "shelfBroken": "This shelf's filter needs an update",
+    "openToFix": "Open the shelf to fix it.",
+    "editShelf": "Edit shelf",
+    "useReplacement": "Use <field>{new}</field>",
+    "fixConditions": "Fix the highlighted conditions to see a preview"
+  },
   "ShelfEditor": {
     "editTitle": "Edit Shelf",
     "createTitle": "Create Shelf",
@@ -622,6 +650,7 @@
     "exportSettings": "Export settings as JSON",
     "lockedSettings": "Some settings are managed via the configuration file and cannot be changed here.",
     "lockedSettingTooltip": "This setting is locked because it is managed via the settings configuration file.",
+    "advanced": "Advanced",
     "settingsSavedSuccessfully": "Settings saved successfully",
     "failedToSaveSettings": "Failed to save settings",
     "searchSettings": "Search settings...",
@@ -744,11 +773,11 @@
             "locationTypeCustomFolder": "In a custom folder",
             "locationTypeInternal": "In the Storyteller internal folder",
             "cleanCacheAfterReadaloud": "Clean up cache after alignment",
-            "cleanCacheAfterReadaloudDescription": "Automatically delete processed audio and transcription files after a readaloud is successfully created. Saves disk space, but means a full restart is needed if you want to re-align later.",
+            "cleanCacheAfterReadaloudDescription": "Automatically delete processed audio, transcripts and alignment data after a readaloud is successfully created. Saves disk space, but means a full restart is needed if you want to re-align later.",
             "clearCacheNow": "Clear cache for all books",
-            "clearCacheNowDescription": "Delete all processed audio and transcription files across the library now. Original files are left untouched.",
+            "clearCacheNowDescription": "Delete all processed audio, transcripts and alignment data across the library now. Original files are left untouched.",
             "clearCacheConfirmTitle": "Clear cache for all books",
-            "clearCacheConfirmDescription": "Delete processed audio and transcription files for every book in the library? This frees disk space but means a full restart is needed to re-align books later. Original files are left untouched.",
+            "clearCacheConfirmDescription": "Delete processed audio, transcripts and alignment data for every book in the library? This frees disk space but means a full restart is needed to re-align books later. Original files are left untouched.",
             "clearCacheConfirm": "Clear cache",
             "clearCacheSuccess": "Cleared processed cache",
             "clearCacheError": "Failed to clear cache"
@@ -772,9 +801,27 @@
             "bitrateDefault": "Default (32 Kb/s)",
             "mp3BitrateDefault": "Default"
           },
-          "transcription": {
-            "title": "Transcription Settings",
-            "description": "Configure how Storyteller transcribes audiobook narration to text. By default, transcription runs locally using whisper.cpp. You can also use paid third-party services.",
+          "alignment": {
+            "title": "Alignment",
+            "description": "Choose how Storyteller alignes the book text with the audiobook narration.",
+            "aligner": "Aligner",
+            "aligners": {
+              "whisper": {
+                "label": "Transcription-based aligment",
+                "description": "Transcribes the narration directly to text, then matches that transcript to the book text using <error_link>Error Align</error_link>. Well tested, and has many options for offloading transcription to a third-party service."
+              },
+              "ctc": {
+                "label": "CTC forced alignment (experimental)",
+                "description": "Aligns text to audio using the Connectionist Temporal Classification (CTC) algorithm. It is more accurate, potentially much faster, gives better word timings and works well across languages.",
+                "badge": "New"
+              }
+            },
+            "alignmentGranularity": "Alignment granularity",
+            "autoExclude": "Skip front and back matter automatically",
+            "autoExcludeDescription": "Covers, tables of contents, copyright pages, indexes and publisher pages are left out of the alignment. Chapters that are only sometimes narrated, like forewords and dedications, are still aligned and flagged in the report. You can include or exclude any chapter from the report.",
+            "alignmentGranularityDescription": "Word level alignment may not be accurately reproduces in all clients at the moment, and is only available with the CTC aligner.",
+            "alignmentGranularityWord": "Word+Sentence (experimental)",
+            "alignmentGranularitySentence": "Sentence",
             "engine": "Transcription engine",
             "tabLocal": "On this server",
             "tabRemote": "On another server",
@@ -829,7 +876,43 @@
             "modelName": "Model name (optional)",
             "modelNameDescription": "e.g. Systran/faster-distil-whisper-large-v3 for faster-whisper-server, or whisper-1 for OpenAI Cloud.",
             "deepgramModel": "Model name",
-            "deepgramModelDescription": "Can be any model the server supports, like nova-3, nova-2, nova, enhanced, base or whisper. Defaults to nova-3."
+            "deepgramModelDescription": "Can be any model the server supports, like nova-3, nova-2, nova, enhanced, base or whisper. Defaults to nova-3.",
+            "ctcEngines": {
+              "ctc-local": {
+                "label": "On this server",
+                "description": "Runs on the machine hosting Storyteller."
+              }
+            },
+            "ctcEngine": "Where it runs",
+            "ctcDevice": "Device",
+            "ctcDeviceDescription": "Pick CPU if alignment crashes.",
+            "ctcDevices": {
+              "auto": "Auto",
+              "cpu": "CPU",
+              "webgpu": "GPU (WebGPU)",
+              "cuda": "GPU (CUDA)",
+              "mlx": "GPU (Apple Silicon)"
+            },
+            "ctcModel": "Model",
+            "ctcModelDescription": "Automatic uses QuartzNet when if there's a supported model for the language, and MMS when there isn't.",
+            "ctcModelLanguages": "Available for {languages}.",
+            "ctcDtype": "Precision",
+            "ctcDtypeDescription": "Half precision runs faster on a GPU. Automatic uses half precision on a GPU, full precision on a CPU.",
+            "ctcDtypes": {
+              "auto": "Automatic",
+              "fp32": "Full precision",
+              "fp16": "Half precision"
+            },
+            "ctcBatchSize": "Chunks per batch",
+            "ctcBatchSizePlaceholder": "Automatic",
+            "ctcBatchSizeDescription": "How many pieces of audio the model looks at in one go. Higher is faster on a GPU and uses more memory. This only matters once alignment is already fast.",
+            "ctcModels": {
+              "mms": "MMS only",
+              "quartznet15x5": "Automatic",
+              "citrinet256": "Citrinet 256",
+              "citrinet512": "Citrinet 512",
+              "citrinet1024": "Citrinet 1024"
+            }
           },
           "parallelization": {
             "title": "Parallelization Settings",
@@ -837,7 +920,7 @@
             "parallelTranscodes": "Parallel audio track transcoding",
             "parallelTranscodesDescription": "Transcoding one track will use one CPU core",
             "parallelTranscribes": "Parallel audio track transcription",
-            "parallelTranscribesDescription": "Transcribing one track will use up to 4 CPU cores (when using CPU-based transcription)",
+            "parallelTranscribesDescription": "Applies to Whisper only. Transcribing one track uses up to 4 CPU cores.",
             "parallelWhisperBuild": "CPU cores for whisper.cpp build",
             "parallelWhisperBuildDescription": "Whenever the Storyteller container is recreated (e.g. after an update), it will rebuild whisper.cpp. This process can be sped up by dedicating multiple CPU cores."
           }
@@ -1077,6 +1160,88 @@
             "title": "Users",
             "description": "Manage your users."
           }
+        }
+      },
+      "queue": {
+        "title": "Processing Queue",
+        "pauseAll": "Pause all",
+        "resumeAll": "Resume all",
+        "subtitle": "{count, number} books currently processing or waiting.",
+        "empty": "Nothing is processing right now.",
+        "finishedTitle": "Finished jobs",
+        "searchPlaceholder": "Search by title",
+        "noFinished": "No finished jobs.",
+        "previous": "Previous",
+        "next": "Next",
+        "untitled": "Untitled",
+        "sortTitle": "Sort by",
+        "sort": {
+          "finishedAt": "Finished recently",
+          "title": "Title A–Z",
+          "status": "Status",
+          "asc": "Ascending",
+          "desc": "Descending"
+        },
+        "filtersTitle": "Filter by status",
+        "status": {
+          "all": "All",
+          "RUNNING": "Running",
+          "QUEUED": "Queued",
+          "PAUSED": "Paused",
+          "ERROR": "Error",
+          "DONE": "Done",
+          "CANCELED": "Canceled"
+        },
+        "detail": {
+          "waiting": "Waiting",
+          "paused": "Paused",
+          "finished": "Finished {time}",
+          "runTime": "Took {duration}",
+          "remaining": "{duration} left"
+        },
+        "actions": {
+          "reorder": "Reorder {title}",
+          "resume": "Resume job",
+          "pause": "Pause job",
+          "cancel": "Cancel job",
+          "alignmentReport": "Alignment report"
+        },
+        "toast": {
+          "processing": "Processing",
+          "paused": "Paused",
+          "queued": "Queued",
+          "openQueue": "Open the queue",
+          "openBook": "Open the book",
+          "cancelJob": "Cancel job",
+          "popOut": "Pop out",
+          "moveToSidebar": "Move to the sidebar",
+          "pause": "Pause",
+          "resume": "Resume",
+          "moreActions": "More actions",
+          "expand": "Expand",
+          "minimize": "Minimize",
+          "queuedSuffix": "+{count, number} queued",
+          "ready": "{title} is ready",
+          "open": "Open",
+          "openReport": "Report",
+          "grade": "Grade {grade}",
+          "sentences": "{percent, number}% sentences",
+          "audio": "{percent, number}% audio",
+          "skipped": "{count, plural, one {# chapter skipped} other {# chapters skipped}}",
+          "toCheck": "{count, plural, one {# chapter to check} other {# chapters to check}}",
+          "notifyReadyTitle": "Book ready",
+          "notifyReadyBody": "{title} has finished aligning.",
+          "notifyReadyBodyGraded": "{title} has finished aligning with grade {grade}.",
+          "failed": "{title} failed to process",
+          "aBook": "A book"
+        },
+        "reorderHint": "Drag a book above the one that's running to start it next. The running book goes back to the queue and picks up where it left off.",
+        "announce": {
+          "instructions": "Press the space bar to pick up a book. Use the arrow keys to move it through the queue, then press the space bar again to drop it in its new position. Press escape to cancel. Moving a book above the one that's running starts it next.",
+          "lifted": "Picked up {title}. Position {position, number} of {total, number}.",
+          "moved": "{title} is now at position {position, number} of {total, number}.",
+          "dropped": "Dropped {title} at position {position, number} of {total, number}.",
+          "canceled": "Reordering canceled. {title} is back at position {position, number} of {total, number}."
         }
       }
     }
@@ -1497,7 +1662,7 @@
       "lastAligned": "Last aligned",
       "alignedIn": "Aligned in",
       "estimatedRemaining": "{duration} left",
-      "transcriptionEngine": "Transcription engine",
+      "transcriptionEngine": "Alignment engine",
       "storytellerVersion": "Storyteller version"
     },
     "identifiers": {
@@ -1564,7 +1729,8 @@
       "approximate": "~{duration}",
       "compactHours": "{hours}h",
       "compactMinutes": "{minutes}m",
-      "compactHoursAndMinutes": "{hours}h {minutes}m"
+      "compactHoursAndMinutes": "{hours}h {minutes}m",
+      "mostCompact": "{hours}:{minutes}:{seconds}"
     },
     "actions": {
       "save": "Save",
@@ -1614,15 +1780,14 @@
         "duration": "Duration",
         "fileSize": "File Size",
         "language": "Language",
-        "alignmentScore": "Alignment Score",
+        "alignmentConfidence": "Alignment Confidence",
         "alignmentGrade": "Alignment Grade",
-        "alignmentMissingSentences": "Missing Sentences",
-        "alignmentMutedChapters": "Muted Chapters",
-        "alignmentMissingChapters": "Missing Chapters",
-        "alignmentUnalignedFiles": "Unaligned Audio Files",
+        "alignmentPreviousGrade": "Previous Alignment Grade",
+        "alignmentSentenceCoverage": "Sentence Coverage (%)",
+        "alignmentAudioCoverage": "Audio Coverage (%)",
         "alignedAt": "Date Aligned",
-        "alignedWith": "Transcription engine",
-        "alignedByStorytellerVersion": "Aligner version",
+        "alignedWith": "Alignment Engine",
+        "alignedByStorytellerVersion": "Aligner Version",
         "lastRead": "Last Read",
         "readingPosition": "Reading Progress",
         "seriesPosition": "Series Position",
@@ -1654,11 +1819,17 @@
           "no-media": "No media"
         },
         "alignmentGrade": {
-          "A+": "A+",
+          "S": "S",
           "A": "A",
-          "A-": "A-",
           "B": "B",
-          "B-": "B-",
+          "C": "C",
+          "D": "D",
+          "F": "F"
+        },
+        "alignmentPreviousGrade": {
+          "S": "S",
+          "A": "A",
+          "B": "B",
           "C": "C",
           "D": "D",
           "F": "F"
@@ -1675,12 +1846,11 @@
         "duration": "Dur.",
         "fileSize": "Size",
         "language": "Lang.",
-        "alignmentScore": "Score",
+        "alignmentConfidence": "Confidence",
         "alignmentGrade": "Grade",
-        "alignmentMissingSentences": "Missing",
-        "alignmentMutedChapters": "Muted",
-        "alignmentMissingChapters": "Missing Ch.",
-        "alignmentUnalignedFiles": "Unaligned",
+        "alignmentPreviousGrade": "Prev. grade",
+        "alignmentSentenceCoverage": "Sentences",
+        "alignmentAudioCoverage": "Audio",
         "alignedAt": "Aligned",
         "lastRead": "Read",
         "readingPosition": "Progress",
@@ -1690,6 +1860,11 @@
         "creators": "Creators",
         "alignedWith": "Engine",
         "alignedByStorytellerVersion": "Version"
+      },
+      "retired": {
+        "alignmentScore": "Alignment Score",
+        "alignmentMissingSentences": "Missing Sentences",
+        "alignmentMutedChapters": "Muted Chapters"
       }
     },
     "empty": {
@@ -1835,81 +2010,249 @@
     "importBooksDescription": "Pick EPUB or audio files on the server to import as new books."
   },
   "AlignmentReport": {
-    "notAvailable": "No alignment report is available for this book.",
-    "title": "Alignment report",
+    "title": "Alignment report (experimental)",
     "loading": "Loading report…",
+    "notAvailable": "No alignment report is available for this book.",
+    "untitled": "Untitled",
+    "back": "Back",
+    "close": "Close",
     "openFullPage": "Open full page",
+    "openBook": "Book",
     "createdByJob": "Created {relativeTime}",
-    "heading": {
-      "excellentAlignment": "Excellent alignment",
-      "nearlyEverySentenceMatched": "nearly every sentence matched",
-      "almostEverythingLinedUp": "almost everything lined up",
-      "strongAlignment": "Strong Alignment",
-      "withOnlyAFewGaps": "with only a handful of gaps",
-      "goodAlignment": "Good alignment",
-      "withAFewRoughPatches": "with a few rough patches",
-      "roughAlignment": "Rough alignment",
-      "noticeableGapsRemain": "noticeable gaps remain",
-      "patchyAlignment": "Patchy alignment",
-      "largeStretchesDrifted": "large stretches drifted",
-      "alignmentFailed": "Alignment failed",
-      "muchOfTheBookDidNotMatch": "much of the book did not match",
-      "partAlignedScore": "{score}% of the ebook aligned to the narration across {chapters} chapters.",
-      "partNotAlignedScore": "Across {chapters} chapters, no sentence-level alignment was recorded.",
-      "partAllAudioPlaced": "All audio was placed.",
-      "partSomeAudioNotPlaced": "{count, number} audio file(s) could not be placed.",
-      "partFewGaps": "The few gaps are scattered single sentences, not whole sections.",
-      "partManyGaps": "{count, number} sentences went unmatched."
+    "lastGraded": "Last graded {date}",
+    "previous": {
+      "title": "Previous report",
+      "open": "Open",
+      "pruned": "details no longer stored",
+      "hide": "Hide the previous report",
+      "show": "Show the previous report",
+      "older": "Older report",
+      "latest": "Back to the latest report",
+      "now": "Now {value}"
+    },
+    "job": {
+      "took": "took {duration}"
+    },
+    "verdict": {
+      "excellent": "Excellent alignment",
+      "strong": "Strong alignment",
+      "good": "Good alignment",
+      "fair": "Fair alignment",
+      "weak": "Weak alignment",
+      "failed": "Alignment failed"
+    },
+    "judgment": {
+      "approved": "Approved",
+      "excluded": "Excluded",
+      "included": "Included"
+    },
+    "stats": {
+      "sentences": "Sentences aligned",
+      "sentencesSub": "{aligned, number} of {total, number}",
+      "audio": "Audio placed",
+      "audioSub": "{placed} of {total}",
+      "confidence": "Confidence",
+      "skipped": "skipped",
+      "toCheck": "to check"
+    },
+    "reel": {
+      "title": "{count, plural, one {# track} other {# tracks}} · {duration}",
+      "titleSpine": "{count, plural, one {# chapter} other {# chapters}} · {sentences, plural, one {# sentence} other {# sentences}}",
+      "hint": "Click a track to play from there",
+      "hintSpine": "Click a chapter to open it, click its audio to play it",
+      "notOnDisk": "audio not available",
+      "fromOriginal": "played from the original file",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "mode": {
+        "audio": "Show in audio order",
+        "spine": "Show in book order"
+      },
+      "minimap": "Overview. Drag the window to scroll, drag its edges to zoom."
+    },
+    "list": {
+      "title": "Chapters",
+      "selectAll": "Select all",
+      "selectNone": "Select none",
+      "empty": "This report has no chapters.",
+      "sortBySpine": "Sort by position in the book",
+      "sentences": "{aligned, number}/{total, number}",
+      "sortByMatched": "Sort by sentences matched",
+      "interpolated": "+{count, number}"
+    },
+    "bulk": {
+      "selected": "{count, plural, one {# selected} other {# selected}}",
+      "playInOrder": "Play in order",
+      "clear": "Clear selection"
+    },
+    "actions": {
+      "approve": "Approve",
+      "exclude": "Exclude",
+      "clearJudgment": "Clear",
+      "excludeAudio": "Also exclude its audio",
+      "restoreAudio": "Restore its audio",
+      "include": "Include",
+      "includeHint": "Align it even though a rule would skip it",
+      "excludeStretch": "Exclude this stretch of audio",
+      "restoreStretch": "Restore this stretch of audio"
+    },
+    "reason": {
+      "not-found": "not found",
+      "too-short": "too short",
+      "is-nav": "navigation",
+      "no-text": "no text",
+      "audio-only": "audio only",
+      "excluded": "skipped"
+    },
+    "detail": {
+      "empty": "Pick a chapter to see its matches and audio.",
+      "spine": "Spine {index, number}",
+      "confidence": "Confidence",
+      "missing": "{count, plural, =0 {sentences, none missing} one {sentences, # missing} other {sentences, # missing}}",
+      "files": "{count, plural, one {audio, # file} other {audio, # files}}",
+      "perSentence": "per sentence",
+      "firstMatch": "First match",
+      "lastMatch": "Last match",
+      "noAudioFiles": "No audio was placed in this chapter.",
+      "sharedBefore": "also {label}",
+      "sharedAfter": "then {label}",
+      "sentenceCount": "{count, plural, one {# sentence} other {# sentences}}",
+      "prev": "Previous",
+      "next": "Next",
+      "previousProblem": "Previous problem area",
+      "nextProblem": "Next problem area",
+      "followAlong": "Scroll along with the narration",
+      "loadingText": "Loading chapter text…",
+      "textUnavailable": "The chapter text could not be loaded.",
+      "textHint": "Dimmed text was not matched to the narration. Struck text is not read in it.",
+      "textUnmarkedHint": "The matched range could not be located in this text.",
+      "interpolated": "{count, plural, one {# sentence} other {# sentences}} interpolated",
+      "dropped": "{count, plural, one {# sentence} other {# sentences}} not read",
+      "stretches": "{count, plural, one {# stretch} other {# stretches}}",
+      "fromOriginal": "from the original file",
+      "showSource": "Show source",
+      "sourceTitle": "Chapter source",
+      "sourceDescription": "The chapter and its media overlay as stored in the readaloud.",
+      "xhtml": "XHTML",
+      "mediaOverlay": "Media overlay",
+      "readingSource": "Reading the file…",
+      "noOverlay": "This chapter has no media overlay.",
+      "overlayUnavailable": "Could not read the media overlay.",
+      "copy": "Copy",
+      "close": "Close",
+      "modePace": "Shade sentences by reading pace",
+      "modeDrift": "Mark sentences whose audio does not line up with the text",
+      "paceHint": "Shaded sentences are read much slower or faster than this chapter's usual pace.",
+      "driftHint": "Marked sentences sound like a neighbouring sentence, or not like their own text.",
+      "driftUnavailable": "No emissions or transcriptions are on disk for this book, so there is nothing to compare against.",
+      "hoverTiming": "{start} to {end} · {duration} s · {cps} chars/s",
+      "hoverHoles": "Plus {seconds} s of audio-only entries",
+      "hoverSlow": "Much slower than this chapter's usual {median} chars/s",
+      "hoverFast": "Much faster than this chapter's usual {median} chars/s",
+      "hoverHeard": "Heard ({percent}% match)",
+      "hoverNothingHeard": "Nothing was heard in this clip.",
+      "hoverSoundsLikeNext": "Its audio sounds like the next sentence, so the highlight runs a sentence behind here.",
+      "hoverSoundsLikePrevious": "Its audio sounds like the previous sentence, so the highlight runs a sentence ahead here.",
+      "hoverStartsLate": "Starts late. The previous sentence's audio contains its opening.",
+      "hoverStartsEarly": "Starts early. Its audio opens with the end of the previous sentence.",
+      "hoverRunsOn": "Its audio runs into the next sentence.",
+      "hoverMismatch": "Its audio does not sound like this text."
     },
     "marks": {
-      "score": "% Sentences aligned",
-      "alignmentGrade": "Grade",
-      "audioIncluded": "Audio included",
-      "excludedClips": "{count, number} excluded clips",
-      "mutedChapters": "{count, number} muted",
-      "sentencesAligned": "Sentences aligned",
-      "significantMisalignment": "{count, number} chapters with significant misalignment",
-      "unalignedChapters": "Unaligned chapters"
+      "sentences": "Sentences aligned",
+      "audio": "Audio placed",
+      "skipped": "Skipped",
+      "toCheck": "To check",
+      "pending": "Pending next alignment"
     },
-    "overrides": {
-      "menu": "Chapter options",
-      "markOk": "Mark as OK",
-      "ok": "OK",
-      "excludeFromScore": "Exclude from score",
-      "excluded": "Excluded",
-      "markIntended": "Mark intended",
-      "intended": "Intended",
-      "excludeClip": "Exclude clip",
-      "clipExcluded": "Excluded"
+    "loose": {
+      "title": "Audio not placed",
+      "count": "{count, plural, one {# stretch} other {# stretches}} · {duration}",
+      "between": "{before} → {after}",
+      "beforeFirst": "before {label}",
+      "afterLast": "after {label}",
+      "fromExcluded": "in {label}, excluded",
+      "unavailable": "audio not available",
+      "showShort": "{count, plural, one {# gap} other {# gaps}} under {seconds, number} s hidden · show",
+      "hideShort": "Hide {count, plural, one {# gap} other {# gaps}} under {seconds, number} s",
+      "onlyShort": "Only gaps under {seconds, number} s remain.",
+      "sort": "Sort stretches",
+      "sortByLength": "Longest first",
+      "sortByPosition": "Position in the book",
+      "sortByTrack": "Track name"
     },
-    "table": {
-      "flaggedOnly": "Flagged only",
-      "detail": {
-        "transcript": "Transcript"
-      },
-      "columns": {
-        "chapter": "Chapter",
-        "audio": "Audio",
-        "duration": "Dur.",
-        "sentences": "Sentences",
-        "notes": "Notes"
+    "rule": {
+      "skipped": "Skipped by a rule",
+      "skippedPending": "Included, aligned on the next run",
+      "excludedPending": "Excluded, skipped on the next run",
+      "restoredPending": "Restored, aligned on the next run",
+      "listen": "Worth a listen",
+      "signal": "{source}: {value}",
+      "noText": "no text"
+    },
+    "source": {
+      "linear": "not in reading order",
+      "nav": "navigation document",
+      "media-type": "not a text document",
+      "landmark": "landmark",
+      "content-type": "epub type",
+      "guide": "guide",
+      "title": "title",
+      "filename": "file name",
+      "no-text": "text"
+    },
+    "pending": {
+      "badge": "Pending",
+      "hint": "Takes effect on the next alignment",
+      "summary": "{count, plural, one {# change waits} other {# changes wait}} for the next alignment",
+      "realign": "Realign now"
+    },
+    "audio": {
+      "none": "Audio for this report is not available",
+      "original": "Audio plays from the original files"
+    },
+    "legend": {
+      "sentences": "Sentences matched",
+      "andUp": "{min, number}% and up",
+      "between": "{min, number} to {max, number}%",
+      "under": "under {max, number}%",
+      "fills": "Fills",
+      "solid": "matched",
+      "soft": "filled in from neighbours",
+      "striped": "not read",
+      "dimmed": "skipped",
+      "gap": "no text",
+      "track": "Thin strip: the audio track, coloured by how much of it was placed",
+      "help": "How to read the reel",
+      "explain": {
+        "chapters": "Each chapter block is coloured by the share of its sentences that were matched to the narration. Approved chapters count as fully matched, included chapters are shown as good, excluded chapters are dimmed.",
+        "fills": "A solid fill is sentences matched to the narration. A lighter fill is sentences whose timing was filled in from their neighbours. Stripes mark sentences that were not read. A dashed outline marks audio with no text. Dimmed blocks are skipped chapters.",
+        "track": "The thin strip above each block is the audio track. It is coloured by how much of the track was placed in the book.",
+        "trackGood": "{min, number}% or more placed",
+        "trackModerate": "partly placed",
+        "trackPoor": "nothing placed",
+        "trackMuted": "excluded or empty"
       }
-    },
-    "lastGraded": "Last graded {date}",
-    "unalignedChapters": "Unaligned chapters",
-    "unalignedAudio": {
-      "title": "Unaligned audio",
-      "noTranscription": "no transcription on file",
-      "heard": "heard"
     }
+  },
+  "Player": {
+    "label": "Audio player",
+    "play": "Play",
+    "pause": "Pause",
+    "back10": "Back 10 seconds",
+    "forward10": "Forward 10 seconds",
+    "wholeFile": "Whole file",
+    "speed": "Playback speed",
+    "close": "Close player"
   },
   "Processing": {
     "menuTitle": "Processing",
     "startProcessing": "Start processing",
     "continue": "Continue",
     "resync": "Re-sync (keep all files)",
-    "fromSync": "From sync step (keep transcriptions)",
-    "fromTranscription": "From transcription step (keep audio)",
+    "fromSync": "From sync step (keep the track analysis)",
+    "fromTranscription": "From the analysis step (keep audio)",
+    "fromTranscode": "Re-transcode audio (keep the track analysis)",
     "fullRestart": "Full restart (delete all cache)",
     "reprocess": "Reprocess",
     "deleteCache": "Delete cache files",
@@ -1929,79 +2272,10 @@
     "noEstimateHistory": "Not enough history to estimate",
     "stage": {
       "SPLIT_TRACKS": "Pre-processing audio",
-      "TRANSCRIBE_CHAPTERS": "Transcribing tracks",
+      "TRANSCRIBE_CHAPTERS": "Analyzing tracks",
       "SYNC_CHAPTERS": "Aligning chapters"
     },
     "viewReport": "View alignment report"
-  },
-  "Queue": {
-    "title": "Processing queue",
-    "subtitle": "{count, number} books currently processing or waiting.",
-    "empty": "Nothing is processing right now.",
-    "finishedTitle": "Finished jobs",
-    "searchPlaceholder": "Search by title",
-    "noFinished": "No finished jobs.",
-    "previous": "Previous",
-    "next": "Next",
-    "untitled": "Untitled",
-    "sort": {
-      "recent": "Recently finished",
-      "oldest": "Oldest first",
-      "title": "Title A–Z",
-      "status": "Status"
-    },
-    "status": {
-      "RUNNING": "running",
-      "QUEUED": "queued",
-      "PAUSED": "paused",
-      "ERROR": "error",
-      "DONE": "done",
-      "CANCELED": "canceled"
-    },
-    "detail": {
-      "waiting": "Waiting",
-      "paused": "Paused",
-      "finished": "Finished {time}",
-      "runTime": "Took {duration}",
-      "remaining": "{duration} left"
-    },
-    "actions": {
-      "moveUp": "Move up",
-      "moveDown": "Move down",
-      "resume": "Resume job",
-      "pause": "Pause job",
-      "cancel": "Cancel job",
-      "alignmentReport": "Alignment report"
-    },
-    "toast": {
-      "processing": "Processing",
-      "paused": "Paused",
-      "queued": "Queued",
-      "manageQueue": "Manage queue",
-      "pause": "Pause",
-      "resume": "Resume",
-      "moreActions": "More actions",
-      "expand": "Expand",
-      "minimize": "Minimize",
-      "dismiss": "Dismiss",
-      "queuedSuffix": "+{count, number} queued",
-      "ready": "{title} is ready",
-      "open": "Open",
-      "notifyReadyTitle": "Book ready",
-      "notifyReadyBody": "{title} has finished aligning.",
-      "failed": "{title} failed to process",
-      "aBook": "A book"
-    }
-  },
-  "Player": {
-    "label": "Audio player",
-    "play": "Play",
-    "pause": "Pause",
-    "back10": "Back 10 seconds",
-    "forward10": "Forward 10 seconds",
-    "wholeFile": "Whole file",
-    "speed": "Playback speed",
-    "close": "Close player"
   },
   "Reader": {
     "toolbar": {

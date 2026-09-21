@@ -70,7 +70,7 @@ function verifyFromChecksumFile(
 function extract(archive: string, dest: string) {
   rmSync(dest, { recursive: true, force: true })
   mkdirSync(dest, { recursive: true })
-  if (archive.endsWith(".zip") && process.platform === "linux") {
+  if (archive.endsWith(".zip")) {
     execFileSync("unzip", ["-q", archive, "-d", dest])
   } else {
     execFileSync("tar", ["-xf", archive, "-C", dest])

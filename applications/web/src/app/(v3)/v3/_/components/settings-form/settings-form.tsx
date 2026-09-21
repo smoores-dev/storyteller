@@ -9,6 +9,8 @@ import { type FieldErrors, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
 
+import { isCtcModelFamily } from "@storyteller-platform/ghost-story/constants"
+
 import { SiteHeader } from "@v3/_/components/site-header"
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -29,15 +31,23 @@ import {
 } from "@v3/_/components/ui/page-layout"
 import { Spinner } from "@v3/_/components/ui/spinner"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { DocumentTitle } from "@v3/_/hooks/use-document-title"
 import { useIsMobile } from "@v3/_/hooks/use-mobile"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { applyServerErrors } from "@v3/_/lib/form-errors"
 
-import { type Invite, type Settings, type User } from "@/apiModels"
+import {
+  type Invite,
+  type ServerCapabilities,
+  type Settings,
+  type User,
+} from "@/apiModels"
 import { useIsTauri } from "@/app/(v3)/v3/_/hooks/use-is-tauri"
 import { SettingsSchema } from "@/database/settingsTypes"
+import { useInitialData } from "@/hooks/useInitialData"
 import * as icon from "@/icons"
 import {
+  api,
   useGetMaxUploadChunkSizeQuery,
   useUpdateSettingsMutation,
 } from "@/store/api"
@@ -192,12 +202,16 @@ function settingsFormValues(settings: Settings) {
   return {
     ...settings,
     serverIconSha256: settings.serverIconSha256 ?? null,
-    transcriptionEngine: settings.transcriptionEngine ?? "whisper.cpp",
-    whisperModel: settings.whisperModel ?? "tiny",
-    whisperCpuFallback: settings.whisperCpuFallback ?? null,
+    // TODO: change, if we ever want to use a different CTC engine
+    ctcEngine: "ctc-local" as const,
+    ctcModel:
+      settings.ctcModel && isCtcModelFamily(settings.ctcModel)
+        ? settings.ctcModel
+        : null,
+    // ctcServerUrl: settings.ctcServerUrl ?? "",
+    // ctcServerApiKey: settings.ctcServerApiKey ?? "",
     whisperServerUrl: settings.whisperServerUrl ?? "",
     whisperServerApiKey: settings.whisperServerApiKey ?? "",
-    maxTrackLength: settings.maxTrackLength ?? 2,
     codec: settings.codec ?? "",
     bitrate: settings.bitrate ?? "",
     googleCloudApiKey: settings.googleCloudApiKey ?? "",
@@ -213,7 +227,6 @@ function settingsFormValues(settings: Settings) {
     openAiBaseUrl: settings.openAiBaseUrl ?? "",
     openAiModelName: settings.openAiModelName ?? "",
     deepgramApiKey: settings.deepgramApiKey ?? "",
-    deepgramModel: settings.deepgramModel ?? "nova-3",
     disablePasswordLogin: settings.disablePasswordLogin,
     importRules: settings.importRules ?? [],
     autoIgnoreRules: settings.autoIgnoreRules ?? [],
@@ -229,6 +242,7 @@ export function SettingsForm({
   settings,
   sectionKeywords,
   configLockedKeys,
+  capabilities,
   currentVersion,
   initialUsers,
   initialInvites,
@@ -236,10 +250,14 @@ export function SettingsForm({
   settings: Settings
   sectionKeywords: SectionKeywords
   configLockedKeys: (keyof Settings)[]
+  capabilities: ServerCapabilities
   currentVersion: string
   initialUsers?: User[]
   initialInvites?: Invite[]
 }) {
+  useInitialData(
+    api.util.upsertQueryData("getServerCapabilities", undefined, capabilities),
+  )
   const t = useTranslation("SettingsPage")
   const c = useCommon()
   const title = t("title")
@@ -351,7 +369,11 @@ export function SettingsForm({
           icon: icon.History,
         },
         { value: "logs", label: t("tabs.logs.title"), icon: icon.FileText },
-        { value: "queue", label: "Queue", icon: icon.ListNumbers },
+        {
+          value: "queue",
+          label: t("tabs.queue.title"),
+          icon: icon.ListNumbers,
+        },
         {
           value: "backups",
           label: t("tabs.backups.title"),
@@ -447,6 +469,7 @@ export function SettingsForm({
 
   const tabContent = (
     <>
+      <DocumentTitle parts={[activeTabDef?.label, title]} />
       {activeTab === "library" && <LibraryTab />}
       {activeTab === "processing" && <ProcessingTab />}
       {activeTab === "auth" && <AuthTab />}
@@ -529,6 +552,7 @@ export function SettingsForm({
     <SettingsFormProvider
       form={form as SettingsFormForm}
       lockedSettings={lockedKeys}
+      capabilities={capabilities}
     >
       <SearchContext.Provider value={{ query: searchQuery, isMatch }}>
         {isFormTab ? (

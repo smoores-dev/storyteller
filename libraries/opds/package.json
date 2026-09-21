@@ -59,7 +59,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@readium/shared": "^2.2.0",
+    "@readium/shared": "*",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1"
   },

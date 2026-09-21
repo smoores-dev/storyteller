@@ -1,4 +1,12 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises"
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises"
 import * as os from "node:os"
 import { basename, extname, join, resolve } from "node:path"
 
@@ -20,6 +28,8 @@ import {
   type WhisperModel,
 } from "@storyteller-platform/ghost-story/constants"
 import { MediaType } from "@storyteller-platform/media-types"
+
+import { pruneStaleOutputs, readTrackSource } from "../process/trackSource.ts"
 
 type WhisperCpuOverride = "blas" | "cpu" | null
 
@@ -77,8 +87,18 @@ export async function transcribe(
     )
   }
 
+  await pruneStaleOutputs(output, filenames)
+
   const engine = options.engine ?? "whisper.cpp"
   const model = options.model ?? "tiny.en"
+  const engineModel =
+    engine === "openai-cloud"
+      ? (options.openAiModelName ?? null)
+      : engine === "deepgram"
+        ? (options.deepgramModel ?? null)
+        : engine === "whisper.cpp" || engine === "whisper-server"
+          ? model
+          : null
 
   if (engine === "whisper.cpp") {
     const resolvedModel = getWhisperCppModelId(locale.language, model)
@@ -113,23 +133,37 @@ export async function transcribe(
         if (aborted()) throw new Error("Aborted")
 
         const filepath = join(input, filename)
-        const transcriptionFilepath = join(
-          output,
-          `${basename(filename, extname(filename))}.json`,
+        const name = basename(filename, extname(filename))
+        const transcriptionFilepath = join(output, `${name}.json`)
+        const identityFilepath = join(output, `${name}.identity`)
+        const identity = JSON.stringify({
+          engine,
+          model: engineModel,
+          language: locale.language,
+          track: await readTrackSource(filepath),
+        })
+
+        const hasTranscription = await stat(transcriptionFilepath).then(
+          (stats) => stats.size > 0,
+          () => false,
         )
 
-        try {
-          await readFile(transcriptionFilepath, {
+        if (hasTranscription) {
+          const cachedIdentity = await readFile(identityFilepath, {
             encoding: "utf-8",
             signal,
-          })
+          }).catch(() => null)
 
-          options.logger?.info(`Found existing transcription for ${filepath}`)
-          transcriptions.push(transcriptionFilepath)
-          options.onProgress?.((transcriptions.length + 1) / filenames.length)
-          return
-        } catch {
-          //
+          if (cachedIdentity === identity) {
+            options.logger?.info(`Found existing transcription for ${filepath}`)
+            transcriptions.push(transcriptionFilepath)
+            options.onProgress?.((transcriptions.length + 1) / filenames.length)
+            return
+          }
+
+          options.logger?.warn(
+            `Existing transcription for ${filepath} came from a different engine, model or audio track, regenerating`,
+          )
         }
 
         if (aborted()) throw new Error("Aborted")
@@ -170,14 +204,23 @@ export async function transcribe(
         )
         timing.add(transcription.timing)
 
-        await writeFile(
-          transcriptionFilepath,
-          JSON.stringify({
-            transcript: transcription.transcript,
-            timeline: transcription.timeline,
-          }),
-          { signal },
-        )
+        const tmpFilepath = `${transcriptionFilepath}.tmp`
+        try {
+          await writeFile(
+            tmpFilepath,
+            JSON.stringify({
+              transcript: transcription.transcript,
+              timeline: transcription.timeline,
+            }),
+            { signal },
+          )
+          await rm(identityFilepath, { force: true })
+          await rename(tmpFilepath, transcriptionFilepath)
+          await writeFile(identityFilepath, identity, { encoding: "utf-8" })
+        } catch (err) {
+          await rm(tmpFilepath, { force: true })
+          throw err
+        }
 
         transcriptions.push(transcriptionFilepath)
         options.onProgress?.((transcriptions.length + 1) / filenames.length)

@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server"
-import { z } from "zod"
 
+import { validateFilter } from "@/app/api/v2/shelves/validateFilter"
 import { withHasPermission } from "@/auth/auth"
 import { booksQuery } from "@/database/books"
 import {
   buildFilterExpression,
   buildSortExpression,
 } from "@/database/shelfFilter"
-import {
-  type ShelfFilter,
-  type ShelfOrderBy,
-  shelfFilterSchema,
-} from "@/shelves"
+import { type ShelfFilter, type ShelfOrderBy } from "@/shelves"
 
 export const dynamic = "force-dynamic"
 
@@ -31,19 +27,13 @@ export const POST = withHasPermission("bookList")(async (request) => {
     return NextResponse.json([])
   }
 
-  // validate filter
-  const validated = shelfFilterSchema.safeParse(filter)
-  if (!validated.success) {
-    return NextResponse.json(
-      { message: `Invalid filter: ${z.prettifyError(validated.error)}` },
-      { status: 400 },
-    )
-  }
+  const validated = validateFilter(filter)
+  if (!validated.ok) return validated.response
 
   let query = booksQuery(user.id)
 
   query = query.where((eb) =>
-    buildFilterExpression(eb, validated.data, user.id),
+    buildFilterExpression(eb, validated.filter, user.id),
   )
 
   const limit = body.limit ?? 20

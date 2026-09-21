@@ -5,3 +5,4 @@ sea-config.json
 src/__fixtures__/__output__/*
 !src/__fixtures__/__output__/.keep
 build
+scripts/word-timing/out

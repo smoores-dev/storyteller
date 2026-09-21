@@ -21,6 +21,7 @@ import {
   updateBook,
 } from "@/database/books"
 import {
+  type DisplayJob,
   type Job,
   createJob,
   getActiveJobForBook,
@@ -28,11 +29,13 @@ import {
   getJobs,
   getNextJobPosition,
   nowTimestamp,
-  reorderQueuedJobs,
+  reorderActiveJobs,
   updateJob,
 } from "@/database/jobs"
 import { getSettings } from "@/database/settings"
 import { env } from "@/env"
+import { ACTIVE_JOB_STATUSES } from "@/jobEvents"
+import { queueJobNext } from "@/jobList"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 
@@ -41,9 +44,26 @@ import { type RunConfig, buildRunConfig } from "./runConfig"
 import { STAGE_ORDER } from "./stages"
 import type processBook from "./worker"
 
-export type RestartMode = false | "full" | "transcription" | "sync"
+export type RestartMode =
+  | false
+  | "full"
+  | "transcode"
+  | "transcription"
+  | "sync"
 
 const MAX_CONCURRENT = 1
+const WORKER_STOP_GRACE_MS = 30_000
+
+export type ControlMessage = { type: "abort" }
+
+type AbortIntent = "cancel" | "pause" | "requeue"
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("onnxruntime-node")
+} catch (err) {
+  logger.error({ msg: "Failed to import onnx-runtime", err })
+}
 
 /**
  * Next.js app directory seems to have a bug where, in production,
@@ -58,7 +78,7 @@ declare global {
   // variables declared with const/let cannot be added to the global scope
   /* eslint-disable no-var */
   var jobControllers: Map<UUID, AbortController> | undefined
-  var jobAbortIntents: Map<UUID, "cancel" | "pause"> | undefined
+  var jobAbortIntents: Map<UUID, AbortIntent> | undefined
   var alignmentPiscina: Piscina | undefined
   /* eslint-enable no-var */
 }
@@ -71,7 +91,7 @@ if (globalThis.jobControllers) {
   globalThis.jobControllers = controllers
 }
 
-let abortIntents: Map<UUID, "cancel" | "pause">
+let abortIntents: Map<UUID, AbortIntent>
 if (globalThis.jobAbortIntents) {
   abortIntents = globalThis.jobAbortIntents
 } else {
@@ -110,7 +130,7 @@ export async function enqueueBookAlign(
   bookUuid: UUID,
   restart: RestartMode,
   overrides?: Partial<RunConfig>,
-): Promise<Job> {
+): Promise<DisplayJob> {
   const existing = await getActiveJobForBook(bookUuid)
   if (existing) {
     return existing
@@ -147,7 +167,9 @@ export async function enqueueBookAlign(
   return job
 }
 
-async function claimNextJob(): Promise<Job | undefined> {
+async function claimNextJob(): Promise<
+  { job: Job; resumed: boolean } | undefined
+> {
   await pumpMutex.lock()
   try {
     if (controllers.size >= MAX_CONCURRENT) return undefined
@@ -157,28 +179,30 @@ async function claimNextJob(): Promise<Job | undefined> {
 
     const abortController = new AbortController()
     controllers.set(next.uuid, abortController)
-    return await updateJob(next.uuid, {
+    const job = await updateJob(next.uuid, {
       status: "RUNNING",
       startedAt: nowTimestamp(),
       error: null,
     })
+    return { job, resumed: next.startedAt !== null }
   } finally {
     pumpMutex.unlock()
   }
 }
 
 export async function pump(): Promise<void> {
-  const job = await claimNextJob()
-  if (!job) return
+  const claimed = await claimNextJob()
+  if (!claimed) return
 
-  void runJob(job).finally(() => {
+  const { job, resumed } = claimed
+  void runJob(job, resumed).finally(() => {
     controllers.delete(job.uuid)
     abortIntents.delete(job.uuid)
     void pump()
   })
 }
 
-async function runJob(job: Job): Promise<void> {
+async function runJob(job: Job, resumed: boolean): Promise<void> {
   if (!job.bookUuid) {
     logger.error(`Job ${job.uuid} is not a runnable book_align job`)
     await updateJob(job.uuid, { status: "ERROR", error: "invalid job" })
@@ -224,6 +248,22 @@ async function runJob(job: Job): Promise<void> {
 
   const { port1, port2 } = new MessageChannel()
 
+  const terminate = new AbortController()
+  let terminateTimer: NodeJS.Timeout | undefined
+  abortController.signal.addEventListener(
+    "abort",
+    () => {
+      port2.postMessage({ type: "abort" } satisfies ControlMessage)
+      terminateTimer = setTimeout(() => {
+        logger.warn(
+          `Worker for job ${job.uuid} did not stop within ${WORKER_STOP_GRACE_MS}ms, terminating it`,
+        )
+        terminate.abort()
+      }, WORKER_STOP_GRACE_MS)
+    },
+    { once: true },
+  )
+
   port2.on(
     "message",
     async (message: {
@@ -262,11 +302,11 @@ async function runJob(job: Job): Promise<void> {
       {
         jobUuid: job.uuid,
         bookUuid,
-        restart: job.restart ?? false,
+        restart: resumed ? false : (job.restart ?? false),
         config: job.config,
         port: port1,
       } satisfies Parameters<typeof processBook>[0],
-      { transferList: [port1], signal: abortController.signal },
+      { transferList: [port1], signal: terminate.signal },
     )) as JobStats | undefined
 
     const finished = await getBookOrThrow(bookUuid)
@@ -313,26 +353,34 @@ async function runJob(job: Job): Promise<void> {
       stats: stats ?? undefined,
     })
   } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
+    if (
+      abortController.signal.aborted ||
+      (err instanceof Error && err.name === "AbortError")
+    ) {
       const intent = abortIntents.get(job.uuid) ?? "cancel"
       const current = await getBookOrThrow(bookUuid)
       const stage = current.readaloud?.currentStage ?? "SPLIT_TRACKS"
+      const requeued = intent === "requeue"
+      const position = requeued
+        ? ((await getJob(job.uuid))?.position ?? job.position)
+        : null
 
       logger.info(`Processing for job ${job.uuid} ${intent}d by user`)
 
       await updateBook(bookUuid, null, {
         readaloud: {
-          status: "STOPPED",
+          status: requeued ? "QUEUED" : "STOPPED",
           currentStage: stage,
-          queuePosition: null,
+          queuePosition: position,
           restartPending: null,
         },
       })
 
       await updateJob(job.uuid, {
-        status: intent === "pause" ? "PAUSED" : "CANCELED",
+        status:
+          intent === "pause" ? "PAUSED" : requeued ? "QUEUED" : "CANCELED",
         stage,
-        finishedAt: intent === "pause" ? null : nowTimestamp(),
+        finishedAt: intent === "cancel" ? nowTimestamp() : null,
       })
       return
     }
@@ -356,6 +404,7 @@ async function runJob(job: Job): Promise<void> {
     logger.error(`Processing for job ${job.uuid} failed unexpectedly`)
     logger.error(err)
   } finally {
+    clearTimeout(terminateTimer)
     for (const fp of toSupress) releasePrefixAfterSettle(fp)
   }
 }
@@ -405,18 +454,16 @@ export async function resumeJob(jobUuid: UUID): Promise<void> {
   const job = await getJob(jobUuid)
   if (!job || job.status !== "PAUSED") return
 
-  const position = await getNextJobPosition()
-  await updateJob(jobUuid, {
-    status: "QUEUED",
-    position,
-    finishedAt: null,
-  })
+  await updateJob(jobUuid, { status: "QUEUED", finishedAt: null })
+  const active = await getJobs({ statuses: ACTIVE_JOB_STATUSES })
+  const order = queueJobNext(active, jobUuid)
+  await reorderActiveJobs(order)
   if (job.bookUuid) {
     await updateBook(job.bookUuid, null, {
       readaloud: {
         status: "QUEUED",
         currentStage: job.stage ?? "SPLIT_TRACKS",
-        queuePosition: position,
+        queuePosition: order.indexOf(jobUuid),
       },
     })
   }
@@ -424,7 +471,26 @@ export async function resumeJob(jobUuid: UUID): Promise<void> {
 }
 
 export async function reorderJobs(orderedUuids: UUID[]): Promise<void> {
-  await reorderQueuedJobs(orderedUuids)
+  const active = await getJobs({ statuses: ACTIVE_JOB_STATUSES })
+  await reorderActiveJobs(orderedUuids)
+
+  const running = active.find((job) => job.status === "RUNNING")
+  if (!running) {
+    void pump()
+    return
+  }
+
+  const queued = new Set(
+    active.filter((job) => job.status === "QUEUED").map((job) => job.uuid),
+  )
+  const ahead = orderedUuids.slice(0, orderedUuids.indexOf(running.uuid))
+  if (!ahead.some((uuid) => queued.has(uuid))) return
+
+  const controller = controllers.get(running.uuid)
+  if (!controller) return
+
+  abortIntents.set(running.uuid, "requeue")
+  controller.abort()
 }
 
 export async function cancelProcessing(bookUuid: UUID): Promise<void> {
@@ -443,7 +509,8 @@ function clampRestart(
   restart: RestartMode,
   book: BookWithRelations,
 ): RestartMode {
-  if (restart === false || restart === "full") return restart
+  if (restart === false || restart === "full" || restart === "transcode")
+    return restart
 
   const bookStage = book.readaloud?.currentStage ?? "SPLIT_TRACKS"
   const targetStage: Readaloud["currentStage"] =
@@ -458,7 +525,7 @@ function getStartStage(
   restart: RestartMode,
   book: BookWithRelations,
 ): Readaloud["currentStage"] {
-  if (restart === "full") return "SPLIT_TRACKS"
+  if (restart === "full" || restart === "transcode") return "SPLIT_TRACKS"
   if (restart === "transcription") return "TRANSCRIBE_CHAPTERS"
   if (restart === "sync") return "SYNC_CHAPTERS"
   return book.readaloud?.currentStage ?? "SPLIT_TRACKS"

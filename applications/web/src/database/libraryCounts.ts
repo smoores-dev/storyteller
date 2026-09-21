@@ -10,7 +10,11 @@ import {
   isFacetSection,
 } from "@/facet-sections"
 import { ALIGNMENT_GRADES, FORMAT_VALUES, resolveFieldAlias } from "@/fields"
-import { type ShelfFilter } from "@/shelves"
+import {
+  type ShelfFilter,
+  type ShelfFilterIssue,
+  collectFilterIssues,
+} from "@/shelves"
 import { type UUID } from "@/uuid"
 
 import { db } from "./connection"
@@ -26,6 +30,7 @@ export type FacetValue = {
   icon?: string | null
   color?: string | null
   kind?: string
+  filterIssues?: ShelfFilterIssue[]
 }
 
 export const NONE_FACET_KEY = "__none__"
@@ -34,6 +39,7 @@ export type LibraryCounts = Record<BadgeFacetSection, number> & {
   books: number
   collections: Record<string, number>
   shelves: Record<string, number>
+  shelfIssues: Record<string, ShelfFilterIssue[]>
 }
 
 export function visibleBooks(userId: UUID, dab = db) {
@@ -49,8 +55,20 @@ async function countSmartShelf(userId: UUID, filter: ShelfFilter) {
   return row?.count ?? 0
 }
 
-function parseShelfFilter(raw: unknown): ShelfFilter {
-  return (typeof raw === "string" ? JSON.parse(raw) : raw) as ShelfFilter
+function readShelfFilter(raw: unknown): {
+  filter: ShelfFilter | null
+  issues: ShelfFilterIssue[]
+} {
+  let parsed: unknown = raw
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return { filter: null, issues: [{ kind: "unparseable" }] }
+    }
+  }
+  const issues = collectFilterIssues(parsed)
+  return { filter: issues.length > 0 ? null : (parsed as ShelfFilter), issues }
 }
 
 async function countCreatorsByRole(_userId: UUID, role: Role) {
@@ -178,13 +196,20 @@ export async function getLibraryCounts(userId: UUID): Promise<LibraryCounts> {
   const shelves: Record<string, number> = {}
   for (const row of manualShelfRows) shelves[row.uuid] = row.count
 
+  const shelfIssues: Record<string, ShelfFilterIssue[]> = {}
   const smartCounts = await Promise.all(
     smartShelves.map(async (shelf) => {
-      const filter = parseShelfFilter(shelf.filter)
+      const { filter, issues } = readShelfFilter(shelf.filter)
+      if (!filter) {
+        shelfIssues[shelf.uuid] = issues
+        return null
+      }
       return [shelf.uuid, await countSmartShelf(userId, filter)] as const
     }),
   )
-  for (const [uuid, count] of smartCounts) shelves[uuid] = count
+  for (const entry of smartCounts) {
+    if (entry) shelves[entry[0]] = entry[1]
+  }
 
   const badges = Object.fromEntries(
     BADGE_FACET_SECTIONS.map((section, i) => [section, badgeCounts[i] ?? 0]),
@@ -195,6 +220,7 @@ export async function getLibraryCounts(userId: UUID): Promise<LibraryCounts> {
     books: books?.count ?? 0,
     collections,
     shelves,
+    shelfIssues,
   }
 }
 
@@ -494,11 +520,27 @@ async function shelfFacets(userId: UUID): Promise<FacetValue[]> {
 
   return Promise.all(
     shelves.map(async (shelf) => {
-      const bookCount =
-        shelf.filter != null
-          ? await countSmartShelf(userId, parseShelfFilter(shelf.filter))
-          : shelf.manualCount
-      return { key: shelf.key, name: shelf.name, bookCount }
+      if (shelf.filter == null) {
+        return {
+          key: shelf.key,
+          name: shelf.name,
+          bookCount: shelf.manualCount,
+        }
+      }
+      const { filter, issues } = readShelfFilter(shelf.filter)
+      if (!filter) {
+        return {
+          key: shelf.key,
+          name: shelf.name,
+          bookCount: 0,
+          filterIssues: issues,
+        }
+      }
+      return {
+        key: shelf.key,
+        name: shelf.name,
+        bookCount: await countSmartShelf(userId, filter),
+      }
     }),
   )
 }

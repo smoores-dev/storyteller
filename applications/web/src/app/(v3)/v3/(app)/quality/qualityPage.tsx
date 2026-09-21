@@ -12,15 +12,17 @@ import { type DisplayField } from "@/sort"
 
 const ALIGNMENT_DISPLAY_FIELDS: DisplayField[] = [
   "alignmentGrade",
-  "alignmentScore",
-  "alignmentMissingSentences",
-  "alignmentMutedChapters",
+  "alignmentPreviousGrade",
+  "alignmentSentenceCoverage",
+  "alignmentAudioCoverage",
+  // "alignmentConfidence",
+  // ""
   "alignedAt",
 ]
 const FORCE_DISPLAY_MODE: ForceDisplayMode = {
   layout: "list",
   displayFields: ALIGNMENT_DISPLAY_FIELDS,
-  sortMode: "alignmentGrade",
+  sortMode: "alignedAt",
   sortDirection: "desc",
 }
 
@@ -37,7 +39,7 @@ export default function QualityPage() {
       forceDisplayMode={FORCE_DISPLAY_MODE}
       emptyMessage={t("BookReports.emptyState")}
       noneLabel={t("BookReports.none")}
-      contentClassName="p-6 [&_.font-heading]:text-[0.8125rem]!"
+      contentClassName="p-6 pt-0 [&_.font-heading]:text-[0.8125rem]!"
     />
   )
 }

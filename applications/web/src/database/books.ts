@@ -730,16 +730,27 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
       jsonObjectFrom(
         eb
           .selectFrom("alignmentReport")
-          .select([
+          .select((eb) => [
             "alignmentReport.grade",
             "alignmentReport.score",
-            "alignmentReport.missingSentences",
-            "alignmentReport.mutedChapters",
+            "alignmentReport.confidence",
+            "alignmentReport.sentenceCoverage",
+            "alignmentReport.audioCoverage",
             "alignmentReport.failedChapters",
             "alignmentReport.unalignedAudio",
+            eb
+              .selectFrom("alignmentReport as previousReport")
+              .select("previousReport.grade")
+              .whereRef("previousReport.bookUuid", "=", "book.uuid")
+              .orderBy("previousReport.createdAt", "desc")
+              .orderBy(sql`rowid`, "desc")
+              .limit(1)
+              .offset(1)
+              .as("previousGrade"),
           ])
           .whereRef("alignmentReport.bookUuid", "=", "book.uuid")
           .orderBy("alignmentReport.createdAt", "desc")
+          .orderBy(sql`rowid`, "desc")
           .limit(1),
       ).as("alignmentSummary"),
 

@@ -5,9 +5,19 @@ import { toWords } from "to-words"
 import { type Mapping } from "@storyteller-platform/mapping"
 import { slugify as transliterateSlugify } from "@storyteller-platform/transliteration"
 
+import TSCharacters from "./opencc/TSCharacters.json" with { type: "json" }
+
+const traditionalToSimplified: Record<string, string> = TSCharacters
+
 const replacerMap = new WeakMap<
   Intl.Locale,
   ReturnType<typeof createReplacers>
+>()
+
+// cache the vocab creation
+const vocabCharsMap = new WeakMap<
+  Map<string, number>,
+  { locale: string; chars: string[]; allowedChars: string }
 >()
 
 function getCurrencySymbols(locale: Intl.Locale) {
@@ -74,8 +84,13 @@ function getNumberSymbols(locale: Intl.Locale) {
   )
 }
 
-function createReplacers(locale: Intl.Locale) {
-  const maximizedLocale = locale.maximize()
+export function createReplacers(locale: Intl.Locale) {
+  const maximizedLocale =
+    // "ar".maximize() === "ar-EG", which to-words doesn't support
+    locale.language === "ar" &&
+    !["AE", "LB", "MA"].includes(locale.region ?? "")
+      ? new Intl.Locale("ar-SA")
+      : locale.maximize()
 
   const currencySymbols = getCurrencySymbols(maximizedLocale)
 
@@ -149,15 +164,55 @@ export async function slugify(
   text: string,
   locale: Intl.Locale,
   separator = "-",
+  useLocale = true,
+  vocab?: Map<string, number>,
 ) {
   const replacers = replacerMap.get(locale) ?? createReplacers(locale)
   replacerMap.set(locale, replacers)
 
-  const { result, mapping } = await transliterateSlugify(text, {
-    allowedChars: "a-zA-Z0-9",
-    locale,
+  let vocabChars = vocab ? vocabCharsMap.get(vocab) : undefined
+  if (vocab && vocabChars?.locale !== locale.baseName) {
+    const chars = Array.from(vocab.keys())
+      .filter((c) => c !== "|")
+      .flatMap((c) => [
+        c.toLocaleLowerCase(locale),
+        c.toLocaleUpperCase(locale),
+      ])
+    vocabChars = {
+      locale: locale.baseName,
+      chars,
+      allowedChars: `a-zA-Z${chars.filter((c) => !/[a-zA-Z]/.test(c)).join("")}`,
+    }
+    vocabCharsMap.set(vocab, vocabChars)
+  }
+
+  const folded = vocab
+    ? text.replace(/\p{Script=Han}/gu, (c) => {
+        const simplified = traditionalToSimplified[c]
+        return !vocab.has(c) && simplified && vocab.has(simplified)
+          ? simplified
+          : c
+      })
+    : text
+
+  const chars = new Set(folded)
+  if (vocabChars) {
+    for (const [regex, replacer] of replacers) {
+      for (const match of folded.matchAll(regex)) {
+        for (const c of replacer(match)) {
+          chars.add(c)
+        }
+      }
+    }
+  }
+  const ignores = vocabChars?.chars.filter((c) => chars.has(c)) ?? []
+
+  const { result, mapping } = await transliterateSlugify(folded, {
+    allowedChars: vocabChars?.allowedChars ?? "a-zA-Z",
     replace: replacers,
     separator,
+    ignore: ignores,
+    ...(useLocale ? { locale } : {}),
   })
 
   return { result, mapping }

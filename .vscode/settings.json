@@ -35,5 +35,6 @@
   },
   "tailwindCSS.experimental.configFile": "../applications/web/src/app/(v3)/v3/globals.css",
   "i18n-ally.localesPaths": ["./web/messages"],
-  "i18n-ally.keystyle": "nested"
+  "i18n-ally.keystyle": "nested",
+  "python.defaultInterpreterPath": "${workspaceFolder}/libraries/mlx-audio/scripts/.venv/bin/python"
 }

@@ -284,6 +284,9 @@ async function main() {
             reportsPath: parsed.reports,
             logger,
             onProgress: updateProgressBar,
+            gapSeconds: parsed.gapSeconds,
+            audioChapterSeconds: parsed.audioChapterSeconds,
+            dropUnread: parsed.dropUnread,
           },
         )
 
@@ -304,6 +307,9 @@ async function main() {
             reportsPath: parsed.reports,
             logger,
             onProgress: updateProgressBar,
+            gapSeconds: parsed.gapSeconds,
+            audioChapterSeconds: parsed.audioChapterSeconds,
+            dropUnread: parsed.dropUnread,
           },
         )
 
@@ -388,6 +394,7 @@ async function main() {
 
         const transcribeTiming = await emit(processedAudio, emissions, {
           ...parsed,
+          language: primaryLocale,
           signal: controller.signal,
           logger,
           onProgress: updateProgressBar,
@@ -490,6 +497,9 @@ async function main() {
             reportsPath: parsed.reports,
             logger,
             onProgress: updateProgressBar,
+            gapSeconds: parsed.gapSeconds,
+            audioChapterSeconds: parsed.audioChapterSeconds,
+            dropUnread: parsed.dropUnread,
           },
         )
 

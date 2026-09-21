@@ -1,5 +1,6 @@
 import { type ComponentType } from "react"
 
+import { isRetiredField } from "@/fields"
 import { type ShelfFilterField } from "@/shelves"
 
 import * as icon from "./source"
@@ -22,6 +23,7 @@ const FIELD_ICONS: Record<FieldIconKey, FieldIconDef> = {
   review: { base: icon.Pencil },
   search: { base: icon.Search },
   alignmentGrade: { base: icon.Certificate },
+  alignmentPreviousGrade: { base: icon.History },
   status: { base: icon.Progress },
   tags: {
     base: icon.Tag,
@@ -41,9 +43,9 @@ const FIELD_ICONS: Record<FieldIconKey, FieldIconDef> = {
   duration: { base: icon.Clock },
   fileSize: { base: icon.Database },
   readingPosition: { base: icon.Bookmark },
-  alignmentScore: { base: icon.ChartBar },
-  alignmentMissingSentences: { base: icon.AlertTriangle },
-  alignmentMutedChapters: { base: icon.Volume3 },
+  alignmentConfidence: { base: icon.ChartBar },
+  alignmentSentenceCoverage: { base: icon.TextGrammar },
+  alignmentAudioCoverage: { base: icon.Volume },
   publicationDate: { base: icon.Calendar },
   createdAt: { base: icon.CalendarPlus },
   updatedAt: { base: icon.History },
@@ -61,7 +63,8 @@ export function fieldIcon(
   field: FieldIconKey,
   variant: "base" | "add" | "remove" | "filled" = "base",
 ): ComponentType<StyledIconProps> {
-  const def = FIELD_ICONS[field]
+  const def = FIELD_ICONS[field] as FieldIconDef | undefined
+  if (!def) return isRetiredField(field) ? icon.History : icon.AlertTriangle
 
   const resolved = def[variant]
   if (resolved) return resolved

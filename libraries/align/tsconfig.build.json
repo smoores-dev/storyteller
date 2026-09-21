@@ -7,7 +7,7 @@
     "rootDir": "src",
     "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/align/opencc/TSCharacters.json"],
   "exclude": ["dist", "src/**/__tests__"],
   "references": [
     { "path": "../epub" },

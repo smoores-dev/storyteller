@@ -11,6 +11,8 @@ export type ListView = "list" | "table"
 
 export type GridSpacing = "compact" | "cozy" | "spacious"
 
+export type ProcessingToastLocation = "floating" | "sidebar"
+
 export type LogDisplayPrefs = {
   wrapLines: boolean
   highlighting: boolean
@@ -48,9 +50,9 @@ export type UISettings = {
   detailSectionOrder: string[] | null
   hiddenDetailSections: string[]
   detailCoverWidth: number | null
-
-  processingToastLocation: "bottom-right" | "sidebar"
-
+  processingToastLocation: ProcessingToastLocation
+  processingToastCollapsed: boolean
+  showPreviousAlignmentReport: boolean
   theme: "light" | "dark" | "system"
 }
 
@@ -82,7 +84,7 @@ const defaults: UISettings = {
   listView: "list",
   gridDisplayFields: null,
   gridSpacing: "cozy",
-  gridCardSize: "medium",
+  gridCardSize: "small",
   listDisplayFields: defaultListDisplayFields,
   listShowThumbnail: true,
   tableColumnOrder: null,
@@ -98,7 +100,9 @@ const defaults: UISettings = {
   detailCoverWidth: null,
   theme: "system",
   defaultSorts: {},
-  processingToastLocation: "bottom-right",
+  processingToastLocation: "floating",
+  processingToastCollapsed: false,
+  showPreviousAlignmentReport: true,
 }
 
 export { defaults as UI_SETTINGS_DEFAULTS }
@@ -173,6 +177,10 @@ export const uiSettingsSlice = createSlice({
         merged.listDisplayFields = defaultListDisplayFields
       }
 
+      if (legacy["processingToastLocation"] === "bottom-right") {
+        merged.processingToastLocation = "floating"
+      }
+
       return merged
     },
 
@@ -225,19 +233,7 @@ export const uiSettingsSlice = createSlice({
       state,
       action: PayloadAction<Record<string, number>>,
     ) => {
-      state.tableColumnWidths = {
-        ...state.tableColumnWidths,
-        ...action.payload,
-      }
-      saveToCookie(state)
-    },
-
-    resetTableColumnWidth: (state, action: PayloadAction<string>) => {
-      state.tableColumnWidths = Object.fromEntries(
-        Object.entries(state.tableColumnWidths).filter(
-          ([key]) => key !== action.payload,
-        ),
-      )
+      state.tableColumnWidths = action.payload
       saveToCookie(state)
     },
 
@@ -342,9 +338,19 @@ export const uiSettingsSlice = createSlice({
 
     setProcessingToastLocation: (
       state,
-      action: PayloadAction<"bottom-right" | "sidebar">,
+      action: PayloadAction<ProcessingToastLocation>,
     ) => {
       state.processingToastLocation = action.payload
+      saveToCookie(state)
+    },
+
+    setProcessingToastCollapsed: (state, action: PayloadAction<boolean>) => {
+      state.processingToastCollapsed = action.payload
+      saveToCookie(state)
+    },
+
+    setShowPreviousAlignmentReport: (state, action: PayloadAction<boolean>) => {
+      state.showPreviousAlignmentReport = action.payload
       saveToCookie(state)
     },
   },
@@ -424,3 +430,11 @@ export const selectDefaultSorts = (state: { uiSettings: UISettings }) => {
 export const selectProcessingToastLocation = (state: {
   uiSettings: UISettings
 }) => state.uiSettings.processingToastLocation
+
+export const selectProcessingToastCollapsed = (state: {
+  uiSettings: UISettings
+}) => state.uiSettings.processingToastCollapsed
+
+export const selectShowPreviousAlignmentReport = (state: {
+  uiSettings: UISettings
+}) => state.uiSettings.showPreviousAlignmentReport

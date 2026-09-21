@@ -182,8 +182,13 @@ export function detectDroppedLabels(
   }
 
   const framesPerChar = (endFrame - startFrame) / (endOffset - startOffset)
+  if (framesPerChar >= 2) return false
 
-  return framesPerChar < 2
+  const goodChars = alignments
+    .slice(startOffset, endOffset + 1)
+    .reduce((acc, a) => acc + (a.score > -4 ? 1 : 0), 0)
+
+  return goodChars / (endOffset + 1 - startOffset) < 0.5
 }
 
 function removeLabelRanges(

@@ -23,7 +23,7 @@ import {
 } from "@v3/_/components/ui/tooltip"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { type Settings } from "@/apiModels"
+import { type ServerCapabilities, type Settings } from "@/apiModels"
 import { type SettingsSchema } from "@/database/settingsTypes"
 import * as icon from "@/icons"
 
@@ -33,11 +33,13 @@ export type SettingsFormProviderProps = {
   children: React.ReactNode
   form: SettingsFormForm
   lockedSettings: Set<keyof Settings>
+  capabilities?: ServerCapabilities
 }
 
 export type SettingsFormProviderContext = {
   form: SettingsFormForm
   lockedSettings: Set<keyof Settings>
+  capabilities?: ServerCapabilities
 } | null
 
 export const SettingsFormProviderContext =
@@ -47,9 +49,12 @@ export const SettingsFormProvider = ({
   children,
   form,
   lockedSettings,
+  capabilities,
 }: SettingsFormProviderProps) => {
   return (
-    <SettingsFormProviderContext.Provider value={{ form, lockedSettings }}>
+    <SettingsFormProviderContext.Provider
+      value={{ form, lockedSettings, capabilities }}
+    >
       {children}
     </SettingsFormProviderContext.Provider>
   )

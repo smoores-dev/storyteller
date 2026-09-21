@@ -15,6 +15,7 @@ import {
   type Epub2ImportStrategy,
   type ImportMode,
   ImportRuleSchema,
+  SETTINGS_DEFAULTS,
   type Settings,
   isEncryptedSettingKey,
 } from "./settingsTypes"
@@ -63,6 +64,10 @@ async function encryptSettingValue(name: string, value: unknown) {
 }
 
 export function formatTranscriptionEngineDetails(settings: Settings) {
+  if (settings.aligner === "ctc") {
+    return settings.ctcEngine ?? "ctc-local"
+  }
+
   let details = settings.transcriptionEngine ?? "whisper.cpp"
   if (settings.transcriptionEngine === "whisper.cpp") {
     details += `:${settings.whisperModel ?? "tiny"}`
@@ -229,17 +234,26 @@ export async function getSetting<Name extends keyof Settings>(name: Name) {
     return configSettings[name] as Settings[Name]
   }
 
-  const { valueJson } = await db
+  const fallback = (SETTINGS_DEFAULTS as Partial<Settings>)[
+    name
+  ] as Settings[Name]
+
+  const row = await db
     .selectFrom("settings")
     .select(["value as valueJson"])
     .where("name", "=", name)
     .orderBy("createdAt", "desc")
-    .executeTakeFirstOrThrow()
+    .executeTakeFirst()
+
+  if (!row) return fallback
 
   const parsed: unknown =
-    typeof valueJson === "string" ? JSON.parse(valueJson) : valueJson
+    typeof row.valueJson === "string"
+      ? JSON.parse(row.valueJson)
+      : row.valueJson
 
-  return (await decryptSettingValue(name, parsed)) as Settings[Name]
+  const value = (await decryptSettingValue(name, parsed)) as Settings[Name]
+  return value ?? fallback
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -258,20 +272,14 @@ export async function getSettings(): Promise<Settings> {
     }),
   )
 
-  const dbDesttings = Object.fromEntries(decrypted) as Settings
+  const stored: Record<string, unknown> = Object.fromEntries(decrypted)
+  for (const [name, fallback] of Object.entries(SETTINGS_DEFAULTS)) {
+    stored[name] ??= fallback
+  }
 
   const { settings: configSettings } = await loadConfigFile()
 
-  const result = {
-    ...dbDesttings,
-    smtpSsl: dbDesttings.smtpSsl ?? true,
-    smtpRejectUnauthorized: dbDesttings.smtpRejectUnauthorized ?? true,
-    backupCronExpression: dbDesttings.backupCronExpression ?? null,
-    backupRetentionCount: dbDesttings.backupRetentionCount ?? null,
-    logRetentionDays: dbDesttings.logRetentionDays ?? null,
-  }
-
-  return { ...result, ...configSettings }
+  return { ...(stored as Settings), ...configSettings }
 }
 
 export async function updateSettings(settings: Settings) {

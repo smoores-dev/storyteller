@@ -1,5 +1,5 @@
 import { type Metadata } from "next"
-import { getMessages, getTranslations } from "next-intl/server"
+import { getMessages } from "next-intl/server"
 
 import { SettingsForm } from "@v3/_/components/settings-form/settings-form"
 import {
@@ -8,7 +8,7 @@ import {
 } from "@v3/_/components/settings-form/tabs"
 import { withPageAuth } from "@v3/_/server/page-auth-wrapper"
 
-import { type Invite, type User } from "@/apiModels"
+import { type Invite, type ServerCapabilities, type User } from "@/apiModels"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
 import {
   getImportRules,
@@ -17,12 +17,7 @@ import {
 import { getConfigLockedKeys, getSettings } from "@/database/settings"
 import { getCurrentVersion } from "@/versions"
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("SettingsPage")
-  return {
-    title: t("title"),
-  }
-}
+export const metadata: Metadata = { title: null }
 
 function extractKeywords(obj: Record<string, unknown>): string[] {
   const keywords: string[] = []
@@ -65,19 +60,27 @@ export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([
   const canManageUsers =
     user.permissions.userList || user.permissions.inviteList
 
-  const [settings, rules, messages, configLockedKeys, users, invites] =
-    await Promise.all([
-      getSettings(),
-      getImportRules(),
-      getMessages(),
-      getConfigLockedKeys(),
-      canManageUsers
-        ? fetchApiRoute<User[]>("/users")
-        : Promise.resolve(undefined),
-      canManageUsers
-        ? fetchApiRoute<Invite[]>("/invites")
-        : Promise.resolve(undefined),
-    ])
+  const [
+    settings,
+    rules,
+    messages,
+    configLockedKeys,
+    capabilities,
+    users,
+    invites,
+  ] = await Promise.all([
+    getSettings(),
+    getImportRules(),
+    getMessages(),
+    getConfigLockedKeys(),
+    fetchApiRoute<ServerCapabilities>("/server/capabilities"),
+    canManageUsers
+      ? fetchApiRoute<User[]>("/users")
+      : Promise.resolve(undefined),
+    canManageUsers
+      ? fetchApiRoute<Invite[]>("/invites")
+      : Promise.resolve(undefined),
+  ])
 
   const settingsMessages = messages.SettingsPage as {
     tabs: Record<string, { sections?: Record<string, unknown> }>
@@ -92,6 +95,7 @@ export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([
       settings={{ ...settings, importRules, autoIgnoreRules }}
       sectionKeywords={sectionKeywords}
       configLockedKeys={Array.from(configLockedKeys)}
+      capabilities={capabilities}
       currentVersion={currentVersion}
       initialUsers={users}
       initialInvites={invites}

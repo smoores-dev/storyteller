@@ -3,6 +3,7 @@
 import { useMessages } from "next-intl"
 import { useState } from "react"
 
+import { CtcAlignerAnnouncement } from "@v3/_/components/announcements/ctc-aligner-announcement"
 import { Button } from "@v3/_/components/ui/button"
 import {
   Dialog,
@@ -34,6 +35,8 @@ export function AnnouncementModal({ pending }: { pending: Announcement[] }) {
   const content = messages.Announcements?.[activeKey]
   if (!content) return null
 
+  const ctcAligner = announcement.kind === "ctc-aligner"
+
   const paragraphs = Object.keys(content)
     .filter((key) => /^p\d+$/.test(key))
     .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))
@@ -51,18 +54,27 @@ export function AnnouncementModal({ pending }: { pending: Announcement[] }) {
         if (!open) handleDismiss()
       }}
     >
-      <DialogContent showCloseButton={false} className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{content.title}</DialogTitle>
-        </DialogHeader>
-        <div className="text-muted-foreground flex flex-col gap-2 text-xs/relaxed">
-          {paragraphs.map((paragraph, i) => (
-            <p key={i}>{paragraph}</p>
-          ))}
-        </div>
-        <DialogFooter>
-          <Button onClick={handleDismiss}>{t("dismiss")}</Button>
-        </DialogFooter>
+      <DialogContent
+        showCloseButton={false}
+        className={ctcAligner ? "sm:max-w-2xl" : "sm:max-w-md"}
+      >
+        {ctcAligner ? (
+          <CtcAlignerAnnouncement onDone={handleDismiss} />
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>{content.title}</DialogTitle>
+            </DialogHeader>
+            <div className="text-muted-foreground flex flex-col gap-2 text-xs/relaxed">
+              {paragraphs.map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button onClick={handleDismiss}>{t("dismiss")}</Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

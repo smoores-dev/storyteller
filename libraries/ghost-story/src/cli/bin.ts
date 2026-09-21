@@ -14,11 +14,15 @@ import { z } from "zod/v4"
 import { type RecognitionOptions } from "../api/Recognition.ts"
 import {
   BUILD_VARIANTS,
-  CTC_MODELS,
+  CTC_MODEL_FAMILIES,
   CTC_MODEL_PACKAGES,
   RECOGNITION_ENGINES,
+  CTC_DEVICES,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
+  ctcModelLanguages,
+  isCtcModelFamily,
+  resolveCtcModelVariant,
 } from "../constants.ts"
 
 import {
@@ -26,8 +30,9 @@ import {
   getInstalledVariant,
   isValidModel,
   isValidVariant,
+  resolveCtcDevice,
 } from "./config.ts"
-import { installModelPackage, isCtcModel } from "./ctc-install.ts"
+import { installModelPackage } from "./ctc-install.ts"
 import {
   PlatformMismatchError,
   installBinary,
@@ -42,11 +47,16 @@ import {
 const recognitionEngineSchema = z.enum(RECOGNITION_ENGINES)
 const whisperModelSchema = z.enum(WHISPER_MODELS)
 const buildVariantSchema = z.enum(BUILD_VARIANTS)
+// const wav2vec2ModelSchema = z.enum([WAV2VEC2_MODEL])
+const wav2vec2DeviceSchema = z.enum(CTC_DEVICES)
 
-type InstallTarget = "binary" | "model" | "vad" | "ctc-model" | "all"
+const INSTALL_TARGETS = ["binary", "model", "vad", "ctc-model", "all"] as const
+const installTargetSchema = z.enum(INSTALL_TARGETS)
+
+type InstallTarget = (typeof INSTALL_TARGETS)[number]
 
 function isInstallTarget(value: string): value is InstallTarget {
-  return ["binary", "model", "vad", "ctc-model", "all"].includes(value)
+  return INSTALL_TARGETS.includes(value as InstallTarget)
 }
 
 const installCommand = defineCommand({
@@ -60,14 +70,14 @@ Usage:
   ghost-story install all                 - Install binary, all models, and VAD`,
   args: z.union([
     z.tuple([
-      z
-        .enum(["binary", "model", "vad", "ctc-model", "all"])
-        .describe("What to install: binary, model, vad, ctc-model, or all"),
+      installTargetSchema.describe(
+        `What to install: ${INSTALL_TARGETS.join(", ")}`,
+      ),
     ]),
     z.tuple([
-      z
-        .enum(["binary", "model", "vad", "ctc-model", "all"])
-        .describe("What to install: binary, model, vad, ctc-model, or all"),
+      installTargetSchema.describe(
+        `What to install: ${INSTALL_TARGETS.join(", ")}`,
+      ),
       z
         .string()
         .optional()
@@ -84,8 +94,15 @@ Usage:
         .boolean()
         .default(false)
         .describe("List available variants or models"),
+      device: wav2vec2DeviceSchema
+        .default("auto")
+        .describe("Device the CTC model will run on"),
+      language: z
+        .string()
+        .optional()
+        .describe("Language of the CTC model, for example en or de"),
     }),
-    { f: "force", l: "list" },
+    { f: "force", l: "list", d: "device" },
   ),
   action: async (options, args) => {
     const [target, argument] = args
@@ -115,9 +132,13 @@ Usage:
         return
       }
       if (target === "ctc-model") {
-        console.log("Available CTC model variants:")
-        for (const variant of CTC_MODELS) {
-          console.log(`  ${variant} (${CTC_MODEL_PACKAGES[variant].name})`)
+        console.log("Available CTC models:")
+        for (const family of CTC_MODEL_FAMILIES) {
+          const languages =
+            family === "mms"
+              ? "any language"
+              : ctcModelLanguages(family).join(", ")
+          console.log(`  ${family} (${languages})`)
         }
         return
       }
@@ -127,7 +148,7 @@ Usage:
 
     if (!isInstallTarget(target)) {
       console.error(`Unknown install target: ${target as string}`)
-      console.error("Valid targets: binary, model, vad, all")
+      console.error(`Valid targets: ${INSTALL_TARGETS.join(", ")}`)
       process.exit(1)
     }
 
@@ -161,15 +182,17 @@ Usage:
       }
 
       if (target === "ctc-model") {
-        const variant = argument ?? "fp32"
-        if (!isCtcModel(variant)) {
-          console.error(`Unknown CTC model variant: ${variant}`)
-          console.error("\nAvailable variants:")
-          for (const v of CTC_MODELS) {
-            console.log(`  ${v}`)
+        const family = argument ?? "mms"
+        if (!isCtcModelFamily(family)) {
+          console.error(`Unknown CTC model: ${family}`)
+          console.error("\nAvailable models:")
+          for (const f of CTC_MODEL_FAMILIES) {
+            console.log(`  ${f}`)
           }
           process.exit(1)
         }
+        const device = resolveCtcDevice(options.device, null)
+        const variant = resolveCtcModelVariant(family, options.language, device)
         await installModelPackage(CTC_MODEL_PACKAGES[variant], {
           force,
           printOutput: true,
@@ -396,6 +419,69 @@ const serverCommand = defineCommand({
   },
 })
 
+// const emitServerCommand = defineCommand({
+//   description: "Start a wav2vec2 CTC emission server",
+//   options: defineOptions(
+//     z.object({
+//       model: wav2vec2ModelSchema
+//         .default(WAV2VEC2_MODEL)
+//         .describe("Wav2Vec2 model"),
+//       device: wav2vec2DeviceSchema
+//         .default("auto")
+//         .describe("Device to run inference on"),
+//       dtype: wav2vec2DtypeSchema
+//         .optional()
+//         .describe("Weight precision. Defaults to fp16 on cuda, fp32 otherwise"),
+//       host: z.string().default("0.0.0.0").describe("Host to bind to"),
+//       port: z.coerce.number().default(8080).describe("Port to listen on"),
+//       apiKey: z
+//         .string()
+//         .optional()
+//         .describe("Bearer token required on every request"),
+//     }),
+//     { m: "model", p: "port", d: "device" },
+//   ),
+//   action: async (options) => {
+//     const { startEmissionServer } = await import("../server/emissionServer.ts")
+
+//     const variant = getConfiguredVariant() ?? getInstalledVariant()
+//     const device = resolveCtcDevice(options.device, variant)
+//     const dtype = options.dtype ?? resolveWav2Vec2Dtype(device)
+//     const apiKey = options.apiKey ?? process.env["GHOST_STORY_API_KEY"] ?? null
+
+//     console.log("Setting up CTC emission server...")
+//     console.log(`  Model: ${options.model}`)
+//     console.log(`  Device: ${device}`)
+//     console.log(`  Dtype: ${dtype}`)
+//     console.log(`  Host: ${options.host}`)
+//     console.log(`  Port: ${options.port}`)
+//     console.log(`  Auth: ${apiKey ? "bearer token" : "none"}`)
+//     console.log("")
+//     console.log("Loading model, this can take a while on a cold cache...")
+
+//     const server = await startEmissionServer({
+//       model: options.model,
+//       device,
+//       dtype,
+//       host: options.host,
+//       port: options.port,
+//       apiKey,
+//     })
+
+//     console.log(`Listening on http://${options.host}:${options.port}`)
+
+//     const shutdown = () => {
+//       console.log("\nShutting down emission server...")
+//       server.close(() => {
+//         process.exit(0)
+//       })
+//     }
+
+//     process.on("SIGINT", shutdown)
+//     process.on("SIGTERM", shutdown)
+//   },
+// })
+
 const vadCommand = defineCommand({
   description: "Run voice activity detection on an audio file",
   args: z.tuple([z.string().describe("Input audio file path")], {
@@ -476,6 +562,7 @@ const config = defineConfig({
     status: statusCommand,
     transcribe: transcribeCommand,
     server: serverCommand,
+    // "emit-server": emitServerCommand,
     vad: vadCommand,
   },
   defaultCommand: statusCommand,

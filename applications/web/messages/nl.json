@@ -8,10 +8,17 @@
       "p3": "We staan open voor suggesties, maar we proberen onze eigen neiging tot scope-creep al in toom te houden. Nieuwe functies worden waarschijnlijk pas toegevoegd nadat v3 officieel is.",
       "p4": "Dat gezegd hebbende zijn we erg blij met bugmeldingen, input over de ergonomie en feedback over wat verwarrend is.",
       "p5": "We staan graag open voor merge requests, maar dien ze eerst in als een feature request op Discord of GitLab zodat we het kunnen bespreken. Achter de schermen verandert er veel en we willen dubbel werk voorkomen."
+    },
+    "ctc-aligner": {
+      "title": "Probeer de nieuwe CTC-synchronisatie",
+      "p1": "Storyteller kan een boek nu synchroniseren door de tekst direct naast de audio te leggen, zonder de vertelling eerst te transcriberen.",
+      "p2": "Dat is nauwkeuriger en geeft betere timings per woord. Je kunt nu overschakelen of het later aanpassen bij Instellingen, Verwerking.",
+      "keep": "Whisper houden",
+      "switch": "Overschakelen naar CTC"
     }
   },
   "Layout": {
-    "description": "Een eenvoudig hulpmiddel voor het synchroniseren van audiobooks en ebooks",
+    "description": "Een eenvoudig hulpmiddel voor het synchroniseren van luisterboeken en ebooks",
     "title": "Storyteller"
   },
   "LoginPage": {
@@ -393,12 +400,15 @@
     "setStatus": "Leesstatus instellen",
     "upgradeEpub": "EPUB upgraden",
     "clearCache": "Cache wissen",
+    "recomputeAlignmentReports": "Synchronisatierapport herberekenen",
+    "recomputeAlignmentReportsDone": "{count} synchronisatierapport(en) herberekend",
+    "recomputeAlignmentReportsFailed": "Herberekenen van synchronisatierapporten mislukt",
     "merge": "Boeken samenvoegen",
     "mergeInto": "Samenvoegen in",
     "deleteTitle": "{count} boek(en) verwijderen?",
     "deleteDescription": "Bestanden in je assets-map worden verwijderd. Dit kan niet ongedaan worden.",
     "clearCacheTitle": "Cache wissen voor {count} boek(en)?",
-    "clearCacheDescription": "Verwijdert verwerkte audio- en transcriptiecachebestanden. Bronbestanden blijven behouden.",
+    "clearCacheDescription": "Verwijdert verwerkte audio, transcripties en synchronisatie-gegevens uit de cache. Bronbestanden blijven behouden.",
     "processTitle": "Verwerken starten voor {count} boek(en)?",
     "processDescription": "Start de verwerkingspijplijn voor de geselecteerde boeken.",
     "upgradeTitle": "EPUB upgraden voor {count} boek(en)?",
@@ -511,7 +521,7 @@
     "presets": "Snel toevoegen",
     "preset": {
       "highlyRated": "Hoog beoordeeld (4+)",
-      "audiobooksOnly": "Alleen audioboeken",
+      "luisterboekenOnly": "Alleen luisterboeken",
       "ebooksOnly": "Alleen e-books",
       "hasReadaloud": "Heeft readaloud",
       "hasReview": "Heeft recensie",
@@ -528,6 +538,20 @@
       "gb": "GB"
     },
     "selectValues": "Zoek waarden..."
+  },
+  "ShelfFilterIssues": {
+    "retiredField": "<field>{old}</field> bestaat niet meer. Gebruik in plaats daarvan <field>{new}</field>.",
+    "retiredFieldNoReplacement": "<field>{old}</field> bestaat niet meer.",
+    "unknownField": "{field} is geen veld dat deze versie van Storyteller kent.",
+    "invalidCondition": "De voorwaarde op <field>{field}</field> is niet meer geldig: {message}",
+    "unparseable": "Het opgeslagen filter kon niet worden gelezen.",
+    "retiredFieldShort": "bestaat niet meer.",
+    "unknownFieldShort": "is geen veld dat deze versie van Storyteller kent.",
+    "shelfBroken": "Het filter van deze plank moet worden bijgewerkt",
+    "openToFix": "Open de plank om het op te lossen.",
+    "editShelf": "Plank bewerken",
+    "useReplacement": "Gebruik <field>{new}</field>",
+    "fixConditions": "Los de gemarkeerde voorwaarden op om een voorbeeld te zien"
   },
   "ShelfEditor": {
     "editTitle": "Plank bewerken",
@@ -572,6 +596,7 @@
     "exportSettings": "Exporteer instellingen als JSON",
     "lockedSettings": "Sommige instellingen worden via een configuratiebestand beheerd en kunnen hier niet gewijzigd worden.",
     "lockedSettingTooltip": "Deze instelling kan niet worden gewijzigd omdat het via wordt beheerd via een configuratiebestand.",
+    "advanced": "Geavanceerd",
     "settingsSavedSuccessfully": "Instellingen succesvol opgeslagen",
     "failedToSaveSettings": "Instellingen opslaan mislukt",
     "searchSettings": "Instellingen zoeken...",
@@ -688,11 +713,11 @@
             "locationTypeCustomFolder": "In een specifieke folder",
             "locationTypeInternal": "In de interne Storyteller-folder",
             "cleanCacheAfterReadaloud": "Cache opruimen na synchronisatie",
-            "cleanCacheAfterReadaloudDescription": "Verwijder automatisch verwerkte audio- en transcriptiebestanden nadat een readaloud succesvol is aangemaakt. Bespaart schijfruimte, maar betekent dat een volledige herstart nodig is als je later opnieuw wilt synchroniseren.",
+            "cleanCacheAfterReadaloudDescription": "Verwijder automatisch verwerkte audio, transcripties en synchronisatie-gegevens nadat een readaloud succesvol is aangemaakt. Bespaart schijfruimte, maar betekent dat een volledige herstart nodig is als je later opnieuw wilt synchroniseren.",
             "clearCacheNow": "Cache wissen voor alle boeken",
-            "clearCacheNowDescription": "Verwijder nu alle verwerkte audio- en transcriptiebestanden in de bibliotheek. Originele bestanden blijven ongemoeid.",
+            "clearCacheNowDescription": "Verwijder nu alle verwerkte audio, transcripties en synchronisatie-gegevens in de bibliotheek. Originele bestanden blijven ongemoeid.",
             "clearCacheConfirmTitle": "Cache wissen voor alle boeken",
-            "clearCacheConfirmDescription": "Verwerkte audio- en transcriptiebestanden verwijderen voor elk boek in de bibliotheek? Dit maakt schijfruimte vrij, maar betekent dat een volledige herstart nodig is om boeken later opnieuw te synchroniseren. Originele bestanden blijven ongemoeid.",
+            "clearCacheConfirmDescription": "Verwerkte audio, transcripties en synchronisatie-gegevens verwijderen voor elk boek in de bibliotheek? Dit maakt schijfruimte vrij, maar betekent dat een volledige herstart nodig is om boeken later opnieuw te synchroniseren. Originele bestanden blijven ongemoeid.",
             "clearCacheConfirm": "Cache wissen",
             "clearCacheSuccess": "Verwerkte cache gewist",
             "clearCacheError": "Cache wissen mislukt"
@@ -716,9 +741,25 @@
             "bitrateDefault": "Standaard (32 Kb/s)",
             "mp3BitrateDefault": "Standaard"
           },
-          "transcription": {
-            "title": "Transcriptie Instellingen",
-            "description": "Stel in hoe <em>Storyteller</em> audioboeken naar tekst transcribeert. Standaard wordt transcriptie lokaal uitgevoerd met whisper.cpp. Je kunt ook betaalde externe diensten gebruiken.",
+          "alignment": {
+            "title": "Synchronisatie",
+            "description": "Kies hoe Storyteller de tekst van het boek synchroniseert met de audio.",
+            "aligner": "Synchronisatie-<em>engine</em>",
+            "aligners": {
+              "whisper": {
+                "label": "Whisper-transcriptie",
+                "description": "Transcribeert de audio met Whisper en synchroniseert die transcriptie daarna met de tekst van het boek."
+              },
+              "ctc": {
+                "label": "CTC forced synchronisatie (experimenteel)",
+                "description": "Synchroniseert de tekst van het boek direct naast de audio. Dit is nauwkeuriger, geeft betere <em>timestamps</em> en werkt goed in vele talen. Wellicht trager.",
+                "badge": "Nieuw"
+              }
+            },
+            "alignmentGranularity": "Synchronisatieniveau",
+            "alignmentGranularityDescription": "Synchronisatie op woordniveau kan niet altijd nauwkeurig worden gereproduceerd in alle <em>clients</em>, en is alleen beschikbaar via CTC synchronisatie.",
+            "alignmentGranularityWord": "Woord+Zin (experimenteel)",
+            "alignmentGranularitySentence": "Zin",
             "engine": "Transcriptie-engine",
             "tabLocal": "Op deze server",
             "tabRemote": "Op een andere server",
@@ -772,7 +813,43 @@
             "modelName": "Modelnaam (optioneel)",
             "modelNameDescription": "bijv. Systran/faster-distil-whisper-large-v3 voor faster-whisper-server, of whisper-1 voor OpenAI Cloud.",
             "deepgramModel": "Modelnaam",
-            "deepgramModelDescription": "Kan elk model zijn dat de server ondersteunt, zoals nova-3, nova-2, nova, enhanced, base of whisper. Standaard is nova-3."
+            "deepgramModelDescription": "Kan elk model zijn dat de server ondersteunt, zoals nova-3, nova-2, nova, enhanced, base of whisper. Standaard is nova-3.",
+            "ctcEngines": {
+              "ctc-local": {
+                "label": "Op deze server",
+                "description": "Draait op de machine waarop Storyteller draait. Er gaat niets van deze machine af."
+              }
+            },
+            "ctcEngine": "Waar het draait",
+            "ctcDevice": "Apparaat",
+            "ctcDeviceDescription": "Kies CPU als de synchronisatie crasht.",
+            "ctcDevices": {
+              "auto": "Auto",
+              "cpu": "CPU",
+              "webgpu": "GPU (WebGPU)",
+              "cuda": "GPU (CUDA)",
+              "mlx": "GPU (Apple Silicon)"
+            },
+            "ctcModel": "Model",
+            "ctcModelDescription": "Automatisch gebruikt QuartzNet als het de taal van het boek dekt en anders MMS.",
+            "ctcModelLanguages": "Beschikbaar voor {languages}.",
+            "ctcDtype": "Precisie",
+            "ctcDtypeDescription": "Halve precisie is sneller op een GPU en kan de uitlijning iets verschuiven. Automatisch is halve precisie op een GPU en volledige precisie op een CPU.",
+            "ctcDtypes": {
+              "auto": "Automatisch",
+              "fp32": "Volledige precisie",
+              "fp16": "Halve precisie"
+            },
+            "ctcBatchSize": "Stukken per batch",
+            "ctcBatchSizePlaceholder": "Automatisch",
+            "ctcBatchSizeDescription": "Hoeveel stukken audio het model tegelijk bekijkt. Meer is sneller op een GPU en gebruikt meer geheugen. Dit maakt pas verschil als de synchronisatie al snel is.",
+            "ctcModels": {
+              "mms": "Alleen MMS",
+              "quartznet15x5": "Automatisch",
+              "citrinet256": "Citrinet 256",
+              "citrinet512": "Citrinet 512",
+              "citrinet1024": "Citrinet 1024"
+            }
           },
           "parallelization": {
             "title": "Parallellisatie Instellingen",
@@ -780,7 +857,7 @@
             "parallelTranscodes": "Parallelle audiotrack-transcodering",
             "parallelTranscodesDescription": "Het transcoderen van één track gebruikt één CPU core",
             "parallelTranscribes": "Parallelle audiotrack-transcriptie",
-            "parallelTranscribesDescription": "Het transcriberen van één track gebruikt tot 4 CPU cores (bij CPU-gebaseerde transcriptie)"
+            "parallelTranscribesDescription": "Geldt alleen voor Whisper. Het transcriberen van één track gebruikt tot 4 CPU cores."
           }
         }
       },
@@ -863,7 +940,7 @@
             "pageSize": "Paginagrootte",
             "pageSizeDescription": "Het aantal boeken per pagina in de OPDS <em>feed</em>. Standaard is 25.",
             "format": "Voorkeurs-ebook",
-            "formatDescription": "Welk ebookformaat wordt aangeboden in de OPDS <em>feed</em>. Readalouds kunnen groot zijn en e-reader ondersteuning is slecht, dus misschien wil je alleen het gewone ebook aanbieden om te downloaded. Een audioboek wordt altijd aangeboden indien beschikbaar.",
+            "formatDescription": "Welk ebookformaat wordt aangeboden in de OPDS <em>feed</em>. Readalouds kunnen groot zijn en e-reader ondersteuning is slecht, dus misschien wil je alleen het gewone ebook aanbieden om te downloaded. Een luisterboek wordt altijd aangeboden indien beschikbaar.",
             "formatReadaloud": "Readaloud, of ebook indien niet beschikbaar",
             "formatEbook": "Ebook, of readaloud indien niet beschikbaar",
             "formatBoth": "Zowel readaloud als ebook",
@@ -1019,6 +1096,76 @@
             "description": "Beheer je gebruikers."
           }
         }
+      },
+      "queue": {
+        "title": "Verwerkingswachtrij",
+        "subtitle": "{count, number} boeken worden verwerkt of wachten.",
+        "empty": "Er wordt op dit moment niets verwerkt.",
+        "finishedTitle": "Voltooide taken",
+        "searchPlaceholder": "Zoeken op titel",
+        "noFinished": "Geen voltooide taken.",
+        "previous": "Vorige",
+        "next": "Volgende",
+        "untitled": "Zonder titel",
+        "sort": {
+          "recent": "Onlangs voltooid",
+          "oldest": "Oudste eerst",
+          "title": "Titel A–Z",
+          "status": "Status"
+        },
+        "status": {
+          "all": "Alle",
+          "RUNNING": "Bezig",
+          "QUEUED": "In wachtrij",
+          "PAUSED": "Gepauzeerd",
+          "ERROR": "Mislukt",
+          "DONE": "Klaar",
+          "CANCELED": "Geannuleerd"
+        },
+        "detail": {
+          "waiting": "Wachten",
+          "paused": "Gepauzeerd",
+          "finished": "Voltooid {time}",
+          "runTime": "Duurde {duration}",
+          "remaining": "{duration} resterend"
+        },
+        "actions": {
+          "reorder": "{title} verplaatsen",
+          "resume": "Taak hervatten",
+          "pause": "Taak pauzeren",
+          "cancel": "Taak annuleren",
+          "alignmentReport": "Synchronisatierapport"
+        },
+        "toast": {
+          "processing": "Verwerken",
+          "paused": "Gepauzeerd",
+          "queued": "In wachtrij",
+          "openQueue": "Wachtrij openen",
+          "openBook": "Boek openen",
+          "cancelJob": "Taak annuleren",
+          "popOut": "Losmaken",
+          "moveToSidebar": "Naar de zijbalk verplaatsen",
+          "pause": "Pauzeren",
+          "resume": "Hervatten",
+          "moreActions": "Meer acties",
+          "expand": "Uitklappen",
+          "minimize": "Inklappen",
+          "queuedSuffix": "+{count} in wachtrij",
+          "ready": "{title} is klaar",
+          "open": "Openen",
+          "notifyReadyTitle": "Boek klaar",
+          "notifyReadyBody": "{title} is klaar met synchroniseren.",
+          "failed": "{title} kon niet worden verwerkt",
+          "aBook": "Een boek"
+        },
+        "reorderHint": "Sleep een boek boven het boek dat nu verwerkt wordt om het als volgende te starten. Het lopende boek gaat terug naar de wachtrij en gaat later verder waar het gebleven was.",
+        "announce": {
+          "instructions": "Druk op de spatiebalk om een boek op te pakken. Gebruik de pijltjestoetsen om het door de wachtrij te verplaatsen en druk daarna weer op de spatiebalk om het op de nieuwe plek neer te zetten. Druk op escape om te annuleren. Een boek boven het lopende boek zetten start het als volgende.",
+          "lifted": "{title} opgepakt. Positie {position, number} van {total, number}.",
+          "moved": "{title} staat nu op positie {position, number} van {total, number}.",
+          "dropped": "{title} neergezet op positie {position, number} van {total, number}.",
+          "canceled": "Verplaatsen geannuleerd. {title} staat weer op positie {position, number} van {total, number}."
+        }
       }
     }
   },
@@ -1113,9 +1260,9 @@
           },
           "colorfulness": {
             "title": "Kleurrijkheid",
-            "description": "Hoeveel coverkleuren doorwerken in de interface.",
+            "description": "Hoe de kleuren van de cover in de interface verwerkt worden.",
             "label": "Kleurniveau",
-            "hint": "Vol gebruikt coverkleuren overal; minimaal houdt een neutraal thema aan.",
+            "hint": "'Vol' zorgt ervoor dat coverkleuren overal worden gebruikt; 'minimaal' houdt een neutraal thema aan.",
             "levels": {
               "full": "Vol",
               "minimal": "Minimaal"
@@ -1138,20 +1285,20 @@
             "title": "Rasterweergave",
             "description": "Hoe boeken in het bibliotheekraster worden getoond.",
             "coverLabel": "Coverweergave",
-            "coverHint": "Beide toont de e-book- en audioboekcover wanneer een boek die heeft.",
+            "coverHint": "'Beide' toont de e-book- en luisterboekcover wanneer een boek die heeft.",
             "coverOptions": {
               "auto": "Beide covers",
               "ebook": "Alleen e-book",
-              "audiobook": "Alleen audioboek"
+              "audiobook": "Alleen luisterboek"
             },
             "alignmentLabel": "Dubbelcoverstijl",
             "alignmentHint": "Bepaalt of de twee covers scheef of recht worden getoond.",
             "alignmentOptions": {
-              "auto": "Scheef als niet gesynchroniseerd",
+              "auto": "Gekanteld als boeken niet zijn gesynchroniseerd",
               "straight": "Altijd recht"
             },
             "sizeLabel": "Kaartgrootte",
-            "sizeHint": "Kleiner past meer boeken per rij.",
+            "sizeHint": "Met 'kleiner' passen er meer boeken per rij.",
             "sizeOptions": {
               "smallest": "Kleinst",
               "small": "Klein",
@@ -1192,7 +1339,7 @@
             "view": {
               "hint": "De hoek waarin het 3D-boek begint. Klik op een boek om die te veranderen.",
               "ebookLabel": "E-book",
-              "audiobookLabel": "Audioboek",
+              "audiobookLabel": "Luisterboek",
               "cycle": "Beginpositie wijzigen",
               "options": {
                 "cover": "Cover",
@@ -1329,11 +1476,12 @@
     "cover": {
       "edit": "Cover bewerken",
       "uploadEbook": "Ebook-cover uploaden",
-      "uploadAudiobook": "Audioboek-cover uploaden",
+      "uploadAudiobook": "Luisterboek-cover uploaden",
       "setDefaultPosition": "Als standaardpositie instellen",
       "savedDefaultPosition": "Standaardpositie opgeslagen",
       "resize": "Sleep om de omslag te vergroten, dubbelklik om te herstellen",
-      "oddShapeWarning": "Die afbeelding is {width}x{height} en wijkt verder af van een normale omslagvorm dan we kunnen tonen. Hij wordt overal bijgesneden of met balken getoond."
+      "oddShapeWarning": "Deze afbeelding is {width}x{height} en wijkt verder af van een normale omslagvorm dan we kunnen tonen. Hij wordt overal bijgesneden of met balken getoond.",
+      "viewFullScreen": "Geef weer in volledig scherm"
     },
     "narratedBy": "verteld door",
     "writtenBy": "door",
@@ -1356,8 +1504,8 @@
       "avg": "Gem.",
       "useAverage": "gebruik gemiddelde",
       "revertManual": "Terug naar {rating}",
-      "overrideTitle": "Meerdimensionale beoordeling overschrijven?",
-      "overrideDescription": "Handmatig beoordelen vervangt je meerdimensionale beoordeling door één waarde.",
+      "overrideTitle": "Multidimensionale beoordeling overschrijven?",
+      "overrideDescription": "Handmatig beoordelen vervangt je multidimensionale beoordeling door één waarde.",
       "overrideConfirm": "Overschrijven",
       "apply": "Toepassen",
       "adjustScores": "Scores aanpassen",
@@ -1375,7 +1523,7 @@
       "download": "Downloaden",
       "downloadReadaloud": "Download <em>Readaloud</em>",
       "downloadEbook": "Download Ebook",
-      "downloadAudiobook": "Download Audiobook"
+      "downloadAudiobook": "Download Luisterboek"
     },
     "series": {
       "notInAnySeries": "Geen deel van een serie",
@@ -1402,7 +1550,7 @@
       "upload": "Upload bestand",
       "readaloud": "<em>Readaloud</em> bestand",
       "ebook": "Ebook bestand",
-      "audiobook": "Audiobook bestand",
+      "audiobook": "Luisterboek bestand",
       "title": "Bestanden",
       "assetFolder": "<em>Asset</em> map"
     },
@@ -1419,7 +1567,7 @@
       "lastAligned": "Laatst gesynchroniseerd",
       "alignedIn": "Gesynchroniseerd in",
       "estimatedRemaining": "{duration} resterend",
-      "transcriptionEngine": "Transcriptie engine",
+      "transcriptionEngine": "Synchronisatie-engine",
       "storytellerVersion": "<em>Storyteller</em> versie"
     },
     "identifiers": {
@@ -1575,10 +1723,128 @@
     "importBooksTitle": "Importeer boeken van server",
     "importBooksDescription": "Kies EPUB- of audiobestanden op de server om als nieuwe boeken te importeren."
   },
+  "AlignmentReport": {
+    "title": "Synchronisatie-rapport",
+    "loading": "Rapport laden…",
+    "notAvailable": "Voor dit boek is geen synchronisatie-rapport beschikbaar.",
+    "untitled": "Zonder titel",
+    "back": "Terug",
+    "close": "Sluiten",
+    "openFullPage": "Op volledige pagina openen",
+    "openBook": "Boek",
+    "createdByJob": "Gemaakt {relativeTime}",
+    "lastGraded": "Laatst beoordeeld op {date}",
+    "previous": {
+      "title": "Vorig rapport",
+      "open": "Openen",
+      "pruned": "details niet meer opgeslagen",
+      "hide": "Vorig rapport verbergen",
+      "show": "Vorig rapport tonen",
+      "older": "Ouder rapport",
+      "latest": "Terug naar het nieuwste rapport",
+      "now": "Nu {value}"
+    },
+    "ignored": "Genegeerd",
+    "verdict": {
+      "excellent": "Uitstekend gesynchroniseerd",
+      "strong": "Sterk gesynchroniseerd",
+      "good": "Goed gesynchroniseerd",
+      "fair": "Redelijk gesynchroniseerd",
+      "rough": "Ruw gesynchroniseerd",
+      "patchy": "Rommelig gesynchroniseerd",
+      "failed": "Synchronisatie mislukt",
+      "score": "Gewogen score {score} over {sentences, number} zinnen.",
+      "noScore": "Niets uit het ebook kwam overeen met de opname.",
+      "notFound": "{count, plural, one {# hoofdstuk in het boek is niet gevonden.} other {# hoofdstukken in het boek zijn niet gevonden.}}",
+      "looseAudio": "{count, plural, one {# audiobestand is niet geplaatst.} other {# audiobestanden zijn niet geplaatst.}}",
+      "ignored": "{count, plural, one {# hoofdstuk wordt genegeerd.} other {# hoofdstukken worden genegeerd.}}"
+    },
+    "stats": {
+      "score": "Score",
+      "scoreSub": "gewogen naar zinnen",
+      "sentences": "Zinnen",
+      "audio": "Audio geplaatst",
+      "audioOf": "van {total}",
+      "filesLoose": "{count, plural, one {# bestand los} other {# bestanden los}}",
+      "allPlaced": "alles geplaatst",
+      "needsLook": "Nakijken",
+      "needsNoAudio": "{count, number} zonder audio",
+      "needsNotFound": "{count, number} niet gevonden"
+    },
+    "table": {
+      "needsLookOnly": "Alleen nakijken",
+      "selectAll": "Alle rijen selecteren",
+      "rangeSuspicious": "bereik?",
+      "columns": {
+        "chapter": "Hoofdstuk",
+        "score": "Score",
+        "sentences": "Zinnen",
+        "audio": "Audio",
+        "length": "Duur",
+        "status": "Status"
+      }
+    },
+    "bulk": {
+      "selected": "{count, plural, one {# geselecteerd} other {# geselecteerd}}",
+      "playInOrder": "Op volgorde afspelen",
+      "clear": "Selectie wissen"
+    },
+    "actions": {
+      "menu": "Rijopties",
+      "ignore": "Negeren",
+      "unignore": "Niet meer negeren"
+    },
+    "reason": {
+      "not-found": "niet gevonden",
+      "too-short": "te kort",
+      "is-nav": "navigatie",
+      "no-text": "geen tekst"
+    },
+    "hint": {
+      "front-matter": "voorwerk",
+      "part-title": "deeltitel",
+      "promo": "promotie",
+      "after-last-match": "na de laatste match",
+      "before-first-match": "voor de eerste match"
+    },
+    "status": {
+      "missing": "zinnen ontbreken",
+      "no-audio": "geen audio",
+      "range": "audio lijkt te kort"
+    },
+    "detail": {
+      "firstMatch": "Eerste match",
+      "lastMatch": "Laatste match",
+      "noAudioFiles": "In dit hoofdstuk is geen audio geplaatst.",
+      "sharedBefore": "ook {label}",
+      "sharedAfter": "daarna {label}"
+    },
+    "loose": {
+      "title": "Audio niet geplaatst",
+      "between": "{before} → {after}",
+      "beforeFirst": "voor {label}",
+      "afterLast": "na {label}",
+      "notOnDisk": "niet op schijf"
+    },
+    "marks": {
+      "score": "% zinnen gesynchroniseerd",
+      "unalignedChapters": "Niet-gesynchroniseerde hoofdstukken"
+    }
+  },
+  "Player": {
+    "label": "Audiospeler",
+    "play": "Afspelen",
+    "pause": "Pauzeren",
+    "back10": "10 seconden terug",
+    "forward10": "10 seconden vooruit",
+    "wholeFile": "Hele bestand",
+    "speed": "Afspeelsnelheid",
+    "close": "Speler sluiten"
+  },
   "Common": {
     "Nouns": {
       "ebook": "{count, plural, one {Ebook} other {Ebooks}}",
-      "audiobook": "{count, plural, one {Audioboek} other {Audioboeken}}",
+      "audiobook": "{count, plural, one {Luisterboek} other {Luisterboeken}}",
       "readaloud": "{count, plural, one {Readaloud} other {Readalouds}}",
       "book": "{count, plural, one {Boek} other {Boeken}}",
       "chapter": "{count, plural, one {Hoofdstuk} other {Hoofdstukken}}",
@@ -1653,14 +1919,14 @@
         "duration": "Duur",
         "fileSize": "Grootte",
         "language": "Taal",
-        "alignmentScore": "Synchronisatiescore",
+        "alignmentConfidence": "Synchronisatiezekerheid",
         "alignmentGrade": "Synchronisatiecijfer",
-        "alignmentMissingSentences": "Ontbrekende zinnen",
-        "alignmentMutedChapters": "Gedempte hoofdstukken",
-        "alignmentMissingChapters": "Ontbrekende hoofdstukken",
+        "alignmentPreviousGrade": "Vorig synchronisatiecijfer",
+        "alignmentSentenceCoverage": "Zinnen gesynchroniseerd",
+        "alignmentAudioCoverage": "Audio gesynchroniseerd",
         "alignedAt": "Laatst gesynchroniseerd",
-        "alignedWith": "Transcriptie-engine",
-        "alignedByStorytellerVersion": "Aligner-versie",
+        "alignedWith": "Synchronisatie-engine",
+        "alignedByStorytellerVersion": "Synchronisatie-versie",
         "lastRead": "Laatst gelezen",
         "readingPosition": "Voortgang",
         "seriesPosition": "Reekspositie",
@@ -1690,11 +1956,11 @@
         "duration": "Duur",
         "fileSize": "Grootte",
         "language": "Taal",
-        "alignmentScore": "Score",
+        "alignmentConfidence": "Zekerheid",
         "alignmentGrade": "Cijfer",
-        "alignmentMissingSentences": "Ontbrekend",
-        "alignmentMutedChapters": "Gedempt",
-        "alignmentMissingChapters": "Ontbrk. hfdst.",
+        "alignmentPreviousGrade": "Vorig cijfer",
+        "alignmentSentenceCoverage": "Zinnen",
+        "alignmentAudioCoverage": "Audio",
         "alignedAt": "Gesynchroniseerd",
         "lastRead": "Laatst gelezen",
         "readingPosition": "Voortgang",
@@ -1705,20 +1971,35 @@
         "alignedWith": "Engine",
         "alignedByStorytellerVersion": "Versie"
       },
+      "retired": {
+        "alignmentScore": "Synchronisatiescore",
+        "alignmentMissingSentences": "Ontbrekende zinnen",
+        "alignmentMutedChapters": "Gedempte hoofdstukken"
+      },
       "options": {
         "format": {
           "ebook": "Heeft ebook",
-          "audiobook": "Heeft audioboek",
+          "audiobook": "Heeft luisterboek",
           "readaloud": "Heeft readaloud",
           "ebook-only": "Alleen ebook",
-          "audiobook-only": "Alleen audioboek",
+          "audiobook-only": "Alleen luisterboek",
           "readaloud-only": "Alleen readaloud",
           "missing-readaloud": "Readaloud ontbreekt",
           "missing-files": "Ontbrekende bestanden",
           "no-media": "Geen media"
         },
         "alignmentGrade": {
-          "A+": "A+",
+          "S": "S",
+          "A": "A",
+          "A-": "A-",
+          "B": "B",
+          "B-": "B-",
+          "C": "C",
+          "D": "D",
+          "F": "F"
+        },
+        "alignmentPreviousGrade": {
+          "S": "S",
           "A": "A",
           "A-": "A-",
           "B": "B",
@@ -1759,8 +2040,9 @@
     "startProcessing": "Verwerken starten",
     "continue": "Doorgaan",
     "resync": "Opnieuw synchroniseren (alle bestanden behouden)",
-    "fromSync": "Vanaf synchronisatiestap (transcripties behouden)",
-    "fromTranscription": "Vanaf transcriptiestap (audio behouden)",
+    "fromSync": "Vanaf synchronisatiestap (analyse behouden)",
+    "fromTranscription": "Vanaf analysestap (audio behouden)",
+    "fromTranscode": "Audio opnieuw transcoderen (analyse behouden)",
     "fullRestart": "Volledig opnieuw (alle cache verwijderen)",
     "reprocess": "Opnieuw verwerken",
     "deleteCache": "Cachebestanden verwijderen",
@@ -1777,82 +2059,13 @@
     "toastSavedAndStarted": "Als standaard opgeslagen en verwerken gestart",
     "toastFailed": "Verwerken starten mislukt",
     "estimatedTime": "Geschatte tijd: {duration}",
-    "noEstimateHistory": "Niet genoeg geschiedenis om te schatten",
+    "noEstimateHistory": "Niet genoeg geschiedenis om in te schatten",
     "stage": {
       "SPLIT_TRACKS": "Audio voorbereiden",
-      "TRANSCRIBE_CHAPTERS": "Tracks transcriberen",
-      "SYNC_CHAPTERS": "Hoofdstukken synchroniseren"
+      "TRANSCRIBE_CHAPTERS": "Analyseren",
+      "SYNC_CHAPTERS": "Synchroniseren"
     },
     "viewReport": "Synchronisatierapport bekijken"
-  },
-  "Queue": {
-    "title": "Verwerkingswachtrij",
-    "subtitle": "{count, number} boeken worden verwerkt of wachten.",
-    "empty": "Er wordt op dit moment niets verwerkt.",
-    "finishedTitle": "Voltooide taken",
-    "searchPlaceholder": "Zoeken op titel",
-    "noFinished": "Geen voltooide taken.",
-    "previous": "Vorige",
-    "next": "Volgende",
-    "untitled": "Zonder titel",
-    "sort": {
-      "recent": "Onlangs voltooid",
-      "oldest": "Oudste eerst",
-      "title": "Titel A–Z",
-      "status": "Status"
-    },
-    "status": {
-      "RUNNING": "bezig",
-      "QUEUED": "in wachtrij",
-      "PAUSED": "gepauzeerd",
-      "ERROR": "fout",
-      "DONE": "klaar",
-      "CANCELED": "geannuleerd"
-    },
-    "detail": {
-      "waiting": "Wachten",
-      "paused": "Gepauzeerd",
-      "finished": "Voltooid {time}",
-      "runTime": "Duurde {duration}",
-      "remaining": "{duration} resterend"
-    },
-    "actions": {
-      "moveUp": "Omhoog",
-      "moveDown": "Omlaag",
-      "resume": "Taak hervatten",
-      "pause": "Taak pauzeren",
-      "cancel": "Taak annuleren",
-      "alignmentReport": "Synchronisatierapport"
-    },
-    "toast": {
-      "processing": "Verwerken",
-      "paused": "Gepauzeerd",
-      "queued": "In wachtrij",
-      "manageQueue": "Wachtrij beheren",
-      "pause": "Pauzeren",
-      "resume": "Hervatten",
-      "moreActions": "Meer acties",
-      "expand": "Uitklappen",
-      "minimize": "Inklappen",
-      "dismiss": "Sluiten",
-      "queuedSuffix": "+{count} in wachtrij",
-      "ready": "{title} is klaar",
-      "open": "Openen",
-      "notifyReadyTitle": "Boek klaar",
-      "notifyReadyBody": "{title} is klaar met synchroniseren.",
-      "failed": "{title} kon niet worden verwerkt",
-      "aBook": "Een boek"
-    }
-  },
-  "Player": {
-    "label": "Audiospeler",
-    "play": "Afspelen",
-    "pause": "Pauzeren",
-    "back10": "10 seconden terug",
-    "forward10": "10 seconden vooruit",
-    "wholeFile": "Hele bestand",
-    "speed": "Afspeelsnelheid",
-    "close": "Speler sluiten"
   },
   "Reader": {
     "toolbar": {

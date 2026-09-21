@@ -1,21 +1,32 @@
+import { type GuidedNavigationDocument } from "@readium/shared"
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import {
+  type BaseQueryFn,
+  type MutationDefinition,
+  createApi,
+  fetchBaseQuery,
+} from "@reduxjs/toolkit/query/react"
 import { v4 as uuidv4 } from "uuid"
 
 import { type JsColor } from "@storyteller-platform/okmain"
 
-import { type BookAlignmentReportView } from "@/alignmentReportView"
+import {
+  type AlignmentDecisions,
+  type AlignmentOverrides,
+  type BookAlignmentReportView,
+} from "@/alignmentReportView"
 import { dismissalKey } from "@/announcement-builtins"
 import {
   type Invite,
   type InviteRequest,
+  type ServerCapabilities,
   type Settings,
   type User,
 } from "@/apiModels"
 import { type UpgradeResult } from "@/app/api/v2/books/[bookId]/upgrade-epub/route"
 import { type BackupInfo } from "@/backups"
+import { type ChapterAudio } from "@/chapterAudio"
 import { type Role } from "@/components/books/edit/marcRelators"
-import { type AlignmentOverrides } from "@/database/alignmentReports"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -37,7 +48,7 @@ import {
 } from "@/database/identifiers"
 import { type Image } from "@/database/images"
 import { type ImportRuleWithCollections } from "@/database/importRules"
-import { type PublicJob } from "@/database/jobs"
+import { type DisplayJob } from "@/database/jobs"
 import {
   type FacetSection,
   type FacetValue,
@@ -80,9 +91,20 @@ import {
 import { type UserBookRating } from "@/database/userRatings"
 import { type UserPermissionSet } from "@/database/users"
 import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
+import {
+  type JobListFilter,
+  type JobListPatch,
+  applyJobEvent,
+  applyJobPatch,
+  compareJobs,
+  queueJobNext,
+} from "@/jobList"
+import { type JobsQueryV2 } from "@/schemas/v2/job"
+import { type TranscodedAudioFile } from "@/schemas/v2/transcodedAudio"
 import { type ShelfFilter } from "@/shelves"
 import { type SortField } from "@/sort"
 import { type UUID } from "@/uuid"
+import { type StageName } from "@/work/jobStats"
 import { type RunConfig } from "@/work/runConfig"
 
 import { subscribeToEventStream } from "./eventStream"
@@ -120,6 +142,46 @@ function startBookMembershipBridge(dispatch: (action: unknown) => unknown) {
   })
 }
 
+type JobListsLifecycle = Pick<
+  Parameters<
+    NonNullable<
+      MutationDefinition<
+        unknown,
+        BaseQueryFn,
+        string,
+        unknown,
+        "api"
+      >["onQueryStarted"]
+    >
+  >[1],
+  "dispatch" | "getState"
+>
+
+function patchJobLists(
+  { dispatch, getState }: JobListsLifecycle,
+  recipe: (draft: DisplayJob[], filter: JobListFilter | undefined) => void,
+) {
+  const args = api.util.selectCachedArgsForQuery(getState(), "getJobs")
+  return args.map((arg) =>
+    dispatch(
+      api.util.updateQueryData("getJobs", arg, (draft) => {
+        recipe(draft, arg as JobListFilter | undefined)
+      }),
+    ),
+  )
+}
+
+async function undoOnFailure(
+  patches: { undo: () => void }[],
+  queryFulfilled: Promise<unknown>,
+) {
+  try {
+    await queryFulfilled
+  } catch {
+    for (const patch of patches) patch.undo()
+  }
+}
+
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: "/api/v2" }),
@@ -149,11 +211,13 @@ export const api = createApi({
     "Sidebar",
     "Jobs",
     "BookAlignmentReport",
+    "TranscodedAudio",
     "Settings",
     "Identifiers",
     "BookIdentifiers",
     "Backups",
     "PathsStatus",
+    "ServerCapabilities",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -223,6 +287,10 @@ export const api = createApi({
     getCurrentUser: build.query<User, void>({
       query: () => "/user",
       providesTags: () => ["CurrentUser"],
+    }),
+    getServerCapabilities: build.query<ServerCapabilities, void>({
+      query: () => "/server/capabilities",
+      providesTags: () => ["ServerCapabilities"],
     }),
     getMaxUploadChunkSize: build.query<
       { maxUploadChunkSize: number | null; overriden: boolean },
@@ -373,6 +441,25 @@ export const api = createApi({
         method: "DELETE",
         body: { bookUuids },
       }),
+    }),
+    recomputeAlignmentReports: build.mutation<
+      { count: number },
+      { bookUuids?: UUID[] }
+    >({
+      query: ({ bookUuids }) => ({
+        url: `/books/alignment-reports/recompute`,
+        method: "POST",
+        body: { bookUuids },
+      }),
+      invalidatesTags: (_result, _error, { bookUuids }) => [
+        "Books",
+        ...(bookUuids
+          ? bookUuids.map((uuid) => ({
+              type: "BookAlignmentReport" as const,
+              id: uuid,
+            }))
+          : ["BookAlignmentReport" as const]),
+      ],
     }),
     deleteBooks: build.mutation<
       void,
@@ -655,7 +742,7 @@ export const api = createApi({
       void,
       {
         uuid: UUID
-        restart?: "full" | "transcription" | "sync" | false
+        restart?: "full" | "transcode" | "transcription" | "sync" | false
         dismissGpuWarning?: boolean
         config?: Partial<RunConfig>
       }
@@ -1881,6 +1968,22 @@ export const api = createApi({
       ],
     }),
 
+    getBookOpf: build.query<
+      string,
+      { bookUuid: UUID; format: "ebook" | "readaloud" }
+    >({
+      query: ({ bookUuid, format }) => ({
+        url: `/books/${bookUuid}/debug/opf?format=${format}`,
+        responseHandler: "text",
+      }),
+    }),
+    getBookMediaOverlay: build.query<string, { bookUuid: UUID; href: string }>({
+      query: ({ bookUuid, href }) => ({
+        url: `/books/${bookUuid}/debug/media-overlay?href=${encodeURIComponent(href)}`,
+        responseHandler: "text",
+      }),
+    }),
+
     getInfiniteChangelog: build.infiniteQuery<
       ChangelogEntry[],
       string,
@@ -2242,34 +2345,29 @@ export const api = createApi({
     }),
 
     // processing jobs queue
-    getJobs: build.query<
-      PublicJob[],
-      {
-        type?: "active" | "finished" | "all"
-        bookUuid?: UUID
-        search?: string
-        sort?: "finishedAt" | "title" | "status"
-        order?: "asc" | "desc"
-        limit?: number
-        offset?: number
-      } | void
-    >({
+    getJobs: build.query<DisplayJob[], JobsQueryV2 | void>({
       query: (arg) => {
+        const filter: JobsQueryV2 = (arg as JobsQueryV2 | undefined) ?? {}
         const params = new URLSearchParams()
-        if (arg?.type) params.set("type", arg.type)
-        if (arg?.bookUuid) params.set("bookUuid", arg.bookUuid)
-        if (arg?.search) params.set("search", arg.search)
-        if (arg?.sort) params.set("sort", arg.sort)
-        if (arg?.order) params.set("order", arg.order)
-        if (arg?.limit) params.set("limit", String(arg.limit))
-        if (arg?.offset) params.set("offset", String(arg.offset))
+        for (const [key, value] of Object.entries(filter) as [
+          string,
+          string | number | string[] | undefined,
+        ][]) {
+          if (value === undefined) {
+            continue
+          }
+          params.set(
+            key,
+            Array.isArray(value) ? value.join(",") : String(value),
+          )
+        }
         return `/jobs?${params.toString()}`
       },
       providesTags: ["Jobs"],
       onCacheEntryAdded: async (
-        _arg,
+        arg,
         /* eslint-disable-next-line @typescript-eslint/unbound-method */
-        { dispatch, cacheDataLoaded, cacheEntryRemoved },
+        { cacheDataLoaded, cacheEntryRemoved, updateCachedData, dispatch },
       ) => {
         try {
           await cacheDataLoaded
@@ -2277,8 +2375,21 @@ export const api = createApi({
           /* empty */
         }
 
-        const unsubscribe = subscribeToEventStream("job", () => {
-          dispatch(api.util.invalidateTags(["Jobs"]))
+        const filter = arg as JobListFilter | undefined
+
+        const unsubscribe = subscribeToEventStream("job", (event) => {
+          const outcome: { value: JobListPatch } = { value: "patched" }
+          updateCachedData((draft) => {
+            outcome.value = applyJobEvent(draft, filter, event)
+          })
+          if (outcome.value === "refetch") {
+            void dispatch(
+              api.endpoints.getJobs.initiate(arg, {
+                subscribe: false,
+                forceRefetch: true,
+              }),
+            )
+          }
         })
 
         await cacheEntryRemoved
@@ -2286,7 +2397,11 @@ export const api = createApi({
       },
     }),
     getAlignmentEstimate: build.query<
-      { estimateSeconds: number | null; sampleSize: number },
+      {
+        estimateSeconds: number | null
+        stageSeconds: Partial<Record<StageName, number>>
+        sampleSize: number
+      },
       {
         bookUuid: UUID
         engine: string
@@ -2307,7 +2422,15 @@ export const api = createApi({
 
     cancelJob: build.mutation<void, { uuid: UUID }>({
       query: ({ uuid }) => ({ url: `/jobs/${uuid}`, method: "DELETE" }),
-      invalidatesTags: ["Jobs"],
+      onQueryStarted: async ({ uuid }, lifecycle) => {
+        const patches = patchJobLists(lifecycle, (draft, filter) => {
+          applyJobPatch(draft, filter, uuid, {
+            status: "CANCELED",
+            finishedAt: new Date().toISOString(),
+          })
+        })
+        await undoOnFailure(patches, lifecycle.queryFulfilled)
+      },
     }),
     reorderJobs: build.mutation<void, { order: UUID[] }>({
       query: ({ order }) => ({
@@ -2315,7 +2438,16 @@ export const api = createApi({
         method: "PATCH",
         body: { order },
       }),
-      invalidatesTags: ["Jobs"],
+      onQueryStarted: async ({ order }, lifecycle) => {
+        const patches = patchJobLists(lifecycle, (draft, filter) => {
+          for (const [index, uuid] of order.entries()) {
+            const job = draft.find((candidate) => candidate.uuid === uuid)
+            if (job) job.position = index
+          }
+          draft.sort(compareJobs(filter))
+        })
+        await undoOnFailure(patches, lifecycle.queryFulfilled)
+      },
     }),
     pauseJob: build.mutation<void, { uuid: UUID }>({
       query: ({ uuid }) => ({
@@ -2323,7 +2455,12 @@ export const api = createApi({
         method: "PATCH",
         body: { action: "pause" },
       }),
-      invalidatesTags: ["Jobs"],
+      onQueryStarted: async ({ uuid }, lifecycle) => {
+        const patches = patchJobLists(lifecycle, (draft, filter) => {
+          applyJobPatch(draft, filter, uuid, { status: "PAUSED" })
+        })
+        await undoOnFailure(patches, lifecycle.queryFulfilled)
+      },
     }),
     resumeJob: build.mutation<void, { uuid: UUID }>({
       query: ({ uuid }) => ({
@@ -2331,15 +2468,81 @@ export const api = createApi({
         method: "PATCH",
         body: { action: "resume" },
       }),
-      invalidatesTags: ["Jobs"],
+      onQueryStarted: async ({ uuid }, lifecycle) => {
+        const patches = patchJobLists(lifecycle, (draft, filter) => {
+          queueJobNext(draft, uuid)
+          applyJobPatch(draft, filter, uuid, {
+            status: "QUEUED",
+            finishedAt: null,
+          })
+        })
+        await undoOnFailure(patches, lifecycle.queryFulfilled)
+      },
     }),
     getBookAlignmentReport: build.query<
       BookAlignmentReportView,
-      { uuid: UUID }
+      { uuid: UUID; reportUuid?: UUID }
     >({
-      query: ({ uuid }) => `/books/${uuid}/alignment-report`,
+      query: ({ uuid, reportUuid }) =>
+        `/books/${uuid}/alignment-report${reportUuid ? `?reportUuid=${reportUuid}` : ""}`,
       providesTags: (_result, _error, { uuid }) => [
         { type: "BookAlignmentReport", id: uuid },
+      ],
+    }),
+    getBookChapterText: build.query<
+      string,
+      { uuid: UUID; updatedAt: string; href: string }
+    >({
+      query: ({ uuid, updatedAt, href }) => ({
+        url: `/books/${uuid}/read/${href
+          .split("/")
+          .map(encodeURIComponent)
+          .join("/")}?v=${new Date(updatedAt).getTime()}`,
+        responseHandler: "text",
+      }),
+    }),
+    getBookChapterGuidedNavigation: build.query<
+      GuidedNavigationDocument,
+      { uuid: UUID; updatedAt: string; href: string }
+    >({
+      query: ({ uuid, updatedAt, href }) => ({
+        url: `/books/${uuid}/read/~readium/guided-navigation.json?ref=${href
+          .split("/")
+          .map(encodeURIComponent)
+          .join("/")}&v=${new Date(updatedAt).getTime()}`,
+      }),
+    }),
+    getBookChapterAudio: build.query<
+      ChapterAudio,
+      { bookUuid: UUID; version: string; href: string }
+    >({
+      query: ({ bookUuid, version, href }) =>
+        `/books/${bookUuid}/debug/chapter-audio?href=${encodeURIComponent(href)}&v=${encodeURIComponent(version)}`,
+    }),
+    getTranscodedAudio: build.query<TranscodedAudioFile[], { uuid: UUID }>({
+      query: ({ uuid }) => `/books/${uuid}/transcoded-audio`,
+      providesTags: (_result, _error, { uuid }) => [
+        { type: "TranscodedAudio", id: uuid },
+      ],
+    }),
+    getBookAlignmentDecisions: build.query<AlignmentDecisions, { uuid: UUID }>({
+      query: ({ uuid }) => `/books/${uuid}/alignment-decisions`,
+      providesTags: (_result, _error, { uuid }) => [
+        { type: "BookAlignmentReport", id: uuid },
+      ],
+    }),
+    updateBookAlignmentDecisions: build.mutation<
+      AlignmentDecisions,
+      { uuid: UUID; decisions: AlignmentDecisions }
+    >({
+      query: ({ uuid, decisions }) => ({
+        url: `/books/${uuid}/alignment-decisions`,
+        method: "PUT",
+        body: decisions,
+      }),
+      invalidatesTags: (_result, _error, { uuid }) => [
+        { type: "BookAlignmentReport", id: uuid },
+        "Books",
       ],
     }),
     updateBookAlignmentOverrides: build.mutation<
@@ -2371,6 +2574,7 @@ export const {
   useCreateCollectionMutation,
   useCreateInviteMutation,
   useClearBooksCacheMutation,
+  useRecomputeAlignmentReportsMutation,
   useDeleteBookAssetsMutation,
   useDeleteBookMutation,
   useDeleteBooksMutation,
@@ -2389,6 +2593,7 @@ export const {
   useGetCurrentUserQuery,
   useGetGpuBuildWarningQuery,
   useGetMaxUploadChunkSizeQuery,
+  useGetServerCapabilitiesQuery,
   useLazyListCollectionsQuery,
   useLazyListCreatorsQuery,
   useLazyListSeriesQuery,
@@ -2418,6 +2623,12 @@ export const {
   useGetJobsQuery,
   useGetAlignmentEstimateQuery,
   useGetBookAlignmentReportQuery,
+  useGetBookChapterTextQuery,
+  useGetBookChapterGuidedNavigationQuery,
+  useGetBookChapterAudioQuery,
+  useGetTranscodedAudioQuery,
+  useGetBookAlignmentDecisionsQuery,
+  useUpdateBookAlignmentDecisionsMutation,
   useUpdateBookAlignmentOverridesMutation,
   useCancelJobMutation,
   useReorderJobsMutation,
@@ -2504,6 +2715,8 @@ export const {
   useMergeIdentifierTypesMutation,
   useListBookIdentifiersQuery,
   useUpdateBookIdentifiersMutation,
+  useGetBookOpfQuery,
+  useGetBookMediaOverlayQuery,
 } = api
 
 export function getDownloadUrl(

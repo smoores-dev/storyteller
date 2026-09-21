@@ -1,8 +1,14 @@
 "use client"
 
+import { useLocale } from "next-intl"
 import { type ReactNode, useState } from "react"
 import { Controller, useWatch } from "react-hook-form"
 import { toast } from "sonner"
+
+import {
+  CTC_DTYPES,
+  ctcModelLanguages,
+} from "@storyteller-platform/ghost-story/constants"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -45,22 +51,28 @@ import {
 } from "@v3/_/components/ui/tabs"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
+import { type ProcessRestart } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
 import {
   ConfirmDialog,
   useConfirmAction,
 } from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import { cn } from "@/cn"
+import { type ReadaloudLocationType } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
-import { useClearBooksCacheMutation } from "@/store/api"
+import {
+  useClearBooksCacheMutation,
+  useGetServerCapabilitiesQuery,
+} from "@/store/api"
 
 import {
   LockTooltip,
   SettingsFormField,
   useSettingsForm,
 } from "./SettingsFormProvider"
-import { SettingsSection } from "./shared"
+import { AlignerPicker } from "./aligner-picker"
+import { AdvancedFields, SettingsSection } from "./shared"
 
 export function ProcessingTab() {
   return (
@@ -102,17 +114,18 @@ function SettingsCard({
     <Card>
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger className="w-full cursor-pointer text-left">
-          <CardHeader className="flex-row items-start justify-between gap-2">
-            <div className="grid gap-1.5">
-              <CardTitle>{title}</CardTitle>
-              <CardDescription>{description}</CardDescription>
-            </div>
-            <icon.ChevronDown
-              className={cn(
-                "text-muted-foreground mt-0.5 size-4 shrink-0 stroke-[1.5] transition-transform",
-                open && "rotate-180",
-              )}
-            />
+          <CardHeader className="w-full">
+            <CardTitle className="flex w-full items-start justify-between">
+              {title}
+              <icon.ChevronDown
+                className={cn(
+                  "text-muted-foreground mt-0.5 size-4 shrink-0 stroke-[1.5] transition-transform",
+                  open && "rotate-180",
+                )}
+              />
+            </CardTitle>
+
+            <CardDescription>{description}</CardDescription>
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -121,6 +134,11 @@ function SettingsCard({
       </Collapsible>
     </Card>
   )
+}
+
+const alignerSettingsComponents = {
+  whisper: WhisperAlignerSettings,
+  ctc: CtcAlignerSettings,
 }
 
 const engineSettingsComponents = {
@@ -135,88 +153,22 @@ const engineSettingsComponents = {
 
 export function ProcessingSettingsFields({
   collapsible = false,
+  restart,
 }: {
   collapsible?: boolean
+  restart?: ProcessRestart
 } = {}) {
   const { form } = useSettingsForm()
-  const tt = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const tt = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   const tp = useTranslation(
     "SettingsPage.tabs.processing.sections.parallelization",
   )
   const ta = useTranslation("SettingsPage.tabs.processing.sections.audio")
 
-  const transcriptionEngine = useWatch({
-    control: form.control,
-    name: "transcriptionEngine",
-  })
+  const aligner = useWatch({ control: form.control, name: "aligner" })
   const codec = useWatch({ control: form.control, name: "codec" })
 
-  const engineCategories = [
-    {
-      key: "local",
-      label: tt("tabLocal"),
-      engines: [
-        {
-          value: "whisper.cpp" as const,
-          label: tt("whisperCpp"),
-          description: tt("whisperCppDescription"),
-        },
-      ],
-    },
-    {
-      key: "remote",
-      label: tt("tabRemote"),
-      engines: [
-        {
-          value: "whisper-server" as const,
-          label: tt("whisperServer"),
-          description: tt("whisperServerDescription"),
-        },
-      ],
-    },
-    {
-      key: "thirdParty",
-      label: tt("tabThirdParty"),
-      engines: [
-        {
-          value: "openai-cloud" as const,
-          label: tt("openaiCloud"),
-          description: tt("openaiCloudDescription"),
-        },
-        {
-          value: "deepgram" as const,
-          label: tt("deepgram"),
-          description: tt("deepgramDescription"),
-        },
-        {
-          value: "google-cloud" as const,
-          label: tt("googleCloud"),
-          description: tt("googleCloudDescription"),
-        },
-        {
-          value: "microsoft-azure" as const,
-          label: tt("microsoftAzure"),
-          description: tt("microsoftAzureDescription"),
-        },
-        {
-          value: "amazon-transcribe" as const,
-          label: tt("amazonTranscribe"),
-          description: tt("amazonTranscribeDescription"),
-        },
-      ],
-    },
-  ]
-
-  const engineCategoryOf = (engine: string | null | undefined) =>
-    engineCategories.find((category) =>
-      category.engines.some((e) => e.value === engine),
-    )?.key ?? "local"
-
-  const [engineTab, setEngineTab] = useState(() =>
-    engineCategoryOf(transcriptionEngine),
-  )
+  const AlignerSettings = alignerSettingsComponents[aligner ?? "whisper"]
 
   const trackLengths = [
     { value: 0.75, label: ta("maxTrackLength45") },
@@ -250,281 +202,564 @@ export function ProcessingSettingsFields({
     })),
   ]
 
+  const keepsAnalysis = restart === "sync" || restart === "transcode"
+  const showTranscription = !keepsAnalysis
+  const showAudio = !restart || restart === "full" || restart === "transcode"
+
   return (
     <div className="space-y-6">
-      <SettingsSection tab="processing" section="transcription">
+      <SettingsSection tab="processing" section="alignment">
         <SettingsCard
           collapsible={collapsible}
           defaultOpen
           title={tt("title")}
           description={tt("description")}
         >
-          <SettingsFormField
-            name="transcriptionEngine"
-            label={tt("engine")}
-            render={(field, _fieldState, isLocked) => (
-              <Tabs
-                value={engineTab}
-                onValueChange={(value) => {
-                  if (typeof value === "string") setEngineTab(value)
-                }}
-              >
-                <TabsList className="w-full">
-                  {engineCategories.map((category) => (
-                    <TabsTrigger key={category.key} value={category.key}>
-                      {category.label}
-                      {engineCategoryOf(field.value) === category.key && (
-                        <span className="bg-primary size-1.5 shrink-0 rounded-full" />
-                      )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                {engineCategories.map((category) => (
-                  <TabsContent key={category.key} value={category.key}>
-                    <RadioGroup
-                      value={field.value}
-                      onValueChange={(value) => {
-                        if (typeof value === "string") field.onChange(value)
-                      }}
-                      disabled={isLocked}
-                    >
-                      {category.engines.map((engine) => {
-                        const selected = field.value === engine.value
-                        const EngineSettings =
-                          engineSettingsComponents[engine.value]
-                        return (
-                          <div
-                            key={engine.value}
-                            className={cn(
-                              "overflow-hidden rounded-md border",
-                              selected && "border-primary",
-                            )}
-                          >
-                            <FieldLabel
-                              htmlFor={`engine-${engine.value}`}
-                              className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
-                            >
-                              <Field orientation="horizontal">
-                                <FieldContent>
-                                  <FieldTitle>{engine.label}</FieldTitle>
-                                  <FieldDescription>
-                                    {engine.description}
-                                  </FieldDescription>
-                                </FieldContent>
-                                <RadioGroupItem
-                                  value={engine.value}
-                                  id={`engine-${engine.value}`}
-                                />
-                              </Field>
-                            </FieldLabel>
-                            {selected && (
-                              <div className="space-y-4 border-t p-3">
-                                <EngineSettings />
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </RadioGroup>
-                  </TabsContent>
-                ))}
-              </Tabs>
+          {showTranscription && (
+            <SettingsFormField
+              name="aligner"
+              label={tt("aligner")}
+              render={(field, _fieldState, isLocked) => (
+                <AlignerPicker
+                  value={field.value ?? "whisper"}
+                  onChange={field.onChange}
+                  disabled={isLocked}
+                />
+              )}
+            />
+          )}
+
+          <AlignerSettings restart={restart} />
+
+          <AdvancedFields>
+            {showTranscription && (aligner ?? "whisper") === "ctc" && (
+              <CtcAdvancedFields />
             )}
-          />
+
+            <SettingsFormField
+              name="alignmentAutoExclude"
+              label={tt("autoExclude")}
+              description={tt("autoExcludeDescription")}
+              render={(field, _fieldState, isLocked) => (
+                <Switch
+                  checked={field.value ?? true}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked)
+                  }}
+                  disabled={isLocked}
+                />
+              )}
+            />
+          </AdvancedFields>
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection tab="processing" section="audio">
-        <SettingsCard
-          collapsible={collapsible}
-          defaultOpen={!collapsible}
-          title={ta("title")}
-          description={ta("description")}
-        >
-          <SettingsFormField
-            name="maxTrackLength"
-            label={ta("maxTrackLength")}
-            description={ta("maxTrackLengthDescription")}
-            render={(field, fieldState, isLocked) => (
-              <Select
-                disabled={isLocked}
-                aria-invalid={fieldState.invalid}
-                data-disabled={isLocked}
-                items={trackLengths.map(({ value, label }) => ({
-                  value: String(value),
-                  label,
-                }))}
-                value={String(field.value)}
-                onValueChange={(value) => {
-                  if (value) {
-                    field.onChange(parseFloat(value))
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {trackLengths.find(({ value }) => value === field.value)
-                      ?.label ?? ta("maxTrackLength2")}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {trackLengths.map(({ value, label }) => (
-                    <SelectItem key={value} value={String(value)}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
+      {showAudio && (
+        <SettingsSection tab="processing" section="audio">
+          <SettingsCard
+            collapsible={collapsible}
+            defaultOpen={!collapsible}
+            title={ta("title")}
+            description={ta("description")}
+          >
+            <SettingsFormField
+              name="maxTrackLength"
+              label={ta("maxTrackLength")}
+              description={ta("maxTrackLengthDescription")}
+              render={(field, fieldState, isLocked) => (
+                <Select
+                  disabled={isLocked}
+                  aria-invalid={fieldState.invalid}
+                  data-disabled={isLocked}
+                  items={trackLengths.map(({ value, label }) => ({
+                    value: String(value),
+                    label,
+                  }))}
+                  value={String(field.value)}
+                  onValueChange={(value) => {
+                    if (value) {
+                      field.onChange(parseFloat(value))
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {trackLengths.find(({ value }) => value === field.value)
+                        ?.label ?? ta("maxTrackLength2")}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trackLengths.map(({ value, label }) => (
+                      <SelectItem key={value} value={String(value)}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
 
-          <SettingsFormField
-            name="codec"
-            label={ta("codec")}
-            render={(field, fieldState, isLocked) => (
+            <SettingsFormField
+              name="codec"
+              label={ta("codec")}
+              render={(field, fieldState, isLocked) => (
+                <Select
+                  disabled={isLocked}
+                  aria-invalid={fieldState.invalid}
+                  data-disabled={isLocked}
+                  value={field.value ?? "default"}
+                  items={codecOptions.map(({ value, label }) => ({
+                    value,
+                    label,
+                  }))}
+                  onValueChange={(value) => {
+                    field.onChange(value === "default" ? null : value)
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {codecOptions.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+
+            {codec === "libopus" && (
+              <SettingsFormField
+                name="bitrate"
+                label={ta("bitrate")}
+                render={(field, fieldState, isLocked) => (
+                  <Select
+                    items={opusBitrateOptions}
+                    disabled={isLocked}
+                    aria-invalid={fieldState.invalid}
+                    data-disabled={isLocked}
+                    value={field.value ?? ""}
+                    onValueChange={(value) => {
+                      field.onChange(value || null)
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {opusBitrateOptions.map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            )}
+
+            {codec === "libmp3lame" && (
+              <SettingsFormField
+                name="bitrate"
+                label={ta("bitrate")}
+                render={(field, fieldState, isLocked) => (
+                  <Select
+                    disabled={isLocked}
+                    aria-invalid={fieldState.invalid}
+                    data-disabled={isLocked}
+                    value={field.value ?? ""}
+                    onValueChange={(value) => {
+                      field.onChange(value || null)
+                    }}
+                    items={mp3BitrateOptions}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mp3BitrateOptions.map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            )}
+            <AdvancedFields>
+              <SettingsFormField
+                name="parallelTranscodes"
+                label={tp("parallelTranscodes")}
+                description={tp("parallelTranscodesDescription")}
+                render={(field, fieldState, isLocked) => (
+                  <Input
+                    id="parallelTranscodes"
+                    type="number"
+                    min={1}
+                    disabled={isLocked}
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(parseInt(e.target.value) || 1)
+                    }}
+                    aria-invalid={fieldState.invalid}
+                  />
+                )}
+              />
+            </AdvancedFields>
+          </SettingsCard>
+        </SettingsSection>
+      )}
+    </div>
+  )
+}
+
+function WhisperAlignerSettings({ restart }: { restart?: ProcessRestart }) {
+  const { form } = useSettingsForm()
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+  const tp = useTranslation(
+    "SettingsPage.tabs.processing.sections.parallelization",
+  )
+
+  const transcriptionEngine = useWatch({
+    control: form.control,
+    name: "transcriptionEngine",
+  })
+
+  const engineCategories = [
+    {
+      key: "local",
+      label: t("tabLocal"),
+      engines: [
+        {
+          value: "whisper.cpp" as const,
+          label: t("whisperCpp"),
+          description: t("whisperCppDescription"),
+        },
+      ],
+    },
+    {
+      key: "remote",
+      label: t("tabRemote"),
+      engines: [
+        {
+          value: "whisper-server" as const,
+          label: t("whisperServer"),
+          description: t("whisperServerDescription"),
+        },
+      ],
+    },
+    {
+      key: "thirdParty",
+      label: t("tabThirdParty"),
+      engines: [
+        {
+          value: "openai-cloud" as const,
+          label: t("openaiCloud"),
+          description: t("openaiCloudDescription"),
+        },
+        {
+          value: "deepgram" as const,
+          label: t("deepgram"),
+          description: t("deepgramDescription"),
+        },
+        {
+          value: "google-cloud" as const,
+          label: t("googleCloud"),
+          description: t("googleCloudDescription"),
+        },
+        {
+          value: "microsoft-azure" as const,
+          label: t("microsoftAzure"),
+          description: t("microsoftAzureDescription"),
+        },
+        {
+          value: "amazon-transcribe" as const,
+          label: t("amazonTranscribe"),
+          description: t("amazonTranscribeDescription"),
+        },
+      ],
+    },
+  ]
+
+  const engineCategoryOf = (engine: string | null | undefined) =>
+    engineCategories.find((category) =>
+      category.engines.some((e) => e.value === engine),
+    )?.key ?? "local"
+
+  const [engineTab, setEngineTab] = useState(() =>
+    engineCategoryOf(transcriptionEngine),
+  )
+
+  return (
+    <>
+      <SettingsFormField
+        name="transcriptionEngine"
+        label={t("engine")}
+        render={(field, _fieldState, isLocked) => (
+          <Tabs
+            value={engineTab}
+            onValueChange={(value) => {
+              if (typeof value === "string") setEngineTab(value)
+            }}
+          >
+            <TabsList className="w-full">
+              {engineCategories.map((category) => (
+                <TabsTrigger key={category.key} value={category.key}>
+                  {category.label}
+                  {engineCategoryOf(field.value) === category.key && (
+                    <span className="bg-primary size-1.5 shrink-0 rounded-full" />
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {engineCategories.map((category) => (
+              <TabsContent key={category.key} value={category.key}>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={(value) => {
+                    if (typeof value === "string") field.onChange(value)
+                  }}
+                  disabled={isLocked}
+                >
+                  {category.engines.map((engine) => {
+                    const selected = field.value === engine.value
+                    const EngineSettings =
+                      engineSettingsComponents[engine.value]
+                    return (
+                      <div
+                        key={engine.value}
+                        className={cn(
+                          "overflow-hidden rounded-md border",
+                          selected && "border-primary",
+                        )}
+                      >
+                        <FieldLabel
+                          htmlFor={`engine-${engine.value}`}
+                          className="has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border-0"
+                        >
+                          <Field orientation="horizontal">
+                            <FieldContent>
+                              <FieldTitle>{engine.label}</FieldTitle>
+                              <FieldDescription>
+                                {engine.description}
+                              </FieldDescription>
+                            </FieldContent>
+                            <RadioGroupItem
+                              value={engine.value}
+                              id={`engine-${engine.value}`}
+                            />
+                          </Field>
+                        </FieldLabel>
+                        {selected && (
+                          <div className="space-y-4 border-t p-3">
+                            <EngineSettings />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </RadioGroup>
+              </TabsContent>
+            ))}
+          </Tabs>
+        )}
+      />
+      {restart !== "sync" && restart !== "transcode" && (
+        <SettingsFormField
+          name="parallelTranscribes"
+          label={tp("parallelTranscribes")}
+          description={tp("parallelTranscribesDescription")}
+          render={(field, fieldState, isLocked) => (
+            <Input
+              id="parallelTranscribes"
+              type="number"
+              min={1}
+              disabled={isLocked}
+              {...field}
+              onChange={(e) => {
+                field.onChange(parseInt(e.target.value) || 1)
+              }}
+              aria-invalid={fieldState.invalid}
+            />
+          )}
+        />
+      )}
+    </>
+  )
+}
+
+function CtcAlignerSettings({ restart }: { restart?: ProcessRestart }) {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+  const { capabilities: initialCapabilities } = useSettingsForm()
+  const { data: fetchedCapabilities } = useGetServerCapabilitiesQuery(
+    undefined,
+    { skip: initialCapabilities !== undefined },
+  )
+  const capabilities = initialCapabilities ?? fetchedCapabilities
+
+  if (restart === "sync" || restart === "transcode") return null
+
+  const available = capabilities?.ctcDevices.available ?? []
+  const deviceOptions = available.map((value) => ({
+    value,
+    label: t(`ctcDevices.${value}`),
+  }))
+
+  return (
+    <SettingsFormField
+      name="ctcDevice"
+      label={t("ctcDevice")}
+      description={t("ctcDeviceDescription")}
+      render={(field, fieldState, isLocked) => (
+        <Select
+          items={deviceOptions}
+          value={
+            available.some((device) => device === field.value)
+              ? (field.value ?? "")
+              : (capabilities?.ctcDevices.default ?? "")
+          }
+          onValueChange={(value) => {
+            field.onChange(value)
+          }}
+          disabled={isLocked}
+          aria-invalid={fieldState.invalid}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {deviceOptions.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    />
+  )
+}
+
+function CtcAdvancedFields() {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+  const locale = useLocale()
+
+  const modelOptions = [
+    { value: "quartznet15x5" as const, label: t("ctcModels.quartznet15x5") },
+    { value: "mms" as const, label: t("ctcModels.mms") },
+  ]
+
+  const dtypeOptions = ["auto", ...CTC_DTYPES].map((value) => ({
+    value,
+    label: t(`ctcDtypes.${value as "auto" | (typeof CTC_DTYPES)[number]}`),
+  }))
+
+  const languageNames = new Intl.DisplayNames([locale], { type: "language" })
+
+  return (
+    <>
+      <SettingsFormField
+        name="ctcModel"
+        label={t("ctcModel")}
+        description={t("ctcModelDescription")}
+        render={(field, fieldState, isLocked) => {
+          const family = field.value ?? "quartznet15x5"
+          return (
+            <>
               <Select
+                items={modelOptions}
+                value={family}
+                onValueChange={(value) => {
+                  field.onChange(value)
+                }}
                 disabled={isLocked}
                 aria-invalid={fieldState.invalid}
-                data-disabled={isLocked}
-                value={field.value ?? "default"}
-                items={codecOptions.map(({ value, label }) => ({
-                  value,
-                  label,
-                }))}
-                onValueChange={(value) => {
-                  field.onChange(value === "default" ? null : value)
-                }}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {codecOptions.map(({ value, label }) => (
+                  {modelOptions.map(({ value, label }) => (
                     <SelectItem key={value} value={value}>
                       {label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
-          />
-
-          {codec === "libopus" && (
-            <SettingsFormField
-              name="bitrate"
-              label={ta("bitrate")}
-              render={(field, fieldState, isLocked) => (
-                <Select
-                  items={opusBitrateOptions}
-                  disabled={isLocked}
-                  aria-invalid={fieldState.invalid}
-                  data-disabled={isLocked}
-                  value={field.value ?? ""}
-                  onValueChange={(value) => {
-                    field.onChange(value || null)
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {opusBitrateOptions.map(({ value, label }) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {family !== "mms" && (
+                <FieldDescription>
+                  {t("ctcModelLanguages", {
+                    languages: ctcModelLanguages(family)
+                      .map((language) => languageNames.of(language) ?? language)
+                      .join(", "),
+                  })}
+                </FieldDescription>
               )}
-            />
-          )}
-
-          {codec === "libmp3lame" && (
-            <SettingsFormField
-              name="bitrate"
-              label={ta("bitrate")}
-              render={(field, fieldState, isLocked) => (
-                <Select
-                  disabled={isLocked}
-                  aria-invalid={fieldState.invalid}
-                  data-disabled={isLocked}
-                  value={field.value ?? ""}
-                  onValueChange={(value) => {
-                    field.onChange(value || null)
-                  }}
-                  items={mp3BitrateOptions}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mp3BitrateOptions.map(({ value, label }) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          )}
-        </SettingsCard>
-      </SettingsSection>
-
-      <SettingsSection tab="processing" section="parallelization">
-        <SettingsCard
-          collapsible={collapsible}
-          defaultOpen={!collapsible}
-          title={tp("title")}
-          description={tp("description")}
-        >
-          <SettingsFormField
-            name="parallelTranscodes"
-            label={tp("parallelTranscodes")}
-            description={tp("parallelTranscodesDescription")}
-            render={(field, fieldState, isLocked) => (
-              <Input
-                id="parallelTranscodes"
-                type="number"
-                min={1}
-                disabled={isLocked}
-                {...field}
-                onChange={(e) => {
-                  field.onChange(parseInt(e.target.value) || 1)
-                }}
-                aria-invalid={fieldState.invalid}
-              />
-            )}
+            </>
+          )
+        }}
+      />
+      <SettingsFormField
+        name="ctcDtype"
+        label={t("ctcDtype")}
+        description={t("ctcDtypeDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Select
+            items={dtypeOptions}
+            value={field.value ?? "auto"}
+            onValueChange={(value) => {
+              field.onChange(value === "auto" ? null : value)
+            }}
+            disabled={isLocked}
+            aria-invalid={fieldState.invalid}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {dtypeOptions.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+      <SettingsFormField
+        name="ctcBatchSize"
+        label={t("ctcBatchSize")}
+        description={t("ctcBatchSizeDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Input
+            id="ctcBatchSize"
+            type="number"
+            min={1}
+            max={16}
+            placeholder={t("ctcBatchSizePlaceholder")}
+            disabled={isLocked}
+            {...field}
+            value={field.value ?? ""}
+            onChange={(e) => {
+              field.onChange(
+                e.target.value === ""
+                  ? null
+                  : Math.max(1, parseInt(e.target.value) || 1),
+              )
+            }}
+            aria-invalid={fieldState.invalid}
           />
-
-          <SettingsFormField
-            name="parallelTranscribes"
-            label={tp("parallelTranscribes")}
-            description={tp("parallelTranscribesDescription")}
-            render={(field, fieldState, isLocked) => (
-              <Input
-                id="parallelTranscribes"
-                type="number"
-                min={1}
-                disabled={isLocked}
-                {...field}
-                onChange={(e) => {
-                  field.onChange(parseInt(e.target.value) || 1)
-                }}
-                aria-invalid={fieldState.invalid}
-              />
-            )}
-          />
-        </SettingsCard>
-      </SettingsSection>
-    </div>
+        )}
+      />
+    </>
   )
 }
 
 function WhisperSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
 
   const whisperModelOptions = [
     {
@@ -661,9 +896,7 @@ function WhisperSettings() {
 }
 
 function WhisperServerSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
 
   return (
     <>
@@ -701,9 +934,7 @@ function WhisperServerSettings() {
 }
 
 function GoogleCloudSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <SettingsFormField
       name="googleCloudApiKey"
@@ -723,9 +954,7 @@ function GoogleCloudSettings() {
 }
 
 function AzureSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <>
       <SettingsFormField
@@ -760,9 +989,7 @@ function AzureSettings() {
 }
 
 function AmazonSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <>
       <SettingsFormField
@@ -824,9 +1051,7 @@ function AmazonSettings() {
 }
 
 function OpenAiSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <>
       <SettingsFormField
@@ -889,9 +1114,7 @@ function OpenAiSettings() {
 }
 
 function DeepgramSettings() {
-  const t = useTranslation(
-    "SettingsPage.tabs.processing.sections.transcription",
-  )
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   return (
     <>
       <SettingsFormField
@@ -963,7 +1186,7 @@ function ReadaloudSection() {
     { value: "SIBLING_FOLDER", label: tr("locationTypeSiblingFolder") },
     { value: "CUSTOM_FOLDER", label: tr("locationTypeCustomFolder") },
     { value: "INTERNAL", label: tr("locationTypeInternal") },
-  ]
+  ] as const satisfies { value: ReadaloudLocationType; label: string }[]
 
   return (
     <SettingsSection tab="processing" section="readaloud">

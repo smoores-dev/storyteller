@@ -25,6 +25,7 @@ import {
 
 import { type AudioEncoding } from "./AudioEncoding.ts"
 import { getSafeChapterRanges } from "./ranges.ts"
+import { describeTrackSource, writeTrackSource } from "./trackSource.ts"
 
 export interface ProcessOptions {
   maxLength?: number | null | undefined
@@ -69,7 +70,7 @@ export async function processAudiobook(
   await Promise.all(
     filenames
       .map(async (filename, index) => {
-        if (signal.aborted) throw new Error("Aborted")
+        signal.throwIfAborted()
 
         const filepath = join(input, filename)
 
@@ -87,6 +88,7 @@ export async function processAudiobook(
         const fileOptions = {
           ...options,
           signal,
+          root: input,
           lock: semaphore,
           onProgress: onFileProgress,
         }
@@ -113,6 +115,7 @@ export async function processAudiobook(
 
 interface ProcessFileOptions extends Omit<ProcessOptions, "parallelism"> {
   lock: AsyncSemaphore
+  root?: string | null | undefined
 }
 
 async function resolveVbrEncoding(
@@ -225,6 +228,16 @@ export async function processFile(
           )
 
           if (wasSplit) {
+            await writeTrackSource(
+              outputFilepath,
+              await describeTrackSource(
+                options.root ?? input,
+                range.filepath,
+                range.start,
+                range.end,
+                range.title,
+              ),
+            )
             outputFiles.push(outputFilename)
 
             options.onProgress?.((outputFiles.length + 1) / ranges.length)

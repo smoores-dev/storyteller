@@ -1,3 +1,13 @@
+import { type ShelfFilterIssue } from "@/shelves"
+
+export function apiErrorIssues(error: unknown): ShelfFilterIssue[] | null {
+  if (!error || typeof error !== "object" || !("data" in error)) return null
+  const data = error.data
+  if (!data || typeof data !== "object") return null
+  const issues = (data as { issues?: unknown }).issues
+  return Array.isArray(issues) ? (issues as ShelfFilterIssue[]) : null
+}
+
 export function apiErrorMessage(error: unknown): string | undefined {
   if (!error || typeof error !== "object") return undefined
 

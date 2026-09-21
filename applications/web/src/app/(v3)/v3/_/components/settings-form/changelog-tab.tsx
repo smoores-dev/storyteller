@@ -15,6 +15,7 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { type ChangelogEntry } from "@/database/changelog"
 import * as icon from "@/icons"
+import { useSanitizedHtml } from "@/sanitizeHtml"
 import { api, useGetLatestChangelogQuery } from "@/store/api"
 import { BETA_TAGS, compareVersions } from "@/versions"
 
@@ -48,7 +49,9 @@ function ChangelogEntryCard({
 }) {
   const v = compareVersions(entry.version, currentVersion)
 
-  const descriptionWithoutHeader = formatChangelogDescription(entry.description)
+  const descriptionWithoutHeader = useSanitizedHtml(
+    formatChangelogDescription(entry.description),
+  )
 
   const t = useTranslation("SettingsPage.changelog")
 

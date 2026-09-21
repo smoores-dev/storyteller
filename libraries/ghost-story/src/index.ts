@@ -7,12 +7,18 @@ export {
 } from "./api/Recognition.ts"
 export {
   type EmissionData,
-  type Emissions,
   type EmissionOptions,
   type EmissionResult,
+  type EmissionTokenizer,
+  type Emissions,
+  type SentencePieceModel,
   decodeEmissions,
   emit,
   encodeEmissions,
+  encodeUnigram,
+  readSentencePieceModel,
+  unigramText,
+  unigramTokenizer,
 } from "./api/Emission.ts"
 export {
   type AudioFormat,
@@ -51,6 +57,7 @@ export {
   detectPlatform,
   getConfiguredVariant,
   getInstallDir,
+  getInstalledVariant,
   getModelDir,
   getModelPath,
   getVadModelPath,
@@ -58,6 +65,9 @@ export {
   getWhisperServerExecutablePath,
   isValidModel,
   resolveVariant,
+  type CtcDeviceCapabilities,
+  ctcDeviceCapabilities,
+  resolveCtcDevice,
 } from "./cli/config.ts"
 export {
   type InstallBinaryOptions,
@@ -68,6 +78,50 @@ export {
   installModel,
   installVadModel,
 } from "./cli/install.ts"
+// export {
+//   type EmissionWireResult,
+//   decodeEmissions,
+//   encodeEmissions,
+// } from "./emission/EmissionWire.ts"
+export {
+  type CtcOptions,
+  type CtcResult,
+  emitWindows,
+  readAudioAsFloat32,
+} from "./emission/CtcEmission.ts"
+export {
+  type EmissionsFileHeader,
+  type EmissionsMeta,
+  type GetBytes,
+  decodeEmissionsFrames,
+  decodeEmissionsHeader,
+  frameByteRange,
+} from "./emission/encoding.ts"
+export {
+  type ChunkRequest,
+  type Grid,
+  type SourceInfo,
+  PCM_SAMPLE_RATE,
+  planChunks,
+} from "./audio/PlanChunks.ts"
+export {
+  type DecodeOptions,
+  type DecodeRequest,
+  decodePcm,
+  probeSource,
+} from "./audio/DecodePcm.ts"
+export { mapOrdered } from "./utilities/MapOrdered.ts"
+export { Scratch, type ScratchOptions } from "./utilities/Scratch.ts"
+export {
+  type CtcBackend,
+  type CtcRun,
+  type CtcRunOptions,
+  type LoadCtcModelOptions,
+  type LoadedCtcModel,
+  loadCtcModel,
+  resolveCtcRun,
+} from "./emission/CtcModel.ts"
+// export { type Wav2Vec2ServerOptions } from "./emission/Wav2Vec2ServerEmission.ts"
 export {
   type ConversionMode,
   getConfig,

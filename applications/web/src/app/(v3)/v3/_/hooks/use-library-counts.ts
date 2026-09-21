@@ -1,9 +1,11 @@
 import { BADGE_FACET_SECTIONS } from "@/facet-sections"
+import { type ShelfFilterIssue } from "@/shelves"
 import { useGetLibraryCountsQuery } from "@/store/api"
 
 export type CountResult = {
   count: number | undefined
   isLoading: boolean
+  issues?: ShelfFilterIssue[]
 }
 
 export type LibraryCounts = Record<string, CountResult>
@@ -25,6 +27,10 @@ export function useLibraryCounts(): LibraryCounts {
 
   for (const [uuid, count] of Object.entries(data?.shelves ?? {})) {
     result[`shelf:${uuid}`] = { count, isLoading }
+  }
+
+  for (const [uuid, issues] of Object.entries(data?.shelfIssues ?? {})) {
+    result[`shelf:${uuid}`] = { count: undefined, isLoading, issues }
   }
 
   return result

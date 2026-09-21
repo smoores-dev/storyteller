@@ -1,7 +1,8 @@
 "use client"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useState } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { type FieldErrors, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 import { LANGUAGES } from "@storyteller-platform/ghost-story/constants"
@@ -37,10 +38,14 @@ import { Spinner } from "@v3/_/components/ui/spinner"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { type Settings } from "@/apiModels"
-import { SettingsFormProvider } from "@/app/(v3)/v3/_/components/settings-form/SettingsFormProvider"
+import {
+  type SettingsFormForm,
+  SettingsFormProvider,
+} from "@/app/(v3)/v3/_/components/settings-form/SettingsFormProvider"
 import { ProcessingSettingsFields } from "@/app/(v3)/v3/_/components/settings-form/processing-tab"
 import { useFormatDuration } from "@/app/(v3)/v3/_/lib/formatters"
 import { type BookWithRelations } from "@/database/books"
+import { SettingsSchema } from "@/database/settingsTypes"
 import * as icon from "@/icons"
 import {
   useGetAlignmentEstimateQuery,
@@ -50,7 +55,7 @@ import {
 } from "@/store/api"
 import { RUN_CONFIG_SETTING_KEYS, type RunConfig } from "@/work/runConfig"
 
-type ProcessRestart = false | "sync" | "transcription" | "full"
+import { type ProcessRestart } from "./useProcessingRun"
 
 export function ProcessRunDialog({
   book,
@@ -108,28 +113,51 @@ function RunConfigForm({
   restart: ProcessRestart
   onClose: () => void
 }) {
-  const form = useForm<Settings>({ defaultValues: settings })
+  const form = useForm({
+    defaultValues: settings,
+    resolver: zodResolver(SettingsSchema),
+  })
   const [language, setLanguage] = useState(book.language ?? "auto")
   const [processBook, { isLoading: isProcessing }] = useProcessBookMutation()
   const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation()
   const t = useTranslation("Processing")
   const formatDuration = useFormatDuration()
 
+  const watchedAligner = useWatch({ control: form.control, name: "aligner" })
   const watchedEngine = useWatch({
     control: form.control,
     name: "transcriptionEngine",
   })
-  const watchedModel = useWatch({ control: form.control, name: "whisperModel" })
+  const watchedModel = useWatch({
+    control: form.control,
+    name: "whisperModel",
+  })
+  const watchedCtcEngine = useWatch({
+    control: form.control,
+    name: "ctcEngine",
+  })
+
+  const isCtc = (watchedAligner ?? settings.aligner) === "ctc"
 
   const { data: estimate } = useGetAlignmentEstimateQuery(
     {
       bookUuid: book.uuid,
-      engine: watchedEngine ?? settings.transcriptionEngine ?? "whisper.cpp",
-      whisperModel: watchedModel ?? settings.whisperModel ?? null,
+      engine: isCtc
+        ? (watchedCtcEngine ?? settings.ctcEngine ?? "ctc-local")
+        : (watchedEngine ?? settings.transcriptionEngine ?? "whisper.cpp"),
+      whisperModel: isCtc
+        ? null
+        : (watchedModel ?? settings.whisperModel ?? null),
       restart: restart || false,
     },
     { skip: !book.uuid },
   )
+
+  function reportInvalid(errors: FieldErrors<Settings>) {
+    toast.error(t("toastFailed"), {
+      description: Object.keys(errors).join(", "),
+    })
+  }
 
   async function start(values: Settings, saveAsDefaults: boolean) {
     const config: Partial<RunConfig> = {
@@ -162,9 +190,15 @@ function RunConfigForm({
     label: lang,
   }))
   return (
-    <SettingsFormProvider form={form} lockedSettings={new Set()}>
+    <SettingsFormProvider
+      form={form as SettingsFormForm}
+      lockedSettings={new Set()}
+    >
       <form
-        onSubmit={form.handleSubmit((values) => start(values, false))}
+        onSubmit={form.handleSubmit(
+          (values) => start(values, false),
+          reportInvalid,
+        )}
         className="relative flex min-h-0 flex-1 flex-col"
       >
         <div className="min-h-0 flex-1 overflow-y-auto px-px">
@@ -192,7 +226,7 @@ function RunConfigForm({
               </Select>
             </Field>
 
-            <ProcessingSettingsFields collapsible />
+            <ProcessingSettingsFields collapsible restart={restart} />
           </div>
         </div>
 
@@ -225,7 +259,10 @@ function RunConfigForm({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={() => {
-                    void form.handleSubmit((values) => start(values, true))()
+                    void form.handleSubmit(
+                      (values) => start(values, true),
+                      reportInvalid,
+                    )()
                   }}
                 >
                   {t("saveAsDefaults")}

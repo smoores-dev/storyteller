@@ -118,3 +118,18 @@ test-align:
     - npm i -g corepack
     - yarn
     - yarn test:align
+
+test-ghost-story:
+  image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main
+  stage: check
+  tags: [saas-linux-large-amd64]
+  rules:
+    - if:
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
+      changes:
+        - libraries/ghost-story/**/*
+  script:
+    - npm i -g corepack
+    - yarn
+    - yarn test:ghost-story

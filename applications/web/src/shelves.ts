@@ -11,12 +11,16 @@ import {
   ENUM_FIELDS,
   FIELDS,
   FORMAT_VALUES,
+  type Field,
   type FieldType,
   NUMBER_FIELDS,
+  RETIRED_FIELDS,
   STRING_FIELDS,
   UUID_FIELDS,
   getFieldDef,
   getFieldType,
+  isField,
+  isRetiredField,
 } from "./fields"
 import { type RegistrySortField, SORTABLE_FIELDS } from "./sort"
 
@@ -361,7 +365,7 @@ const conditionVariants = z.union([
   unaryCondition,
 ])
 
-export const shelfFilterConditionSchema = z.preprocess((val) => {
+export function remapLegacyCondition(val: unknown): unknown {
   if (!val || typeof val !== "object") return val
   let obj = val as Record<string, unknown>
 
@@ -399,7 +403,12 @@ export const shelfFilterConditionSchema = z.preprocess((val) => {
   }
 
   return obj
-}, conditionVariants)
+}
+
+export const shelfFilterConditionSchema = z.preprocess(
+  remapLegacyCondition,
+  conditionVariants,
+)
 
 export type ShelfFilterCondition = {
   type: "condition"
@@ -617,3 +626,97 @@ export const HomeSectionKind = [
 export type AlignmentGrade = (typeof ALIGNMENT_GRADES)[number]
 
 export type HomeSectionKind = (typeof HomeSectionKind)[number]
+
+export type ShelfFilterIssue =
+  | {
+      kind: "retiredField"
+      field: string
+      replacedBy: Field | null
+    }
+  | {
+      kind: "unknownField"
+      field: string
+    }
+  | {
+      kind: "invalidCondition"
+      field: string
+      message: string
+    }
+  | {
+      kind: "unparseable"
+    }
+
+export function collectFilterIssues(raw: unknown): ShelfFilterIssue[] {
+  const issues = new Map<string, ShelfFilterIssue>()
+
+  function visitCondition(node: Record<string, unknown>) {
+    const remapped = remapLegacyCondition(node) as Record<string, unknown>
+    const field = typeof remapped["field"] === "string" ? remapped["field"] : ""
+    if (issues.has(field)) return
+
+    if (isRetiredField(field)) {
+      issues.set(field, {
+        kind: "retiredField",
+        field,
+        replacedBy: RETIRED_FIELDS[field].replacedBy,
+      })
+      return
+    }
+
+    if (!isField(field)) {
+      issues.set(field, { kind: "unknownField", field })
+      return
+    }
+
+    const parsed = conditionVariants.safeParse(remapped)
+    if (parsed.success) return
+    issues.set(field, {
+      kind: "invalidCondition",
+      field,
+      message: z.prettifyError(parsed.error),
+    })
+  }
+
+  function visit(node: unknown) {
+    if (!node || typeof node !== "object") return
+    const obj = node as Record<string, unknown>
+    switch (obj["type"]) {
+      case "condition":
+        visitCondition(obj)
+        return
+      case "not":
+        visit(obj["child"])
+        return
+      case "and":
+      case "or":
+        if (Array.isArray(obj["children"])) {
+          for (const child of obj["children"]) visit(child)
+        }
+        return
+    }
+  }
+
+  visit(raw)
+  return [...issues.values()]
+}
+
+export function describeFilterIssue(issue: ShelfFilterIssue): string {
+  switch (issue.kind) {
+    case "retiredField":
+      return issue.replacedBy
+        ? `The field "${issue.field}" was retired, use "${issue.replacedBy}" instead`
+        : `The field "${issue.field}" was retired`
+    case "unknownField":
+      return `Unknown field "${issue.field}"`
+    case "invalidCondition":
+      return `Invalid condition on "${issue.field}": ${issue.message}`
+    case "unparseable":
+      return "The stored filter is not valid JSON"
+  }
+}
+
+export class ShelfFilterInvalidError extends Error {
+  constructor(public issues: ShelfFilterIssue[]) {
+    super("Invalid shelf filter")
+  }
+}

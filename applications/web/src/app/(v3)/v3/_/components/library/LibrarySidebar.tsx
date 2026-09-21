@@ -687,7 +687,9 @@ function SidebarRow({
   const firstPathSegment = pathname.split("/")[1]
   const { selectedBookUuid } = useBookInSidePanel()
   const tEntity = useTranslation("EntityActions")
+  const tIssues = useTranslation("ShelfFilterIssues")
   const hiddenLabel = tEntity.plain("hiddenFromSidebar")
+  const issuesLabel = tIssues.plain("shelfBroken")
 
   if (!firstPathSegment) return null
 
@@ -737,6 +739,13 @@ function SidebarRow({
               />
             ) : null}
             <span className="min-w-0 truncate">{item.name}</span>
+
+            {item.filterIssues && item.filterIssues.length > 0 && (
+              <icon.AlertTriangle
+                className="text-destructive size-3 shrink-0"
+                aria-label={issuesLabel}
+              />
+            )}
 
             {isLocked && (
               <icon.Lock className="text-muted-foreground/60 size-3 shrink-0" />

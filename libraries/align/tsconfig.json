@@ -22,7 +22,11 @@
       "../../types"
     ]
   },
-  "include": ["package.json", "src/**/*.ts"],
+  "include": [
+    "package.json",
+    "src/**/*.ts",
+    "src/align/opencc/TSCharacters.json"
+  ],
   "references": [
     {
       "path": "../epub"

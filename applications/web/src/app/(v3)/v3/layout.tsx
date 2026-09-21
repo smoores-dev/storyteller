@@ -16,6 +16,7 @@ import {
   TooltipProvider,
 } from "@v3/_/components/ui/tooltip"
 import { VersionProvider } from "@v3/_/components/version-context"
+import { DocumentTitleProvider } from "@v3/_/hooks/use-document-title"
 
 import StoreProvider from "@/components/StoreProvider"
 import { getSetting } from "@/database/settings"
@@ -91,7 +92,13 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [reqHeaders, cookieStore] = await Promise.all([headers(), cookies()])
+  const [reqHeaders, cookieStore, t, libraryName] = await Promise.all([
+    headers(),
+    cookies(),
+    getTranslations("Layout"),
+    getSetting("libraryName"),
+  ])
+  const titleTemplate = `%s • ${libraryName || t("title")}`
   const isRewritten = reqHeaders.get("x-v3-rewritten") === "1"
   const basePath = isRewritten ? "" : "/v3"
 
@@ -135,7 +142,9 @@ export default async function RootLayout({
                   >
                     <TooltipProvider delay={BASE_TOOLTIP_DELAY}>
                       <NuqsAdapter>
-                        {children}
+                        <DocumentTitleProvider template={titleTemplate}>
+                          {children}
+                        </DocumentTitleProvider>
                         <Toaster />
                         <TauriTitlebarSync />
                       </NuqsAdapter>

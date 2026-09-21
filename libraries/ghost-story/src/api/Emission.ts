@@ -1,5 +1,10 @@
 import { type AudioFormat } from "../audio/AudioFormat.ts"
-import { type Wav2Vec2Options } from "../emission/Wav2Vec2Emission.ts"
+import { type CtcOptions } from "../emission/CtcEmission.ts"
+import {
+  type EmissionTokenizer,
+  type Emissions,
+} from "../emission/Emissions.ts"
+// import { type Wav2Vec2ServerOptions } from "../emission/Wav2Vec2ServerEmission.ts"
 import { extendDeep } from "../utilities/ObjectUtilities.ts"
 import { type TimingSummary, createTiming } from "../utilities/Timing.ts"
 
@@ -10,12 +15,17 @@ export {
   decodeEmissions,
   encodeEmissions,
 } from "../emission/encoding.ts"
-
-export interface Emissions {
-  values: Float32Array
-  frames: number
-  classes: number
-}
+export {
+  type EmissionTokenizer,
+  type Emissions,
+} from "../emission/Emissions.ts"
+export {
+  type SentencePieceModel,
+  encodeUnigram,
+  readSentencePieceModel,
+  unigramText,
+  unigramTokenizer,
+} from "../emission/sentencepiece.ts"
 
 export async function emit(
   input: AudioInput,
@@ -32,8 +42,8 @@ export async function emit(
 
   switch (opts.engine) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    case "wav2vec2": {
-      const Wav2Vec2Emission = await import("../emission/Wav2Vec2Emission.ts")
+    case "ctc-local": {
+      const Wav2Vec2Emission = await import("../emission/CtcEmission.ts")
 
       const result = await Wav2Vec2Emission.emit(
         source,
@@ -47,6 +57,25 @@ export async function emit(
         timing: timing.summary(),
       }
     }
+    // case "wav2vec-server": {
+    //   const Wav2Vec2ServerEmission = await import(
+    //     "../emission/Wav2Vec2ServerEmission.ts"
+    //   )
+    //
+    //   timing.setMetadata("baseURL", opts.options.baseURL)
+    //
+    //   const result = await Wav2Vec2ServerEmission.emit(
+    //     source,
+    //     timing,
+    //     opts.options,
+    //     opts.signal,
+    //   )
+    //
+    //   return {
+    //     ...result,
+    //     timing: timing.summary(),
+    //   }
+    // }
     default: {
       throw new Error(`Unknown engine: ${(opts as { engine: string }).engine}`)
     }
@@ -59,11 +88,16 @@ interface BaseEmissionOptions {
 }
 
 export type EmissionOptions = BaseEmissionOptions & {
-  engine: "wav2vec2"
-  options: Wav2Vec2Options
+  engine: "ctc-local"
+  options: CtcOptions
 }
+// | (BaseEmissionOptions & {
+//     engine: "wav2vec-server"
+//     options: Wav2Vec2ServerOptions
+//   })
+
 const defaultEmissionOptions: Partial<EmissionOptions> = {
-  engine: "wav2vec2",
+  engine: "ctc-local",
 }
 
 export interface EmissionResult {
@@ -75,4 +109,7 @@ export interface EmissionResult {
   secondsPerChunk: number
   framesPerChunk: number
   secondsPerFrame: number
+  startOffsetSeconds: number
+  endOffsetSeconds: number
+  tokenizer: EmissionTokenizer | null
 }

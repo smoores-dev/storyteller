@@ -120,6 +120,8 @@ export const POST = withHasPermission<Params>("bookProcess")(async (
   let restart: RestartMode = false
   if (restartParam === "full" || restartParam === "true") {
     restart = "full"
+  } else if (restartParam === "transcode") {
+    restart = "transcode"
   } else if (restartParam === "transcription") {
     restart = "transcription"
   } else if (restartParam === "sync") {
@@ -130,7 +132,7 @@ export const POST = withHasPermission<Params>("bookProcess")(async (
     config?: Partial<RunConfig>
   }
 
-  void enqueueBookAlign(bookUuid, restart, body.config)
+  await enqueueBookAlign(bookUuid, restart, body.config)
 
   return new Response(null, { status: 204 })
 })

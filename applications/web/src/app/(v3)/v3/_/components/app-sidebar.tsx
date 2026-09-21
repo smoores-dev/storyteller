@@ -15,6 +15,7 @@ import {
   type NavSecondaryItem,
 } from "@v3/_/components/nav/nav-secondary"
 import { NavUser } from "@v3/_/components/nav/nav-user"
+import { FilterIssueList } from "@v3/_/components/shelves/filter-issues"
 import { KeyboardShortcut } from "@v3/_/components/ui/kbd"
 import {
   Sidebar,
@@ -36,7 +37,10 @@ import {
 import { Skeleton } from "@v3/_/components/ui/skeleton"
 import { V3Link } from "@v3/_/components/v3-link"
 import { useVersionBasePath } from "@v3/_/components/version-context"
-import { useLibraryCounts } from "@v3/_/hooks/use-library-counts"
+import {
+  type LibraryCounts,
+  useLibraryCounts,
+} from "@v3/_/hooks/use-library-counts"
 import { useSidebarPrefetch } from "@v3/_/hooks/use-sidebar-prefetch"
 import { useTheme } from "@v3/_/hooks/use-theme"
 import { useTranslation } from "@v3/_/hooks/use-translation"
@@ -50,8 +54,8 @@ import {
 import { usePermission } from "@/hooks/usePermission"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
+import { sanitizeHtml } from "@/sanitizeHtml"
 import {
-  useGetJobsQuery,
   useGetLatestChangelogQuery,
   useListCollectionsQuery,
   useListSidebarGroupsQuery,
@@ -78,8 +82,7 @@ import {
   SHELF_ICON,
 } from "./nav/sidebar-items"
 import { toSidebarGroupInputs } from "./nav/sidebar-payload"
-import { useFinishedNotifications } from "./processing/ProcessingToast"
-import { jobToView, overallProgress } from "./processing/shared"
+import { ProcessingSidebarItem } from "./processing/ProcessingSidebarItem"
 import {
   DISMISSED_VERSION_KEY,
   formatChangelogDescription,
@@ -203,9 +206,8 @@ export function AppSidebar({
 
     toastShownRef.current = true
 
-    const cleanedDescription = formatChangelogDescription(
-      latestChangelog?.description,
-    )
+    const formatted = formatChangelogDescription(latestChangelog?.description)
+    const cleanedDescription = formatted ? sanitizeHtml(formatted) : undefined
 
     toast(`A new version (v${latestVersion}) is available`, {
       dismissible: true,
@@ -315,7 +317,7 @@ export function AppSidebar({
     ...(processingToastLocation === "sidebar" && canProcess
       ? [
           {
-            custom: <ProcessingJobs />,
+            custom: <ProcessingSidebarItem />,
             key: "processingJobs",
           },
         ]
@@ -478,10 +480,7 @@ function SidebarNavGroup({
   onCreateNew,
 }: {
   group: SidebarGroupWithItems
-  libraryCounts: Record<
-    string,
-    { count: number | undefined; isLoading: boolean }
-  >
+  libraryCounts: LibraryCounts
   startIndex: number
   onPrefetchEnter: (item: SidebarItemDetail) => void
   onPrefetchLeave: () => void
@@ -594,8 +593,6 @@ function SidebarNavGroup({
                       "small-caps",
                       "group-data-[collapsible=icon]:opacity-0",
                       "group-data-[collapsible=icon]:w-0",
-
-                      "tracking-[0.08em]",
                     )}
                   >
                     {group.name}
@@ -603,7 +600,7 @@ function SidebarNavGroup({
                   <span
                     aria-hidden
                     className={cn(
-                      "bg-muted-foreground/60 group-data-[collapsible=icon]:bg-muted-foreground h-px min-w-3 flex-1 group-data-[collapsible=icon]:ml-0.75 group-data-[collapsible=icon]:max-w-6 group-data-[collapsible=icon]:min-w-6",
+                      "bg-muted-foreground/60 group-data-[collapsible=icon]:bg-muted-foreground/40 h-px min-w-3 flex-1 group-data-[collapsible=icon]:ml-0.75 group-data-[collapsible=icon]:max-w-6 group-data-[collapsible=icon]:min-w-6",
                       totalCount == null &&
                         "mr-3 group-data-[collapsible=icon]:mr-0",
                     )}
@@ -687,10 +684,7 @@ function SidebarNavItem({
   index: number
   item: SidebarItemDetail
   builtinTitle: (builtin: BuiltinSidebarItem) => string
-  libraryCounts: Record<
-    string,
-    { count: number | undefined; isLoading: boolean }
-  >
+  libraryCounts: LibraryCounts
   onPrefetchEnter: (item: SidebarItemDetail) => void
   onPrefetchLeave: () => void
   onEdit?: () => void
@@ -722,6 +716,7 @@ function SidebarNavItem({
     },
   )
   const [tooltipOpen, setTooltipOpen] = useState(false)
+  const tIssues = useTranslation("ShelfFilterIssues")
 
   const resolved = resolveItem(item, builtinTitle)
   if (!resolved) return null
@@ -735,6 +730,7 @@ function SidebarNavItem({
     : null
   const count = countResult?.count
   const isCountLoading = countResult?.isLoading ?? false
+  const filterIssues = countResult?.issues ?? []
 
   const isEntity = item.kind === "shelf" || item.kind === "collection"
 
@@ -801,8 +797,28 @@ function SidebarNavItem({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <SidebarMenuBadge className="group-focus-within/menu-item:opacity-0 group-hover/menu-item:opacity-0 peer-data-popup-open/item-action:opacity-0">
-            {count != null ? (
+          <SidebarMenuBadge
+            className={cn(
+              filterIssues.length > 0
+                ? "pointer-events-auto"
+                : "group-focus-within/menu-item:opacity-0 group-hover/menu-item:opacity-0 peer-data-popup-open/item-action:opacity-0",
+            )}
+          >
+            {filterIssues.length > 0 ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="text-destructive inline-flex">
+                      <icon.AlertTriangle className="size-3.5" />
+                    </span>
+                  }
+                />
+                <TooltipContent side="right" className="max-w-64">
+                  <FilterIssueList issues={filterIssues} />
+                  <p className="mt-1">{tIssues("openToFix")}</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : count != null ? (
               count
             ) : isCountLoading ? (
               <Skeleton className="h-3.5 w-5 rounded" />
@@ -900,58 +916,4 @@ function resolveItem(
   }
 
   return null
-}
-
-function ProcessingJobs() {
-  const { data: jobs } = useGetJobsQuery(
-    { type: "active" },
-    { pollingInterval: 30_000, skipPollingIfUnfocused: true },
-  )
-  const { data: finishedJobs } = useGetJobsQuery({ type: "finished", limit: 5 })
-  const basePath = useVersionBasePath()
-  const router = useRouter()
-
-  const dispatch = useAppDispatch()
-  useFinishedNotifications(finishedJobs, basePath, router)
-
-  if (!jobs || jobs.length === 0) {
-    return null
-  }
-  const current = jobs[0]
-  if (!current) {
-    return null
-  }
-
-  const view = jobToView(current)
-  const pct = Math.round(overallProgress(view) * 100)
-  return (
-    <SidebarMenuItem className="relative">
-      <SidebarMenuButton
-        onClick={() => {
-          dispatch(
-            uiSettingsSlice.actions.setProcessingToastLocation("bottom-right"),
-          )
-        }}
-        className="line-clamp-1 inline-flex items-center gap-2"
-      >
-        <icon.Loader
-          className={cn(
-            "text-primary size-3.5 shrink-0",
-            current.status !== "PAUSED" && "animate-spin",
-          )}
-        />
-        <span>{jobs[0]?.bookTitle}</span>
-      </SidebarMenuButton>
-
-      {jobs.length > 1 && (
-        <SidebarMenuBadge>+{jobs.length - 1}</SidebarMenuBadge>
-      )}
-      <div
-        className="bg-muted absolute right-3.5 bottom-0 left-3.5 h-0.5"
-        style={{ width: `${pct}%` }}
-      >
-        <div className="bg-primary h-full" />
-      </div>
-    </SidebarMenuItem>
-  )
 }

@@ -1,0 +1,11 @@
+releases:
+  "@storyteller-platform/align": patch
+  "@storyteller-platform/docs": patch
+  "@storyteller-platform/epub": patch
+  "@storyteller-platform/ghost-story": patch
+  "@storyteller-platform/mlx-audio": patch
+
+declined:
+  - "@storyteller-platform/tauri"
+  - "@storyteller-platform/web"
+  - "@storyteller-platform/opds"

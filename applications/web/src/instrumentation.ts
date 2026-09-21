@@ -27,7 +27,7 @@ export async function register() {
   const { migrate } = await import("./database/migrate")
   const { syncChangelog } = await import("./database/changelog")
   const { getQueuedBooks } = await import("./database/books")
-  const { startProcessing, pump } = await import("./work/distributor")
+  // const { startProcessing, pump } = await import("./work/distributor")
   const { getReadiumService } = await import("./services/readiumService")
   const { env } = await import("./env")
   const { startLogRetention } = await import("./logRetention")
@@ -72,13 +72,14 @@ export async function register() {
     logger.error(err)
   }
 
-  try {
-    if (env.STORYTELLER_SYNC_CHANGELOG) {
-      await syncChangelog()
-    }
-  } catch (err) {
-    logger.error("Failed to sync changelog from GitLab")
-    logger.error(err)
+  if (env.STORYTELLER_SYNC_CHANGELOG) {
+    // i guess no real reason why we need to wait for this to complete
+    void syncChangelog().catch((err: unknown) => {
+      logger.error({
+        msg: "Failed to sync changelog from GitLab. This may be due to an issue with Gitlab. Storyteller will automatically retry fetching the changelog later.",
+        err,
+      })
+    })
   }
 
   const cron = await import("node-cron")
@@ -94,12 +95,15 @@ export async function register() {
       logger.info("Restoring processing queue...")
     }
     for (const book of queue) {
-      logger.info(`Adding ${book.title} to the queue`)
-      void startProcessing(book.uuid, book.readaloud?.restartPending || false)
+      logger.warn({
+        msg: `Processing ${book.title} was not automatically restarted, you should restart it manually`,
+      })
+      // logger.info(`Adding ${book.title} to the queue`)
+      // void startProcessing(book.uuid, book.readaloud?.restartPending || false)
     }
-    if (queue.length) {
-      void pump()
-    }
+    // if (queue.length) {
+    //   void pump()
+    // }
   } catch (err) {
     logger.error("Failed to restart processing queue")
     logger.error(err)

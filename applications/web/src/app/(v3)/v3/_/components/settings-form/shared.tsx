@@ -1,11 +1,19 @@
 "use client"
 
-import { type ReactNode, createContext, useContext } from "react"
+import { type ReactNode, createContext, useContext, useState } from "react"
 import { type UseFormReturn } from "react-hook-form"
 import { type z } from "zod"
 
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@v3/_/components/ui/collapsible"
+import { useTranslation } from "@v3/_/hooks/use-translation"
+
 import { cn } from "@/cn"
 import { type SettingsSchema } from "@/database/settingsTypes"
+import * as icon from "@/icons"
 
 import { type Tab } from "./tabs"
 
@@ -44,6 +52,25 @@ export function SettingsSection({
     >
       {children}
     </div>
+  )
+}
+
+export function AdvancedFields({ children }: { children: ReactNode }) {
+  const t = useTranslation("SettingsPage")
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="text-muted-foreground hover:text-foreground flex cursor-pointer items-center gap-1 text-xs">
+        <icon.ChevronRight
+          className={cn("size-3.5 transition-transform", open && "rotate-90")}
+        />
+        {t("advanced")}
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-4 pt-3">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 

@@ -3,10 +3,10 @@ import z from "zod"
 import { marcRelators } from "@/components/books/edit/marcRelators"
 import { IDENTIFIER_KINDS } from "@/database/identifiers"
 import { COVER_ORIGINS } from "@/database/images"
-import { JOB_STATUSES } from "@/database/jobs"
 import { toIsoDateString } from "@/dates"
 import { ALIGNMENT_GRADES } from "@/fields"
 import { ICON_IDS } from "@/icons/icon-registry"
+import { JOB_STATUSES } from "@/jobEvents"
 import { uuidv4 } from "@/schemas/uuid"
 
 import { ImageSchemaV2 } from "./image"
@@ -246,10 +246,12 @@ export const BookSchemaV2 = z.object({
     z.object({
       grade: z.enum(ALIGNMENT_GRADES),
       score: z.nullish(z.number()),
-      missingSentences: z.nullish(z.number()),
-      mutedChapters: z.nullish(z.number()),
+      confidence: z.nullish(z.number()),
+      sentenceCoverage: z.nullish(z.number()),
+      audioCoverage: z.nullish(z.number()),
       failedChapters: z.nullish(z.number()),
       unalignedAudio: z.nullish(z.number()),
+      previousGrade: z.nullish(z.enum(ALIGNMENT_GRADES)),
     }),
   ),
   ebook: z.nullish(

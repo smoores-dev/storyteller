@@ -30,8 +30,10 @@ if ! node scripts/fetch-metallib.mjs; then
     fi
 fi
 
-swift build -c release --product StorytellerMLXAudio
-BUILT="$(swift build -c release --show-bin-path)"
+SWIFT="${SWIFT:-swift}"
+read -r -a SWIFT_FLAGS <<<"${SWIFT_BUILD_FLAGS:-}"
+"${SWIFT}" build -c release --product StorytellerMLXAudio "${SWIFT_FLAGS[@]}"
+BUILT="$("${SWIFT}" build -c release --show-bin-path "${SWIFT_FLAGS[@]}")"
 DEST="prebuilds/darwin-arm64/@storyteller-platform+mlx-audio.node"
 mkdir -p "$(dirname "${DEST}")"
 cp "${BUILT}/libStorytellerMLXAudio.dylib" "${DEST}"

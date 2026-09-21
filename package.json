@@ -31,6 +31,7 @@
     "test:audiobook": "yarn workspace @storyteller-platform/audiobook test",
     "test:docs": "yarn workspace @storyteller-platform/docs test",
     "test:epub": "yarn workspace @storyteller-platform/epub test",
+    "test:ghost-story": "yarn workspace @storyteller-platform/ghost-story test:emission-server",
     "test:mapping": "yarn workspace @storyteller-platform/mapping test",
     "test:media-types": "yarn workspace @storyteller-platform/media-types test",
     "test:mobile": "yarn workspace @storyteller-platform/mobile test",
@@ -71,6 +72,7 @@
     "expo-file-system@npm:~19.0.17": "patch:expo-file-system@npm%3A19.0.17#~/.yarn/patches/expo-file-system-npm-19.0.17-cda362f0b1.patch",
     "expo-file-system@npm:~19.0.19": "patch:expo-file-system@npm%3A19.0.19#~/.yarn/patches/expo-file-system-npm-19.0.19-800f9ff305.patch",
     "expo-file-system@npm:~19.0.21": "patch:expo-file-system@npm%3A19.0.21#~/.yarn/patches/expo-file-system-npm-19.0.21-64dc8cb1bc.patch",
-    "@storyteller-platform/mapping": "workspace:*"
+    "@storyteller-platform/mapping": "workspace:*",
+    "@huggingface/transformers/onnxruntime-node": "1.29.0"
   }
 }

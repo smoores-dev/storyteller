@@ -120,6 +120,7 @@ type BookListPageProps = {
 
   breadcrumbs: BookListBreadcrumbs
   headerActions?: ReactNode
+  banner?: ReactNode
   sidebar?: ReactNode
   description?: string | null | undefined
   filtersClassName?: string
@@ -177,6 +178,7 @@ function BookListPageInner({
   extraSortFields,
   breadcrumbs,
   headerActions,
+  banner,
   sidebar,
   description,
   filtersClassName,
@@ -222,7 +224,12 @@ function BookListPageInner({
     ...(isBooksSource && source.collectionContext
       ? { collectionContext: source.collectionContext }
       : {}),
-    defaultSort,
+    defaultSort: forceDisplayMode
+      ? {
+          field: forceDisplayMode.sortMode,
+          direction: forceDisplayMode.sortDirection,
+        }
+      : defaultSort,
   })
 
   const {
@@ -758,6 +765,7 @@ function BookListPageInner({
             </PageHeader>
 
             {descriptionText}
+            {banner}
 
             <PageContent className={"relative p-6 pt-0 md:p-0"}>
               <BookFilters
@@ -834,6 +842,7 @@ function BookListPageInner({
             </PageHeader>
 
             {descriptionText}
+            {banner}
 
             <PageContent
               className={cn(contentClassName ?? "p-6 pt-0", "relative")}
@@ -872,14 +881,8 @@ function BookListPageInner({
                 }
                 listDisplayFieldsOverride={listDisplayFields}
                 displayContext={displayContext}
-                sortField={
-                  forceDisplayMode ? forceDisplayMode.sortMode : sort.field
-                }
-                sortDirection={
-                  forceDisplayMode
-                    ? forceDisplayMode.sortDirection
-                    : sort.direction
-                }
+                sortField={sort.field}
+                sortDirection={sort.direction}
                 forceLayout={forceDisplayMode?.layout}
                 onSortChange={handleColumnSort}
               />

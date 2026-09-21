@@ -15,6 +15,7 @@ import { useReportPanel } from "@v3/_/hooks/use-report-panel"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
+import { GRADE_TILE } from "@/app/(v3)/v3/_/components/books/grade-pill"
 import { useStageLabels } from "@/app/(v3)/v3/_/components/processing/useStageLabels"
 import {
   useFormatDate,
@@ -31,32 +32,41 @@ import {
   useGetBookAlignmentReportQuery,
   useGetJobsQuery,
 } from "@/store/api"
+import { type StageName } from "@/work/jobStats"
 
-import { FilePathRow } from "./FilePathRow"
 import { CollapsibleSection } from "./sections/CollapsibleSection"
+import { DetailRow } from "./sections/DetailsSection"
 import {
   type ProcessRestart,
   type ProcessingPosition,
   useProcessingRun,
 } from "./useProcessingRun"
 
-function ProcessingDropdown({
+const STAGE_ORDER: StageName[] = [
+  "SPLIT_TRACKS",
+  "TRANSCRIBE_CHAPTERS",
+  "SYNC_CHAPTERS",
+]
+
+export function ProcessingDropdown({
   positions,
   onSelect,
   triggerLabel,
   triggerIcon,
+  size = "sm",
 }: {
   positions: ProcessingPosition[]
   onSelect: (restart: ProcessRestart, modifiers: { shiftKey: boolean }) => void
   triggerLabel: string
   triggerIcon?: ReactNode
+  size?: "sm" | "xs"
 }) {
   const tp = useTranslation("Processing")
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size={size}>
             {triggerIcon}
             {triggerLabel}
           </Button>
@@ -111,21 +121,41 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
 
   const activeJob = activeJobs?.[0]
 
+  const activeEngine =
+    activeJob?.config?.aligner === "ctc"
+      ? activeJob.config.ctcEngine
+      : activeJob?.config?.transcriptionEngine
+
   const { data: estimateData } = useGetAlignmentEstimateQuery(
     {
       bookUuid: book.uuid,
-      engine: activeJob?.config?.transcriptionEngine ?? "",
-      whisperModel: activeJob?.config?.whisperModel ?? null,
-      restart:
-        (activeJob as { restart?: string | false } | undefined)?.restart ||
-        false,
+      engine: activeEngine ?? "",
+      whisperModel:
+        activeJob?.config?.aligner === "ctc"
+          ? null
+          : (activeJob?.config?.whisperModel ?? null),
+      restart: activeJob?.restart || false,
     },
-    {
-      skip:
-        readaloudStatus !== "PROCESSING" ||
-        !activeJob?.config?.transcriptionEngine,
-    },
+    { skip: readaloudStatus !== "PROCESSING" || !activeEngine },
   )
+
+  const remainingSeconds = (() => {
+    if (!estimateData || estimateData.estimateSeconds == null) return null
+    const currentStage = book.readaloud?.currentStage
+    const currentIndex = currentStage ? STAGE_ORDER.indexOf(currentStage) : -1
+    if (currentIndex === -1) return estimateData.estimateSeconds
+
+    let total = 0
+    for (const [i, stage] of STAGE_ORDER.entries()) {
+      const seconds = estimateData.stageSeconds[stage]
+      if (seconds == null || i < currentIndex) continue
+      total +=
+        i === currentIndex
+          ? seconds * (1 - (book.readaloud?.stageProgress ?? 0))
+          : seconds
+    }
+    return total
+  })()
 
   const alignedInDuration = (() => {
     const stats = latestFinishedJob?.[0]?.stats as
@@ -214,10 +244,10 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
             />
           </div>
 
-          {estimateData?.estimateSeconds != null && (
+          {remainingSeconds != null && (
             <span className="text-tinted text-xs">
               {t("estimatedRemaining", {
-                duration: formatDuration(estimateData.estimateSeconds, {
+                duration: formatDuration(remainingSeconds, {
                   approximate: true,
                 }),
               })}
@@ -267,50 +297,33 @@ export function ProcessingSection({ book }: { book: BookWithRelations }) {
 
       {dialog}
 
-      {book.alignedAt && (
-        <FilePathRow
-          label={t("lastAligned")}
-          filepath={formatDate(book.alignedAt)}
-        />
-      )}
+      <div className="grid grid-cols-2 items-start gap-x-4 gap-y-2">
+        {book.alignedAt && (
+          <DetailRow label={t("lastAligned")}>
+            <time dateTime={book.alignedAt} title={formatDate(book.alignedAt)}>
+              {formatDate(book.alignedAt, { timeStyle: undefined })}
+            </time>
+          </DetailRow>
+        )}
 
-      {alignedInDuration && (
-        <FilePathRow label={t("alignedIn")} filepath={alignedInDuration} />
-      )}
+        {alignedInDuration && (
+          <DetailRow label={t("alignedIn")}>{alignedInDuration}</DetailRow>
+        )}
 
-      {book.alignedWith && (
-        <FilePathRow
-          label={t("transcriptionEngine")}
-          filepath={book.alignedWith}
-        />
-      )}
+        {book.alignedWith && (
+          <DetailRow label={t("transcriptionEngine")}>
+            {book.alignedWith}
+          </DetailRow>
+        )}
 
-      {book.alignedByStorytellerVersion && (
-        <FilePathRow
-          label={t("storytellerVersion")}
-          filepath={book.alignedByStorytellerVersion}
-        />
-      )}
+        {book.alignedByStorytellerVersion && (
+          <DetailRow label={t("storytellerVersion")}>
+            {book.alignedByStorytellerVersion}
+          </DetailRow>
+        )}
+      </div>
     </CollapsibleSection>
   )
-}
-
-type GradeTone = "positive" | "good" | "moderate" | "poor"
-
-function gradeTone(grade: string): GradeTone {
-  if (grade.startsWith("A")) return "positive"
-  if (grade.startsWith("B")) return "good"
-  if (grade === "C") return "moderate"
-  return "poor"
-}
-
-const GRADE_BADGE: Record<GradeTone, string> = {
-  positive:
-    "border-positive-border bg-positive-bg text-positive dark:border-positive-900 dark:bg-positive-950/40 dark:text-positive-300",
-  good: "border-good-border bg-good-bg text-good dark:border-good-900 dark:bg-good-950/40 dark:text-good-300",
-  moderate:
-    "border-moderate-border bg-moderate-bg text-moderate dark:border-moderate-900 dark:bg-moderate-950/40 dark:text-moderate-300",
-  poor: "border-poor-border bg-poor-bg text-poor dark:border-poor-900 dark:bg-poor-950/40 dark:text-poor-300",
 }
 
 function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
@@ -323,23 +336,38 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
 
   const grade = data?.summary.grade ?? book.alignmentSummary?.grade
   if (!grade) return null
-  const tone = gradeTone(grade)
   const summary = data?.summary
 
   const marks: { label: string; value: string }[] = summary
     ? [
         {
-          label: tr("marks.score"),
-          value: summary.score != null ? `${summary.score}%` : "—",
+          label: tr("marks.sentences"),
+          value:
+            summary.sentencesTotal > 0
+              ? `${Math.round((summary.sentencesMatched / summary.sentencesTotal) * 100)}%`
+              : "—",
+        },
+        {
+          label: tr("marks.audio"),
+          value:
+            summary.audioTotalSeconds > 0
+              ? `${Math.round((summary.audioPlacedSeconds / summary.audioTotalSeconds) * 100)}%`
+              : "—",
         },
         {
           label: tNouns("chapter", { count: summary.chapters }),
           value: `${summary.chapters}`,
         },
-        {
-          label: tr("marks.unalignedChapters"),
-          value: `${summary.failedChapters}`,
-        },
+        ...[
+          {
+            label: tr("marks.skipped"),
+            count: summary.excluded + summary.excludedByRule,
+          },
+          { label: tr("marks.toCheck"), count: summary.review },
+          { label: tr("marks.pending"), count: summary.pending },
+        ]
+          .filter((mark) => mark.count > 0)
+          .map((mark) => ({ label: mark.label, value: `${mark.count}` })),
       ]
     : []
 
@@ -349,7 +377,7 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
         <Badge
           className={cn(
             "size-9 justify-center rounded-md border text-base font-semibold tabular-nums",
-            GRADE_BADGE[tone],
+            GRADE_TILE[grade],
           )}
         >
           {grade}
@@ -376,12 +404,6 @@ function AlignmentReportSummary({ book }: { book: BookWithRelations }) {
         >
           <icon.FileText className="size-3.5" /> {tp("viewReport")}
         </button>
-        <V3Link
-          href={`/books/${book.uuid}/alignment`}
-          className="hover:text-primary inline-flex items-center gap-1 hover:underline"
-        >
-          <icon.ExternalLink className="size-3.5" /> {tr("openFullPage")}
-        </V3Link>
         {data?.jobUuid && (
           <V3Link
             href="/settings?tab=queue"
