@@ -65,10 +65,12 @@ export {
   getWhisperServerExecutablePath,
   isValidModel,
   resolveVariant,
+} from "./cli/config.ts"
+export {
   type CtcDeviceCapabilities,
   ctcDeviceCapabilities,
   resolveCtcDevice,
-} from "./cli/config.ts"
+} from "./constants.ts"
 export {
   type InstallBinaryOptions,
   type InstallModelOptions,

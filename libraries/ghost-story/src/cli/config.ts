@@ -10,11 +10,9 @@ import {
   BUILD_VARIANTS,
   type BuildVariant,
   type Platform,
-  type ResolvedCtcDevice,
   SILERO_VAD_VERSION,
   WHISPER_CPP_VERSION,
   WHISPER_MODELS,
-  type CtcDevice,
   type WhisperModel,
 } from "../constants.ts"
 import { getAppDataDir } from "../utilities/FileSystem.ts"
@@ -359,68 +357,6 @@ export function resolveVariant(requestedVariant?: BuildVariant): BuildVariant {
     "No variant configured or installed. Falling back to platform detection.",
   )
   return applyLegacyCpuFallback(detectPlatform())
-}
-
-export interface CtcDeviceCapabilities {
-  available: ResolvedCtcDevice[]
-  default: ResolvedCtcDevice
-}
-
-const CTC_DEVICE_ORDER = ["cuda", "mlx", "webgpu", "cpu"] as const
-
-export function ctcDeviceCapabilities(
-  variant: string | null | undefined,
-): CtcDeviceCapabilities {
-  const variantName = variant ?? ""
-  const cpuVariant = variantName.includes("cpu") || variantName.includes("blas")
-  const cuda = process.platform === "linux" && process.arch === "x64"
-  const mlx = process.platform === "darwin" && process.arch === "arm64"
-  const webgpu =
-    !(process.platform === "linux" && process.arch === "arm64") && !cpuVariant
-
-  const available = CTC_DEVICE_ORDER.filter(
-    (device) =>
-      device === "cpu" ||
-      (device === "cuda" && cuda) ||
-      (device === "mlx" && mlx) ||
-      (device === "webgpu" && webgpu),
-  )
-
-  const gpuVariant =
-    variantName.includes("cuda") ||
-    variantName.includes("rocm") ||
-    variantName.includes("sycl") ||
-    variantName.includes("vulkan") ||
-    variantName.includes("coreml")
-
-  const preferred: ResolvedCtcDevice =
-    cuda && variantName.includes("cuda") && !variantName.includes("cuda-11")
-      ? "cuda"
-      : mlx
-        ? "mlx"
-        : gpuVariant && webgpu
-          ? "webgpu"
-          : "cpu"
-
-  return {
-    available: [preferred, ...available.filter((d) => d !== preferred)],
-    default: preferred,
-  }
-}
-
-export function resolveCtcDevice(
-  requested: CtcDevice | null | undefined,
-  variant: string | null | undefined,
-): ResolvedCtcDevice {
-  const capabilities = ctcDeviceCapabilities(variant)
-  if (
-    requested &&
-    requested !== "auto" &&
-    capabilities.available.includes(requested)
-  ) {
-    return requested
-  }
-  return capabilities.default
 }
 
 export function isValidModel(model: string): model is WhisperModel {

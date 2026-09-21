@@ -77,11 +77,65 @@ const noNextIntlUseTranslations = {
   },
 }
 
+const noHeavyBarrelImport = {
+  meta: {
+    type: "problem",
+    docs: {
+      description: "Import heavy packages through a subpath",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          packages: {
+            type: "array",
+            items: { type: "string" },
+            uniqueItems: true,
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    defaultOptions: [{ packages: [] }],
+  },
+  create(context) {
+    const packages = new Set(context.options[0]?.packages ?? [])
+    if (packages.size === 0) return {}
+
+    function check(node, kind, specifiers) {
+      if (!node.source || !packages.has(node.source.value)) return
+      if (kind === "type") return
+      if (
+        specifiers?.length &&
+        specifiers.every((specifier) => specifier.importKind === "type")
+      )
+        return
+      context.report({
+        node: node.source,
+        message: `\`${node.source.value}\` ends up re-exporting everything, which causes next to crash. Import from a more specific subpath instead.`,
+      })
+    }
+
+    return {
+      ImportDeclaration(node) {
+        check(node, node.importKind, node.specifiers)
+      },
+      ExportNamedDeclaration(node) {
+        check(node, node.exportKind, node.specifiers)
+      },
+      ExportAllDeclaration(node) {
+        check(node, node.exportKind)
+      },
+    }
+  },
+}
+
 export default {
   meta: { name: "storyteller" },
   rules: {
     "no-tmpdir": noTmpdir,
     "no-react-hook-form-watch": noReactHookFormWatch,
     "no-next-intl-use-translations": noNextIntlUseTranslations,
+    "no-heavy-barrel-import": noHeavyBarrelImport,
   },
 }

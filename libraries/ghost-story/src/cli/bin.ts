@@ -22,6 +22,7 @@ import {
   WHISPER_MODELS,
   ctcModelLanguages,
   isCtcModelFamily,
+  resolveCtcDevice,
   resolveCtcModelVariant,
 } from "../constants.ts"
 
@@ -30,7 +31,6 @@ import {
   getInstalledVariant,
   isValidModel,
   isValidVariant,
-  resolveCtcDevice,
 } from "./config.ts"
 import { installModelPackage } from "./ctc-install.ts"
 import {

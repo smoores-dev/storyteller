@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { ctcDeviceCapabilities } from "@storyteller-platform/ghost-story"
+import { ctcDeviceCapabilities } from "@storyteller-platform/ghost-story/constants"
 
 import { type ServerCapabilities } from "@/apiModels"
 import { withUser } from "@/auth/auth"

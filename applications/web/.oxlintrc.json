@@ -22,6 +22,18 @@
   "rules": {
     "no-empty": ["error", { "allowEmptyCatch": true }],
     "react-compiler/react-compiler": "error",
+    "storyteller/no-heavy-barrel-import": [
+      "error",
+      {
+        "packages": [
+          "@storyteller-platform/align",
+          "@storyteller-platform/ghost-story",
+          "@storyteller-platform/mlx-audio",
+          "@huggingface/transformers",
+          "onnxruntime-node"
+        ]
+      }
+    ],
     "storyteller/no-next-intl-use-translations": "error",
     "storyteller/no-react-hook-form-watch": "error",
     "react/react-in-jsx-scope": "off",
@@ -29,6 +41,12 @@
     "react/no-unknown-property": "off"
   },
   "overrides": [
+    {
+      "files": ["src/work/worker.ts"],
+      "rules": {
+        "storyteller/no-heavy-barrel-import": "off"
+      }
+    },
     {
       "files": ["**/*.ts", "**/*.tsx"],
       "rules": {

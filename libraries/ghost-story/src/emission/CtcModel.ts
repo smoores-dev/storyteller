@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import { ensureDir } from "fs-extra"
 
-import { getModelDir, resolveCtcDevice } from "../cli/config.ts"
+import { getModelDir } from "../cli/config.ts"
 import {
   getModelPackageDir,
   installModelPackage,
@@ -22,6 +22,7 @@ import {
   type CtcTokenizer,
   type ResolvedCtcDevice,
   resolveCtcBatchSize,
+  resolveCtcDevice,
   resolveCtcDtype,
   resolveCtcModelVariant,
 } from "../constants.ts"
