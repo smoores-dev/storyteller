@@ -12,11 +12,14 @@ const pkg = JSON.parse(
 
 const repoRoot = resolve(new URL(import.meta.url).pathname, "../../..")
 
+const notNeededAtRuntime = new Set(["onnxruntime-web", "@types/node"])
+
 function packageClosure(roots: string[]) {
   const seen = new Set<string>()
   const walk = (name: string) => {
     const dir = resolve(repoRoot, "node_modules", name)
-    if (seen.has(name) || !existsSync(dir)) return
+    if (seen.has(name) || notNeededAtRuntime.has(name) || !existsSync(dir))
+      return
     seen.add(name)
     const pkg = JSON.parse(
       readFileSync(resolve(dir, "package.json"), "utf-8"),
