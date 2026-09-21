@@ -1,8 +1,11 @@
 // oxlint-disable no-console
 
 import { execFile } from "node:child_process"
+import { createHash } from "node:crypto"
+import { createReadStream } from "node:fs"
 import { readFile, stat } from "node:fs/promises"
 import { basename, join } from "node:path"
+import { pipeline } from "node:stream/promises"
 import { promisify } from "node:util"
 
 const execFileAsync = promisify(execFile)
@@ -17,7 +20,7 @@ const UPLOAD_FILES = [
   "vocab.txt",
   "model.onnx",
 ]
-const OPTIONAL_FILES = ["tokenizer.spm"]
+const OPTIONAL_FILES = ["model_fp16.onnx", "tokenizer.spm"]
 const ARCHITECTURE_LABELS = {
   quartznet15x5: "QuartzNet15x5",
   citrinet: "Citrinet",
@@ -30,6 +33,9 @@ function usage() {
       "",
       "Publishes converted CTC model directories to the gitlab ml model registry.",
       `${UPLOAD_FILES.join(", ")} are uploaded, plus ${OPTIONAL_FILES.join(", ")} when the directory has them.`,
+      "A file that is already in the registry under the same name is replaced: the new",
+      "upload goes up first, then the older entries are deleted, since the download",
+      "endpoint serves the newest upload and stale entries break checksum checks.",
       "Everything else in the directory is ignored. --name only applies to a single directory.",
       "",
       "Reads and creates the model through glab, which handles its own login.",
@@ -165,11 +171,35 @@ async function listPackageFiles(packageId) {
       `projects/${PROJECT_ID}/packages/${packageId}/package_files?per_page=100`,
     ])) ?? []
 
-  const sizes = new Map()
+  const byName = new Map()
   for (const file of files) {
-    sizes.set(decodeURIComponent(file.file_name), file.size)
+    const fileName = decodeURIComponent(file.file_name)
+    const entries = byName.get(fileName) ?? []
+    entries.push({ id: file.id, size: file.size, sha256: file.file_sha256 })
+    byName.set(fileName, entries)
   }
-  return sizes
+  return byName
+}
+
+async function deletePackageFile(token, packageId, fileId) {
+  const response = await fetch(
+    `${API}/packages/${packageId}/package_files/${fileId}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      `deleting package file ${fileId} failed: ${response.status} ${response.statusText}`,
+    )
+  }
+
+  console.log(`deleted the previous upload, package file ${fileId}`)
+}
+
+async function sha256(modelDir, fileName) {
+  const hash = createHash("sha256")
+  await pipeline(createReadStream(join(modelDir, fileName)), hash)
+  return hash.digest("hex")
 }
 
 async function uploadFile(token, modelVersionId, modelDir, fileName) {
@@ -243,11 +273,21 @@ async function publish(modelDir, options, token) {
       )
       continue
     }
-    if (uploaded.get(fileName) === size) {
+
+    const previous = uploaded.get(fileName) ?? []
+    if (
+      previous.length === 1 &&
+      previous[0].size === size &&
+      previous[0].sha256 === (await sha256(modelDir, fileName))
+    ) {
       console.log(`${fileName} is already uploaded`)
       continue
     }
+
     await uploadFile(token, modelVersionId, modelDir, fileName)
+    for (const stale of previous) {
+      await deletePackageFile(token, target.id, stale.id)
+    }
   }
 
   console.log("")

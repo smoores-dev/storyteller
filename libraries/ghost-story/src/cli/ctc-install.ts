@@ -19,6 +19,7 @@ interface GitLabPackageFile {
   file_name: string
   size: number
   file_sha256: string | null
+  created_at: string
 }
 
 export function getModelPackageDir(
@@ -48,16 +49,22 @@ export function getModelPackageFileUrl(
   return `https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/packages/ml_models/${model.modelVersionId}/files/${filePath}`
 }
 
+function uploadedAt(file: GitLabPackageFile): number {
+  return Date.parse(file.created_at) || 0
+}
+
 /**
  * Lists the files a package holds. The registry url-encodes path separators in
- * file names, so they are decoded back into relative paths here.
+ * file names, so they are decoded back into relative paths here. Re-uploading a
+ * file keeps the older entry around and the download endpoint serves the newest
+ * one, so only the newest entry per name is kept.
  */
 export async function listModelPackageFiles(
   model: CtcModelPackage,
   signal?: AbortSignal | null,
 ): Promise<ModelPackageFile[]> {
   const url = `https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/packages/${model.packageId}/package_files`
-  const files: ModelPackageFile[] = []
+  const newest = new Map<string, GitLabPackageFile>()
 
   for (let page = 1; ; page++) {
     const response = await fetch(
@@ -81,11 +88,10 @@ export async function listModelPackageFiles(
         )
       }
 
-      files.push({
-        fileName,
-        size: file.size,
-        sha256: file.file_sha256 ?? "",
-      })
+      const previous = newest.get(fileName)
+      if (previous === undefined || uploadedAt(file) >= uploadedAt(previous)) {
+        newest.set(fileName, file)
+      }
     }
 
     if (batch.length < 100) {
@@ -93,7 +99,11 @@ export async function listModelPackageFiles(
     }
   }
 
-  return files
+  return [...newest].map(([fileName, file]) => ({
+    fileName,
+    size: file.size,
+    sha256: file.file_sha256 ?? "",
+  }))
 }
 
 export interface InstallModelPackageOptions {

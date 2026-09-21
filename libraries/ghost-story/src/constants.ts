@@ -524,8 +524,8 @@ export const CTC_MODEL_PACKAGES: Record<CtcModelVariant, CtcModelPackage> = {
   quartznet15x5_ja: {
     name: "quartznet15x5-ja",
     version: CTC_MODEL_VERSION,
-    packageId: 0,
-    modelVersionId: 0,
+    packageId: 70086087,
+    modelVersionId: 3023444,
     subdir: "quartznet15x5-ja",
     entryFile: "model.safetensors",
     // TODO: requires additional finetuning

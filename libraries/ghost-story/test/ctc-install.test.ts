@@ -92,6 +92,41 @@ function registryFetch(
   }
 }
 
+/**
+ * Stands in for a package whose `onnx/model.onnx` was uploaded twice. The
+ * download endpoint serves the newest upload whatever the listing order is.
+ */
+function reuploadFetch(
+  listing: unknown[],
+  body: Buffer,
+  downloads: { count: number },
+): typeof fetch {
+  const prefix = `/api/v4/projects/${GITLAB_PROJECT_ID}/packages/`
+
+  return (input: Parameters<typeof fetch>[0]): Promise<Response> => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url
+    const { pathname } = new URL(url)
+
+    if (pathname === `${prefix}${model.packageId}/package_files`) {
+      return Promise.resolve(new Response(JSON.stringify(listing)))
+    }
+
+    downloads.count++
+
+    return Promise.resolve(
+      new Response(body, {
+        status: 200,
+        headers: { "content-length": String(body.length) },
+      }),
+    )
+  }
+}
+
 describe("ctc models", () => {
   it("recognizes known variants", () => {
     assert.ok(isCtcModelVariant("fp32"))
@@ -184,5 +219,52 @@ describe("model packages", () => {
       /Checksum mismatch/,
     )
     assert.ok(!existsSync(path.join(destDir, "onnx/model.onnx")))
+  })
+
+  it("keeps the newest entry of a re-uploaded file", async () => {
+    const reuploaded = Buffer.from("new weights")
+    const entries = [
+      {
+        file_name: encodeURIComponent("onnx/model.onnx"),
+        size: contents["onnx/model.onnx"]!.length,
+        file_sha256: sha256(contents["onnx/model.onnx"]!),
+        created_at: "2026-09-11T22:47:23.000Z",
+      },
+      {
+        file_name: encodeURIComponent("onnx/model.onnx"),
+        size: reuploaded.length,
+        file_sha256: sha256(reuploaded),
+        created_at: "2026-09-19T14:22:46.680Z",
+      },
+    ]
+
+    for (const listing of [entries, [...entries].reverse()]) {
+      const downloads = { count: 0 }
+      globalThis.fetch = reuploadFetch(listing, reuploaded, downloads)
+
+      const files = await listModelPackageFiles(model)
+      assert.deepEqual(files, [
+        {
+          fileName: "onnx/model.onnx",
+          size: reuploaded.length,
+          sha256: sha256(reuploaded),
+        },
+      ])
+
+      const reuploadDir = await mkdtemp(
+        path.join(tmpdir(), "ghost-story-reupload-"),
+      )
+      const destDir = await installModelPackage(model, {
+        modelDir: reuploadDir,
+        printOutput: false,
+      })
+
+      assert.equal(downloads.count, 1)
+      assert.equal(
+        await readFile(path.join(destDir, "onnx/model.onnx"), "utf8"),
+        "new weights",
+      )
+      await rm(reuploadDir, { recursive: true, force: true })
+    }
   })
 })
