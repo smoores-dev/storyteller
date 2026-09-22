@@ -55,13 +55,13 @@ publish-web-gpu:
   parallel:
     matrix:
       - VARIANT: cuda-13.1.0
-        BASE_TAG: cuda-13.1-mr-656
+        BASE_TAG: cuda-13.1
       - VARIANT: cuda-12.9.0
-        BASE_TAG: cuda-12.9-mr-656
+        BASE_TAG: cuda-12.9
       - VARIANT: cuda-11.8.0
-        BASE_TAG: cuda-11.8-mr-656
+        BASE_TAG: cuda-11.8
       - VARIANT: vulkan
-        BASE_TAG: vulkan
+        BASE_TAG: vulkan-mr-710
       - VARIANT: rocm
         BASE_TAG: rocm
       - VARIANT: blas
@@ -83,7 +83,7 @@ publish-web-arm64-gpu:
   parallel:
     matrix:
       - VARIANT: vulkan
-        BASE_TAG: vulkan
+        BASE_TAG: vulkan-mr-710
   script:
     - docker buildx build --provenance=false --sbom=false --build-arg
       CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg BASE_TAG=$BASE_TAG --build-arg

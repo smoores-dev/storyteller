@@ -301,7 +301,7 @@ build-whisper-linux-x64-vulkan-legacy:
 
 build-whisper-linux-arm64-vulkan:
   extends: .whisper-build-base
-  image: $CI_REGISTRY_IMAGE/storyteller-base:vulkan
+  image: $CI_REGISTRY_IMAGE/storyteller-base:vulkan-mr-710
   tags: [saas-linux-large-arm64]
   variables:
     VARIANT: "linux-arm64-vulkan"
