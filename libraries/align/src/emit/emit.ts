@@ -224,7 +224,8 @@ export async function emit(
 
   const decoded = mapOrdered(
     chunks,
-    options.concurrency ?? Math.min(4, os.availableParallelism() - 2),
+    options.concurrency ??
+      Math.max(1, Math.min(4, os.availableParallelism() - 2)),
     async (chunk, scope) => {
       const track = progressFor(progress, chunk.source)
       const samples = await track.timing.timeAsync("conversion", () =>
