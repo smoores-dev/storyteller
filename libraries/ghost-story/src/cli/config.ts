@@ -294,6 +294,9 @@ export function detectPlatform(): BuildVariant {
   }
 
   if (platform === "linux") {
+    if (arch === "arm64") {
+      return hasVulkan() ? "linux-arm64-vulkan" : "linux-arm64-cpu"
+    }
     if (hasCuda()) {
       // we can detect CUDA presence but not version, default to latest
       console.warn(
@@ -311,7 +314,7 @@ export function detectPlatform(): BuildVariant {
     if (hasVulkan()) {
       return "linux-x64-vulkan"
     }
-    return arch === "arm64" ? "linux-arm64-cpu" : "linux-x64-cpu"
+    return "linux-x64-cpu"
   }
 
   if (platform === "win32") {

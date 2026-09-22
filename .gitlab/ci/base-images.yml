@@ -44,7 +44,7 @@ build-base-cpu:
       --tag $CI_REGISTRY_IMAGE/storyteller-base:$TAG --tag
       $CI_REGISTRY_IMAGE/storyteller-base:cpu-$CI_COMMIT_SHORT_SHA .
 
-# GPU base images (amd64 only)
+# GPU base images (amd64 only, except vulkan which is multi-arch)
 build-base-gpu:
   extends: .base-image-build
   tags: [saas-linux-large-amd64]
@@ -63,6 +63,8 @@ build-base-gpu:
         - scripts/install-node.sh
         - scripts/install-cuda.sh
         - .gitlab/ci/base-images.yml
+  variables:
+    PLATFORMS: linux/amd64
   parallel:
     matrix:
       - GPU_VARIANT:
@@ -70,9 +72,10 @@ build-base-gpu:
           - cuda-12.9
           - cuda-13.1
           - rocm
-          - vulkan
           - blas
           - sycl
+      - GPU_VARIANT: vulkan
+        PLATFORMS: linux/amd64,linux/arm64
   script:
     - |
       if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
@@ -80,7 +83,11 @@ build-base-gpu:
       else
         TAG="${GPU_VARIANT}"
       fi
-    - docker buildx build --platform linux/amd64 --push --build-arg
+    - |
+      case "$PLATFORMS" in
+        *arm64*) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes ;;
+      esac
+    - docker buildx build --platform $PLATFORMS --push --build-arg
       GPU_VARIANT=$GPU_VARIANT -f Dockerfile.base --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/storyteller-base/cache:$GPU_VARIANT
       --cache-to

@@ -299,6 +299,16 @@ build-whisper-linux-x64-vulkan-legacy:
   variables:
     LEGACY: "1"
 
+build-whisper-linux-arm64-vulkan:
+  extends: .whisper-build-base
+  image: $CI_REGISTRY_IMAGE/storyteller-base:vulkan
+  tags: [saas-linux-large-arm64]
+  variables:
+    VARIANT: "linux-arm64-vulkan"
+    CMAKE_FLAGS: "-DGGML_VULKAN=1"
+    CFLAGS: ""
+    CXXFLAGS: ""
+
 # Linux ROCm build (AMD GPUs - still uses ubuntu image since we don't have a rocm base)
 
 build-whisper-linux-x64-rocm:

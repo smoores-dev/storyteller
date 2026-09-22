@@ -25,6 +25,7 @@ export const BUILD_VARIANTS = [
   "linux-x64-blas-legacy",
   "linux-x64-cpu-legacy",
   "linux-arm64-cpu",
+  "linux-arm64-vulkan",
   "windows-x64-cpu",
   "windows-x64-cuda-13.1.0",
   "windows-x64-cuda-12.9.0",

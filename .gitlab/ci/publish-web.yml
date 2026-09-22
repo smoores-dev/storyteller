@@ -77,6 +77,22 @@ publish-web-gpu:
       type=registry,ref=$CI_REGISTRY_IMAGE/cache-amd64-$VARIANT:latest,mode=max
       --tag $CI_REGISTRY_IMAGE/amd64-$VARIANT:$CI_COMMIT_SHORT_SHA .
 
+publish-web-arm64-gpu:
+  extends: .publish-web-base
+  tags: [saas-linux-large-arm64]
+  parallel:
+    matrix:
+      - VARIANT: vulkan
+        BASE_TAG: vulkan
+  script:
+    - docker buildx build --provenance=false --sbom=false --build-arg
+      CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg BASE_TAG=$BASE_TAG --build-arg
+      WHISPER_VARIANT=linux-arm64-$VARIANT --push -f Dockerfile --cache-from
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache-arm64-$VARIANT:latest
+      --cache-to
+      type=registry,ref=$CI_REGISTRY_IMAGE/cache-arm64-$VARIANT:latest,mode=max
+      --tag $CI_REGISTRY_IMAGE/arm64-$VARIANT:$CI_COMMIT_SHORT_SHA .
+
 # Create multi-arch manifests and version tags
 publish-web-multiarch:
   image: docker:29.6.2
@@ -121,12 +137,14 @@ publish-web-multiarch:
         $CI_REGISTRY_IMAGE/amd64:$CI_COMMIT_SHORT_SHA \
         $CI_REGISTRY_IMAGE/arm64:$CI_COMMIT_SHORT_SHA
 
-    # create tags for GPU variants (x64 only)
-    # format: VARIANT:MAJOR_ALIAS (empty means no major version alias)
+    # create tags for GPU variants
+    # format: VARIANT:MAJOR_ALIAS:ARCHES (empty alias means no major version alias)
     - |
-      for entry in "cuda-13.1.0:cuda-13" "cuda-12.9.0:cuda-12" "cuda-11.8.0:cuda-11" "vulkan:" "rocm:" "blas:" "sycl:"; do
+      for entry in "cuda-13.1.0:cuda-13:amd64" "cuda-12.9.0:cuda-12:amd64" "cuda-11.8.0:cuda-11:amd64" "vulkan::amd64 arm64" "rocm::amd64" "blas::amd64" "sycl::amd64"; do
         VARIANT="${entry%%:*}"
-        MAJOR_ALIAS="${entry#*:}"
+        REST="${entry#*:}"
+        MAJOR_ALIAS="${REST%%:*}"
+        ARCHES="${REST#*:}"
 
         TAGS="--tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG-$VARIANT"
         if [ "$IS_STABLE" = "true" ]; then
@@ -139,9 +157,13 @@ publish-web-multiarch:
           TAGS="$TAGS --tag $CI_REGISTRY_IMAGE:$PRERELEASE_BASE-$VARIANT"
         fi
 
+        SOURCES=""
+        for ARCH in $ARCHES; do
+          SOURCES="$SOURCES $CI_REGISTRY_IMAGE/$ARCH-$VARIANT:$CI_COMMIT_SHORT_SHA"
+        done
+
         echo "Creating tags for $VARIANT: $TAGS"
-        docker buildx imagetools create $TAGS \
-          $CI_REGISTRY_IMAGE/amd64-$VARIANT:$CI_COMMIT_SHORT_SHA
+        docker buildx imagetools create $TAGS $SOURCES
       done
 
 prerelease-web:
