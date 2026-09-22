@@ -6,15 +6,26 @@
 !/applications/tauri/
 !/applications/web/
 !/Dockerfile*
+!/compose.yaml
+!/.dockerignore
 !/libraries/ghost-story/
 !/libraries/okmain/
 !/libraries/opds/
 !/libraries/StorytellerKit/
+!/libraries/media-types/
+!/libraries/nodekit/
+!/libraries/mlx-audio/
 !/Package.swift
 !/Package.resolved
 !/config/
 !/yarn.lock
+!/crowdin.yml
+!/package.json
+!/oxlintrc.json
+!/oxfmtrc.json
 !/.yarn/versions/*.yml
+!/scripts
+!/docker-scripts
 
 [Applications]
 /applications/clients/ @smoores @kyonifer
@@ -22,18 +33,31 @@
 /applications/mobile/ @smoores @trcoffman
 /applications/tauri/ @smoores @tefkah
 /applications/web/ @smoores @tefkah
+
+[Docker]
+/compose.yaml @smoores @tefkah
 /Dockerfile* @smoores @tefkah
+/.dockerignore @smoores @tefkah
+/scripts @smoores @tefkah
+/docker-scripts @smoores @tefkah
 
 [Libraries]
 /libraries/ghost-story/ @smoores @tefkah
 /libraries/okmain/ @smoores @tefkah
 /libraries/opds/ @smoores @tefkah
+/libraries/media-types/ @smoores @tefkah
+/libraries/nodekit/ @smoores @tefkah @kyonifer
+/libraries/mlx-audio/ @smoores @tefkah @kyonifer
 /libraries/StorytellerKit/ @smoores @kyonifer
 /Package.swift @smoores @kyonifer
 /Package.resolved @smoores @kyonifer
 
 [Config]
 /config/ @smoores @tefkah
+/crowdin.yml @smoores @tefkah
+/.oxlintrc.json @smoores @tefkah
+/.oxfmtrc.json @smoores @tefkah
 
 [Dependencies]
 /yarn.lock @smoores @tefkah @trcoffman
+/package.json @smoores @tefkah
