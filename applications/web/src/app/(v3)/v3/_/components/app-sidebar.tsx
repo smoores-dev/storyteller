@@ -2,7 +2,6 @@
 
 import {
   type Hotkey,
-  useHotkey,
   useHotkeySequence,
   useKeyHold,
 } from "@tanstack/react-hotkeys"
@@ -42,7 +41,6 @@ import {
   useLibraryCounts,
 } from "@v3/_/hooks/use-library-counts"
 import { useSidebarPrefetch } from "@v3/_/hooks/use-sidebar-prefetch"
-import { useTheme } from "@v3/_/hooks/use-theme"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import type { User } from "@/apiModels"
@@ -66,7 +64,6 @@ import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   selectCollapsedSidebarGroups,
   selectProcessingToastLocation,
-  selectTheme,
   uiSettingsSlice,
 } from "@/store/slices/uiSettingsSlice"
 import { extractEmojiIcon } from "@/strings"
@@ -105,14 +102,14 @@ import { TooltipButton } from "./ui/tooltip-button"
 
 const THIRTY_MINUTES = 30 * 60 * 1000
 
-function UpdateDot() {
-  return (
-    <span
-      className="bg-primary size-2 rounded-full"
-      aria-label="Update available"
-    />
-  )
-}
+// function UpdateDot() {
+//   return (
+//     <span
+//       className="bg-primary size-2 rounded-full"
+//       aria-label="Update available"
+//     />
+//   )
+// }
 
 export function AppSidebar({
   user,
@@ -141,7 +138,7 @@ export function AppSidebar({
   const [setSidebarGroupsMut] = useSetSidebarGroupsMutation()
   const canAccessSettings = usePermission("settingsUpdate")
   const canProcess = usePermission("bookProcess")
-  const { pinned } = useSidebar()
+  const { pinned, setPinned } = useSidebar()
 
   // editing only makes sense while the sidebar stays open
   useEffect(() => {
@@ -238,82 +235,60 @@ export function AppSidebar({
   const { openSearch } = useCommandSearch()
 
   const t = useTranslation("AppSidebar")
-  const theme = useAppSelector(selectTheme)
-  const { setTheme } = useTheme()
-
-  const toggleTheme = () => {
-    setTheme(
-      theme === "dark" ? "system" : theme === "system" ? "light" : "dark",
-    )
-  }
-
-  useHotkey("Mod+Shift+L", () => {
-    toggleTheme()
-  })
 
   const processingToastLocation = useAppSelector(selectProcessingToastLocation)
 
   const navSecondary: NavSecondaryItem[] = [
-    {
-      onClick: () => {
-        // eslint-disable-next-line react-compiler/react-compiler
-        document.cookie = "frontend-version=v2; path=/; max-age=31536000"
-        window.location.href = "/"
-      },
-      icon: icon.ArrowBack,
-      title: t("switchToClassic"),
-      key: "switchToClassic",
-    },
-    {
-      custom: (
-        <SidebarMenuItem>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <SidebarMenuButton
-                  onClick={toggleTheme}
-                  className="flex items-center gap-2"
-                  size="sm"
-                  suppressHydrationWarning
-                >
-                  {theme === "dark" ? (
-                    <icon.DarkMode className="size-4" />
-                  ) : theme === "system" ? (
-                    <icon.System className="size-4" />
-                  ) : (
-                    <icon.LightMode className="size-4" />
-                  )}
-                  <span>{t(theme)}</span>
-                </SidebarMenuButton>
-              }
-            />
-            <TooltipContent side="right" suppressHydrationWarning>
-              {t("toggleTheme")}
-              <KeyboardShortcut shortcut={["Mod+Shift+L"]} />
-            </TooltipContent>
-          </Tooltip>
-        </SidebarMenuItem>
-      ),
-      key: "theme",
-    },
-    {
-      custom: (
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={openSearch}
-            size="sm"
-            className="flex justify-between gap-2"
-          >
-            <icon.Search />
-            <span className="flex grow justify-between">
-              {t("search")}
-              <KeyboardShortcut shortcut={["Mod+K"]} />
-            </span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ),
-      key: "search",
-    },
+    // {
+    //   custom: (
+    //     <SidebarMenuItem>
+    //       <Tooltip>
+    //         <TooltipTrigger
+    //           render={
+    //             <SidebarMenuButton
+    //               onClick={toggleTheme}
+    //               className="flex items-center gap-2"
+    //               size="sm"
+    //               suppressHydrationWarning
+    //             >
+    //               {theme === "dark" ? (
+    //                 <icon.DarkMode className="size-4" />
+    //               ) : theme === "system" ? (
+    //                 <icon.System className="size-4" />
+    //               ) : (
+    //                 <icon.LightMode className="size-4" />
+    //               )}
+    //               <span>{t(theme)}</span>
+    //             </SidebarMenuButton>
+    //           }
+    //         />
+    //         <TooltipContent side="right" suppressHydrationWarning>
+    //           {t("toggleTheme")}
+    //           <KeyboardShortcut shortcut={["Mod+Shift+L"]} />
+    //         </TooltipContent>
+    //       </Tooltip>
+    //     </SidebarMenuItem>
+    //   ),
+    //   key: "theme",
+    // },
+    // {
+    //   custom: (
+    //     <SidebarMenuItem>
+    //       <SidebarMenuButton
+    //         onClick={openSearch}
+    //         size="sm"
+    //         className="flex justify-between gap-2"
+    //       >
+    //         <icon.Search />
+    //         <span className="flex grow justify-between">
+    //           {t("search")}
+    //           <KeyboardShortcut shortcut={["Mod+K"]} />
+    //         </span>
+    //       </SidebarMenuButton>
+    //     </SidebarMenuItem>
+    //   ),
+    //   key: "search",
+    // },
     ...(processingToastLocation === "sidebar" && canProcess
       ? [
           {
@@ -322,16 +297,16 @@ export function AppSidebar({
           },
         ]
       : []),
-    ...(canAccessSettings
-      ? [
-          {
-            title: t("settings"),
-            url: "/settings",
-            icon: icon.Settings,
-            badge: hasUpdate ? <UpdateDot /> : undefined,
-          },
-        ]
-      : []),
+    // ...(canAccessSettings
+    //   ? [
+    //       {
+    //         title: t("settings"),
+    //         url: "/settings",
+    //         icon: icon.Settings,
+    //         badge: hasUpdate ? <UpdateDot /> : undefined,
+    //       },
+    //     ]
+    //   : []),
   ]
 
   return (
@@ -366,16 +341,14 @@ export function AppSidebar({
 
           <div className="relative flex items-center gap-0.5 group-data-[collapsible=icon]:hidden">
             <TooltipButton
-              size="sm"
-              variant="real-ghost"
-              className="hover:text-sidebar-accent-foreground size-7 shrink-0"
-              onClick={() => {
-                setEditMode(true)
-              }}
-              tooltip={t("customize")}
-              aria-label={t("customize")}
+              variant="ghost"
+              size="icon-sm"
+              onClick={openSearch}
+              tooltip={t("search")}
+              shortcut={["Mod+K"]}
+              aria-label={t("search")}
             >
-              <icon.AdjustmentsHorizontal className="size-4" />
+              <icon.Search className="size-4" />
             </TooltipButton>
             <SidebarPinButton />
           </div>
@@ -432,12 +405,16 @@ export function AppSidebar({
           )}
         </SidebarContent>
 
-        <SidebarFooter>
+        <SidebarFooter className="py-0">
           <NavUser
             user={{
               name: user.name ?? null,
               email: user.email,
               username: user.username ?? null,
+            }}
+            onCustomize={() => {
+              setPinned(true)
+              setEditMode(true)
             }}
           />
         </SidebarFooter>

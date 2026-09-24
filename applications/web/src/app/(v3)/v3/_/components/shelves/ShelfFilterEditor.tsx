@@ -31,6 +31,7 @@ import {
 } from "@/app/(v3)/v3/_/components/books/RolePicker"
 import {
   DurationInput,
+  EditorInput,
   FileSizeInput,
   MultiCombobox,
   NumericInput,
@@ -466,7 +467,7 @@ function DraggableFilterItem({
       transition={{ layout: { duration: 0 } }}
       className="list-none"
     >
-      <div className="flex items-start gap-1">
+      <div className="flex items-baseline gap-1">
         {showHandle && (
           <motion.button
             type="button"
@@ -593,7 +594,7 @@ function LogicalBlockEditor({
           }}
           items={items}
         >
-          <SelectTrigger className="h-6 w-fit text-xs font-medium">
+          <SelectTrigger className="h-6 w-fit border-0 bg-transparent text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -850,10 +851,10 @@ function ConditionEditor({
   }))
 
   return (
-    <div className="flex flex-col">
+    <div className="relative flex w-full flex-col">
       <div
         className={cn(
-          "flex flex-wrap items-center gap-1.5 py-1",
+          "flex scroll-x w-full items-center gap-0.5 py-1",
           !hasValidValue && "opacity-60",
         )}
       >
@@ -861,9 +862,9 @@ function ConditionEditor({
           <FilterableMenuTrigger
             render={
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="bg-input/20 dark:bg-input/30 border-input rounded-md font-normal"
+                className="rounded-md font-normal"
               >
                 <FieldIcon field={condition.field} className="size-3" />
                 {c(`fields.label.${condition.field}`)}
@@ -926,11 +927,7 @@ function ConditionEditor({
         <FilterableMenu>
           <FilterableMenuTrigger
             render={
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-input/20 dark:bg-input/30 border-input rounded-md font-normal"
-              >
+              <Button variant="ghost" size="sm" className="font-normal">
                 {t.plain(`operators.${condition.operator}` as "operators.is")}
                 <icon.ChevronDown className="size-3" />
               </Button>
@@ -987,23 +984,22 @@ function ConditionEditor({
             />
           </div>
         )}
-
-        <div className="flex shrink-0 items-center gap-0.5">
-          {onDuplicate && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={onDuplicate}
-              title={t.plain("duplicate")}
-            >
-              <icon.Copy className="size-3" />
-            </Button>
-          )}
-
-          <Button variant="ghost" size="icon-sm" onClick={onRemove}>
-            <icon.Trash className="size-3" />
+      </div>
+      <div className="from-background via-background absolute top-1/2 right-0 flex shrink-0 -translate-y-1/2 items-center bg-linear-to-l via-90% to-transparent">
+        {onDuplicate && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onDuplicate}
+            title={t.plain("duplicate")}
+          >
+            <icon.Copy className="size-3" />
           </Button>
-        </div>
+        )}
+
+        <Button variant="ghost" size="icon-sm" onClick={onRemove}>
+          <icon.Trash className="size-3" />
+        </Button>
       </div>
 
       {needsValue && !hasValidValue && (
@@ -1102,11 +1098,7 @@ function QualifierPicker({
     <FilterableMenu>
       <FilterableMenuTrigger
         render={
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-input/20 dark:bg-input/30 border-input rounded-md font-normal"
-          >
+          <Button variant="ghost" size="sm" className="rounded-md font-normal">
             {current?.label ?? anyLabel}
             <icon.ChevronDown className="size-3" />
           </Button>
@@ -1179,9 +1171,9 @@ function FacetValueMenu({
       <FilterableMenuTrigger
         render={
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="bg-input/20 dark:bg-input/30 border-input h-7 w-full justify-between gap-1 rounded-md text-xs font-normal"
+            className="h-7 w-full justify-between gap-1 rounded-md text-xs font-normal"
           >
             <span className="truncate">
               {selectedNames.length ? selectedNames.join(", ") : placeholder}
@@ -1449,7 +1441,7 @@ function ConditionValueInput({
       return (
         <div className="flex items-center gap-2">
           <NumericInput
-            className="h-7 w-20 text-xs"
+            className="w-20"
             value={rangeStart}
             onChange={(n) => {
               onChange([n, rangeEnd])
@@ -1459,7 +1451,7 @@ function ConditionValueInput({
           <span className="text-muted-foreground text-xs">{t.plain("to")}</span>
 
           <NumericInput
-            className="h-7 w-20 text-xs"
+            className="w-20"
             value={rangeEnd}
             onChange={(n) => {
               onChange([rangeStart, n])
@@ -1471,7 +1463,7 @@ function ConditionValueInput({
 
     return (
       <NumericInput
-        className="h-7 w-20 text-xs"
+        className="w-20"
         value={typeof value === "number" ? value : ""}
         onChange={onChange}
         placeholder={t.plain("numericPlaceholders.default")}
@@ -1485,9 +1477,8 @@ function ConditionValueInput({
 
       return (
         <div className="flex items-center gap-2">
-          <Input
+          <EditorInput
             type="date"
-            className="h-7 text-xs"
             value={typeof rangeValue[0] === "string" ? rangeValue[0] : ""}
             onChange={(e) => {
               onChange([
@@ -1499,9 +1490,8 @@ function ConditionValueInput({
 
           <span className="text-muted-foreground text-xs">{t.plain("to")}</span>
 
-          <Input
+          <EditorInput
             type="date"
-            className="h-7 text-xs"
             value={typeof rangeValue[1] === "string" ? rangeValue[1] : ""}
             onChange={(e) => {
               onChange([
@@ -1515,9 +1505,8 @@ function ConditionValueInput({
     }
 
     return (
-      <Input
+      <EditorInput
         type="date"
-        className="h-7 text-xs"
         value={typeof value === "string" ? value : ""}
         onChange={(e) => {
           onChange(e.target.value)
@@ -1549,8 +1538,7 @@ function ConditionValueInput({
   }
 
   return (
-    <Input
-      className="h-7 text-xs"
+    <EditorInput
       value={typeof value === "string" ? value : ""}
       onChange={(e) => {
         onChange(e.target.value || null)

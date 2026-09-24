@@ -6,11 +6,14 @@ import {
   MeshTransmissionMaterial,
   useGLTF,
 } from "@react-three/drei"
-import { Canvas, useFrame } from "@react-three/fiber"
-import { Suspense, useMemo, useRef } from "react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { Suspense, useEffect, useMemo, useRef } from "react"
 import { Color, type Group, MathUtils, type Mesh } from "three"
 
 const MODEL_URL = "/models/quartz.glb"
+
+const IDLE_FRAME_MS = 1000 / 30
+const SETTLE_EPSILON = 0.002
 
 export type CrystalMode = "hidden" | "hover" | "selected"
 
@@ -35,7 +38,33 @@ function Crystal({ mode, spins, reducedMotion }: SceneProps) {
     }
   }, [source])
 
-  const interior = useMemo(() => new Color("#3fae7e"), [])
+  const interior = useMemo(() => new Color("#7fbcc0"), [])
+  const invalidate = useThree((three) => three.invalidate)
+  const canvas = useThree((three) => three.gl.domElement)
+  const onScreen = useRef(true)
+  const idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    invalidate()
+  }, [mode, spins, invalidate])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      onScreen.current = entry?.isIntersecting ?? true
+      if (onScreen.current) invalidate()
+    })
+    observer.observe(canvas)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") invalidate()
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => {
+      observer.disconnect()
+      document.removeEventListener("visibilitychange", onVisibility)
+      clearTimeout(idleTimer.current)
+    }
+  }, [canvas, invalidate])
+
   const group = useRef<Group>(null)
   const state = useRef({
     scale: 0,
@@ -85,6 +114,22 @@ function Crystal({ mode, spins, reducedMotion }: SceneProps) {
     node.scale.setScalar(Math.max(s.scale, 0.0001))
     node.position.y = s.lift + bob
     node.rotation.set(s.tilt, s.yaw, 0)
+
+    const springing =
+      Math.abs(targetScale - s.scale) > SETTLE_EPSILON ||
+      Math.abs(s.scaleV) > SETTLE_EPSILON ||
+      Math.abs(targetLift - s.lift) > SETTLE_EPSILON ||
+      Math.abs(s.liftV) > SETTLE_EPSILON ||
+      Math.abs(s.velocity - idle) > 0.01 ||
+      bob !== 0
+
+    clearTimeout(idleTimer.current)
+    if (!onScreen.current || document.visibilityState === "hidden") return
+    if (springing) {
+      invalidate()
+    } else if (node.visible && idle > 0) {
+      idleTimer.current = setTimeout(invalidate, IDLE_FRAME_MS)
+    }
   })
 
   return (
@@ -92,8 +137,8 @@ function Crystal({ mode, spins, reducedMotion }: SceneProps) {
       <mesh geometry={geometry} scale={fit}>
         <MeshTransmissionMaterial
           backside
-          samples={6}
-          resolution={512}
+          samples={3}
+          resolution={256}
           transmission={1}
           thickness={0.55}
           roughness={0.05}
@@ -103,10 +148,10 @@ function Crystal({ mode, spins, reducedMotion }: SceneProps) {
           distortion={0.12}
           distortionScale={0.4}
           temporalDistortion={0.04}
-          color="#c2f7dc"
-          attenuationColor="#5fd39f"
+          color="#e2f5f4"
+          attenuationColor="#9dd3d6"
           attenuationDistance={2.6}
-          emissive="#2a9d6b"
+          emissive="#5c9fa6"
           emissiveIntensity={0.18}
           background={interior}
         />
@@ -119,7 +164,8 @@ export function QuartzCanvas(props: SceneProps) {
   return (
     <Canvas
       style={{ pointerEvents: "none" }}
-      dpr={[1, 2]}
+      frameloop="demand"
+      dpr={[1, 1.5]}
       gl={{ alpha: true, antialias: true }}
       camera={{ position: [0, 0.2, 4.2], fov: 32 }}
     >
@@ -135,14 +181,14 @@ export function QuartzCanvas(props: SceneProps) {
           <Lightformer
             form="ring"
             intensity={3}
-            color="#b6ffd9"
+            color="#d2f3f1"
             position={[-4, 1, 2]}
             scale={3}
           />
           <Lightformer
             form="rect"
             intensity={2}
-            color="#7df0ff"
+            color="#b3e3ff"
             position={[4, -1, 3]}
             scale={[3, 6, 1]}
           />

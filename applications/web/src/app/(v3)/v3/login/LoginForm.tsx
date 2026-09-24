@@ -21,6 +21,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@v3/_/components/ui/input-group"
+import { V3Link } from "@v3/_/components/v3-link"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
@@ -39,6 +40,7 @@ export type LoginFormData = z.infer<typeof loginSchema>
 
 export function LoginForm({
   disablePasswordLogin,
+  showPasswordReset,
   className,
   credentialsLoginAction,
   oauthLoginAction,
@@ -46,6 +48,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div"> & {
   disablePasswordLogin: boolean
+  showPasswordReset: boolean
   credentialsLoginAction: (
     data: LoginFormData,
     callbackUrl?: string,
@@ -120,6 +123,16 @@ export function LoginForm({
                     {t("loginToYourStorytellerAccount")}
                   </p>
                 </div>
+                {searchParams.get("reset") === "success" && !hasError && (
+                  <p className="text-center text-sm">
+                    {t("passwordResetSuccess")}
+                  </p>
+                )}
+                {searchParams.get("error") === "reset-invalid" && !hasError && (
+                  <p className="text-destructive text-center text-sm">
+                    {t("passwordResetInvalid")}
+                  </p>
+                )}
                 {hasError && (
                   <p className="text-destructive text-center text-sm">
                     {errors.root?.message !== "bad-creds"
@@ -169,6 +182,14 @@ export function LoginForm({
                     {isLoading ? t("loggingIn") : t("login")}
                   </Button>
                 </Field>
+                {showPasswordReset && (
+                  <V3Link
+                    href="/forgot-password"
+                    className="text-muted-foreground hover:text-foreground text-center text-sm underline-offset-4 hover:underline"
+                  >
+                    {t("forgotPassword")}
+                  </V3Link>
+                )}
                 {providers.length > 0 && (
                   <>
                     <FieldSeparator className="*:data-[slot=field-separator-content]:bg-transparent" />

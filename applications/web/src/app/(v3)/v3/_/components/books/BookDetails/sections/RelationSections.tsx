@@ -20,7 +20,11 @@ export function TagsSection() {
         <TagEditor />
       ) : (
         <RelationDisplay
-          items={book.tags.map((tag) => ({ uuid: tag.uuid, name: tag.name }))}
+          items={book.tags.map((tag) => ({
+            uuid: tag.uuid,
+            name: tag.name,
+            url: `/tags?item=${tag.uuid}`,
+          }))}
           source="tags"
           emptyText={t("notInAnyTags")}
           canEdit={canEdit}

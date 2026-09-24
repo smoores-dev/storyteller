@@ -22,7 +22,7 @@ import * as icon from "@/icons"
 import { useBookForm } from "./BookFormProvider"
 
 const pill =
-  "flex items-center gap-0.5 rounded-full bg-background/55 p-0.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:ring-white/10"
+  "flex items-center gap-0.5 rounded-full bg-background/55 p-0.5 h-7 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:ring-white/10"
 
 export function BookPageHeader({ onCustomize }: { onCustomize?: () => void }) {
   const { book, isEditing, setIsEditing } = useBookForm()

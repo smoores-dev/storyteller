@@ -227,7 +227,7 @@ export function FilterChip({
 
   if (locked) {
     return (
-      <span className="border-border bg-muted text-muted-foreground inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">
+      <span className="border-border bg-muted text-muted-foreground inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs">
         {label}
         {summary}
       </span>
@@ -238,32 +238,38 @@ export function FilterChip({
     <FilterableMenu open={open} onOpenChange={setOpen}>
       <span
         className={cn(
-          "inline-flex shrink-0 items-center rounded-full border text-xs font-medium",
+          "inline-flex shrink-0 items-center rounded-full h-7 border text-xs px-2 gap-1 ",
           active
             ? "border-primary/30 bg-primary/10 text-primary"
             : "bg-muted text-muted-foreground border-transparent",
         )}
       >
+        <FieldIcon field={field} className="size-3.5" />
         <FilterableMenuTrigger
           render={
-            <button className="flex cursor-pointer items-center gap-1 py-1 pr-1 pl-2.5">
-              <FieldIcon field={field} className="h-3 w-3" />
+            <Button
+              variant="real-ghost"
+              size="sm"
+              className="hover:text-primary px-0 font-normal"
+            >
               {label}
               {summary}
-            </button>
+            </Button>
           }
         />
         {active && onRemove && (
-          <button
+          <Button
+            variant="real-ghost"
+            size="icon-xs"
             aria-label={`Remove ${label} filter`}
-            className="hover:text-foreground cursor-pointer py-1 pr-2 pl-1"
+            className="hover:text-foreground size-4 p-0!"
             onClick={(e) => {
               e.stopPropagation()
               onRemove()
             }}
           >
-            <icon.Close className="h-3 w-3" />
-          </button>
+            <icon.Close className="size-4" />
+          </Button>
         )}
       </span>
       <FilterableMenuContent
@@ -405,7 +411,7 @@ export function FacetEditor({
         ) : null
       }
       footer={
-        <div className="border-border flex items-center justify-between border-t p-1">
+        <div className="border-border flex items-center justify-between border-t py-0.5">
           <Button
             variant="ghost"
             size="sm"
@@ -504,14 +510,14 @@ function NumberRangeEditor({
   ]
 
   const controls = (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-1">
       {!!def.formats && (
         <div className="flex flex-wrap gap-1">
           {formatChips.map((f) => {
             const value = f === "any" ? undefined : f
             const selected = format === value
             return (
-              <button
+              <Button
                 key={f}
                 onClick={() => {
                   set(lo, hi, value)
@@ -524,7 +530,7 @@ function NumberRangeEditor({
                 )}
               >
                 {f === "any" ? "Any" : ASSET_FORMAT_LABELS[f]}
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -569,11 +575,12 @@ function NumberRangeEditor({
         <Slider
           secondThumb
           thumbAlignment="edge-client-only"
-          className="[&_[data-slot='slider-indicator']]:bg-primary/70 [&_[data-slot='slider-thumb']]:border-primary/70"
+          className="[&_[data-slot='slider-indicator']]:bg-primary/70 [&_[data-slot='slider-thumb']]:border-primary/70 pt-4 pb-0"
           min={sliderBounds.min}
           max={sliderBounds.max}
           step={sliderBounds.step}
           defaultValue={[lo ?? sliderBounds.min, hi ?? sliderBounds.max]}
+          tooltipPosition="bottom"
           onValueCommitted={(v) => {
             const arr = (Array.isArray(v) ? v : [v]) as number[]
             set(arr[0] ?? null, arr[1] ?? null)
@@ -604,12 +611,12 @@ function NumberRangeEditor({
             </FilterableMenuItem>
           )
         })}
-        <div className="border-t p-3">{controls}</div>
+        <div className="border-t p-1">{controls}</div>
       </>
     )
   }
 
-  return <div className="p-3">{controls}</div>
+  return <div className="p-1">{controls}</div>
 }
 
 function readDateRange(conditions: ShelfFilterCondition[]): {
@@ -721,23 +728,24 @@ function YearEditor({
   }
 
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-1 p-1">
       <div className="flex flex-wrap gap-1">
         {(Object.keys(YEAR_MODE_LABELS) as YearMode[]).map((m) => (
-          <button
+          <Button
+            size="sm"
             key={m}
             onClick={() => {
               set(m, a, m === "between" ? b : "")
             }}
             className={cn(
-              "rounded-full border px-2 py-0.5 text-xs",
+              "rounded-full border font-normal text-xs",
               m === mode
                 ? "border-primary/30 bg-primary/10 text-primary"
                 : "bg-muted text-muted-foreground border-transparent",
             )}
           >
             {YEAR_MODE_LABELS[m]}
-          </button>
+          </Button>
         ))}
       </div>
 

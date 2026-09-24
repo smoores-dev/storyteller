@@ -233,7 +233,7 @@ export function SidebarEntityActions({
     <>
       <ActionTray
         show={count > 0}
-        className="absolute bottom-12 gap-1 border-x-0 border-b-0 p-1 pl-2.5"
+        className="absolute bottom-0 gap-1 border-x-0 border-b-0 p-1 pl-2.5"
       >
         <span className="flex-1 text-sm whitespace-nowrap">
           {c.rich("selectedCount", {

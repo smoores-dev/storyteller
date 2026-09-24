@@ -1,5 +1,6 @@
 "use client"
 
+import { useHotkey } from "@tanstack/react-hotkeys"
 import Link from "next/link"
 
 import { LocaleChanger } from "@v3/_/components/locale-changer"
@@ -18,72 +19,129 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@v3/_/components/ui/sidebar"
+import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
+import { V3Link } from "@v3/_/components/v3-link"
 import { useVersionBasePath } from "@v3/_/components/version-context"
+import { useTheme } from "@v3/_/hooks/use-theme"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
+import { usePermission } from "@/hooks/usePermission"
 import * as icon from "@/icons"
 import { api } from "@/store/api"
-import { useAppDispatch } from "@/store/appState"
+import { useAppDispatch, useAppSelector } from "@/store/appState"
+import { selectTheme } from "@/store/slices/uiSettingsSlice"
+
+import { CreateMenu } from "./create-menu"
 
 export function NavUser({
   user,
+  onCustomize,
 }: {
   user: {
     name: string | null
     email: string | null
     username: string | null
   }
+  onCustomize: () => void
 }) {
   const { isMobile } = useSidebar()
   const basePath = useVersionBasePath()
+  const canAccessSettings = usePermission("settingsUpdate")
 
   const displayName = user.name ?? user.username ?? "User"
 
   const t = useTranslation("AppSidebar")
   const dispatch = useAppDispatch()
+  const theme = useAppSelector(selectTheme)
+  const { setTheme } = useTheme()
+
+  const toggleTheme = () => {
+    setTheme(
+      theme === "dark" ? "system" : theme === "system" ? "light" : "dark",
+    )
+  }
+
+  useHotkey("Mod+Shift+L", () => {
+    toggleTheme()
+  })
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
+    <SidebarMenu className="w-full flex-row items-center justify-center gap-0.5 overflow-clip border-t py-1">
+      <SidebarMenuItem className="opacity-100 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+        <CreateMenu />
+      </SidebarMenuItem>
+
+      <SidebarMenuItem className="opacity-100 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+        <TooltipButton
+          aria-label={t.plain("toggleTheme")}
+          variant="ghost"
+          size="icon-lg"
+          tooltip={t("toggleTheme")}
+          shortcut={["Mod+Shift+L"]}
+          render={
+            <SidebarMenuButton onClick={toggleTheme} suppressHydrationWarning>
+              {theme === "dark" ? (
+                <icon.DarkMode />
+              ) : theme === "system" ? (
+                <icon.System />
+              ) : (
+                <icon.LightMode />
+              )}
+            </SidebarMenuButton>
+          }
+        />
+      </SidebarMenuItem>
+
+      {canAccessSettings && (
+        <SidebarMenuItem className="opacity-100 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+          <TooltipButton
+            aria-label={t.plain("settings")}
+            variant="ghost"
+            size="icon-lg"
+            tooltip={t("settings")}
+            nativeButton={false}
+            render={
+              <SidebarMenuButton
+                render={
+                  <V3Link prefetch={true} href={`${basePath}/settings`} />
+                }
+              >
+                <icon.Settings />
+              </SidebarMenuButton>
+            }
+          />
+        </SidebarMenuItem>
+      )}
+
+      <SidebarMenuItem className="group-data-[collapsible=icon]:-ml-14">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
               <SidebarMenuButton
-                size="default"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:p-1!"
-                style={{ scrollbarWidth: "none" }}
-                aria-label={t("account")}
+                className="group-data-[collapsible=icon]:p-1!"
+                aria-label={t.plain("account")}
+                // size="icon-lg"
               >
-                <div className="grid w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden data-[state=open]:w-auto">
-                  <span className="truncate font-medium">{displayName}</span>
-                  {user.name && (
-                    <span className="text-sidebar-foreground/60 truncate font-sans text-xs">
-                      {user.username}
-                    </span>
-                  )}
-                </div>
-                <icon.DotsVertical className="size-4 data-[collapsible=icon]:-ml-4!" />
+                <icon.DotsVertical className="size-4" />
               </SidebarMenuButton>
             }
           />
           <DropdownMenuContent
-            className="z-0 min-w-56 rounded-lg"
+            className="z-0 min-w-56"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={12}
           >
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{displayName}</span>
+              <DropdownMenuLabel className="py-0 font-normal">
+                <div className="grid px-1 py-1.5 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{displayName}</span>
 
-                    {user.username && (
-                      <span className="text-muted-foreground truncate text-xs">
-                        {user.username}
-                      </span>
-                    )}
-                  </div>
+                  {user.username && (
+                    <span className="text-muted-foreground truncate text-xs">
+                      {user.username}
+                    </span>
+                  )}
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
@@ -93,7 +151,7 @@ export function NavUser({
                 nativeButton={false}
                 render={
                   <Link
-                    href={`${basePath}/preferences?tab=general`}
+                    href={`${basePath}/preferences`}
                     className="flex items-center gap-2"
                   >
                     <icon.Settings2 />
@@ -102,6 +160,15 @@ export function NavUser({
                 }
               />
 
+              <DropdownMenuItem onClick={onCustomize}>
+                <icon.AdjustmentsHorizontal />
+                {t("customize")}
+              </DropdownMenuItem>
+
+              <LocaleChanger nested />
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
               <DropdownMenuItem
                 nativeButton={false}
                 render={
@@ -114,7 +181,17 @@ export function NavUser({
                   </Link>
                 }
               />
-              <LocaleChanger nested />
+
+              <DropdownMenuItem
+                onClick={() => {
+                  document.cookie =
+                    "frontend-version=v2; path=/; max-age=31536000"
+                  window.location.href = "/"
+                }}
+              >
+                <icon.ArrowBack />
+                {t("switchToClassic")}
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem

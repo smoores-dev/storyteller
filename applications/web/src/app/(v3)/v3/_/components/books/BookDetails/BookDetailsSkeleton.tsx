@@ -149,7 +149,7 @@ export const BookDetailsSkeleton = ({ compact }: { compact?: boolean }) => {
 
   return (
     <div className="@container/book flex flex-1 flex-col">
-      <SiteHeader breadcrumbs={[]} />
+      <SiteHeader breadcrumbs={null} />
       <div className="flex-1 overflow-hidden">
         <div className="mx-auto max-w-3xl">
           <HeroSkeleton compact={false} />

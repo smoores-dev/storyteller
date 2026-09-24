@@ -19,48 +19,58 @@ function Widget({
   section,
   children,
   menuClassName,
+  index,
 }: {
   section: HomeSectionWithDetails
   children: React.ReactNode
   menuClassName?: string
+  index: number
 }) {
   return (
     <div className="group/section relative px-4">
       {children}
-      <SectionMenu
-        section={section}
-        className={cn(
-          "absolute top-2 right-6 opacity-0 transition-opacity group-hover/section:opacity-100",
-          menuClassName,
-        )}
-      />
+      {index > 0 && (
+        <SectionMenu
+          section={section}
+          className={cn(
+            "absolute top-2 right-6 opacity-0 transition-opacity group-hover/section:opacity-100",
+            menuClassName,
+          )}
+        />
+      )}
     </div>
   )
 }
 
-function Section({ section }: { section: HomeSectionWithDetails }) {
+function Section({
+  section,
+  index,
+}: {
+  section: HomeSectionWithDetails
+  index: number
+}) {
   switch (section.kind) {
     case "hero":
       return (
-        <Widget section={section}>
+        <Widget section={section} index={index}>
           <HeroSection />
         </Widget>
       )
     case "stats":
       return (
-        <Widget section={section}>
+        <Widget section={section} index={index}>
           <StatsBar />
         </Widget>
       )
     case "getStarted":
       return (
-        <Widget section={section}>
+        <Widget section={section} index={index}>
           <GetStartedSection section={section} />
         </Widget>
       )
     case "addSection":
       return (
-        <Widget section={section} menuClassName="top-.5">
+        <Widget section={section} index={index} menuClassName="top-.5">
           <AddSectionSection />
         </Widget>
       )
@@ -114,8 +124,8 @@ export function HomeSections({
         heroFirst ? "-mt-5" : "pt-(--header-height)",
       )}
     >
-      {enabled.map((section) => (
-        <Section key={section.uuid} section={section} />
+      {enabled.map((section, index) => (
+        <Section key={section.uuid} section={section} index={index} />
       ))}
     </div>
   )
@@ -130,7 +140,6 @@ export function HomeSectionsActions() {
     <>
       <TooltipButton
         variant="ghost"
-        size="sm"
         onClick={openSearch}
         tooltip={tSidebar("search")}
         aria-label={tSidebar("search")}
@@ -143,11 +152,10 @@ export function HomeSectionsActions() {
         trigger={
           <TooltipButton
             variant="ghost"
-            size="sm"
             tooltip={t("sections.customize")}
             aria-label={t("sections.customize")}
           >
-            <icon.Books className="mr-2 size-4" />
+            <icon.Books className="size-4" />
           </TooltipButton>
         }
       />

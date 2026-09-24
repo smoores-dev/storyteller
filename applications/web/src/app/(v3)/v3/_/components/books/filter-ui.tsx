@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { type ComponentProps, useMemo, useState } from "react"
 
+import { Button } from "@v3/_/components/ui/button"
 import {
   Combobox,
   ComboboxChip,
@@ -13,17 +14,18 @@ import {
   ComboboxList,
   ComboboxValue,
 } from "@v3/_/components/ui/combobox"
-import { Input } from "@v3/_/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v3/_/components/ui/select"
+  FilterableMenu,
+  FilterableMenuContent,
+  FilterableMenuItem,
+  FilterableMenuTrigger,
+} from "@v3/_/components/ui/filterable-menu"
+import { Input } from "@v3/_/components/ui/input"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
+import { cn } from "@/cn"
 import { type FieldDefNumeric } from "@/fields"
+import * as icon from "@/icons"
 
 export type ScaleUnit = NonNullable<FieldDefNumeric["scale"]>["unit"]
 
@@ -81,7 +83,7 @@ export function NumericInput({
       : String(value)
 
   return (
-    <Input
+    <EditorInput
       type="text"
       inputMode="decimal"
       className={className}
@@ -127,7 +129,7 @@ export function DurationInput({
   return (
     <div className="flex items-center gap-1">
       <NumericInput
-        className="h-7 w-14 text-xs"
+        className="w-14"
         value={hours || ""}
         onChange={(h) => {
           onChange(h * 3600 + minutes * 60)
@@ -139,7 +141,7 @@ export function DurationInput({
       </span>
 
       <NumericInput
-        className="h-7 w-14 text-xs"
+        className="w-14"
         value={minutes || ""}
         onChange={(m) => {
           onChange(hours * 3600 + m * 60)
@@ -198,31 +200,40 @@ export function FileSizeInput({
   return (
     <div className="flex items-center gap-1">
       <NumericInput
-        className="h-7 w-20 text-xs"
+        className="w-12"
         value={displayValue}
         onChange={(n) => {
           onChange(n * multiplier)
         }}
       />
 
-      <Select
-        value={unit}
-        onValueChange={(v) => {
-          setUnit(v as FileSizeUnit)
-        }}
-        items={unitItems}
-      >
-        <SelectTrigger className="h-7 w-16 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
+      <FilterableMenu>
+        <FilterableMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-md font-normal"
+            >
+              {unitItems.find((item) => item.value === unit)?.label}
+              <icon.ChevronDown className="size-3" />
+            </Button>
+          }
+        />
+        <FilterableMenuContent>
           {unitItems.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
+            <FilterableMenuItem
+              textValue={item.label}
+              key={item.value}
+              onSelect={() => {
+                setUnit(item.value)
+              }}
+            >
               {item.label}
-            </SelectItem>
+            </FilterableMenuItem>
           ))}
-        </SelectContent>
-      </Select>
+        </FilterableMenuContent>
+      </FilterableMenu>
     </div>
   )
 }
@@ -278,5 +289,17 @@ export function MultiCombobox({
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
+  )
+}
+
+export function EditorInput(props: ComponentProps<typeof Input>) {
+  return (
+    <Input
+      {...props}
+      className={cn(
+        "h-7 border-0 border-b rounded-b-none bg-transparent text-xs",
+        props.className,
+      )}
+    />
   )
 }

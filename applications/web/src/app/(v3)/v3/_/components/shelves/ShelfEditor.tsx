@@ -31,6 +31,7 @@ import {
   FilterableMenuItem,
   FilterableMenuTrigger,
 } from "@/app/(v3)/v3/_/components/ui/filterable-menu"
+import { Tabs, TabsList, TabsTrigger } from "@/app/(v3)/v3/_/components/ui/tabs"
 import { type BookWithRelations } from "@/database/books"
 import { type ShelfWithBooks } from "@/database/shelves"
 import * as icon from "@/icons"
@@ -384,34 +385,38 @@ export function ShelfEditor({
                       </Button>
                     )}
 
-                    <div className="bg-muted flex rounded-md p-0.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleModeChange("filter")
-                        }}
-                        className={`rounded px-2 py-1 text-xs transition-colors ${
-                          selectionMode === "filter"
-                            ? "bg-background shadow-sm"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {t.plain("dynamicFilter")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleModeChange("manual")
-                        }}
-                        className={`rounded px-2 py-1 text-xs transition-colors ${
-                          selectionMode === "manual"
-                            ? "bg-background shadow-sm"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {t.plain("manual")}
-                      </button>
-                    </div>
+                    <Tabs>
+                      <TabsList>
+                        <TabsTrigger
+                          // type="button"
+                          onClick={() => {
+                            handleModeChange("filter")
+                          }}
+                          className={`px-2 py-1 text-xs transition-colors ${
+                            selectionMode === "filter"
+                              ? "bg-background shadow-sm"
+                              : "text-muted-foreground"
+                          }`}
+                          value="filter"
+                        >
+                          {t.plain("dynamicFilter")}
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="manual"
+                          // type="button"
+                          onClick={() => {
+                            handleModeChange("manual")
+                          }}
+                          className={`px-2 py-1 text-xs transition-colors ${
+                            selectionMode === "manual"
+                              ? "bg-background shadow-sm"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {t.plain("manual")}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                   </div>
                 </div>
 

@@ -74,7 +74,7 @@ export function HeroSection() {
 function HeroSkeleton() {
   return (
     <section className="to-cover-well relative -mx-4 flex min-h-96 flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8">
-      <Skeleton className="mx-6 mt-8 h-3 w-28 animate-none" />
+      <Skeleton className="mx-6 mt-14 h-3 w-28 animate-none md:mt-8" />
       <div className="flex flex-col-reverse gap-6 overflow-hidden px-6 py-8 @xl/main:flex-row @xl/main:gap-10">
         <div className="flex flex-1 flex-col justify-between gap-8 pb-4">
           <div className="flex flex-col gap-2">
@@ -145,7 +145,9 @@ function Hero({ book }: { book: BookWithRelations }) {
       className="to-cover-well relative -mx-4 flex min-h-96 flex-col gap-0 bg-linear-to-t from-transparent via-30% pb-8"
       {...scope}
     >
-      <p className="text-tinted small-caps mx-6 mt-8">{t("hero.eyebrow")}</p>
+      <p className="text-tinted small-caps mx-6 mt-14 md:mt-8">
+        {t("hero.eyebrow")}
+      </p>
       <div className="flex grow flex-col-reverse gap-6 overflow-hidden px-6 py-8 @xl/main:flex-row @xl/main:gap-10">
         <div className="flex flex-1 flex-col justify-between pb-4">
           <div slot="main-info">

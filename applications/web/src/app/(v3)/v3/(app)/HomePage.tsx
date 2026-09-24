@@ -19,7 +19,7 @@ export function HomePage({
     <PageLayout>
       <PageMain>
         <SiteHeader
-          breadcrumbs={[]}
+          breadcrumbs={null}
           actions={<HomeSectionsActions />}
           className="pointer-events-none absolute z-50 w-full bg-transparent!"
         />

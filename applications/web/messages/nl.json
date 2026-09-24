@@ -175,6 +175,7 @@
       "reset": "Sortering herstellen"
     },
     "displayOptions": {
+      "moreFields": "Meer velden",
       "layout": "Layout",
       "view": "Weergave",
       "auto": "Automatisch",
@@ -242,6 +243,7 @@
     }
   },
   "LibraryPage": {
+    "filter": "Filteren…",
     "emptyStateSub": "Selecteer een item in de zijbalk om de bijbehorende boeken te zien",
     "allItems": "Alle",
     "Series": {
@@ -315,6 +317,7 @@
     "empty": "Geen items gevonden"
   },
   "EntityActions": {
+    "createShelf": "Plank aanmaken",
     "mergeInto": "Samenvoegen naar...",
     "createShelfWith": "Plank maken met selectie",
     "deleteTitle": "{count} {entity} verwijderen?",
@@ -1123,8 +1126,6 @@
           "CANCELED": "Geannuleerd"
         },
         "detail": {
-          "waiting": "Wachten",
-          "paused": "Gepauzeerd",
           "finished": "Voltooid {time}",
           "runTime": "Duurde {duration}",
           "remaining": "{duration} resterend"
@@ -1411,6 +1412,8 @@
     "hintClose": "Sluiten"
   },
   "AppSidebar": {
+    "openNavigation": "Navigatie openen",
+    "create": "Nieuw maken",
     "home": "Start",
     "books": "Boeken",
     "alignmentQuality": "Synchronisatiekwaliteit",
@@ -1704,7 +1707,9 @@
     "zoneEbook": "Sleep een EPUB hierheen of klik om te kiezen",
     "zoneEbookHint": "Eén EPUB-bestand",
     "zoneAudio": "Sleep audiobestanden hierheen of klik om te kiezen",
-    "zoneAudioHint": "M4B, MP3 of andere audiobestanden, of een zip-archief"
+    "zoneAudioHint": "M4B, MP3 of andere audiobestanden, of een zip-archief",
+    "bookUploaded": "Boek geüpload",
+    "uploadAnother": "Nog een uploaden"
   },
   "ImportFromServerDialog": {
     "importMode": "Importmodus",

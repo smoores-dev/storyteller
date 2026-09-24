@@ -15,6 +15,7 @@ import {
 import { Field, FieldLabel } from "@v3/_/components/ui/field"
 import { Input } from "@v3/_/components/ui/input"
 import { Spinner } from "@v3/_/components/ui/spinner"
+import { useVersionBasePath } from "@v3/_/components/version-context"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
 import { type User } from "@/apiModels"
@@ -36,6 +37,7 @@ export function ProfileTab({
   const t = useTranslation("PreferencesPage.profile")
   const c = useCommon()
   const router = useRouter()
+  const basePath = useVersionBasePath()
 
   const [isSaving, setIsSaving] = useState(false)
   const [username, setUsername] = useState(user.username ?? "")
@@ -160,6 +162,26 @@ export function ProfileTab({
             {isSaving && <Spinner />}
             {isSaving ? c("states.saving") : t("saveProfile")}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("otherDevices")}</CardTitle>
+          <CardDescription>{t("otherDevicesDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={
+              <a href={`${basePath}/device/start`}>
+                <icon.Scan className="mr-1 h-4 w-4" />
+                {t("pairADevice")}
+              </a>
+            }
+          />
         </CardContent>
       </Card>
 

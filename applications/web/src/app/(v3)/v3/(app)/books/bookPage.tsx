@@ -19,14 +19,13 @@ export default function BookPage({
       breadcrumbs={[
         {
           render: (
-            <h1 className="font-heading text-foreground truncate text-2xl font-normal">
+            <h1 className="font-heading text-foreground truncate text-lg font-normal md:text-xl">
               {t("title")}
             </h1>
           ),
         },
       ]}
       headerActions={<AddBookButton />}
-      enableBookStepping
       emptyFilteredSubMessage="Try adjusting your search or filters"
     />
   )

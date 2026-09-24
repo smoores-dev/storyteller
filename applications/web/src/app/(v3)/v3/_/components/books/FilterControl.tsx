@@ -76,7 +76,8 @@ export function FilterControl({
         render={
           <TooltipButton
             variant="outline"
-            className="text-muted-foreground hover:text-foreground inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border border-dashed px-2.5 py-1 text-xs font-medium"
+            // size="icon"
+            className="text-muted-foreground hover:text-foreground inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium"
             tooltip={t("filters.filters")}
             shortcut={[filterHotKey]}
             aria-label={t("filters.filters")}

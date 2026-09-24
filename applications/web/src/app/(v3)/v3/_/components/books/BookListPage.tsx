@@ -50,7 +50,10 @@ import { useBookInSidePanel } from "@v3/_/hooks/use-open-book"
 import { useReportPanel } from "@v3/_/hooks/use-report-panel"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { SiteHeader } from "@/app/(v3)/v3/_/components/site-header"
+import {
+  type Breadcrumb,
+  SiteHeader,
+} from "@/app/(v3)/v3/_/components/site-header"
 import { useSidebar } from "@/app/(v3)/v3/_/components/ui/sidebar"
 import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-provider"
 import { useLayoutAnimations } from "@/app/(v3)/v3/_/hooks/use-layout-animations"
@@ -105,11 +108,6 @@ export type BookListSource =
       orderDirection?: "asc" | "desc" | null
     }
 
-export type BookListBreadcrumbs = (
-  | { label: string; url?: string }
-  | { render: ReactNode }
-)[]
-
 type BookListPageProps = {
   source: BookListSource
   skip?: boolean
@@ -118,7 +116,7 @@ type BookListPageProps = {
   defaultSort?: BookSort[number] | undefined
   extraSortFields?: SortField[]
 
-  breadcrumbs: BookListBreadcrumbs
+  breadcrumbs: [Breadcrumb, ...Breadcrumb[]] | null
   headerActions?: ReactNode
   banner?: ReactNode
   sidebar?: ReactNode
@@ -128,7 +126,6 @@ type BookListPageProps = {
   listDisplayFields?: DisplayField[]
 
   bookClickMode?: "panel" | "report"
-  enableBookStepping?: boolean
 
   emptyMessage?: string
   emptySubMessage?: string
@@ -185,7 +182,6 @@ function BookListPageInner({
   contentClassName,
   listDisplayFields,
   bookClickMode = "panel",
-  enableBookStepping = false,
   emptyMessage,
   emptySubMessage,
   emptyFilteredSubMessage,
@@ -423,13 +419,12 @@ function BookListPageInner({
 
   const bookUuids = useMemo(() => books.map((b) => b.uuid), [books])
 
-  const selectedIndex =
-    enableBookStepping && selectedBookUuid
-      ? bookUuids.indexOf(selectedBookUuid)
-      : -1
+  const selectedIndex = selectedBookUuid
+    ? bookUuids.indexOf(selectedBookUuid)
+    : -1
 
   useEffect(() => {
-    if (!enableBookStepping || selectedIndex < 0) return
+    if (selectedIndex < 0) return
 
     const remaining = bookUuids.length - 1 - selectedIndex
     if (
@@ -440,7 +435,6 @@ function BookListPageInner({
       void fetchNextPage()
     }
   }, [
-    enableBookStepping,
     selectedIndex,
     bookUuids.length,
     hasNextPage,
@@ -449,26 +443,19 @@ function BookListPageInner({
   ])
 
   const goToNext = useMemo(() => {
-    if (!enableBookStepping) return undefined
     const atEnd = selectedIndex >= bookUuids.length - 1
     if (selectedIndex < 0 || (atEnd && !hasNextPage)) return undefined
     return () => {
       const next = bookUuids[selectedIndex + 1]
       if (next) void setSelectedBookUuid(next)
     }
-  }, [
-    enableBookStepping,
-    selectedIndex,
-    bookUuids,
-    hasNextPage,
-    setSelectedBookUuid,
-  ])
+  }, [selectedIndex, bookUuids, hasNextPage, setSelectedBookUuid])
 
   const goToPrevious = useMemo(() => {
-    if (!enableBookStepping || selectedIndex <= 0) return undefined
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return () => void setSelectedBookUuid(bookUuids[selectedIndex - 1]!)
-  }, [enableBookStepping, selectedIndex, bookUuids, setSelectedBookUuid])
+    const previous = selectedIndex > 0 ? bookUuids[selectedIndex - 1] : null
+    if (!previous) return undefined
+    return () => void setSelectedBookUuid(previous)
+  }, [selectedIndex, bookUuids, setSelectedBookUuid])
 
   const displayContext = useMemo<SortContext>(
     () => ({
@@ -802,6 +789,14 @@ function BookListPageInner({
                 sortDirection={sort.direction}
                 onSortChange={handleColumnSort}
                 forceLayout={forceDisplayMode?.layout}
+              />
+
+              <SelectionToolbar
+                books={books}
+                requestAllBooks={requestAllBooks}
+                allBooksCount={baselineCount ?? 0}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
               />
             </PageContent>
           </PageMain>

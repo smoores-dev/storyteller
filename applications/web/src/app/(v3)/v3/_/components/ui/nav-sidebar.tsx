@@ -68,7 +68,7 @@ function NavSidebarGroup({
       className={cn("p-0", className)}
       {...props}
     >
-      <SidebarGroupLabel className="text-muted-foreground mb-1.5 h-auto font-medium tracking-wider uppercase">
+      <SidebarGroupLabel className="text-muted-foreground mb-1.5 h-auto font-medium">
         {label}
       </SidebarGroupLabel>
       {children}

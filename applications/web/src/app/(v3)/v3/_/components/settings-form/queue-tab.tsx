@@ -18,16 +18,14 @@ import {
   parseAsStringEnum,
   useQueryState,
 } from "nuqs"
-import { useEffect, useEffectEvent, useState } from "react"
+import { Fragment, useEffect, useEffectEvent, useState } from "react"
 
 import { Button } from "@v3/_/components/ui/button"
 import {
   Item,
   ItemActions,
   ItemContent,
-  ItemFooter,
   ItemMedia,
-  ItemTitle,
 } from "@v3/_/components/ui/item"
 
 import {
@@ -620,10 +618,6 @@ function JobItem({
   const detail =
     job.status === "RUNNING" && stageLabel ? (
       `${stageLabel} · ${pct}%`
-    ) : job.status === "QUEUED" ? (
-      t("detail.waiting")
-    ) : job.status === "PAUSED" ? (
-      t("detail.paused")
     ) : job.finishedAt ? (
       <time
         title={formatDate(job.finishedAt)}
@@ -631,9 +625,7 @@ function JobItem({
       >
         {t("detail.finished", { time: relativeTime(job.finishedAt) })}
       </time>
-    ) : (
-      job.status.toLowerCase()
-    )
+    ) : null
 
   const configSummary = (
     job.config?.aligner === "ctc"
@@ -647,13 +639,26 @@ function JobItem({
     .filter(Boolean)
     .join(" · ")
 
+  const detailParts = [
+    detail,
+    runTime && job.status === "DONE"
+      ? t("detail.runTime", { duration: runTime })
+      : null,
+    estimatedRemaining != null
+      ? t("detail.remaining", {
+          duration: formatDuration(estimatedRemaining, { approximate: true }),
+        })
+      : null,
+    configSummary || null,
+    job.error ?? null,
+  ].filter((part) => part != null)
+
   return (
     <Item
       ref={dragRef}
       variant="outline"
       className={cn(
-        "relative overflow-clip",
-        "items-start",
+        "relative flex-nowrap gap-3 overflow-clip",
         isDragging && "opacity-60 shadow-md",
         job.status === "RUNNING" && "border-primary/40",
       )}
@@ -665,13 +670,13 @@ function JobItem({
           aria-label={t("actions.reorder", {
             title: job.bookTitle ?? t("untitled"),
           })}
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-6 shrink-0 cursor-grab touch-none items-center justify-center self-center rounded outline-none focus-visible:ring-2 active:cursor-grabbing"
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring -mr-1 flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded outline-none focus-visible:ring-2 active:cursor-grabbing"
         >
           <icon.GripVertical className="size-4" />
         </button>
       )}
 
-      <ItemMedia variant="image" className="self-center">
+      <ItemMedia variant="image" className="h-11 w-8 shrink-0">
         {job.bookUuid ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -689,11 +694,11 @@ function JobItem({
         )}
       </ItemMedia>
 
-      <ItemContent className="w-full justify-between">
-        <ItemTitle className="w-full">
+      <ItemContent className="min-w-0 gap-0.5">
+        <div className="flex w-full min-w-0 items-center gap-2 leading-snug font-medium">
           <V3Link
             href={`/books/${job.bookUuid}`}
-            className="hover:text-primary grow truncate hover:underline"
+            className="hover:text-primary min-w-0 flex-1 truncate hover:underline"
           >
             {job.bookTitle ?? t("untitled")}
           </V3Link>
@@ -701,7 +706,7 @@ function JobItem({
           {job.status === "DONE" && job.alignmentGrade && job.bookUuid && (
             <V3Link
               href={`/books/${job.bookUuid}?report=true`}
-              className="inline-flex items-center gap-1"
+              className="inline-flex shrink-0 items-center gap-1"
             >
               <GradePill grade={job.alignmentGrade} />
             </V3Link>
@@ -712,7 +717,7 @@ function JobItem({
               <TooltipTrigger
                 aria-label={t("actions.alignmentReport")}
                 className={cn(
-                  "inline-flex items-center gap-1 px-1 text-[11px]",
+                  "inline-flex shrink-0 items-center gap-1 px-1 text-[11px]",
                   TONE_BADGE[percentTone(job.alignmentSentenceCoverage)],
                   TONE_TEXT[percentTone(job.alignmentSentenceCoverage)],
                 )}
@@ -729,7 +734,7 @@ function JobItem({
               <TooltipTrigger
                 aria-label={t("actions.alignmentReport")}
                 className={cn(
-                  "inline-flex items-center gap-1 px-1 text-[11px]",
+                  "inline-flex shrink-0 items-center gap-1 px-1 text-[11px]",
                   TONE_BADGE[audioPercentTone(job.alignmentAudioCoverage)],
                   TONE_TEXT[audioPercentTone(job.alignmentAudioCoverage)],
                 )}
@@ -744,7 +749,7 @@ function JobItem({
           {job.status === "DONE" && job.bookUuid && job.alignmentReportUuid ? (
             <TooltipButton
               variant="ghost"
-              className="size-5"
+              className="size-5 shrink-0"
               aria-label={t("actions.alignmentReport")}
               tooltip={t("actions.alignmentReport")}
               render={
@@ -756,28 +761,22 @@ function JobItem({
               <icon.FileText className="size-4" />
             </TooltipButton>
           ) : null}
-
+        </div>
+        <div className="text-muted-foreground flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
           <StatusBadge status={job.status} />
-        </ItemTitle>
-        <ItemFooter className="text-muted-foreground flex-wrap justify-start">
-          {detail}
-          {runTime && job.status === "DONE"
-            ? ` · ${t("detail.runTime", { duration: runTime })}`
-            : ""}
-          {estimatedRemaining != null
-            ? ` · ${t("detail.remaining", { duration: formatDuration(estimatedRemaining, { approximate: true }) })}`
-            : ""}
-          {configSummary ? ` · ${configSummary}` : ""}
-          {job.error ? ` · ${job.error}` : ""}
-        </ItemFooter>
+          {detailParts.map((part, i) => (
+            <Fragment key={i}>
+              {i > 0 && <span aria-hidden>·</span>}
+              <span className="min-w-0 break-words">{part}</span>
+            </Fragment>
+          ))}
+        </div>
       </ItemContent>
 
-      <ItemActions>
+      <ItemActions className="shrink-0 gap-1">
         {job.status === "PAUSED" && resumeJob ? (
           <TooltipButton
             variant="ghost"
-            // size="icon"
-            // className="size-5"
             className="size-5"
             aria-label={t("actions.resume")}
             tooltip={t("actions.resume")}

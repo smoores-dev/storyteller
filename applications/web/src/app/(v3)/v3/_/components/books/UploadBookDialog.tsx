@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef } from "react"
+import { toast } from "sonner"
 import { v4 as uuidv4 } from "uuid"
 
 import { MediaType } from "@storyteller-platform/media-types"
@@ -57,6 +58,14 @@ export function UploadBookDialog({
     const uuid = bookUuidRef.current
     bookUuidRef.current = uuidv4() as UUID
     onBookCreated?.(uuid)
+    toast.success(t.plain("bookUploaded"), {
+      action: {
+        label: t.plain("uploadAnother"),
+        onClick: () => {
+          onOpenChange(true)
+        },
+      },
+    })
   }
 
   return (

@@ -1,3 +1,4 @@
+import { Button } from "@base-ui/react/button"
 import { useHotkeys } from "@tanstack/react-hotkeys"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 
@@ -157,14 +158,14 @@ export function BookFilters({
         className,
       )}
     >
-      <div className="flex h-8 items-center gap-1.5">
+      <div className="flex h-7 w-full items-center gap-1.5">
         <SearchInput
           placeholder={t("seachBooksPlaceholder")}
           ref={searchRef}
           value={search}
           onChange={setSearch}
           shortcut={searchShortcut}
-          className="h-8"
+          className="h-7 shrink"
         />
 
         {!isAdvanced && (
@@ -202,13 +203,13 @@ export function BookFilters({
       {hasChips && (
         <div className="scroll-x flex items-center gap-1.5">
           {seedLabel && (
-            <span className="border-border bg-muted text-muted-foreground inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">
+            <span className="border-border bg-muted text-muted-foreground inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">
               {seedLabel}
             </span>
           )}
 
           {advancedChip && (
-            <button
+            <Button
               className="border-primary/30 bg-primary/10 text-primary inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
               onClick={() => {
                 setAdvancedOverride(true)
@@ -216,7 +217,7 @@ export function BookFilters({
             >
               <icon.AdjustmentsHorizontal className="h-3 w-3" />
               {t.plain("filters.advancedSummary", { count: advancedCount })}
-            </button>
+            </Button>
           )}
 
           {!isAdvanced &&

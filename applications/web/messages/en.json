@@ -32,7 +32,70 @@
     "loginToYourStorytellerAccount": "Login to your Storyteller account",
     "somethingWentWrongPleaseTryAgain": "Something went wrong. Please try again.",
     "invalidUsernameOrPassword": "Invalid username or password",
-    "loggingIn": "Logging in..."
+    "loggingIn": "Logging in...",
+    "forgotPassword": "Forgot password?",
+    "passwordResetSuccess": "Your password has been reset. Log in with your new password.",
+    "passwordResetInvalid": "That reset link is invalid or has expired. Request a new one."
+  },
+  "ForgotPasswordPage": {
+    "title": "Forgot password",
+    "resetYourPassword": "Reset your password",
+    "enterYourUsernameOrEmail": "Enter your username or email and we will send you a reset link",
+    "usernameOrEmail": "Username or email",
+    "sendResetLink": "Send reset link",
+    "sending": "Sending...",
+    "checkYourEmail": "Check your email",
+    "resetLinkSent": "If an account matches, we sent a password reset link to its email address.",
+    "backToLogin": "Back to login"
+  },
+  "ResetPasswordPage": {
+    "title": "Reset password",
+    "chooseANewPassword": "Choose a new password",
+    "enterANewPassword": "Enter a new password for your account",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "setNewPassword": "Set new password",
+    "saving": "Saving...",
+    "backToLogin": "Back to login"
+  },
+  "AcceptInvitePage": {
+    "title": "Accept invite",
+    "youAreInvited": "You're invited!",
+    "setUpYourAccount": "Set up your account to get started",
+    "email": "Email",
+    "fullName": "Full name",
+    "username": "Username",
+    "password": "Password",
+    "createAccount": "Create account",
+    "creatingAccount": "Creating account...",
+    "signUpWithPassword": "Sign up with a password",
+    "continueWith": "Or continue with"
+  },
+  "DevicePage": {
+    "title": "Approve device sign-in",
+    "approveDeviceSignIn": "Approve device sign-in",
+    "enterTheCodeShownOnYourDevice": "Enter the code shown on your device to approve sign-in.",
+    "code": "Code",
+    "findRequest": "Find request",
+    "noMatchingRequest": "No pairing request matches that code. Check the code on your device and try again.",
+    "expired": "This pairing request has expired. Start again from your app.",
+    "approved": "This device is approved. Return to the app to finish pairing.",
+    "denied": "This pairing request was denied. Start again from your app if needed.",
+    "consumed": "This pairing request has already been used.",
+    "pending": "Approve this request to let the app sign in to your account.",
+    "pollingInterval": "Your device checks back about every {seconds} seconds.",
+    "approve": "Approve",
+    "deny": "Deny"
+  },
+  "DeviceStartPage": {
+    "title": "Pair a device",
+    "pairADevice": "Pair a device",
+    "scanThisQrCode": "Scan this QR code from your device.",
+    "qrCodeLabel": "QR code for device pairing",
+    "openQrCode": "Open QR code",
+    "manualEntry": "If scanning does not work, open {url} on another device or browser and enter the code above.",
+    "expiresIn": "This code expires in {minutes} minutes. Refresh this page to get a new one.",
+    "backToProfile": "Back to your profile"
   },
   "InitPage": {
     "title": "Setup",
@@ -193,6 +256,7 @@
       "tooltip": "Toggle sort direction"
     },
     "displayOptions": {
+      "moreFields": "More fields",
       "layout": "Layout",
       "view": "View",
       "auto": "Auto",
@@ -260,6 +324,7 @@
     }
   },
   "LibraryPage": {
+    "filter": "Filter…",
     "Identifier": {
       "plain": "Identifier",
       "by": "By Identifier",
@@ -338,6 +403,7 @@
     "empty": "No items found"
   },
   "EntityActions": {
+    "createShelf": "Create shelf",
     "mergeInto": "Merge into...",
     "createShelfWith": "Create shelf with selected",
     "deleteTitle": "Delete {count, number} {entity}?",
@@ -1158,7 +1224,10 @@
           },
           "users-list": {
             "title": "Users",
-            "description": "Manage your users."
+            "description": "Manage your users.",
+            "sendPasswordReset": "Send password reset",
+            "passwordResetSent": "Password reset link sent to {email}",
+            "passwordResetFailed": "Could not send the password reset link"
           }
         }
       },
@@ -1193,8 +1262,6 @@
           "CANCELED": "Canceled"
         },
         "detail": {
-          "waiting": "Waiting",
-          "paused": "Paused",
           "finished": "Finished {time}",
           "runTime": "Took {duration}",
           "remaining": "{duration} left"
@@ -1286,7 +1353,10 @@
       "unlink": "Unlink",
       "linkWith": "Link with {provider}",
       "accountUnlinked": "Account unlinked",
-      "failedToUnlink": "Failed to unlink account"
+      "failedToUnlink": "Failed to unlink account",
+      "otherDevices": "Other devices",
+      "otherDevicesDescription": "Sign in to the Storyteller app on another device with a QR code.",
+      "pairADevice": "Pair a device"
     },
     "tabs": {
       "profile": {
@@ -1461,6 +1531,8 @@
     }
   },
   "AppSidebar": {
+    "openNavigation": "Open navigation",
+    "create": "Create new",
     "home": "Home",
     "books": "Books",
     "alignmentQuality": "Book Reports",
@@ -1990,7 +2062,9 @@
     "zoneEbook": "Drop an EPUB here or click to browse",
     "zoneEbookHint": "One EPUB file",
     "zoneAudio": "Drop audio files here or click to browse",
-    "zoneAudioHint": "M4B, MP3 or other audio files, or a zip archive"
+    "zoneAudioHint": "M4B, MP3 or other audio files, or a zip archive",
+    "bookUploaded": "Book uploaded",
+    "uploadAnother": "Upload another"
   },
   "ImportFromServerDialog": {
     "importMode": "Import mode",

@@ -133,14 +133,14 @@
   --radius-cover: var(--radius-cover); */
 
   --radius-sm: calc(var(--radius) - 6px);
-  --radius-md: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 2px);
   --radius-2xl: calc(var(--radius) + 2px);
   --radius-3xl: calc(var(--radius) + 2px);
   --radius-4xl: calc(var(--radius) + 2px);
 
-  --radius-card: calc(var(--radius) + 2px);
+  --radius-card: calc(var(--radius) - 2px);
 
   --color-positive: var(--positive);
   --color-positive-bg: var(--positive-bg);
@@ -225,7 +225,7 @@
   --radius: 0.75rem;
 
   --sidebar: oklch(0.958 0.014 73);
-  --sidebar-foreground: oklch(0.34 0.024 52);
+  --sidebar-foreground: oklch(26.002% 0.05838 48.75);
   --sidebar-primary: oklch(0.62 0.175 42);
   --sidebar-border: oklch(0.882 0.018 72);
   /* --sidebar: oklch(0.964 0.012 67);
@@ -312,8 +312,8 @@
   --highlight-wash: oklch(0.91 0.06 80);
   --highlight-edge: oklch(0.78 0.11 72);
 
-  --radius-card: var(--radius-lg);
-  --radius-cover: var(--radius-md);
+  /* --radius-card: var(--radius-md); */
+  /* --radius-cover: var(--radius-md); */
 
   --cover-wash: transparent; /* faint ambient bg, hero / page */
   --cover-well: var(--muted); /* medium ambient bg, the well behind a cover */
@@ -1118,4 +1118,12 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
   .shj-syn-func {
     color: #d2a8ff;
   }
+}
+
+button {
+  cursor: pointer;
+}
+
+.small-caps {
+  @apply text-[12px] tracking-wider uppercase;
 }

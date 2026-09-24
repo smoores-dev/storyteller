@@ -23,10 +23,10 @@ import { cn } from "@v3/_/lib/utils"
 import * as icon from "@/icons"
 import { ChevronRight } from "@/icons"
 
-const ROW_HEIGHT = 32
+const ROW_HEIGHT = 28
 
 const listClassName =
-  "scroll-py-1 max-h-64 scroll-y overscroll-contain px-1 pb-1"
+  "scroll-py-1 max-h-64 scroll-y overscroll-contain px-0 pb-1"
 
 function LoadingRows() {
   return (
@@ -47,18 +47,18 @@ function LoadingRows() {
 // lets not be too cutesy, looks nicer if just instant
 const menuPopupClassName =
   // "data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2
-  "ring-foreground/10 bg-popover text-popover-foreground z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md p-1 shadow-md ring-1 duration-100 outline-none"
+  "ring-foreground/10 bg-popover text-popover-foreground z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md p-0 shadow-md ring-1 duration-100 outline-none [&>[role=menuitem]:first-child]:pt-1 [&>[role=menuitem]:last-child]:pb-1"
 
 const menuItemClassName =
-  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:data-highlighted:bg-destructive/10 dark:data-[variant=destructive]:data-highlighted:bg-destructive/20 data-[variant=destructive]:data-highlighted:text-destructive data-[variant=destructive]:*:[svg]:text-destructive relative flex min-h-7 cursor-default items-center gap-2 rounded-md px-2 py-1 text-xs/relaxed outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 [&_svg:not([class*='ml-']):not(:first-child)]:ml-auto"
+  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:data-highlighted:bg-destructive/10 dark:data-[variant=destructive]:data-highlighted:bg-destructive/20 data-[variant=destructive]:data-highlighted:text-destructive data-[variant=destructive]:*:[svg]:text-destructive relative flex min-h-7 cursor-default items-center gap-2 rounded-xs px-2 py-.5 text-xs/relaxed outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 [&_svg:not([class*='ml-']):not(:first-child)]:ml-auto [&_svg:not([class*='stroke-'])]:stroke-[1.5]"
 
 const menuSubTriggerClassName =
-  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground flex min-h-7 cursor-default items-center gap-2 rounded-md px-2 py-1 text-xs outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5"
+  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground flex min-h-7 cursor-default items-center gap-2 rounded-xs px-2 py-.5 text-xs outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5"
 
 const menuLabelClassName = "text-muted-foreground px-2 py-1.5 text-xs"
 
 const searchBoxClassName =
-  "placeholder:text-muted-foreground h-7 w-full bg-transparent px-2 text-sm outline-none md:h-6 md:text-xs"
+  "placeholder:text-muted-foreground h-7 w-full bg-transparent px-1 text-sm outline-none md:h-6 md:text-xs"
 
 function itemMatches(query: string, text: string): boolean {
   const q = query.trim().toLowerCase()
@@ -447,7 +447,7 @@ export function SearchBox({
   const placeholderDefault = c.plain("actions.search")
 
   return (
-    <div className={cn("mb-1 border-b p-1", wrapperClassName)}>
+    <div className={cn("border-b p-1", wrapperClassName)}>
       {before}
       <input
         ref={inputRef}
@@ -688,7 +688,7 @@ export function FilterableMenuLabel({
     <div
       className={cn(
         menuLabelClassName,
-        "flex items-center justify-between gap-2 py-0.5 pr-1",
+        "flex items-center justify-between gap-2 mt-1 py-0.5 pr-1",
         className,
       )}
     >
@@ -704,7 +704,7 @@ export function FilterableMenuSeparator({ className }: { className?: string }) {
   return (
     <div
       role="separator"
-      className={cn("bg-border/50 -mx-1 my-1 h-px", className)}
+      className={cn("bg-border/50 -mx-1 my-0 h-px", className)}
     />
   )
 }

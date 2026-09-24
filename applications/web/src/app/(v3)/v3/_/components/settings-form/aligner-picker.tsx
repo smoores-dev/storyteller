@@ -73,10 +73,7 @@ export function AlignerPicker({
           }
         }}
         disabled={disabled}
-        className={cn(
-          "@lg:grid-cols-2 grid grid-cols-1 gap-5 transition-[margin] duration-500 ease-out",
-          crystalMode === "hidden" ? "mt-2" : "mt-20",
-        )}
+        className={cn("@lg:grid-cols-2 mt-2 grid grid-cols-1 gap-5")}
       >
         <Tile
           value="whisper"
@@ -119,7 +116,7 @@ export function AlignerPicker({
           stage={
             <motion.div
               aria-hidden
-              className="absolute inset-x-0 bottom-0 h-full bg-[radial-gradient(ellipse_at_50%_60%,rgb(52_211_153/0.45),transparent_62%)]"
+              className="absolute inset-x-0 bottom-0 h-full bg-[radial-gradient(ellipse_at_50%_60%,rgb(143_208_211/0.5),transparent_62%)]"
               initial={false}
               animate={{
                 opacity: crystalMode === "hidden" ? 0.25 : 1,
@@ -129,7 +126,7 @@ export function AlignerPicker({
             />
           }
           overlay={
-            <div className="pointer-events-none absolute -top-20 left-1/2 z-10 size-60 -translate-x-1/2 select-none">
+            <div className="pointer-events-none absolute -top-6 left-1/2 z-10 size-48 -translate-x-1/2 select-none">
               <QuartzCanvas
                 mode={crystalMode}
                 spins={spins}
@@ -182,13 +179,13 @@ function Tile({
           !selected && "hover:border-foreground/25",
           selected && !ctc && "border-primary",
           ctc &&
-            "group-hover/tile:border-emerald-400/60 group-hover/tile:shadow-[0_24px_70px_-24px_rgb(16_185_129/0.55)]",
+            "group-hover/tile:border-teal-300/70 group-hover/tile:shadow-[0_24px_70px_-24px_rgb(94_170_176/0.5)]",
           ctc &&
             selected &&
-            "border-emerald-400/70 shadow-[0_0_0_1px_rgb(52_211_153/0.35),0_24px_70px_-24px_rgb(16_185_129/0.55)]",
+            "border-teal-300/80 shadow-[0_0_0_1px_rgb(143_208_211/0.4),0_24px_70px_-24px_rgb(94_170_176/0.5)]",
         )}
       >
-        <div className="relative h-28 shrink-0">{stage}</div>
+        <div className="relative h-36 shrink-0">{stage}</div>
         <div className="relative flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -202,7 +199,7 @@ function Tile({
             id={id}
             className={cn(
               ctc &&
-                "data-checked:border-emerald-500 data-checked:bg-emerald-500 dark:data-checked:bg-emerald-500",
+                "data-checked:border-teal-400 data-checked:bg-teal-400 dark:data-checked:bg-teal-400",
             )}
           />
         </div>
@@ -221,7 +218,7 @@ function ShinyBadge({
 }) {
   return (
     <motion.span
-      className="rounded-full border border-emerald-400/40 bg-[linear-gradient(110deg,rgb(16_185_129/0.12)_35%,rgb(167_243_208/0.55)_50%,rgb(16_185_129/0.12)_65%)] bg-size-[250%_100%] px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300"
+      className="rounded-full border border-teal-300/50 bg-[linear-gradient(110deg,rgb(94_170_176/0.12)_35%,rgb(204_236_236/0.6)_50%,rgb(94_170_176/0.12)_65%)] bg-size-[250%_100%] px-2 py-0.5 text-xs font-medium text-teal-700 dark:text-teal-200"
       initial={false}
       animate={animate ? { backgroundPosition: ["120% 0", "-120% 0"] } : {}}
       transition={{ duration: 2.8, ease: "linear", repeat: Infinity }}

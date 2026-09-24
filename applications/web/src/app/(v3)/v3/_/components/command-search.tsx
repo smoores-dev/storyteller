@@ -107,7 +107,7 @@ function useNavCommands(): NavCommand[] {
   )
 }
 
-const rowClassName = "gap-3 rounded-lg px-2 py-1.5"
+const rowClassName = "gap-3 rounded-sm px-2 py-1.5"
 
 function BookRow({
   book,

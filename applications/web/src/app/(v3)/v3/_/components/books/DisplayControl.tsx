@@ -195,6 +195,10 @@ export function DisplayControl({
         (field, i) => UI_SETTINGS_DEFAULTS.listDisplayFields[i] === field,
       )
 
+  const generalFields = DISPLAY_FIELDS.filter(
+    (field) => getFieldDef(field).group !== "alignment",
+  )
+
   const toggleField = (field: DisplayField) => {
     const base = isGrid
       ? (displayOverrides ?? currentFields)
@@ -214,10 +218,10 @@ export function DisplayControl({
       <FilterableMenuTrigger
         render={
           <TooltipButton
-            variant="ghost"
-            size="icon-sm"
+            variant="outline"
+            // size="icon"
             aria-label={t.plain("displayOptions.tooltip")}
-            className="shrink-0"
+            className="shrink-0 rounded-full"
             tooltip={t("displayOptions.tooltip")}
             shortcut={[displayHotKey]}
           >
@@ -583,34 +587,35 @@ export function DisplayControl({
             </FilterableMenuItem>
           )}
 
-          {DISPLAY_FIELDS.filter(
-            (field) => getFieldDef(field).group !== "alignment",
-          ).map((field) => (
-            <FilterableMenuItem
-              key={field}
-              closeOnClick={false}
-              textValue={tLabels(field)}
-              onSelect={() => {
-                toggleField(field)
-              }}
-            >
-              <FieldIcon field={field} />
-              {tLabels(field)}
-              {shown.includes(field) && <icon.Check className="ml-auto" />}
-            </FilterableMenuItem>
-          ))}
+          {generalFields
+            .filter((field) => shown.includes(field))
+            .map((field) => (
+              <FilterableMenuItem
+                key={field}
+                closeOnClick={false}
+                textValue={tLabels(field)}
+                onSelect={() => {
+                  toggleField(field)
+                }}
+              >
+                <FieldIcon field={field} />
+                {tLabels(field)}
+                <icon.Check className="ml-auto" />
+              </FilterableMenuItem>
+            ))}
 
           <FilterableMenuSub>
             <FilterableMenuSubTrigger
-              icon={<icon.AlignLeft className="size-4" />}
-              textValue={tLabels.plain("alignment")}
+              icon={<icon.Plus className="size-4" />}
+              textValue={t.plain("displayOptions.moreFields")}
+              keywords={generalFields
+                .map((field) => tLabels.plain(field))
+                .join(" ")}
             >
-              {tLabels("alignment")}
+              {t("displayOptions.moreFields")}
             </FilterableMenuSubTrigger>
             <FilterableMenuSubContent searchable>
-              {DISPLAY_FIELDS.filter(
-                (field) => getFieldDef(field).group === "alignment",
-              ).map((field) => (
+              {generalFields.map((field) => (
                 <FilterableMenuItem
                   key={field}
                   closeOnClick={false}
@@ -619,11 +624,40 @@ export function DisplayControl({
                     toggleField(field)
                   }}
                 >
-                  <FieldIcon field={field} className="mr-2" />
+                  <FieldIcon field={field} />
                   {tLabels(field)}
                   {shown.includes(field) && <icon.Check className="ml-auto" />}
                 </FilterableMenuItem>
               ))}
+
+              <FilterableMenuSub>
+                <FilterableMenuSubTrigger
+                  icon={<icon.AlignLeft className="size-4" />}
+                  textValue={tLabels.plain("alignment")}
+                >
+                  {tLabels("alignment")}
+                </FilterableMenuSubTrigger>
+                <FilterableMenuSubContent searchable>
+                  {DISPLAY_FIELDS.filter(
+                    (field) => getFieldDef(field).group === "alignment",
+                  ).map((field) => (
+                    <FilterableMenuItem
+                      key={field}
+                      closeOnClick={false}
+                      textValue={tLabels(field)}
+                      onSelect={() => {
+                        toggleField(field)
+                      }}
+                    >
+                      <FieldIcon field={field} className="mr-2" />
+                      {tLabels(field)}
+                      {shown.includes(field) && (
+                        <icon.Check className="ml-auto" />
+                      )}
+                    </FilterableMenuItem>
+                  ))}
+                </FilterableMenuSubContent>
+              </FilterableMenuSub>
             </FilterableMenuSubContent>
           </FilterableMenuSub>
         </FilterableMenuGroup>

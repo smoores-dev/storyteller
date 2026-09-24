@@ -1,8 +1,9 @@
 "use client"
 
-import { type ComponentProps, Suspense, lazy, memo, useMemo } from "react"
+import { Suspense, lazy, memo, useMemo } from "react"
 
 import { ICON_MAP } from "@/icons/icon-registry"
+import { styled, type StyledIconProps } from "@/icons/styled"
 
 type IconComponent = React.ComponentType<{
   className?: string
@@ -58,7 +59,7 @@ type DynamicIconProps = {
   iconId: string | null | undefined
   color?: string | null
   className?: string
-} & Omit<ComponentProps<"svg">, "color">
+} & Omit<StyledIconProps, "color">
 
 export const DynamicIcon = memo(function DynamicIcon({
   iconId,
@@ -72,7 +73,7 @@ export const DynamicIcon = memo(function DynamicIcon({
     const entry = ICON_MAP[iconId]
     if (!entry) return null
 
-    return getLazyIcon(entry.tabler)
+    return styled(getLazyIcon(entry.tabler))
   }, [iconId])
 
   if (!LazyIcon) {
@@ -84,7 +85,7 @@ export const DynamicIcon = memo(function DynamicIcon({
       <LazyIcon
         className={className}
         style={color ? { color } : undefined}
-        {...(rest as Record<string, unknown>)}
+        {...rest}
       />
     </Suspense>
   )

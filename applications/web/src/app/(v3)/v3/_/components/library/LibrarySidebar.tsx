@@ -1,8 +1,10 @@
 "use client"
+"use no memo"
 
+import { Menu } from "@base-ui/react/menu"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { usePathname } from "next/navigation"
-import { useCallback, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { useOptionalBookListPageState } from "@v3/_/components/books/BookListPage"
@@ -68,17 +70,7 @@ const HOVER_PREFETCH_DELAY_MS = 50
 export type SidebarSortMode = "name" | "count"
 export type SidebarSortDirection = "asc" | "desc"
 
-function findScrollParent(node: HTMLElement | null): HTMLElement | null {
-  let el = node?.parentElement ?? null
-
-  while (el) {
-    const overflowY = getComputedStyle(el).overflowY
-    if (overflowY === "auto" || overflowY === "scroll") return el
-    el = el.parentElement
-  }
-
-  return null
-}
+type RowMenuHandle = Menu.Handle<FacetValue>
 
 export function LibrarySidebar({
   title,
@@ -124,51 +116,74 @@ export function LibrarySidebar({
   )
 
   const pageState = useOptionalBookListPageState()
-  const hoverDepsRef = useRef({
-    onHoverItem,
-    controller: pageState?.controller,
-  })
-  hoverDepsRef.current = { onHoverItem, controller: pageState?.controller }
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const handleHoverItem = useCallback((key: string) => {
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
-    hoverTimerRef.current = setTimeout(() => {
-      const { onHoverItem: handler, controller } = hoverDepsRef.current
-      handler?.(key, controller)
-      hoverTimerRef.current = null
-    }, HOVER_PREFETCH_DELAY_MS)
-  }, [])
-  const cancelHoverItem = useCallback(() => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current)
-      hoverTimerRef.current = null
-    }
-  }, [])
 
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [menuTarget, setMenuTarget] = useState<FacetValue | null>(null)
-  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
+  const cancelHover = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = null
+  }
+
+  const hoverItem = (key: string) => {
+    cancelHover()
+    hoverTimerRef.current = setTimeout(() => {
+      hoverTimerRef.current = null
+      onHoverItem?.(key, pageState?.controller)
+    }, HOVER_PREFETCH_DELAY_MS)
+  }
+
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(
+    null,
+  )
+
+  const [activeKey, setActiveKey] = useState<string | null>(null)
+  const highlightedKey =
+    activeKey ?? (search.trim() ? (items[0]?.key ?? null) : null)
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent) => {
+    if (!(event.target instanceof HTMLInputElement)) return
+
+    if (event.key === "Enter") {
+      if (!highlightedKey) return
+      event.preventDefault()
+      onItemClick(highlightedKey)
+      return
+    }
+
+    const moves: Record<string, (current: number) => number> = {
+      ArrowDown: (current) => (current < items.length - 1 ? current + 1 : 0),
+      ArrowUp: (current) => (current > 0 ? current - 1 : items.length - 1),
+      Home: () => 0,
+      End: () => items.length - 1,
+    }
+    const move = moves[event.key]
+    if (!move || items.length === 0) return
+
+    event.preventDefault()
+    const current = highlightedKey
+      ? items.findIndex((item) => item.key === highlightedKey)
+      : -1
+    setActiveKey(items[move(current)]?.key ?? null)
+  }
+
+  const [rowMenu] = useState<RowMenuHandle>(() =>
+    Menu.createHandle<FacetValue>(),
+  )
 
   const deleteEntity = useDeleteEntity(entityType)
-
-  const handleRowDelete = useCallback(async () => {
-    if (!menuTarget) return
-    await deleteEntity(menuTarget.key as UUID)
-    setMenuOpen(false)
-  }, [menuTarget, deleteEntity])
+  const [deleteTarget, setDeleteTarget] = useState<FacetValue | null>(null)
 
   const rowDeleteAction = useConfirmAction({
-    onConfirm: handleRowDelete,
-    title: menuTarget
-      ? tEntity("deleteTitle", {
-          count: 1,
-          entity: entityType
-            ? tEntity(`entityTypes.${entityType}` as "entityTypes.tag", {
-                count: 1,
-              })
-            : "",
-        })
-      : "",
+    onConfirm: async () => {
+      if (deleteTarget) await deleteEntity(deleteTarget.key as UUID)
+    },
+    title: tEntity("deleteTitle", {
+      count: 1,
+      entity: entityType
+        ? tEntity(`entityTypes.${entityType}` as "entityTypes.tag", {
+            count: 1,
+          })
+        : "",
+    }),
     description: tEntity("deleteDescription"),
     confirmLabel: c("actions.delete"),
     variant: "destructive",
@@ -177,40 +192,15 @@ export function LibrarySidebar({
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editItem, setEditItem] = useState<FacetValue | null>(null)
 
-  const handleMenuOpen = useCallback(
-    (open: boolean) => {
-      if (open) {
-        setMenuOpen(true)
-        return
-      }
-
-      setMenuOpen(false)
-      setMenuAnchor(null)
-      if (rowDeleteAction.dialogProps.open || editDialogOpen) return
-      setMenuTarget(null)
-    },
-    [rowDeleteAction.dialogProps.open, editDialogOpen],
-  )
-
-  const handleOpenItemMenu = useCallback(
-    (item: FacetValue, anchor: HTMLElement) => {
-      setMenuTarget(item)
-      setMenuAnchor(anchor)
-      setMenuOpen(true)
-    },
-    [],
-  )
-
-  const handleEditItem = useCallback((item: FacetValue) => {
+  const handleEditItem = (item: FacetValue) => {
     setEditItem(item)
     setEditDialogOpen(true)
-  }, [])
+  }
 
   const { canCreate, createLabel } = useCreateEntity(entityType)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
   const { pinShelf } = usePinShelf()
-  const canPin = !!toShelfFilter
 
   const sidebarItemKind =
     entityType === "collection"
@@ -224,39 +214,31 @@ export function LibrarySidebar({
     isSaving: isTogglingVisibility,
   } = useSidebarVisibility()
 
-  const isHiddenInSidebar = useCallback(
-    (item: FacetValue) =>
-      !!sidebarItemKind && item.key !== NONE_KEY && isHidden(item.key),
-    [sidebarItemKind, isHidden],
-  )
+  const isHiddenInSidebar = (item: FacetValue) =>
+    !!sidebarItemKind && item.key !== NONE_KEY && isHidden(item.key)
 
-  const handleToggleSidebarVisibility = useCallback(
-    (item: FacetValue) => {
-      if (!sidebarItemKind) return
-      void setHidden(sidebarItemKind, item.key, !isHidden(item.key)).catch(
-        (error: unknown) => {
-          toast.error(tEntity("sidebarVisibilityFailed"), {
-            description: apiErrorMessage(error),
-          })
-        },
-      )
-    },
-    [sidebarItemKind, setHidden, isHidden, tEntity],
-  )
-
-  const handlePinItem = useCallback(
-    (item: FacetValue) => {
-      if (!toShelfFilter) return
-      void pinShelf(item.name, toShelfFilter(item.key))
-    },
-    [toShelfFilter, pinShelf],
-  )
+  const handleToggleSidebarVisibility = (item: FacetValue) => {
+    if (!sidebarItemKind) return
+    void setHidden(sidebarItemKind, item.key, !isHidden(item.key)).catch(
+      (error: unknown) => {
+        toast.error(tEntity("sidebarVisibilityFailed"), {
+          description: apiErrorMessage(error),
+        })
+      },
+    )
+  }
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      <div className="scroll-y relative flex min-h-0 flex-1 flex-col">
+      <div
+        ref={setScrollElement}
+        className="scroll-y relative flex min-h-0 flex-1 flex-col"
+      >
         {/* DONT MAKE FLEX CONTAINER THE SEARCH INPUT WILL NOT BE THE CORRECT HEIGHT IT WILL HAUNT YOU */}
-        <div className="bg-background sticky top-0 z-10 shrink-0 flex-col px-3">
+        <div
+          className="bg-background sticky top-0 z-10 shrink-0 flex-col px-3 pb-2"
+          onKeyDown={handleSearchKeyDown}
+        >
           <div className="flex h-(--header-height) items-center justify-between">
             <h2 className={cn("font-heading", "text-base")}>{title}</h2>
 
@@ -312,7 +294,7 @@ export function LibrarySidebar({
 
                     {sortMode === "name" && (
                       <span className="text-muted-foreground text-xs">
-                        {sortDirection === "asc" ? "\u2191" : "\u2193"}
+                        {sortDirection === "asc" ? "↑" : "↓"}
                       </span>
                     )}
                   </DropdownMenuItem>
@@ -335,7 +317,7 @@ export function LibrarySidebar({
 
                     {sortMode === "count" && (
                       <span className="text-muted-foreground text-xs">
-                        {sortDirection === "asc" ? "\u2191" : "\u2193"}
+                        {sortDirection === "asc" ? "↑" : "↓"}
                       </span>
                     )}
                   </DropdownMenuItem>
@@ -343,94 +325,109 @@ export function LibrarySidebar({
               </DropdownMenu>
             </div>
           </div>
+
+          <SearchInput
+            placeholder={t("filter")}
+            value={search}
+            onChange={(value) => {
+              onSearchChange(value)
+              setActiveKey(null)
+            }}
+            onBlur={() => {
+              setActiveKey(null)
+            }}
+            className="h-8! shrink-0 rounded-sm rounded-b-none border-0 border-b-1! bg-transparent [&>svg]:hidden"
+          />
         </div>
 
         <SidebarItemList
           items={items}
+          scrollElement={scrollElement}
           selectedKey={selectedKey}
+          highlightedKey={highlightedKey}
           onItemClick={onItemClick}
-          onHoverItem={handleHoverItem}
-          onCancelHover={cancelHoverItem}
+          onHoverItem={hoverItem}
+          onCancelHover={cancelHover}
           isLoading={isLoading}
           entityType={entityType}
           itemSelection={itemSelection}
-          onOpenItemMenu={handleOpenItemMenu}
-          menuTarget={menuTarget}
+          rowMenu={rowMenu}
           isItemLocked={isItemLocked}
           isItemHiddenInSidebar={
             sidebarItemKind ? isHiddenInSidebar : undefined
           }
         />
 
-        <DropdownMenu open={menuOpen} onOpenChange={handleMenuOpen}>
-          <DropdownMenuContent
-            align="end"
-            className="min-w-40"
-            anchor={menuAnchor}
-          >
-            {entityType && menuTarget && !isItemLocked?.(menuTarget) && (
-              <DropdownMenuItem
-                closeOnClick={false}
-                onClick={() => {
-                  handleEditItem(menuTarget)
-                }}
-              >
-                <icon.Edit className="mr-2 h-4 w-4" />
-                {c("actions.edit")}
-              </DropdownMenuItem>
-            )}
+        <Menu.Root handle={rowMenu}>
+          {({ payload: item }) =>
+            item ? (
+              <DropdownMenuContent align="end" className="min-w-40">
+                {entityType && !isItemLocked?.(item) && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      handleEditItem(item)
+                    }}
+                  >
+                    <icon.Edit className="mr-2 h-4 w-4" />
+                    {c("actions.edit")}
+                  </DropdownMenuItem>
+                )}
 
-            {canPin && menuTarget && (
-              <DropdownMenuItem
-                onClick={() => {
-                  handlePinItem(menuTarget)
-                  setMenuOpen(false)
-                }}
-              >
-                <icon.BookmarkPlus className="mr-2 h-4 w-4" />
-                {t("pinAsShelf")}
-              </DropdownMenuItem>
-            )}
+                {toShelfFilter && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      void pinShelf(item.name, toShelfFilter(item.key))
+                    }}
+                  >
+                    <icon.BookmarkPlus className="mr-2 h-4 w-4" />
+                    {t("pinAsShelf")}
+                  </DropdownMenuItem>
+                )}
 
-            {sidebarItemKind && menuTarget && menuTarget.key !== NONE_KEY && (
-              <DropdownMenuItem
-                disabled={isTogglingVisibility}
-                onClick={() => {
-                  handleToggleSidebarVisibility(menuTarget)
-                  setMenuOpen(false)
-                }}
-              >
-                {isHiddenInSidebar(menuTarget) ? (
+                {sidebarItemKind && item.key !== NONE_KEY && (
+                  <DropdownMenuItem
+                    disabled={isTogglingVisibility}
+                    onClick={() => {
+                      handleToggleSidebarVisibility(item)
+                    }}
+                  >
+                    {isHiddenInSidebar(item) ? (
+                      <>
+                        <icon.Eye className="mr-2 h-4 w-4" />
+                        {tEntity("showInSidebar")}
+                      </>
+                    ) : (
+                      <>
+                        <icon.EyeOff className="mr-2 h-4 w-4" />
+                        {tEntity("hideFromSidebar")}
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                )}
+
+                {entityType && !isItemLocked?.(item) && (
                   <>
-                    <icon.Eye className="mr-2 h-4 w-4" />
-                    {tEntity("showInSidebar")}
-                  </>
-                ) : (
-                  <>
-                    <icon.EyeOff className="mr-2 h-4 w-4" />
-                    {tEntity("hideFromSidebar")}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(event) => {
+                        if (event.shiftKey) {
+                          void deleteEntity(item.key as UUID)
+                          return
+                        }
+                        setDeleteTarget(item)
+                        rowDeleteAction.confirm()
+                      }}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <icon.Trash className="mr-2 h-4 w-4" />
+                      {c("actions.delete")}
+                    </DropdownMenuItem>
                   </>
                 )}
-              </DropdownMenuItem>
-            )}
-
-            {entityType && menuTarget && !isItemLocked?.(menuTarget) && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  closeOnClick={false}
-                  onClick={(event) => {
-                    rowDeleteAction.confirm(event)
-                  }}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <icon.Trash className="mr-2 h-4 w-4" />
-                  {c("actions.delete")}
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              </DropdownMenuContent>
+            ) : null
+          }
+        </Menu.Root>
 
         <ConfirmDialog {...rowDeleteAction.dialogProps} />
 
@@ -452,15 +449,6 @@ export function LibrarySidebar({
         )}
       </div>
 
-      <div className="bg-background z-10 shrink-0 px-3 pt-2 pb-2">
-        <SearchInput
-          placeholder={t("search")}
-          value={search}
-          onChange={onSearchChange}
-          className="h-8! shrink-0"
-        />
-      </div>
-
       {entityType && entityType !== "status" && (
         <SidebarEntityActions
           entityType={entityType}
@@ -478,105 +466,57 @@ export function LibrarySidebar({
 
 function SidebarItemList({
   items,
+  scrollElement,
   selectedKey,
+  highlightedKey,
   onItemClick,
   onHoverItem,
   onCancelHover,
   isLoading,
   entityType,
   itemSelection,
-  onOpenItemMenu,
-  menuTarget,
+  rowMenu,
   isItemLocked,
   isItemHiddenInSidebar,
 }: {
   items: FacetValue[]
+  scrollElement: HTMLElement | null
   selectedKey: string | null
+  highlightedKey: string | null
   onItemClick: (key: string) => void
-  onHoverItem?: (key: string) => void
-  onCancelHover?: () => void
+  onHoverItem: (key: string) => void
+  onCancelHover: () => void
   isLoading: boolean
   entityType?: LibraryEntityType | undefined
-  itemSelection?: ReturnType<typeof useItemSelection>
-  onOpenItemMenu?: (item: FacetValue, anchor: HTMLElement) => void
-  menuTarget?: FacetValue | null
+  itemSelection: ReturnType<typeof useItemSelection>
+  rowMenu: RowMenuHandle
   isItemLocked?: ((item: FacetValue) => boolean) | undefined
   isItemHiddenInSidebar?: ((item: FacetValue) => boolean) | undefined
 }) {
-  const isSelecting = itemSelection?.isSelecting ?? false
-  const canSelect = !!entityType && !!itemSelection
-  const hasRowActions = !!onOpenItemMenu && !!entityType
-
-  const orderedKeys = items.map((item) => item.key)
-
-  const callbacksRef = useRef({
-    onItemClick,
-    onHoverItem,
-    onCancelHover,
-    onOpenItemMenu,
-    itemSelection,
-    orderedKeys,
-    menuTarget,
-  })
-  callbacksRef.current = {
-    onItemClick,
-    onHoverItem,
-    onCancelHover,
-    onOpenItemMenu,
-    itemSelection,
-    orderedKeys,
-    menuTarget,
-  }
-
   const c = useCommon()
+  const { isSelecting } = itemSelection
+  const canSelect = !!entityType
+  const hasRowActions = !!entityType
 
-  const handleRowClick = useCallback((key: string) => {
-    callbacksRef.current.onItemClick(key)
-  }, [])
-
-  const handleRowHover = useCallback((key: string) => {
-    callbacksRef.current.onHoverItem?.(key)
-  }, [])
-
-  const handleRowHoverLeave = useCallback(() => {
-    callbacksRef.current.onCancelHover?.()
-  }, [])
-
-  const handleRowToggle = useCallback((key: string) => {
-    callbacksRef.current.itemSelection?.toggleItem(key)
-  }, [])
-
-  const handleRowSelectRange = useCallback((key: string) => {
-    const { itemSelection: sel, orderedKeys: keys } = callbacksRef.current
-    sel?.selectRange(key, keys)
-  }, [])
-
-  const handleRowMenu = useCallback((item: FacetValue, anchor: HTMLElement) => {
-    callbacksRef.current.onOpenItemMenu?.(item, anchor)
-  }, [])
-
-  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null)
   const [scrollMargin, setScrollMargin] = useState(0)
-
-  const containerRef = useCallback((node: HTMLUListElement | null) => {
-    if (!node) return
-
-    const parent = findScrollParent(node)
-    setScrollElement(parent)
-
-    if (parent) {
-      setScrollMargin(node.offsetTop)
-    }
-  }, [])
 
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => scrollElement,
-    // 1px gap
     estimateSize: () => SIDEBAR_ROW_HEIGHT + 1,
     overscan: 15,
     scrollMargin,
   })
+
+  const highlightedIndex = highlightedKey
+    ? items.findIndex((item) => item.key === highlightedKey)
+    : -1
+
+  useEffect(() => {
+    if (highlightedIndex >= 0) {
+      virtualizer.scrollToIndex(highlightedIndex, { align: "auto" })
+    }
+  }, [highlightedIndex, virtualizer])
 
   if (isLoading) {
     const widths = [60, 45, 72, 50, 38, 65, 55, 42, 68, 48, 58, 44]
@@ -607,15 +547,15 @@ function SidebarItemList({
     )
   }
 
-  const virtualItems = virtualizer.getVirtualItems()
-
   return (
     <SidebarMenu
-      ref={containerRef}
+      ref={(node) => {
+        if (node) setScrollMargin(node.offsetTop)
+      }}
       className="relative shrink-0 gap-0 px-2 py-1"
       style={{ height: virtualizer.getTotalSize() }}
     >
-      {virtualItems.map((virtualItem) => {
+      {virtualizer.getVirtualItems().map((virtualItem) => {
         const item = items[virtualItem.index]
         if (!item) return null
 
@@ -625,22 +565,27 @@ function SidebarItemList({
             item={item}
             style={{
               height: virtualItem.size,
-              transform: `translateY(${virtualItem.start - virtualizer.options.scrollMargin}px)`,
+              transform: `translateY(${virtualItem.start - scrollMargin}px)`,
             }}
             isActive={item.key === selectedKey}
-            isChecked={itemSelection?.isSelected(item.key) ?? false}
+            isHighlighted={item.key === highlightedKey}
+            isChecked={itemSelection.isSelected(item.key)}
             isSelecting={isSelecting}
             isLocked={isItemLocked?.(item) ?? false}
             isHiddenInSidebar={isItemHiddenInSidebar?.(item) ?? false}
             canSelect={canSelect && item.key !== NONE_KEY}
             hasRowActions={hasRowActions && item.key !== NONE_KEY}
-            onItemClick={handleRowClick}
-            onHover={handleRowHover}
-            onHoverLeave={handleRowHoverLeave}
-            onToggle={handleRowToggle}
-            onSelectRange={handleRowSelectRange}
-            onOpenMenu={handleRowMenu}
-            isMenuTarget={menuTarget?.key === item.key}
+            rowMenu={rowMenu}
+            onItemClick={onItemClick}
+            onHover={onHoverItem}
+            onHoverLeave={onCancelHover}
+            onToggle={itemSelection.toggleItem}
+            onSelectRange={(key) => {
+              itemSelection.selectRange(
+                key,
+                items.map((i) => i.key),
+              )
+            }}
           />
         )
       })}
@@ -652,36 +597,36 @@ function SidebarRow({
   item,
   style,
   isActive,
+  isHighlighted,
   isChecked,
   isSelecting,
   isLocked,
   isHiddenInSidebar,
   canSelect,
   hasRowActions,
-  isMenuTarget,
+  rowMenu,
   onItemClick,
   onHover,
   onHoverLeave,
   onToggle,
   onSelectRange,
-  onOpenMenu,
 }: {
   item: FacetValue
   style: React.CSSProperties
   isActive: boolean
+  isHighlighted: boolean
   isChecked: boolean
   isSelecting: boolean
   isLocked: boolean
   isHiddenInSidebar: boolean
   canSelect: boolean
   hasRowActions: boolean
-  isMenuTarget: boolean
+  rowMenu: RowMenuHandle
   onItemClick: (key: string) => void
   onHover: (key: string) => void
   onHoverLeave: () => void
   onToggle: (key: string) => void
   onSelectRange: (key: string) => void
-  onOpenMenu: (item: FacetValue, anchor: HTMLElement) => void
 }) {
   const pathname = usePathname()
   const firstPathSegment = pathname.split("/")[1]
@@ -699,8 +644,9 @@ function SidebarRow({
     <SidebarMenuItem className="absolute top-0 left-0 w-full" style={style}>
       <SidebarMenuButton
         isActive={isActive}
+        data-highlighted={isHighlighted || undefined}
         className={cn(
-          "hover:text-facet-accent-foreground active:text-facet-accent-foreground data-active:text-facet-accent-foreground rounded-sm",
+          "hover:text-facet-accent-foreground active:text-facet-accent-foreground data-active:text-facet-accent-foreground data-highlighted:bg-sidebar-accent/50 data-highlighted:text-facet-accent-foreground rounded-sm",
           canSelect ? "pr-2 pl-1.5" : "px-2",
         )}
         render={
@@ -762,19 +708,21 @@ function SidebarRow({
       />
 
       {hasRowActions && !isSelecting && (
-        <SidebarMenuAction
-          onClick={(e) => {
-            onOpenMenu(item, e.currentTarget)
-          }}
-          className={cn(
-            "text-muted-foreground hover:text-foreground",
-            canSelect && "right-9",
-            REVEAL_ON_HOVER,
-            isMenuTarget && "opacity-100",
-          )}
+        <Menu.Trigger
+          handle={rowMenu}
+          payload={item}
+          render={
+            <SidebarMenuAction
+              className={cn(
+                "text-muted-foreground hover:text-foreground",
+                canSelect && "right-9",
+                REVEAL_ON_HOVER,
+              )}
+            />
+          }
         >
           <icon.DotsVertical className="size-3.5" />
-        </SidebarMenuAction>
+        </Menu.Trigger>
       )}
 
       {canSelect && (
@@ -783,7 +731,6 @@ function SidebarRow({
           checked={isChecked}
           onSelectRange={onSelectRange}
           onToggle={onToggle}
-          // yeah yeah
           uuid={item.key as UUID}
           isSelecting={isSelecting}
           className={cn(

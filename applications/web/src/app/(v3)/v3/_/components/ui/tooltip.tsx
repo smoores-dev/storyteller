@@ -17,7 +17,7 @@ function TooltipProvider({
   )
 }
 
-export const BASE_TOOLTIP_DELAY = 500
+export const BASE_TOOLTIP_DELAY = 300
 
 function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
   return <TooltipPrimitive.Root data-slot="tooltip" {...props} />

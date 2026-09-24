@@ -161,6 +161,9 @@ export default async function LoginPage() {
           providers={Object.values(providers)}
           credentialsLoginAction={credentialsLogin}
           disablePasswordLogin={settings.disablePasswordLogin}
+          showPasswordReset={
+            !!settings.smtpHost && !settings.disablePasswordLogin
+          }
         />
       </div>
     </div>

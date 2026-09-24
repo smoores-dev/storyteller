@@ -12,9 +12,9 @@ export const iconVariants = cva("size-4 shrink-0", {
       lg: "size-5",
     },
     weight: {
-      default: "",
-      thin: "stroke-[1.5]",
-      bold: "stroke-[2.5]",
+      default: "stroke-[1.5]",
+      thin: "stroke-1",
+      bold: "stroke-2",
     },
   },
   defaultVariants: {

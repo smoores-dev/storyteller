@@ -508,9 +508,10 @@ export const BookCard = memo(function BookCard({
                     lang={book.language ?? undefined}
                     className={cn(
                       "group-hover:text-tinted-strong line-clamp-2",
-                      "font-heading font-medium",
+                      "font-heading",
                       "hyphens-auto",
                       "leading-[1.2]",
+                      // otherwise looks wack
                       "[font-variant-ligatures:none]",
                     )}
                     style={{ height: TITLE_HEIGHT }}
@@ -607,7 +608,7 @@ export const BookCard = memo(function BookCard({
         "aria-selected": active,
       })}
       className={cn(
-        "group relative flex h-full min-h-0 flex-col rounded-lg transition-opacity duration-200",
+        "group relative flex h-full min-h-0 flex-col rounded-card transition-opacity duration-200",
         muted && "opacity-50",
         selected &&
           !isBookSelected &&
