@@ -1,8 +1,5 @@
 releases:
   "@storyteller-platform/docs": patch
-  "@storyteller-platform/epub": patch
-  "@storyteller-platform/ghost-story": patch
-  "@storyteller-platform/mlx-audio": patch
 
 declined:
   - "@storyteller-platform/tauri"
