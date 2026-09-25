@@ -117,7 +117,7 @@ describe("slugifiedWordRanges", () => {
     )
   })
 
-  it.only("stays inside the slugified text for a final abbreviation", async () => {
+  it("stays inside the slugified text for a final abbreviation", async () => {
     const { slug, words } = await wordRanges(
       "She said Bridget went up and down, and I said, Yes, so did I.\n",
     )
