@@ -105,6 +105,7 @@ const nextConfig: import("next").NextConfig = {
     "@storyteller-platform/path",
     "@storyteller-platform/audiobook",
     "@storyteller-platform/media-types",
+    "@storyteller-platform/uri-fragment",
     "@t3-oss/env-nextjs",
     "@t3-oss/env-core",
   ],

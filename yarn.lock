@@ -16767,6 +16767,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@storyteller-platform/uri-fragment@workspace:libraries/uri-fragment":
+  version: 0.0.0-use.local
+  resolution: "@storyteller-platform/uri-fragment@workspace:libraries/uri-fragment"
+  dependencies:
+    "@tsconfig/strictest": "npm:^2.0.5"
+    "@types/node": "npm:^24.0.0"
+    typescript: "npm:^7.0.2"
+    vite: "catalog:"
+    vitest: "catalog:"
+  languageName: unknown
+  linkType: soft
+
 "@storyteller-platform/web@workspace:*, @storyteller-platform/web@workspace:^, @storyteller-platform/web@workspace:applications/web":
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/web@workspace:applications/web"

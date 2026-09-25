@@ -32,6 +32,9 @@
 /libraries/audiobook/src/**/*.js
 /libraries/audiobook/src/**/*.cjs
 /libraries/audiobook/src/**/*.d.ts
+!/libraries/uri-fragment
+/libraries/uri-fragment/node_modules
+/libraries/uri-fragment/dist
 !/libraries/align
 /libraries/align/src/**/__fixtures__/
 /libraries/align/node_modules

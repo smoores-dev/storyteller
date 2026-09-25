@@ -1,0 +1,10 @@
+releases:
+  "@storyteller-platform/align": patch
+  "@storyteller-platform/audiobook": patch
+  "@storyteller-platform/epub": patch
+  "@storyteller-platform/uri-fragment": minor
+
+declined:
+  - "@storyteller-platform/web"
+  - "@storyteller-platform/ghost-story"
+  - "@storyteller-platform/mlx-audio"

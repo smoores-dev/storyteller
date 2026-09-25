@@ -143,7 +143,7 @@ For more details about using the API, see the [API documentation](#audiobook).
 This package lives in the
 [Storyteller monorepo](https://gitlab.com/storyteller-platform/storyteller), and
 is developed alongside the
-[Storyteller platform](https://storyteller-platform.gitlab.io/storyteller).
+[Storyteller platform](https://storyteller-platform.dev).
 
 To get started with developing in the Storyteller monorepo, check out the
-[development guides in the docs](https://storyteller-platform.gitlab.io/storyteller/docs/category/development).
+[development guides in the docs](https://storyteller-platform.dev/docs/category/development).

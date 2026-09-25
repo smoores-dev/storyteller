@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "emitDeclarationOnly": false,
+    "declaration": true,
+    "allowImportingTsExtensions": false,
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "**/*.test.ts"],
+  "references": [
+    { "path": "../media-types" },
+    { "path": "../fs" },
+    { "path": "../mlx-audio" }
+  ]
+}

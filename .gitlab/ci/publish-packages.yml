@@ -363,6 +363,79 @@ release-media-types:
         - name: "NPM package for @storyteller-platform/media-types"
           url: "https://npmjs.com/package/@storyteller-platform/media-types"
 
+publish-uri-fragment:
+  image: node:24
+  stage: publish
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^uri-fragment-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+  variables:
+    GITLAB: "true"
+  script:
+    - TAG=${CI_COMMIT_TAG##*-}
+    - |
+      case "$TAG" in
+        alpha*) TAG="alpha" ;;
+        beta*) TAG="beta" ;;
+        rc*) TAG="rc" ;;
+        experimental*) TAG="experimental" ;;
+        dev*) TAG="dev" ;;
+        test*) TAG="test" ;;
+        preview*) TAG="preview" ;;
+        *) TAG="latest" ;;
+      esac
+    - npm i -g corepack
+    - yarn workspaces focus @storyteller-platform/uri-fragment
+    - yarn workspace @storyteller-platform/uri-fragment npm publish --tag="$TAG"
+
+prerelease-uri-fragment:
+  stage: prerelease
+  image: alpine:latest
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^uri-fragment-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - apk add curl jq
+    - version=$(echo $CI_COMMIT_TAG | sed -r 's/uri-fragment-//')
+    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
+    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
+      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
+    - to_sha=$CI_COMMIT_SHORT_SHA
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
+      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-uri-fragment"
+      | jq -r .notes > release_notes.md'
+  artifacts:
+    paths:
+      - release_notes.md
+
+release-uri-fragment:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: prerelease-uri-fragment
+      artifacts: true
+  rules:
+    - if:
+        '$CI_COMMIT_TAG =~
+        /^uri-fragment-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: release_notes.md
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "NPM package for @storyteller-platform/uri-fragment"
+          url: "https://npmjs.com/package/@storyteller-platform/uri-fragment"
+
 publish-mapping:
   image: node:24
   stage: publish

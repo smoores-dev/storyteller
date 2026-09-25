@@ -15,6 +15,7 @@
 !/libraries/media-types/
 !/libraries/nodekit/
 !/libraries/mlx-audio/
+!/libraries/uri-fragment/
 !/Package.swift
 !/Package.resolved
 !/config/
@@ -48,6 +49,7 @@
 /libraries/media-types/ @smoores @tefkah
 /libraries/nodekit/ @smoores @tefkah @kyonifer
 /libraries/mlx-audio/ @smoores @tefkah @kyonifer
+/libraries/uri-fragment/ @smoores @tefkah
 /libraries/StorytellerKit/ @smoores @kyonifer
 /Package.swift @smoores @kyonifer
 /Package.resolved @smoores @kyonifer

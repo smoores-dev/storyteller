@@ -9,7 +9,6 @@
     // .ts specifiers are rewritten to .js on emit; allowImportingTsExtensions is
     // only legal when emitting declarations alone.
     "allowImportingTsExtensions": false,
-    // Pinned so a file added to the program later cannot move the published layout.
     "rootDir": "src",
     "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
   },

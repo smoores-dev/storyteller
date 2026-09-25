@@ -45,6 +45,9 @@
     },
     {
       "path": "libraries/mlx-audio"
+    },
+    {
+      "path": "libraries/uri-fragment"
     }
   ]
 }
