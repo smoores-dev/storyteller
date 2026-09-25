@@ -93,6 +93,7 @@ function DialogContent({
       <Drawer.Portal>
         <DialogOverlay forceRender={forceRender} />
         <Drawer.Content
+          data-slot="dialog-content"
           className={cn(
             "bg-background fixed right-0 bottom-0 left-0 z-50 grid h-[85svh] grid-cols-1 gap-4 overflow-hidden rounded-t-2xl p-4",
             className,

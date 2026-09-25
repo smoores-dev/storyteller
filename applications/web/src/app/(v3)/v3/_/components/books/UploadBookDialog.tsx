@@ -22,11 +22,13 @@ export function UploadBookDialog({
   open,
   onOpenChange,
   collection,
+  initialFiles,
   onBookCreated,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   collection?: UUID
+  initialFiles?: File[]
   onBookCreated?: (bookUuid: UUID) => void
 }) {
   const t = useTranslation("UploadDialog")
@@ -103,6 +105,7 @@ export function UploadBookDialog({
           },
         },
       ]}
+      initialFiles={initialFiles}
       buildMeta={buildMeta}
       onFinalize={handleFinalize}
       onComplete={handleComplete}

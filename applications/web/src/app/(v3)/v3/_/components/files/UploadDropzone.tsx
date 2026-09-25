@@ -4,6 +4,7 @@ import { type default as Uppy } from "@uppy/core"
 import useUppyState from "@uppy/react/lib/useUppyState"
 import { useRef, useState } from "react"
 
+import { addFilesToUppy } from "@v3/_/components/files/useTusUpload"
 import { cn } from "@v3/_/lib/utils"
 
 import {
@@ -43,16 +44,6 @@ export function UploadDropzone({
     ? allFiles.filter((file) => filter(file.name ?? ""))
     : allFiles
 
-  function addFiles(fileList: FileList | File[]) {
-    for (const file of Array.from(fileList)) {
-      try {
-        uppy.addFile({ name: file.name, type: file.type, data: file })
-      } catch (e) {
-        console.error(e)
-      }
-    }
-  }
-
   return (
     <div className="flex flex-col gap-3">
       <button
@@ -70,7 +61,7 @@ export function UploadDropzone({
           e.preventDefault()
           setIsDragging(false)
           if (disabled) return
-          addFiles(e.dataTransfer.files)
+          addFilesToUppy(uppy, e.dataTransfer.files)
         }}
         className={cn(
           "border-input flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 text-center transition-colors",
@@ -90,7 +81,7 @@ export function UploadDropzone({
           multiple={multiple}
           className="hidden"
           onChange={(e) => {
-            if (e.target.files) addFiles(e.target.files)
+            if (e.target.files) addFilesToUppy(uppy, e.target.files)
             e.target.value = ""
           }}
         />
@@ -123,15 +114,15 @@ export function UploadDropzone({
                       {formatBytes(file.size ?? 0)}
                     </span>
 
-                    <div className="bg-muted mt-1 h-1 w-full overflow-hidden rounded-full">
-                      <div
+                    <span className="bg-muted mt-1 block h-1 w-full overflow-hidden rounded-full">
+                      <span
                         className={cn(
-                          "h-full rounded-full transition-all",
+                          "block h-full rounded-full transition-all",
                           isDone ? "bg-green-600" : "bg-primary",
                         )}
                         style={{ width: `${percentage}%` }}
                       />
-                    </div>
+                    </span>
                   </ItemDescription>
                 </ItemContent>
                 {!isDone && (

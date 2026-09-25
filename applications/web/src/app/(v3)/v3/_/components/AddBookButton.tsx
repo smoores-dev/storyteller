@@ -14,7 +14,7 @@ import { bookDialogExtensions } from "@/uploadFileTypes"
 import { type UUID } from "@/uuid"
 
 import { ImportBookDialog } from "./books/ImportBookDialog"
-import { UploadBookDialog } from "./books/UploadBookDialog"
+import { useOpenBookUpload } from "./books/UploadBookProvider"
 import { openTauriFileDialog } from "./files/ServerFileBrowser"
 import {
   FilterableMenu,
@@ -26,18 +26,29 @@ import { TooltipButton } from "./ui/tooltip-button"
 
 const BOOK_FILTERS = [{ name: "Books", extensions: bookDialogExtensions }]
 
-export function useAddBook() {
-  const t = useTranslation("BooksPage")
+export function useImportBookPaths() {
   const { setSelectedBookUuid } = useBookInSidePanel()
-
-  const [uploadOpen, setUploadOpen] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
-
   const [createBook] = useCreateBookMutation()
 
-  function handleBookCreated(bookUuid: UUID) {
-    void setSelectedBookUuid(bookUuid)
+  return async (paths: string[], collection?: UUID) => {
+    const response = await createBook({
+      paths,
+      collection,
+      importMode: "reference",
+    }).unwrap()
+
+    if ("uuid" in response) {
+      void setSelectedBookUuid(response.uuid)
+    }
   }
+}
+
+export function useAddBook() {
+  const t = useTranslation("BooksPage")
+
+  const openBookUpload = useOpenBookUpload()
+  const importBookPaths = useImportBookPaths()
+  const [importOpen, setImportOpen] = useState(false)
 
   async function handleTauriImport() {
     const result = await openTauriFileDialog({
@@ -50,15 +61,7 @@ export function useAddBook() {
     const paths = Array.isArray(result) ? result : [result]
     if (paths.length === 0) return
 
-    const response = await createBook({
-      paths,
-      collection: undefined,
-      importMode: "reference",
-    }).unwrap()
-
-    if ("uuid" in response) {
-      handleBookCreated(response.uuid)
-    }
+    await importBookPaths(paths)
   }
 
   const menuItems = !isTauriApp() ? (
@@ -67,7 +70,7 @@ export function useAddBook() {
         icon={<icon.FileUpload className="size-4" />}
         textValue={t.plain("uploadBook")}
         onSelect={() => {
-          setUploadOpen(true)
+          openBookUpload()
         }}
       >
         {t("uploadBook")}
@@ -96,15 +99,7 @@ export function useAddBook() {
   )
 
   const dialogs = (
-    <>
-      <UploadBookDialog
-        open={uploadOpen}
-        onOpenChange={setUploadOpen}
-        onBookCreated={handleBookCreated}
-      />
-
-      <ImportBookDialog open={importOpen} onOpenChange={setImportOpen} />
-    </>
+    <ImportBookDialog open={importOpen} onOpenChange={setImportOpen} />
   )
 
   return { menuItems, dialogs }

@@ -3,6 +3,8 @@ import { cookies } from "next/headers"
 import { AnnouncementModal } from "@v3/_/components/announcements/announcement-modal"
 import { AppSidebar } from "@v3/_/components/app-sidebar"
 import { FloatingBookPanelProvider } from "@v3/_/components/books/FloatingBookPanel"
+import { UploadBookProvider } from "@v3/_/components/books/UploadBookProvider"
+import { FileDropOverlay } from "@v3/_/components/files/FileDropOverlay"
 import { FloatingDock } from "@v3/_/components/floating/FloatingDock"
 import { PathMismatchBanner } from "@v3/_/components/path-mismatch-banner"
 import { ProcessingWidget } from "@v3/_/components/processing/ProcessingWidget"
@@ -70,31 +72,34 @@ export default async function AppLayout({
           } as React.CSSProperties
         }
       >
-        <AppSidebar
-          variant="inset"
-          user={user}
-          className="absolute z-40"
-          currentVersion={currentVersion}
-          initialSidebarGroups={sidebarGroups}
-        />
-        <EscapeCascadeProvider>
-          <FloatingBookPanelProvider>
-            <SidebarInset className="overflow-x-hidden">
-              {pathMismatch !== null && (
-                <PathMismatchBanner
-                  anchor={pathMismatch}
-                  currentDataDir={DATA_DIR}
-                />
-              )}
-              <div className="flex min-h-0 flex-1 flex-col">{children}</div>
-            </SidebarInset>
-          </FloatingBookPanelProvider>
-        </EscapeCascadeProvider>
-        <AnnouncementModal pending={pendingAnnouncements} />
-        <FloatingDock>
-          {user.permissions.bookProcess && <ProcessingWidget />}
-          <MiniPlayer />
-        </FloatingDock>
+        <UploadBookProvider>
+          <AppSidebar
+            variant="inset"
+            user={user}
+            className="absolute z-40"
+            currentVersion={currentVersion}
+            initialSidebarGroups={sidebarGroups}
+          />
+          <EscapeCascadeProvider>
+            <FloatingBookPanelProvider>
+              <SidebarInset className="overflow-x-hidden">
+                {pathMismatch !== null && (
+                  <PathMismatchBanner
+                    anchor={pathMismatch}
+                    currentDataDir={DATA_DIR}
+                  />
+                )}
+                <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+              </SidebarInset>
+            </FloatingBookPanelProvider>
+          </EscapeCascadeProvider>
+          <AnnouncementModal pending={pendingAnnouncements} />
+          <FloatingDock>
+            {user.permissions.bookProcess && <ProcessingWidget />}
+            <MiniPlayer />
+          </FloatingDock>
+          <FileDropOverlay />
+        </UploadBookProvider>
       </SidebarProvider>
     </UserPreferencesProvider>
   )

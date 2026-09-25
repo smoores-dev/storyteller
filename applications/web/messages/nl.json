@@ -1709,7 +1709,24 @@
     "zoneAudio": "Sleep audiobestanden hierheen of klik om te kiezen",
     "zoneAudioHint": "M4B, MP3 of andere audiobestanden, of een zip-archief",
     "bookUploaded": "Boek geüpload",
-    "uploadAnother": "Nog een uploaden"
+    "uploadAnother": "Nog een uploaden",
+    "formatLabel": "Formaat",
+    "formatReplaces": "Vervangt huidige",
+    "formatNew": "Nieuw"
+  },
+  "FileDrop": {
+    "newBook": "Nieuw boek",
+    "newBookHint": "Een EPUB, audiobestanden, of allebei",
+    "newBookInCollection": "Wordt aan deze collectie toegevoegd",
+    "addToBook": "Toevoegen aan {title}",
+    "addToBookHint": "Een EPUB of audiobestanden. Je kiest daarna het formaat.",
+    "addToBookHintFolder": "Een EPUB of een map met audiobestanden. Je kiest daarna het formaat.",
+    "unsupportedFiles": "Sleep één EPUB of een set audiobestanden naar het boek",
+    "unsupportedPaths": "Sleep één EPUB of één map met audiobestanden naar het boek",
+    "importFailed": "De gesleepte bestanden konden niet worden geïmporteerd",
+    "replaceFailed": "Het gesleepte bestand kon niet aan dit boek worden toegevoegd",
+    "addConfirm": "Toevoegen",
+    "replaceConfirm": "Vervangen"
   },
   "ImportFromServerDialog": {
     "importMode": "Importmodus",

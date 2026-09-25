@@ -713,7 +713,7 @@ export function FileSection({
       {fileDialog?.mode === "upload" && (
         <UploadFileDialog
           book={book}
-          format={fileDialog.format}
+          defaultFormat={fileDialog.format}
           open
           onOpenChange={(next) => {
             if (!next) setFileDialog(null)

@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid"
 import { UploadDropzone } from "@v3/_/components/files/UploadDropzone"
 import {
   type UppyFileType,
+  addFilesToUppy,
   useTusUpload,
 } from "@v3/_/components/files/useTusUpload"
 import { Button } from "@v3/_/components/ui/button"
@@ -72,6 +73,8 @@ export type UploadDialogProps = {
   metadataMode?: MetadataFieldMode
   onMetadataModeChange?: (mode: MetadataFieldMode) => void
   labels: UploadDialogLabels
+  initialFiles?: File[]
+  aboveZones?: (files: UppyFileType[]) => ReactNode
   children?: ReactNode
 }
 
@@ -93,6 +96,8 @@ export function UploadDialog({
   metadataMode: controlledMetadataMode,
   onMetadataModeChange,
   labels,
+  initialFiles,
+  aboveZones,
   children,
 }: UploadDialogProps) {
   const [internalMetadataMode, setInternalMetadataMode] =
@@ -126,6 +131,11 @@ export function UploadDialog({
       buildMeta?.(file, batch)
     },
   })
+
+  useEffect(() => {
+    if (!open || !initialFiles || uppy.getFiles().length > 0) return
+    addFilesToUppy(uppy, initialFiles)
+  }, [open, initialFiles, uppy])
 
   const handleClose = useCallback(() => {
     reset()
@@ -175,6 +185,8 @@ export function UploadDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
+
+        {aboveZones?.(files)}
 
         {zones ? (
           <div className="flex flex-col gap-3">

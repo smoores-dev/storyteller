@@ -158,14 +158,14 @@ export function BookFilters({
         className,
       )}
     >
-      <div className="flex h-7 w-full items-center gap-1.5">
+      <div className="flex h-8 w-full items-center gap-1.5">
         <SearchInput
           placeholder={t("seachBooksPlaceholder")}
           ref={searchRef}
           value={search}
           onChange={setSearch}
           shortcut={searchShortcut}
-          className="h-7 shrink"
+          className="h-8 shrink"
         />
 
         {!isAdvanced && (
@@ -203,7 +203,7 @@ export function BookFilters({
       {hasChips && (
         <div className="scroll-x flex items-center gap-1.5">
           {seedLabel && (
-            <span className="border-border bg-muted text-muted-foreground inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">
+            <span className="border-border bg-muted text-muted-foreground inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">
               {seedLabel}
             </span>
           )}
@@ -262,7 +262,7 @@ export function BookFilters({
             </span>
             <TooltipButton
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               tooltip={t("filters.closeAdvanced")}
               aria-label={t.plain("filters.closeAdvanced")}
               shortcut={[advancedHotKey]}

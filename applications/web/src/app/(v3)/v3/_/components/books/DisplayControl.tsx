@@ -219,9 +219,9 @@ export function DisplayControl({
         render={
           <TooltipButton
             variant="outline"
-            // size="icon"
+            size="icon"
             aria-label={t.plain("displayOptions.tooltip")}
-            className="shrink-0 rounded-full"
+            className="text-muted-foreground hover:text-foreground shrink-0 rounded-full"
             tooltip={t("displayOptions.tooltip")}
             shortcut={[displayHotKey]}
           >

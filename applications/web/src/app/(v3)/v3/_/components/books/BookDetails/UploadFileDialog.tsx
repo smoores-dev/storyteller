@@ -4,6 +4,10 @@ import { useState } from "react"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
+import {
+  type BookFormat,
+  FormatPicker,
+} from "@v3/_/components/books/BookDetails/FormatPicker"
 import { UploadDialog } from "@v3/_/components/files/UploadDialog"
 import { type UppyFileType } from "@v3/_/components/files/useTusUpload"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
@@ -20,8 +24,6 @@ import {
   epubFileTypes,
 } from "@/uploadFileTypes"
 
-type Format = "ebook" | "audiobook" | "readaloud"
-
 function tusEndpointForBook(bookUuid: string) {
   const path = `/api/v2/books/${bookUuid}/replace-asset/upload`
   if (typeof window === "undefined") return path
@@ -30,17 +32,20 @@ function tusEndpointForBook(bookUuid: string) {
 
 export function UploadFileDialog({
   book,
-  format,
+  defaultFormat,
   open,
   onOpenChange,
+  initialFiles,
 }: {
   book: BookWithRelations
-  format: Format
+  defaultFormat: BookFormat
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialFiles?: File[]
 }) {
   const t = useTranslation("UploadDialog")
   const c = useCommon()
+  const [format, setFormat] = useState(defaultFormat)
   const isAdd = !book[format]?.filepath
   const [metadataMode, setMetadataMode] = useState<MetadataFieldMode>("merge")
 
@@ -79,10 +84,7 @@ export function UploadFileDialog({
           ? isAdd
             ? t("audioDescription")
             : t("audioReplaceDescription")
-          : t("ebookDescription", {
-              action: isAdd ? t("add") : t("replace"),
-              format,
-            })
+          : ""
       }
       endpoint={tusEndpointForBook(book.uuid)}
       restrictions={{
@@ -93,6 +95,26 @@ export function UploadFileDialog({
       accept={format === "audiobook" ? audioAccept : epubAccept}
       multiple={format === "audiobook"}
       hint={format === "audiobook" ? t("audioHint") : t("ebookHint")}
+      initialFiles={initialFiles}
+      aboveZones={(files) => {
+        const kinds = files.map(
+          (file) => MediaType.fromPath(file.name ?? "")?.kind,
+        )
+        const hasEpub = kinds.includes("ebook")
+        const hasAudio = kinds.some(
+          (kind) => kind === "audio" || kind === "archive",
+        )
+        return (
+          <FormatPicker
+            book={book}
+            value={format}
+            onValueChange={setFormat}
+            disabled={
+              hasEpub ? ["audiobook"] : hasAudio ? ["ebook", "readaloud"] : []
+            }
+          />
+        )
+      }}
       buildMeta={buildMeta}
       onFinalize={format === "audiobook" ? handleFinalize : undefined}
       metadataMode={metadataMode}

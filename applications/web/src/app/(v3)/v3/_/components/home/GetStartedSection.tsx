@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { ImportBookDialog } from "@v3/_/components/books/ImportBookDialog"
-import { UploadBookDialog } from "@v3/_/components/books/UploadBookDialog"
+import { useOpenBookUpload } from "@v3/_/components/books/UploadBookProvider"
 import { ShelfEditor } from "@v3/_/components/shelves/ShelfEditor"
 import { Button } from "@v3/_/components/ui/button"
 import {
@@ -19,7 +19,6 @@ import { V3Link } from "@v3/_/components/v3-link"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { useIsTauri } from "@/app/(v3)/v3/_/hooks/use-is-tauri"
-import { useBookInSidePanel } from "@/app/(v3)/v3/_/hooks/use-open-book"
 import { type HomeSectionWithDetails } from "@/database/shelves"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
@@ -42,9 +41,8 @@ export function GetStartedSection({
   const canCreate = !!permissions?.bookCreate
   const canUpdateSettings = !!permissions?.settingsUpdate
 
-  const { setSelectedBookUuid } = useBookInSidePanel()
+  const openBookUpload = useOpenBookUpload()
 
-  const [uploadOpen, setUploadOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [shelfOpen, setShelfOpen] = useState(false)
 
@@ -87,7 +85,7 @@ export function GetStartedSection({
           <Button
             variant="default"
             onClick={() => {
-              setUploadOpen(true)
+              openBookUpload()
             }}
           >
             <icon.FileUpload className="mr-2 size-4" />
@@ -130,14 +128,6 @@ export function GetStartedSection({
           />
         )}
       </CardContent>
-
-      <UploadBookDialog
-        open={uploadOpen}
-        onOpenChange={setUploadOpen}
-        onBookCreated={(bookUuid) => {
-          void setSelectedBookUuid(bookUuid)
-        }}
-      />
 
       <ImportBookDialog open={importOpen} onOpenChange={setImportOpen} />
 

@@ -4,7 +4,7 @@ import Uppy, { type Meta, type UppyFile } from "@uppy/core"
 import useUppyEvent from "@uppy/react/lib/useUppyEvent"
 import useUppyState from "@uppy/react/lib/useUppyState"
 import Tus from "@uppy/tus"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { useGetMaxUploadChunkSizeQuery } from "@/store/api"
 
@@ -13,6 +13,16 @@ export type UppyFileType = UppyFile<Meta, Record<string, unknown>>
 type Restrictions = {
   maxNumberOfFiles?: number | null
   allowedFileTypes?: string[] | null
+}
+
+export function addFilesToUppy(uppy: Uppy, files: Iterable<File>) {
+  for (const file of files) {
+    try {
+      uppy.addFile({ name: file.name, type: file.type, data: file })
+    } catch (e) {
+      console.error(e)
+    }
+  }
 }
 
 export function useTusUpload({
@@ -41,6 +51,17 @@ export function useTusUpload({
     configureUppy?.(instance)
     return instance
   })
+
+  const maxNumberOfFiles = restrictions?.maxNumberOfFiles ?? null
+  const allowedFileTypes = restrictions?.allowedFileTypes?.join("\n")
+  useEffect(() => {
+    uppy.setOptions({
+      restrictions: {
+        maxNumberOfFiles,
+        allowedFileTypes: allowedFileTypes?.split("\n") ?? null,
+      },
+    })
+  }, [uppy, maxNumberOfFiles, allowedFileTypes])
 
   useUppyEvent(uppy, "complete", (result) => {
     setIsComplete(true)
