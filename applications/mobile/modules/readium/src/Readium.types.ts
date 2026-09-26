@@ -107,7 +107,8 @@ export type ReadiumContributor =
   | {
       name: ReadiumLocalizedString
       identifier?: string
-      sortAs?: string
+      /** iOS serializes this as a string, Android as a language map. */
+      sortAs?: ReadiumLocalizedString
       role?: string | string[]
       position?: number
       links?: ReadiumLink[]
@@ -117,7 +118,8 @@ export type ReadiumSubject =
   | string
   | {
       name: ReadiumLocalizedString
-      sortAs?: string
+      /** iOS serializes this as a string, Android as a language map. */
+      sortAs?: ReadiumLocalizedString
       code?: string
       scheme?: string
       links?: ReadiumLink[]

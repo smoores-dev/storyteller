@@ -217,18 +217,7 @@ export function parseLocalizedString(
     return ""
   }
 
-  if (locale in localizedString) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return localizedString[locale]!
-  }
-
-  const firstLocale =
-    // Localized strings all have at least one locale
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    Object.keys(localizedString)[0]!
-
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return localizedString[firstLocale]!
+  return localizedString[locale] ?? Object.values(localizedString)[0] ?? ""
 }
 
 export function readiumToStorytellerAuthors(
@@ -246,9 +235,11 @@ export function readiumToStorytellerAuthors(
         role: null,
       }
     }
+    const name = parseLocalizedString(a.name)
+
     return {
-      name: parseLocalizedString(a.name),
-      file_as: a.sortAs ?? parseLocalizedString(a.name),
+      name,
+      file_as: parseLocalizedString(a.sortAs) || name,
       role: Array.isArray(a.role) ? a.role.join(", ") : (a.role ?? null),
     }
   })

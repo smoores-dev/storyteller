@@ -15,13 +15,21 @@ export async function ensureBooksDirectory() {
   }
 }
 
-export async function importBookFile(uuid: UUID, externalPath: string) {
+export type BookFileImportStage = "copying" | "extracting"
+
+export async function importBookFile(
+  uuid: UUID,
+  externalPath: string,
+  onStage?: (stage: BookFileImportStage) => void,
+) {
   const archiveFile = new File(getLocalBookArchiveUrl(uuid, "readaloud"))
   // make sure the destination directory exists without materialising the file
   archiveFile.parentDirectory.create({ intermediates: true, idempotent: true })
 
+  onStage?.("copying")
   await FileSystem.copyAsync({ from: externalPath, to: archiveFile.uri })
 
+  onStage?.("extracting")
   await extractArchive(
     archiveFile.uri,
     getLocalBookExtractedUrl(uuid, "readaloud"),
@@ -31,12 +39,14 @@ export async function importBookFile(uuid: UUID, externalPath: string) {
 export async function copyReadaloudToEbook(uuid: UUID) {
   const ebookArchiveFile = new File(getLocalBookArchiveUrl(uuid, "ebook"))
   ebookArchiveFile.parentDirectory.create({ intermediates: true })
-  new File(getLocalBookArchiveUrl(uuid, "readaloud")).copy(ebookArchiveFile)
+  await new File(getLocalBookArchiveUrl(uuid, "readaloud")).copy(
+    ebookArchiveFile,
+  )
 
   const ebookExtractedDirectory = new Directory(
     getLocalBookExtractedUrl(uuid, "ebook"),
   )
-  new Directory(getLocalBookExtractedUrl(uuid, "readaloud")).copy(
+  await new Directory(getLocalBookExtractedUrl(uuid, "readaloud")).copy(
     ebookExtractedDirectory,
   )
 }
@@ -125,38 +135,134 @@ export async function deleteLocalBookFiles(
   bookUuid: UUID,
   format?: "ebook" | "readaloud" | "audiobook",
 ) {
+  const deletions: Promise<void>[] = []
+
   if (!format || format === "readaloud") {
-    FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "readaloud"), {
-      idempotent: true,
-    })
-    FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "readaloud"), {
-      idempotent: true,
-    })
+    deletions.push(
+      FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "readaloud"), {
+        idempotent: true,
+      }),
+      FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "readaloud"), {
+        idempotent: true,
+      }),
+    )
   }
   if (!format || format === "ebook") {
-    FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "ebook"), {
-      idempotent: true,
-    })
-    FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "ebook"), {
-      idempotent: true,
-    })
+    deletions.push(
+      FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "ebook"), {
+        idempotent: true,
+      }),
+      FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "ebook"), {
+        idempotent: true,
+      }),
+    )
   }
   if (!format || format === "audiobook") {
-    FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "audiobook"), {
-      idempotent: true,
-    })
-    FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "audiobook"), {
-      idempotent: true,
-    })
+    deletions.push(
+      FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "audiobook"), {
+        idempotent: true,
+      }),
+      FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "audiobook"), {
+        idempotent: true,
+      }),
+    )
   }
   if (!format) {
-    FileSystem.deleteAsync(getOldLocalBookCoverUrl(bookUuid), {
-      idempotent: true,
-    })
-    FileSystem.deleteAsync(getOldLocalAudioBookCoverUrl(bookUuid), {
-      idempotent: true,
-    })
+    deletions.push(
+      FileSystem.deleteAsync(getOldLocalBookCoverUrl(bookUuid), {
+        idempotent: true,
+      }),
+      FileSystem.deleteAsync(getOldLocalAudioBookCoverUrl(bookUuid), {
+        idempotent: true,
+      }),
+    )
   }
+
+  await Promise.all(deletions)
+  await deleteEmptyBookDirectories(bookUuid)
+}
+
+/**
+ * Deletes a directory only when it holds nothing, so that pruning a book's own
+ * directories can never take a sibling format's files with it. Failures are
+ * ignored: a leftover directory is cosmetic and must not fail the operation
+ * that triggered the cleanup.
+ */
+async function deleteDirectoryIfEmpty(directory: Directory) {
+  try {
+    if (!directory.exists || directory.list().length > 0) return
+    directory.delete()
+  } catch {
+    // pass
+  }
+}
+
+/**
+ * Prune the directories a book's files lived in, leaving any that still hold
+ * data alone.
+ */
+async function deleteEmptyBookDirectories(bookUuid: UUID) {
+  const archiveRoot = new File(getLocalBookArchiveUrl(bookUuid, "readaloud"))
+    .parentDirectory.parentDirectory
+
+  for (const format of ["readaloud", "ebook", "audiobook"] as const) {
+    await deleteDirectoryIfEmpty(
+      new File(getLocalBookArchiveUrl(bookUuid, format)).parentDirectory,
+    )
+  }
+
+  await deleteDirectoryIfEmpty(archiveRoot)
+  await deleteDirectoryIfEmpty(
+    new Directory(getLocalBookExtractedUrl(bookUuid, "readaloud"))
+      .parentDirectory,
+  )
+}
+
+/**
+ * Remove everything a local import may have written, including the cover image
+ * extracted before the book record exists.
+ */
+export async function deleteImportedBookFiles(
+  bookUuid: UUID,
+  coverUrl?: string,
+) {
+  await deleteLocalBookFiles(bookUuid)
+
+  if (coverUrl) {
+    await FileSystem.deleteAsync(coverUrl, { idempotent: true })
+  }
+}
+
+/**
+ * Remove what a finished local import does not need at runtime: the archive the
+ * book was unpacked from, since reading reads the extracted tree, and for a
+ * plain EPUB the readaloud copies that were duplicated before the book turned
+ * out to have no media overlays. The file the user pointed the picker at is
+ * never touched — only the copy made inside the app directory.
+ */
+export async function deleteImportScratchFiles(
+  bookUuid: UUID,
+  format: "ebook" | "readaloud",
+) {
+  const deletions = [
+    FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, format), {
+      idempotent: true,
+    }),
+  ]
+
+  if (format === "ebook") {
+    deletions.push(
+      FileSystem.deleteAsync(getLocalBookExtractedUrl(bookUuid, "readaloud"), {
+        idempotent: true,
+      }),
+      FileSystem.deleteAsync(getLocalBookArchiveUrl(bookUuid, "readaloud"), {
+        idempotent: true,
+      }),
+    )
+  }
+
+  await Promise.all(deletions)
+  await deleteEmptyBookDirectories(bookUuid)
 }
 
 export async function ensureCoversDirectory() {

@@ -1,4 +1,4 @@
-import { ArrowDown } from "lucide-react-native"
+import { ArrowDown, type LucideIcon } from "lucide-react-native"
 import { useDeferredValue } from "react"
 import { View, type ViewStyle } from "react-native"
 import { AnimatedCircularProgress } from "react-native-circular-progress"
@@ -13,6 +13,7 @@ type Props = {
   progress: number
   size: number
   style: ViewStyle
+  icon?: LucideIcon
 }
 
 export function DownloadingIndicator({
@@ -20,6 +21,7 @@ export function DownloadingIndicator({
   progress,
   size,
   style,
+  icon: IconComponent = ArrowDown,
 }: Props) {
   const { foreground, background } = useColorTheme()
   const deferredProgress = useDeferredValue(progress)
@@ -43,7 +45,7 @@ export function DownloadingIndicator({
         tintColor={foreground}
         backgroundColor={background}
       >
-        {() => <Icon as={ArrowDown} size={size * 0.8} color={foreground} />}
+        {() => <Icon as={IconComponent} size={size * 0.8} color={foreground} />}
       </AnimatedCircularProgress>
     </View>
   )

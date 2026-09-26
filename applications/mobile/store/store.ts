@@ -21,11 +21,13 @@ import { localApi } from "./localApi"
 import { serverApi } from "./serverApi"
 import { bookshelfSlice } from "./slices/bookshelfSlice"
 import { sleepTimerSlice } from "./slices/sleepTimerSlice"
+import { transferFeedbackSlice } from "./slices/transferFeedbackSlice"
 
 export const store = configureStore({
   reducer: {
     bookshelf: bookshelfSlice.reducer,
     sleepTimer: sleepTimerSlice.reducer,
+    transferFeedback: transferFeedbackSlice.reducer,
     [serverApi.reducerPath]: serverApi.reducer,
     [localApi.reducerPath]: localApi.reducer,
   },

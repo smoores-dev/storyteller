@@ -1,5 +1,4 @@
 import { type ConfigContext, type ExpoConfig } from "expo/config"
-import "tsx/cjs"
 
 import packageInfo from "./package.json"
 

@@ -5,6 +5,7 @@ import { router } from "expo-router"
 import { createBook } from "@/database/books"
 import { type BookToCreator } from "@/database/schema"
 import { getStatusByName } from "@/database/statuses"
+import { describeError } from "@/describeError"
 import { logger } from "@/logger"
 import {
   buildAudiobookManifest,
@@ -18,29 +19,37 @@ import { bookImported } from "@/store/actions"
 import { localApi } from "@/store/localApi"
 import {
   copyReadaloudToEbook,
+  deleteImportedBookFiles,
+  deleteImportScratchFiles,
   ensureCoversDirectory,
   getLocalBookCoverUrl,
   getLocalBookExtractedUrl,
   importBookFile,
 } from "@/store/persistence/files"
-import { randomUUID } from "@/uuid"
+import {
+  type BookImportStage,
+  transferFeedbackSlice,
+} from "@/store/slices/transferFeedbackSlice"
+import { randomUUID, type UUID } from "@/uuid"
 
 import { startAppListening } from "./listenerMiddleware"
 
-startAppListening({
-  actionCreator: bookImported,
-  effect: async (action, listenerApi) => {
-    // if we are already on the home screen, don't replace it
-    if (action.payload.from === "open-with") {
-      router.replace("/")
-    }
+async function importLocalBook(
+  uuid: UUID,
+  url: string,
+  setStage: (stage: BookImportStage) => void,
+) {
+  // Hoisted out of the try so a failed import can delete the cover it wrote for
+  // a book that never made it into the database.
+  let ebookCoverUrl: string | undefined = undefined
 
-    const { url } = action.payload
+  try {
     logger.debug(`Importing local book file from ${url}`)
-    const uuid = randomUUID()
 
-    await importBookFile(uuid, url)
+    await importBookFile(uuid, url, setStage)
     logger.debug("Copied and extracted file")
+
+    setStage("parsing")
 
     const epubManifest = await openPublication(
       uuid,
@@ -79,8 +88,6 @@ startAppListening({
       resource.rel?.includes("cover"),
     )
 
-    let ebookCoverUrl: string | undefined = undefined
-
     if (coverLink) {
       const ext = Paths.extname(coverLink.href)
       const coverImage = await getResource(uuid, coverLink)
@@ -101,7 +108,7 @@ startAppListening({
 
     // if (audiobookCoverLink && format === "readaloud") {
     //   const ext = Paths.extname(audiobookCoverLink.href)
-    //   const coverImage = await getResource(uuid, audiobookCoverLink)
+    //   const coverImage = await getResource(uuid, coverLink)
     //   await ensureCoversDirectory()
     //   audiobookCoverUrl = getLocalBookCoverUrl(uuid, ext)
     //   new File(audiobookCoverUrl).write(coverImage, {
@@ -140,6 +147,8 @@ startAppListening({
       }))
 
     const toRead = await getStatusByName("To read")
+
+    setStage("saving")
 
     await createBook(
       {
@@ -195,10 +204,54 @@ startAppListening({
     )
     logger.debug("Saved new record to database")
 
-    listenerApi.dispatch(
-      localApi.util.invalidateTags(["Books", "Tags", "Creators", "Series"]),
-    )
+    await deleteImportScratchFiles(uuid, format).catch((e: unknown) => {
+      logger.error(`Failed to clean up scratch files for book ${uuid}`)
+      logger.error({ err: e })
+    })
+  } catch (e) {
+    try {
+      await deleteImportedBookFiles(uuid, ebookCoverUrl)
+    } catch (cleanupError) {
+      logger.error(`Failed to clean up files for partial import ${uuid}`)
+      logger.error({ err: cleanupError })
+    }
 
-    router.push({ pathname: "/book/[uuid]", params: { uuid } })
+    throw e
+  }
+}
+
+startAppListening({
+  actionCreator: bookImported,
+  effect: async (action, listenerApi) => {
+    // if we are already on the home screen, don't replace it
+    if (action.payload.from === "open-with") {
+      router.replace("/")
+    }
+
+    const uuid = randomUUID()
+
+    try {
+      await importLocalBook(uuid, action.payload.url, (stage) =>
+        listenerApi.dispatch(
+          transferFeedbackSlice.actions.bookImportStageChanged(stage),
+        ),
+      )
+
+      listenerApi.dispatch(
+        localApi.util.invalidateTags(["Books", "Tags", "Creators", "Series"]),
+      )
+
+      router.push({ pathname: "/book/[uuid]", params: { uuid } })
+    } catch (e) {
+      logger.error("Failed to import local book file")
+      logger.error({ err: e })
+      listenerApi.dispatch(
+        transferFeedbackSlice.actions.bookTransferFailed(
+          `Failed to import book: ${describeError(e)}`,
+        ),
+      )
+    } finally {
+      listenerApi.dispatch(transferFeedbackSlice.actions.bookImportSettled())
+    }
   },
 })
