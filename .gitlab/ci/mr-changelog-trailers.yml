@@ -1,0 +1,176 @@
+# Adds `Changelog-<package>: <kind>` trailers to the description of a merge request
+# that carries a Yarn version file in `.yarn/versions/`, so that the release
+# jobs in `.gitlab/ci/publish-*.yml` can turn them into release notes.
+mr-changelog-trailers:
+  stage: check
+  image: alpine:latest
+  variables:
+    GIT_STRATEGY: none # no checkout; everything comes from the API
+  allow_failure: true
+  timeout: 5m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - |
+      set -eu
+
+      API="$CI_API_V4_URL"
+      MR_PROJECT="${CI_MERGE_REQUEST_PROJECT_ID:?CI_MERGE_REQUEST_PROJECT_ID is not set}"
+      MR_IID="${CI_MERGE_REQUEST_IID:?CI_MERGE_REQUEST_IID is not set}"
+      HEAD_SHA="${CI_COMMIT_SHA:?CI_COMMIT_SHA is not set}"
+      BASE_SHA="${CI_MERGE_REQUEST_DIFF_BASE_SHA:?CI_MERGE_REQUEST_DIFF_BASE_SHA is not set}"
+      VERSIONS_DIR=".yarn/versions"
+
+      if [ -z "${CI_API_TOKEN:-}" ]; then
+        echo "CI_API_TOKEN is empty: this pipeline cannot update the merge request." >&2
+        exit 1
+      fi
+
+      work=$(mktemp -d)
+      trap 'rm -rf "$work"' EXIT
+
+      # Append "<blob id> <path>" for every file in $VERSIONS_DIR at $1 to $2. A
+      # missing directory (right after a release consumed every version file) simply
+      # lists nothing.
+      list_tree() (
+        ref=$1
+        out=$2
+        page=1
+        while [ "$page" -le 20 ]; do
+          if ! status=$(curl -s -m 30 -o "$work/body" -w '%{http_code}' --get \
+            --data-urlencode "path=$VERSIONS_DIR" \
+            --data-urlencode "ref=$ref" \
+            --data-urlencode "per_page=100" \
+            --data-urlencode "page=$page" \
+            "$API/projects/$MR_PROJECT/repository/tree"); then
+            echo "GitLab API request failed (http status $status)" >&2
+            exit 1
+          fi
+          case "$status" in
+            200)
+              true
+              ;;
+            404)
+              echo "$VERSIONS_DIR does not exist at $ref"
+              exit 0
+              ;;
+            *)
+              echo "Listing $VERSIONS_DIR at $ref failed with status $status" >&2
+              exit 1
+              ;;
+          esac
+          if ! jq -r '.[] | select(.type == "blob") | "\(.id) \(.path)"' "$work/body" >> "$out"; then
+            echo "Could not parse the file listing of $VERSIONS_DIR at $ref" >&2
+            exit 1
+          fi
+          if [ "$(jq 'length' "$work/body")" -lt 100 ]; then
+            exit 0
+          fi
+          page=$((page + 1))
+        done
+      )
+
+      : > "$work/head"
+      : > "$work/base"
+      list_tree "$HEAD_SHA" "$work/head"
+      list_tree "$BASE_SHA" "$work/base"
+
+      # A version file belongs to this merge request when its blob is not present,
+      # byte-identical, at the base of the merge request.
+      sort "$work/head" -o "$work/head"
+      sort "$work/base" -o "$work/base"
+      comm -23 "$work/head" "$work/base" > "$work/mine"
+
+      if [ ! -s "$work/mine" ]; then
+        echo "No file in $VERSIONS_DIR was added or changed by this merge request."
+        exit 0
+      fi
+
+      : > "$work/content"
+      while read -r _sha path; do
+        encoded=$(printf '%s' "$path" | sed 's|/|%2F|g')
+        url="$API/projects/$MR_PROJECT/repository/files/$encoded/raw"
+        if ! content=$(curl -sf -m 30 --get --data-urlencode "ref=$HEAD_SHA" "$url"); then
+          echo "Could not read $path at $HEAD_SHA" >&2
+          exit 1
+        fi
+        printf '%s\n' "$content" >> "$work/content"
+      done < "$work/mine"
+
+      # Turn each `  "@storyteller-platform/web": patch` line into a trailer, keeping
+      # the biggest bump per package. patch -> fixed, minor -> added, major -> breaking.
+      awk '
+        {
+          line = $0
+          sub(/^[ \t]+/, "", line)
+          sub(/[ \t]+$/, "", line)
+          sep = index(line, ": ")
+          if (sep < 2) next
+          bump = substr(line, sep + 2)
+          sub(/^[ \t]+/, "", bump)
+          sub(/[ \t]+$/, "", bump)
+          if (bump == "patch") { rank = 1; kind = "fixed" }
+          else if (bump == "minor") { rank = 2; kind = "added" }
+          else if (bump == "major") { rank = 3; kind = "breaking" }
+          else next
+          key = substr(line, 1, sep - 1)
+          sub(/^"/, "", key)
+          sub(/"$/, "", key)
+          count = split(key, parts, "/")
+          name = parts[count]
+          if (name == "") next
+          if (!(name in best) || rank > best[name]) {
+            best[name] = rank
+            trailer[name] = "Changelog-" name ": " kind
+          }
+        }
+        END {
+          for (name in best) print trailer[name]
+        }
+      ' "$work/content" | sort > "$work/block"
+
+      if [ ! -s "$work/block" ]; then
+        echo "The version files of this merge request declare no release."
+        exit 0
+      fi
+
+      echo "Changelog trailers for this merge request:"
+      sed 's/^/  /' "$work/block"
+
+      if ! mr=$(curl -sf -m 30 -H "PRIVATE-TOKEN: $CI_API_TOKEN" \
+        "$API/projects/$MR_PROJECT/merge_requests/$MR_IID"); then
+        echo "Could not read merge request !$MR_IID (is CI_API_TOKEN valid and not protected?)" >&2
+        exit 1
+      fi
+      description=$(printf '%s' "$mr" | jq -r '.description // ""')
+
+      # Anything already at the end of the description was written or approved by a
+      # human, so we leave the trailers alone.
+      last=$(printf '%s\n' "$description" | awk 'NF { line = $0 } END { print line }')
+      case "$last" in
+        Changelog-*)
+          echo "The merge request description already ends with changelog trailers."
+          exit 0
+          ;;
+      esac
+
+      if [ -n "$description" ]; then
+        {
+          printf '%s\n\n' "$description"
+          cat "$work/block"
+        } > "$work/new_description"
+      else
+        cat "$work/block" > "$work/new_description"
+      fi
+
+      if ! curl -sf -m 30 -X PUT \
+        -H "PRIVATE-TOKEN: $CI_API_TOKEN" \
+        --data-urlencode "description@$work/new_description" \
+        "$API/projects/$MR_PROJECT/merge_requests/$MR_IID" > /dev/null; then
+        echo "Could not update the description of merge request !$MR_IID" >&2
+        exit 1
+      fi
+
+      echo "Updated the description of merge request !$MR_IID"
