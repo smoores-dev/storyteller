@@ -4,7 +4,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake"
 import * as SecureStore from "expo-secure-store"
 import { sql } from "kysely"
 
-import { getBook } from "@/database/books"
+import { getBook, removeBookDownloads } from "@/database/books"
 import { db, rawDb } from "@/database/db"
 import { getServer } from "@/database/servers"
 import { describeError } from "@/describeError"
@@ -23,6 +23,7 @@ import type {
 } from "@/modules/readium/src/Readium.types"
 import { localApi } from "@/store/localApi"
 import {
+  deleteLocalBookFiles,
   getLocalBookArchiveUrl,
   getLocalBookExtractedUrl,
 } from "@/store/persistence/files"
@@ -226,6 +227,14 @@ startAppListening({
         )
         logger.debug(`Building audiobook manifest`)
         const audioManifest = await buildAudiobookManifest(bookUuid)
+
+        if (format === "readaloud" && !audioManifest.readingOrder.length) {
+          // The audio tracks are derived from the media overlays, so an empty
+          // reading order means they were never parsed. Caching that would leave
+          // the book readable with dead audio, so fail the download instead.
+          throw new Error(`Readaloud for book ${bookUuid} has no audio tracks`)
+        }
+
         logger.debug("Retrieving overlay clips")
         const clips = await Storyteller.getOverlayClips(bookUuid)
         logger.debug("Retrieving positions")
@@ -289,6 +298,15 @@ startAppListening({
       })
       deactivateKeepAwake(`download.${bookUuid}.${format}`)
       logger.debug(`Download complete`)
+
+      if (format === "readaloud") {
+        logger.debug(`Removing standalone formats of ${bookUuid}`)
+
+        for (const standaloneFormat of ["ebook", "audiobook"] as const) {
+          await removeBookDownloads(bookUuid, standaloneFormat)
+          await deleteLocalBookFiles(bookUuid, standaloneFormat)
+        }
+      }
 
       listenerApi.dispatch(
         localApi.util.invalidateTags([{ type: "Books", id: bookUuid }]),

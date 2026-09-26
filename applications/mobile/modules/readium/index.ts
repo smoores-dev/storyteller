@@ -169,7 +169,12 @@ export async function getClip(
       locator,
     )
     if (!readaloudLocator) return null
-    return await ReadiumModule.getClip(book.uuid, readaloudLocator)
+
+    try {
+      return await ReadiumModule.getClip(book.uuid, readaloudLocator)
+    } catch {
+      return null
+    }
   }
 }
 

@@ -245,6 +245,9 @@ export default function BookDetailsScreen() {
                         const isActiveDownload =
                           status === "DOWNLOADING" || status === "QUEUED"
                         const isDownloaded = downloadedFormats.includes(format)
+                        const unavailable =
+                          format !== "readaloud" &&
+                          downloadedFormats.includes("readaloud")
                         const label = isDownloaded
                           ? `Remove ${format}`
                           : isActiveDownload
@@ -256,8 +259,12 @@ export default function BookDetailsScreen() {
                           title: label,
                           ...(isDownloaded
                             ? { attributes: { destructive: true } }
-                            : {}),
+                            : unavailable
+                              ? { attributes: { disabled: true } }
+                              : {}),
                           onPress: () => {
+                            if (unavailable) return
+
                             if (isActiveDownload) {
                               cancelDownload({
                                 bookUuid: book.uuid,
@@ -272,7 +279,7 @@ export default function BookDetailsScreen() {
                             }
                             downloadBook({
                               bookUuid: book.uuid,
-                              format: format,
+                              format,
                             })
                           },
                         }

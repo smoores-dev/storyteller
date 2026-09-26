@@ -59,6 +59,9 @@ object BookService {
         )
 
     private var publications: MutableMap<String, Publication> = mutableMapOf()
+
+    private var publicationDirectories: MutableMap<String, String> = mutableMapOf()
+
     private var clips: MutableMap<String, List<OverlayPar>> = mutableMapOf()
 
     fun extractArchive(archiveUrl: URL, extractedUrl: URL) {
@@ -216,8 +219,11 @@ object BookService {
     }
 
     suspend fun openPublication(bookUuid: String, url: URL, clips: List<OverlayPar>?): Publication {
-        if (publications.contains(bookUuid)) {
-            return publications[bookUuid]!!
+        val directory = url.toString().trimEnd('/')
+        val cached = publications[bookUuid]
+
+        if (cached != null && publicationDirectories[bookUuid] == directory) {
+            return cached
         }
 
         val file = File(url.toURI())
@@ -278,6 +284,7 @@ object BookService {
                 .getOrElse { throw Exception("Failed to open publication at $url: ${it.message}") }
 
         publications[bookUuid] = publication
+        publicationDirectories[bookUuid] = directory
         if (clips == null) {
             makeMediaOverlays(bookUuid, publication)
         } else {

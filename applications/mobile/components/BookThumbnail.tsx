@@ -115,29 +115,40 @@ export function BookThumbnail({
           {
             id: "downloads",
             title: "Downloads",
-            subactions: availableFormats.map((format) => ({
-              id: `download-${format}`,
-              title: downloadedFormats.includes(format)
-                ? `Remove ${format}`
-                : `${format[0]?.toUpperCase()}${format.slice(1)}`,
-              ...(downloadedFormats.includes(format)
-                ? { attributes: { destructive: true } }
-                : {}),
-              onPress: () => {
-                if (downloadedFormats.includes(format)) {
-                  deleteBook({
+            subactions: availableFormats.map((format) => {
+              const isDownloaded = downloadedFormats.includes(format)
+              const unavailable =
+                format !== "readaloud" &&
+                downloadedFormats.includes("readaloud")
+
+              return {
+                id: `download-${format}`,
+                title: isDownloaded
+                  ? `Remove ${format}`
+                  : `${format[0]?.toUpperCase()}${format.slice(1)}`,
+                ...(isDownloaded
+                  ? { attributes: { destructive: true } }
+                  : unavailable
+                    ? { attributes: { disabled: true } }
+                    : {}),
+                onPress: () => {
+                  if (unavailable) return
+
+                  if (isDownloaded) {
+                    deleteBook({
+                      bookUuid: book.uuid,
+                      format,
+                      deleteRecord: book.serverUuid === null,
+                    })
+                    return
+                  }
+                  downloadBook({
                     bookUuid: book.uuid,
                     format,
-                    deleteRecord: book.serverUuid === null,
                   })
-                  return
-                }
-                downloadBook({
-                  bookUuid: book.uuid,
-                  format: format,
-                })
-              },
-            })),
+                },
+              }
+            }),
           },
         ]
       : []),

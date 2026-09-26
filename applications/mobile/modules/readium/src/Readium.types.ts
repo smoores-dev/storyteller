@@ -93,6 +93,8 @@ export type ReadiumClip = {
   start: number
   end: number
   duration: number
+  /** The XHTML resource the clip is synced to. Parsed overlays only. */
+  textResource?: string
   locator: ReadiumLocator
 }
 

@@ -35,6 +35,7 @@ final class BookService {
     let retriever: AssetRetriever
     private let opener: PublicationOpener
     private var publications: [String : Publication] = [:]
+    private var publicationDirectories: [String : String] = [:]
     private var clips: [String : [OverlayPar]] = [:]
 
     public static let shared = BookService()
@@ -331,9 +332,15 @@ final class BookService {
         clips[bookId] = bookClips
     }
 
+    private static func directoryKey(_ url: FileURL) -> String {
+        return url.string.hasSuffix("/") ? String(url.string.dropLast()) : url.string
+    }
+
     /// Opens the Readium 2 Publication at the given `url`.
     func openPublication(for bookId: String, at url: FileURL, clips: [OverlayPar]?) async throws -> Publication {
-        if let publication = getPublication(for: bookId) {
+        let directory = BookService.directoryKey(url)
+
+        if let publication = getPublication(for: bookId), publicationDirectories[bookId] == directory {
             return publication
         }
 
@@ -347,6 +354,7 @@ final class BookService {
             let pub = try pubResult.get()
             try checkIsReadable(publication: pub)
             publications[bookId] = pub
+            publicationDirectories[bookId] = directory
             if clips == nil {
                 try await makeMediaOverlays(for: bookId, pub: pub)
             } else {
