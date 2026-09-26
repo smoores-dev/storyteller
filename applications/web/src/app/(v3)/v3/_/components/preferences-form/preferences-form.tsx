@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { type Locale } from "next-intl"
 import { type SingleParser, parseAsString, useQueryState } from "nuqs"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useForm } from "react-hook-form"
+import { type FieldErrors, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
 
@@ -14,8 +14,9 @@ import { Button } from "@v3/_/components/ui/button"
 import {
   NavSidebar,
   NavSidebarBody,
-  NavSidebarFooterLink,
+  NavSidebarEmpty,
   NavSidebarGroup,
+  NavSidebarHeader,
   NavSidebarList,
   NavSidebarSearch,
   type NavSidebarTab,
@@ -122,8 +123,14 @@ export function PreferencesForm({
     }
   }
 
-  const onInvalid = () => {
-    toast.error(t("failedToSave"))
+  const onInvalid = (
+    errors: FieldErrors<z.output<typeof UserPreferencesFormSchema>>,
+  ) => {
+    toast.error(t("failedToSave"), {
+      description: Object.entries(errors)
+        .map(([field, error]) => `${field}: ${error.message}`)
+        .join("\n"),
+    })
   }
 
   const allTabs = useMemo<SidebarTabDef[]>(
@@ -183,12 +190,20 @@ export function PreferencesForm({
   const matchingTabs = useMemo(() => {
     if (!matchingSections) return null
 
-    return new Set<PreferenceTab>(
-      Array.from(matchingSections).map(
-        (key) => key.split(".")[0] as PreferenceTab,
-      ),
+    const query = searchQuery.toLowerCase()
+    const sectionTabs = new Set(
+      Array.from(matchingSections).map((key) => key.split(".")[0]),
     )
-  }, [matchingSections])
+    return new Set<PreferenceTab>(
+      allTabs
+        .filter(
+          (tab) =>
+            sectionTabs.has(tab.value) ||
+            tab.label.toLowerCase().includes(query),
+        )
+        .map((tab) => tab.value as PreferenceTab),
+    )
+  }, [matchingSections, allTabs, searchQuery])
 
   const isMatch: IsMatch = (tab, section) =>
     !matchingSections || matchingSections.has(`${tab}.${section}`)
@@ -210,11 +225,7 @@ export function PreferencesForm({
   }, [matchingTabs, setActiveTab])
 
   const filteredTabs = matchingTabs
-    ? allTabs.filter(
-        (tab) =>
-          userTabs.includes(tab.value) ||
-          matchingTabs.has(tab.value as PreferenceTab),
-      )
+    ? allTabs.filter((tab) => matchingTabs.has(tab.value as PreferenceTab))
     : allTabs
 
   const activeTabDef = allTabs.find((t) => t.value === activeTab)
@@ -387,7 +398,26 @@ function PreferencesSidebar({
 
   return (
     <NavSidebar>
-      <NavSidebarBody>
+      <NavSidebarHeader
+        title={t("title")}
+        link={
+          canUpdateSettings
+            ? {
+                href: "/settings?tab=files",
+                icon: icon.Settings,
+                label: t("settingsPage"),
+              }
+            : undefined
+        }
+      />
+
+      <NavSidebarBody className="pt-0">
+        <NavSidebarSearch
+          placeholder={t("searchPreferences")}
+          value={searchQuery}
+          onChange={onSearchChange}
+        />
+
         {userSidebarTabs.length > 0 && (
           <NavSidebarGroup label={t("sidebar.user")}>
             <NavSidebarList
@@ -398,28 +428,20 @@ function PreferencesSidebar({
           </NavSidebarGroup>
         )}
 
-        <NavSidebarGroup label={t("sidebar.preferences")}>
-          <NavSidebarSearch
-            placeholder={t("searchPreferences")}
-            value={searchQuery}
-            onChange={onSearchChange}
-          />
+        {prefSidebarTabs.length > 0 && (
+          <NavSidebarGroup label={t("sidebar.preferences")}>
+            <NavSidebarList
+              tabs={prefSidebarTabs}
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+            />
+          </NavSidebarGroup>
+        )}
 
-          <NavSidebarList
-            tabs={prefSidebarTabs}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-          />
-        </NavSidebarGroup>
+        {tabs.length === 0 && (
+          <NavSidebarEmpty>{t("sidebar.noMatches")}</NavSidebarEmpty>
+        )}
       </NavSidebarBody>
-
-      {canUpdateSettings && (
-        <NavSidebarFooterLink
-          href="/settings?tab=library"
-          icon={icon.Settings}
-          label={t("settingsPage")}
-        />
-      )}
     </NavSidebar>
   )
 }

@@ -61,21 +61,35 @@ export const UserPreferencesSchema = z.object({
 
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>
 
+const NON_NULLABLE_KEYS = [
+  "locale",
+] as const satisfies (keyof UserPreferences)[]
+
 export const UserPreferencesFormSchema = UserPreferencesSchema.extend({
   defaultView: UserPreferencesSchema.shape.defaultView.nullable(),
   colorMode: UserPreferencesSchema.shape.colorMode.nullable(),
+  shellTheme: UserPreferencesSchema.shape.shellTheme.nullable(),
   gridCoverDisplay: UserPreferencesSchema.shape.gridCoverDisplay.nullable(),
   gridCardSize: UserPreferencesSchema.shape.gridCardSize.nullable(),
   doubleCoverAlignment:
     UserPreferencesSchema.shape.doubleCoverAlignment.nullable(),
   coverFit: UserPreferencesSchema.shape.coverFit.nullable(),
   bookDetailDisplay: UserPreferencesSchema.shape.bookDetailDisplay.nullable(),
+  bookDetail3dView: UserPreferencesSchema.shape.bookDetail3dView.nullable(),
+  bookDetail3dViewAudio:
+    UserPreferencesSchema.shape.bookDetail3dViewAudio.nullable(),
   ratingIcon: UserPreferencesSchema.shape.ratingIcon.nullable(),
   bookOpenTarget: UserPreferencesSchema.shape.bookOpenTarget.nullable(),
+  accentColor: UserPreferencesSchema.shape.accentColor.nullable(),
   ratingDimensions: UserPreferencesSchema.shape.ratingDimensions.nullable(),
+  defaultStatusUuid: UserPreferencesSchema.shape.defaultStatusUuid.nullable(),
   layoutAnimations: UserPreferencesSchema.shape.layoutAnimations.nullable(),
   animatePanelOpen: UserPreferencesSchema.shape.animatePanelOpen.nullable(),
-})
+} satisfies Record<
+  Exclude<keyof UserPreferences, (typeof NON_NULLABLE_KEYS)[number]>,
+  // oxlint-disable-next-line typescript/no-explicit-any
+  z.ZodNullable<any>
+>)
 
 export type UserPreferencesForm = z.infer<typeof UserPreferencesFormSchema>
 

@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
+import type { Prettify } from "@/assets/library/scanner/types"
+
 export function entries<
   const T extends Record<string, unknown>,
   const KeepUndefined extends boolean = false,
 >(
   obj: T,
   keepUndefined?: KeepUndefined,
-): T extends T ? Entries<T, KeepUndefined> : never {
+): T extends T ? Prettify<Entries<T, KeepUndefined>> : never {
   const newObj = Object.entries(obj)
 
   if (keepUndefined) {
@@ -32,6 +34,7 @@ export type Entries<
       : never,
 > = {
   [K in AcceptedKeys]-?: [
+    K,
     ValueFilter extends undefined
       ? KeepUndefined extends true
         ? T[K]

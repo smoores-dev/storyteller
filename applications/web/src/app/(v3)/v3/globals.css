@@ -132,7 +132,7 @@
   /* --radius-card: var(--radius-card);
   --radius-cover: var(--radius-cover); */
 
-  --radius-sm: calc(var(--radius) - 6px);
+  --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 2px);

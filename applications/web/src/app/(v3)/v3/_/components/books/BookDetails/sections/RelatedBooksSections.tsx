@@ -56,12 +56,13 @@ function RelatedBooksRow({
         {books.map((book) => (
           <div
             key={book.uuid}
-            className="w-[110px] shrink-0 snap-mandatory snap-start [&_h3]:h-[2lh]! [&_h3]:text-sm"
+            className="w-[110px] shrink-0 snap-mandatory snap-start"
           >
             <BookCard
               book={book}
               displayFields={displayFields}
               onClick={handleClick}
+              gridCardSize="smallest"
             />
           </div>
         ))}

@@ -412,6 +412,9 @@
     "deleteDescription": "Bestanden in je assets-map worden verwijderd. Dit kan niet ongedaan worden.",
     "clearCacheTitle": "Cache wissen voor {count} boek(en)?",
     "clearCacheDescription": "Verwijdert verwerkte audio, transcripties en synchronisatie-gegevens uit de cache. Bronbestanden blijven behouden.",
+    "clearCacheMeasuring": "Cache wordt gemeten…",
+    "clearCacheEmpty": "Er staat niets in de cache voor {count, plural, one {dit boek} other {deze boeken}}.",
+    "clearCacheUsage": "Dit maakt {size} vrij.",
     "processTitle": "Verwerken starten voor {count} boek(en)?",
     "processDescription": "Start de verwerkingspijplijn voor de geselecteerde boeken.",
     "upgradeTitle": "EPUB upgraden voor {count} boek(en)?",
@@ -605,8 +608,9 @@
     "searchSettings": "Instellingen zoeken...",
     "formHasErrors": "{count, plural, one {# probleem} other {# problemen}}",
     "sidebar": {
-      "settings": "Instellingen",
-      "administration": "Beheer"
+      "settings": "Configuratie",
+      "administration": "Beheer",
+      "noMatches": "Geen resultaten"
     },
     "changelog": {
       "title": "Changelog",
@@ -619,62 +623,55 @@
       "hideBetaVersions": "Verberg beta-versies"
     },
     "tabs": {
-      "library": {
-        "title": "Bibliotheek",
+      "files": {
+        "title": "Bestanden",
         "sections": {
-          "library": {
-            "title": "Bibliotheek Instellingen",
-            "description": "Configureer je bibliotheeknaam en web URL",
-            "libraryName": "Bibliotheeknaam",
-            "webUrl": "Web URL"
-          },
-          "defaultStatus": {
-            "title": "Standaard Status",
-            "description": "Kies welke status nieuw geimporteerde boeken krijgen.",
-            "label": "Standaard status voor nieuwe boeken",
-            "hint": "Wanneer ingesteld krijgen alle nieuwe boeken deze status voor elke gebruiker. Gebruikers kunnen dit in hun eigen voorkeuren overschrijven.",
-            "none": "Geen (geen status)"
-          },
-          "autoImport": {
-            "title": "Automatisch Importeren",
-            "description": "Configureer automatische boekimport vanuit 1 of meerdere mappen",
-            "explanation": "Je kan <em>Storyteller</em> instellen om automatisch (audio)boeken te importeren vanuit specifieke mappen. Als je dit inschakelt, zal <em>Storyteller</em> automatisch nieuwe (audio)boeken in de ingestelde map importeren.",
-            "importPath": "Importregels",
-            "importPathPlaceholder": "/map/naar/boeken",
-            "useDefault": "standaard",
+          "importRules": {
+            "title": "Importregels",
+            "description": "Stel automatische boekimports in uit één of meerdere mappen.",
+            "watchRulesDescription": "Als je nieuwe boeken in deze mappen plaats of veranderd zal Storyteller ze importeren.",
+            "ignoreRulesDescription": "Storyteller zal deze mappen tijdens scans overslaan.",
             "defaultImportMode": "Standaard importmodus",
-            "defaultImportModeDescription": "Hoe bestanden in importmappen verwerkt worden. Individuele importregels kunnen dit overschrijven.",
             "defaultEpub2Strategy": "EPUB 2 conversie",
-            "defaultEpub2StrategyDescription": "Storyteller kan alleen EPUB 3 lezen, dus EPUB 2 bestanden worden geconverteerd bij het importeren. Kies wat er met het oorspronkelijke bestand gebeurt. Individuele volgregels kunnen dit overschrijven, en kopieermodus converteert altijd tijdens het kopiëren, wat je hier ook kiest.",
+            "defaultEpub2StrategyTip": "Storyteller kan alleen EPUB 3 lezen, dus EPUB 2-bestanden worden bij het importeren omgezet. In de kopieermodus wordt de kopie altijd omgezet, wat je hier ook kiest.",
             "epub2Strategy": "EPUB 2 strategie",
             "epub2BackupSuffix": "Achtervoegsel voor het extra bestand",
-            "epub2BackupSuffixDescription": "Toegevoegd aan de bestandsnaam van het extra bestand dat deze strategieën maken. {placeholder} wordt vervangen door de EPUB-versie van dat bestand, dus de standaardwaarde {example} maakt de back-up book_epub2.epub en de geconverteerde kopie book_epub3.epub.",
-            "addPath": "Voeg pad toe",
+            "epub2BackupSuffixTip": "{placeholder} wordt vervangen door de EPUB-versie van dat bestand.",
             "importMode": "Importmodus",
-            "importModeDescription": "Hoe er omgegaan moet worden met bestanden die in importmap worden gevonden. Individuele regels kunnen hier voorrang op hebben.",
-            "importCollectionsDescription": "Voeg nieuwe boeken toe aan collecties wanneer ze worden geïmporteerd.",
-            "importCollectionsPlaceholder": "Geen collectie",
+            "importCollections": "Toevoegen aan collecties",
             "importCollectionsAdd": "Collectie toevoegen",
+            "noCollections": "Geen collecties gevonden.",
             "addWatchRule": "Importregel toevoegen",
             "addWatchRuleDescription": "<em>Storyteller</em> zal deze map scannen voor nieuwe boeken.",
             "addIgnoreRule": "<em>Ignore-</em>regel toevoegen",
+            "addIgnoreRuleDescription": "<em>Storyteller</em> zal deze map tijdens scans overslaan.",
             "searchWatchRules": "Importregels doorzoeken…",
             "noWatchRules": "Geen importregels.",
-            "noWatchRulesMatchSearch": "Geen importregels gevonden.",
+            "noWatchRulesMatchSearch": "Geen importregels komen overeen met je zoekopdracht.",
             "searchIgnoreRules": "Ignore-regels doorzoeken…",
-            "searchAutoIgnoreRules": "Auto-ignore-regels doorzoeken…",
-            "addIgnoreRuleDescription": "<em>Storyteller</em> zal deze map tijdens scans overslaan.",
             "noIgnoreRules": "Geen ignore-regels.",
-            "noIgnoreRulesMatchSearch": "Geen ignore-regels match je zoekopdracht.",
-            "addAutoIgnoreRule": "<em>Auto-ignore-</em>regel toevoegen",
-            "autoIgnoreRulesDescription": "Auto-ignore-regels worden toegevoegd door <em>Storyteller</em> wanneer boeken worden verplaatst of gekopieerd, of als je ze verwijdert en \"herimporteren voorkomen\" selecteert. Als een boek niet wordt geïmporteerd, zoek hier naar het pad of de titel om te zien waarom.",
+            "noIgnoreRulesMatchSearch": "Geen ignore-regels komen overeen met je zoekopdracht.",
+            "searchAutoIgnoreRules": "Auto-ignore-regels doorzoeken…",
+            "autoIgnoreRulesDescription": "Wordt een boek niet geïmporteerd? Zoek hier op pad of titel.",
+            "autoIgnoreRulesTip": "Storyteller voegt deze toe wanneer een boek verplaatst, geback-upt of verwijderd wordt met bescherming tegen opnieuw importeren.",
             "noAutoIgnoreRules": "Geen auto-ignore-regels.",
-            "noAutoIgnoreRulesMatchSearch": "Geen auto-ignore-regels match je zoekopdracht.",
+            "noAutoIgnoreRulesMatchSearch": "Geen auto-ignore-regels komen overeen met je zoekopdracht.",
             "showingRules": "Toont {start}–{end} van {total}",
             "showingRulesTotal": "Toont {total} van {totalAuto}.",
             "watch": "Importeren",
             "ignore": "Negeren",
             "autoIgnore": "Automatisch genegeerd",
+            "pickFolderFirst": "Kies eerst een map.",
+            "duplicatePath": "Er bestaat al een regel voor dit pad.",
+            "addRule": "Regel toevoegen",
+            "deleteRule": "Regel verwijderen",
+            "selectAll": "Alles selecteren",
+            "clearSelection": "Wissen",
+            "deleteSelected": "{count, number} verwijderen",
+            "previousPage": "Vorige",
+            "nextPage": "Volgende",
+            "pageOf": "Pagina {page, number} van {total, number}",
+            "noLinkedBook": "Geen gekoppeld boek",
             "ignoreSources": {
               "config": "<em>Config</em> bestand",
               "importRelocated": "Verplaatst",
@@ -682,71 +679,40 @@
               "importPreventReimport": "Herimporteren voorkomen"
             }
           },
-          "scanControls": {
-            "title": "Bibliotheek Scannen",
-            "description": "Scan je bibliotheek voor nieuwe bestanden en wijzigingen. Scans controleren alle gevolgde boeken en importpaden voor toevoegingen, verwijderingen en gewijzigde bestanden.",
-            "scanLibrary": "Bibliotheek scannen",
+          "scanning": {
+            "title": "Scannen",
+            "description": "Scans zoeken naar nieuwe, gewijzigde, verplaatste en ontbrekende bestanden.",
+            "scanNowLink": "Bibliotheek nu scannen",
+            "enableScheduledScans": "Voer scans op een schema uit",
+            "scanInterval": "Scan interval (minuten)",
             "showAdvancedCron": "Gebruik een cron expressie in plaats van een interval",
             "showSimpleInterval": "Gebruik een eenvoudig interval in plaats van een cron expressie",
             "cronExpression": "Cron expressie",
-            "cronExpressionDescription": "Standaard cron syntax (minuut uur dag maand weekdag). De expressie wordt uitgevoerd in de tijdzone van de server.",
-            "cronHelper": "Cron expressie referentie (crontab.guru)",
-            "scanNote": "Leest alle importpaden en boekmetadata opnieuw in, ook als bestanden niet zijn gewijzigd sinds de laatste scan.",
-            "scanRunning": "Scan wordt uitgevoerd ({source})",
-            "cancelScan": "Annuleer scan",
-            "enableScheduledScans": "Voer scans op een schema uit",
-            "scanInterval": "Scan interval (minuten)"
+            "cronExpressionTip": "Minuut, uur, dag, maand, weekdag. Geëvalueerd in de tijdzone van de server.",
+            "cronHelper": "Cron expressie referentie (crontab.guru)"
+          }
+        }
+      },
+      "metadata": {
+        "title": "Metadata",
+        "sections": {
+          "readBehavior": {
+            "title": "Metadata uit bestanden",
+            "description": "Hoe scans metadata uit boekbestanden toepassen.",
+            "tip": "Samenvoegen past bij de meeste bibliotheken. Bewerk je je boeken ook in een ander programma, zoals Calibre of Audiobookshelf, kies dan Altijd overschrijven zodat die wijzigingen hier verschijnen."
           },
-          "skippedImportPaths": {
-            "title": "Overgeslagen importpaden",
-            "description": "Deze bestandspaden zijn uitgesloten van automatische import. Boeken op deze paden worden niet opnieuw geïmporteerd tijdens scans.",
-            "clearAll": "Alles wissen"
+          "defaultStatus": {
+            "title": "Standaardstatus",
+            "label": "Standaard status voor nieuwe boeken",
+            "none": "Geen (geen status)"
           }
         }
       },
       "processing": {
         "title": "Verwerking",
         "sections": {
-          "readaloud": {
-            "title": "Readaloud",
-            "description": "Stel in waar nieuwe readalouds worden opgeslagen wanneer de (audio)boeken niet via de webclient zijn geüpload",
-            "locationType": "Locatietype",
-            "locationTypeSuffix": "In dezelfde folder als de EPUB, met een suffix",
-            "locationTypeSiblingFolder": "In dezelfde folder als de EPUB, in een folder",
-            "locationTypeCustomFolder": "In een specifieke folder",
-            "locationTypeInternal": "In de interne Storyteller-folder",
-            "cleanCacheAfterReadaloud": "Cache opruimen na synchronisatie",
-            "cleanCacheAfterReadaloudDescription": "Verwijder automatisch verwerkte audio, transcripties en synchronisatie-gegevens nadat een readaloud succesvol is aangemaakt. Bespaart schijfruimte, maar betekent dat een volledige herstart nodig is als je later opnieuw wilt synchroniseren.",
-            "clearCacheNow": "Cache wissen voor alle boeken",
-            "clearCacheNowDescription": "Verwijder nu alle verwerkte audio, transcripties en synchronisatie-gegevens in de bibliotheek. Originele bestanden blijven ongemoeid.",
-            "clearCacheConfirmTitle": "Cache wissen voor alle boeken",
-            "clearCacheConfirmDescription": "Verwerkte audio, transcripties en synchronisatie-gegevens verwijderen voor elk boek in de bibliotheek? Dit maakt schijfruimte vrij, maar betekent dat een volledige herstart nodig is om boeken later opnieuw te synchroniseren. Originele bestanden blijven ongemoeid.",
-            "clearCacheConfirm": "Cache wissen",
-            "clearCacheSuccess": "Verwerkte cache gewist",
-            "clearCacheError": "Cache wissen mislukt"
-          },
-          "audio": {
-            "title": "Audio Instellingen",
-            "description": "Configureer audio-verwerkingsopties",
-            "maxTrackLength": "Maximale tracklengte",
-            "maxTrackLengthDescription": "Audiotracks langer dan dit worden opgesplitst voordat ze worden verwerkt. Dit kan helpen de hoeveelheid geheugen dat <em>Storyteller</em> gebruikt tijdens verwerking te verminderen.",
-            "maxTrackLength45": "45 minuten",
-            "maxTrackLength1": "1 uur",
-            "maxTrackLength2": "2 uur (standaard)",
-            "maxTrackLength3": "3 uur",
-            "maxTrackLength4": "4 uur",
-            "codec": "Voorkeurs audiocodec",
-            "codecDefault": "Standaard",
-            "codecOpus": "OPUS",
-            "codecMp3": "MP3",
-            "codecAac": "AAC",
-            "bitrate": "Voorkeurs audiobitrate",
-            "bitrateDefault": "Standaard (32 Kb/s)",
-            "mp3BitrateDefault": "Standaard"
-          },
           "alignment": {
             "title": "Synchronisatie",
-            "description": "Kies hoe Storyteller de tekst van het boek synchroniseert met de audio.",
             "aligner": "Synchronisatie-<em>engine</em>",
             "aligners": {
               "whisper": {
@@ -759,71 +725,44 @@
                 "badge": "Nieuw"
               }
             },
-            "alignmentGranularity": "Synchronisatieniveau",
-            "alignmentGranularityDescription": "Synchronisatie op woordniveau kan niet altijd nauwkeurig worden gereproduceerd in alle <em>clients</em>, en is alleen beschikbaar via CTC synchronisatie.",
-            "alignmentGranularityWord": "Woord+Zin (experimenteel)",
-            "alignmentGranularitySentence": "Zin",
             "engine": "Transcriptie-engine",
             "tabLocal": "Op deze server",
             "tabRemote": "Op een andere server",
             "tabThirdParty": "Externe diensten",
             "whisperCpp": "Whisper (whisper.cpp)",
-            "whisperCppDescription": "Draait direct op de server waarop Storyteller draait. Geen extra installatie en niets verlaat deze machine; de snelheid hangt af van de hardware.",
+            "whisperCppDescription": "Draait op de server waarop Storyteller draait. Er verlaat niets deze machine, en de snelheid hangt af van de hardware.",
             "whisperServer": "Storyteller-server (Ghost Story)",
             "googleCloud": "Google Cloud",
-            "googleCloudDescription": "Google Cloud Speech-to-Text. Betaalde cloud-API; vereist een API key.",
+            "googleCloudDescription": "Google Cloud Speech-to-Text. Betaalde cloud-API. Vereist een API key.",
             "microsoftAzure": "Azure Cognitive Services",
-            "microsoftAzureDescription": "Azure AI spraakherkenning. Betaalde cloud-API; vereist een subscription key en serviceregio.",
+            "microsoftAzureDescription": "Azure AI spraakherkenning. Betaalde cloud-API. Vereist een subscription key en serviceregio.",
             "amazonTranscribe": "Amazon Transcribe",
-            "amazonTranscribeDescription": "AWS-transcriptie via een S3 bucket. Betaalde cloud-API; vereist AWS-inloggegevens.",
+            "amazonTranscribeDescription": "AWS-transcriptie via een S3 bucket. Betaalde cloud-API. Vereist AWS-inloggegevens.",
             "openaiCloud": "OpenAI Cloud Platform",
             "openaiCloudDescription": "De gehoste transcriptie-API van OpenAI. Werkt ook met elk OpenAI-compatibel endpoint via een aangepaste base URL.",
             "deepgram": "Deepgram Speech to Text",
-            "deepgramDescription": "De gehoste speech-to-text-API van Deepgram. Betaalde cloud-API; vereist een API key.",
-            "whisperBuildCpu": "CPU",
-            "whisperBuildCublas126": "cuBLAS 12.6 (NVIDIA GPU)",
-            "whisperBuildCublas130": "cuBLAS 13.0 (NVIDIA GPU)",
-            "whisperBuildHipblas": "hipBLAS (AMD GPU)",
-            "whisperBuildDeprecated": "cuBLAS 11.8 is no longer supported. Please update to version 12 or 13.",
+            "deepgramDescription": "De gehoste speech-to-text-API van Deepgram. Betaalde cloud-API. Vereist een API key.",
             "whisperModel": "Whisper model",
-            "whisperModelDescription": "Het standaard model (tiny) is voldoende voor de meeste Engelse en Nederlandse boeken. Voor boeken met veel ongewone woorden, of in andere talen dan Engels of Nederlands, heb je mogelijk grotere modellen nodig zoals small of medium. Tip: ga direct voor large-v3-turbo, die is bijna net zo snel als medium, maar veel accurater.",
             "whisperThreads": "Turbo mode",
-            "whisperThreadsDescription": "Verander het parallelisatieniveau van het Whisper model. Kan een enorme snelheidsverhoging opleveren indien je GPU-acceleratie gebruikt.",
-            "whisperThreadsNote": "We raden niet om deze waarde en de \"Parallelle audiotrack-transcriptie\" waarde beiden hoger dan 1 te zetten. Kies de één of de ander.",
-            "whisperThreadsWarningPrefix": "Waarschuwing!",
-            "whisperThreadsWarning": "Als je dit hoger dan 1 zet kan dat ten koste gaan van de nauwkeurigheid van de transcriptie. Meld geen bugs als je dit hoger dan 1 zet en je geen consistente <em>Readaloud</em> kunt maken.",
+            "whisperThreadsWarning": "Boven 1 is sneller, maar kan de synchronisatie minder nauwkeurig maken.",
             "whisperCpuFallback": "CPU gebruik",
-            "whisperCpuFallbackDescription": "Als je een GPU variant hebt geïnstalleerd maar je toch voor één of andere reden alleen je CPU wil gebruiken, kies hier dan een CPU variant.",
             "whisperCpuFallbackDefault": "GPU (standaard)",
             "whisperCpuFallbackBlas": "OpenBLAS (geoptimaliseerde CPU)",
             "whisperCpuFallbackCpu": "CPU",
             "whisperServerUrl": "Server URL",
-            "whisperServerUrlDescription": "bijv. http://192.168.1.19:8080",
-            "whisperServerApiKey": "API key",
-            "whisperServerApiKeyDescription": "Alleen nodig als je server een API key vereist.",
+            "whisperServerApiKey": "API key (optioneel)",
             "whisperServerDescription": "Offload transcriptie naar een Ghost Story-server op een andere, snellere machine. Elke whisper.cpp-compatibele server werkt ook.",
             "apiKey": "API key *",
             "subscriptionKey": "Subscription key *",
             "serviceRegion": "Serviceregio *",
             "region": "Regio *",
             "bucketName": "Bucket naam *",
-            "bucketNameDescription": "Amazon Transcribe vereist dat bestanden worden geüpload naar een S3 bucket voordat de transcriptie wordt gestart. Dit is de bucket waarnaar <em>Storyteller</em> bestanden zal uploaden.",
             "accessKeyId": "Toegangssleutel ID *",
             "secretAccessKey": "Geheime toegangssleutel *",
             "organization": "Organisatie (optioneel)",
             "baseUrl": "Basis URL (optioneel)",
-            "baseUrlDescription": "Je kunt een aangepaste basis-URL gebruiken om naar een OpenAI-compatibele service te verwijzen, zoals een zelf-gehoste speaches-instantie of een externe whisper.cpp HTTP-server.",
             "modelName": "Modelnaam (optioneel)",
-            "modelNameDescription": "bijv. Systran/faster-distil-whisper-large-v3 voor faster-whisper-server, of whisper-1 voor OpenAI Cloud.",
             "deepgramModel": "Modelnaam",
-            "deepgramModelDescription": "Kan elk model zijn dat de server ondersteunt, zoals nova-3, nova-2, nova, enhanced, base of whisper. Standaard is nova-3.",
-            "ctcEngines": {
-              "ctc-local": {
-                "label": "Op deze server",
-                "description": "Draait op de machine waarop Storyteller draait. Er gaat niets van deze machine af."
-              }
-            },
-            "ctcEngine": "Waar het draait",
             "ctcDevice": "Apparaat",
             "ctcDeviceDescription": "Kies CPU als de synchronisatie crasht.",
             "ctcDevices": {
@@ -834,10 +773,9 @@
               "mlx": "GPU (Apple Silicon)"
             },
             "ctcModel": "Model",
-            "ctcModelDescription": "Automatisch gebruikt QuartzNet als het de taal van het boek dekt en anders MMS.",
             "ctcModelLanguages": "Beschikbaar voor {languages}.",
             "ctcDtype": "Precisie",
-            "ctcDtypeDescription": "Halve precisie is sneller op een GPU en kan de uitlijning iets verschuiven. Automatisch is halve precisie op een GPU en volledige precisie op een CPU.",
+            "ctcDtypeDescription": "Halve precisie is sneller op een GPU.",
             "ctcDtypes": {
               "auto": "Automatisch",
               "fp32": "Volledige precisie",
@@ -845,31 +783,89 @@
             },
             "ctcBatchSize": "Stukken per batch",
             "ctcBatchSizePlaceholder": "Automatisch",
-            "ctcBatchSizeDescription": "Hoeveel stukken audio het model tegelijk bekijkt. Meer is sneller op een GPU en gebruikt meer geheugen. Dit maakt pas verschil als de synchronisatie al snel is.",
+            "ctcBatchSizeDescription": "Meer is sneller op een GPU en gebruikt meer geheugen.",
             "ctcModels": {
               "mms": "Alleen MMS",
               "quartznet15x5": "Automatisch",
               "citrinet256": "Citrinet 256",
               "citrinet512": "Citrinet 512",
               "citrinet1024": "Citrinet 1024"
-            }
+            },
+            "autoExclude": "Voor- en nawerk automatisch overslaan",
+            "autoExcludeDescription": "Omslagen, inhoudsopgaven, colofons en registers worden overgeslagen.",
+            "autoExcludeTip": "Hoofdstukken die maar soms worden voorgelezen, zoals voorwoorden en opdrachten, worden wel gesynchroniseerd en in het rapport gemarkeerd. Je kunt elk hoofdstuk in het rapport opnemen of uitsluiten.",
+            "modelGroupMultilingual": "Aanbevolen voor andere talen",
+            "modelGroupEnglish": "Aanbevolen voor Engels",
+            "modelGroupOther": "Overig",
+            "modelTurboHint": "Beste balans tussen nauwkeurigheid en snelheid. Kan traag zijn zonder GPU.",
+            "modelTinyEnHint": "Genoeg voor de meeste Engelse boeken. Boeken met veel ongewone woorden hebben misschien small of medium nodig.",
+            "whisperThreadsTip": "Splitst audio in stukken die parallel worden getranscribeerd. Dit helpt vooral bij transcriptie op een GPU.",
+            "whisperCpuFallbackTip": "Draait een GPU-versie van Whisper in plaats daarvan op de CPU.",
+            "bucketNameTip": "Elk bestand wordt naar deze S3 bucket geüpload voordat de transcriptie start.",
+            "baseUrlTip": "Verwijst naar elke OpenAI-compatibele dienst, zoals een zelf gehoste speaches-instantie of een whisper.cpp HTTP-server.",
+            "ctcModelTip": "Automatisch gebruikt QuartzNet als er een model is voor de taal van het boek, en anders MMS.",
+            "ctcDtypeTip": "Automatisch gebruikt halve precisie op een GPU en volledige precisie op een CPU.",
+            "ctcBatchSizeTip": "Hoeveel stukken audio het model tegelijk bekijkt. Dit maakt pas verschil als de synchronisatie al snel is.",
+            "parallelTranscribes": "Tracks die tegelijk worden getranscribeerd",
+            "parallelTranscribesDescription": "Niet aangeraden met Ghost Story of turbo mode.",
+            "parallelTranscribesTip": "Whisper gebruikt tot 4 CPU cores per track."
           },
-          "parallelization": {
-            "title": "Parallellisatie Instellingen",
-            "description": "Audio-transcodering is single-threaded, en meer cores toevoegen levert steeds minder op voor het verwerken van één audio-track. Omdat <em>Storyteller</em> audio in meerdere tracks splitst, kan het transcodering en transcriptie parallel uitvoeren.",
-            "parallelTranscodes": "Parallelle audiotrack-transcodering",
-            "parallelTranscodesDescription": "Het transcoderen van één track gebruikt één CPU core",
-            "parallelTranscribes": "Parallelle audiotrack-transcriptie",
-            "parallelTranscribesDescription": "Geldt alleen voor Whisper. Het transcriberen van één track gebruikt tot 4 CPU cores."
+          "audio": {
+            "title": "Audio",
+            "maxTrackLength": "Maximale tracklengte",
+            "maxTrackLengthDescription": "Langere tracks worden vóór het transcriberen gesplitst.",
+            "maxTrackLength45": "45 minuten",
+            "maxTrackLength1": "1 uur",
+            "maxTrackLength2": "2 uur (standaard)",
+            "maxTrackLength3": "3 uur",
+            "maxTrackLength4": "4 uur",
+            "codec": "Voorkeurs audiocodec",
+            "codecDefault": "Standaard",
+            "codecOpus": "OPUS",
+            "codecMp3": "MP3",
+            "codecAac": "AAC",
+            "bitrate": "Voorkeurs audiobitrate",
+            "bitrateDefault": "Standaard (32 Kb/s)",
+            "mp3BitrateDefault": "Standaard",
+            "maxTrackLengthTip": "Splitsen verlaagt het piekgeheugengebruik tijdens transcriptie.",
+            "codecDescription": "De codec voor de audio in je readaloud-bestanden.",
+            "codecTip": "OPUS geeft de kleinste bestanden, maar vraagt meer rekenkracht en speelt nog niet af op Boox-apparaten.",
+            "parallelTranscodes": "Tracks die tegelijk worden getranscodeerd",
+            "parallelTranscodesTip": "Het transcoderen van een track gebruikt één CPU core, dus Storyteller transcodeert meerdere tracks tegelijk."
+          },
+          "readaloud": {
+            "title": "Readaloud",
+            "description": "Waar nieuwe readaloud-bestanden worden opgeslagen voor boeken die niet via de webclient zijn geüpload.",
+            "locationType": "Locatietype",
+            "locationTypeSuffix": "In dezelfde folder als de EPUB, met een suffix",
+            "locationTypeSiblingFolder": "In dezelfde folder als de EPUB, in een folder",
+            "locationTypeCustomFolder": "In een specifieke folder",
+            "locationTypeInternal": "In de interne Storyteller-folder",
+            "cleanCacheAfterReadaloud": "Cache opruimen na synchronisatie",
+            "cleanCacheAfterReadaloudDescription": "Bespaart schijfruimte, maar opnieuw synchroniseren begint dan helemaal opnieuw.",
+            "previewLabel": "Opgeslagen als",
+            "cleanCacheAfterReadaloudTip": "Verwijdert verwerkte audio, transcripties en synchronisatiegegevens zodra een readaloud is aangemaakt. Laat dit uit om boeken later opnieuw te synchroniseren zonder ze opnieuw te transcriberen.",
+            "clearCacheLink": "Cache nu wissen"
           }
         }
       },
-      "auth": {
-        "title": "Authenticatie",
+      "server": {
+        "title": "Server",
         "sections": {
-          "sso": {
-            "title": "Authenticatieproviders",
-            "description": "Configureer externe authenticatieproviders voor single sign-on",
+          "identity": {
+            "title": "Serveridentiteit",
+            "libraryName": "Bibliotheeknaam",
+            "webUrl": "Web URL",
+            "webUrlDescription": "Gebruikt in e-mails en de OPDS-feed.",
+            "serverIcon": "Servericoon",
+            "serverIconDescription": "Getoond in apps die met deze server verbinden, en gebruikt als favicon.",
+            "serverIconUpload": "Icoon uploaden",
+            "serverIconReplace": "Icoon vervangen",
+            "serverIconRemove": "Verwijderen",
+            "serverIconError": "Kon die afbeelding niet uploaden"
+          },
+          "auth": {
+            "title": "Authenticatie",
             "providerType": "Providertype",
             "providerTypeBuiltIn": "Ingebouwd",
             "providerTypeCustom": "Aangepast",
@@ -896,67 +892,49 @@
             "basicPreset": "Basis",
             "addGroup": "Groep toevoegen",
             "disablePasswordLogin": "Schakel inloggen met wachtwoord uit",
-            "disablePasswordLoginDescriptionEnabled": "Hiermee kunnen gebruikers alleen inloggen via ingesteldeauthenticatieproviders. De meeste OPDS-clients ondersteunen geen OAuth.",
+            "disablePasswordLoginDescriptionEnabled": "Hiermee kunnen gebruikers alleen inloggen via ingestelde authenticatieproviders. De meeste OPDS-clients ondersteunen geen OAuth.",
             "disablePasswordLoginDescriptionDisabled": "Kan alleen worden ingeschakeld als er een authenticatieprovider is met een groep die serverinstellingen mag wijzigen."
-          }
-        }
-      },
-      "upload": {
-        "title": "Upload",
-        "sections": {
+          },
           "upload": {
-            "title": "Upload Instellingen",
-            "description": "Stel de maximale <em>chunk-size</em> in voor grote bestandsuploads",
-            "overriddenWarning": "Je maximale <em>chunk-size</em> wordt overschreven via de <em>environment variable</em> Storyteller_MAX_UPLOAD_CHUNK_SIZE. Wijzig die environment variable om de waarde te wijzigen, of verwijder deze om de waarde hier in te stellen.",
+            "title": "Uploaden",
+            "overriddenWarning": "Je maximale <em>chunk-size</em> wordt overschreven via de <em>environment variable</em> STORYTELLER_MAX_UPLOAD_CHUNK_SIZE. Wijzig die environment variable om de waarde te wijzigen, of verwijder deze om de waarde hier in te stellen.",
             "enableMaxChunkSize": "Maximale <em>chunk-size</em> inschakelen",
             "enableMaxChunkSizeDescription": "Schakel dit alleen in als je problemen ondervindt met de maximale <em>chunk-size</em> bij je <em>reverse proxy</em> of hostingprovider.",
             "maxChunkSize": "Maximale <em>chunk-size</em> (bytes)",
-            "maxChunkSizeDescription": "Standaard is 100MB, wat de maximale upload-size van Cloudflare is."
-          }
-        }
-      },
-      "email": {
-        "title": "E-mail",
-        "sections": {
+            "maxChunkSizeTip": "De standaard van 100 MB is de maximale verzoekgrootte van Cloudflare."
+          },
           "email": {
-            "title": "E-mail Instellingen",
-            "description": "Configureer SMTP-instellingen voor het verzenden van e-mails (uitnodigingen, wachtwoordherstel, enz.)",
+            "title": "E-mail",
+            "description": "Gebruikt voor uitnodigingen en wachtwoordresets.",
             "smtpHost": "SMTP host",
             "smtpPort": "SMTP poort",
             "smtpFrom": "SMTP afzenderadres",
             "smtpUsername": "SMTP gebruikersnaam",
             "smtpPassword": "SMTP wachtwoord",
-            "forceTls": "Forceer TLS",
-            "forceTlsDescription": "Deze optie uitschakelen schakelt TLS niet uit. Standaard gebruikt <em>Storyteller</em> STARTTLS om een TLS-verbinding te onderhandelen. Als je deze optie hebt ingeschakeld en een foutmelding ziet over een onjuiste TLS-versie, probeer deze dan uit te schakelen.",
-            "rejectSelfSigned": "Zelfondertekende TLS-certificaten weigeren"
-          }
-        }
-      },
-      "opds": {
-        "title": "OPDS",
-        "sections": {
+            "connectionSecurity": "Verbindingsbeveiliging",
+            "connectionStarttls": "STARTTLS",
+            "connectionTls": "TLS",
+            "rejectSelfSigned": "Zelfondertekende TLS-certificaten weigeren",
+            "connectionSecurityTip": "STARTTLS zet een gewone verbinding om naar TLS. Krijg je een foutmelding over de TLS-versie, probeer dan STARTTLS."
+          },
           "opds": {
-            "title": "OPDS Instellingen",
-            "description": "Configureer de OPDS <em>feed</em> voor je bibliotheek. OPDS is een standaard voor het publiceren van e-book catalogussen.",
+            "title": "OPDS",
+            "tip": "OPDS is een open standaard voor het publiceren van e-boekcatalogi waarop lees-apps zich kunnen abonneren.",
             "enabled": "OPDS inschakelen",
-            "enabledDescription": "Schakel de OPDS feed in voor je bibliotheek. Hierdoor kunnen compatibele e-book readers je bibliotheek doorzoeken en boeken downloaden. Je kan de OPDS feed opvragen via {url}.",
+            "enabledDescription": "Laat compatibele lezers je bibliotheek doorbladeren en downloaden.",
             "pageSize": "Paginagrootte",
-            "pageSizeDescription": "Het aantal boeken per pagina in de OPDS <em>feed</em>. Standaard is 25.",
             "format": "Voorkeurs-ebook",
-            "formatDescription": "Welk ebookformaat wordt aangeboden in de OPDS <em>feed</em>. Readalouds kunnen groot zijn en e-reader ondersteuning is slecht, dus misschien wil je alleen het gewone ebook aanbieden om te downloaded. Een luisterboek wordt altijd aangeboden indien beschikbaar.",
+            "formatTip": "Een audioboek wordt altijd aangeboden als het beschikbaar is.",
             "formatReadaloud": "Readaloud, of ebook indien niet beschikbaar",
+            "formatReadaloudHint": "Volledige readaloud: groot, en veel e-readers kunnen de gesynchroniseerde audio niet afspelen.",
             "formatEbook": "Ebook, of readaloud indien niet beschikbaar",
+            "formatEbookHint": "Gewone EPUB die op elke lezer werkt",
             "formatBoth": "Zowel readaloud als ebook",
+            "formatBothHint": "Biedt beide bestanden aan",
             "urlsTitle": "Feed-URL's",
-            "urlsDescription": "Storyteller ondersteunt zowel OPDS 1.2 als OPDS 2.0. Richt je reader op een van de onderstaande URL's. OPDS 1.2 wordt het breedst ondersteund. OPDS 2.0 is het nieuwere op JSON gebaseerde formaat.",
-            "urlV1": "OPDS 1.2",
-            "urlV2": "OPDS 2.0"
-          }
-        }
-      },
-      "app": {
-        "title": "App",
-        "sections": {
+            "urlV1": "OPDS 1.2 (breedst ondersteund)",
+            "urlV2": "OPDS 2.0 (JSON)"
+          },
           "updates": {
             "title": "Updates",
             "description": "Storyteller Server-app {version}",
@@ -964,95 +942,13 @@
             "channelStable": "Stabiel",
             "channelStableDescription": "Alleen stabiele versies. Testversies worden nooit automatisch geïnstalleerd.",
             "channelBeta": "Bèta",
-            "channelBetaDescription": "Bèta- en release-candidateversies, plus elke stabiele versie. Terugschakelen naar Stabiel downgradet nooit — updates gaan gewoon verder zodra er een nieuwere stabiele versie is.",
+            "channelBetaDescription": "Bèta- en release-candidateversies, plus elke stabiele versie. Terugschakelen naar Stabiel downgradet niet, je moet dan zelf de nieuwste stabiele versie installeren.",
             "channelEdge": "Nieuwste",
             "channelEdgeDescription": "Elke release, inclusief alpha- en experimentele builds.",
             "channelSaveFailed": "Kon het updatekanaal niet opslaan",
             "checkNow": "Zoeken naar updates…"
           }
         }
-      },
-      "changelog": {
-        "title": "Changelog"
-      },
-      "logs": {
-        "title": "Logs",
-        "noLogs": "Geen logregels gevonden.",
-        "searchLogs": "Logs doorzoeken...",
-        "allLevels": "Alle niveaus",
-        "wrapLines": "Regelafbreking aan/uit",
-        "highlighting": "Markering aan/uit",
-        "hideTime": "Tijdstempels verbergen",
-        "showTime": "Tijdstempels tonen",
-        "lineCount": "{count} regels",
-        "enableDebug": "Debug-logging inschakelen",
-        "disableDebug": "Debug-logging uitschakelen",
-        "follow": "Nieuwe logs volgen",
-        "scrollToBottom": "Scroll naar beneden",
-        "clearLogs": "Logs wissen",
-        "clearLogsConfirm": "Dit verwijdert het huidige logbestand permanent. Nieuwe logs worden gewoon opnieuw geschreven.",
-        "logsCleared": "Logs gewist",
-        "copyLogs": "Getoonde regels kopiëren",
-        "copied": "{count, number} regels gekopieerd",
-        "copyFailed": "Kopiëren naar het klembord is mislukt",
-        "downloadLogs": "Logbestand van deze dag downloaden",
-        "lightPane": "Logs op een lichte achtergrond tonen",
-        "darkPane": "Logs op een donkere achtergrond tonen",
-        "today": "Vandaag",
-        "selectDate": "Logdag",
-        "retention": "Logs bewaren voor",
-        "days": "dagen",
-        "retentionDescription": "Logbestanden ouder dan deze termijn worden verwijderd.",
-        "diskUsage": "{size} op schijf",
-        "save": "Opslaan",
-        "retentionSaved": "Logbewaartermijn opgeslagen",
-        "retentionSaveFailed": "Logbewaartermijn opslaan is mislukt"
-      },
-      "backups": {
-        "title": "Gegevens & back-ups",
-        "databaseTitle": "Database",
-        "databaseDescription": "Download een momentopname van de live database of bewaar een back-up op de server.",
-        "downloadDatabase": "Database downloaden",
-        "backUpNow": "Nu back-uppen",
-        "backingUp": "Bezig met back-uppen…",
-        "backupCreated": "Back-up aangemaakt",
-        "backupFailed": "Back-up maken mislukt",
-        "noBackups": "Nog geen opgeslagen back-ups.",
-        "downloadBackup": "Back-up downloaden",
-        "deleteBackup": "Back-up verwijderen",
-        "deleteBackupConfirm": "Dit back-upbestand wordt permanent verwijderd.",
-        "deleteFailed": "Back-up verwijderen mislukt",
-        "scheduleTitle": "Geplande back-ups",
-        "scheduleDescription": "Maak automatisch back-ups van de database volgens een schema. Oude geplande back-ups worden opgeruimd; handmatige back-ups blijven staan.",
-        "enableScheduledBackups": "Geplande back-ups inschakelen",
-        "backupInterval": "Back-upinterval (minuten)",
-        "cronExpression": "Cron-expressie",
-        "showAdvancedCron": "Gebruik een cron-expressie",
-        "hideAdvancedCron": "Gebruik een eenvoudig interval",
-        "retention": "Aantal te bewaren back-ups",
-        "retentionDescription": "Oudere geplande back-ups boven dit aantal worden na elke run verwijderd.",
-        "saveSchedule": "Schema opslaan",
-        "saving": "Opslaan…",
-        "scheduleSaved": "Back-upschema opgeslagen",
-        "scheduleSaveFailed": "Back-upschema opslaan mislukt",
-        "rewriteTitle": "Bestandspaden herschrijven",
-        "rewriteDescription": "Werk opgeslagen absolute bestandspaden bij nadat je je bibliotheek hebt verplaatst of een database van een andere machine hebt geïmporteerd. Paden die met het oude voorvoegsel beginnen worden herschreven naar het nieuwe.",
-        "anchorMismatch": "Deze database werd het laatst gebruikt met gegevensmap \"{anchor}\", maar de server draait nu met \"{current}\". Opgeslagen bestandspaden verwijzen mogelijk naar de oude locatie.",
-        "prefillFromAnchor": "Vul oud → nieuw in",
-        "dismissAnchor": "Paden kloppen — verbergen",
-        "rewriteFrom": "Paden die beginnen met",
-        "rewriteTo": "Worden paden die beginnen met",
-        "previewRewrite": "Voorbeeld",
-        "previewing": "Voorbeeld laden…",
-        "previewFailed": "Voorbeeld laden mislukt",
-        "noMatches": "Geen opgeslagen paden komen overeen met dit voorvoegsel.",
-        "matchSummary": "{count, number} overeenkomsten · {existing, number} van {checked, number} gecontroleerde doelen bestaan",
-        "applyRewrite": "Paden herschrijven",
-        "applyRewriteConfirm": "Alle overeenkomende paden in de database worden herschreven. Een back-up vooraf wordt aangeraden.",
-        "applyRewriteCount": "{count, number} paden herschrijven",
-        "applying": "Bezig met herschrijven…",
-        "applyFailed": "Paden herschrijven mislukt",
-        "applySucceeded": "{count, number} paden herschreven"
       },
       "users": {
         "title": "Gebruikers",
@@ -1099,6 +995,165 @@
             "description": "Beheer je gebruikers."
           }
         }
+      },
+      "maintenance": {
+        "title": "Onderhoud",
+        "sections": {
+          "scan": {
+            "title": "Bibliotheekscan",
+            "description": "Leest elk importpad en alle boekmetadata opnieuw in, ook voor ongewijzigde bestanden.",
+            "scanLibrary": "Bibliotheek scannen",
+            "cancelScan": "Annuleer scan",
+            "scanRunning": "Scan wordt uitgevoerd ({source})",
+            "scheduleLink": "Scanschema aanpassen"
+          },
+          "caches": {
+            "title": "Caches",
+            "description": "Bestanden die Storyteller onderweg heeft gemaakt of bewaard. Wissen maakt schijfruimte vrij.",
+            "measuring": "Bezig met meten…",
+            "processing": {
+              "title": "Verwerking",
+              "description": "Bewaard zodat boeken opnieuw gesynchroniseerd kunnen worden zonder opnieuw te transcriberen.",
+              "books": "{count, plural, =0 {Geen boeken} one {# boek} other {# boeken}}",
+              "transcodedAudio": "Getranscodeerde audio",
+              "transcriptions": "Transcripties",
+              "emissions": "Emissies",
+              "clear": "Wissen",
+              "confirmTitle": "Verwerkingscache wissen?",
+              "confirmDescription": "Verwijdert {size} aan getranscodeerde audio, transcripties en emissies. Een boek opnieuw synchroniseren begint daarna helemaal opnieuw. Originele bestanden blijven ongemoeid.",
+              "confirm": "Cache wissen",
+              "success": "Verwerkingscache gewist",
+              "error": "Verwerkingscache wissen mislukt",
+              "autoCleanLink": "Automatisch opruimen na synchronisatie"
+            },
+            "images": {
+              "title": "Afbeeldingen",
+              "description": "Verkleinde omslagen en andere afbeeldingen.",
+              "files": "{count, plural, =0 {Geen bestanden} one {# bestand} other {# bestanden}}",
+              "clear": "Wissen",
+              "confirmTitle": "Afbeeldingscache wissen?",
+              "confirmDescription": "Verwijdert {size} aan verkleinde afbeeldingen. Omslagen laden iets trager tot ze opnieuw verkleind zijn.",
+              "confirm": "Cache wissen",
+              "success": "Afbeeldingscache gewist",
+              "error": "Afbeeldingscache wissen mislukt"
+            },
+            "uploads": {
+              "title": "Onvoltooide uploads",
+              "description": "Uploads die meer dan een dag geleden begonnen en nooit zijn afgerond.",
+              "files": "{count, plural, =0 {Geen} one {# upload} other {# uploads}}",
+              "clear": "Verwijderen",
+              "confirmTitle": "Onvoltooide uploads verwijderen?",
+              "confirmDescription": "Verwijdert {size} aan half geüploade bestanden. Uploads van de afgelopen dag blijven bewaard.",
+              "confirm": "Uploads verwijderen",
+              "success": "Onvoltooide uploads verwijderd",
+              "error": "Onvoltooide uploads verwijderen mislukt"
+            }
+          },
+          "leftovers": {
+            "title": "Achtergebleven bestanden",
+            "description": "Bestanden die geen boek meer gebruikt. Alles wat in het afgelopen uur is gewijzigd wordt overgeslagen.",
+            "measuring": "Bezig met meten…",
+            "folders": {
+              "title": "Verweesde boekmappen",
+              "description": "Mappen in de assets-map waar geen boek naar verwijst. Mappen met boekbestanden worden alleen één voor één verwijderd.",
+              "summary": "{count, plural, =0 {Geen} one {# map} other {# mappen}}",
+              "show": "Mappen tonen",
+              "hide": "Mappen verbergen",
+              "empty": "Leeg",
+              "deleteOne": "{name} verwijderen",
+              "deleteAll": "Restanten verwijderen",
+              "confirmOneTitle": "Deze map verwijderen?",
+              "confirmOneDescription": "Verwijdert \"{name}\" en de {size} erin. Dit kan niet ongedaan worden gemaakt.",
+              "confirmAllTitle": "Achtergebleven mappen verwijderen?",
+              "confirmAllDescription": "Verwijdert {count, plural, one {# map} other {# mappen}} met {size} aan verwerkingsbestanden en omslagen. Mappen met boekbestanden blijven bewaard. Dit kan niet ongedaan worden gemaakt.",
+              "confirm": "Verwijderen",
+              "success": "{count, plural, one {# map verwijderd} other {# mappen verwijderd}}",
+              "error": "Mappen verwijderen mislukt",
+              "bookFiles": "Boekbestanden",
+              "confirmOneBookFilesDescription": "Verwijdert \"{name}\" en de {size} erin, inclusief e-book-, audio- of readaloud-bestanden die niet in je bibliotheek staan. Dit is mogelijk de enige kopie. Dit kan niet ongedaan worden gemaakt."
+            },
+            "images": {
+              "title": "Ongebruikte afbeeldingen",
+              "description": "Opgeslagen afbeeldingen die geen boek of instelling gebruikt.",
+              "summary": "{count, plural, =0 {Geen} one {# afbeelding} other {# afbeeldingen}}",
+              "delete": "Verwijderen",
+              "confirmTitle": "Ongebruikte afbeeldingen verwijderen?",
+              "confirmDescription": "Verwijdert {size} aan afbeeldingen die niets gebruikt. Dit kan niet ongedaan worden gemaakt.",
+              "confirm": "Verwijderen",
+              "success": "{count, plural, one {# afbeelding verwijderd} other {# afbeeldingen verwijderd}}",
+              "error": "Afbeeldingen verwijderen mislukt"
+            }
+          },
+          "logs": {
+            "title": "Serverlogs",
+            "description": "Logbestanden worden automatisch verwijderd na de bewaartermijn die op de logpagina is ingesteld.",
+            "summary": "{count, plural, =0 {Geen logbestanden} one {# logbestand} other {# logbestanden}}",
+            "delete": "Alles verwijderen",
+            "confirmTitle": "Alle serverlogs verwijderen?",
+            "confirmDescription": "Verwijdert {size} aan logs, inclusief alles van vandaag. Dit kan niet ongedaan worden gemaakt.",
+            "confirm": "Logs verwijderen",
+            "success": "Serverlogs verwijderd",
+            "error": "Serverlogs verwijderen mislukt",
+            "viewLink": "Logs bekijken",
+            "measuring": "Bezig met meten…"
+          },
+          "pathRewrite": {
+            "title": "Bestandspaden herschrijven",
+            "description": "Werk opgeslagen absolute bestandspaden bij nadat je je bibliotheek hebt verplaatst of een database van een andere machine hebt geïmporteerd. Paden die met het oude voorvoegsel beginnen worden herschreven naar het nieuwe.",
+            "anchorMismatch": "Deze database werd het laatst gebruikt met gegevensmap \"{anchor}\", maar de server draait nu met \"{current}\". Opgeslagen bestandspaden verwijzen mogelijk naar de oude locatie.",
+            "prefillFromAnchor": "Vul oud → nieuw in",
+            "dismissAnchor": "Paden kloppen — verbergen",
+            "rewriteFrom": "Paden die beginnen met",
+            "rewriteTo": "Worden paden die beginnen met",
+            "previewRewrite": "Voorbeeld",
+            "previewing": "Voorbeeld laden…",
+            "previewFailed": "Voorbeeld laden mislukt",
+            "noMatches": "Geen opgeslagen paden komen overeen met dit voorvoegsel.",
+            "matchSummary": "{count, number} overeenkomsten · {existing, number} van {checked, number} gecontroleerde doelen bestaan",
+            "applyRewrite": "Paden herschrijven",
+            "applyRewriteConfirm": "Alle overeenkomende paden in de database worden herschreven. Een back-up vooraf wordt aangeraden.",
+            "applyRewriteCount": "{count, number} paden herschrijven",
+            "applying": "Bezig met herschrijven…",
+            "applyFailed": "Paden herschrijven mislukt",
+            "applySucceeded": "{count, number} paden herschreven"
+          }
+        }
+      },
+      "changelog": {
+        "title": "Changelog"
+      },
+      "logs": {
+        "title": "Logs",
+        "noLogs": "Geen logregels gevonden.",
+        "searchLogs": "Logs doorzoeken...",
+        "allLevels": "Alle niveaus",
+        "wrapLines": "Regelafbreking aan/uit",
+        "highlighting": "Markering aan/uit",
+        "hideTime": "Tijdstempels verbergen",
+        "showTime": "Tijdstempels tonen",
+        "lineCount": "{count} regels",
+        "enableDebug": "Debug-logging inschakelen",
+        "disableDebug": "Debug-logging uitschakelen",
+        "follow": "Nieuwe logs volgen",
+        "scrollToBottom": "Scroll naar beneden",
+        "clearLogs": "Logs wissen",
+        "clearLogsConfirm": "Dit verwijdert het huidige logbestand permanent. Nieuwe logs worden gewoon opnieuw geschreven.",
+        "logsCleared": "Logs gewist",
+        "copyLogs": "Getoonde regels kopiëren",
+        "copied": "{count, number} regels gekopieerd",
+        "copyFailed": "Kopiëren naar het klembord is mislukt",
+        "downloadLogs": "Logbestand van deze dag downloaden",
+        "lightPane": "Logs op een lichte achtergrond tonen",
+        "darkPane": "Logs op een donkere achtergrond tonen",
+        "today": "Vandaag",
+        "selectDate": "Logdag",
+        "retention": "Logs bewaren voor",
+        "days": "dagen",
+        "retentionDescription": "Logbestanden ouder dan deze termijn worden verwijderd.",
+        "diskUsage": "{size} op schijf",
+        "save": "Opslaan",
+        "retentionSaved": "Logbewaartermijn opgeslagen",
+        "retentionSaveFailed": "Logbewaartermijn opslaan is mislukt"
       },
       "queue": {
         "title": "Verwerkingswachtrij",
@@ -1167,12 +1222,41 @@
           "dropped": "{title} neergezet op positie {position, number} van {total, number}.",
           "canceled": "Verplaatsen geannuleerd. {title} staat weer op positie {position, number} van {total, number}."
         }
+      },
+      "backups": {
+        "title": "Gegevens & back-ups",
+        "databaseTitle": "Database",
+        "databaseDescription": "Download een momentopname van de live database of bewaar een back-up op de server.",
+        "downloadDatabase": "Database downloaden",
+        "backUpNow": "Nu back-uppen",
+        "backingUp": "Bezig met back-uppen…",
+        "backupCreated": "Back-up aangemaakt",
+        "backupFailed": "Back-up maken mislukt",
+        "noBackups": "Nog geen opgeslagen back-ups.",
+        "downloadBackup": "Back-up downloaden",
+        "deleteBackup": "Back-up verwijderen",
+        "deleteBackupConfirm": "Dit back-upbestand wordt permanent verwijderd.",
+        "deleteFailed": "Back-up verwijderen mislukt",
+        "scheduleTitle": "Geplande back-ups",
+        "scheduleDescription": "Maak automatisch back-ups van de database volgens een schema. Oude geplande back-ups worden opgeruimd; handmatige back-ups blijven staan.",
+        "enableScheduledBackups": "Geplande back-ups inschakelen",
+        "backupInterval": "Back-upinterval (minuten)",
+        "cronExpression": "Cron-expressie",
+        "showAdvancedCron": "Gebruik een cron-expressie",
+        "hideAdvancedCron": "Gebruik een eenvoudig interval",
+        "retention": "Aantal te bewaren back-ups",
+        "retentionDescription": "Oudere geplande back-ups boven dit aantal worden na elke run verwijderd.",
+        "saveSchedule": "Schema opslaan",
+        "saving": "Opslaan…",
+        "scheduleSaved": "Back-upschema opgeslagen",
+        "scheduleSaveFailed": "Back-upschema opslaan mislukt"
       }
-    }
+    },
+    "onThisPage": "Op deze pagina"
   },
   "PreferencesPage": {
     "title": "Voorkeuren",
-    "settingsPage": "Algemene instellingen",
+    "settingsPage": "Instellingen",
     "savedSuccessfully": "Voorkeuren opgeslagen",
     "failedToSave": "Voorkeuren opslaan mislukt",
     "libraryDefault": {
@@ -1191,8 +1275,9 @@
     },
     "searchPreferences": "Voorkeuren zoeken...",
     "sidebar": {
-      "user": "Gebruiker",
-      "preferences": "Voorkeuren"
+      "user": "Account",
+      "preferences": "Personalisatie",
+      "noMatches": "Geen resultaten"
     },
     "profile": {
       "title": "Profiel",
@@ -1221,9 +1306,7 @@
         "sections": {
           "language": {
             "title": "Taal",
-            "description": "Kies je gewenste weergavetaal.",
             "label": "Taal",
-            "hint": "Deze instelling wordt gesynchroniseerd tussen al je apparaten.",
             "systemDefault": "Systeemstandaard"
           },
           "view": {
@@ -1244,7 +1327,6 @@
         "sections": {
           "accent": {
             "title": "Accent & kader",
-            "description": "De kleur waar de app op leunt, en hoe het kader rond je bibliotheek eruitziet.",
             "label": "Accentkleur",
             "hint": "Wordt toegepast op knoppen, accenten en de zijbalk.",
             "useDefault": "Standaardkleur gebruiken",
@@ -1261,9 +1343,7 @@
           },
           "colorfulness": {
             "title": "Kleurrijkheid",
-            "description": "Hoe de kleuren van de cover in de interface verwerkt worden.",
             "label": "Kleurniveau",
-            "hint": "'Vol' zorgt ervoor dat coverkleuren overal worden gebruikt; 'minimaal' houdt een neutraal thema aan.",
             "levels": {
               "full": "Vol",
               "minimal": "Minimaal"
@@ -1271,11 +1351,11 @@
           },
           "motion": {
             "title": "Beweging",
-            "description": "Hoe de bibliotheek reageert op het openen en vergroten van panelen.",
             "label": "Lay-outanimaties",
-            "hint": "Schuift het detailpaneel open en laat boeken naar hun nieuwe plek glijden. Uitgeschakeld klikken panelen direct op hun plaats.",
+            "hint": "Uitgeschakeld springen panelen direct op hun plek.",
             "panelLabel": "Detailpaneel openschuiven",
-            "panelHint": "Animeer het openen van het detailpaneel wanneer je op een boek klikt. Uitgeschakeld verschijnt het direct op volle breedte (aan de rand slepen animeert nog steeds)."
+            "panelHint": "Uitgeschakeld verschijnt het paneel direct op volle breedte.",
+            "panelTip": "De rand van het paneel slepen blijft geanimeerd."
           }
         }
       },
@@ -1284,16 +1364,13 @@
         "sections": {
           "gridDisplay": {
             "title": "Rasterweergave",
-            "description": "Hoe boeken in het bibliotheekraster worden getoond.",
             "coverLabel": "Coverweergave",
-            "coverHint": "'Beide' toont de e-book- en luisterboekcover wanneer een boek die heeft.",
             "coverOptions": {
               "auto": "Beide covers",
               "ebook": "Alleen e-book",
               "audiobook": "Alleen luisterboek"
             },
             "alignmentLabel": "Dubbelcoverstijl",
-            "alignmentHint": "Bepaalt of de twee covers scheef of recht worden getoond.",
             "alignmentOptions": {
               "auto": "Gekanteld als boeken niet zijn gesynchroniseerd",
               "straight": "Altijd recht"
@@ -1308,27 +1385,26 @@
               "largest": "Grootst"
             },
             "fitLabel": "Omslagen met afwijkende vorm",
-            "fitHint": "Hoe een omslag wordt getoond als de afbeelding niet de gebruikelijke boekvorm heeft.",
             "fitOptions": {
               "true-size": "Ware grootte",
               "stretch": "Uitrekken",
               "cover": "Inzoomen",
               "contain": "Passend met achtergrond"
-            }
+            },
+            "fitTip": "Ware grootte behoudt de vorm van de afbeelding zelf en is daarom alleen beschikbaar als omslagen binnen de kaart staan."
           },
           "opening": {
             "title": "Boeken openen",
-            "description": "Wat klikken op een boek op de startpagina of in zoekresultaten doet.",
             "label": "Open boeken in",
-            "hint": "Het zijpaneel zweeft over de pagina voor een snelle blik; de volledige boekpagina is altijd één klik verder. In de raster- en lijstweergave van de bibliotheek opent een klik daar altijd het zijpaneel.",
+            "hint": "De volledige boekpagina is altijd één klik verder.",
             "options": {
               "panel": "Zijpaneel",
               "page": "Boekpagina"
-            }
+            },
+            "tip": "In de raster- en lijstweergave van de bibliotheek opent een klik altijd het zijpaneel."
           },
           "detail": {
             "title": "Detailsweergave",
-            "description": "Hoe een boek op de detailpagina wordt getoond.",
             "display": {
               "label": "Boekweergave",
               "hint": "De platte cover valt terug op je rastercoverkeuze.",
@@ -1338,7 +1414,7 @@
               }
             },
             "view": {
-              "hint": "De hoek waarin het 3D-boek begint. Klik op een boek om die te veranderen.",
+              "hint": "Klik op het boek om de beginhoek te veranderen.",
               "ebookLabel": "E-book",
               "audiobookLabel": "Luisterboek",
               "cycle": "Beginpositie wijzigen",
@@ -1353,9 +1429,7 @@
           },
           "ratingIcon": {
             "title": "Beoordelingspictogram",
-            "description": "Kies het symbool voor beoordelingen.",
             "label": "Pictogram",
-            "hint": "Wissel tussen sterren en hartjes. De waarde blijft hetzelfde.",
             "options": {
               "star": "Sterren",
               "heart": "Hartjes"
@@ -1363,23 +1437,21 @@
           },
           "ratingDimensions": {
             "title": "Beoordelingsdimensies",
-            "description": "Pas de assen van de meerdimensionale boekbeoordeling aan.",
             "label": "Dimensies",
-            "hint": "Elk boek kan per as 0-5 scoren; het gemiddelde wordt de beoordeling.",
+            "hint": "Elk boek kan per as 0-5 scoren. Het gemiddelde van al die scores wordt de beoordeling.",
             "add": "Dimensie toevoegen",
             "placeholder": "Naam van dimensie",
             "remove": "Dimensie verwijderen",
-            "customize": "Aanpassen"
+            "customize": "Aanpassen",
+            "example": "Voorbeeld",
+            "preview": "Weergave"
           },
           "ratings": {
-            "title": "Beoordelingen en recensies",
-            "description": "Verander hoe beoordelingen en recensies eruitzien en werken"
+            "title": "Beoordelingen"
           },
           "defaultStatus": {
-            "title": "Standaard Status",
-            "description": "Kies welke status nieuw toegevoegde boeken voor jou krijgen.",
+            "title": "Standaardstatus",
             "label": "Standaard status voor nieuwe boeken",
-            "hint": "Overschrijft de bibliotheekbrede standaard die door een beheerder is ingesteld. Kies \"Bibliotheek standaard\" om de beheerderinstelling te volgen.",
             "useLibraryDefault": "Bibliotheek standaard"
           }
         }
@@ -1623,13 +1695,15 @@
     "importMode": {
       "modeDefault": "Standaard modus",
       "modeReference": "Bewaren in originele map",
+      "modeReferenceHint": "Bestanden blijven waar ze staan",
       "modeCopy": "Kopiëer bestanden naar de interne <em>Storyteller</em> map",
+      "modeCopyHint": "Een kopie gaat naar de bibliotheek",
       "modeMove": "Verplaats bestanden naar de interne <em>Storyteller</em> map",
-      "modeHardlink": "<em>Hard link</em> bestanden naar de interne <em>Storyteller</em> map"
+      "modeMoveHint": "Bestanden verhuizen naar de bibliotheek",
+      "modeHardlink": "<em>Hard link</em> bestanden naar de interne <em>Storyteller</em> map",
+      "modeHardlinkHint": "Er wordt een harde link in de bibliotheek gemaakt"
     },
     "metadata": {
-      "metadataFieldOverrides": "Metadata gedrag",
-      "metadataFieldOverridesDescription": "Bepaalt hoe <em><em>Storyteller</em></em> metadata uit boekbestanden verwerkt tijdens scans. Het standaardgedrag (alleen lege velden invullen) is geschikt voor de meeste gebruikers. Als je je boeken ook met andere tools beheert (bijv. <em>Calibre</em>, <em>Audiobookshelf</em>) en wilt dat die wijzigingen in <em>Storyteller</em> worden overgenomen, kies dan voor altijd overschrijven.",
       "fieldTitle": "Titel",
       "fieldSubtitle": "Ondertitel",
       "fieldDescription": "Omschrijving",
@@ -1671,13 +1745,9 @@
     "epub2Strategy": {
       "strategyDefault": "Gebruik standaard",
       "strategyBackupAndConvert": "Back-up & converteren",
-      "strategyBackupAndConvertDescription": "Hernoemt het EPUB 2 bestand naar een back-up en schrijft de EPUB 3 conversie naar de oorspronkelijke bestandsnaam. Storyteller importeert het geconverteerde bestand; de back-up blijft ongemoeid.",
       "strategyConvertAlongside": "Converteren naast origineel",
-      "strategyConvertAlongsideDescription": "Laat het EPUB 2 bestand precies waar het is en schrijft de EPUB 3 conversie naar een nieuw bestand ernaast. Storyteller importeert het geconverteerde bestand. Kies dit als de oorspronkelijke bestanden niet mogen verplaatsen.",
       "strategyReplace": "Ter plekke vervangen",
-      "strategyReplaceDescription": "Converteert het bestand ter plekke, zonder een kopie van de EPUB 2 te bewaren.",
       "strategySkip": "Overslaan",
-      "strategySkipDescription": "Laat het bestand met rust en importeert het niet.",
       "previewBefore": "Vooraf",
       "previewAfter": "Achteraf",
       "previewEpub2": "EPUB 2",
@@ -1687,7 +1757,8 @@
       "previewNotImported": "EPUB 2, niet geïmporteerd"
     },
     "commonRoles": "Veelgebruikte rollen",
-    "allRoles": "Alle rollen"
+    "allRoles": "Alle rollen",
+    "moreInfo": "Meer informatie"
   },
   "UploadDialog": {
     "metadataBehavior": "Metadata-gedrag",

@@ -34,20 +34,25 @@ function extractKeywords(obj: Record<string, unknown>): string[] {
 }
 
 function generateSectionKeywords(
-  tabsMessages: Record<string, { sections?: Record<string, unknown> }>,
+  tabsMessages: Record<
+    string,
+    { title?: string; sections?: Record<string, unknown> }
+  >,
 ): SectionKeywords {
   const result = {} as SectionKeywords
 
   for (const tab of preferenceTabs) {
     result[tab] = {}
 
+    const title = tabsMessages[tab]?.title
     const sections = tabsMessages[tab]?.sections
     if (!sections) continue
 
     for (const [sectionKey, sectionData] of Object.entries(sections)) {
-      result[tab][sectionKey] = extractKeywords(
-        sectionData as Record<string, unknown>,
-      )
+      result[tab][sectionKey] = [
+        ...(title ? [title] : []),
+        ...extractKeywords(sectionData as Record<string, unknown>),
+      ]
     }
   }
 

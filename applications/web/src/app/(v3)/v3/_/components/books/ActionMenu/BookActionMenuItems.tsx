@@ -51,6 +51,7 @@ import {
   useBulkRelocateToInternalMutation,
   useClearBooksCacheMutation,
   useDeleteBooksMutation,
+  useGetBooksCacheUsageQuery,
   useGetCurrentUserQuery,
   useMergeBooksMutation,
   useRecomputeAlignmentReportsMutation,
@@ -58,6 +59,7 @@ import {
   useScanBooksMutation,
   useUpgradeBookEpubMutation,
 } from "@/store/api"
+import { formatBytes } from "@/strings"
 import { type UUID } from "@/uuid"
 
 type Mode = "single" | "bulk"
@@ -340,10 +342,23 @@ export function useBookActionItems({
   const clearCacheAction = useConfirmAction({
     onConfirm: handleClearCache,
     title: t("clearCacheTitle", { count }),
-    description: t("clearCacheDescription"),
     confirmLabel: t("clearCache"),
     variant: "destructive",
   })
+  const { data: cacheUsage, isFetching: isMeasuringCache } =
+    useGetBooksCacheUsageQuery(
+      { bookUuids },
+      {
+        skip: !clearCacheAction.dialogProps.open,
+        refetchOnMountOrArgChange: true,
+      },
+    )
+  const cacheUsageLine =
+    !cacheUsage || isMeasuringCache
+      ? t("clearCacheMeasuring")
+      : cacheUsage.bytes === 0
+        ? t("clearCacheEmpty", { count })
+        : t("clearCacheUsage", { size: formatBytes(cacheUsage.bytes) })
 
   const upgradeAction = useConfirmAction({
     onConfirm: handleUpgrade,
@@ -678,7 +693,10 @@ export function useBookActionItems({
         onOpenChange={setCoverColorsOpen}
         books={books}
       />
-      <ConfirmDialog {...clearCacheAction.dialogProps} />
+      <ConfirmDialog
+        {...clearCacheAction.dialogProps}
+        description={`${t("clearCacheDescription")} ${cacheUsageLine}`}
+      />
       <ConfirmDialog {...upgradeAction.dialogProps} />
       <ConfirmDialog {...mergeAction.dialogProps} isLoading={isMerging} />
 

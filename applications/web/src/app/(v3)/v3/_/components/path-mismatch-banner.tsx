@@ -15,7 +15,7 @@ export function PathMismatchBanner({
   anchor: string
   currentDataDir: string
 }) {
-  const t = useTranslation("SettingsPage.tabs.backups")
+  const t = useTranslation("SettingsPage.tabs.maintenance.sections.pathRewrite")
   const [hidden, setHidden] = useState(false)
 
   if (hidden) return null
@@ -30,9 +30,9 @@ export function PathMismatchBanner({
         {t("anchorMismatch", { anchor, current: currentDataDir })}{" "}
         <V3Link
           className="font-medium underline"
-          href={`/settings?tab=backups&from=${encodeURIComponent(anchor)}&to=${encodeURIComponent(currentDataDir)}`}
+          href={`/settings?tab=maintenance&section=pathRewrite&from=${encodeURIComponent(anchor)}&to=${encodeURIComponent(currentDataDir)}`}
         >
-          {t("rewriteTitle")}
+          {t("title")}
         </V3Link>
       </p>
       <Button

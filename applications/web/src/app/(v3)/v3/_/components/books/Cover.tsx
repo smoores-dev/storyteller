@@ -214,7 +214,8 @@ export const Cover = memo(function Cover({
 // old double cover
 
 const TILE_CLASS =
-  "absolute inset-0 m-auto  shadow-md group-hover/covers:overflow-hidden  "
+  // gotta have rounded-cover here otherwise shadow looks weird
+  "absolute inset-0 m-auto shadow-md group-hover/covers:overflow-hidden rounded-cover"
 
 const STACK_WIDTH = 0.82
 

@@ -3,8 +3,8 @@ import { getMessages } from "next-intl/server"
 
 import { SettingsForm } from "@v3/_/components/settings-form/settings-form"
 import {
+  SETTINGS_SECTIONS,
   type SectionKeywords,
-  settingsFormTabs,
 } from "@v3/_/components/settings-form/tabs"
 import { withPageAuth } from "@v3/_/server/page-auth-wrapper"
 
@@ -32,23 +32,22 @@ function extractKeywords(obj: Record<string, unknown>): string[] {
 }
 
 function generateSectionKeywords(
-  tabsMessages: Record<string, { sections?: Record<string, unknown> }>,
+  tabsMessages: Record<
+    string,
+    { title?: string; sections?: Record<string, unknown> }
+  >,
 ): SectionKeywords {
-  const result: SectionKeywords = {} as SectionKeywords
+  const result: SectionKeywords = {}
 
-  for (const tab of settingsFormTabs) {
-    result[tab] = {}
+  for (const section of SETTINGS_SECTIONS) {
+    const tab = tabsMessages[section.page]
+    const sectionData = tab?.sections?.[section.key]
+    if (!sectionData) continue
 
-    const tabData = tabsMessages[tab]
-    if (!tabData?.sections) {
-      continue
-    }
-
-    for (const [sectionKey, sectionData] of Object.entries(tabData.sections)) {
-      result[tab][sectionKey] = extractKeywords(
-        sectionData as Record<string, unknown>,
-      )
-    }
+    result[section.id] = [
+      ...(tab.title ? [tab.title] : []),
+      ...extractKeywords(sectionData as Record<string, unknown>),
+    ]
   }
 
   return result

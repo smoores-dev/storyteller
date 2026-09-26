@@ -11,7 +11,6 @@ import { Button } from "@v3/_/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@v3/_/components/ui/card"
@@ -86,7 +85,7 @@ const PERMISSION_OPTIONS: Array<{ value: Permission; label: string }> = [
   { value: "settingsUpdate", label: "Change server settings" },
 ]
 
-export function AuthTab() {
+export function AuthenticationSection() {
   const { form, lockedSettings } = useSettingsForm()
 
   const webUrl = useWatch({ control: form.control, name: "webUrl" })
@@ -94,7 +93,7 @@ export function AuthTab() {
     control: form.control,
     name: "authProviders",
   })
-  const t = useTranslation("SettingsPage.tabs.auth.sections.sso")
+  const t = useTranslation("SettingsPage.tabs.server.sections.auth")
 
   const {
     fields: authProviders,
@@ -127,7 +126,7 @@ export function AuthTab() {
 
   return (
     <div className="space-y-6">
-      <SettingsSection tab="auth" section="sso">
+      <SettingsSection id="authentication">
         <Card>
           <CardHeader>
             <CardTitle
@@ -138,7 +137,6 @@ export function AuthTab() {
             >
               {t("title")} {isAuthProvidersLocked && <LockTooltip />}
             </CardTitle>
-            <CardDescription>{t("description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {authProviders.map((provider, index) => (
@@ -377,7 +375,7 @@ export function AuthTab() {
 }
 
 type TranslationFn = ReturnType<
-  typeof useTranslation<"SettingsPage.tabs.auth.sections.sso">
+  typeof useTranslation<"SettingsPage.tabs.server.sections.auth">
 >
 
 type GroupPermissionsValue = Record<string, Permission[]>

@@ -30,8 +30,8 @@ function isChannel(value: unknown): value is Channel {
   return CHANNELS.includes(value as Channel)
 }
 
-export function AppTab() {
-  const t = useTranslation("SettingsPage.tabs.app.sections.updates")
+export function UpdatesSection() {
+  const t = useTranslation("SettingsPage.tabs.server.sections.updates")
   const [channel, setChannel] = useState<Channel | null>(null)
   const [version, setVersion] = useState<string | null>(null)
 
@@ -93,7 +93,7 @@ export function AppTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SettingsSection tab="app" section="updates">
+      <SettingsSection id="updates">
         <Card>
           <CardHeader>
             <CardTitle>{t("title")}</CardTitle>

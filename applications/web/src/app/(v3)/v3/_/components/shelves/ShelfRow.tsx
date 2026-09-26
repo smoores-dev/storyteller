@@ -168,6 +168,7 @@ export function ShelfRow({ shelf, className, actions }: ShelfRowProps) {
               book={book}
               displayFields={[displayField ?? "authors", "title"]}
               onClick={handleBookClick}
+              gridCardSize="small"
             />
           </div>
         ))}

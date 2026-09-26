@@ -5,7 +5,8 @@ import {
 } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"
 import { getBooks } from "@/database/books"
-import { type UUID } from "@/uuid"
+
+import { readBookUuids } from "./readBookUuids"
 
 export const dynamic = "force-dynamic"
 
@@ -17,22 +18,7 @@ export const dynamic = "force-dynamic"
  *       clear the cache for every book in the library.
  */
 export const DELETE = withHasPermission("bookProcess")(async (request) => {
-  let body: unknown = null
-  try {
-    body = await request.json()
-  } catch {
-    // no body means clear everything
-  }
-
-  const rawUuids =
-    body && typeof body === "object" && "bookUuids" in body
-      ? (body as { bookUuids?: unknown }).bookUuids
-      : undefined
-
-  const bookUuids =
-    Array.isArray(rawUuids) && rawUuids.every((u) => typeof u === "string")
-      ? (rawUuids as UUID[])
-      : null
+  const bookUuids = await readBookUuids(request)
 
   const books = await getBooks(bookUuids, request.auth.user.id)
 

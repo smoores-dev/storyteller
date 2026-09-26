@@ -120,7 +120,7 @@ export function GetStartedSection({
             variant="ghost"
             nativeButton={false}
             render={
-              <V3Link href="/settings?tab=library">
+              <V3Link href="/settings?tab=files">
                 <icon.ExternalLink className="mr-2 size-4" />
                 {t("getStarted.importSettings")}
               </V3Link>

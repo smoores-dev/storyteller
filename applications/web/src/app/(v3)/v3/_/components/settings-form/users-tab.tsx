@@ -93,7 +93,7 @@ export function UsersTab({
 
   return (
     <div className="space-y-6">
-      <SettingsSection tab="users" section="users-invites">
+      <SettingsSection id="invites">
         {permissions?.inviteList && (
           <Card>
             <CardHeader>
@@ -114,7 +114,7 @@ export function UsersTab({
           </Card>
         )}
       </SettingsSection>
-      <SettingsSection tab="users" section="users-list">
+      <SettingsSection id="usersList">
         {permissions?.userList && (
           <Card>
             <CardHeader>

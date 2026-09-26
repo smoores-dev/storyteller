@@ -66,7 +66,7 @@ export function NavUser({
   })
 
   return (
-    <SidebarMenu className="w-full flex-row items-center justify-center gap-0.5 overflow-clip border-t py-1">
+    <SidebarMenu className="border-sidebar-border w-full flex-row items-center justify-center gap-0.5 overflow-clip border-t py-1">
       <SidebarMenuItem className="opacity-100 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
         <CreateMenu />
       </SidebarMenuItem>

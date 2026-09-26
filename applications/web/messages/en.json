@@ -511,6 +511,9 @@
     "deleteDescription": "Files in your assets folder will be deleted. This cannot be undone.",
     "clearCacheTitle": "Clear cache for {count, number} book(s)?",
     "clearCacheDescription": "Deletes processed audio, transcripts and alignment data from the cache. Source files are kept.",
+    "clearCacheMeasuring": "Measuring the cache…",
+    "clearCacheEmpty": "Nothing is cached for {count, plural, one {this book} other {these books}}.",
+    "clearCacheUsage": "This frees {size}.",
     "processTitle": "Begin processing {count, number} book(s)?",
     "processDescription": "Starts the audiobook processing pipeline for the selected books.",
     "upgradeTitle": "Upgrade EPUB for {count, number} book(s)?",
@@ -722,8 +725,9 @@
     "searchSettings": "Search settings...",
     "formHasErrors": "{count, plural, one {# error} other {# errors}}",
     "sidebar": {
-      "settings": "Settings",
-      "administration": "Administration"
+      "settings": "Configuration",
+      "administration": "Administration",
+      "noMatches": "No matches"
     },
     "changelog": {
       "title": "Changelog",
@@ -736,61 +740,37 @@
       "hideBetaVersions": "Hide beta versions"
     },
     "tabs": {
-      "library": {
-        "title": "Library",
+      "files": {
+        "title": "Files",
         "sections": {
-          "library": {
-            "title": "Library Settings",
-            "description": "Configure your library name and web URL. These are used in for instance emails and the OPDS feed.",
-            "libraryName": "Library name",
-            "webUrl": "Web URL",
-            "serverIcon": "Server icon",
-            "serverIconDescription": "Shown in clients that connect to this server, and used as the favicon.",
-            "serverIconUpload": "Upload icon",
-            "serverIconReplace": "Replace icon",
-            "serverIconRemove": "Remove",
-            "serverIconError": "Could not upload that image"
-          },
-          "defaultStatus": {
-            "title": "Default Status",
-            "description": "Choose which status newly imported books start with.",
-            "label": "Default status for new books",
-            "hint": "When set, all new books are assigned this status for every user. Users can override this in their own preferences.",
-            "none": "None (no status)"
-          },
-          "autoImport": {
-            "title": "Auto-Import",
-            "description": "Configure automatic book import from a directory",
-            "explanation": "Storyteller can be configured to automatically import book files from a specific directory. When enabled, Storyteller will set up a filesystem watcher for the directory and automatically import any new book files it finds.",
-            "importPath": "Import paths",
-            "importPathPlaceholder": "/path/to/books",
-            "useDefault": "default",
+          "importRules": {
+            "title": "Import rules",
+            "watchRulesDescription": "If you add a new book to these folders or change an existing one, Storyteller will import it.",
+            "ignoreRulesDescription": "Storyteller will skip these paths during scans.",
+            "description": "Storyteller can automatically import books placed in certain folders. You can configure that behavior here.",
             "defaultImportMode": "Default import mode",
-            "defaultImportModeDescription": "How to handle files found in import directories. Individual paths can override this.",
             "defaultEpub2Strategy": "EPUB 2 conversion",
-            "defaultEpub2StrategyDescription": "Storyteller can only read EPUB 3, so EPUB 2 files are converted when they are imported. Choose what happens to the original file. Individual watch rules can override this, and copy mode always converts while copying, whatever you pick here.",
+            "defaultEpub2StrategyTip": "Storyteller can only read EPUB 3, so EPUB 2 files are converted on import. Copy mode always converts the copy, whatever is chosen here.",
             "epub2Strategy": "EPUB 2 strategy",
             "epub2BackupSuffix": "Converted file suffix",
-            "epub2BackupSuffixDescription": "Added to the filename of the extra file these strategies create. {placeholder} is replaced with the EPUB version of that file, so the default {example} names the backup book_epub2.epub and the converted copy book_epub3.epub.",
-            "addPath": "Add path",
+            "epub2BackupSuffixTip": "{placeholder} is replaced with the EPUB version of that file.",
             "importMode": "Import mode",
-            "importModeDescription": "How to handle files found in import directories. Individual paths can override this.",
-            "importCollectionsDescription": "Add new books to collections when they are imported.",
-            "importCollectionsPlaceholder": "No collection",
+            "importCollections": "Add to collections",
             "importCollectionsAdd": "Add collection",
+            "noCollections": "No collections found.",
             "addWatchRule": "Add import rule",
             "addWatchRuleDescription": "Storyteller will scan this folder for new books.",
             "addIgnoreRule": "Add ignore rule",
+            "addIgnoreRuleDescription": "Storyteller will skip this path during scans.",
             "searchWatchRules": "Search watch rules…",
             "noWatchRules": "No watch rules.",
             "noWatchRulesMatchSearch": "No watch rules match your search.",
             "searchIgnoreRules": "Search ignore rules…",
-            "searchAutoIgnoreRules": "Search auto-ignore rules…",
-            "addIgnoreRuleDescription": "Storyteller will skip this path during scans.",
             "noIgnoreRules": "No ignore rules.",
             "noIgnoreRulesMatchSearch": "No ignore rules match your search.",
-            "addAutoIgnoreRule": "Add auto-ignore rule",
-            "autoIgnoreRulesDescription": "Auto-ignore rules are added by Storyteller when books are relocated, backed up, or removed with re-import prevention. If a book isn't importing, search here for its path or title.",
+            "searchAutoIgnoreRules": "Search auto-ignore rules…",
+            "autoIgnoreRulesDescription": "If a book isn't importing, search here for its path or title.",
+            "autoIgnoreRulesTip": "Storyteller adds these when a book is relocated, backed up, or removed with re-import prevention.",
             "noAutoIgnoreRules": "No auto-ignore rules.",
             "noAutoIgnoreRulesMatchSearch": "No auto-ignore rules match your search.",
             "showingRules": "Showing {start, number}–{end, number} of {total, number}",
@@ -798,6 +778,17 @@
             "watch": "Import",
             "ignore": "Ignore",
             "autoIgnore": "Auto-ignore",
+            "pickFolderFirst": "Pick a folder first.",
+            "duplicatePath": "A rule already exists for this path.",
+            "addRule": "Add rule",
+            "deleteRule": "Delete rule",
+            "selectAll": "Select all",
+            "clearSelection": "Clear",
+            "deleteSelected": "Delete {count, number}",
+            "previousPage": "Previous",
+            "nextPage": "Next",
+            "pageOf": "Page {page, number} of {total, number}",
+            "noLinkedBook": "No linked book",
             "ignoreSources": {
               "config": "Config",
               "importRelocated": "Relocated",
@@ -805,54 +796,141 @@
               "importPreventReimport": "Re-import prevention"
             }
           },
-          "scanControls": {
-            "title": "Library Scanning",
-            "description": "Scan your library for new files and changes. Scans check all tracked books and import paths for additions, removals, and modified files.",
-            "scanLibrary": "Scan library",
-            "scanNote": "Re-reads all import paths and book metadata, even if files haven't changed since the last scan.",
-            "scanRunning": "Scan in progress ({source})",
-            "cancelScan": "Cancel scan",
+          "scanning": {
+            "title": "Scanning",
+            "description": "Scans look for new, changed, moved and missing files.",
+            "scanNowLink": "Scan the library now",
             "enableScheduledScans": "Run scans on a schedule",
             "scanInterval": "Scan interval (minutes)",
             "showAdvancedCron": "Use a cron expression instead",
             "showSimpleInterval": "Use a simple interval instead",
             "cronExpression": "Cron expression",
-            "cronExpressionDescription": "Standard cron syntax (minute hour day month weekday). The expression is evaluated in the server's timezone.",
+            "cronExpressionTip": "Minute, hour, day, month, weekday. Evaluated in the server's timezone.",
             "cronHelper": "Cron expression reference (crontab.guru)"
+          }
+        }
+      },
+      "metadata": {
+        "title": "Metadata",
+        "sections": {
+          "readBehavior": {
+            "title": "Metadata from files",
+            "description": "How scans apply metadata read from book files.",
+            "tip": "Merge suits most libraries. If you also edit your books in another tool, such as Calibre or Audiobookshelf, pick Always override so those edits show up here."
           },
-          "skippedImportPaths": {
-            "title": "Skipped import paths",
-            "description": "These file paths have been excluded from auto-import. Books at these paths will not be re-imported during scans.",
-            "clearAll": "Clear all"
+          "defaultStatus": {
+            "title": "Default status",
+            "label": "Default status for new books",
+            "none": "None (no status)"
           }
         }
       },
       "processing": {
         "title": "Processing",
         "sections": {
-          "readaloud": {
-            "title": "Readaloud",
-            "description": "Configure where new readaloud files are saved when the input files were not uploaded through the web client",
-            "locationType": "Location type",
-            "locationTypeSuffix": "Alongside input with a suffix",
-            "locationTypeSiblingFolder": "Alongside input in a folder",
-            "locationTypeCustomFolder": "In a custom folder",
-            "locationTypeInternal": "In the Storyteller internal folder",
-            "cleanCacheAfterReadaloud": "Clean up cache after alignment",
-            "cleanCacheAfterReadaloudDescription": "Automatically delete processed audio, transcripts and alignment data after a readaloud is successfully created. Saves disk space, but means a full restart is needed if you want to re-align later.",
-            "clearCacheNow": "Clear cache for all books",
-            "clearCacheNowDescription": "Delete all processed audio, transcripts and alignment data across the library now. Original files are left untouched.",
-            "clearCacheConfirmTitle": "Clear cache for all books",
-            "clearCacheConfirmDescription": "Delete processed audio, transcripts and alignment data for every book in the library? This frees disk space but means a full restart is needed to re-align books later. Original files are left untouched.",
-            "clearCacheConfirm": "Clear cache",
-            "clearCacheSuccess": "Cleared processed cache",
-            "clearCacheError": "Failed to clear cache"
+          "alignment": {
+            "title": "Alignment",
+            "aligner": "Aligner",
+            "aligners": {
+              "whisper": {
+                "label": "Transcription-based alignment",
+                "description": "Transcribes the narration directly to text, then matches that transcript to the book text using <error_link>Error Align</error_link>. Well tested, and has many options for offloading transcription to a third-party service."
+              },
+              "ctc": {
+                "label": "CTC forced alignment (experimental)",
+                "description": "Aligns text to audio using the Connectionist Temporal Classification (CTC) algorithm. It is more accurate, potentially much faster, gives better word timings and works well across languages.",
+                "badge": "New"
+              }
+            },
+            "autoExclude": "Skip front and back matter automatically",
+            "autoExcludeDescription": "Covers, contents, copyright pages and indexes are left out.",
+            "engine": "Transcription engine",
+            "tabLocal": "On this server",
+            "tabRemote": "On another server",
+            "tabThirdParty": "Third-party services",
+            "whisperCpp": "Whisper (whisper.cpp)",
+            "whisperCppDescription": "Runs on the server hosting Storyteller. Nothing leaves this machine, and speed depends on its hardware.",
+            "whisperServer": "Storyteller server (Ghost Story)",
+            "googleCloud": "Google Cloud",
+            "googleCloudDescription": "Google Cloud Speech-to-Text. Paid cloud API. Requires an API key.",
+            "microsoftAzure": "Azure Cognitive Services",
+            "microsoftAzureDescription": "Azure AI speech recognition. Paid cloud API. Requires a subscription key and service region.",
+            "amazonTranscribe": "Amazon Transcribe",
+            "amazonTranscribeDescription": "AWS transcription via an S3 bucket. Paid cloud API. Requires AWS credentials.",
+            "openaiCloud": "OpenAI Cloud Platform",
+            "openaiCloudDescription": "OpenAI's hosted transcription API. Also works with any OpenAI-compatible endpoint via a custom base URL.",
+            "deepgram": "Deepgram Speech to Text",
+            "deepgramDescription": "Deepgram's hosted speech-to-text API. Paid cloud API. Requires an API key.",
+            "whisperModel": "Whisper model",
+            "whisperThreads": "Turbo mode",
+            "whisperThreadsWarning": "Above 1 is faster but can make alignment less accurate.",
+            "whisperCpuFallback": "CPU fallback",
+            "whisperCpuFallbackDefault": "Use default (GPU if available)",
+            "whisperCpuFallbackBlas": "OpenBLAS (optimized CPU)",
+            "whisperCpuFallbackCpu": "Plain CPU",
+            "whisperServerUrl": "Server URL",
+            "whisperServerApiKey": "API key (optional)",
+            "whisperServerDescription": "Offload transcription to a Ghost Story server running on another, faster machine. Any whisper.cpp-compatible server works too.",
+            "apiKey": "API key *",
+            "subscriptionKey": "Subscription key *",
+            "serviceRegion": "Service region *",
+            "region": "Region *",
+            "bucketName": "Bucket name *",
+            "accessKeyId": "Access key ID *",
+            "secretAccessKey": "Secret access key *",
+            "organization": "Organization (optional)",
+            "baseUrl": "Base URL (optional)",
+            "modelName": "Model name (optional)",
+            "deepgramModel": "Model name",
+            "ctcDevice": "Device",
+            "ctcDeviceDescription": "Pick CPU if alignment crashes.",
+            "ctcDevices": {
+              "auto": "Auto",
+              "cpu": "CPU",
+              "webgpu": "GPU (WebGPU)",
+              "cuda": "GPU (CUDA)",
+              "mlx": "GPU (Apple Silicon)"
+            },
+            "ctcModel": "Model",
+            "ctcModelLanguages": "Available for {languages}.",
+            "ctcDtype": "Precision",
+            "ctcDtypeDescription": "Half precision runs faster on a GPU.",
+            "ctcDtypes": {
+              "auto": "Automatic",
+              "fp32": "Full precision",
+              "fp16": "Half precision"
+            },
+            "ctcBatchSize": "Chunks per batch",
+            "ctcBatchSizePlaceholder": "Automatic",
+            "ctcBatchSizeDescription": "Higher is faster on a GPU and uses more memory.",
+            "ctcModels": {
+              "mms": "MMS only",
+              "quartznet15x5": "Automatic",
+              "citrinet256": "Citrinet 256",
+              "citrinet512": "Citrinet 512",
+              "citrinet1024": "Citrinet 1024"
+            },
+            "autoExcludeTip": "Chapters that are only sometimes narrated, like forewords and dedications, are still aligned and flagged in the report. You can include or exclude any chapter from the report.",
+            "modelGroupMultilingual": "Recommended for other languages",
+            "modelGroupEnglish": "Recommended for English",
+            "modelGroupOther": "Other",
+            "modelTurboHint": "Best balance of accuracy and speed. Can be slow without a GPU.",
+            "modelTinyEnHint": "Enough for most English books. Books with many uncommon words may need small or medium.",
+            "whisperThreadsTip": "Splits audio into chunks that are transcribed in parallel. This mainly helps with GPU transcription.",
+            "whisperCpuFallbackTip": "Runs a GPU build of Whisper on the CPU instead.",
+            "bucketNameTip": "Each file is uploaded to this S3 bucket before the transcription job starts.",
+            "baseUrlTip": "Points at any OpenAI-compatible service, such as a self-hosted speaches instance or a whisper.cpp HTTP server.",
+            "ctcModelTip": "Automatic uses QuartzNet when there is a model for the book's language, and MMS when there isn't.",
+            "ctcDtypeTip": "Automatic uses half precision on a GPU and full precision on a CPU.",
+            "ctcBatchSizeTip": "How many pieces of audio the model looks at in one go. This only matters once alignment is already fast.",
+            "parallelTranscribes": "Tracks to transcribe at once",
+            "parallelTranscribesDescription": "Not recommended with Ghost Story or turbo mode.",
+            "parallelTranscribesTip": "Whisper uses up to 4 CPU cores per track."
           },
           "audio": {
-            "title": "Audio Settings",
-            "description": "Configure audio processing options",
+            "title": "Audio",
             "maxTrackLength": "Maximum processed track length",
-            "maxTrackLengthDescription": "Audio tracks longer than this will be split before transcribing. This can help reduce memory usage during transcription.",
+            "maxTrackLengthDescription": "Longer tracks are split before transcribing.",
             "maxTrackLength45": "45 minutes",
             "maxTrackLength1": "1 hour",
             "maxTrackLength2": "2 hours (default)",
@@ -865,139 +943,46 @@
             "codecAac": "AAC",
             "bitrate": "Preferred audio bitrate",
             "bitrateDefault": "Default (32 Kb/s)",
-            "mp3BitrateDefault": "Default"
+            "mp3BitrateDefault": "Default",
+            "maxTrackLengthTip": "Splitting lowers peak memory use during transcription.",
+            "codecDescription": "The codec used for the audio in your readaloud files.",
+            "codecTip": "OPUS makes the smallest files, but it needs more processing power and does not play on Boox devices yet.",
+            "parallelTranscodes": "Tracks to transcode at once",
+            "parallelTranscodesTip": "Transcoding a track uses a single CPU core, so Storyteller transcodes several tracks at once instead."
           },
-          "alignment": {
-            "title": "Alignment",
-            "description": "Choose how Storyteller alignes the book text with the audiobook narration.",
-            "aligner": "Aligner",
-            "aligners": {
-              "whisper": {
-                "label": "Transcription-based aligment",
-                "description": "Transcribes the narration directly to text, then matches that transcript to the book text using <error_link>Error Align</error_link>. Well tested, and has many options for offloading transcription to a third-party service."
-              },
-              "ctc": {
-                "label": "CTC forced alignment (experimental)",
-                "description": "Aligns text to audio using the Connectionist Temporal Classification (CTC) algorithm. It is more accurate, potentially much faster, gives better word timings and works well across languages.",
-                "badge": "New"
-              }
-            },
-            "alignmentGranularity": "Alignment granularity",
-            "autoExclude": "Skip front and back matter automatically",
-            "autoExcludeDescription": "Covers, tables of contents, copyright pages, indexes and publisher pages are left out of the alignment. Chapters that are only sometimes narrated, like forewords and dedications, are still aligned and flagged in the report. You can include or exclude any chapter from the report.",
-            "alignmentGranularityDescription": "Word level alignment may not be accurately reproduces in all clients at the moment, and is only available with the CTC aligner.",
-            "alignmentGranularityWord": "Word+Sentence (experimental)",
-            "alignmentGranularitySentence": "Sentence",
-            "engine": "Transcription engine",
-            "tabLocal": "On this server",
-            "tabRemote": "On another server",
-            "tabThirdParty": "Third-party services",
-            "whisperCpp": "Whisper (whisper.cpp)",
-            "whisperCppDescription": "Runs directly on the server hosting Storyteller. No extra setup and nothing leaves this machine; speed depends on its hardware.",
-            "whisperServer": "Storyteller server (Ghost Story)",
-            "googleCloud": "Google Cloud",
-            "googleCloudDescription": "Google Cloud Speech-to-Text. Paid cloud API; requires an API key.",
-            "microsoftAzure": "Azure Cognitive Services",
-            "microsoftAzureDescription": "Azure AI speech recognition. Paid cloud API; requires a subscription key and service region.",
-            "amazonTranscribe": "Amazon Transcribe",
-            "amazonTranscribeDescription": "AWS transcription via an S3 bucket. Paid cloud API; requires AWS credentials.",
-            "openaiCloud": "OpenAI Cloud Platform",
-            "openaiCloudDescription": "OpenAI's hosted transcription API. Also works with any OpenAI-compatible endpoint via a custom base URL.",
-            "deepgram": "Deepgram Speech to Text",
-            "deepgramDescription": "Deepgram's hosted speech-to-text API. Paid cloud API; requires an API key.",
-            "whisperBuild": "Whisper build",
-            "whisperBuildCpu": "CPU",
-            "whisperBuildCublas126": "cuBLAS 12.6 (NVIDIA GPU)",
-            "whisperBuildCublas130": "cuBLAS 13.0 (NVIDIA GPU)",
-            "whisperBuildHipblas": "hipBLAS (AMD GPU)",
-            "whisperBuildDeprecated": "cuBLAS 11.8 is no longer supported. Please update to version 12 or 13.",
-            "whisperModel": "Whisper model",
-            "whisperModelDescription": "The default (tiny) is sufficient for most English books. For books with many uncommon words, or in languages other than English, you may need larger models like small or medium.",
-            "whisperThreads": "Turbo mode",
-            "whisperThreadsDescription": "Change the parallelization level of the Whisper model. Can result in a massive speed increase when doing GPU-accelerated transcription.",
-            "whisperThreadsNote": "It is not recommended to set both this value and the \"Number of audio tracks to transcribe in parallel\" value to a value greater than 1. Choose one or the other.",
-            "whisperThreadsWarningPrefix": "Warning!",
-            "whisperThreadsWarning": "Setting above 1 may reduce transcription accuracy but increases speed by splitting audio into chunks processed in parallel. Do not report bugs if you set this to a value greater than 1 and are not able to get a consistent Readaloud, only if you cannot get a consistent Readaloud even with a value of 1.",
-            "whisperCpuFallback": "CPU fallback",
-            "whisperCpuFallbackDescription": "If you have a GPU variant installed but want to fall back to CPU transcription, select a CPU variant here.",
-            "whisperCpuFallbackDefault": "Use default (GPU if available)",
-            "whisperCpuFallbackBlas": "OpenBLAS (optimized CPU)",
-            "whisperCpuFallbackCpu": "Plain CPU",
-            "whisperServerUrl": "Server URL",
-            "whisperServerUrlDescription": "e.g. http://192.168.1.19:8080 for the local whisper.cpp server.",
-            "whisperServerApiKey": "API key",
-            "whisperServerApiKeyDescription": "Only necessary if your server requires an API key.",
-            "whisperServerDescription": "Offload transcription to a Ghost Story server running on another, faster machine. Any whisper.cpp-compatible server works too.",
-            "apiKey": "API key *",
-            "subscriptionKey": "Subscription key *",
-            "serviceRegion": "Service region *",
-            "region": "Region *",
-            "bucketName": "Bucket name *",
-            "bucketNameDescription": "Amazon Transcribe requires files to be uploaded to an S3 bucket before starting the transcribe job. This is the bucket Storyteller will upload files to.",
-            "accessKeyId": "Access key ID *",
-            "secretAccessKey": "Secret access key *",
-            "organization": "Organization (optional)",
-            "baseUrl": "Base URL (optional)",
-            "baseUrlDescription": "You can use a custom base URL to point at a OpenAI-compatible service like a self-hosted speaches instance or a remote whisper.cpp HTTP server.",
-            "modelName": "Model name (optional)",
-            "modelNameDescription": "e.g. Systran/faster-distil-whisper-large-v3 for faster-whisper-server, or whisper-1 for OpenAI Cloud.",
-            "deepgramModel": "Model name",
-            "deepgramModelDescription": "Can be any model the server supports, like nova-3, nova-2, nova, enhanced, base or whisper. Defaults to nova-3.",
-            "ctcEngines": {
-              "ctc-local": {
-                "label": "On this server",
-                "description": "Runs on the machine hosting Storyteller."
-              }
-            },
-            "ctcEngine": "Where it runs",
-            "ctcDevice": "Device",
-            "ctcDeviceDescription": "Pick CPU if alignment crashes.",
-            "ctcDevices": {
-              "auto": "Auto",
-              "cpu": "CPU",
-              "webgpu": "GPU (WebGPU)",
-              "cuda": "GPU (CUDA)",
-              "mlx": "GPU (Apple Silicon)"
-            },
-            "ctcModel": "Model",
-            "ctcModelDescription": "Automatic uses QuartzNet when if there's a supported model for the language, and MMS when there isn't.",
-            "ctcModelLanguages": "Available for {languages}.",
-            "ctcDtype": "Precision",
-            "ctcDtypeDescription": "Half precision runs faster on a GPU. Automatic uses half precision on a GPU, full precision on a CPU.",
-            "ctcDtypes": {
-              "auto": "Automatic",
-              "fp32": "Full precision",
-              "fp16": "Half precision"
-            },
-            "ctcBatchSize": "Chunks per batch",
-            "ctcBatchSizePlaceholder": "Automatic",
-            "ctcBatchSizeDescription": "How many pieces of audio the model looks at in one go. Higher is faster on a GPU and uses more memory. This only matters once alignment is already fast.",
-            "ctcModels": {
-              "mms": "MMS only",
-              "quartznet15x5": "Automatic",
-              "citrinet256": "Citrinet 256",
-              "citrinet512": "Citrinet 512",
-              "citrinet1024": "Citrinet 1024"
-            }
-          },
-          "parallelization": {
-            "title": "Parallelization Settings",
-            "description": "Audio transcoding is single-threaded, and Whisper has diminishing returns on multi-core processing for a single file. Since Storyteller splits input audio into multiple tracks, it can run transcoding and transcription in parallel.",
-            "parallelTranscodes": "Parallel audio track transcoding",
-            "parallelTranscodesDescription": "Transcoding one track will use one CPU core",
-            "parallelTranscribes": "Parallel audio track transcription",
-            "parallelTranscribesDescription": "Applies to Whisper only. Transcribing one track uses up to 4 CPU cores.",
-            "parallelWhisperBuild": "CPU cores for whisper.cpp build",
-            "parallelWhisperBuildDescription": "Whenever the Storyteller container is recreated (e.g. after an update), it will rebuild whisper.cpp. This process can be sped up by dedicating multiple CPU cores."
+          "readaloud": {
+            "title": "Readaloud",
+            "description": "Where new readaloud files are saved for books that were not uploaded through the web client.",
+            "locationType": "Location type",
+            "locationTypeSuffix": "Alongside input with a suffix",
+            "locationTypeSiblingFolder": "Alongside input in a folder",
+            "locationTypeCustomFolder": "In a custom folder",
+            "locationTypeInternal": "In the Storyteller internal folder",
+            "cleanCacheAfterReadaloud": "Clean up cache after alignment",
+            "cleanCacheAfterReadaloudDescription": "Saves disk space, but re-aligning a book later starts from scratch.",
+            "previewLabel": "Saved as",
+            "cleanCacheAfterReadaloudTip": "Removes processed audio, transcripts and alignment data once a readaloud is created. Leave this off to re-align books later without transcribing them again.",
+            "clearCacheLink": "Clear the cache now"
           }
         }
       },
-      "auth": {
-        "title": "Authentication",
+      "server": {
+        "title": "Server",
         "sections": {
-          "sso": {
-            "title": "Authentication Providers",
-            "description": "Configure external authentication providers for single sign-on",
+          "identity": {
+            "title": "Server identity",
+            "libraryName": "Library name",
+            "webUrl": "Web URL",
+            "webUrlDescription": "Used in emails and the OPDS feed.",
+            "serverIcon": "Server icon",
+            "serverIconDescription": "Shown in clients that connect to this server, and used as the favicon.",
+            "serverIconUpload": "Upload icon",
+            "serverIconReplace": "Replace icon",
+            "serverIconRemove": "Remove",
+            "serverIconError": "Could not upload that image"
+          },
+          "auth": {
+            "title": "Authentication",
             "providerType": "Provider type",
             "providerTypeBuiltIn": "Built-in",
             "providerTypeCustom": "Custom",
@@ -1026,65 +1011,47 @@
             "disablePasswordLogin": "Disable password login",
             "disablePasswordLoginDescriptionEnabled": "Only allow login via configured authentication providers. Most OPDS clients do not support OAuth.",
             "disablePasswordLoginDescriptionDisabled": "Requires an auth provider with a group that can change server settings."
-          }
-        }
-      },
-      "upload": {
-        "title": "Upload",
-        "sections": {
+          },
           "upload": {
-            "title": "Upload Settings",
-            "description": "Configure upload chunk size for large file uploads",
+            "title": "Upload",
             "overriddenWarning": "Your max chunk size is overridden via the environment variable STORYTELLER_MAX_UPLOAD_CHUNK_SIZE. Change that environment variable to change the value, or unset it to configure the value here.",
             "enableMaxChunkSize": "Enable max chunk size",
             "enableMaxChunkSizeDescription": "Only enable this if you're running into maximum request size issues with your reverse proxy or hosting provider.",
             "maxChunkSize": "Max chunk size (bytes)",
-            "maxChunkSizeDescription": "Default is 100MB, which is Cloudflare's maximum request size."
-          }
-        }
-      },
-      "email": {
-        "title": "Email",
-        "sections": {
+            "maxChunkSizeTip": "The default of 100 MB is Cloudflare's maximum request size."
+          },
           "email": {
-            "title": "Email Settings",
-            "description": "Configure SMTP settings for sending emails (invitations, password resets, etc.)",
+            "title": "Email",
+            "description": "Used for invitations and password resets.",
             "smtpHost": "SMTP host",
             "smtpPort": "SMTP port",
             "smtpFrom": "SMTP from address",
             "smtpUsername": "SMTP username",
             "smtpPassword": "SMTP password",
-            "forceTls": "Force TLS",
-            "forceTlsDescription": "Disabling this option does not disable TLS. By default, Storyteller will use STARTTLS to negotiate a TLS connection. If you have this option enabled and see an error about an incorrect TLS version, try disabling it.",
-            "rejectSelfSigned": "Reject self-signed TLS certs"
-          }
-        }
-      },
-      "opds": {
-        "title": "OPDS",
-        "sections": {
+            "connectionSecurity": "Connection security",
+            "connectionStarttls": "STARTTLS",
+            "connectionTls": "TLS",
+            "rejectSelfSigned": "Reject self-signed TLS certs",
+            "connectionSecurityTip": "STARTTLS upgrades a plain connection to TLS. If you get an error about the TLS version, try STARTTLS."
+          },
           "opds": {
-            "title": "OPDS Settings",
-            "description": "Configure the OPDS feed for your library. OPDS is a standard for publishing ebook catalogs.",
+            "title": "OPDS",
+            "tip": "OPDS is an open standard for publishing ebook catalogs that reader apps can subscribe to.",
             "enabled": "Enable OPDS",
-            "enabledDescription": "Enable the OPDS feed for your library. This allows compatible ebook readers to browse your library and download books. You can access the OPDS feed at {url}.",
+            "enabledDescription": "Lets compatible readers browse and download your library.",
             "pageSize": "Page size",
-            "pageSizeDescription": "The number of books per page in the OPDS feed. Default is 25.",
             "format": "Preferred ebook",
-            "formatDescription": "Which ebook edition to offer for download. Readaloud epubs include synchronized audio (media overlays) and are large, and many e-readers (e.g. Kindle, Kobo) can't use them, so you may prefer the plain ebook. An audiobook is always offered when available.",
+            "formatTip": "An audiobook is always offered when available.",
             "formatReadaloud": "Readaloud, or ebook if unavailable",
-            "formatEbook": "Ebook, or read-aloud if unavailable",
+            "formatReadaloudHint": "Full readaloud: large, and many e-readers can't play the synchronized audio.",
+            "formatEbook": "Ebook, or readaloud if unavailable",
+            "formatEbookHint": "Plain EPUB which works on every reader",
+            "formatBoth": "Both readaloud and ebook",
+            "formatBothHint": "Offers both files",
             "urlsTitle": "Feed URLs",
-            "urlsDescription": "Storyteller supports both OPDS 1.2 and OPDS 2.0. Point your reader at either URL below. OPDS 1.2 is the most widely supported. OPDS 2.0 is the newer JSON-based format.",
-            "urlV1": "OPDS 1.2",
-            "urlV2": "OPDS 2.0",
-            "formatBoth": "Both read-aloud and ebook"
-          }
-        }
-      },
-      "app": {
-        "title": "App",
-        "sections": {
+            "urlV1": "OPDS 1.2 (widest support)",
+            "urlV2": "OPDS 2.0 (JSON)"
+          },
           "updates": {
             "title": "Updates",
             "description": "Storyteller Server app {version}",
@@ -1099,88 +1066,6 @@
             "checkNow": "Check for Updates…"
           }
         }
-      },
-      "changelog": {
-        "title": "Changelog"
-      },
-      "logs": {
-        "title": "Logs",
-        "noLogs": "No log entries found.",
-        "searchLogs": "Search logs...",
-        "allLevels": "All levels",
-        "wrapLines": "Toggle line wrapping",
-        "highlighting": "Toggle highlighting",
-        "hideTime": "Hide timestamps",
-        "showTime": "Show timestamps",
-        "lineCount": "{count, number} lines",
-        "enableDebug": "Enable debug logging",
-        "disableDebug": "Disable debug logging",
-        "follow": "Follow new logs",
-        "scrollToBottom": "Scroll to bottom",
-        "clearLogs": "Clear logs",
-        "clearLogsConfirm": "This empties today's log file. New entries keep being written.",
-        "logsCleared": "Logs cleared",
-        "copyLogs": "Copy shown lines",
-        "copied": "Copied {count, number} lines",
-        "copyFailed": "Could not copy to the clipboard",
-        "downloadLogs": "Download this day's log file",
-        "lightPane": "Show logs on a light background",
-        "darkPane": "Show logs on a dark background",
-        "today": "Today",
-        "selectDate": "Log day",
-        "retention": "Keep logs for",
-        "days": "days",
-        "retentionDescription": "Log files older than this are deleted.",
-        "diskUsage": "{size} on disk",
-        "save": "Save",
-        "retentionSaved": "Log retention saved",
-        "retentionSaveFailed": "Failed to save log retention"
-      },
-      "backups": {
-        "title": "Data & backups",
-        "databaseTitle": "Database",
-        "databaseDescription": "Download a snapshot of the live database or store a backup on the server.",
-        "downloadDatabase": "Download database",
-        "backUpNow": "Back up now",
-        "backingUp": "Backing up…",
-        "backupCreated": "Backup created",
-        "backupFailed": "Failed to create backup",
-        "noBackups": "No stored backups yet.",
-        "downloadBackup": "Download backup",
-        "deleteBackup": "Delete backup",
-        "deleteBackupConfirm": "This backup file will be permanently deleted.",
-        "deleteFailed": "Failed to delete backup",
-        "scheduleTitle": "Scheduled backups",
-        "scheduleDescription": "Automatically back up the database on a schedule. Old scheduled backups are pruned; manual backups are never touched.",
-        "enableScheduledBackups": "Enable scheduled backups",
-        "backupInterval": "Backup interval (minutes)",
-        "cronExpression": "Cron expression",
-        "showAdvancedCron": "Use a cron expression instead",
-        "hideAdvancedCron": "Use a simple interval instead",
-        "retention": "Backups to keep",
-        "retentionDescription": "Older scheduled backups beyond this count are deleted after each run.",
-        "saveSchedule": "Save schedule",
-        "saving": "Saving…",
-        "scheduleSaved": "Backup schedule saved",
-        "scheduleSaveFailed": "Failed to save backup schedule",
-        "rewriteTitle": "Rewrite file paths",
-        "rewriteDescription": "Update stored absolute file paths after moving your library or importing a database from another machine. Paths starting with the old prefix are rewritten to the new one.",
-        "anchorMismatch": "This database was last used with data directory \"{anchor}\", but the server is now running with \"{current}\". Stored file paths may point to the old location.",
-        "prefillFromAnchor": "Prefill old → new",
-        "dismissAnchor": "Paths are fine — dismiss",
-        "rewriteFrom": "Paths starting with",
-        "rewriteTo": "Become paths starting with",
-        "previewRewrite": "Preview",
-        "previewing": "Previewing…",
-        "previewFailed": "Failed to preview rewrite",
-        "noMatches": "No stored paths match this prefix.",
-        "matchSummary": "{count, number} matching · {existing, number} of {checked, number} checked targets exist",
-        "applyRewrite": "Rewrite paths",
-        "applyRewriteConfirm": "All matching paths in the database will be rewritten. A pre-rewrite backup is recommended.",
-        "applyRewriteCount": "Rewrite {count, number} paths",
-        "applying": "Rewriting…",
-        "applyFailed": "Failed to rewrite paths",
-        "applySucceeded": "Rewrote {count, number} paths"
       },
       "users": {
         "title": "Users",
@@ -1230,6 +1115,165 @@
             "passwordResetFailed": "Could not send the password reset link"
           }
         }
+      },
+      "maintenance": {
+        "title": "Maintenance",
+        "sections": {
+          "scan": {
+            "title": "Library scan",
+            "description": "Rereads every import path and all book metadata, even for unchanged files.",
+            "scanLibrary": "Scan library",
+            "cancelScan": "Cancel scan",
+            "scanRunning": "Scan in progress ({source})",
+            "scheduleLink": "Change the scan schedule"
+          },
+          "caches": {
+            "title": "Caches",
+            "description": "Files Storyteller made or kept along the way. Clearing them frees disk space.",
+            "measuring": "Measuring…",
+            "processing": {
+              "title": "Processing",
+              "description": "Kept so books can be re-aligned without transcribing them again.",
+              "books": "{count, plural, =0 {No books} one {# book} other {# books}}",
+              "transcodedAudio": "Transcoded audio",
+              "transcriptions": "Transcriptions",
+              "emissions": "Emissions",
+              "clear": "Clear",
+              "confirmTitle": "Clear the processing cache?",
+              "confirmDescription": "Deletes {size} of transcoded audio, transcriptions and emissions. Re-aligning a book afterwards starts from scratch. Original files are left untouched.",
+              "confirm": "Clear cache",
+              "success": "Cleared the processing cache",
+              "error": "Could not clear the processing cache",
+              "autoCleanLink": "Clean up automatically after alignment"
+            },
+            "images": {
+              "title": "Images",
+              "description": "Resized covers and other images.",
+              "files": "{count, plural, =0 {No files} one {# file} other {# files}}",
+              "clear": "Clear",
+              "confirmTitle": "Clear the image cache?",
+              "confirmDescription": "Deletes {size} of resized images. Covers load a little slower until they are resized again.",
+              "confirm": "Clear cache",
+              "success": "Cleared the image cache",
+              "error": "Could not clear the image cache"
+            },
+            "uploads": {
+              "title": "Unfinished uploads",
+              "description": "Uploads that started more than a day ago and never finished.",
+              "files": "{count, plural, =0 {None} one {# upload} other {# uploads}}",
+              "clear": "Delete",
+              "confirmTitle": "Delete unfinished uploads?",
+              "confirmDescription": "Deletes {size} of partly uploaded files. Uploads started in the last day are kept.",
+              "confirm": "Delete uploads",
+              "success": "Deleted unfinished uploads",
+              "error": "Could not delete unfinished uploads"
+            }
+          },
+          "leftovers": {
+            "title": "Leftover files",
+            "description": "Files no book uses anymore. Anything changed in the last hour is left out.",
+            "measuring": "Measuring…",
+            "folders": {
+              "title": "Orphaned book folders",
+              "description": "Folders in the assets directory that no book points to. Folders that still hold book files are only deleted one at a time.",
+              "summary": "{count, plural, =0 {None} one {# folder} other {# folders}}",
+              "show": "Show folders",
+              "hide": "Hide folders",
+              "empty": "Empty",
+              "deleteOne": "Delete {name}",
+              "deleteAll": "Delete leftovers",
+              "confirmOneTitle": "Delete this folder?",
+              "confirmOneDescription": "Deletes \"{name}\" and the {size} inside it. This cannot be undone.",
+              "confirmAllTitle": "Delete leftover folders?",
+              "confirmAllDescription": "Deletes {count, plural, one {# folder} other {# folders}} with {size} of processing files and covers. Folders that still hold book files are kept. This cannot be undone.",
+              "confirm": "Delete",
+              "success": "{count, plural, one {Deleted # folder} other {Deleted # folders}}",
+              "error": "Could not delete the folders",
+              "bookFiles": "Book files",
+              "confirmOneBookFilesDescription": "Deletes \"{name}\" and the {size} inside it, including ebook, audio or readaloud files that are not in your library. This may be the only copy. This cannot be undone."
+            },
+            "images": {
+              "title": "Unused images",
+              "description": "Stored images that no book or setting uses.",
+              "summary": "{count, plural, =0 {None} one {# image} other {# images}}",
+              "delete": "Delete",
+              "confirmTitle": "Delete unused images?",
+              "confirmDescription": "Deletes {size} of images nothing uses. This cannot be undone.",
+              "confirm": "Delete",
+              "success": "{count, plural, one {Deleted # image} other {Deleted # images}}",
+              "error": "Could not delete the images"
+            }
+          },
+          "logs": {
+            "title": "Server logs",
+            "description": "Log files are deleted automatically after the retention period set on the logs page.",
+            "summary": "{count, plural, =0 {No log files} one {# log file} other {# log files}}",
+            "delete": "Delete all",
+            "confirmTitle": "Delete all server logs?",
+            "confirmDescription": "Deletes {size} of logs, including everything logged today. This cannot be undone.",
+            "confirm": "Delete logs",
+            "success": "Deleted the server logs",
+            "error": "Could not delete the server logs",
+            "viewLink": "View logs",
+            "measuring": "Measuring…"
+          },
+          "pathRewrite": {
+            "title": "Rewrite file paths",
+            "description": "Update stored absolute file paths after moving your library or importing a database from another machine. Paths starting with the old prefix are rewritten to the new one.",
+            "anchorMismatch": "This database was last used with data directory \"{anchor}\", but the server is now running with \"{current}\". Stored file paths may point to the old location.",
+            "prefillFromAnchor": "Prefill old → new",
+            "dismissAnchor": "Paths are fine — dismiss",
+            "rewriteFrom": "Paths starting with",
+            "rewriteTo": "Become paths starting with",
+            "previewRewrite": "Preview",
+            "previewing": "Previewing…",
+            "previewFailed": "Failed to preview rewrite",
+            "noMatches": "No stored paths match this prefix.",
+            "matchSummary": "{count, number} matching · {existing, number} of {checked, number} checked targets exist",
+            "applyRewrite": "Rewrite paths",
+            "applyRewriteConfirm": "All matching paths in the database will be rewritten. A pre-rewrite backup is recommended.",
+            "applyRewriteCount": "Rewrite {count, number} paths",
+            "applying": "Rewriting…",
+            "applyFailed": "Failed to rewrite paths",
+            "applySucceeded": "Rewrote {count, number} paths"
+          }
+        }
+      },
+      "changelog": {
+        "title": "Changelog"
+      },
+      "logs": {
+        "title": "Logs",
+        "noLogs": "No log entries found.",
+        "searchLogs": "Search logs...",
+        "allLevels": "All levels",
+        "wrapLines": "Toggle line wrapping",
+        "highlighting": "Toggle highlighting",
+        "hideTime": "Hide timestamps",
+        "showTime": "Show timestamps",
+        "lineCount": "{count, number} lines",
+        "enableDebug": "Enable debug logging",
+        "disableDebug": "Disable debug logging",
+        "follow": "Follow new logs",
+        "scrollToBottom": "Scroll to bottom",
+        "clearLogs": "Clear logs",
+        "clearLogsConfirm": "This empties today's log file. New entries keep being written.",
+        "logsCleared": "Logs cleared",
+        "copyLogs": "Copy shown lines",
+        "copied": "Copied {count, number} lines",
+        "copyFailed": "Could not copy to the clipboard",
+        "downloadLogs": "Download this day's log file",
+        "lightPane": "Show logs on a light background",
+        "darkPane": "Show logs on a dark background",
+        "today": "Today",
+        "selectDate": "Log day",
+        "retention": "Keep logs for",
+        "days": "days",
+        "retentionDescription": "Log files older than this are deleted.",
+        "diskUsage": "{size} on disk",
+        "save": "Save",
+        "retentionSaved": "Log retention saved",
+        "retentionSaveFailed": "Failed to save log retention"
       },
       "queue": {
         "title": "Processing Queue",
@@ -1310,12 +1354,41 @@
           "dropped": "Dropped {title} at position {position, number} of {total, number}.",
           "canceled": "Reordering canceled. {title} is back at position {position, number} of {total, number}."
         }
+      },
+      "backups": {
+        "title": "Data & backups",
+        "databaseTitle": "Database",
+        "databaseDescription": "Download a snapshot of the live database or store a backup on the server.",
+        "downloadDatabase": "Download database",
+        "backUpNow": "Back up now",
+        "backingUp": "Backing up…",
+        "backupCreated": "Backup created",
+        "backupFailed": "Failed to create backup",
+        "noBackups": "No stored backups yet.",
+        "downloadBackup": "Download backup",
+        "deleteBackup": "Delete backup",
+        "deleteBackupConfirm": "This backup file will be permanently deleted.",
+        "deleteFailed": "Failed to delete backup",
+        "scheduleTitle": "Scheduled backups",
+        "scheduleDescription": "Automatically back up the database on a schedule. Old scheduled backups are pruned; manual backups are never touched.",
+        "enableScheduledBackups": "Enable scheduled backups",
+        "backupInterval": "Backup interval (minutes)",
+        "cronExpression": "Cron expression",
+        "showAdvancedCron": "Use a cron expression instead",
+        "hideAdvancedCron": "Use a simple interval instead",
+        "retention": "Backups to keep",
+        "retentionDescription": "Older scheduled backups beyond this count are deleted after each run.",
+        "saveSchedule": "Save schedule",
+        "saving": "Saving…",
+        "scheduleSaved": "Backup schedule saved",
+        "scheduleSaveFailed": "Failed to save backup schedule"
       }
-    }
+    },
+    "onThisPage": "On this page"
   },
   "PreferencesPage": {
     "title": "Preferences",
-    "settingsPage": "Global settings",
+    "settingsPage": "Settings",
     "savedSuccessfully": "Preferences saved",
     "failedToSave": "Failed to save preferences",
     "searchPreferences": "Search preferences...",
@@ -1334,8 +1407,9 @@
       "lockedHint": "This default is managed by the server config file and can't be changed here."
     },
     "sidebar": {
-      "user": "User",
-      "preferences": "Preferences"
+      "user": "Account",
+      "preferences": "Personalization",
+      "noMatches": "No matches"
     },
     "profile": {
       "title": "Profile",
@@ -1367,9 +1441,7 @@
         "sections": {
           "language": {
             "title": "Language",
-            "description": "Choose your preferred display language.",
             "label": "Language",
-            "hint": "This setting syncs across all your devices.",
             "systemDefault": "System default"
           },
           "view": {
@@ -1390,7 +1462,6 @@
         "sections": {
           "accent": {
             "title": "Accent & shell",
-            "description": "The color the app leans on, and how the frame around your library is dressed.",
             "label": "Accent color",
             "hint": "Applies to buttons, highlights and the sidebar.",
             "useDefault": "Use default color",
@@ -1407,9 +1478,7 @@
           },
           "colorfulness": {
             "title": "Colorfulness",
-            "description": "How much cover colors bleed into the interface.",
             "label": "Color level",
-            "hint": "Full uses cover colors everywhere; minimal keeps a neutral theme.",
             "levels": {
               "full": "Full",
               "minimal": "Minimal"
@@ -1417,11 +1486,11 @@
           },
           "motion": {
             "title": "Motion",
-            "description": "How the library responds to opening and resizing panels.",
             "label": "Layout animations",
-            "hint": "Slide the detail panel open and glide books to their new spots. When off, panels snap into place instantly.",
+            "hint": "When off, panels snap into place instantly.",
             "panelLabel": "Slide the detail panel open",
-            "panelHint": "Animate the detail panel opening when you click a book. When off, it appears at full width instantly (dragging the edge still animates)."
+            "panelHint": "When off, the panel appears at full width instantly.",
+            "panelTip": "Dragging the panel edge still animates."
           }
         }
       },
@@ -1430,16 +1499,13 @@
         "sections": {
           "gridDisplay": {
             "title": "Grid display",
-            "description": "How books are shown in the library grid.",
             "coverLabel": "Cover display",
-            "coverHint": "Both arranges the ebook and audiobook covers inside the card, and centres the one cover a single-format book has. Pinning a format instead fills the whole card with that cover.",
             "coverOptions": {
               "auto": "Both covers",
               "ebook": "Ebook only",
               "audiobook": "Audiobook only"
             },
             "alignmentLabel": "Double cover style",
-            "alignmentHint": "Controls whether the two covers appear tilted or straight.",
             "alignmentOptions": {
               "auto": "Tilted when unsynced",
               "straight": "Always straight"
@@ -1454,27 +1520,26 @@
               "largest": "Largest"
             },
             "fitLabel": "Odd-shaped covers",
-            "fitHint": "How a cover whose art is not the usual book shape is displayed. True size keeps the art's own shape, so it only applies when covers sit inside the card.",
             "fitOptions": {
               "true-size": "True size",
               "stretch": "Stretch",
               "cover": "Zoom to fill",
               "contain": "Fit with backdrop"
-            }
+            },
+            "fitTip": "True size keeps the art's own shape, so it is only available when covers sit inside the card."
           },
           "opening": {
             "title": "Opening books",
-            "description": "What clicking a book on the home page or in search results does.",
             "label": "Open books in",
-            "hint": "The side panel floats over the page for a quick look; the full book page is always one more click away. In the library's grid and list views a click always opens the side panel there.",
+            "hint": "The full book page is always one more click away.",
             "options": {
               "panel": "Side panel",
               "page": "Book page"
-            }
+            },
+            "tip": "In the library's grid and list views a click always opens the side panel."
           },
           "detail": {
             "title": "Details display",
-            "description": "How a book is shown on its details page.",
             "display": {
               "label": "Book display",
               "hint": "The flat cover falls back to your grid cover choice.",
@@ -1484,7 +1549,7 @@
               }
             },
             "view": {
-              "hint": "The angle the 3D book starts at. Click a book to change it.",
+              "hint": "Click the book to change the starting angle.",
               "label": "View",
               "options": {
                 "cover": "Cover",
@@ -1497,9 +1562,7 @@
           },
           "ratingIcon": {
             "title": "Rating icon",
-            "description": "Choose the glyph used to show ratings.",
             "label": "Icon",
-            "hint": "Switch between stars and hearts. The rating value stays the same.",
             "options": {
               "star": "Stars",
               "heart": "Hearts"
@@ -1507,23 +1570,21 @@
           },
           "ratingDimensions": {
             "title": "Rating dimensions",
-            "description": "Customize the axes of the multidimensional book rating.",
             "label": "Dimensions",
-            "hint": "Each book can be scored 0-5 on every axis; the average becomes its rating.",
+            "hint": "Each book can be scored 0-5 on every axis. The average of all these scores becomes its rating.",
             "add": "Add dimension",
             "placeholder": "Dimension name",
             "remove": "Remove dimension",
-            "customize": "Customize"
+            "customize": "Customize",
+            "example": "Example",
+            "preview": "Preview"
           },
           "ratings": {
-            "title": "Ratings and Reviews",
-            "description": "Change how ratings and reviews display and work"
+            "title": "Ratings"
           },
           "defaultStatus": {
-            "title": "Default Status",
-            "description": "Choose which status newly added books start with for you.",
+            "title": "Default status",
             "label": "Default status for new books",
-            "hint": "Overrides the library-wide default set by an admin. Choose \"Use library default\" to follow the admin setting.",
             "useLibraryDefault": "Use library default"
           }
         }
@@ -1978,13 +2039,15 @@
     "importMode": {
       "modeDefault": "Default",
       "modeReference": "Reference in place",
+      "modeReferenceHint": "Files stay where they are",
       "modeCopy": "Copy to library",
+      "modeCopyHint": "A copy goes into the library",
       "modeMove": "Move to library",
-      "modeHardlink": "Hard link"
+      "modeMoveHint": "Files move into the library",
+      "modeHardlink": "Hard link",
+      "modeHardlinkHint": "A hard link is created in the library"
     },
     "metadata": {
-      "metadataFieldOverrides": "Metadata read behavior",
-      "metadataFieldOverridesDescription": "Controls how Storyteller handles metadata from book files during scans. The default (merge) is suitable for most users. If you also manage your books with other tools (e.g. Calibre, Audiobookshelf) and want those changes reflected in Storyteller, consider using always override.",
       "fieldTitle": "Title",
       "fieldSubtitle": "Subtitle",
       "fieldDescription": "Description",
@@ -2026,13 +2089,9 @@
     "epub2Strategy": {
       "strategyDefault": "Use default",
       "strategyBackupAndConvert": "Backup & rename",
-      "strategyBackupAndConvertDescription": "Renames the EPUB 2 file to a backup and writes the EPUB 3 conversion to the original filename. Storyteller imports the converted file.",
       "strategyConvertAlongside": "Convert & rename",
-      "strategyConvertAlongsideDescription": "Leaves the EPUB 2 file exactly where it is and writes the EPUB 3 conversion to a new file next to it. Storyteller imports the converted file. Pick this if the original files must not move.",
       "strategyReplace": "Replace in place",
-      "strategyReplaceDescription": "Converts the file in place, keeping no copy of the EPUB 2.",
       "strategySkip": "Skip",
-      "strategySkipDescription": "Leaves the file alone and doesn't import it.",
       "previewBefore": "Before",
       "previewAfter": "After",
       "previewEpub2": "EPUB 2",
@@ -2042,7 +2101,8 @@
       "previewNotImported": "EPUB 2, not imported"
     },
     "commonRoles": "Common roles",
-    "allRoles": "All roles"
+    "allRoles": "All roles",
+    "moreInfo": "More information"
   },
   "UploadDialog": {
     "metadataBehavior": "Metadata behavior",

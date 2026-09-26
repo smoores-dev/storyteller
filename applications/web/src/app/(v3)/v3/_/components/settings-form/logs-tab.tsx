@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { SearchInput } from "@v3/_/components/books/SearchInput"
 import { Button } from "@v3/_/components/ui/button"
 import {
   ConfirmDialog,
@@ -570,28 +571,14 @@ function LogsToolbar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="relative min-w-40 flex-1">
-        <icon.Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
-        <Input
+        <SearchInput
           type="text"
           placeholder={t("searchLogs")}
           value={search}
-          onChange={(e) => {
-            onSearchChange(e.target.value)
+          onChange={(value) => {
+            onSearchChange(value)
           }}
-          className="h-8 pr-8 pl-8 text-sm"
         />
-
-        {search && (
-          <button
-            type="button"
-            onClick={() => {
-              onSearchChange("")
-            }}
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2"
-          >
-            <icon.Close className="h-3.5 w-3.5" />
-          </button>
-        )}
       </div>
 
       {selectedDate && dateItems.length > 0 && (
@@ -603,7 +590,7 @@ function LogsToolbar({
           items={dateItems}
         >
           <SelectTrigger
-            className="h-8 w-36 text-sm"
+            className="h-8! w-36 text-sm"
             aria-label={t("selectDate")}
           >
             <icon.Calendar className="text-muted-foreground h-3.5 w-3.5" />
@@ -626,7 +613,7 @@ function LogsToolbar({
         }}
         items={levelItems}
       >
-        <SelectTrigger className="h-8 w-28 text-sm">
+        <SelectTrigger className="h-8! w-28 text-sm">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -645,7 +632,7 @@ function LogsToolbar({
         }}
         items={lineCountItems}
       >
-        <SelectTrigger className="h-8 w-28 text-sm">
+        <SelectTrigger className="h-8! w-28 text-sm">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

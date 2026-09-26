@@ -1,28 +1,14 @@
 "use client"
 
 import { useLocale } from "next-intl"
-import { type ReactNode, useState } from "react"
+import { useState } from "react"
 import { Controller, useWatch } from "react-hook-form"
-import { toast } from "sonner"
 
 import {
   CTC_DTYPES,
   ctcModelLanguages,
 } from "@storyteller-platform/ghost-story/constants"
 
-import { Button } from "@v3/_/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@v3/_/components/ui/card"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@v3/_/components/ui/collapsible"
 import {
   Field,
   FieldContent,
@@ -31,6 +17,7 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@v3/_/components/ui/field"
+import { InfoTip } from "@v3/_/components/ui/info-tip"
 import { Input } from "@v3/_/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@v3/_/components/ui/radio-group"
 import {
@@ -52,19 +39,11 @@ import {
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { type ProcessRestart } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
-import {
-  ConfirmDialog,
-  useConfirmAction,
-} from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
 import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import { cn } from "@/cn"
 import { type ReadaloudLocationType } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
-import * as icon from "@/icons"
-import {
-  useClearBooksCacheMutation,
-  useGetServerCapabilitiesQuery,
-} from "@/store/api"
+import { useGetServerCapabilitiesQuery } from "@/store/api"
 
 import {
   LockTooltip,
@@ -72,69 +51,13 @@ import {
   useSettingsForm,
 } from "./SettingsFormProvider"
 import { AlignerPicker } from "./aligner-picker"
-import { AdvancedFields, SettingsSection } from "./shared"
-
-export function ProcessingTab() {
-  return (
-    <div className="space-y-6">
-      <ReadaloudSection />
-      <ProcessingSettingsFields />
-    </div>
-  )
-}
-
-function SettingsCard({
-  collapsible = false,
-  defaultOpen = true,
-  title,
-  description,
-  children,
-}: {
-  collapsible?: boolean
-  defaultOpen?: boolean
-  title: string
-  description: string
-  children: ReactNode
-}) {
-  const [open, setOpen] = useState(defaultOpen)
-
-  if (!collapsible) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">{children}</CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card>
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger className="w-full cursor-pointer text-left">
-          <CardHeader className="w-full">
-            <CardTitle className="flex w-full items-start justify-between">
-              {title}
-              <icon.ChevronDown
-                className={cn(
-                  "text-muted-foreground mt-0.5 size-4 shrink-0 stroke-[1.5] transition-transform",
-                  open && "rotate-180",
-                )}
-              />
-            </CardTitle>
-
-            <CardDescription>{description}</CardDescription>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent className="space-y-4 pt-4">{children}</CardContent>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
-  )
-}
+import {
+  AdvancedFields,
+  OptionWithHint,
+  SettingsCard,
+  SettingsLink,
+  SettingsSection,
+} from "./shared"
 
 const alignerSettingsComponents = {
   whisper: WhisperAlignerSettings,
@@ -160,9 +83,6 @@ export function ProcessingSettingsFields({
 } = {}) {
   const { form } = useSettingsForm()
   const tt = useTranslation("SettingsPage.tabs.processing.sections.alignment")
-  const tp = useTranslation(
-    "SettingsPage.tabs.processing.sections.parallelization",
-  )
   const ta = useTranslation("SettingsPage.tabs.processing.sections.audio")
 
   const aligner = useWatch({ control: form.control, name: "aligner" })
@@ -208,13 +128,8 @@ export function ProcessingSettingsFields({
 
   return (
     <div className="space-y-6">
-      <SettingsSection tab="processing" section="alignment">
-        <SettingsCard
-          collapsible={collapsible}
-          defaultOpen
-          title={tt("title")}
-          description={tt("description")}
-        >
+      <SettingsSection id="alignment">
+        <SettingsCard collapsible={collapsible} defaultOpen title={tt("title")}>
           {showTranscription && (
             <SettingsFormField
               name="aligner"
@@ -240,6 +155,7 @@ export function ProcessingSettingsFields({
               name="alignmentAutoExclude"
               label={tt("autoExclude")}
               description={tt("autoExcludeDescription")}
+              tip={tt("autoExcludeTip")}
               render={(field, _fieldState, isLocked) => (
                 <Switch
                   checked={field.value ?? true}
@@ -255,53 +171,17 @@ export function ProcessingSettingsFields({
       </SettingsSection>
 
       {showAudio && (
-        <SettingsSection tab="processing" section="audio">
+        <SettingsSection id="audio">
           <SettingsCard
             collapsible={collapsible}
             defaultOpen={!collapsible}
             title={ta("title")}
-            description={ta("description")}
           >
-            <SettingsFormField
-              name="maxTrackLength"
-              label={ta("maxTrackLength")}
-              description={ta("maxTrackLengthDescription")}
-              render={(field, fieldState, isLocked) => (
-                <Select
-                  disabled={isLocked}
-                  aria-invalid={fieldState.invalid}
-                  data-disabled={isLocked}
-                  items={trackLengths.map(({ value, label }) => ({
-                    value: String(value),
-                    label,
-                  }))}
-                  value={String(field.value)}
-                  onValueChange={(value) => {
-                    if (value) {
-                      field.onChange(parseFloat(value))
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {trackLengths.find(({ value }) => value === field.value)
-                        ?.label ?? ta("maxTrackLength2")}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trackLengths.map(({ value, label }) => (
-                      <SelectItem key={value} value={String(value)}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-
             <SettingsFormField
               name="codec"
               label={ta("codec")}
+              description={ta("codecDescription")}
+              tip={ta("codecTip")}
               render={(field, fieldState, isLocked) => (
                 <Select
                   disabled={isLocked}
@@ -392,8 +272,8 @@ export function ProcessingSettingsFields({
             <AdvancedFields>
               <SettingsFormField
                 name="parallelTranscodes"
-                label={tp("parallelTranscodes")}
-                description={tp("parallelTranscodesDescription")}
+                label={ta("parallelTranscodes")}
+                tip={ta("parallelTranscodesTip")}
                 render={(field, fieldState, isLocked) => (
                   <Input
                     id="parallelTranscodes"
@@ -408,6 +288,43 @@ export function ProcessingSettingsFields({
                   />
                 )}
               />
+              <SettingsFormField
+                name="maxTrackLength"
+                label={ta("maxTrackLength")}
+                description={ta("maxTrackLengthDescription")}
+                tip={ta("maxTrackLengthTip")}
+                render={(field, fieldState, isLocked) => (
+                  <Select
+                    disabled={isLocked}
+                    aria-invalid={fieldState.invalid}
+                    data-disabled={isLocked}
+                    items={trackLengths.map(({ value, label }) => ({
+                      value: String(value),
+                      label,
+                    }))}
+                    value={String(field.value)}
+                    onValueChange={(value) => {
+                      if (value) {
+                        field.onChange(parseFloat(value))
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {trackLengths.find(({ value }) => value === field.value)
+                          ?.label ?? ta("maxTrackLength2")}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {trackLengths.map(({ value, label }) => (
+                        <SelectItem key={value} value={String(value)}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </AdvancedFields>
           </SettingsCard>
         </SettingsSection>
@@ -419,9 +336,6 @@ export function ProcessingSettingsFields({
 function WhisperAlignerSettings({ restart }: { restart?: ProcessRestart }) {
   const { form } = useSettingsForm()
   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
-  const tp = useTranslation(
-    "SettingsPage.tabs.processing.sections.parallelization",
-  )
 
   const transcriptionEngine = useWatch({
     control: form.control,
@@ -570,8 +484,9 @@ function WhisperAlignerSettings({ restart }: { restart?: ProcessRestart }) {
       {restart !== "sync" && restart !== "transcode" && (
         <SettingsFormField
           name="parallelTranscribes"
-          label={tp("parallelTranscribes")}
-          description={tp("parallelTranscribesDescription")}
+          label={t("parallelTranscribes")}
+          description={t("parallelTranscribesDescription")}
+          tip={t("parallelTranscribesTip")}
           render={(field, fieldState, isLocked) => (
             <Input
               id="parallelTranscribes"
@@ -664,7 +579,7 @@ function CtcAdvancedFields() {
       <SettingsFormField
         name="ctcModel"
         label={t("ctcModel")}
-        description={t("ctcModelDescription")}
+        tip={t("ctcModelTip")}
         render={(field, fieldState, isLocked) => {
           const family = field.value ?? "quartznet15x5"
           return (
@@ -706,6 +621,7 @@ function CtcAdvancedFields() {
         name="ctcDtype"
         label={t("ctcDtype")}
         description={t("ctcDtypeDescription")}
+        tip={t("ctcDtypeTip")}
         render={(field, fieldState, isLocked) => (
           <Select
             items={dtypeOptions}
@@ -733,6 +649,7 @@ function CtcAdvancedFields() {
         name="ctcBatchSize"
         label={t("ctcBatchSize")}
         description={t("ctcBatchSizeDescription")}
+        tip={t("ctcBatchSizeTip")}
         render={(field, fieldState, isLocked) => (
           <Input
             id="ctcBatchSize"
@@ -763,16 +680,23 @@ function WhisperSettings() {
 
   const whisperModelOptions = [
     {
-      group: "Recommended for non-English",
-      options: [{ value: "large-v3-turbo", label: "large-v3-turbo" }],
+      group: t("modelGroupMultilingual"),
+      options: [
+        {
+          value: "large-v3-turbo",
+          label: "large-v3-turbo",
+          hint: t("modelTurboHint"),
+        },
+      ],
     },
     {
-      group: "Recommended for English",
-      options: [{ value: "tiny.en", label: "tiny.en" }],
+      group: t("modelGroupEnglish"),
+      options: [
+        { value: "tiny.en", label: "tiny.en", hint: t("modelTinyEnHint") },
+      ],
     },
-
     {
-      group: "Others",
+      group: t("modelGroupOther"),
       options: [
         { value: "tiny", label: "tiny" },
         { value: "tiny-q5_1", label: "tiny-q5_1" },
@@ -806,7 +730,6 @@ function WhisperSettings() {
       <SettingsFormField
         name="whisperModel"
         label={t("whisperModel")}
-        description={t("whisperModelDescription")}
         render={(field, fieldState, isLocked) => (
           <Select
             items={whisperModelOptions.flatMap((option) =>
@@ -824,9 +747,16 @@ function WhisperSettings() {
               {whisperModelOptions.map(({ group, options }) => (
                 <SelectGroup key={group}>
                   <SelectLabel>{group}</SelectLabel>
-                  {options.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
+                  {options.map((option) => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="[&>div]:whitespace-normal"
+                    >
+                      <OptionWithHint
+                        label={option.label}
+                        hint={"hint" in option ? option.hint : null}
+                      />
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -836,12 +766,40 @@ function WhisperSettings() {
         )}
       />
 
-      <SettingsFormField
-        name="whisperThreads"
-        label={t("whisperThreads")}
-        description={t("whisperThreadsDescription")}
-        render={(field, fieldState, isLocked) => (
-          <>
+      <AdvancedFields>
+        <SettingsFormField
+          name="whisperCpuFallback"
+          label={t("whisperCpuFallback")}
+          tip={t("whisperCpuFallbackTip")}
+          render={(field, fieldState, isLocked) => (
+            <Select
+              items={whisperCpuFallbackOptions}
+              value={field.value || ""}
+              onValueChange={(val) => {
+                field.onChange(val || null)
+              }}
+              disabled={isLocked}
+              aria-invalid={fieldState.invalid}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {whisperCpuFallbackOptions.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <SettingsFormField
+          name="whisperThreads"
+          label={t("whisperThreads")}
+          description={t("whisperThreadsWarning")}
+          tip={t("whisperThreadsTip")}
+          render={(field, fieldState, isLocked) => (
             <Input
               id="whisperThreads"
               type="number"
@@ -854,43 +812,9 @@ function WhisperSettings() {
               }}
               aria-invalid={fieldState.invalid}
             />
-            <p className="text-xs opacity-70">
-              <span className="font-bold text-orange-600">
-                {t("whisperThreadsWarningPrefix")}
-              </span>{" "}
-              {t("whisperThreadsWarning")}
-            </p>
-          </>
-        )}
-      />
-
-      <SettingsFormField
-        name="whisperCpuFallback"
-        label={t("whisperCpuFallback")}
-        description={t("whisperCpuFallbackDescription")}
-        render={(field, fieldState, isLocked) => (
-          <Select
-            items={whisperCpuFallbackOptions}
-            value={field.value || ""}
-            onValueChange={(val) => {
-              field.onChange(val || null)
-            }}
-            disabled={isLocked}
-            aria-invalid={fieldState.invalid}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {whisperCpuFallbackOptions.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      />
+          )}
+        />
+      </AdvancedFields>
     </>
   )
 }
@@ -903,10 +827,10 @@ function WhisperServerSettings() {
       <SettingsFormField
         name="whisperServerUrl"
         label={t("whisperServerUrl")}
-        description={t("whisperServerUrlDescription")}
         render={(field, fieldState, isLocked) => (
           <Input
             id="whisperServerUrl"
+            placeholder="http://192.168.1.19:8080"
             disabled={isLocked}
             {...field}
             value={field.value || ""}
@@ -917,7 +841,6 @@ function WhisperServerSettings() {
       <SettingsFormField
         name="whisperServerApiKey"
         label={t("whisperServerApiKey")}
-        description={t("whisperServerApiKeyDescription")}
         render={(field, fieldState, isLocked) => (
           <Input
             id="whisperServerApiKey"
@@ -1008,7 +931,7 @@ function AmazonSettings() {
       <SettingsFormField
         name="amazonTranscribeBucketName"
         label={t("bucketName")}
-        description={t("bucketNameDescription")}
+        tip={t("bucketNameTip")}
         render={(field, fieldState, isLocked) => (
           <Input
             id="amazonTranscribeBucketName"
@@ -1084,7 +1007,7 @@ function OpenAiSettings() {
       <SettingsFormField
         name="openAiBaseUrl"
         label={t("baseUrl")}
-        description={t("baseUrlDescription")}
+        tip={t("baseUrlTip")}
         render={(field, fieldState, isLocked) => (
           <Input
             id="openAiBaseUrl"
@@ -1098,10 +1021,10 @@ function OpenAiSettings() {
       <SettingsFormField
         name="openAiModelName"
         label={t("modelName")}
-        description={t("modelNameDescription")}
         render={(field, fieldState, isLocked) => (
           <Input
             id="openAiModelName"
+            placeholder="whisper-1"
             disabled={isLocked}
             {...field}
             value={field.value ?? ""}
@@ -1134,10 +1057,10 @@ function DeepgramSettings() {
       <SettingsFormField
         name="deepgramModel"
         label={t("deepgramModel")}
-        description={t("deepgramModelDescription")}
         render={(field, fieldState, isLocked) => (
           <Input
             id="deepgramModel"
+            placeholder="nova-3"
             disabled={isLocked}
             {...field}
             value={field.value ?? ""}
@@ -1149,37 +1072,24 @@ function DeepgramSettings() {
   )
 }
 
-function ReadaloudSection() {
+export function ReadaloudSection() {
   const tr = useTranslation("SettingsPage.tabs.processing.sections.readaloud")
   const { form, lockedSettings } = useSettingsForm()
 
   const permissions = usePermissions()
-  const [clearBooksCache] = useClearBooksCacheMutation()
-  const {
-    isLoading,
-    confirm: clearCacheConfirm,
-    dialogProps: clearCacheDialogProps,
-  } = useConfirmAction({
-    title: tr("clearCacheConfirmTitle"),
-    description: tr("clearCacheConfirmDescription"),
-    confirmLabel: tr("clearCacheConfirm"),
-    variant: "destructive",
-    onConfirm: () => {
-      void clearBooksCache({})
-        .unwrap()
-        .then(() => {
-          toast.success(tr("clearCacheSuccess"))
-        })
-        .catch(() => {
-          toast.error(tr("clearCacheError"))
-        })
-    },
-  })
 
   const locationType = useWatch({
     control: form.control,
     name: "readaloudLocationType",
   })
+  const location = useWatch({
+    control: form.control,
+    name: "readaloudLocation",
+  })
+  const locationPreview =
+    locationType === "SUFFIX"
+      ? `book${location}.epub`
+      : `${location.replace(/\/+$/, "")}/book.epub`
 
   const readaloudLocationOptions = [
     { value: "SUFFIX", label: tr("locationTypeSuffix") },
@@ -1189,137 +1099,121 @@ function ReadaloudSection() {
   ] as const satisfies { value: ReadaloudLocationType; label: string }[]
 
   return (
-    <SettingsSection tab="processing" section="readaloud">
-      <Card>
-        <CardHeader>
-          <CardTitle>{tr("title")}</CardTitle>
-          <CardDescription>{tr("description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <SettingsSection id="readaloud">
+      <SettingsCard title={tr("title")} description={tr("description")}>
+        <SettingsFormField
+          name="readaloudLocationType"
+          label={tr("locationType")}
+          render={(field, _, isLocked) => (
+            <Select
+              items={readaloudLocationOptions}
+              disabled={isLocked}
+              value={field.value}
+              onValueChange={(value) => {
+                if (!value) return
+
+                field.onChange(value)
+                switch (value) {
+                  case "SUFFIX":
+                    form.setValue("readaloudLocation", " (readaloud)", {
+                      shouldDirty: true,
+                    })
+                    break
+                  case "SIBLING_FOLDER":
+                    form.setValue("readaloudLocation", "readaloud", {
+                      shouldDirty: true,
+                    })
+                    break
+                  case "CUSTOM_FOLDER":
+                    form.setValue("readaloudLocation", "/readalouds", {
+                      shouldDirty: true,
+                    })
+                    break
+                  case "INTERNAL":
+                    form.setValue("readaloudLocation", "", {
+                      shouldDirty: true,
+                    })
+                    break
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {readaloudLocationOptions.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+
+        {locationType !== "INTERNAL" && (
           <SettingsFormField
-            name="readaloudLocationType"
-            label={tr("locationType")}
-            render={(field, _, isLocked) => (
-              <Select
-                items={readaloudLocationOptions}
-                disabled={isLocked}
-                value={field.value}
-                onValueChange={(value) => {
-                  if (!value) return
-
-                  field.onChange(value)
-                  switch (value) {
-                    case "SUFFIX":
-                      form.setValue("readaloudLocation", " (readaloud)", {
-                        shouldDirty: true,
-                      })
-                      break
-                    case "SIBLING_FOLDER":
-                      form.setValue("readaloudLocation", "readaloud", {
-                        shouldDirty: true,
-                      })
-                      break
-                    case "CUSTOM_FOLDER":
-                      form.setValue("readaloudLocation", "/readalouds", {
-                        shouldDirty: true,
-                      })
-                      break
-                    case "INTERNAL":
-                      form.setValue("readaloudLocation", "", {
-                        shouldDirty: true,
-                      })
-                      break
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {readaloudLocationOptions.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-
-          {locationType !== "INTERNAL" && (
-            <SettingsFormField
-              name="readaloudLocation"
-              label={
-                locationType === "SUFFIX"
-                  ? tr("locationTypeSuffix")
-                  : locationType === "SIBLING_FOLDER"
-                    ? tr("locationTypeSiblingFolder")
-                    : tr("locationTypeCustomFolder")
-              }
-              render={(field, fieldState, isLocked) => (
+            name="readaloudLocation"
+            label={
+              locationType === "SUFFIX"
+                ? tr("locationTypeSuffix")
+                : locationType === "SIBLING_FOLDER"
+                  ? tr("locationTypeSiblingFolder")
+                  : tr("locationTypeCustomFolder")
+            }
+            render={(field, fieldState, isLocked) => (
+              <>
                 <Input
                   id="readaloudLocation"
                   disabled={isLocked}
                   {...field}
                   aria-invalid={fieldState.invalid}
                 />
-              )}
-            />
-          )}
-
-          <Controller
-            name="cleanCacheAfterReadaloud"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field
-                orientation="horizontal"
-                data-invalid={fieldState.invalid}
-                data-disabled={lockedSettings.has("cleanCacheAfterReadaloud")}
-              >
-                <Switch
-                  id="cleanCacheAfterReadaloud"
-                  disabled={lockedSettings.has("cleanCacheAfterReadaloud")}
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-                <div className="space-y-1">
-                  <FieldLabel htmlFor="cleanCacheAfterReadaloud">
-                    {tr("cleanCacheAfterReadaloud")}
-                    {lockedSettings.has("cleanCacheAfterReadaloud") && (
-                      <LockTooltip />
-                    )}
-                  </FieldLabel>
-                  <FieldDescription>
-                    {tr("cleanCacheAfterReadaloudDescription")}
-                  </FieldDescription>
-                </div>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
+                <FieldDescription>
+                  {tr("previewLabel")}{" "}
+                  <code className="font-mono">{locationPreview}</code>
+                </FieldDescription>
+              </>
             )}
           />
+        )}
 
-          {permissions?.bookProcess && (
-            <div className="space-y-1.5">
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                disabled={isLoading}
-                onClick={clearCacheConfirm}
-              >
-                {isLoading ? "..." : tr("clearCacheNow")}
-              </Button>
-              <FieldDescription>
-                {tr("clearCacheNowDescription")}
-              </FieldDescription>
-            </div>
+        <Controller
+          name="cleanCacheAfterReadaloud"
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field
+              orientation="horizontal"
+              data-invalid={fieldState.invalid}
+              data-disabled={lockedSettings.has("cleanCacheAfterReadaloud")}
+            >
+              <Switch
+                id="cleanCacheAfterReadaloud"
+                disabled={lockedSettings.has("cleanCacheAfterReadaloud")}
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+              <div className="space-y-1">
+                <FieldLabel htmlFor="cleanCacheAfterReadaloud">
+                  {tr("cleanCacheAfterReadaloud")}
+                  <InfoTip>{tr("cleanCacheAfterReadaloudTip")}</InfoTip>
+                  {lockedSettings.has("cleanCacheAfterReadaloud") && (
+                    <LockTooltip />
+                  )}
+                </FieldLabel>
+                <FieldDescription>
+                  {tr("cleanCacheAfterReadaloudDescription")}
+                </FieldDescription>
+              </div>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
+        />
 
-          <ConfirmDialog {...clearCacheDialogProps} />
-        </CardContent>
-      </Card>
+        {permissions?.bookProcess && (
+          <SettingsLink section="caches">{tr("clearCacheLink")}</SettingsLink>
+        )}
+      </SettingsCard>
     </SettingsSection>
   )
 }

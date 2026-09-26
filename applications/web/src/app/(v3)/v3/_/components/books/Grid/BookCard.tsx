@@ -32,6 +32,7 @@ import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-
 import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations } from "@/database/books"
+import type { GridCardSize } from "@/database/userPreferencesTypes"
 import * as icon from "@/icons"
 import {
   type CreatorDisplayField,
@@ -47,7 +48,7 @@ import {
 } from "@/store/slices/uiSettingsSlice"
 import { type UUID } from "@/uuid"
 
-import { TITLE_HEIGHT } from "./BookGrid"
+import { TITLE_HEIGHT_FOR_CARD_SIZE } from "./bookCardSizing"
 
 type BookCardProps = {
   book: BookWithRelations
@@ -69,6 +70,7 @@ type BookCardProps = {
   ) => void
   displayFields?: DisplayField[]
   displayContext?: SortContext
+  gridCardSize: GridCardSize
   handle?: Popover.Handle<unknown>
 }
 
@@ -362,6 +364,7 @@ export const BookCard = memo(function BookCard({
   onClick,
   displayFields = ["authors", "title"],
   displayContext,
+  gridCardSize,
   handle,
 }: BookCardProps) {
   const isMobile = useIsMobile()
@@ -398,6 +401,8 @@ export const BookCard = memo(function BookCard({
     search,
     displayFields,
   )
+
+  const isSmallestCover = gridCardSize === "smallest"
 
   const cardContent = (
     <>
@@ -511,10 +516,11 @@ export const BookCard = memo(function BookCard({
                       "font-heading",
                       "hyphens-auto",
                       "leading-[1.2]",
+                      isSmallestCover && "text-sm leading-[1.15]",
                       // otherwise looks wack
                       "[font-variant-ligatures:none]",
                     )}
-                    style={{ height: TITLE_HEIGHT }}
+                    style={{ height: TITLE_HEIGHT_FOR_CARD_SIZE[gridCardSize] }}
                   >
                     {search && visibleCategories.has("title") ? (
                       <SearchHighlight term={search}>

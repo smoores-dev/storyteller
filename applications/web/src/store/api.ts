@@ -99,6 +99,7 @@ import {
   compareJobs,
   queueJobNext,
 } from "@/jobList"
+import { type OrphanFolder, type StorageUsage } from "@/maintenance"
 import { type JobsQueryV2 } from "@/schemas/v2/job"
 import { type TranscodedAudioFile } from "@/schemas/v2/transcodedAudio"
 import { type ShelfFilter } from "@/shelves"
@@ -218,6 +219,9 @@ export const api = createApi({
     "Backups",
     "PathsStatus",
     "ServerCapabilities",
+    "CacheUsage",
+    "MaintenanceStorage",
+    "Orphans",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -435,12 +439,32 @@ export const api = createApi({
         }),
       },
     ),
+    getBooksCacheUsage: build.query<
+      {
+        bytes: number
+        bookCount: number
+        parts: {
+          transcodedAudio: number
+          transcriptions: number
+          emissions: number
+        }
+      },
+      { bookUuids?: UUID[] }
+    >({
+      query: ({ bookUuids }) => ({
+        url: `/books/cache/usage`,
+        method: "POST",
+        body: { bookUuids },
+      }),
+      providesTags: ["CacheUsage"],
+    }),
     clearBooksCache: build.mutation<void, { bookUuids?: UUID[] }>({
       query: ({ bookUuids }) => ({
         url: `/books/cache`,
         method: "DELETE",
         body: { bookUuids },
       }),
+      invalidatesTags: ["CacheUsage"],
     }),
     recomputeAlignmentReports: build.mutation<
       { count: number },
@@ -2282,6 +2306,48 @@ export const api = createApi({
       }),
     }),
 
+    getMaintenanceStorage: build.query<
+      Record<"imageCache" | "uploads" | "logs", StorageUsage>,
+      void
+    >({
+      query: () => "/maintenance/storage",
+      providesTags: ["MaintenanceStorage"],
+    }),
+    clearImageCache: build.mutation<void, void>({
+      query: () => ({ url: "/maintenance/image-cache", method: "DELETE" }),
+      invalidatesTags: ["MaintenanceStorage"],
+    }),
+    clearStaleUploads: build.mutation<void, void>({
+      query: () => ({ url: "/maintenance/uploads", method: "DELETE" }),
+      invalidatesTags: ["MaintenanceStorage"],
+    }),
+    deleteAllLogs: build.mutation<void, void>({
+      query: () => ({ url: "/maintenance/logs", method: "DELETE" }),
+      invalidatesTags: ["MaintenanceStorage"],
+    }),
+    getOrphans: build.query<
+      { folders: OrphanFolder[]; images: StorageUsage },
+      void
+    >({
+      query: () => "/maintenance/orphans",
+      providesTags: ["Orphans"],
+    }),
+    deleteOrphanFolders: build.mutation<
+      { deleted: number },
+      { names: string[] }
+    >({
+      query: ({ names }) => ({
+        url: "/maintenance/orphans/folders",
+        method: "DELETE",
+        body: { names },
+      }),
+      invalidatesTags: ["Orphans"],
+    }),
+    deleteUnusedImages: build.mutation<{ deleted: number }, void>({
+      query: () => ({ url: "/maintenance/orphans/images", method: "DELETE" }),
+      invalidatesTags: ["Orphans"],
+    }),
+
     // database backups
     getBackups: build.query<{ backups: BackupInfo[] }, void>({
       query: () => "/backups",
@@ -2574,6 +2640,14 @@ export const {
   useCreateCollectionMutation,
   useCreateInviteMutation,
   useClearBooksCacheMutation,
+  useGetBooksCacheUsageQuery,
+  useGetMaintenanceStorageQuery,
+  useClearImageCacheMutation,
+  useClearStaleUploadsMutation,
+  useDeleteAllLogsMutation,
+  useGetOrphansQuery,
+  useDeleteOrphanFoldersMutation,
+  useDeleteUnusedImagesMutation,
   useRecomputeAlignmentReportsMutation,
   useDeleteBookAssetsMutation,
   useDeleteBookMutation,

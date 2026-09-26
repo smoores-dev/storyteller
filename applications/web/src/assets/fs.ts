@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { cp, link, mkdir, readdir, rm, stat } from "node:fs/promises"
+import { cp, link, lstat, mkdir, readdir, rm, stat } from "node:fs/promises"
 import { dirname, join } from "node:path"
 
 import { reflinkFile } from "@reflink/reflink"
@@ -549,6 +549,37 @@ export async function relocateAssetsIntoBook(
 export async function deleteProcessed(book: BookWithRelations) {
   await deleteProcessedAudio(book)
   await deleteTranscriptions(book)
+}
+
+export async function getDirectorySize(directory: string) {
+  const entries = await readdir(directory, {
+    recursive: true,
+    withFileTypes: true,
+  }).catch(() => [])
+
+  const seen = new Set<number>()
+  let total = 0
+  for (const entry of entries) {
+    if (!entry.isFile()) continue
+
+    const info = await lstat(join(entry.parentPath, entry.name)).catch(
+      () => null,
+    )
+    if (!info || seen.has(info.ino)) continue
+
+    seen.add(info.ino)
+    total += info.size
+  }
+  return total
+}
+
+export async function getProcessedUsage(book: BookWithRelations) {
+  const [transcodedAudio, transcriptions, emissions] = await Promise.all([
+    getDirectorySize(getProcessedAudioFilepath(book)),
+    getDirectorySize(getTranscriptionsFilepath(book)),
+    getDirectorySize(getEmissionsFilepath(book)),
+  ])
+  return { transcodedAudio, transcriptions, emissions }
 }
 
 export function isReadaloudInFlight(book: BookWithRelations) {

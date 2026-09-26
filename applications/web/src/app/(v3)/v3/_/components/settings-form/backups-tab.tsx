@@ -1,6 +1,5 @@
 "use client"
 
-import { parseAsString, useQueryState } from "nuqs"
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
 
@@ -25,18 +24,13 @@ import {
   cronExpressionToMinutes,
   minutesToCronExpression,
 } from "@/assets/library/scanner/triggers/cron"
-import { type RewritePreview } from "@/database/pathRewrite"
 import { type Settings } from "@/database/settingsTypes"
 import * as icon from "@/icons"
 import {
-  useAcknowledgePathsMutation,
-  useApplyPathRewriteMutation,
   useCreateBackupMutation,
   useDeleteBackupMutation,
   useGetBackupsQuery,
-  useGetPathsStatusQuery,
   useGetSettingsQuery,
-  usePreviewPathRewriteMutation,
   useUpdateSettingsMutation,
 } from "@/store/api"
 import { formatFileSize } from "@/utils/formatFileSize"
@@ -311,203 +305,11 @@ function ScheduleSection() {
   )
 }
 
-function RewriteSection() {
-  const t = useTranslation("SettingsPage.tabs.backups")
-  const { data: pathsStatus } = useGetPathsStatusQuery()
-  const [fromParam] = useQueryState("from", parseAsString)
-  const [toParam] = useQueryState("to", parseAsString)
-
-  const [from, setFrom] = useState(fromParam ?? "")
-  const [to, setTo] = useState(toParam ?? "")
-  const [preview, setPreview] = useState<RewritePreview | null>(null)
-
-  const [previewRewrite, { isLoading: isPreviewing }] =
-    usePreviewPathRewriteMutation()
-  const [applyRewrite, { isLoading: isApplying }] =
-    useApplyPathRewriteMutation()
-  const [acknowledgePaths] = useAcknowledgePathsMutation()
-
-  const anchorMismatch =
-    pathsStatus?.anchor != null &&
-    pathsStatus.anchor !== pathsStatus.currentDataDir
-
-  const handlePreview = useCallback(async () => {
-    const result = await previewRewrite({ from, to })
-    if ("error" in result) {
-      toast.error(t("previewFailed"))
-      return
-    }
-    setPreview(result.data.preview)
-  }, [previewRewrite, from, to, t])
-
-  const applyConfirm = useConfirmAction({
-    onConfirm: async () => {
-      const result = await applyRewrite({ from, to })
-      if ("error" in result) {
-        toast.error(t("applyFailed"))
-        return
-      }
-      toast.success(
-        t("applySucceeded", { count: result.data.result.totalUpdated }),
-      )
-      setPreview(null)
-    },
-    title: t("applyRewrite"),
-    description: t("applyRewriteConfirm"),
-    confirmLabel: t("applyRewrite"),
-    variant: "destructive",
-  })
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("rewriteTitle")}</CardTitle>
-        <CardDescription>{t("rewriteDescription")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {anchorMismatch && (
-          <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-            <p>
-              {t("anchorMismatch", {
-                anchor: pathsStatus.anchor ?? "",
-                current: pathsStatus.currentDataDir,
-              })}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFrom(pathsStatus.anchor ?? "")
-                  setTo(pathsStatus.currentDataDir)
-                  setPreview(null)
-                }}
-              >
-                {t("prefillFromAnchor")}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => void acknowledgePaths()}
-              >
-                {t("dismissAnchor")}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="rewriteFrom">{t("rewriteFrom")}</Label>
-            <Input
-              id="rewriteFrom"
-              placeholder="/old/data/dir"
-              value={from}
-              onChange={(e) => {
-                setFrom(e.target.value)
-                setPreview(null)
-              }}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="rewriteTo">{t("rewriteTo")}</Label>
-            <Input
-              id="rewriteTo"
-              placeholder="/new/data/dir"
-              value={to}
-              onChange={(e) => {
-                setTo(e.target.value)
-                setPreview(null)
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!from || !to || from === to || isPreviewing}
-            onClick={() => void handlePreview()}
-          >
-            {isPreviewing ? t("previewing") : t("previewRewrite")}
-          </Button>
-          {preview && preview.totalMatches > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={isApplying}
-              onClick={(event) => {
-                applyConfirm.confirm(event)
-              }}
-            >
-              {isApplying
-                ? t("applying")
-                : t("applyRewriteCount", { count: preview.totalMatches })}
-            </Button>
-          )}
-        </div>
-
-        {preview && (
-          <div className="space-y-3">
-            {preview.totalMatches === 0 ? (
-              <p className="text-muted-foreground text-sm">{t("noMatches")}</p>
-            ) : (
-              preview.columns
-                .filter((col) => col.matchCount > 0)
-                .map((col) => (
-                  <div
-                    key={`${col.table}.${col.column}`}
-                    className="space-y-2 rounded-md border p-3 text-sm"
-                  >
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-medium">
-                        {col.table}.{col.column}
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {t("matchSummary", {
-                          count: col.matchCount,
-                          existing: col.existingCount,
-                          checked: col.checkedCount,
-                        })}
-                      </span>
-                    </div>
-                    <ul className="space-y-1 font-mono text-xs">
-                      {col.samples.map((sample) => (
-                        <li key={sample.before} className="truncate">
-                          <span className="text-muted-foreground line-through">
-                            {sample.before}
-                          </span>{" "}
-                          →{" "}
-                          <span
-                            className={
-                              sample.targetExists
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : "text-red-600 dark:text-red-400"
-                            }
-                          >
-                            {sample.after}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))
-            )}
-          </div>
-        )}
-        <ConfirmDialog {...applyConfirm.dialogProps} />
-      </CardContent>
-    </Card>
-  )
-}
-
 export function BackupsTab() {
   return (
     <div className="space-y-6">
       <BackupsSection />
       <ScheduleSection />
-      <RewriteSection />
     </div>
   )
 }

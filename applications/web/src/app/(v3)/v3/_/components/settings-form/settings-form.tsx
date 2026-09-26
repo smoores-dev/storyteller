@@ -16,8 +16,9 @@ import { Button } from "@v3/_/components/ui/button"
 import {
   NavSidebar,
   NavSidebarBody,
-  NavSidebarFooterLink,
+  NavSidebarEmpty,
   NavSidebarGroup,
+  NavSidebarHeader,
   NavSidebarList,
   NavSidebarSearch,
   type NavSidebarTab,
@@ -43,6 +44,7 @@ import {
   type User,
 } from "@/apiModels"
 import { useIsTauri } from "@/app/(v3)/v3/_/hooks/use-is-tauri"
+import { cn } from "@/cn"
 import { SettingsSchema } from "@/database/settingsTypes"
 import { useInitialData } from "@/hooks/useInitialData"
 import * as icon from "@/icons"
@@ -56,28 +58,31 @@ import {
   type SettingsFormForm,
   SettingsFormProvider,
 } from "./SettingsFormProvider"
-import { AppTab } from "./app-tab"
-import { AuthTab } from "./auth-tab"
 import { BackupsTab } from "./backups-tab"
 import { ChangelogTab } from "./changelog-tab"
-import { EmailTab } from "./email-tab"
-import { LibraryTab } from "./library-tab"
+import { FilesPage } from "./files-page"
 import { LogsTab } from "./logs-tab"
-import { OpdsTab } from "./opds-tab"
-import { ProcessingTab } from "./processing-tab"
+import { MaintenanceTab } from "./maintenance-tab"
+import { MetadataPage } from "./metadata-page"
+import { ProcessingPage } from "./processing-page"
 import { QueueTab } from "./queue-tab"
+import { ServerPage } from "./server-page"
 import { type IsMatch, SearchContext } from "./shared"
+import { TAB_ICONS } from "./tab-icons"
 import {
   type AdminTab,
-  type DesktopTab,
+  SETTINGS_SECTIONS,
   type SectionKeywords,
-  type SettingsFormTab,
+  type SettingsPage,
+  type SettingsSectionDef,
   type Tab,
   adminTabs,
-  desktopTabs,
-  settingsFormTabs,
+  isSectionOnPlatform,
+  resolveTab,
+  sectionsForPage,
+  settingsPages,
+  tabs as allTabValues,
 } from "./tabs"
-import { UploadTab } from "./upload-tab"
 import { UsersTab } from "./users-tab"
 
 type ErrorPathSegment = string | number
@@ -274,7 +279,7 @@ export function SettingsForm({
   })
   const { handleSubmit, formState } = form
   const errorCount = Object.keys(formState.errors).length
-  const { dirtyFields } = formState
+  const { dirtyFields, isDirty } = formState
 
   const onSubmit = async (data: z.output<typeof SettingsSchema>) => {
     const changed = Object.keys(dirtyFields) as (keyof Settings)[]
@@ -338,49 +343,14 @@ export function SettingsForm({
 
   const allTabs = useMemo<SidebarTabDef[]>(
     () =>
-      [
-        { value: "library", label: t("tabs.library.title"), icon: icon.Book },
-        {
-          value: "processing",
-          label: t("tabs.processing.title"),
-          icon: icon.Microphone,
-        },
-        { value: "auth", label: t("tabs.auth.title"), icon: icon.Shield },
-        !isTauri && {
-          value: "upload" as Tab,
-          label: t("tabs.upload.title"),
-          icon: icon.Upload,
-        },
-        { value: "email", label: t("tabs.email.title"), icon: icon.Mail },
-        { value: "opds", label: t("tabs.opds.title"), icon: icon.Rss },
-        isTauri && {
-          value: "app" as Tab,
-          label: t("tabs.app.title"),
-          icon: icon.System,
-        },
-        hasUsers && {
-          value: "users" as Tab,
-          label: t("tabs.users.title"),
-          icon: icon.Users,
-        },
-        {
-          value: "changelog",
-          label: t("tabs.changelog.title"),
-          icon: icon.History,
-        },
-        { value: "logs", label: t("tabs.logs.title"), icon: icon.FileText },
-        {
-          value: "queue",
-          label: t("tabs.queue.title"),
-          icon: icon.ListNumbers,
-        },
-        {
-          value: "backups",
-          label: t("tabs.backups.title"),
-          icon: icon.Database,
-        },
-      ].filter(Boolean) as SidebarTabDef[],
-    [t, hasUsers, isTauri],
+      allTabValues
+        .filter((tab) => tab !== "users" || hasUsers)
+        .map((tab) => ({
+          value: tab,
+          label: t.plain(`tabs.${tab}.title`),
+          icon: TAB_ICONS[tab],
+        })),
+    [t, hasUsers],
   )
 
   const searchParams = useSearchParams()
@@ -393,51 +363,82 @@ export function SettingsForm({
     void setActiveTab(tab)
   })
 
+  const canonicaliseTabEvent = useEffectEvent((tab: Tab | null) => {
+    void setActiveTab(tab, { history: "replace" })
+  })
+
   useEffect(() => {
-    const searchTab = searchParams.get("tab")
+    const searchTab = resolveTab(searchParams.get("tab"))
     if (searchTab !== activeTabRaw) {
-      setActiveTabEvent(searchTab as Tab)
+      canonicaliseTabEvent(searchTab)
     }
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
-  const activeTab: Tab | null = isMobile
-    ? activeTabRaw
-    : (activeTabRaw ?? "library")
+  const [targetSection, setTargetSection] = useQueryState(
+    "section",
+    parseAsString.withOptions({ history: "replace" }),
+  )
+  const clearTargetSectionEvent = useEffectEvent(() => {
+    void setTargetSection(null)
+  })
+
+  useEffect(() => {
+    if (!targetSection) return
+
+    const frame = requestAnimationFrame(() => {
+      const element = document.getElementById(`settings-${targetSection}`)
+      if (!element) return
+
+      element.scrollIntoView({ block: "start" })
+      clearTargetSectionEvent()
+    })
+    return () => {
+      cancelAnimationFrame(frame)
+    }
+  }, [targetSection, activeTabRaw])
+
+  const resolvedTab = resolveTab(activeTabRaw)
+  const activeTab = isMobile ? resolvedTab : (resolvedTab ?? "files")
   const showMobileSidebar = isMobile && !activeTab
 
   const matchingSections = useMemo(() => {
-    if (!searchQuery) return new Set(allTabs.map((t) => t.value))
-
     const query = searchQuery.toLowerCase()
-    const matching = new Set<string>()
+    if (!query) return null
 
-    for (const [tab, sections] of Object.entries(sectionKeywords)) {
-      for (const [section, keywords] of Object.entries(sections)) {
-        const matchesKeywords = keywords.some((kw) =>
-          kw.toLowerCase().includes(query),
-        )
-
-        if (matchesKeywords) {
-          matching.add(`${tab}.${section}`)
-        }
-      }
-    }
-
-    return matching
-  }, [searchQuery, allTabs, sectionKeywords])
+    return new Set<string>(
+      SETTINGS_SECTIONS.filter(
+        (section) =>
+          isSectionOnPlatform(section, isTauri) &&
+          sectionKeywords[section.id]?.some((keyword) =>
+            keyword.toLowerCase().includes(query),
+          ),
+      ).map((section) => section.id),
+    )
+  }, [searchQuery, sectionKeywords, isTauri])
 
   const matchingTabs = useMemo(() => {
-    return new Set<Tab>(
-      Array.from(matchingSections.values()).map(
-        (tab) => tab.split(".")[0] as Tab,
-      ),
-    )
-  }, [matchingSections])
+    if (!matchingSections) return new Set<Tab>(allTabs.map((tab) => tab.value))
 
-  const isMatch: IsMatch = (tab, section) => {
-    return matchingSections.has(`${tab}.${section}`)
-  }
+    const query = searchQuery.toLowerCase()
+    const sectionPages = new Set<Tab>(
+      SETTINGS_SECTIONS.filter((section) =>
+        matchingSections.has(section.id),
+      ).map((section) => section.page),
+    )
+    return new Set<Tab>(
+      allTabs
+        .filter(
+          (tab) =>
+            sectionPages.has(tab.value) ||
+            tab.label.toLowerCase().includes(query),
+        )
+        .map((tab) => tab.value),
+    )
+  }, [matchingSections, allTabs, searchQuery])
+
+  const isMatch: IsMatch = (section) =>
+    !matchingSections || matchingSections.has(section)
 
   const prefActiveTab = useRef<Tab | null>(null)
   prefActiveTab.current = activeTab
@@ -456,25 +457,29 @@ export function SettingsForm({
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- pre-existing; these dependencies are left out on purpose
   }, [matchingTabs, searchQuery, setActiveTabEvent])
 
-  const filteredTabs = searchQuery
-    ? allTabs.filter(
-        (tab) =>
-          matchingTabs.has(tab.value) ||
-          adminTabs.includes(tab.value as AdminTab),
-      )
-    : allTabs
+  const filteredTabs = allTabs.filter((tab) => matchingTabs.has(tab.value))
 
-  const isFormTab = settingsFormTabs.includes(activeTab as SettingsFormTab)
-  const activeTabDef = allTabs.find((t) => t.value === activeTab)
+  const isFormTab = settingsPages.includes(activeTab as SettingsPage)
+  const activeTabDef = allTabs.find((tab) => tab.value === activeTab)
+
+  const railSections = useMemo(
+    () =>
+      isFormTab && activeTab
+        ? sectionsForPage(activeTab, isTauri).filter(
+            (section) => !matchingSections || matchingSections.has(section.id),
+          )
+        : [],
+    [isFormTab, activeTab, isTauri, matchingSections],
+  )
 
   const tabContent = (
     <>
       <DocumentTitle parts={[activeTabDef?.label, title]} />
-      {activeTab === "library" && <LibraryTab />}
-      {activeTab === "processing" && <ProcessingTab />}
-      {activeTab === "auth" && <AuthTab />}
-      {activeTab === "upload" && (
-        <UploadTab maxUploadChunkSize={maxUploadChunkSize} />
+      {activeTab === "files" && <FilesPage />}
+      {activeTab === "metadata" && <MetadataPage />}
+      {activeTab === "processing" && <ProcessingPage />}
+      {activeTab === "server" && (
+        <ServerPage maxUploadChunkSize={maxUploadChunkSize} />
       )}
       {activeTab === "users" && initialUsers && initialInvites && (
         <UsersTab
@@ -483,12 +488,10 @@ export function SettingsForm({
           disablePasswordLogin={settings.disablePasswordLogin}
         />
       )}
-      {activeTab === "email" && <EmailTab />}
-      {activeTab === "opds" && <OpdsTab />}
-      {activeTab === "app" && <AppTab />}
       {activeTab === "changelog" && (
         <ChangelogTab currentVersion={currentVersion} />
       )}
+      {activeTab === "maintenance" && <MaintenanceTab />}
       {activeTab === "logs" && <LogsTab />}
       {activeTab === "queue" && <QueueTab />}
       {activeTab === "backups" && <BackupsTab />}
@@ -526,7 +529,7 @@ export function SettingsForm({
           <Button
             type="submit"
             form="settings-form"
-            disabled={isSaving}
+            disabled={isSaving || !isDirty}
             size="sm"
           >
             {isSaving && <Spinner />}
@@ -554,14 +557,21 @@ export function SettingsForm({
       lockedSettings={lockedKeys}
       capabilities={capabilities}
     >
-      <SearchContext.Provider value={{ query: searchQuery, isMatch }}>
+      <SearchContext.Provider
+        value={{ query: searchQuery, isMatch, targetSection }}
+      >
         {isFormTab ? (
           <form
             id="settings-form"
             onSubmit={handleSubmit(onSubmit, onInvalidSubmit)}
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
           >
-            <PageContent className="p-4">{tabContent}</PageContent>
+            <PageContent className="p-4">
+              <div className="flex gap-8">
+                <div className="min-w-0 flex-1">{tabContent}</div>
+                <SectionRail sections={railSections} />
+              </div>
+            </PageContent>
           </form>
         ) : (
           <PageContent className="p-4">{tabContent}</PageContent>
@@ -605,7 +615,7 @@ export function SettingsForm({
                   <Button
                     type="submit"
                     form="settings-form"
-                    disabled={isSaving}
+                    disabled={isSaving || !isDirty}
                     size="sm"
                   >
                     {isSaving && <Spinner />}
@@ -652,6 +662,70 @@ export function SettingsForm({
   )
 }
 
+function SectionRail({
+  sections,
+}: {
+  sections: readonly SettingsSectionDef[]
+}) {
+  const t = useTranslation("SettingsPage")
+  const [visibleIds, setVisibleIds] = useState<ReadonlySet<string>>(new Set())
+  const sectionIds = sections.map((section) => section.id).join(",")
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      setVisibleIds((prev) => {
+        const next = new Set(prev)
+        for (const entry of entries) {
+          if (entry.isIntersecting) next.add(entry.target.id)
+          else next.delete(entry.target.id)
+        }
+        return next
+      })
+    })
+
+    for (const id of sectionIds.split(",")) {
+      const element = document.getElementById(`settings-${id}`)
+      if (element) observer.observe(element)
+    }
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [sectionIds])
+
+  if (sections.length < 2) return null
+
+  return (
+    <nav className="sticky top-0 hidden h-fit w-44 shrink-0 self-start lg:block">
+      <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
+        {t("onThisPage")}
+      </p>
+      <ul className="flex flex-col gap-0.5">
+        {sections.map((section) => (
+          <li key={section.id}>
+            <button
+              type="button"
+              className={cn(
+                "text-muted-foreground hover:text-foreground w-full truncate rounded px-1.5 py-1 text-left text-xs",
+                visibleIds.has(`settings-${section.id}`) && "text-foreground",
+              )}
+              onClick={() => {
+                document
+                  .getElementById(`settings-${section.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }}
+            >
+              {t.plain(
+                `tabs.${section.page}.sections.${section.key}.title` as never,
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
 function LockedSettingsBanner({
   t,
 }: {
@@ -680,10 +754,8 @@ function SettingsSidebar({
 }) {
   const t = useTranslation("SettingsPage")
 
-  const settingsTabs = tabs.filter(
-    (tab) =>
-      settingsFormTabs.includes(tab.value as SettingsFormTab) ||
-      desktopTabs.includes(tab.value as DesktopTab),
+  const settingsTabs = tabs.filter((tab) =>
+    settingsPages.includes(tab.value as SettingsPage),
   )
   const administrationTabs = tabs.filter((tab) =>
     adminTabs.includes(tab.value as AdminTab),
@@ -691,20 +763,31 @@ function SettingsSidebar({
 
   return (
     <NavSidebar>
-      <NavSidebarBody>
-        <NavSidebarGroup label={t("sidebar.settings")}>
-          <NavSidebarSearch
-            placeholder={t("searchSettings")}
-            value={searchQuery}
-            onChange={onSearchChange}
-          />
+      <NavSidebarHeader
+        title={t("title")}
+        link={{
+          href: "/preferences?tab=general",
+          icon: icon.Settings2,
+          label: t("preferences"),
+        }}
+      />
 
-          <NavSidebarList
-            tabs={settingsTabs}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-          />
-        </NavSidebarGroup>
+      <NavSidebarBody className="pt-0">
+        <NavSidebarSearch
+          placeholder={t("searchSettings")}
+          value={searchQuery}
+          onChange={onSearchChange}
+        />
+
+        {settingsTabs.length > 0 && (
+          <NavSidebarGroup label={t("sidebar.settings")}>
+            <NavSidebarList
+              tabs={settingsTabs}
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+            />
+          </NavSidebarGroup>
+        )}
 
         {administrationTabs.length > 0 && (
           <NavSidebarGroup label={t("sidebar.administration")}>
@@ -715,13 +798,11 @@ function SettingsSidebar({
             />
           </NavSidebarGroup>
         )}
-      </NavSidebarBody>
 
-      <NavSidebarFooterLink
-        href="/preferences?tab=general"
-        icon={icon.Settings2}
-        label={t("preferences")}
-      />
+        {tabs.length === 0 && (
+          <NavSidebarEmpty>{t("sidebar.noMatches")}</NavSidebarEmpty>
+        )}
+      </NavSidebarBody>
     </NavSidebar>
   )
 }

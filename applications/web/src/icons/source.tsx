@@ -146,6 +146,7 @@ import {
   IconTextCaption,
   IconTextGrammar,
   IconTextWrap,
+  IconTool,
   IconTrash,
   IconUpload,
   IconUser,
@@ -190,6 +191,7 @@ export const Copy = /*#__PURE__*/ styled(IconCopy)
 export const Replace = /*#__PURE__*/ styled(IconReplace)
 export const Upgrade = /*#__PURE__*/ styled(IconSettingsUp)
 export const Scan = /*#__PURE__*/ styled(IconScan)
+export const Tool = /*#__PURE__*/ styled(IconTool)
 export const Pointer = /*#__PURE__*/ styled(IconPointer)
 export const Logout = /*#__PURE__*/ styled(IconLogout)
 export const ArrowBack = /*#__PURE__*/ styled(IconArrowBack)
