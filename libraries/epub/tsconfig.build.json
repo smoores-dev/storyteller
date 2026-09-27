@@ -11,7 +11,8 @@
     "allowImportingTsExtensions": false,
     // Pinned so a file added to the program later cannot move the published layout.
     "rootDir": ".",
-    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "outDir": "dist"
   },
   // scripts/install-epubcheck.ts downloads the vendored epubcheck; it never ships.
   "exclude": ["dist", "scripts", "**/*.test.ts", "vitest.config.ts"],

@@ -15,7 +15,8 @@
     "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
     "lib": ["esnext"],
-    "outDir": "dist",
+    "tsBuildInfoFile": ".tsbuild/tsconfig.tsbuildinfo",
+    "outDir": ".tsbuild/types",
     "typeRoots": [
       "./node_modules/@types",
       "../../node_modules/@types",

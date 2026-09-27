@@ -41,19 +41,19 @@
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.9.3",
-    "@tsconfig/strictest": "^2.0.5",
-    "@types/node": "^24.0.0",
+    "@tsconfig/strictest": "catalog:",
+    "@types/node": "catalog:",
     "@typescript/native": "npm:typescript@^7.0.2",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "fast-xml-validator": "^1.4.2",
     "json-schema-to-typescript": "^15.0.0",
-    "markdown-toc": "^1.2.0",
-    "remark-toc": "^9.0.0",
-    "tsx": "^4.19.2",
-    "typedoc": "^0.28.20",
-    "typedoc-plugin-markdown": "^4.6.3",
-    "typedoc-plugin-remark": "^1.2.0",
+    "markdown-toc": "catalog:",
+    "remark-toc": "catalog:",
+    "tsx": "catalog:",
+    "typedoc": "catalog:",
+    "typedoc-plugin-markdown": "catalog:",
+    "typedoc-plugin-remark": "catalog:",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "catalog:",
     "vitest": "catalog:"
@@ -73,7 +73,7 @@
   },
   "dependencies": {
     "@storyteller-platform/media-types": "workspace:^",
-    "fast-xml-parser": "^5.11.1"
+    "fast-xml-builder": "^1.3.1"
   },
   "publishConfig": {
     "access": "public",
@@ -85,6 +85,10 @@
       "./validate": {
         "types": "./dist/validate/index.d.ts",
         "default": "./dist/validate/index.js"
+      },
+      "./validate/ajv": {
+        "types": "./dist/schemas/ajv/validate.d.ts",
+        "default": "./dist/schemas/ajv/validate.js"
       }
     }
   }

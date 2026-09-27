@@ -14,6 +14,7 @@ A Node.js library for inspecting, modifying, and creating EPUB 3 publications.
   - [Adding a chapter](#adding-a-chapter)
   - [Writing to disk](#writing-to-disk)
   - [Writing to a byte array](#writing-to-a-byte-array)
+  - [Upgrading an EPUB 2 to EPUB 3](#upgrading-an-epub-2-to-epub-3)
 - [Development](#development)
 - [API Docs](#api-docs)
 
@@ -95,11 +96,23 @@ scratch.
 ### Reading from a file
 
 ```ts
-// If you want to read or write to disk, import from the `/node`
-// export
-import { Epub } from "@storyteller-platform/epub/node"
+import { Epub } from "@storyteller-platform/epub"
 
-const epub = await Epub.from("path/to/book.epub")
+using epub = await Epub.from("path/to/book.epub")
+// equivalent to
+// using epub = await Epub.using(TmpFsAdapter).from("path/to/book.epub")
+console.log(await epub.getTitle())
+```
+
+If you want to be a little more efficient and not unpack the entire EPUB file
+into disk (which can take some time when dealing with EPUBs with Media
+Overlays/audio contents), you can instead lazily read the contents of the EPUB
+file into memory.
+
+```ts
+import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+
+using epub = await Epub.using(MemoryAdapter).from("path/to/book.epub")
 console.log(await epub.getTitle())
 ```
 
@@ -118,6 +131,7 @@ import { randomUUID } from "node:crypto"
 
 import { Epub } from "@storyteller-platform/epub"
 
+// Implicitly uses the TmpFsAdapter
 const epub = await Epub.create({
   title: "S'mores For Everyone",
   // This should be the primary language of the publication.
@@ -179,7 +193,7 @@ await epub.addSpineItem(manifestItem.id)
 ### Writing to disk
 
 ```ts
-import { Epub } from "@storyteller-platform/epub/node"
+import { Epub } from "@storyteller-platform/epub"
 
 const epub = await Epub.from("path/to/book.epub")
 await epub.setTitle("S'mores for Everyone")
@@ -204,6 +218,28 @@ const data: Uint8Array = await epub.writeToArray()
 ```
 
 For more details about using the API, see the [API documentation](#epub).
+
+### Upgrading an EPUB 2 to EPUB 3
+
+This library only supports operations on EPUB 3 files and will throw an error if
+you attempt to load an EPUB 2 file.
+
+However, it does support upgrading an EPUB 2 file to EPUB 3, after which you can
+use the library like normal.
+
+```ts
+import { Epub } from "@storyteller-platform/epub"
+
+using epub = await Epub.upgrade("path/to/epub2.epub", {
+  // optional. if omitted the Epub
+  outputPath: "path/to/epub3.epub",
+})
+
+// if .saveAndClose() is not called and `outputPath` isn't provided, the Epub will return to it's unupgraded state
+await epub.saveAndClose()
+
+// Do Epub stuff
+```
 
 ## Development
 

@@ -78,6 +78,8 @@ __tests__
 /libraries/mlx-audio/node_modules
 /libraries/mlx-audio/build
 /libraries/mlx-audio/.build
+/libraries/mlx-audio/.build-xcode
+/libraries/mlx-audio/_models
 
 
 !/types
@@ -85,3 +87,7 @@ __tests__
 /docker
 
 **/whisper.cpp/**
+
+/libraries/*/dist
+**/.tsbuild
+**/*.tsbuildinfo

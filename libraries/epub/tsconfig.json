@@ -14,8 +14,8 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "lib": ["ESNext"],
-    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
-    "outDir": "dist",
+    "tsBuildInfoFile": ".tsbuild/tsconfig.tsbuildinfo",
+    "outDir": ".tsbuild/types",
     "customConditions": ["@storyteller"]
   },
   "include": ["./**/*.ts"],

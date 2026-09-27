@@ -169,7 +169,7 @@ const config = {
       },
     ],
     require.resolve("docusaurus-lunr-search"),
-    // "./plugins/fetch-contributors.ts",
+    "./plugins/fetch-contributors.ts",
     "./plugins/studio-sidebar.ts",
     tailwindPlugin,
   ],

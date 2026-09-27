@@ -20,16 +20,16 @@
     "prepack": "yarn build"
   },
   "devDependencies": {
-    "@tsconfig/strictest": "^2.0.5",
-    "@types/yauzl-promise": "^4",
-    "@types/yazl": "^3",
+    "@tsconfig/strictest": "catalog:",
+    "@types/yauzl-promise": "catalog:",
+    "@types/yazl": "catalog:",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "markdown-toc": "^1.2.0",
-    "remark-toc": "^9.0.0",
-    "tsx": "^4.19.2",
-    "typedoc": "^0.28.20",
-    "typedoc-plugin-markdown": "^4.6.3",
-    "typedoc-plugin-remark": "^1.2.0",
+    "markdown-toc": "catalog:",
+    "remark-toc": "catalog:",
+    "tsx": "catalog:",
+    "typedoc": "catalog:",
+    "typedoc-plugin-markdown": "catalog:",
+    "typedoc-plugin-remark": "catalog:",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "catalog:",
     "vitest": "catalog:"
@@ -38,10 +38,9 @@
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/media-types": "workspace:^",
     "@storyteller-platform/path": "workspace:^",
-    "@types/node": "^24.0.0",
-    "music-metadata": "^11.9.0",
-    "yauzl-promise": "^4.0.0",
-    "yazl": "^3.3.1"
+    "@types/node": "catalog:",
+    "yauzl-promise": "catalog:",
+    "yazl": "catalog:"
   },
   "publishConfig": {
     "access": "public",

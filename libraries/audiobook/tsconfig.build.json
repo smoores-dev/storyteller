@@ -11,7 +11,8 @@
     "allowImportingTsExtensions": false,
     // Pinned so a file added to the program later cannot move the published layout.
     "rootDir": "src",
-    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "outDir": "dist"
   },
   "exclude": ["dist", "**/*.test.ts"],
   "references": [

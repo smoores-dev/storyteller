@@ -12,7 +12,8 @@
     "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
     "lib": ["esnext"],
-    "outDir": "dist"
+    "tsBuildInfoFile": ".tsbuild/tsconfig.tsbuildinfo",
+    "outDir": ".tsbuild/types"
   },
   "include": ["package.json", "__test__/**/*.ts", "index.js", "index.d.ts"],
   "exclude": ["node_modules", "bench", "__test__"]

@@ -5,7 +5,8 @@
     "declaration": true,
     "allowImportingTsExtensions": false,
     "rootDir": "src",
-    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "outDir": "dist"
   },
   "include": ["src/**/*.ts", "src/align/opencc/TSCharacters.json"],
   "exclude": ["dist", "src/**/__tests__"],

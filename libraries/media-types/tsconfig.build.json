@@ -11,7 +11,8 @@
     "allowImportingTsExtensions": false,
     // Pinned so a file added to the program later cannot move the published layout.
     "rootDir": ".",
-    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "outDir": "dist"
   },
   // generate-json.ts is the table generator and index.test.ts is the stale-table guard;
   // neither ships.

@@ -50,36 +50,34 @@
     "@aws-sdk/client-s3": "^3.994.0",
     "@aws-sdk/client-transcribe": "^3.994.0",
     "@hono/node-server": "^2.1.1",
-    "@huggingface/hub": "^2.17.0",
     "@huggingface/transformers": "^4.3.0",
     "@robingenz/zli": "^0.2.0",
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/media-types": "workspace:^",
-    "chalk": "^5.4.1",
-    "cli-progress": "^3.12.0",
+    "chalk": "catalog:",
+    "cli-progress": "catalog:",
     "ffmpeg-stream": "^1.0.1",
     "fs-extra": "~11.3.0",
     "hono": "^4.13.5",
     "lodash.merge": "^4.6.2",
     "microsoft-cognitiveservices-speech-sdk": "~1.44.0",
-    "onnxruntime-node": "1.30.0",
+    "onnxruntime-node": "catalog:",
     "openai": "~4.103.0",
     "tar": "^7.4.3",
-    "undici": "7.14.0",
+    "undici": "catalog:",
     "zod": "catalog:"
   },
   "optionalDependencies": {
     "@storyteller-platform/mlx-audio": "workspace:^"
   },
   "devDependencies": {
-    "@tsconfig/strictest": "^2.0.5",
-    "@types/cli-progress": "^3",
+    "@tsconfig/strictest": "catalog:",
+    "@types/cli-progress": "catalog:",
     "@types/fs-extra": "~11.0.4",
     "@types/lodash.merge": "^4",
-    "@types/node": "^24.0.0",
-    "@types/tar": "^6.1.13",
-    "tsx": "^4.19.2",
-    "typescript": "^7.0.2",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   },
@@ -99,14 +97,8 @@
         "default": "./dist/emission/encoding.js"
       },
       "./emission-server": {
-        "import": {
-          "types": "./dist/server/emissionServer.d.ts",
-          "default": "./dist/server/emissionServer.js"
-        },
-        "require": {
-          "types": "./dist/server/emissionServer.d.cts",
-          "default": "./dist/server/emissionServer.cjs"
-        }
+        "types": "./dist/server/emissionServer.d.ts",
+        "default": "./dist/server/emissionServer.js"
       },
       "./recognition": {
         "types": "./dist/api/Recognition.d.ts",

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": [
+    "libraries/StorytellerKit/Sources/**",
+    "libraries/StorytellerKit/Tests/Browser/{harness,fixtures}/**",
+    ".yarn/**",
+    "applications/web/src/apiModels/**",
+    "libraries/opds/schemas/ajv/standalone.d.cts"
+  ],
+  "ignoreWorkspaces": ["applications/mobile"],
+  "ignoreBinaries": [
+    "diff",
+    "tail",
+    "ffmpeg",
+    "glab",
+    "install_name_tool",
+    "nvidia-smi",
+    "rocminfo",
+    "vulkaninfo",
+    "sycl-ls",
+    "readium"
+  ],
+  "ignoreUnresolved": ["node-gyp-build", "smil-clockvalue"],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "scripts/*.{mts,ts,js,mjs}",
+        "libraries/StorytellerKit/Tests/Browser/**/*.ts"
+      ]
+    },
+    "applications/docs": {
+      "entry": ["src/theme/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@docusaurus/theme-classic"]
+    },
+    "applications/tauri": {
+      "entry": ["scripts/*.{ts,mjs}"],
+      "ignoreDependencies": ["@storyteller-platform/web"]
+    },
+    "applications/web": {
+      "entry": ["src/app/(v3)/v3/global.ts"],
+      "ignoreDependencies": ["shadcn"]
+    },
+    "libraries/align": {
+      "entry": ["src/cli/bin.ts", "scripts/**/*.{js,mjs,mts,ts}"],
+      "ignoreDependencies": ["kuromoji", "node-gyp", "node-addon-api"]
+    },
+    "libraries/audiobook": {
+      "ignoreDependencies": ["remark-toc"]
+    },
+    "libraries/epub": {
+      "ignoreDependencies": ["remark-toc"]
+    },
+    "libraries/ghost-story": {
+      "entry": ["scripts/**/*.{js,mjs,mts,ts}"],
+      "ignoreDependencies": ["hono", "@hono/node-server"]
+    },
+    "libraries/mlx-audio": {
+      "entry": ["scripts/*.{mjs,mts}"],
+      "ignoreDependencies": ["@storyteller-platform/ghost-story"]
+    },
+    "libraries/nodekit": {
+      "ignoreDependencies": ["remark-toc"]
+    },
+    "libraries/okmain": {
+      "ignoreDependencies": ["@storyteller-platform/okmain-.*"],
+      "ignoreUnresolved": ["./okmain.wasi.cjs"]
+    },
+    "libraries/opds": {
+      "ignoreDependencies": ["remark-toc"]
+    }
+  },
+  "ignoreExportsUsedInFile": true
+}

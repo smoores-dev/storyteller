@@ -5,6 +5,7 @@
     "declaration": true,
     "allowImportingTsExtensions": false,
     "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "outDir": "dist",
     "rootDir": "src"
   },
   "include": ["src/**/*.ts"],

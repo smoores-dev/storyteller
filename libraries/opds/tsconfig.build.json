@@ -11,7 +11,8 @@
     "allowImportingTsExtensions": false,
     // Pinned so a file added to the program later cannot move the published layout.
     "rootDir": ".",
-    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "outDir": "dist"
   },
   // The dev-only AJV pipeline (compiling the vendored schemas into standalone.cjs) and the
   // test catalog are type-checked but never shipped: the built ./validate entry loads the
@@ -20,10 +21,7 @@
     "dist",
     "schemas/sync.ts",
     "schemas/ajv/compile.ts",
-    "schemas/ajv/validate.ts",
     "schemas/ajv/standalone.cjs",
-    "schemas/registry.generated.ts",
-    "schemas/roots.generated.ts",
     "test-catalog.json.ts",
     "**/*.test.ts",
     "vitest.config.ts"

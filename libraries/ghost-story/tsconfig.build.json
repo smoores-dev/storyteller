@@ -10,7 +10,8 @@
     // only legal when emitting declarations alone.
     "allowImportingTsExtensions": false,
     "rootDir": "src",
-    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo"
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "outDir": "dist"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "**/*.test.ts"],

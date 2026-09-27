@@ -13,7 +13,8 @@
     "exactOptionalPropertyTypes": false,
     "lib": ["esnext"],
     "types": ["node"],
-    "outDir": "dist",
+    "tsBuildInfoFile": ".tsbuild/tsconfig.tsbuildinfo",
+    "outDir": ".tsbuild/types",
     "typeRoots": [
       "./node_modules/@types",
       "../../node_modules/@types",

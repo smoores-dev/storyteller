@@ -14,8 +14,8 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "lib": ["esnext"],
-    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
-    "outDir": "dist",
+    "tsBuildInfoFile": ".tsbuild/tsconfig.tsbuildinfo",
+    "outDir": ".tsbuild/types",
     "typeRoots": [
       "./node_modules/@types",
       "../../node_modules/@types",
