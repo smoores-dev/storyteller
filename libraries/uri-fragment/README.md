@@ -16,6 +16,10 @@ Supports:
   (`#epubcfi(/6/4!/4/10/3:10)`)
 - [XPointer](https://www.w3.org/TR/xptr-xpointer/)
   (`#xpointer(id("introduction"))`)
+- [KOReader crengine "xpointer"](https://github.com/koreader/koreader/issues/14690#issuecomment-4416018495),
+  a non-standard fragment to represent KOReader's crengine's non-standard
+  "xpointer" implementation (has almost nothing to do with the W3C XPointer
+  spec). (`#crengine(/body/DocFragment/body/div/p[4]/text()[1].64)`)
 
 Also supports mixing fragments where supported by the spec(s). For example, any
 URI fragment may contain one identifier _and_ any number of directives, e.g.,

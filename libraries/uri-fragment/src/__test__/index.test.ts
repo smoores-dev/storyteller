@@ -117,6 +117,45 @@ describe("UriFragment", () => {
     expect(identifier.value).toBe("paragraph01")
   })
 
+  it("should parse an epubcfi fragment", () => {
+    const fragment = new UriFragment("epubcfi(/6/4)")
+
+    expect(fragment.identifier).toBeDefined()
+    const identifier = fragment.identifier! as {
+      kind: "epubcfi"
+      path: string
+    }
+
+    expect(identifier.kind).toBe("epubcfi")
+    expect(identifier.path).toBe("/6/4")
+  })
+
+  it("should parse an xpointer fragment", () => {
+    const fragment = new UriFragment('xpointer(id("test"))')
+
+    expect(fragment.identifier).toBeDefined()
+    const identifier = fragment.identifier! as {
+      kind: "xpointer"
+      expression: string
+    }
+
+    expect(identifier.kind).toBe("xpointer")
+    expect(identifier.expression).toBe('id("test")')
+  })
+
+  it("should parse an crengine fragment", () => {
+    const fragment = new UriFragment("crengine(/a)")
+
+    expect(fragment.identifier).toBeDefined()
+    const identifier = fragment.identifier! as {
+      kind: "crengine"
+      path: string
+    }
+
+    expect(identifier.kind).toBe("crengine")
+    expect(identifier.path).toBe("/a")
+  })
+
   it("should parse an identifier and directive", () => {
     const fragment = new UriFragment("paragraph01:~:text=beginning")
 

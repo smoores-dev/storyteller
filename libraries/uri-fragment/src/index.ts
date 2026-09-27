@@ -10,6 +10,7 @@ export type FragmentIdentifier =
   | { kind: "media"; media: MediaDimensions }
   | { kind: "epubcfi"; path: string }
   | { kind: "xpointer"; expression: string }
+  | { kind: "crengine"; path: string }
   | { kind: "anchor"; value: string }
   | { kind: "char"; range: CharacterRange }
 
@@ -116,6 +117,7 @@ export class UriFragment {
         path: identifier.slice("epubcfi(".length, -1),
       }
     }
+
     if (identifier.startsWith("xpointer(")) {
       if (!identifier.endsWith(")")) {
         return {
@@ -126,6 +128,19 @@ export class UriFragment {
       return {
         kind: "xpointer",
         expression: identifier.slice("xpointer(".length, -1),
+      }
+    }
+
+    if (identifier.startsWith("crengine(")) {
+      if (!identifier.endsWith(")")) {
+        return {
+          kind: "anchor",
+          value: identifier,
+        }
+      }
+      return {
+        kind: "crengine",
+        path: identifier.slice("crengine(".length, -1),
       }
     }
 
@@ -187,6 +202,9 @@ export class UriFragment {
       }
       case "xpointer": {
         return `xpointer(${identifier.expression})`
+      }
+      case "crengine": {
+        return `crengine(${identifier.path})`
       }
       case "media": {
         return identifier.media.toString()
