@@ -8,10 +8,5 @@
     "rootDir": "src"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["dist", "**/*.test.ts"],
-  "references": [
-    { "path": "../media-types" },
-    { "path": "../fs" },
-    { "path": "../mlx-audio" }
-  ]
+  "exclude": ["dist", "**/*.test.ts"]
 }

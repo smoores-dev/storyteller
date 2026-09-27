@@ -16460,6 +16460,7 @@ __metadata:
     "@tsconfig/strictest": "npm:^2.0.5"
     "@types/node": "npm:^24.0.0"
     node-gyp-build: "npm:^4.8.4"
+    typescript: "npm:^7.0.2"
   languageName: unknown
   linkType: soft
 
