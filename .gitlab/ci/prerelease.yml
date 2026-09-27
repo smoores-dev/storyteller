@@ -1,0 +1,111 @@
+# A job extending this one must set PACKAGE to its tag prefix ("mobile" for
+# mobile-v2.11.7) and supply its own rules.
+.prerelease-base:
+  stage: prerelease
+  image: alpine:latest
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - |
+      set -eu
+
+      apk add --no-cache curl jq
+
+      : "${PACKAGE:?A prerelease job must set PACKAGE to its package name}"
+      : "${CI_API_TOKEN:?CI_API_TOKEN is not available to this job}"
+
+      api="$CI_API_V4_URL/projects/$CI_PROJECT_ID"
+      trailer="Changelog-$PACKAGE"
+      to_sha="$CI_COMMIT_SHORT_SHA"
+      version=$(printf '%s\n' "$CI_COMMIT_TAG" | sed "s|^$PACKAGE-||")
+      per_page=100
+
+      # The releases endpoint is paginated and returns the 20 newest releases of
+      # the whole project by default
+      from_sha=""
+      page=1
+      examined_everything=""
+      max_pages=50
+      while [ "$page" -le "$max_pages" ]; do
+        if ! releases=$(curl -fsS -m 60 --header "PRIVATE-TOKEN: $CI_API_TOKEN" \
+          "$api/releases?include_branch_configs=false&order_by=released_at&sort=desc&per_page=$per_page&page=$page"); then
+          echo "Could not list the releases of this project (page $page)." >&2
+          echo "Is CI_API_TOKEN set, valid, and allowed on protected refs?" >&2
+          exit 1
+        fi
+
+        # A broken response must not be mistaken for "no release", and only a
+        # real array can be measured by the page count check further down.
+        if ! printf '%s' "$releases" | jq -e 'type == "array"' > /dev/null; then
+          echo "Page $page of the release list is not a JSON array:" >&2
+          printf '%s\n' "$releases" >&2
+          exit 1
+        fi
+
+        if ! from_sha=$(printf '%s' "$releases" | jq -r \
+          --arg prefix "$PACKAGE-" \
+          --arg head "$CI_COMMIT_SHA" \
+          'first(.[]
+             | select(.tag_name | startswith($prefix))
+             | select(.commit.id != $head)
+             | .commit.short_id) // empty'); then
+          echo "Could not read page $page of the release list." >&2
+          exit 1
+        fi
+
+        if [ -n "$from_sha" ]; then
+          break
+        fi
+        if ! count=$(printf '%s' "$releases" | jq 'length'); then
+          echo "Could not read page $page of the release list." >&2
+          exit 1
+        fi
+        if [ "$count" -lt "$per_page" ]; then
+          examined_everything=yes
+          break
+        fi
+        page=$((page + 1))
+      done
+
+      # Stopping without a previous release is only sound once the whole list
+      # has been walked; otherwise the page cap would hide a broken list.
+      if [ -z "$from_sha" ] && [ -z "$examined_everything" ]; then
+        echo "No previous $PACKAGE release in the first $((max_pages * per_page)) releases." >&2
+        exit 1
+      fi
+
+      # With no previous release the range starts at the beginning of the
+      # repository: the endpoint accepts a missing "from", but an empty one is a
+      # 422 and no notes at all.
+      range=""
+      if [ -n "$from_sha" ]; then
+        range="from=$from_sha&"
+      fi
+      echo "Release notes for $PACKAGE $version: ${from_sha:-the beginning of the repository}..$to_sha"
+
+      # Generating a changelog walks the repository server side, so it gets a
+      # longer timeout than a page of the release list.
+      if ! changelog=$(curl -fsS -m 300 --header "PRIVATE-TOKEN: $CI_API_TOKEN" \
+        "$api/repository/changelog?version=$version&${range}to=$to_sha&trailer=$trailer"); then
+        echo "Could not generate the changelog for $PACKAGE $version." >&2
+        echo "Tried: $api/repository/changelog?version=$version&${range}to=$to_sha&trailer=$trailer" >&2
+        exit 1
+      fi
+
+      # An error response carries no "notes"; writing "null" here would publish
+      # a release described as null.
+      if ! notes=$(printf '%s' "$changelog" | jq -r '.notes // empty'); then
+        echo "Could not read the changelog response for $PACKAGE $version." >&2
+        printf '%s\n' "$changelog" >&2
+        exit 1
+      fi
+      if [ -z "$notes" ]; then
+        echo "The changelog response for $PACKAGE $version carried no notes:" >&2
+        printf '%s\n' "$changelog" >&2
+        exit 1
+      fi
+
+      printf '%s\n' "$notes" > release_notes.md
+  artifacts:
+    paths:
+      - release_notes.md

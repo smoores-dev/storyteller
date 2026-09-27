@@ -11,6 +11,7 @@ include:
   - local: ".gitlab/ci/check.yml"
   - local: ".gitlab/ci/mr-changelog-trailers.yml"
   - local: ".gitlab/ci/base-images.yml"
+  - local: ".gitlab/ci/prerelease.yml"
   - local: ".gitlab/ci/bump-versions.yml"
   - local: ".gitlab/ci/publish-web.yml"
   - local: ".gitlab/ci/publish-tauri.yml"

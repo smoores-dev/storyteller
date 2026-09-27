@@ -28,26 +28,13 @@ publish-fs:
     - yarn workspace @storyteller-platform/fs npm publish --tag="$TAG"
 
 prerelease-fs:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: fs
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^fs-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/fs-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-fs"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-fs:
   stage: release
@@ -101,26 +88,13 @@ publish-epub:
     - yarn workspace @storyteller-platform/epub npm publish --tag="$TAG"
 
 prerelease-epub:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: epub
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^epub-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/epub-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-epub"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-epub:
   stage: release
@@ -174,26 +148,13 @@ publish-audiobook:
     - yarn workspace @storyteller-platform/audiobook npm publish --tag="$TAG"
 
 prerelease-audiobook:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: audiobook
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/audiobook-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-audiobook"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-audiobook:
   stage: release
@@ -247,26 +208,13 @@ publish-path:
     - yarn workspace @storyteller-platform/path npm publish --tag="$TAG"
 
 prerelease-path:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: path
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^path-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/path-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-path"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-path:
   stage: release
@@ -320,26 +268,13 @@ publish-media-types:
     - yarn workspace @storyteller-platform/media-types npm publish --tag="$TAG"
 
 prerelease-media-types:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: media-types
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^media-types-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/media-types-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-media-types"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-media-types:
   stage: release
@@ -393,26 +328,13 @@ publish-uri-fragment:
     - yarn workspace @storyteller-platform/uri-fragment npm publish --tag="$TAG"
 
 prerelease-uri-fragment:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: uri-fragment
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^uri-fragment-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/uri-fragment-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-uri-fragment"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-uri-fragment:
   stage: release
@@ -466,26 +388,13 @@ publish-mapping:
     - yarn workspace @storyteller-platform/mapping npm publish --tag="$TAG"
 
 prerelease-mapping:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: mapping
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^mapping-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/mapping-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-mapping"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-mapping:
   stage: release
@@ -539,26 +448,13 @@ publish-mlx-audio:
     - yarn workspace @storyteller-platform/mlx-audio npm publish --tag="$TAG"
 
 prerelease-mlx-audio:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: mlx-audio
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^mlx-audio-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/mlx-audio-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-mlx-audio"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-mlx-audio:
   stage: release
@@ -612,26 +508,13 @@ publish-ghost-story:
     - yarn workspace @storyteller-platform/ghost-story npm publish --tag="$TAG"
 
 prerelease-ghost-story:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: ghost-story
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^ghost-story-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/ghost-story-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-ghost-story"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-ghost-story:
   stage: release
@@ -871,26 +754,13 @@ publish-align:
     - yarn workspace @storyteller-platform/align npm publish --tag="$TAG"
 
 prerelease-align:
-  stage: prerelease
-  image: alpine:latest
+  extends: .prerelease-base
+  variables:
+    PACKAGE: align
   rules:
     - if:
         '$CI_COMMIT_TAG =~
         /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/align-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-align"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
 
 release-align:
   stage: release
@@ -1162,23 +1032,11 @@ publish-okmain:
       --access public
 
 prerelease-okmain:
-  stage: prerelease
-  image: alpine:latest
-  extends: .okmain-tag-rules
-  script:
-    - apk add curl jq
-    - version=$(echo $CI_COMMIT_TAG | sed -r 's/okmain-//')
-    - package=$(echo $CI_COMMIT_TAG | sed -r 's/-v\d+\.\d+\.\d+.*$//')
-    - 'from_sha=$(curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases" | jq -r "first(.[] |
-      select(.tag_name | startswith(\"$package\")) | .commit.short_id)")'
-    - to_sha=$CI_COMMIT_SHORT_SHA
-    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN"
-      "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=${version}&from=${from_sha}&to=${to_sha}&trailer=Changelog-okmain"
-      | jq -r .notes > release_notes.md'
-  artifacts:
-    paths:
-      - release_notes.md
+  extends:
+    - .prerelease-base
+    - .okmain-tag-rules
+  variables:
+    PACKAGE: okmain
 
 release-okmain:
   stage: release
