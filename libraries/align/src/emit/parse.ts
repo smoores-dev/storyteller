@@ -4,6 +4,7 @@ import {
   command,
   constant,
   integer,
+  map,
   merge,
   message,
   object,
@@ -11,6 +12,7 @@ import {
   optional,
   withDefault,
 } from "@optique/core"
+import { string, url } from "@optique/core/valueparser"
 import { path } from "@optique/run/valueparser"
 
 import {
@@ -23,11 +25,10 @@ import {
 import { languageParser, loggingParser } from "../common/parse.ts"
 
 export const emitParser = object({
-  engine: withDefault(
+  engine: optional(
     option("--engine", choice(CTC_ENGINES, { metavar: "ENGINE" }), {
-      description: message`The wav2vec2 engine to generate emissions with`,
+      description: message`Where to generate emissions. Unset runs on this machine, or on the server when --server-url is given.`,
     }),
-    "ctc-local",
   ),
   device: withDefault(
     option("--device", "-d", choice(CTC_DEVICES, { metavar: "DEVICE" }), {
@@ -56,19 +57,19 @@ export const emitParser = object({
       description: message`How many ffmpeg processes decode audio ahead of the model. Unset picks 4, or fewer on small machines.`,
     }),
   ),
-  // serverUrl: optional(
-  //   map(
-  //     option("--server-url", url(), {
-  //       description: message`The URL of the emission server`,
-  //     }),
-  //     (url) => url.toString(),
-  //   ),
-  // ),
-  // serverApiKey: optional(
-  //   option("--api-key", string(), {
-  //     description: message`The API key of the emission server`,
-  //   }),
-  // ),
+  serverUrl: optional(
+    map(
+      option("--server-url", url(), {
+        description: message`The URL of a ghost-story server started with ghost-story serve`,
+      }),
+      (url) => url.toString(),
+    ),
+  ),
+  serverApiKey: optional(
+    option("--server-api-key", string(), {
+      description: message`The API key of the ghost-story server`,
+    }),
+  ),
 })
 
 export const emitCommand = command(

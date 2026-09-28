@@ -63,16 +63,18 @@ export interface EmissionsFileHeader extends EmissionsMeta {
 }
 
 export function encodeEmissions(data: EmissionData): [Uint8Array, Uint8Array] {
-  const { values, frames, classes } = data.emissions
-  const head = encodeHeader({ ...data, classes }, frames)
-  return [head, encodeFrames(values, frames, classes)]
+  const { classes, frames } = data.emissions
+  return [
+    encodeEmissionsHeader({ ...data, classes }, frames),
+    encodeEmissionsFrames(data.emissions),
+  ]
 }
 
-function encodeFrames(
-  values: Float32Array,
-  frames: number,
-  classes: number,
-): Uint8Array {
+export function encodeEmissionsFrames({
+  values,
+  frames,
+  classes,
+}: Emissions): Uint8Array {
   const length = frames * classes
   if (values.length < length) {
     throw new Error(
@@ -84,7 +86,10 @@ function encodeFrames(
     : encodeDenseFrames(values, length)
 }
 
-function encodeHeader(data: EmissionsMeta, frames: number): Uint8Array {
+export function encodeEmissionsHeader(
+  data: EmissionsMeta,
+  frames: number,
+): Uint8Array {
   const vocabSize = data.vocab.size
 
   if (data.classes !== vocabSize) {

@@ -1,26 +1,23 @@
 import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises"
-import os from "node:os"
 import { basename, extname, join } from "node:path"
 
 import { type Logger } from "pino"
 
 import {
-  type Emissions,
+  type CtcServer,
   type LoadedCtcModel,
-  PCM_SAMPLE_RATE,
-  Scratch,
-  type Timing,
+  type RemoteRunOptions,
   type TimingAggregator,
   createAggregator,
   createTiming,
-  decodePcm,
-  emitWindows,
+  emitRemote,
+  emitTracks,
   formatSingleReport,
   loadCtcModel,
   mapOrdered,
-  planChunks,
   probeSource,
   resolveCtcRun,
+  resolveRemoteCtcRun,
 } from "@storyteller-platform/ghost-story"
 import {
   type CtcDataType,
@@ -37,9 +34,9 @@ import {
   readTrackSource,
 } from "../process/trackSource.ts"
 
-import { writeEmissionsFile } from "./fs.ts"
+import { replaceFile, writeEmissionsStream } from "./fs.ts"
 
-const CHUNK_SECONDS = 300
+const REMOTE_TRACKS_IN_FLIGHT = 3
 
 export interface EmitOptions {
   onProgress?: ((progress: number) => void) | null | undefined
@@ -51,6 +48,8 @@ export interface EmitOptions {
   batchSize?: number | null | undefined
   language?: Intl.Locale | null | undefined
   concurrency?: number | null | undefined
+  serverUrl?: string | null | undefined
+  serverApiKey?: string | null | undefined
   logger?: Logger | null | undefined
 }
 
@@ -70,13 +69,6 @@ type PlannedTrack = {
   identityFilepath: string
   identity: Identity
   status: "cached" | "stale" | "missing"
-}
-
-type TrackProgress = {
-  timing: Timing
-  parts: Emissions[]
-  secondsPerChunk: number
-  framesPerChunk: number
 }
 
 export async function emit(
@@ -101,15 +93,39 @@ export async function emit(
 
   await pruneStaleOutputs(output, filenames)
 
-  const engine = options.engine ?? "ctc-local"
-  const run = resolveCtcRun({
-    device: options.device,
+  const engine =
+    options.engine ?? (options.serverUrl ? "ctc-server" : "ctc-local")
+  const runOptions: RemoteRunOptions = {
     model: options.model,
     language: options.language?.language ?? null,
     dtype: options.dtype,
-    batchSize: options.batchSize,
-    buildVariant: process.env["STORYTELLER_WHISPER_VARIANT"],
-  })
+  }
+
+  if (engine === "ctc-server" && !options.serverUrl) {
+    throw new Error(
+      "The ctc-server engine needs the URL of a ghost-story server",
+    )
+  }
+  const server: CtcServer = {
+    url: options.serverUrl ?? "",
+    apiKey: options.serverApiKey,
+  }
+  const backend =
+    engine === "ctc-server"
+      ? {
+          kind: "server" as const,
+          run: await resolveRemoteCtcRun(server, runOptions, signal),
+        }
+      : {
+          kind: "local" as const,
+          run: resolveCtcRun({
+            ...runOptions,
+            device: options.device,
+            batchSize: options.batchSize,
+            buildVariant: process.env["STORYTELLER_WHISPER_VARIANT"],
+          }),
+        }
+  const run = backend.run
 
   const timing = createAggregator()
   timing.setMetadata("engine", engine)
@@ -193,123 +209,98 @@ export async function emit(
     return timing
   }
 
+  if (backend.kind === "server") {
+    const fractions = new Map<PlannedTrack, number>()
+    const report = () => {
+      let done = cached
+      for (const fraction of fractions.values()) {
+        done += fraction
+      }
+      options.onProgress?.(done / planned.length)
+    }
+    const results = mapOrdered(
+      pending,
+      REMOTE_TRACKS_IN_FLIGHT,
+      async (target, scope) => {
+        const emitted = await emitRemote(target.filepath, server, runOptions, {
+          signal: scope,
+          onProgress: (done, total) => {
+            fractions.set(target, done / total)
+            report()
+          },
+        })
+        await rm(target.identityFilepath, { force: true })
+        await writeEmissionsStream(target.emissionFilepath, emitted.body, {
+          signal: scope,
+        })
+        return { target, timing: emitted.timing }
+      },
+      signal,
+    )
+    for await (const result of results) {
+      const summary = { ...result.timing, spans: [] }
+      options.logger?.info(
+        formatSingleReport(
+          summary,
+          `Transcription Timing Report for ${result.target.filepath} on ${server.url}`,
+        ),
+      )
+      timing.add(summary)
+      await writeFile(
+        result.target.identityFilepath,
+        JSON.stringify(result.target.identity),
+        { encoding: "utf-8" },
+      )
+      fractions.set(result.target, 1)
+      report()
+    }
+    return timing
+  }
+
   const sources = await Promise.all(
     pending.map((track) => probeSource(track.filepath)),
   )
 
   const loadTiming = createTiming()
-  await using loaded: LoadedCtcModel = await loadCtcModel(run, {
+  await using loaded: LoadedCtcModel = await loadCtcModel(backend.run, {
     timing: loadTiming,
     signal,
   })
   options.logger?.info(
     formatSingleReport(
       loadTiming.summary(),
-      `Model load for ${run.variant} on ${run.device}`,
+      `Model load for ${loaded.run.variant} on ${loaded.run.device}`,
     ),
   )
 
-  const windowSamples = Math.round(run.chunkSeconds * PCM_SAMPLE_RATE)
-  const chunks = planChunks(sources, {
-    windowSamples,
-    windowsPerChunk: Math.max(
-      run.batchSize,
-      Math.ceil(CHUNK_SECONDS / run.chunkSeconds),
-    ),
-  })
-
-  const progress = new Map<number, TrackProgress>()
-
-  await using scratch = await Scratch.create()
-
-  const decoded = mapOrdered(
-    chunks,
-    options.concurrency ??
-      Math.max(1, Math.min(4, os.availableParallelism() - 2)),
-    async (chunk, scope) => {
-      const track = progressFor(progress, chunk.source)
-      const samples = await track.timing.timeAsync("conversion", () =>
-        decodePcm(chunk, { scratch, signal: scope }),
-      )
-      return { chunk, samples }
+  const tracks = emitTracks(
+    sources,
+    pending.map((track) => `${track.emissionFilepath}.partial`),
+    loaded,
+    {
+      concurrency: options.concurrency,
+      signal,
+      onBlock: (done, total) => {
+        options.onProgress?.(
+          (cached + (done / total) * pending.length) / planned.length,
+        )
+      },
     },
-    signal,
   )
-
-  for await (const { chunk, samples } of decoded) {
-    const track = progressFor(progress, chunk.source)
-    const source = sources[chunk.source] as (typeof sources)[number]
-    const target = pending[chunk.source] as PlannedTrack
-
-    const windows: Float32Array[] = []
-    for (let i = 0; i < samples.length; i += windowSamples) {
-      const window = samples.subarray(i, i + windowSamples)
-      if (window.length >= loaded.minSamples) {
-        windows.push(window)
-      }
-    }
-
-    const emissions = await track.timing.timeAsync("transcription", () =>
-      emitWindows(loaded, windows, signal),
-    )
-    for (const [i, part] of emissions.entries()) {
-      track.parts.push({
-        values: part.values.slice(0, part.frames * part.classes),
-        frames: part.frames,
-        classes: part.classes,
-      })
-      if (track.framesPerChunk === 0) {
-        track.framesPerChunk = part.frames
-        track.secondsPerChunk =
-          (windows[i] as Float32Array).length / PCM_SAMPLE_RATE
-      }
-    }
-
-    options.onProgress?.(
-      (cached + ((chunk.index + 1) / chunks.length) * pending.length) /
-        planned.length,
-    )
-
-    if (!chunk.last) {
-      continue
-    }
-
-    if (track.framesPerChunk === 0) {
-      throw new Error(`Failed to process empty audio source ${source.path}`)
-    }
-
-    const merged = mergeEmissions(track.parts)
-    track.timing.setMetadata("audioLength", source.durationSeconds)
-    track.timing.setMetadata("device", loaded.run.device)
-    track.timing.setMetadata("model", loaded.run.variant)
-    track.timing.setMetadata("dtype", loaded.dtype)
-    track.timing.setMetadata("batchSize", loaded.run.batchSize)
-    const summary = track.timing.summary()
+  for await (const track of tracks) {
+    const target = pending[track.source] as PlannedTrack
     options.logger?.info(
       formatSingleReport(
-        summary,
+        track.timing,
         `Transcription Timing Report for ${target.filepath}`,
       ),
     )
-    timing.add(summary)
-    progress.delete(chunk.source)
+    timing.add(track.timing)
 
     await rm(target.identityFilepath, { force: true })
-    await writeEmissionsFile(
+    await replaceFile(
+      `${target.emissionFilepath}.partial`,
       target.emissionFilepath,
-      {
-        emissions: merged,
-        numFrames: merged.frames,
-        vocab: loaded.vocab,
-        blankIndex: loaded.blankIndex,
-        secondsPerChunk: track.secondsPerChunk,
-        framesPerChunk: track.framesPerChunk,
-        secondsPerFrame: loaded.samplesPerFrame / PCM_SAMPLE_RATE,
-        startOffsetSeconds: loaded.startOffsetSeconds,
-        endOffsetSeconds: loaded.endOffsetSeconds,
-        tokenizer: loaded.tokenizer,
-      },
-      { signal: signal ?? undefined },
     )
     await writeFile(target.identityFilepath, JSON.stringify(target.identity), {
       encoding: "utf-8",
@@ -317,30 +308,4 @@ export async function emit(
   }
 
   return timing
-}
-
-function progressFor(progress: Map<number, TrackProgress>, source: number) {
-  let track = progress.get(source)
-  if (!track) {
-    track = {
-      timing: createTiming(),
-      parts: [],
-      secondsPerChunk: 0,
-      framesPerChunk: 0,
-    }
-    progress.set(source, track)
-  }
-  return track
-}
-
-function mergeEmissions(parts: Emissions[]): Emissions {
-  const classes = parts[0]?.classes ?? 0
-  const frames = parts.reduce((total, part) => total + part.frames, 0)
-  const values = new Float32Array(frames * classes)
-  let offset = 0
-  for (const part of parts) {
-    values.set(part.values, offset)
-    offset += part.values.length
-  }
-  return { values, frames, classes }
 }

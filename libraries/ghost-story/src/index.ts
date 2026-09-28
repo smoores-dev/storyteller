@@ -80,15 +80,10 @@ export {
   installModel,
   installVadModel,
 } from "./cli/install.ts"
-// export {
-//   type EmissionWireResult,
-//   decodeEmissions,
-//   encodeEmissions,
-// } from "./emission/EmissionWire.ts"
 export {
   type CtcOptions,
   type CtcResult,
-  emitWindows,
+  emitChunks,
   readAudioAsFloat32,
 } from "./emission/CtcEmission.ts"
 export {
@@ -100,12 +95,13 @@ export {
   frameByteRange,
 } from "./emission/encoding.ts"
 export {
-  type ChunkRequest,
+  type BlockRequest,
   type Grid,
+  type SampleRange,
   type SourceInfo,
   PCM_SAMPLE_RATE,
-  planChunks,
-} from "./audio/PlanChunks.ts"
+  planBlocks,
+} from "./audio/PlanBlocks.ts"
 export {
   type DecodeOptions,
   type DecodeRequest,
@@ -123,7 +119,30 @@ export {
   loadCtcModel,
   resolveCtcRun,
 } from "./emission/CtcModel.ts"
-// export { type Wav2Vec2ServerOptions } from "./emission/Wav2Vec2ServerEmission.ts"
+export {
+  type EmitTracksOptions,
+  type EmittedTrack,
+  blockGrid,
+  emitTracks,
+} from "./emission/EmitTracks.ts"
+export {
+  type CtcServer,
+  type RemoteEmissions,
+  type RemoteEmitOptions,
+  type RemoteRunOptions,
+  emitRemote,
+  fetchEmissionCapabilities,
+  hashFile,
+  resolveRemoteCtcRun,
+  uploadFile,
+} from "./emission/CtcServerClient.ts"
+export {
+  type EmissionCapabilities,
+  type Job,
+  type JobState,
+  type RemoteCtcRun,
+  type RemoteEmissionResult,
+} from "./server/protocol.ts"
 export {
   type ConversionMode,
   getConfig,

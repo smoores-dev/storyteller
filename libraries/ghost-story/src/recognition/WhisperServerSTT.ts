@@ -17,7 +17,6 @@ import type { Timing } from "../utilities/Timing.ts"
 import {
   type RawWhisperSegment,
   type WhisperServerSegment,
-  calculateEffectiveProcessors,
   calculateWhisperSplits,
   countProcessorBoundaries,
   extractCorrectedTimeline,
@@ -28,11 +27,8 @@ export type InputPreference = "file"
 export const inputPreference: InputPreference = "file"
 
 type WhisperServerRunConfig = {
-  threads: number
   processors: number
-  model: string
-  maxThreads: number
-  maxProcessors: number
+  corrected?: boolean
   audioDuration: number
 }
 
@@ -127,27 +123,6 @@ export async function recognize(
         ...(config as WhisperServerRunConfig),
         audioDuration: audioLength,
       }
-
-      // if we get a config, we are using ghost-story server, so we have control over the number of processors used
-      // check if we need to lower number of proessors
-      const effectiveProcessors = calculateEffectiveProcessors(
-        audioLength,
-        whisperConfig.maxProcessors,
-      )
-      if (effectiveProcessors !== whisperConfig.processors) {
-        const configForm = new FormData()
-        configForm.append("processors", String(effectiveProcessors))
-        configForm.append("threads", String(whisperConfig.threads))
-
-        // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
-        await fetch(`${baseUrl}/config`, {
-          method: "POST",
-          headers,
-          body: configForm,
-        } as RequestInit)
-
-        whisperConfig.processors = effectiveProcessors
-      }
     } catch (e) {
       console.warn(
         `Failed to get config from Whisper server, continuing with default config. If you aren't using ghost-story server, this is expected`,
@@ -208,12 +183,14 @@ async function extractTimelineAndTranscript(
   if (hasNestedWords) {
     const rawSegments = parseWhisperServerOutput(response.segments)
     // we either know where the splits are bc we are using an up to date ghost-story, or we need to try and detect them (which is pretyy jank)
-    const splitBoundaries = whisperConfig?.audioDuration
-      ? calculateWhisperSplits(
-          whisperConfig.audioDuration,
-          whisperConfig.processors,
-        )
-      : await detectSplitBoundaries(rawSegments, audioPath)
+    const splitBoundaries = whisperConfig?.corrected
+      ? []
+      : whisperConfig?.audioDuration
+        ? calculateWhisperSplits(
+            whisperConfig.audioDuration,
+            whisperConfig.processors,
+          )
+        : await detectSplitBoundaries(rawSegments, audioPath)
 
     const timeline = extractCorrectedTimeline(rawSegments, { splitBoundaries })
 

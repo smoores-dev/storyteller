@@ -1,3 +1,4 @@
+import { createWriteStream } from "node:fs"
 import {
   type FileHandle,
   open,
@@ -5,9 +6,13 @@ import {
   readdir,
   rename,
   rm,
+  stat,
   writeFile,
 } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
+import { type Readable } from "node:stream"
+import { pipeline } from "node:stream/promises"
+import { setTimeout } from "node:timers/promises"
 
 import {
   type EmissionData,
@@ -29,10 +34,53 @@ export async function writeEmissionsFile(
   const partial = `${path}.partial`
   try {
     await writeFile(partial, encodeEmissions(data), options)
-    await rename(partial, path)
+    await replaceFile(partial, path)
   } catch (error) {
     await rm(partial, { force: true })
     throw error
+  }
+}
+
+export async function writeEmissionsStream(
+  path: string,
+  stream: Readable,
+  options: { signal?: AbortSignal | undefined } = {},
+) {
+  const partial = `${path}.partial`
+  try {
+    await pipeline(stream, createWriteStream(partial), options)
+    const header = await readEmissionsHeader(partial)
+    const [, end] = frameByteRange(header)
+    const { size } = await stat(partial)
+
+    if (size !== end) {
+      throw new Error(
+        `Received a truncated emissions file for ${path}, expected ${end} bytes and got ${size}`,
+      )
+    }
+    await replaceFile(partial, path)
+  } catch (error) {
+    await rm(partial, { force: true })
+    throw error
+  }
+}
+
+export async function replaceFile(from: string, to: string) {
+  // annoying retry logic necessary for when eg windows defender is blocking access to the file
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await rename(from, to)
+      return
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (
+        attempt >= 5 ||
+        (code !== "EPERM" && code !== "EACCES" && code !== "EBUSY")
+      ) {
+        throw error
+      }
+      await setTimeout(100 * attempt)
+    }
   }
 }
 

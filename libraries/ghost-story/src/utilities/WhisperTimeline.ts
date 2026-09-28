@@ -286,6 +286,7 @@ export function parseWhisperServerOutput(
 
 interface CorrectionState {
   cumulativeOffset: number
+  partEnd: number
   lastSegmentEnd: number
   lastWordEnd: number
 }
@@ -357,6 +358,7 @@ export function countProcessorBoundaries(
   let boundaryCount = 0
   const state: CorrectionState = {
     cumulativeOffset: 0,
+    partEnd: Infinity,
     lastSegmentEnd: 0,
     lastWordEnd: 0,
   }
@@ -401,8 +403,8 @@ function correctWordTimestamps(
   state: CorrectionState,
   segmentBounds: { start: number; end: number },
 ): { startTime: number; endTime: number } {
-  let startTime = word.start + state.cumulativeOffset
-  let endTime = word.end + state.cumulativeOffset
+  let startTime = Math.min(word.start + state.cumulativeOffset, state.partEnd)
+  let endTime = Math.min(word.end + state.cumulativeOffset, state.partEnd)
 
   const duration = endTime - startTime
 
@@ -442,59 +444,15 @@ export interface TimelineCorrectionOptions {
   splitBoundaries?: number[] | undefined
 }
 
-const findBestSplit = (
-  state: CorrectionState,
-  segment: RawWhisperSegment,
-  splitBoundaries: number[],
-  usedSplits: Set<number>,
-) => {
-  if (!splitBoundaries.length) return null
-
-  const segmentStart = segment.segmentStart
-
-  const expectedTime = state.lastWordEnd > 0 ? state.lastWordEnd : segmentStart
-  let bestSplit: number | null = null
-
-  for (const split of splitBoundaries) {
-    if (usedSplits.has(split)) continue
-    // look for a split that's close to our expected position or segment start
-    if (
-      Math.abs(split - expectedTime) < 30 ||
-      Math.abs(split - segmentStart) < 30
-    ) {
-      bestSplit = split
-      break
-    }
-  }
-
-  return bestSplit
-}
-
 const getBetterCumulativeOffset = (
   state: CorrectionState,
   segment: RawWhisperSegment,
-  splitBoundaries: number[],
-  usedSplits: Set<number>,
 ) => {
-  const segmentStart = segment.segmentStart
-  const firstWord = segment.words[0]
-  const firstWordStart = firstWord?.start ?? 0
-
-  // if we have known split boundaries, use them for accurate offset
-  // this is the case in whisper-cpp with turbo mode > 1
-  const bestSplit = findBestSplit(state, segment, splitBoundaries, usedSplits)
-
-  if (bestSplit === null) {
-    if (state.lastWordEnd > 0) {
-      return state.lastWordEnd - firstWordStart
-    }
-
-    return segmentStart - firstWordStart
+  const firstWordStart = segment.words[0]?.start ?? 0
+  if (state.lastWordEnd > 0) {
+    return state.lastWordEnd - firstWordStart
   }
-
-  // use the known split time as the accurate offset
-  usedSplits.add(bestSplit)
-  return bestSplit - firstWordStart
+  return segment.segmentStart - firstWordStart
 }
 
 export function extractCorrectedTimeline(
@@ -504,11 +462,12 @@ export function extractCorrectedTimeline(
   if (segments.length === 0) return []
 
   const { splitBoundaries = [] } = options
-  const usedSplits = new Set<number>()
+  const partStarts = [0, ...splitBoundaries]
 
   const timeline: TimelineEntry[] = []
   const state: CorrectionState = {
     cumulativeOffset: 0,
+    partEnd: Infinity,
     lastSegmentEnd: 0,
     lastWordEnd: 0,
   }
@@ -524,34 +483,32 @@ export function extractCorrectedTimeline(
         : segment.segmentEnd
 
     if (splitBoundaries.length > 0) {
-      // if we _really_ know the boundary it should be really close
-      const boundary = splitBoundaries.find((boundary) => {
-        return Math.abs(boundary - segmentStart) < 2
-      })
-      if (boundary) {
-        state.cumulativeOffset = getBetterCumulativeOffset(
-          state,
-          segment,
-          splitBoundaries,
-          usedSplits,
-        )
-      }
+      const estimate = segmentStart - (segment.words[0]?.start ?? 0)
+      const part = partStarts.reduce(
+        (best, start, index) =>
+          Math.abs(start - estimate) <
+          Math.abs((partStarts[best] as number) - estimate)
+            ? index
+            : best,
+        0,
+      )
+      state.cumulativeOffset = partStarts[part] as number
+      state.partEnd = partStarts[part + 1] ?? Infinity
     } else {
       const boundary = detectProcessorBoundary(segment, state)
 
       if (boundary.isBoundary) {
-        state.cumulativeOffset = getBetterCumulativeOffset(
-          state,
-          segment,
-          splitBoundaries,
-          usedSplits,
-        )
+        state.cumulativeOffset = getBetterCumulativeOffset(state, segment)
       }
     }
 
     // check if next segment is time traveling, we should fix this segment then
     const nextSegment = segments[i + 1] ?? null
-    if (nextSegment && isTimeTravelingSegment(nextSegment)) {
+    if (
+      splitBoundaries.length === 0 &&
+      nextSegment &&
+      isTimeTravelingSegment(nextSegment)
+    ) {
       // we should take the end of the next segment as the sensible one
       // we can calculate the correct start of the next segment/end of this segment by
       // 1. assuming the next segment is correct (it should be)

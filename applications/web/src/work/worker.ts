@@ -279,10 +279,14 @@ export default async function processBook({
 
         if (settings.aligner === "ctc") {
           logger.info("Generating emissions...")
-          const device = resolveCtcDevice(
-            settings.ctcDevice,
-            env.STORYTELLER_WHISPER_VARIANT,
-          )
+          const engine = settings.ctcEngine ?? "ctc-local"
+          const device =
+            engine === "ctc-local"
+              ? resolveCtcDevice(
+                  settings.ctcDevice,
+                  env.STORYTELLER_WHISPER_VARIANT,
+                )
+              : null
           const family = settings.ctcModel ?? "quartznet15x5"
           const model =
             family === "mms" ||
@@ -296,14 +300,14 @@ export default async function processBook({
           }
           await processTiming.timeAsync("transcribe_chapters", () =>
             emit(getProcessedAudioFilepath(book), getEmissionsFilepath(book), {
-              engine: settings.ctcEngine ?? "ctc-local",
+              engine,
               device,
               model,
               dtype: settings.ctcDtype,
               batchSize: settings.ctcBatchSize,
               language: locale,
-              // serverUrl: settings.ctcServerUrl,
-              // serverApiKey: settings.ctcServerApiKey,
+              serverUrl: settings.ctcServerUrl,
+              serverApiKey: settings.ctcServerApiKey,
               onProgress: progressCallback,
               logger,
               signal,

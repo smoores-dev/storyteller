@@ -102,9 +102,7 @@ export function NavUser({
             nativeButton={false}
             render={
               <SidebarMenuButton
-                render={
-                  <V3Link prefetch={true} href={`${basePath}/settings`} />
-                }
+                render={<V3Link prefetch={true} href={`/settings`} />}
               >
                 <icon.Settings />
               </SidebarMenuButton>

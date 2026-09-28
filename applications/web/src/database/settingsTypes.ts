@@ -281,7 +281,7 @@ export const ENCRYPTED_SETTING_KEYS = [
   "amazonTranscribeSecretAccessKey",
   "openAiApiKey",
   "deepgramApiKey",
-  // "ctcServerApiKey",
+  "ctcServerApiKey",
 ] as const
 
 export const ALIGNMENT_GRANULARITY_OPTIONS = ["word", "sentence"] as const
@@ -325,8 +325,8 @@ export const SettingsSchema = z.object({
   ctcModel: CtcModelFamilySchema.nullable(),
   ctcDtype: CtcDtypeSchema.nullable(),
   ctcBatchSize: z.coerce.number<number>().nullable(),
-  // ctcServerUrl: z.string().nullable(),
-  // ctcServerApiKey: z.string().nullable(),
+  ctcServerUrl: z.string().nullable(),
+  ctcServerApiKey: z.string().nullable(),
   // Transcription settings
   transcriptionEngine: TranscriptionEngineSchema.nullable(),
   whisperModel: WhisperModelSchema.nullable(),
@@ -417,6 +417,8 @@ export const SETTINGS_DEFAULTS = {
   ctcModel: "quartznet15x5",
   ctcDtype: null,
   ctcBatchSize: null,
+  ctcServerUrl: null,
+  ctcServerApiKey: null,
   transcriptionEngine: "whisper.cpp",
   whisperModel: "tiny",
   whisperThreads: 1,

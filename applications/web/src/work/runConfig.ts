@@ -17,8 +17,8 @@ export const RUN_CONFIG_SETTING_KEYS = [
   "ctcBatchSize",
   "alignmentGranularity",
   "alignmentAutoExclude",
-  // "ctcServerUrl",
-  // "ctcServerApiKey",
+  "ctcServerUrl",
+  "ctcServerApiKey",
   // transcription
   "transcriptionEngine",
   "whisperModel",

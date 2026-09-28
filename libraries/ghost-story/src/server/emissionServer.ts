@@ -1,206 +1,308 @@
-// import { randomUUID, timingSafeEqual } from "node:crypto"
-// import { rm, writeFile } from "node:fs/promises"
-// import { tmpdir } from "node:os"
-// import { extname, join } from "node:path"
+import { Hono } from "hono"
+import { HTTPException } from "hono/http-exception"
+import PQueue from "p-queue"
 
-// import { type ServerType, serve } from "@hono/node-server"
-// import { Hono } from "hono"
+import { probeSource } from "../audio/DecodePcm.ts"
+import { PCM_SAMPLE_RATE, type SourceInfo } from "../audio/PlanBlocks.ts"
+import {
+  CTC_MODEL_FAMILIES,
+  type CtcDevice,
+  ctcDeviceCapabilities,
+  ctcModelLanguages,
+  resolveCtcDevice,
+} from "../constants.ts"
+import {
+  type CtcRun,
+  type CtcRunOptions,
+  type LoadedCtcModel,
+  loadCtcModel,
+  resolveCtcRun,
+} from "../emission/CtcModel.ts"
+import { emitTracks } from "../emission/EmitTracks.ts"
+import { Scratch } from "../utilities/Scratch.ts"
 
-// import { getModelDir } from "../cli/config.ts"
-// import {
-//   WAV2VEC2_SECONDS_PER_CHUNK,
-//   type Wav2Vec2DataType,
-//   type Wav2Vec2Device,
-//   type Wav2Vec2Model,
-// } from "../constants.ts"
-// import {
-//   type EmissionWireResult,
-//   encodeEmissions,
-// } from "../emission/EmissionWire.ts"
-// import {
-//   type Wav2Vec2ModelBundle,
-//   type Wav2Vec2Result,
-// } from "../emission/Wav2Vec2Emission.ts"
-// import { type Timing, createTiming } from "../utilities/Timing.ts"
+import { type FileStore } from "./files.ts"
+import { type Jobs, serviceRoutes } from "./jobs.ts"
+import { error, errorResponses, openApi } from "./openapi.ts"
+import {
+  type EmissionCapabilities,
+  type RemoteEmissionResult,
+  type RemoteCtcRun,
+  emissionCapabilitiesSchema,
+  emissionInputSchema,
+  emissionResultSchema,
+  remoteCtcRunSchema,
+  runQuerySchema,
+} from "./protocol.ts"
+import { type Service } from "./server.ts"
 
-// export type EmissionServerEmit = (
-//   filePath: string,
-//   timing: Timing,
-// ) => Promise<Wav2Vec2Result>
+export interface EmissionServiceOptions {
+  jobs: Jobs
+  files: FileStore
+  device?: CtcDevice | null | undefined
+  batchSize?: number | null | undefined
+  buildVariant?: string | null | undefined
+  modelDir?: string | undefined
+  ffmpegPath?: string | undefined
+  ffprobePath?: string | undefined
+  concurrency?: number | null | undefined
+  inference?: PQueue | undefined
+  log?: ((message: string) => void) | undefined
+  load?: ((run: CtcRun) => Promise<LoadedCtcModel>) | undefined
+}
 
-// export interface EmissionServerOptions {
-//   model: Wav2Vec2Model
-//   device: Wav2Vec2Device
-//   dtype: Wav2Vec2DataType
-//   host: string
-//   port: number
-//   apiKey?: string | null
-//   modelDir?: string
-//   loaded?: Wav2Vec2ModelBundle
-//   emitImpl?: EmissionServerEmit
-// }
+type Entry = { model: Promise<LoadedCtcModel>; users: number }
 
-// export interface EmissionServerConfig {
-//   model: Wav2Vec2Model
-//   device: Wav2Vec2Device
-//   dtype: Wav2Vec2DataType
-//   secondsPerChunk: number
-// }
+type EmissionTask = {
+  file: string
+  run: CtcRun
+  source: SourceInfo
+  range: RemoteEmissionResult["range"]
+}
 
-// export async function loadEmissionServerModel(
-//   options: EmissionServerOptions,
-// ): Promise<Wav2Vec2ModelBundle> {
-//   const { loadWav2Vec2Model } = await import("../emission/Wav2Vec2Emission.ts")
+export function remoteRun(run: CtcRun): RemoteCtcRun {
+  return {
+    variant: run.variant,
+    dtype: run.dtype,
+    device: run.device,
+    batchSize: run.batchSize,
+    chunkSeconds: run.chunkSeconds,
+    startOffsetSeconds: run.startOffsetSeconds,
+    endOffsetSeconds: run.endOffsetSeconds,
+  }
+}
 
-//   return loadWav2Vec2Model({
-//     model: options.model,
-//     modelDir: options.modelDir ?? getModelDir(),
-//     device: options.device,
-//     dtype: options.dtype,
-//   })
-// }
+export function emissionService(
+  options: EmissionServiceOptions,
+): Service<EmissionCapabilities> {
+  const { jobs, files } = options
+  const log = options.log ?? (() => {})
+  const load =
+    options.load ??
+    ((run: CtcRun) => loadCtcModel(run, { modelDir: options.modelDir }))
 
-// function createLocalEmitter(
-//   options: EmissionServerOptions,
-// ): EmissionServerEmit {
-//   let pending: Promise<Wav2Vec2ModelBundle> | null = null
+  let device = resolveCtcDevice(options.device, options.buildVariant)
+  const entries = new Map<string, Entry>()
+  let latest: string | null = null
+  const inference = options.inference ?? new PQueue({ concurrency: 1 })
 
-//   return async (filePath, timing) => {
-//     pending ??= options.loaded
-//       ? Promise.resolve(options.loaded)
-//       : loadEmissionServerModel(options)
+  const evict = async () => {
+    for (const [key, entry] of entries) {
+      if (key === latest || entry.users > 0) {
+        continue
+      }
+      entries.delete(key)
+      await entry.model.then(
+        (model) => model[Symbol.asyncDispose](),
+        () => undefined,
+      )
+    }
+  }
 
-//     const loaded = await pending
+  const acquire = async (run: CtcRun) => {
+    const key = `${run.variant}:${run.dtype}:${run.device}:${run.batchSize}`
+    let entry = entries.get(key)
+    if (!entry) {
+      const model = load(run)
+      entry = { model, users: 0 }
+      entries.set(key, entry)
+      model.catch(() => entries.delete(key))
+    }
+    latest = key
+    entry.users++
+    const release = async () => {
+      entry.users--
+      await evict()
+    }
+    try {
+      const model = await entry.model
+      if (model.run.device !== device) {
+        log(
+          `${run.variant} could not run on ${device}, serving ${model.run.device} from now on`,
+        )
+        device = model.run.device
+      }
+      await evict()
+      return { model, [Symbol.asyncDispose]: release }
+    } catch (cause) {
+      await release()
+      throw cause
+    }
+  }
 
-//     const { emit } = await import("../emission/Wav2Vec2Emission.ts")
+  const resolve = (
+    query: Omit<CtcRunOptions, "device" | "batchSize" | "buildVariant">,
+  ) => {
+    try {
+      return resolveCtcRun({
+        ...query,
+        device,
+        batchSize: options.batchSize,
+        buildVariant: options.buildVariant,
+      })
+    } catch (cause) {
+      throw new HTTPException(400, {
+        message: cause instanceof Error ? cause.message : String(cause),
+      })
+    }
+  }
 
-//     return emit(filePath, timing, {
-//       model: options.model,
-//       modelDir: options.modelDir ?? getModelDir(),
-//       device: options.device,
-//       dtype: options.dtype,
-//       loaded,
-//     })
-//   }
-// }
+  const routes = new Hono()
+    .get(
+      "/emissions/run",
+      openApi({
+        tags: ["Emissions"],
+        summary: "Resolve the run a request would get",
+        description:
+          "Responds with the model, precision and device a request with the same parameters would run on. Use it to decide whether emissions from earlier are still valid, before uploading anything.",
+        request: { query: runQuerySchema },
+        responses: {
+          200: remoteCtcRunSchema,
+          400: error(
+            "The query is malformed, or the model family has no model for the language.",
+          ),
+          ...errorResponses,
+        },
+      }),
+      (c) => c.json(remoteRun(resolve(c.req.valid("query")))),
+    )
+    .route(
+      "/emissions",
+      serviceRoutes({
+        jobs,
+        type: "emissions",
+        tag: "Emissions",
+        summary: "Compute the emissions of an uploaded file",
+        description:
+          "The result points at a `.emissions` file in /v1/files. The server runs one model at a time and decodes the audio of the next request in the meantime.",
+        input: emissionInputSchema,
+        result: emissionResultSchema,
+        jobId: "EmissionJob",
+        errors: {
+          400: error(
+            "The body is malformed, the model family has no model for the language, or the range is off the chunk grid.",
+          ),
+          404: error("The server does not have the file. Upload it first."),
+          422: error("ffprobe could not read the file."),
+        },
+        prepare: async (input): Promise<EmissionTask> => {
+          const run = resolve(input)
+          await using file = await files.open(input.file)
+          if (!file) {
+            throw new HTTPException(404, {
+              message: `No file ${input.file}, upload it first`,
+            })
+          }
+          const probed = await probeSource(
+            file.path,
+            options.ffprobePath,
+          ).catch((cause: unknown) => {
+            throw new HTTPException(422, {
+              message: `Could not read the uploaded audio: ${cause instanceof Error ? cause.message : String(cause)}`,
+            })
+          })
 
-// function createQueue(): <T>(task: () => Promise<T>) => Promise<T> {
-//   let tail: Promise<unknown> = Promise.resolve()
+          const size = Math.round(run.chunkSeconds * PCM_SAMPLE_RATE)
+          const total = Math.round(probed.durationSeconds * PCM_SAMPLE_RATE)
+          const count = probed.seekable ? Math.ceil(total / size) : 1
+          const toChunk = (seconds: number) => {
+            const chunk = (seconds * PCM_SAMPLE_RATE) / size
+            return Math.abs(chunk - Math.round(chunk)) < 1e-6
+              ? Math.round(chunk)
+              : Number.NaN
+          }
+          const startChunk = toChunk(input.range?.start ?? 0)
+          const endIsLast = input.range?.end === undefined
+          const endChunk =
+            input.range?.end === undefined ? count : toChunk(input.range.end)
+          if (
+            !(startChunk >= 0 && startChunk < count) ||
+            !(endChunk > startChunk && (endIsLast || endChunk < count))
+          ) {
+            throw new HTTPException(400, {
+              message: `A range starts and ends on a multiple of ${run.chunkSeconds} s, and the range that reaches the end of the file leaves out end. This file has ${count} chunks.`,
+            })
+          }
 
-//   return <T>(task: () => Promise<T>) => {
-//     const result = tail.then(task, task)
-//     tail = result.catch(() => undefined)
-//     return result
-//   }
-// }
+          return {
+            file: input.file,
+            run,
+            source: {
+              ...probed,
+              range: {
+                start: startChunk * size,
+                end: endIsLast ? null : endChunk * size,
+              },
+            },
+            range: {
+              start: (startChunk * size) / PCM_SAMPLE_RATE,
+              end: endIsLast
+                ? probed.durationSeconds
+                : (endChunk * size) / PCM_SAMPLE_RATE,
+            },
+          }
+        },
+        handler: async (task, { signal, progress }) => {
+          await using file = await files.open(task.file)
+          if (!file) {
+            throw new Error("The uploaded file expired, upload it again")
+          }
+          await using lease = await acquire(task.run)
+          await using scratch = await Scratch.create({ sweep: false })
+          const output = scratch.unique(".emissions")
+          const tracks = emitTracks(
+            [{ ...task.source, path: file.path }],
+            [output],
+            lease.model,
+            {
+              signal,
+              scratch,
+              compute: (work) => inference.add(work, { signal }),
+              ffmpegPath: options.ffmpegPath,
+              concurrency: options.concurrency,
+              onBlock: progress,
+            },
+          )
+          for await (const track of tracks) {
+            const { spans: _spans, ...timing } = track.timing
+            log(
+              `Emitted ${timing.metadata["audioLength"] ?? "?"} s of audio with ${lease.model.run.variant} on ${lease.model.run.device} in ${(timing.wallClockMs / 1000).toFixed(1)} s`,
+            )
+            return {
+              run: remoteRun(lease.model.run),
+              range: task.range,
+              timing,
+              emissions: await files.adopt(output, {
+                ext: ".emissions",
+                signal,
+              }),
+            }
+          }
+          throw new Error("The audio produced no emissions")
+        },
+      }),
+    )
 
-// function isAuthorized(apiKey: string, header: string | undefined): boolean {
-//   const prefix = "Bearer "
-//   const provided =
-//     header && header.startsWith(prefix) ? header.slice(prefix.length) : ""
-
-//   const expectedBuffer = Buffer.from(apiKey, "utf-8")
-//   const providedBuffer = Buffer.from(provided, "utf-8")
-
-//   if (expectedBuffer.length !== providedBuffer.length) {
-//     return false
-//   }
-
-//   return timingSafeEqual(expectedBuffer, providedBuffer)
-// }
-
-// export function createEmissionServer(options: EmissionServerOptions): Hono {
-//   const apiKey = options.apiKey ?? null
-//   const runEmit = options.emitImpl ?? createLocalEmitter(options)
-//   const enqueue = createQueue()
-
-//   const app = new Hono()
-
-//   app.use("*", async (c, next) => {
-//     if (!apiKey) {
-//       await next()
-//       return
-//     }
-
-//     if (!isAuthorized(apiKey, c.req.header("Authorization"))) {
-//       return c.json({ error: "Unauthorized" }, 401)
-//     }
-
-//     await next()
-//     return
-//   })
-
-//   app.get("/config", (c) => {
-//     const config: EmissionServerConfig = {
-//       model: options.model,
-//       device: options.device,
-//       dtype: options.dtype,
-//       secondsPerChunk: WAV2VEC2_SECONDS_PER_CHUNK,
-//     }
-//     return c.json(config)
-//   })
-
-//   app.post("/audio/emissions", async (c) => {
-//     const body = await c.req.parseBody()
-//     const file = body["file"]
-
-//     if (!(file instanceof File)) {
-//       return c.json(
-//         { error: "Expected a multipart form field named 'file'" },
-//         400,
-//       )
-//     }
-
-//     const filePath = join(
-//       tmpdir(),
-//       `ghost-story-emission-${randomUUID()}${extname(file.name) || ".wav"}`,
-//     )
-
-//     await writeFile(filePath, Buffer.from(await file.arrayBuffer()))
-
-//     try {
-//       const timing = createTiming()
-//       timing.setMetadata("model", options.model)
-//       timing.setMetadata("device", options.device)
-//       timing.setMetadata("dtype", options.dtype)
-
-//       const result = await enqueue(() => runEmit(filePath, timing))
-//       const { emissions, frames, dims } = encodeEmissions(result.emissions)
-
-//       const wire: EmissionWireResult = {
-//         vocab: Object.fromEntries(result.vocab),
-//         blankIndex: result.blankIndex,
-//         secondsPerChunk: result.secondsPerChunk,
-//         framesPerChunk: result.framesPerChunk,
-//         secondsPerFrame: result.secondsPerFrame,
-//         frames,
-//         dims,
-//         emissions,
-//         timing: timing.summary(),
-//       }
-
-//       return c.json(wire)
-//     } finally {
-//       await rm(filePath, { force: true })
-//     }
-//   })
-
-//   return app
-// }
-
-// export async function startEmissionServer(
-//   options: EmissionServerOptions,
-// ): Promise<ServerType> {
-//   const loaded =
-//     options.emitImpl || options.loaded
-//       ? options.loaded
-//       : await loadEmissionServerModel(options)
-
-//   const app = createEmissionServer({ ...options, ...(loaded && { loaded }) })
-
-//   return serve({
-//     fetch: app.fetch,
-//     hostname: options.host,
-//     port: options.port,
-//   })
-// }
+  return {
+    name: "emissions",
+    routes,
+    capabilitiesSchema: emissionCapabilitiesSchema,
+    capabilities: () => ({
+      device,
+      devices: ctcDeviceCapabilities(options.buildVariant).available,
+    }),
+    models: () =>
+      CTC_MODEL_FAMILIES.map((family) => ({
+        id: family,
+        object: "model" as const,
+        created: 0,
+        owned_by: "ghost-story",
+        service: "emissions",
+        languages: ctcModelLanguages(family),
+      })),
+    async [Symbol.asyncDispose]() {
+      latest = null
+      await evict()
+    },
+  }
+}

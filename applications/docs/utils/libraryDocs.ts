@@ -6,6 +6,7 @@ import GitHubSlugger from "github-slugger"
 const LIBRARIES_DIR = path.resolve(__dirname, "../../../libraries")
 const OUTPUT_DIR = path.resolve(__dirname, "../generated/libraries")
 const STUB = "readme-stub.md"
+const OPENAPI = "openapi.json"
 const API_HEADING = /^## API Docs\s*$/m
 
 export interface LibraryDocsOptions {
@@ -18,6 +19,7 @@ export interface GeneratedLibrary {
   name: string
   source: string
   hasApi: boolean
+  hasHttpApi: boolean
 }
 
 /**
@@ -133,9 +135,11 @@ export function generateLibraryDocs(
   const result: GeneratedLibrary[] = []
   for (const entry of fs.readdirSync(LIBRARIES_DIR, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
+
     const dir = path.join(LIBRARIES_DIR, entry.name)
     const readmePath = path.join(dir, "README.md")
     if (!fs.existsSync(readmePath)) continue
+
     const stubPath = path.join(dir, STUB)
     const hasStub = fs.existsSync(stubPath)
     const readme = fs.readFileSync(readmePath, "utf8")
@@ -146,6 +150,10 @@ export function generateLibraryDocs(
     const title = titleOf(overview) ?? entry.name
     const apiBody = api.replace(API_HEADING, "").replace(/^\s+/, "")
     const hasApi = apiBody.trim().length > 0
+
+    const openApiPath = path.join(dir, OPENAPI)
+    const hasHttpApi = fs.existsSync(openApiPath)
+
     const apiRoute = `/${options.routeBasePath}/${entry.name}/api`
     const sourceUrl = (relative: string, image: boolean) =>
       `${options.repoUrl}/-/${image ? "raw" : "blob"}/${options.branch}/libraries/${entry.name}/${relative.replace(/^\.\//, "")}`
@@ -158,7 +166,11 @@ export function generateLibraryDocs(
         sidebar_label: entry.name,
         custom_edit_url: `/edit?file=${source}`,
         studio_source: source,
-        pagination_next: hasApi ? `${entry.name}/api` : null,
+        pagination_next: hasApi
+          ? `${entry.name}/api`
+          : hasHttpApi
+            ? `${entry.name}/http-api`
+            : null,
       }) +
         rewriteOverviewLinks(
           overview,
@@ -180,6 +192,21 @@ export function generateLibraryDocs(
         }) + rewriteApiLinks(apiBody, sourceUrl),
       )
     }
+    if (hasHttpApi) {
+      fs.writeFileSync(
+        path.join(out, "http-api.mdx"),
+        frontMatter({
+          title: `${title} HTTP API`,
+          sidebar_label: "HTTP API",
+          slug: `/${entry.name}/http-api`,
+          custom_edit_url: null,
+          hide_title: true,
+          hide_table_of_contents: true,
+          pagination_prev: hasApi ? `${entry.name}/api` : `${entry.name}/index`,
+        }) +
+          `import ApiReference from "@site/src/components/ApiReference"\nimport spec from ${JSON.stringify(path.relative(out, openApiPath))}\n\n<ApiReference spec={spec} />\n`,
+      )
+    }
     fs.writeFileSync(
       path.join(out, "_category_.json"),
       `${JSON.stringify(
@@ -192,7 +219,7 @@ export function generateLibraryDocs(
         2,
       )}\n`,
     )
-    result.push({ name: entry.name, source, hasApi })
+    result.push({ name: entry.name, source, hasApi, hasHttpApi })
   }
   return result
 }

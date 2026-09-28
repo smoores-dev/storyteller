@@ -4,7 +4,7 @@ import { promisify } from "node:util"
 
 import { type Scratch } from "../utilities/Scratch.ts"
 
-import { PCM_SAMPLE_RATE, type SourceInfo } from "./PlanChunks.ts"
+import { PCM_SAMPLE_RATE, type SourceInfo } from "./PlanBlocks.ts"
 
 const execFileAsync = promisify(execFile)
 
@@ -118,9 +118,12 @@ export async function decodePcm(
         : Math.min(decoded.length, request.keepEnd - request.decodeStart)
     return decoded.subarray(from, Math.max(from, to))
   } finally {
-    await rm(output, { force: true, maxRetries: 3, retryDelay: 50 }).catch(
-      () => {},
-    )
+    await rm(output, {
+      recursive: true,
+      force: true,
+      maxRetries: 3,
+      retryDelay: 50,
+    }).catch(() => {})
   }
 }
 

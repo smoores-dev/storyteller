@@ -51,6 +51,7 @@
     "/applications/web/work-dist",
     "/applications/web/file-write-dist",
     "/applications/web/whisper-builds",
+    "libraries/ghost-story/openapi.json",
     "libraries/epub/index.js",
     "libraries/epub/index.cjs",
     "libraries/epub/index.d.ts",

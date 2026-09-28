@@ -62,6 +62,10 @@ export async function spawnWhisperServer(options: ServerOptions) {
     : getInstallDir()
   const modelPath = getModelPath(options.model)
 
+  console.warn(
+    "[DEPRECATED] The whisper-server engine is deprecated and will be removed in a future version. Use the `ghost-story serve` instead if you are on Storyteller 3.0.0 or later.",
+  )
+
   console.log("Setting up whisper.cpp server...")
   console.log(`  Model: ${options.model}`)
   console.log(`  Port: ${options.port}`)

@@ -9,6 +9,7 @@ import {
   ctcModelLanguages,
 } from "@storyteller-platform/ghost-story/constants"
 
+import { Button } from "@v3/_/components/ui/button"
 import {
   Field,
   FieldContent,
@@ -43,7 +44,10 @@ import { MP3_CBR_BITRATE_OPTIONS } from "@/assets/audio/mp3Bitrates"
 import { cn } from "@/cn"
 import { type ReadaloudLocationType } from "@/database/settingsTypes"
 import { usePermissions } from "@/hooks/usePermissions"
-import { useGetServerCapabilitiesQuery } from "@/store/api"
+import {
+  useGetServerCapabilitiesQuery,
+  useTestCtcServerMutation,
+} from "@/store/api"
 
 import {
   LockTooltip,
@@ -508,14 +512,50 @@ function WhisperAlignerSettings({ restart }: { restart?: ProcessRestart }) {
 
 function CtcAlignerSettings({ restart }: { restart?: ProcessRestart }) {
   const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+
+  if (restart === "sync" || restart === "transcode") return null
+
+  return (
+    <SettingsFormField
+      name="ctcEngine"
+      label={t("ctcEngine")}
+      render={(field, _fieldState, isLocked) => (
+        <Tabs
+          value={field.value ?? "ctc-local"}
+          onValueChange={(value) => {
+            if (typeof value === "string" && !isLocked) field.onChange(value)
+          }}
+        >
+          <TabsList className="w-full">
+            <TabsTrigger value="ctc-local">{t("tabLocal")}</TabsTrigger>
+            <TabsTrigger value="ctc-server">{t("tabRemote")}</TabsTrigger>
+          </TabsList>
+          <TabsContent value="ctc-local" className="space-y-4 pt-2">
+            <FieldDescription>
+              {t("ctcEngines.ctc-local.description")}
+            </FieldDescription>
+            <CtcDeviceField />
+          </TabsContent>
+          <TabsContent value="ctc-server" className="space-y-4 pt-2">
+            <FieldDescription>
+              {t("ctcEngines.ctc-server.description")}
+            </FieldDescription>
+            <CtcServerSettings />
+          </TabsContent>
+        </Tabs>
+      )}
+    />
+  )
+}
+
+function CtcDeviceField() {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
   const { capabilities: initialCapabilities } = useSettingsForm()
   const { data: fetchedCapabilities } = useGetServerCapabilitiesQuery(
     undefined,
     { skip: initialCapabilities !== undefined },
   )
   const capabilities = initialCapabilities ?? fetchedCapabilities
-
-  if (restart === "sync" || restart === "transcode") return null
 
   const available = capabilities?.ctcDevices.available ?? []
   const deviceOptions = available.map((value) => ({
@@ -555,6 +595,78 @@ function CtcAlignerSettings({ restart }: { restart?: ProcessRestart }) {
         </Select>
       )}
     />
+  )
+}
+
+function CtcServerSettings() {
+  const t = useTranslation("SettingsPage.tabs.processing.sections.alignment")
+  const { form } = useSettingsForm()
+  const url = useWatch({ control: form.control, name: "ctcServerUrl" })
+  const apiKey = useWatch({ control: form.control, name: "ctcServerApiKey" })
+  const [testServer, { data, error, isLoading }] = useTestCtcServerMutation()
+
+  const errorMessage =
+    error && "data" in error
+      ? ((error.data as { error?: string } | undefined)?.error ??
+        t("ctcServerUnreachable"))
+      : error
+        ? t("ctcServerUnreachable")
+        : null
+
+  return (
+    <>
+      <SettingsFormField
+        name="ctcServerUrl"
+        label={t("ctcServerUrl")}
+        description={t("ctcServerUrlDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Input
+            id="ctcServerUrl"
+            disabled={isLocked}
+            {...field}
+            value={field.value || ""}
+            aria-invalid={fieldState.invalid}
+          />
+        )}
+      />
+      <SettingsFormField
+        name="ctcServerApiKey"
+        label={t("ctcServerApiKey")}
+        description={t("ctcServerApiKeyDescription")}
+        render={(field, fieldState, isLocked) => (
+          <Input
+            id="ctcServerApiKey"
+            type="password"
+            disabled={isLocked}
+            {...field}
+            value={field.value || ""}
+            aria-invalid={fieldState.invalid}
+          />
+        )}
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!url || !apiKey || isLoading}
+          onClick={() => {
+            void testServer({ url: url ?? "", apiKey: apiKey ?? "" })
+          }}
+        >
+          {t("ctcServerTest")}
+        </Button>
+        {!isLoading && data && !error && (
+          <span className="text-muted-foreground text-xs">
+            {t("ctcServerConnected", {
+              device: t(`ctcDevices.${data.device}`),
+            })}
+          </span>
+        )}
+        {!isLoading && errorMessage && (
+          <span className="text-destructive text-xs">{errorMessage}</span>
+        )}
+      </div>
+    </>
   )
 }
 

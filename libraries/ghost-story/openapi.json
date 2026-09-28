@@ -1,0 +1,1519 @@
+{
+  "info": {
+    "title": "ghost-story",
+    "version": "1",
+    "description": "The HTTP API of `ghost-story serve`, which lets Storyteller run speech models on another machine.\n\nUpload audio once to `/v1/files` and refer to it by its SHA-256 afterwards. Every service responds the same way. `POST /v1/{service}` returns the result once the work is done. `POST /v1/{service}/jobs`.\n\nOpenAI-compatible transcription endpoint at `/v1/audio/transcriptions`."
+  },
+  "servers": [
+    {
+      "url": "http://{host}:{port}",
+      "variables": {
+        "host": {
+          "default": "localhost"
+        },
+        "port": {
+          "default": "8765"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "openapi": "3.1.0",
+  "paths": {
+    "/v1/capabilities": {
+      "get": {
+        "tags": [
+          "Server"
+        ],
+        "summary": "List the services and what they can do",
+        "description": "Call this first. Refuse a server whose protocol differs from your own.",
+        "responses": {
+          "200": {
+            "description": "200 OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "protocol": {
+                      "type": "number",
+                      "const": 1
+                    },
+                    "services": {
+                      "type": "object",
+                      "properties": {
+                        "emissions": {
+                          "$ref": "#/components/schemas/EmissionCapabilities"
+                        },
+                        "transcriptions": {
+                          "$ref": "#/components/schemas/TranscriptionCapabilities"
+                        }
+                      },
+                      "required": [
+                        "emissions",
+                        "transcriptions"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "protocol",
+                    "services"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "tags": [
+          "Server"
+        ],
+        "summary": "List the models of every service",
+        "description": "OpenAI-compatible model list.",
+        "responses": {
+          "200": {
+            "description": "200 OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/files/{sha256}": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Download a file",
+        "description": "Send HEAD instead of GET to check whether the server has a file, so a file it still has from earlier is not uploaded again.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sha256",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "description": "SHA-256 of the file, in lowercase hex."
+            },
+            "required": true,
+            "description": "SHA-256 of the file, in lowercase hex."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The server does not have this file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Upload a file",
+        "description": "Send the file as the raw request body. The server checks it against the hash in the path. Files the server has not used for an hour, or that no longer fit in its cache, are removed.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ext",
+            "schema": {
+              "description": "The extension of the file, such as .mp3 or .m4b. It helps ffmpeg recognize the format.",
+              "type": "string",
+              "pattern": "^\\.[A-Za-z0-9]{1,8}$"
+            },
+            "description": "The extension of the file, such as .mp3 or .m4b. It helps ffmpeg recognize the format."
+          },
+          {
+            "in": "path",
+            "name": "sha256",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "description": "SHA-256 of the file, in lowercase hex."
+            },
+            "required": true,
+            "description": "SHA-256 of the file, in lowercase hex."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The server already had the file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoredFile"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The file was stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoredFile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body does not match the hash.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/emissions/run": {
+      "get": {
+        "tags": [
+          "Emissions"
+        ],
+        "summary": "Resolve the run a request would get",
+        "description": "Responds with the model, precision and device a request with the same parameters would run on. Use it to decide whether emissions from earlier are still valid, before uploading anything.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "model",
+            "schema": {
+              "default": "mms",
+              "description": "The model family.",
+              "type": "string",
+              "enum": [
+                "mms",
+                "quartznet15x5",
+                "citrinet256",
+                "citrinet512",
+                "citrinet1024"
+              ]
+            },
+            "description": "The model family."
+          },
+          {
+            "in": "query",
+            "name": "language",
+            "schema": {
+              "description": "A language code such as en or zh. Families with one model per language need it.",
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "A language code such as en or zh. Families with one model per language need it."
+          },
+          {
+            "in": "query",
+            "name": "dtype",
+            "schema": {
+              "description": "The precision on a GPU. Leave it out for the family's default. The CPU always runs fp32.",
+              "type": "string",
+              "enum": [
+                "fp32",
+                "fp16"
+              ]
+            },
+            "description": "The precision on a GPU. Leave it out for the family's default. The CPU always runs fp32."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoteCtcRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The query is malformed, or the model family has no model for the language.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/emissions": {
+      "post": {
+        "tags": [
+          "Emissions"
+        ],
+        "summary": "Compute the emissions of an uploaded file",
+        "description": "The result points at a `.emissions` file in /v1/files. The server runs one model at a time and decodes the audio of the next request in the meantime. Returns the result once the work is done. For long audio, or with a proxy in between that gives up on slow requests, use the jobs route instead.",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmissionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "200 OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmissionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is malformed, the model family has no model for the language, or the range is off the chunk grid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The server does not have the file. Upload it first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ffprobe could not read the file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/emissions/jobs": {
+      "post": {
+        "tags": [
+          "Emissions"
+        ],
+        "summary": "Compute the emissions of an uploaded file, as a job",
+        "description": "The result points at a `.emissions` file in /v1/files. The server runs one model at a time and decodes the audio of the next request in the meantime. Returns a job right away. Poll it until it is done, then read its result and remove it.",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmissionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The job is queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmissionJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is malformed, the model family has no model for the language, or the range is off the chunk grid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The server does not have the file. Upload it first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ffprobe could not read the file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/emissions/jobs/{id}": {
+      "get": {
+        "tags": [
+          "Emissions"
+        ],
+        "summary": "Get a job",
+        "description": "With wait and revision, the server holds the request until the job moves past that revision or wait seconds pass. Clients poll this way. A job nobody asks about for ten minutes is cancelled and removed.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "wait",
+            "schema": {
+              "description": "Hold the request for up to this many seconds until the job changes.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30
+            },
+            "description": "Hold the request for up to this many seconds until the job changes."
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "schema": {
+              "description": "The revision the client already has. Waiting ends when the job moves past it.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "description": "The revision the client already has. Waiting ends when the job moves past it."
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmissionJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No job has this id, or it expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Emissions"
+        ],
+        "summary": "Cancel a job, or remove a finished one",
+        "description": "Remove a job once you have its result. Removing a queued or running job cancels it.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The job is gone."
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No job has this id, or it expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/transcriptions": {
+      "post": {
+        "tags": [
+          "Transcriptions"
+        ],
+        "summary": "Transcribe audio",
+        "description": "OpenAI-compatible transcription endpoint. Send the audio as multipart form data.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "json and verbose_json answer with JSON. text, srt and vtt answer with plain text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Transcription"
+                    },
+                    {
+                      "$ref": "#/components/schemas/VerboseTranscription"
+                    }
+                  ]
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The form is malformed, or the server does not have the model or language.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/config": {
+      "get": {
+        "tags": [
+          "Transcriptions"
+        ],
+        "summary": "Read the whisper.cpp server config",
+        "deprecated": true,
+        "description": "Only used by Storyteller's `whisper-server` transcription engine. Returns the config used for transciption alignment.",
+        "responses": {
+          "200": {
+            "description": "200 OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhisperServerConfig"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The request did not send the server's API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EmissionInput": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 of an audio file uploaded to /v1/files."
+          },
+          "model": {
+            "default": "mms",
+            "description": "The model family.",
+            "type": "string",
+            "enum": [
+              "mms",
+              "quartznet15x5",
+              "citrinet256",
+              "citrinet512",
+              "citrinet1024"
+            ]
+          },
+          "language": {
+            "description": "A language code such as en or zh. Families with one model per language need it.",
+            "type": "string",
+            "minLength": 1
+          },
+          "dtype": {
+            "description": "The precision on a GPU. Leave it out for the family's default. The CPU always runs fp32.",
+            "type": "string",
+            "enum": [
+              "fp32",
+              "fp16"
+            ]
+          },
+          "range": {
+            "description": "Range of the file to compute, on multiples of the run's chunkSeconds. Omit to run to the end of the file. Emissions of consecutive ranges join into the emissions of the whole file.",
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "number",
+                "minimum": 0
+              },
+              "end": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "start"
+            ]
+          }
+        },
+        "required": [
+          "file"
+        ]
+      },
+      "TranscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "description": "The audio file.",
+            "type": "string",
+            "format": "binary"
+          },
+          "model": {
+            "description": "A whisper model installed on the server, such as large-v3-turbo. whisper-1 or leaving it out uses the server's default.",
+            "type": "string"
+          },
+          "language": {
+            "description": "An ISO 639-1 language code. Leave it out to detect it.",
+            "type": "string"
+          },
+          "prompt": {
+            "description": "Ignored.",
+            "type": "string"
+          },
+          "temperature": {
+            "description": "Ignored.",
+            "type": "number"
+          },
+          "response_format": {
+            "default": "json",
+            "type": "string",
+            "enum": [
+              "json",
+              "text",
+              "srt",
+              "vtt",
+              "verbose_json"
+            ]
+          },
+          "timestamp_granularities[]": {
+            "default": [
+              "segment"
+            ],
+            "description": "The timestamps verbose_json includes. Word timestamps come at no extra cost.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "word",
+                "segment"
+              ]
+            }
+          }
+        },
+        "required": [
+          "file"
+        ]
+      },
+      "EmissionCapabilities": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "string",
+            "enum": [
+              "cpu",
+              "webgpu",
+              "dml",
+              "cuda",
+              "mlx"
+            ],
+            "description": "The device (type of GPU/CPU) the server runs models on right now."
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "cpu",
+                "webgpu",
+                "dml",
+                "cuda",
+                "mlx"
+              ]
+            },
+            "description": "Every device (type of GPU/CPU) available on this machine."
+          }
+        },
+        "required": [
+          "device",
+          "devices"
+        ],
+        "additionalProperties": false
+      },
+      "TranscriptionCapabilities": {
+        "type": "object",
+        "properties": {
+          "defaultModel": {
+            "type": "string",
+            "description": "The model whisper-1 stands for."
+          }
+        },
+        "required": [
+          "defaultModel"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "description": "What went wrong, in plain English."
+      },
+      "ModelList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "list"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Model"
+            }
+          }
+        },
+        "required": [
+          "object",
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "Model": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "What to pass as model."
+          },
+          "object": {
+            "type": "string",
+            "const": "model"
+          },
+          "created": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "owned_by": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string",
+            "description": "The service that runs the model."
+          },
+          "languages": {
+            "description": "The languages the model supports, for families with one model per language.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "created",
+          "owned_by",
+          "service"
+        ],
+        "additionalProperties": false
+      },
+      "StoredFile": {
+        "type": "object",
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 of the file, in lowercase hex."
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "sha256",
+          "size"
+        ],
+        "additionalProperties": false
+      },
+      "RemoteCtcRun": {
+        "type": "object",
+        "properties": {
+          "variant": {
+            "type": "string",
+            "enum": [
+              "fp32",
+              "fp16",
+              "mlx",
+              "quartznet15x5_ar",
+              "quartznet15x5_ca",
+              "quartznet15x5_de",
+              "quartznet15x5_en",
+              "quartznet15x5_es",
+              "quartznet15x5_fo",
+              "quartznet15x5_fr",
+              "quartznet15x5_hy",
+              "quartznet15x5_is",
+              "quartznet15x5_it",
+              "quartznet15x5_kk",
+              "quartznet15x5_mt",
+              "quartznet15x5_pl",
+              "quartznet15x5_pt",
+              "quartznet15x5_ru",
+              "quartznet15x5_zh",
+              "quartznet15x5_ja",
+              "citrinet256_en",
+              "citrinet512_ca",
+              "citrinet512_de",
+              "citrinet512_en",
+              "citrinet512_es",
+              "citrinet512_fr",
+              "citrinet512_hy",
+              "citrinet512_it",
+              "citrinet512_nl",
+              "citrinet512_pt",
+              "citrinet512_uk",
+              "citrinet512_zh",
+              "citrinet1024_en",
+              "citrinet1024_ko",
+              "citrinet1024_uk",
+              "citrinet1024_zh"
+            ]
+          },
+          "dtype": {
+            "type": "string",
+            "enum": [
+              "fp32",
+              "fp16"
+            ]
+          },
+          "device": {
+            "type": "string",
+            "enum": [
+              "cpu",
+              "webgpu",
+              "dml",
+              "cuda",
+              "mlx"
+            ]
+          },
+          "batchSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "How many chunks go through the model at once. Defined by server."
+          },
+          "chunkSeconds": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "The length of a single chunk feeding into the model. Ranges start and end on multiples of it."
+          },
+          "startOffsetSeconds": {
+            "type": "number"
+          },
+          "endOffsetSeconds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "variant",
+          "dtype",
+          "device",
+          "batchSize",
+          "chunkSeconds",
+          "startOffsetSeconds",
+          "endOffsetSeconds"
+        ],
+        "additionalProperties": false,
+        "description": "The details of a specific CTC run. Used to store in emissions headers for follow ups"
+      },
+      "EmissionResult": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/RemoteCtcRun"
+          },
+          "range": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "number"
+              },
+              "end": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "additionalProperties": false,
+            "description": "The seconds of the file the emissions cover."
+          },
+          "timing": {
+            "type": "object",
+            "properties": {
+              "totalMs": {
+                "type": "number"
+              },
+              "wallClockMs": {
+                "type": "number"
+              },
+              "phases": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "duration": {
+                      "type": "number"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "duration",
+                    "percentage"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "metadata": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "totalMs",
+              "wallClockMs",
+              "phases",
+              "metadata"
+            ],
+            "additionalProperties": false,
+            "description": "Duration of each stage. Meant for logs."
+          },
+          "emissions": {
+            "description": "The .emissions file. Download it from /v1/files.",
+            "$ref": "#/components/schemas/StoredFile"
+          }
+        },
+        "required": [
+          "run",
+          "range",
+          "timing",
+          "emissions"
+        ],
+        "additionalProperties": false
+      },
+      "EmissionJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "description": "The kind of work, such as emissions."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Increments one on every change. Pass it back as revision to wait for the next change."
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "done": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "done",
+                  "total"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmissionResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the job produced, once it is done."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "state",
+          "revision",
+          "progress",
+          "result",
+          "error",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "Transcription": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "VerboseTranscription": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string",
+            "const": "transcribe"
+          },
+          "language": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "text": {
+            "type": "string"
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "start": {
+                  "type": "number"
+                },
+                "end": {
+                  "type": "number"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "words": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "word": {
+                        "type": "string"
+                      },
+                      "start": {
+                        "type": "number"
+                      },
+                      "end": {
+                        "type": "number"
+                      },
+                      "probability": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "word",
+                      "start",
+                      "end"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": "The words of this segment, each with a leading space, the way the whisper.cpp server writes them. OpenAI does not send these. Storyteller's whisper-server engine reads them."
+                }
+              },
+              "required": [
+                "id",
+                "start",
+                "end",
+                "text",
+                "words"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "word": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "number"
+                },
+                "end": {
+                  "type": "number"
+                },
+                "probability": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "word",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "task",
+          "language",
+          "duration",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "WhisperServerConfig": {
+        "type": "object",
+        "properties": {
+          "threads": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "processors": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "max_threads": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "max_processors": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "model": {
+            "type": "string"
+          },
+          "corrected": {
+            "type": "boolean",
+            "const": true,
+            "description": "Only a notice for Storyteller's whisper-server engine to not correct already corrected timestamps."
+          }
+        },
+        "required": [
+          "threads",
+          "processors",
+          "max_threads",
+          "max_processors",
+          "model",
+          "corrected"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The key passed to `ghost-story serve --api-key`. Required for every route, except for the OpenAPI document."
+      }
+    }
+  }
+}

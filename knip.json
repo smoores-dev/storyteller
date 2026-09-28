@@ -51,8 +51,7 @@
       "ignoreDependencies": ["remark-toc"]
     },
     "libraries/ghost-story": {
-      "entry": ["scripts/**/*.{js,mjs,mts,ts}"],
-      "ignoreDependencies": ["hono", "@hono/node-server"]
+      "entry": ["scripts/**/*.{js,mjs,mts,ts}"]
     },
     "libraries/mlx-audio": {
       "entry": ["scripts/*.{mjs,mts}"],

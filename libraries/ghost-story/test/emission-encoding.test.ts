@@ -1,8 +1,10 @@
 import assert from "node:assert"
+import { access, readFile } from "node:fs/promises"
 
 import { describe, it } from "vitest"
 
-import { decodeEmissions, encodeEmissions } from "../src/index.ts"
+import { EmissionsWriter } from "../src/emission/EmissionsWriter.ts"
+import { Scratch, decodeEmissions, encodeEmissions } from "../src/index.ts"
 
 const vocab = new Map([
   ["<blank>", 0],
@@ -203,5 +205,88 @@ describe("decodeEmissions", () => {
     let getData: (from: number, to: number) => Promise<Uint8Array> = getHeadMeta
 
     await decodeEmissions((from, to) => getData(from, to), 1, 2)
+  })
+})
+
+describe("EmissionsWriter", () => {
+  const meta = {
+    blankIndex: blankId,
+    secondsPerChunk,
+    secondsPerFrame,
+    framesPerChunk,
+    startOffsetSeconds: 0,
+    endOffsetSeconds: 0,
+    tokenizer: null,
+  }
+
+  async function writeInBlocks(
+    path: string,
+    data: typeof meta & {
+      vocab: Map<string, number>
+      emissions: typeof emissions
+    },
+    blockFrames: number,
+  ) {
+    const { values, frames, classes } = data.emissions
+    await using writer = await EmissionsWriter.create(path, {
+      ...data,
+      classes,
+      secondsPerChunk: 0,
+      framesPerChunk: 0,
+    })
+    for (let from = 0; from < frames; from += blockFrames) {
+      const to = Math.min(from + blockFrames, frames)
+      await writer.append({
+        values: values.subarray(from * classes, to * classes),
+        frames: to - from,
+        classes,
+      })
+    }
+    return await writer.finish({ ...data, classes })
+  }
+
+  it("should write the same bytes as encodeEmissions a block at a time", async () => {
+    await using scratch = await Scratch.create({ sweep: false })
+
+    const classes = 200
+    const frames = 7
+    const wideVocab = new Map<string, number>()
+    for (let i = 0; i < classes; i++) wideVocab.set(`t${i}`, i)
+    const wideValues = new Float32Array(frames * classes)
+    for (let i = 0; i < wideValues.length; i++) {
+      wideValues[i] = -((i * 7) % classes) - 1
+    }
+
+    for (const data of [
+      { ...meta, vocab, emissions },
+      {
+        ...meta,
+        vocab: wideVocab,
+        emissions: { values: wideValues, frames, classes },
+      },
+    ]) {
+      const path = scratch.unique(".emissions")
+      const written = await writeInBlocks(path, data, 2)
+      const expected = Buffer.concat(
+        encodeEmissions({ ...data, numFrames: data.emissions.frames }),
+      )
+
+      assert.equal(written, data.emissions.frames)
+      assert.ok(expected.equals(await readFile(path)))
+    }
+  })
+
+  it("should remove the file if it is never finished", async () => {
+    await using scratch = await Scratch.create({ sweep: false })
+    const path = scratch.unique(".emissions")
+    {
+      await using writer = await EmissionsWriter.create(path, {
+        ...meta,
+        vocab,
+        classes: emissions.classes,
+      })
+      await writer.append(emissions)
+    }
+    await assert.rejects(access(path))
   })
 })

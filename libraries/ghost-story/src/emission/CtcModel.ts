@@ -51,7 +51,7 @@ export interface CtcRunOptions {
   language?: string | null | undefined
   /** Precision on GPU devices, CPU always runs float32. Unset means the model family's default. */
   dtype?: CtcDataType | null | undefined
-  /** How many equal length chunks go through the model per call. Unset picks 2 on a GPU and 1 on a CPU. */
+  /** How many equal length ~25s chunks go through the model per call. If unset, defaults to 2 on a GPU and 1 on a CPU. */
   batchSize?: number | null | undefined
   /** The installed whisper build, which hints at the GPU when the device is left on auto. */
   buildVariant?: string | null | undefined
@@ -159,9 +159,11 @@ export async function loadCtcModel(
       loadBackend(run, getModelPackageDir(run.package, modelDir), modelDir),
     )
   } catch (error) {
-    if (run.device !== "webgpu" || signal?.aborted) throw error
+    if ((run.device !== "webgpu" && run.device !== "dml") || signal?.aborted) {
+      throw error
+    }
     console.warn(
-      `[ghost-story] WebGPU could not load ${run.variant} (${error instanceof Error ? error.message : String(error)}), falling back to the cpu`,
+      `[ghost-story] ${run.device} could not load ${run.variant} (${error instanceof Error ? error.message : String(error)}), falling back to the cpu`,
     )
     activeRun = cpuFallbackRun(run)
     await install(activeRun)

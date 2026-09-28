@@ -107,16 +107,16 @@ export async function emit(
   }
 }
 
-export async function emitWindows(
+export async function emitChunks(
   model: LoadedCtcModel,
-  windows: Float32Array[],
+  chunks: Float32Array[],
   signal: AbortSignal | null,
 ): Promise<Emissions[]> {
   const emissions: Emissions[] = []
-  for (let start = 0; start < windows.length;) {
-    const batch = windows.slice(start, start + model.run.batchSize)
+  for (let start = 0; start < chunks.length;) {
+    const batch = chunks.slice(start, start + model.run.batchSize)
     const length = batch[0]?.length
-    const shorter = batch.findIndex((window) => window.length !== length)
+    const shorter = batch.findIndex((chunk) => chunk.length !== length)
     if (shorter > 0) {
       batch.length = shorter
     }

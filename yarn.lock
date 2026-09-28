@@ -7583,6 +7583,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@hono/zod-validator@npm:^0.7.6":
+  version: 0.7.6
+  resolution: "@hono/zod-validator@npm:0.7.6"
+  peerDependencies:
+    hono: ">=3.9.0"
+    zod: ^3.25.0 || ^4.0.0
+  checksum: 10c0/4fbbf0ac85bbb59c2beec09c42696fbe601bc495c977f0456139ba4d563f12eaadf34ed00a0d5790a10b8cf674c5420fe84e86f8b44759fc6bbf8cd80bbd0523
+  languageName: node
+  linkType: hard
+
 "@hookform/resolvers@npm:^5.2.2":
   version: 5.2.2
   resolution: "@hookform/resolvers@npm:5.2.2"
@@ -15646,6 +15656,7 @@ __metadata:
     "@aws-sdk/client-s3": "npm:^3.994.0"
     "@aws-sdk/client-transcribe": "npm:^3.994.0"
     "@hono/node-server": "npm:^2.1.1"
+    "@hono/zod-validator": "npm:^0.7.6"
     "@huggingface/transformers": "npm:^4.3.0"
     "@robingenz/zli": "npm:^0.2.0"
     "@storyteller-platform/fs": "workspace:^"
@@ -15661,10 +15672,12 @@ __metadata:
     ffmpeg-stream: "npm:^1.0.1"
     fs-extra: "npm:~11.3.0"
     hono: "npm:^4.13.5"
+    hono-zod-openapi: "npm:^1.1.1"
     lodash.merge: "npm:^4.6.2"
     microsoft-cognitiveservices-speech-sdk: "npm:~1.44.0"
     onnxruntime-node: "catalog:"
     openai: "npm:~4.103.0"
+    p-queue: "npm:^9.3.3"
     tar: "npm:^7.4.3"
     tsx: "catalog:"
     typescript: "catalog:"
@@ -24860,6 +24873,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eventemitter3@npm:^5.0.4":
+  version: 5.0.4
+  resolution: "eventemitter3@npm:5.0.4"
+  checksum: 10c0/575b8cac8d709e1473da46f8f15ef311b57ff7609445a7c71af5cd42598583eee6f098fa7a593e30f27e94b8865642baa0689e8fa97c016f742abdb3b1bf6d9a
+  languageName: node
+  linkType: hard
+
 "events@npm:^3.2.0":
   version: 3.3.0
   resolution: "events@npm:3.3.0"
@@ -27596,6 +27616,19 @@ __metadata:
   dependencies:
     react-is: "npm:^16.7.0"
   checksum: 10c0/fe0889169e845d738b59b64badf5e55fa3cf20454f9203d1eb088df322d49d4318df774828e789898dcb280e8a5521bb59b3203385662ca5e9218a6ca5820e74
+  languageName: node
+  linkType: hard
+
+"hono-zod-openapi@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "hono-zod-openapi@npm:1.1.1"
+  dependencies:
+    "@hono/zod-validator": "npm:^0.7.6"
+    zod-openapi: "npm:^5.4.6"
+  peerDependencies:
+    hono: ^4.8.0
+    zod: ^4.0.0
+  checksum: 10c0/e6589f74e952ce1f33d6511b06b28cd09853a90b8c0a67296464229a88daa7809b3592bc29588d245b67c10b0bcf5681267d177ad20afa453717bc49c4c60724
   languageName: node
   linkType: hard
 
@@ -34262,6 +34295,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"p-queue@npm:^9.3.3":
+  version: 9.3.3
+  resolution: "p-queue@npm:9.3.3"
+  dependencies:
+    eventemitter3: "npm:^5.0.4"
+    p-timeout: "npm:^7.0.0"
+  checksum: 10c0/0d88a35cb3301bee2aac654c0a7018a2e40775fa597f3a06da66f33b0311d106bebbe9732c8e5968ae1e0e0b49f79c874333d2a7b0a57fad469189f236c066d7
+  languageName: node
+  linkType: hard
+
 "p-retry@npm:^6.1.0, p-retry@npm:^6.2.0":
   version: 6.2.1
   resolution: "p-retry@npm:6.2.1"
@@ -34286,6 +34329,13 @@ __metadata:
   version: 6.1.4
   resolution: "p-timeout@npm:6.1.4"
   checksum: 10c0/019edad1c649ab07552aa456e40ce7575c4b8ae863191477f02ac8d283ac8c66cedef0ca93422735130477a051dfe952ba717641673fd3599befdd13f63bcc33
+  languageName: node
+  linkType: hard
+
+"p-timeout@npm:^7.0.0":
+  version: 7.0.2
+  resolution: "p-timeout@npm:7.0.2"
+  checksum: 10c0/26595bbda27361a15231a82d8d3ef4f277bb3e9647aaa4a554b90012d03d22aaf28165b60afffe9425fb1326bd40b93f145d76eb23adb6b76d07d5f5d4c7964a
   languageName: node
   linkType: hard
 
@@ -43145,6 +43195,15 @@ __metadata:
   version: 0.3.1
   resolution: "zlibjs@npm:0.3.1"
   checksum: 10c0/2d110bfcb0f8b8dbf225423f6556da9c5bca95c8b849c1218983676158a24b5cd0350357e0c4d504e27f8c7e18d471d9712576f35114a81a51bcf83453f02beb
+  languageName: node
+  linkType: hard
+
+"zod-openapi@npm:^5.4.6":
+  version: 5.4.6
+  resolution: "zod-openapi@npm:5.4.6"
+  peerDependencies:
+    zod: ^3.25.74 || ^4.0.0
+  checksum: 10c0/87fb2c55c11d2a285d4a9edc1f9b9f7a6b741092786065575468f384ef180bb80b03694c1b8f5364ddf698ba603ff0543ef7c5395962cf3289893b1ebf7f1497
   languageName: node
   linkType: hard
 

@@ -9,6 +9,7 @@ import {
 } from "@robingenz/zli"
 import { Presets, SingleBar } from "cli-progress"
 import { ensureDirSync } from "fs-extra"
+import PQueue from "p-queue"
 import { z } from "zod/v4"
 
 import { type RecognitionOptions } from "../api/Recognition.ts"
@@ -41,14 +42,14 @@ import {
 } from "./install.ts"
 import {
   IncompatibleBinaryError,
+  defaultServerOptions,
   spawnWhisperServer,
 } from "./whisper-server.ts"
 
 const recognitionEngineSchema = z.enum(RECOGNITION_ENGINES)
 const whisperModelSchema = z.enum(WHISPER_MODELS)
 const buildVariantSchema = z.enum(BUILD_VARIANTS)
-// const wav2vec2ModelSchema = z.enum([WAV2VEC2_MODEL])
-const wav2vec2DeviceSchema = z.enum(CTC_DEVICES)
+const ctcDeviceSchema = z.enum(CTC_DEVICES)
 
 const INSTALL_TARGETS = ["binary", "model", "vad", "ctc-model", "all"] as const
 const installTargetSchema = z.enum(INSTALL_TARGETS)
@@ -94,7 +95,7 @@ Usage:
         .boolean()
         .default(false)
         .describe("List available variants or models"),
-      device: wav2vec2DeviceSchema
+      device: ctcDeviceSchema
         .default("auto")
         .describe("Device the CTC model will run on"),
       language: z
@@ -419,68 +420,172 @@ const serverCommand = defineCommand({
   },
 })
 
-// const emitServerCommand = defineCommand({
-//   description: "Start a wav2vec2 CTC emission server",
-//   options: defineOptions(
-//     z.object({
-//       model: wav2vec2ModelSchema
-//         .default(WAV2VEC2_MODEL)
-//         .describe("Wav2Vec2 model"),
-//       device: wav2vec2DeviceSchema
-//         .default("auto")
-//         .describe("Device to run inference on"),
-//       dtype: wav2vec2DtypeSchema
-//         .optional()
-//         .describe("Weight precision. Defaults to fp16 on cuda, fp32 otherwise"),
-//       host: z.string().default("0.0.0.0").describe("Host to bind to"),
-//       port: z.coerce.number().default(8080).describe("Port to listen on"),
-//       apiKey: z
-//         .string()
-//         .optional()
-//         .describe("Bearer token required on every request"),
-//     }),
-//     { m: "model", p: "port", d: "device" },
-//   ),
-//   action: async (options) => {
-//     const { startEmissionServer } = await import("../server/emissionServer.ts")
+const serveCommand = defineCommand({
+  description:
+    "Start a server that computes CTC emissions, and optionally transcribes, for other machines",
+  options: defineOptions(
+    z.object({
+      host: z.string().default("0.0.0.0").describe("Host to bind to"),
+      port: z.coerce.number().default(8765).describe("Port to listen on"),
+      apiKey: z
+        .string()
+        .optional()
+        .describe(
+          "The key clients must send, defaults to GHOST_STORY_API_KEY. Required.",
+        ),
+      device: ctcDeviceSchema
+        .default("auto")
+        .describe("Device to run inference on"),
+      modelDir: z
+        .string()
+        .optional()
+        .describe("Directory CTC models are installed to"),
+      batchSize: z.coerce
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe(
+          "How many chunks go through the model at once. Defaults to 2 on a GPU and 1 on a CPU. Only really important if time per chunk is already very short, <1s.",
+        ),
+      concurrency: z.coerce
+        .number()
+        .optional()
+        .describe("How many blocks of audio ffmpeg decodes at once"),
+      ffmpeg: z.string().default("ffmpeg").describe("Path to ffmpeg"),
+      ffprobe: z.string().default("ffprobe").describe("Path to ffprobe"),
+      cacheSize: z.coerce
+        .number()
+        .positive()
+        .default(10)
+        .describe("Gigabytes of uploaded audio to keep for later jobs"),
+      whisperModel: whisperModelSchema
+        .optional()
+        .describe(
+          "Transcribe with this whisper model at /v1/audio/transcriptions. Omit to serve emissions only.",
+        ),
+      threads: z.coerce
+        .number()
+        .default(defaultServerOptions.threads)
+        .describe("Threads per whisper processor"),
+      processors: z.coerce
+        .number()
+        .default(defaultServerOptions.processors)
+        .describe("Parts whisper splits long audio into"),
+    }),
+    { p: "port", d: "device", m: "whisper-model" },
+  ),
+  action: async (options) => {
+    const apiKey = options.apiKey ?? process.env["GHOST_STORY_API_KEY"]
+    if (!apiKey) {
+      const { randomBytes } = await import("node:crypto")
+      console.error(
+        `The server needs an API key. Pass --api-key or set GHOST_STORY_API_KEY, for example:\n\n  ghost-story serve --api-key ${randomBytes(24).toString("base64url")}\n\nThen enter the same key in Storyteller.`,
+      )
+      process.exit(1)
+    }
 
-//     const variant = getConfiguredVariant() ?? getInstalledVariant()
-//     const device = resolveCtcDevice(options.device, variant)
-//     const dtype = options.dtype ?? resolveWav2Vec2Dtype(device)
-//     const apiKey = options.apiKey ?? process.env["GHOST_STORY_API_KEY"] ?? null
+    const { execFile } = await import("node:child_process")
+    const { promisify } = await import("node:util")
+    for (const tool of [options.ffmpeg, options.ffprobe]) {
+      try {
+        await promisify(execFile)(tool, ["-version"])
+      } catch {
+        console.error(
+          `Could not run ${tool}. Install ffmpeg and put it on your PATH, or pass --ffmpeg and --ffprobe.`,
+        )
+        process.exit(1)
+      }
+    }
 
-//     console.log("Setting up CTC emission server...")
-//     console.log(`  Model: ${options.model}`)
-//     console.log(`  Device: ${device}`)
-//     console.log(`  Dtype: ${dtype}`)
-//     console.log(`  Host: ${options.host}`)
-//     console.log(`  Port: ${options.port}`)
-//     console.log(`  Auth: ${apiKey ? "bearer token" : "none"}`)
-//     console.log("")
-//     console.log("Loading model, this can take a while on a cold cache...")
+    let server: typeof import("../server/index.ts")
+    try {
+      server = await import("../server/index.ts")
+    } catch (error) {
+      console.error("Failed to load the inference runtime:", error)
+      if (process.platform === "win32") {
+        console.error(
+          "\nOn Windows this usually means the Microsoft Visual C++ Redistributable is missing. Install the x64 or arm64 build from https://aka.ms/vs/17/release/vc_redist.x64.exe (or vc_redist.arm64.exe) and try again.",
+        )
+      }
+      process.exit(1)
+    }
 
-//     const server = await startEmissionServer({
-//       model: options.model,
-//       device,
-//       dtype,
-//       host: options.host,
-//       port: options.port,
-//       apiKey,
-//     })
+    if (options.whisperModel) {
+      console.log(`Installing whisper.cpp and ${options.whisperModel}...`)
+      await installBinary({ printOutput: true })
+      await installModel({ model: options.whisperModel, printOutput: true })
+    }
 
-//     console.log(`Listening on http://${options.host}:${options.port}`)
+    const jobs = server.memoryJobs()
+    const files = await server.diskFileStore({
+      maxBytes: options.cacheSize * 1024 ** 3,
+    })
+    const inference = new PQueue({ concurrency: 1 })
+    const log = (message: string) => {
+      console.log(`[${new Date().toISOString()}] ${message}`)
+    }
+    const emissions = server.emissionService({
+      jobs,
+      files,
+      inference,
+      device: options.device,
+      batchSize: options.batchSize,
+      buildVariant: getInstalledVariant(),
+      modelDir: options.modelDir,
+      concurrency: options.concurrency,
+      ffmpegPath: options.ffmpeg,
+      ffprobePath: options.ffprobe,
+      log,
+    })
+    const services = [
+      emissions,
+      ...(options.whisperModel
+        ? [
+            server.transcriptionService({
+              model: options.whisperModel,
+              threads: options.threads,
+              processors: options.processors,
+              inference,
+              log,
+            }),
+          ]
+        : []),
+    ]
+    const listening = await server.listen(
+      server.createServer({ services, files, apiKey }),
+      { host: options.host, port: options.port },
+    )
+    console.log("ghost-story server")
+    console.log(
+      `  Services: ${services.map((service) => service.name).join(", ")}`,
+    )
+    console.log(`  Device: ${emissions.capabilities().device}`)
+    if (options.whisperModel) {
+      console.log(`  Whisper model: ${options.whisperModel}`)
+    }
+    console.log(`  Listening on http://${options.host}:${options.port}`)
 
-//     const shutdown = () => {
-//       console.log("\nShutting down emission server...")
-//       server.close(() => {
-//         process.exit(0)
-//       })
-//     }
-
-//     process.on("SIGINT", shutdown)
-//     process.on("SIGTERM", shutdown)
-//   },
-// })
+    let closing = false
+    const shutdown = () => {
+      if (closing) return
+      closing = true
+      console.log("\nShutting down...")
+      listening.close()
+      void jobs[Symbol.asyncDispose]()
+        .then(() =>
+          Promise.all(
+            services.map((service) => service[Symbol.asyncDispose]()),
+          ),
+        )
+        .then(() => files[Symbol.asyncDispose]())
+        .finally(() => process.exit(0))
+    }
+    process.on("SIGINT", shutdown)
+    process.on("SIGTERM", shutdown)
+    process.on("SIGBREAK", shutdown)
+  },
+})
 
 const vadCommand = defineCommand({
   description: "Run voice activity detection on an audio file",
@@ -562,7 +667,7 @@ const config = defineConfig({
     status: statusCommand,
     transcribe: transcribeCommand,
     server: serverCommand,
-    // "emit-server": emitServerCommand,
+    serve: serveCommand,
     vad: vadCommand,
   },
   defaultCommand: statusCommand,

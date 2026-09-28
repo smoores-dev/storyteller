@@ -8,6 +8,7 @@ import {
 } from "@reduxjs/toolkit/query/react"
 import { v4 as uuidv4 } from "uuid"
 
+import { type EmissionCapabilities } from "@storyteller-platform/ghost-story/emission-client"
 import { type JsColor } from "@storyteller-platform/okmain"
 
 import {
@@ -295,6 +296,16 @@ export const api = createApi({
     getServerCapabilities: build.query<ServerCapabilities, void>({
       query: () => "/server/capabilities",
       providesTags: () => ["ServerCapabilities"],
+    }),
+    testCtcServer: build.mutation<
+      EmissionCapabilities,
+      { url: string; apiKey: string | null }
+    >({
+      query: (body) => ({
+        url: "/server/ctc-server",
+        method: "POST",
+        body,
+      }),
     }),
     getMaxUploadChunkSize: build.query<
       { maxUploadChunkSize: number | null; overriden: boolean },
@@ -2668,6 +2679,7 @@ export const {
   useGetGpuBuildWarningQuery,
   useGetMaxUploadChunkSizeQuery,
   useGetServerCapabilitiesQuery,
+  useTestCtcServerMutation,
   useLazyListCollectionsQuery,
   useLazyListCreatorsQuery,
   useLazyListSeriesQuery,

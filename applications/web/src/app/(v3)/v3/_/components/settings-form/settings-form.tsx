@@ -207,14 +207,12 @@ function settingsFormValues(settings: Settings) {
   return {
     ...settings,
     serverIconSha256: settings.serverIconSha256 ?? null,
-    // TODO: change, if we ever want to use a different CTC engine
-    ctcEngine: "ctc-local" as const,
     ctcModel:
       settings.ctcModel && isCtcModelFamily(settings.ctcModel)
         ? settings.ctcModel
         : null,
-    // ctcServerUrl: settings.ctcServerUrl ?? "",
-    // ctcServerApiKey: settings.ctcServerApiKey ?? "",
+    ctcServerUrl: settings.ctcServerUrl ?? "",
+    ctcServerApiKey: settings.ctcServerApiKey ?? "",
     whisperServerUrl: settings.whisperServerUrl ?? "",
     whisperServerApiKey: settings.whisperServerApiKey ?? "",
     codec: settings.codec ?? "",

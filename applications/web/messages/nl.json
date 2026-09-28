@@ -763,12 +763,32 @@
             "baseUrl": "Basis URL (optioneel)",
             "modelName": "Modelnaam (optioneel)",
             "deepgramModel": "Modelnaam",
+            "deepgramModelDescription": "Kan elk model zijn dat de server ondersteunt, zoals nova-3, nova-2, nova, enhanced, base of whisper. Standaard is nova-3.",
+            "ctcEngines": {
+              "ctc-local": {
+                "label": "Op deze server",
+                "description": "Draait op de machine waarop Storyteller draait. Bestanden worden niet naar een andere server gestuurd."
+              },
+              "ctc-server": {
+                "label": "Op een andere server",
+                "description": "Stuurt elk audiobestand naar een Ghost Story-server op een andere (hopelijk!) snellere machine, bijvoorbeeld een PC met een GPU. Start er een met npx @storyteller-platform/ghost-story serve."
+              }
+            },
+            "ctcServerUrl": "Server URL",
+            "ctcServerUrlDescription": "bijv. http://192.168.1.19:8765",
+            "ctcServerApiKey": "API key",
+            "ctcServerApiKeyDescription": "De sleutel waarmee de server is gestart.",
+            "ctcServerTest": "Verbinding testen",
+            "ctcServerConnected": "Verbonden, draait op {device}",
+            "ctcServerUnreachable": "Kan de server niet bereiken",
+            "ctcEngine": "Waar het draait",
             "ctcDevice": "Apparaat",
             "ctcDeviceDescription": "Kies CPU als de synchronisatie crasht.",
             "ctcDevices": {
               "auto": "Auto",
               "cpu": "CPU",
               "webgpu": "GPU (WebGPU)",
+              "dml": "GPU (DirectML)",
               "cuda": "GPU (CUDA)",
               "mlx": "GPU (Apple Silicon)"
             },

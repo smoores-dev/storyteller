@@ -70,7 +70,15 @@ export const WHISPER_MODELS = [
 ] as const
 export type WhisperModel = (typeof WHISPER_MODELS)[number]
 
-export const CTC_DEVICES = ["auto", "cpu", "webgpu", "cuda", "mlx"] as const
+export const CTC_DEVICES = [
+  "auto",
+  "cpu",
+  "webgpu",
+  // windows
+  "dml",
+  "cuda",
+  "mlx",
+] as const
 export type CtcDevice = (typeof CTC_DEVICES)[number]
 export type ResolvedCtcDevice = Exclude<CtcDevice, "auto">
 
@@ -82,10 +90,7 @@ export type CtcDataType = (typeof CTC_DTYPES)[number]
 export const ALIGNERS = ["whisper", "ctc"] as const
 export type Aligner = (typeof ALIGNERS)[number]
 
-export const CTC_ENGINES = [
-  "ctc-local",
-  // "ctc-server",
-] as const
+export const CTC_ENGINES = ["ctc-local", "ctc-server"] as const
 export type CtcEngine = (typeof CTC_ENGINES)[number]
 export const CTC_MODEL_VERSION = "1.0.0"
 
@@ -236,7 +241,7 @@ export interface CtcDeviceCapabilities {
   default: ResolvedCtcDevice
 }
 
-const CTC_DEVICE_ORDER = ["cuda", "mlx", "webgpu", "cpu"] as const
+const CTC_DEVICE_ORDER = ["cuda", "mlx", "dml", "webgpu", "cpu"] as const
 
 export function ctcDeviceCapabilities(
   variant: string | null | undefined,
@@ -245,6 +250,7 @@ export function ctcDeviceCapabilities(
   const cpuVariant = variantName.includes("cpu") || variantName.includes("blas")
   const cuda = process.platform === "linux" && process.arch === "x64"
   const mlx = process.platform === "darwin" && process.arch === "arm64"
+  const dml = process.platform === "win32"
   const webgpu =
     !(process.platform === "linux" && process.arch === "arm64") && !cpuVariant
 
@@ -253,6 +259,7 @@ export function ctcDeviceCapabilities(
       device === "cpu" ||
       (device === "cuda" && cuda) ||
       (device === "mlx" && mlx) ||
+      (device === "dml" && dml) ||
       (device === "webgpu" && webgpu),
   )
 
@@ -268,9 +275,11 @@ export function ctcDeviceCapabilities(
       ? "cuda"
       : mlx
         ? "mlx"
-        : gpuVariant && webgpu
-          ? "webgpu"
-          : "cpu"
+        : dml
+          ? "dml"
+          : gpuVariant && webgpu
+            ? "webgpu"
+            : "cpu"
 
   return {
     available: [preferred, ...available.filter((d) => d !== preferred)],
@@ -283,13 +292,15 @@ export function resolveCtcDevice(
   variant: string | null | undefined,
 ): ResolvedCtcDevice {
   const capabilities = ctcDeviceCapabilities(variant)
-  if (
-    requested &&
-    requested !== "auto" &&
-    capabilities.available.includes(requested)
-  ) {
+  if (!requested || requested === "auto") {
+    return capabilities.default
+  }
+  if (capabilities.available.includes(requested)) {
     return requested
   }
+  console.warn(
+    `[ghost-story] The ${requested} device is not available here, using ${capabilities.default}`,
+  )
   return capabilities.default
 }
 

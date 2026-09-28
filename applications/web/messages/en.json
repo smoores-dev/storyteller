@@ -884,11 +884,30 @@
             "deepgramModel": "Model name",
             "ctcDevice": "Device",
             "ctcDeviceDescription": "Pick CPU if alignment crashes.",
+            "ctcEngine": "Transcription location",
+            "ctcEngines": {
+              "ctc-local": {
+                "label": "On this server",
+                "description": "Runs on the machine hosting Storyteller."
+              },
+              "ctc-server": {
+                "label": "On another server",
+                "description": "Sends each audio file to a Ghost Story server on a faster machine, for example a computer with a GPU. Start one there with npx @storyteller-platform/ghost-story serve."
+              }
+            },
+            "ctcServerUrl": "Server URL",
+            "ctcServerUrlDescription": "e.g. http://192.168.1.19:8765",
+            "ctcServerApiKey": "API key",
+            "ctcServerApiKeyDescription": "The key the server was started with.",
+            "ctcServerTest": "Test connection",
+            "ctcServerConnected": "Connected, runs on {device}",
+            "ctcServerUnreachable": "Could not reach the server",
             "ctcDevices": {
               "auto": "Auto",
               "cpu": "CPU",
               "webgpu": "GPU (WebGPU)",
               "cuda": "GPU (CUDA)",
+              "dml": "GPU (DirectML)",
               "mlx": "GPU (Apple Silicon)"
             },
             "ctcModel": "Model",
@@ -1121,7 +1140,7 @@
         "sections": {
           "scan": {
             "title": "Library scan",
-            "description": "Rereads every import path and all book metadata, even for unchanged files.",
+            "description": "Will re-read every import path and all book metadata, even for unchanged files.",
             "scanLibrary": "Scan library",
             "cancelScan": "Cancel scan",
             "scanRunning": "Scan in progress ({source})",
@@ -1129,7 +1148,7 @@
           },
           "caches": {
             "title": "Caches",
-            "description": "Files Storyteller made or kept along the way. Clearing them frees disk space.",
+            "description": "Cached files. Can be removed without losing data to save space, but may make some operations to take longer.",
             "measuring": "Measuring…",
             "processing": {
               "title": "Processing",
@@ -1171,17 +1190,17 @@
           },
           "leftovers": {
             "title": "Leftover files",
-            "description": "Files no book uses anymore. Anything changed in the last hour is left out.",
+            "description": "Files that are in Storyteller's assets directory, but aren't referenced by any book.",
             "measuring": "Measuring…",
             "folders": {
               "title": "Orphaned book folders",
-              "description": "Folders in the assets directory that no book points to. Folders that still hold book files are only deleted one at a time.",
+              "description": "Folders accidentally left behind in the assets directory, or you put there with your grubby hands",
               "summary": "{count, plural, =0 {None} one {# folder} other {# folders}}",
               "show": "Show folders",
               "hide": "Hide folders",
               "empty": "Empty",
               "deleteOne": "Delete {name}",
-              "deleteAll": "Delete leftovers",
+              "deleteAll": "Delete",
               "confirmOneTitle": "Delete this folder?",
               "confirmOneDescription": "Deletes \"{name}\" and the {size} inside it. This cannot be undone.",
               "confirmAllTitle": "Delete leftover folders?",
