@@ -20,6 +20,7 @@
     "build:native:debug": "scripts/build --debug",
     "build:native:metallib": "node scripts/fetch-metallib.mjs",
     "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
+    "prepack": "yarn build",
     "load-test": "PREBUILDS_ONLY=1 node scripts/load-test.mjs"
   },
   "dependencies": {
