@@ -26,7 +26,8 @@
         "reading/playing-readalouds",
         "reading/storyteller-apps",
         "reading/web-reader",
-        "reading/opds"
+        "reading/opds",
+        "reading/koreader"
       ]
     },
     "sharing",
