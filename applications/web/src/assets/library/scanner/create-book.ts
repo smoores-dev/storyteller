@@ -7,7 +7,6 @@ import {
 } from "@storyteller-platform/audiobook"
 import {
   Epub,
-  type EpubReader,
   type InMemoryEpubReader,
   MemoryAdapter,
 } from "@storyteller-platform/epub"
@@ -38,11 +37,6 @@ import {
 import { isEpubVersionError } from "@/epub"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
-
-export async function isReadaloudEpub(epub: EpubReader): Promise<boolean> {
-  const manifest = await epub.getManifest()
-  return Object.values(manifest).some((item) => item.mediaOverlay)
-}
 
 async function resolveEpub2Strategy(
   override: Epub2ImportStrategy | undefined,

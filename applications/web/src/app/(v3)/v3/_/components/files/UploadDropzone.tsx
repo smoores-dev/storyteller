@@ -4,7 +4,11 @@ import { type default as Uppy } from "@uppy/core"
 import useUppyState from "@uppy/react/lib/useUppyState"
 import { useRef, useState } from "react"
 
-import { addFilesToUppy } from "@v3/_/components/files/useTusUpload"
+import { useEpubPreview } from "@v3/_/components/files/useEpubPreview"
+import {
+  type UppyFileType,
+  addFilesToUppy,
+} from "@v3/_/components/files/useTusUpload"
 import { cn } from "@v3/_/lib/utils"
 
 import {
@@ -89,61 +93,76 @@ export function UploadDropzone({
 
       {files.length > 0 && (
         <ul className="flex max-h-[200px] flex-col gap-1 overflow-y-auto">
-          {files.map((file) => {
-            const percentage = file.progress.percentage ?? 0
-            const isDone = file.progress.uploadComplete
-
-            return (
-              <Item
-                key={file.id}
-                render={<li />}
-                className="bg-muted/50 flex min-w-0 items-center gap-2 rounded-md px-3 py-2"
-              >
-                <ItemMedia variant="icon">
-                  <icon.File className="text-muted-foreground h-4 w-4 shrink-0" />
-                </ItemMedia>
-                <ItemContent className="min-w-0 flex-1 gap-1">
-                  <ItemTitle
-                    className="block w-full truncate text-sm"
-                    title={file.name}
-                  >
-                    {file.name}
-                  </ItemTitle>
-                  <ItemDescription className="text-muted-foreground w-full min-w-0 text-xs">
-                    <span className="text-muted-foreground shrink-0 text-xs">
-                      {formatBytes(file.size ?? 0)}
-                    </span>
-
-                    <span className="bg-muted mt-1 block h-1 w-full overflow-hidden rounded-full">
-                      <span
-                        className={cn(
-                          "block h-full rounded-full transition-all",
-                          isDone ? "bg-green-600" : "bg-primary",
-                        )}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </span>
-                  </ItemDescription>
-                </ItemContent>
-                {!isDone && (
-                  <ItemActions>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${file.name}`}
-                      onClick={() => {
-                        uppy.removeFile(file.id)
-                      }}
-                      className="text-muted-foreground hover:text-foreground shrink-0"
-                    >
-                      <icon.Close className="h-4 w-4" />
-                    </button>
-                  </ItemActions>
-                )}
-              </Item>
-            )
-          })}
+          {files.map((file) => (
+            <UploadFileItem key={file.id} uppy={uppy} file={file} />
+          ))}
         </ul>
       )}
     </div>
+  )
+}
+
+function UploadFileItem({ uppy, file }: { uppy: Uppy; file: UppyFileType }) {
+  const preview = useEpubPreview(file.name ?? "", file.data)
+  const percentage = file.progress.percentage ?? 0
+  const isDone = file.progress.uploadComplete
+  const authors = preview?.authors.join(", ")
+
+  return (
+    <Item
+      render={<li />}
+      className="bg-muted/50 flex min-w-0 items-center gap-2 rounded-md px-3 py-2"
+    >
+      {preview?.coverUrl ? (
+        <ItemMedia variant="image" className="h-10 w-7 rounded-xs">
+          <img src={preview.coverUrl} alt="" />
+        </ItemMedia>
+      ) : (
+        <ItemMedia variant="icon">
+          <icon.File className="text-muted-foreground h-4 w-4 shrink-0" />
+        </ItemMedia>
+      )}
+      <ItemContent className="min-w-0 flex-1 gap-1">
+        <ItemTitle
+          className="flex w-full min-w-0 items-center gap-1.5 text-sm"
+          title={file.name}
+        >
+          <span className="truncate">{preview?.title ?? file.name}</span>
+          {preview?.isReadaloud && (
+            <icon.Readaloud className="text-primary size-4 shrink-0" />
+          )}
+        </ItemTitle>
+        <ItemDescription className="text-muted-foreground w-full min-w-0 text-xs">
+          <span className="block truncate">
+            {authors && `${authors} · `}
+            {formatBytes(file.size ?? 0)}
+          </span>
+
+          <span className="bg-muted mt-1 block h-1 w-full overflow-hidden rounded-full">
+            <span
+              className={cn(
+                "block h-full rounded-full transition-all",
+                isDone ? "bg-green-600" : "bg-primary",
+              )}
+              style={{ width: `${percentage}%` }}
+            />
+          </span>
+        </ItemDescription>
+      </ItemContent>
+      {!isDone && (
+        <ItemActions>
+          <button
+            type="button"
+            aria-label={`Remove ${file.name}`}
+            onClick={() => {
+              uppy.removeFile(file.id)
+            }}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <icon.Close className="h-4 w-4" />
+          </button>
+        </ItemActions>
+      )}
+    </Item>
   )
 }

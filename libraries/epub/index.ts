@@ -1,5 +1,3 @@
-import { cp, mkdir } from "node:fs/promises"
-
 import { Mutex } from "async-mutex"
 import XMLBuilder from "fast-xml-builder"
 import { XMLParser } from "fast-xml-parser"
@@ -7,27 +5,30 @@ import memoize from "mem"
 import { nanoid } from "nanoid"
 
 import { MediaType } from "@storyteller-platform/media-types"
-import { dirname } from "@storyteller-platform/path"
+
+import { copyFile } from "#files"
+import { TmpFsAdapter } from "#tmpfs"
 
 import type {
   AdapterOptions,
+  ArchiveSource,
   EpubStorageAdapter,
   EpubStorageAdapterClass,
   EpubStorageKind,
 } from "./adapters/interface.ts"
-import { TmpFsAdapter } from "./adapters/tmpfs.ts"
 import * as Upgrade from "./upgrade.ts"
 
-export type { EpubStorageKind } from "./adapters/interface.ts"
-export {
-  type AdapterOptions,
-  type EpubListEntry,
-  type EpubStorageAdapter,
-  type EpubStorageAdapterClass,
-  type EpubStorageCapabilities,
+export { TmpFsAdapter } from "#tmpfs"
+export type {
+  AdapterOptions,
+  ArchiveSource,
+  EpubListEntry,
+  EpubStorageAdapter,
+  EpubStorageAdapterClass,
+  EpubStorageCapabilities,
+  EpubStorageKind,
 } from "./adapters/interface.ts"
 export { MemoryAdapter, type MemoryAdapterOptions } from "./adapters/memory.ts"
-export { TmpFsAdapter } from "./adapters/tmpfs.ts"
 
 /*
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo
@@ -39,7 +40,7 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Intl {
     interface Locale {
-      textInfo: { direction: "rtl" | "ltr" }
+      textInfo?: { direction: "rtl" | "ltr" }
     }
   }
 }
@@ -693,17 +694,17 @@ export class Epub {
    *   `Epub.using(MemoryAdapter).from(path)` for read-only, in-memory access)
    * @throws {EpubVersionError} when the archive is not a valid EPUB 3
    */
-  static async from(pathOrData: string | Uint8Array): Promise<Epub>
+  static async from(pathOrData: ArchiveSource): Promise<Epub>
   static async from(
-    pathOrData: string | Uint8Array,
+    pathOrData: ArchiveSource,
     options: FromOptions & { readonly: true },
   ): Promise<EpubReader>
   static async from(
-    pathOrData: string | Uint8Array,
+    pathOrData: ArchiveSource,
     options?: FromOptions,
   ): Promise<Epub | EpubReader>
   static async from(
-    pathOrData: string | Uint8Array,
+    pathOrData: ArchiveSource,
     options: FromOptions = {},
   ): Promise<Epub | EpubReader> {
     return Epub.using(TmpFsAdapter).from(pathOrData, options)
@@ -3639,15 +3640,15 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
    * @throws {EpubVersionError} when the archive is not a valid EPUB 3
    */
   from(
-    source: string | Uint8Array,
+    source: ArchiveSource,
     options: FromOptions & { readonly: true } & AdapterOptions<A>,
   ): Promise<EpubReader & { storage: A["kind"] }>
   from(
-    source: string | Uint8Array,
+    source: ArchiveSource,
     options?: FromOptions & AdapterOptions<A>,
   ): Promise<EpubInstanceFor<A> & { storage: A["kind"] }>
   async from(
-    source: string | Uint8Array,
+    source: ArchiveSource,
     options: FromOptions = {},
   ): Promise<
     (Epub & { storage: A["kind"] }) | (EpubReader & { storage: A["kind"] })
@@ -3686,7 +3687,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
   }
 
   async readPackageDocumentSource(
-    source: string | Uint8Array,
+    source: ArchiveSource,
     options: AdapterOptions<A> = {} as AdapterOptions<A>,
   ): Promise<string> {
     const adapter = await this.adapterClass.init(source, options)
@@ -3744,6 +3745,10 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
       )
     }
 
+    const textInfo =
+      typeof language.getTextInfo === "function"
+        ? language.getTextInfo()
+        : language.textInfo
     const encoder = new TextEncoder()
     const container = encoder.encode(`<?xml version="1.0"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -3755,7 +3760,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
     await adapter.write("META-INF/container.xml", container)
 
     const packageDocument = encoder.encode(`<?xml version="1.0"?>
-<package unique-identifier="pub-id" dir="${language.textInfo.direction}" xml:lang="${language.toString()}" version="3.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<package unique-identifier="pub-id" dir="${textInfo?.direction ?? "ltr"}" xml:lang="${language.toString()}" version="3.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <metadata>
   </metadata>
   <manifest>
@@ -3829,10 +3834,7 @@ export class EpubFactory<A extends EpubStorageAdapterClass> {
     }
     const { removeNcx = false, outputPath } = options
 
-    if (outputPath) {
-      await mkdir(dirname(outputPath), { recursive: true })
-      await cp(path, outputPath, { force: true })
-    }
+    if (outputPath) await copyFile(path, outputPath)
 
     const source = outputPath ?? path
     const adapter = await this.adapterClass.init(

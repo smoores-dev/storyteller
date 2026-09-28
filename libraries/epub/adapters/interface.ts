@@ -9,6 +9,28 @@
  */
 export type EpubStorageKind = "tmp-dir" | "in-memory" | (string & {})
 
+export type ArchiveSource = string | Uint8Array | Blob
+
+/**
+ * A file in an opened zip archive. Directory entries are left out.
+ */
+export interface ZipEntry {
+  readonly filename: string
+  readonly compressedSize: number
+  readonly uncompressedSize: number
+  /** rejects when the data doesn't match the CRC32 or size in the central directory */
+  read(): Promise<Uint8Array>
+}
+
+/**
+ * An opened zip archive. The `#zip` import picks the reader:
+ * yauzl-promise in Node, zip.js everywhere else.
+ */
+export interface ZipArchive {
+  readonly entries: readonly ZipEntry[]
+  close(): Promise<void>
+}
+
 export interface EpubStorageCapabilities {
   /** when false, the Epub class refuses every mutation method at runtime */
   readonly writable: boolean
@@ -76,7 +98,7 @@ export interface EpubStorageAdapterClass<Opts extends object = object> {
    * Open an archive from a path or buffer.
    * Will throw if the archive is not a valid EPUB 3
    */
-  init(source: string | Uint8Array, opts?: Opts): Promise<EpubStorageAdapter>
+  init(source: ArchiveSource, opts?: Opts): Promise<EpubStorageAdapter>
 
   /**
    * Initialize an empty extract root for {@link Epub.create}.

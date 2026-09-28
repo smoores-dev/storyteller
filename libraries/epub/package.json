@@ -10,6 +10,20 @@
       "default": "./index.ts"
     }
   },
+  "imports": {
+    "#files": {
+      "node": "./files.node.ts",
+      "default": "./files.browser.ts"
+    },
+    "#tmpfs": {
+      "node": "./adapters/tmpfs.ts",
+      "default": "./adapters/tmpfs.browser.ts"
+    },
+    "#zip": {
+      "node": "./zip.node.ts",
+      "default": "./zip.browser.ts"
+    }
+  },
   "files": [
     "dist/"
   ],
@@ -43,6 +57,7 @@
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/media-types": "workspace:^",
     "@storyteller-platform/path": "workspace:^",
+    "@zip.js/zip.js": "catalog:",
     "async-mutex": "^0.5.0",
     "fast-xml-builder": "^1.3.1",
     "fast-xml-parser": "catalog:",
@@ -56,6 +71,38 @@
     "exports": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "imports": {
+      "#files": {
+        "node": {
+          "types": "./dist/files.node.d.ts",
+          "default": "./dist/files.node.js"
+        },
+        "default": {
+          "types": "./dist/files.browser.d.ts",
+          "default": "./dist/files.browser.js"
+        }
+      },
+      "#tmpfs": {
+        "node": {
+          "types": "./dist/adapters/tmpfs.d.ts",
+          "default": "./dist/adapters/tmpfs.js"
+        },
+        "default": {
+          "types": "./dist/adapters/tmpfs.browser.d.ts",
+          "default": "./dist/adapters/tmpfs.browser.js"
+        }
+      },
+      "#zip": {
+        "node": {
+          "types": "./dist/zip.node.d.ts",
+          "default": "./dist/zip.node.js"
+        },
+        "default": {
+          "types": "./dist/zip.browser.d.ts",
+          "default": "./dist/zip.browser.js"
+        }
+      }
     }
   }
 }

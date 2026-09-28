@@ -11,7 +11,6 @@ import {
   createBookFromOpenedAudiobook,
   createBookFromOpenedEpub,
   ensureCollections,
-  isReadaloudEpub,
   openAudiobookDir,
   openOrUpgradeEpub,
 } from "@/assets/library/scanner/create-book"
@@ -24,6 +23,7 @@ import { relocateIfNeeded } from "@/assets/library/scanner/relocate"
 import { type Candidate, type ScanFormat } from "@/assets/library/scanner/types"
 import { type BookWithRelations, updateBook } from "@/database/books"
 import { type ImportMode } from "@/database/settingsTypes"
+import { isReadaloudEpub } from "@/epub"
 
 /**
  * format-agnostic resolved candidate ready to feed into the pipeline. the

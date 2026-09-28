@@ -1,0 +1,38 @@
+diff --git a/lib/entry.js b/lib/entry.js
+index 3d55b73f94d2ca41f856c99cd7f7d9010b612298..6a359abf882cbe364f69fdadede4abbc3e212d6e 100644
+--- a/lib/entry.js
++++ b/lib/entry.js
+@@ -8,7 +8,7 @@
+ // Modules
+ const {createInflateRaw} = require('zlib'),
+ 	{Transform: TransformStream, pipeline} = require('stream'),
+-	calculateCrc32 = require('@node-rs/crc32').crc32,
++	calculateCrc32 = require('node:zlib').crc32,
+ 	{isObject, isBoolean, isPositiveInteger, isPositiveIntegerOrZero} = require('is-it-type'),
+ 	assert = require('simple-invariant');
+ 
+diff --git a/lib/zip.js b/lib/zip.js
+index 456259f67e634a27612bf0812e9e060167644168..078292c033e3ddeb7c5e5d317beb13e9a2ae8a97 100644
+--- a/lib/zip.js
++++ b/lib/zip.js
+@@ -8,7 +8,7 @@
+ 'use strict';
+ 
+ // Modules
+-const calculateCrc32 = require('@node-rs/crc32').crc32,
++const calculateCrc32 = require('node:zlib').crc32,
+ 	assert = require('simple-invariant'),
+ 	{isPositiveIntegerOrZero} = require('is-it-type');
+ 
+diff --git a/package.json b/package.json
+index 40721c5852ebc7cf36c81dc16c59752c8d93d086..c5665955cd1e86ef96679053ba4e3e794cead810 100644
+--- a/package.json
++++ b/package.json
+@@ -17,7 +17,6 @@
+     "url": "https://github.com/overlookmotel/yauzl-promise/issues"
+   },
+   "dependencies": {
+-    "@node-rs/crc32": "^1.7.0",
+     "is-it-type": "^5.1.2",
+     "simple-invariant": "^2.0.1"
+   },

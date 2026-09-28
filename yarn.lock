@@ -15609,6 +15609,7 @@ __metadata:
     "@types/yauzl-promise": "catalog:"
     "@types/yazl": "catalog:"
     "@typescript/native": "npm:typescript@^7.0.2"
+    "@zip.js/zip.js": "catalog:"
     async-mutex: "npm:^0.5.0"
     fast-xml-builder: "npm:^1.3.1"
     fast-xml-parser: "catalog:"
@@ -20040,6 +20041,13 @@ __metadata:
   bin:
     shell: ./lib/cli.js
   checksum: 10c0/0cbbfa7c446bc0450f5fdc6f892eb4e8ebdc6addce4f4366fdcb6cb63e5e8b33096db80d6c1f27e0277e008f384f2041d6abaae381b31574495c4c3a71e0192b
+  languageName: node
+  linkType: hard
+
+"@zip.js/zip.js@npm:^2.18.2":
+  version: 2.18.2
+  resolution: "@zip.js/zip.js@npm:2.18.2"
+  checksum: 10c0/2b5437036dfee60e7c249677c4c5db3fb0314dcbbb507f31cd1526370c2ea1f0d7e9f9e56ed1bc6f671da8b5228757f7424b293aba34f4786f492dfee0e43c57
   languageName: node
   linkType: hard
 
@@ -43062,7 +43070,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yauzl-promise@npm:^4.0.0":
+"yauzl-promise@npm:4.0.0":
   version: 4.0.0
   resolution: "yauzl-promise@npm:4.0.0"
   dependencies:
@@ -43070,6 +43078,17 @@ __metadata:
     is-it-type: "npm:^5.1.2"
     simple-invariant: "npm:^2.0.1"
   checksum: 10c0/105c397c5dd96b3dccd567f70d3f2694f35790157b1f9977ac9e343f6f953850dcc5a1d25c11dbf45d38a263db7f18715e8065e0a04df11065cb1eb48665eced
+  languageName: node
+  linkType: hard
+
+"yauzl-promise@patch:yauzl-promise@npm%3A4.0.0#~/.yarn/patches/yauzl-promise-npm-4.0.0-8d2a0279b2.patch":
+  version: 4.0.0
+  resolution: "yauzl-promise@patch:yauzl-promise@npm%3A4.0.0#~/.yarn/patches/yauzl-promise-npm-4.0.0-8d2a0279b2.patch::version=4.0.0&hash=378971"
+  dependencies:
+    "@node-rs/crc32": "npm:^1.7.0"
+    is-it-type: "npm:^5.1.2"
+    simple-invariant: "npm:^2.0.1"
+  checksum: 10c0/938eba7db5444a6516b8f34ced3ea00ee3c11380b738953b589cb955f3e9d47c1b759fb3d5a2d755b3be6ec2192bb5a082e4f8771d774378c022cc95772eeaf3
   languageName: node
   linkType: hard
 

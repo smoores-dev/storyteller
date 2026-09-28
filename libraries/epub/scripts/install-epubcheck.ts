@@ -6,7 +6,7 @@ import path from "node:path"
 import { pipeline } from "node:stream/promises"
 import { fileURLToPath } from "node:url"
 
-import { open } from "yauzl-promise"
+import { openZip } from "../zip.node.ts"
 
 const version = "5.3.0"
 
@@ -33,29 +33,22 @@ async function main() {
   const outputDir = path.join(vendorsDir, `epubcheck-${version}`)
 
   fs.mkdirSync(vendorsDir, { recursive: true })
-  try {
-    const zipfile = await open(zip)
-
-    await using stack = new AsyncDisposableStack()
-    stack.defer(async () => {
-      await zipfile.close()
-    })
-
-    for await (const entry of zipfile) {
-      if (entry.filename.endsWith("/")) {
-        continue
-      }
-
-      const writePath = path.join(vendorsDir, entry.filename)
-      const readStream = await entry.openReadStream()
-      fs.mkdirSync(path.dirname(writePath), { recursive: true })
-      const writeStream = fs.createWriteStream(writePath)
-      await pipeline(readStream, writeStream)
-    }
-  } catch (error) {
+  await using cleanup = new AsyncDisposableStack()
+  cleanup.defer(() => {
     fs.rmSync(outputDir, { force: true, recursive: true })
-    throw error
+  })
+
+  await using archive = await openZip(zip)
+  for (const entry of archive.entries) {
+    const writePath = path.join(vendorsDir, entry.filename)
+    fs.mkdirSync(path.dirname(writePath), { recursive: true })
+    await pipeline(
+      await entry.openReadStream(),
+      fs.createWriteStream(writePath),
+    )
   }
+
+  cleanup.move()
   console.log(`installed epubcheck ${version} to ${vendorsDir}`)
 }
 

@@ -1,6 +1,7 @@
 # @storyteller-platform/epub
 
-A Node.js library for inspecting, modifying, and creating EPUB 3 publications.
+A Node.js/browser library for inspecting, modifying, and creating EPUB 3
+publications.
 
 <!-- toc -->
 
@@ -15,6 +16,7 @@ A Node.js library for inspecting, modifying, and creating EPUB 3 publications.
   - [Writing to disk](#writing-to-disk)
   - [Writing to a byte array](#writing-to-a-byte-array)
   - [Upgrading an EPUB 2 to EPUB 3](#upgrading-an-epub-2-to-epub-3)
+  - [Browser support](#browser-support)
 - [Development](#development)
 - [API Docs](#api-docs)
 
@@ -240,6 +242,58 @@ await epub.saveAndClose()
 
 // Do Epub stuff
 ```
+
+### Browser support
+
+This library is designed to be used in both Node.js and browser environments.
+
+In the browser, currently you can only use the `MemoryAdapter` to read EPUB
+files.
+
+```tsx
+import { useState, useEffect } from "react"
+
+import {
+  Epub,
+  type EpubReader,
+  MemoryAdapter,
+} from "@storyteller-platform/epub"
+
+export function BookCover(file: File) {
+  const [cover, setCover] = useState<string | null>(null)
+
+  useEffect(() => {
+    let epub: EpubReader | null = null
+    let coverUrl: string | null = null
+
+    async function loadCover() {
+      // unfortunately Safari does not support `using` syntax yet
+      try {
+        epub = await Epub.using(MemoryAdapter).from(file)
+        const cover = await epub.getCoverImage()
+        if (cover) {
+          coverUrl = URL.createObjectURL(new Blob([new Uint8Array(cover)]))
+          setCover(coverUrl)
+        }
+      } finally {
+        epub?.discardAndClose()
+      }
+    }
+
+    loadCover()
+
+    return () => {
+      if (coverUrl) {
+        URL.revokeObjectURL(coverUrl)
+      }
+    }
+  }, [file])
+
+  return cover ? <img src={cover} alt="Cover" /> : null
+}
+```
+
+Note that doing a bare `Epub.from` will result in an error.
 
 ## Development
 

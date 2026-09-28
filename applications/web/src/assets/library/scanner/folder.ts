@@ -5,7 +5,6 @@ import { extname, join, resolve, sep } from "node:path"
 import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
 
 import { isInsideInternalDirectory } from "@/assets/library/internalDirs"
-import { isReadaloudEpub } from "@/assets/library/scanner/create-book"
 import { isAudioFile, isHiddenFile } from "@/audio"
 import { type BookWithRelations } from "@/database/books"
 import { getIgnorePaths } from "@/database/importRules"
@@ -15,7 +14,7 @@ import {
   type ImportMode,
   renderEpubSuffix,
 } from "@/database/settingsTypes"
-import { isEpubFile, isEpubVersionError } from "@/epub"
+import { isEpubFile, isEpubVersionError, isReadaloudEpub } from "@/epub"
 import { logger } from "@/logging"
 
 import { type ScanCtx } from "./ctx"

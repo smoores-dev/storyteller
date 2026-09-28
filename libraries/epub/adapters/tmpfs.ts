@@ -17,9 +17,13 @@ import { scratchPath } from "@storyteller-platform/fs"
 import { type Kind, MediaType } from "@storyteller-platform/media-types"
 import { dirname, join, sep } from "@storyteller-platform/path"
 
-import { openZip } from "../zip.ts"
+import { openZip } from "../zip.node.ts"
 
-import type { EpubListEntry, EpubStorageAdapter } from "./interface.ts"
+import type {
+  ArchiveSource,
+  EpubListEntry,
+  EpubStorageAdapter,
+} from "./interface.ts"
 
 const PRECOMPRESSED_KINDS = new Set<Kind | undefined>([
   "audio",
@@ -54,34 +58,21 @@ export class TmpFsAdapter implements EpubStorageAdapter {
   static readonly kind = "extracted-dir" as const
   static readonly capabilities = { writable: true } as const
 
-  static async init(source: string | Uint8Array): Promise<TmpFsAdapter> {
+  static async init(source: ArchiveSource): Promise<TmpFsAdapter> {
+    await using cleanup = new AsyncDisposableStack()
     const rootPath = mintRootPath()
-    try {
-      const zipfile = await openZip(source)
+    cleanup.defer(() => rm(rootPath, { force: true, recursive: true }))
 
-      await using stack = new AsyncDisposableStack()
-      stack.defer(async () => {
-        await zipfile.close()
-      })
+    await using zip = await openZip(source)
+    for (const entry of zip.entries) {
+      if (!isStorableEntryName(entry.filename)) continue
 
-      for await (const entry of zipfile) {
-        if (entry.filename.endsWith("/")) {
-          // directory entries are skipped; parent dirs are created implicitly
-          continue
-        }
-        if (!isStorableEntryName(entry.filename)) continue
-
-        const writePath = join(rootPath, ...entry.filename.split("/"))
-        const readStream = await entry.openReadStream()
-        await mkdir(dirname(writePath), { recursive: true })
-        const writeStream = createWriteStream(writePath)
-        await pipeline(readStream, writeStream)
-      }
-    } catch (error) {
-      rmSync(rootPath, { force: true, recursive: true })
-      throw error
+      const writePath = join(rootPath, ...entry.filename.split("/"))
+      await mkdir(dirname(writePath), { recursive: true })
+      await pipeline(await entry.openReadStream(), createWriteStream(writePath))
     }
 
+    cleanup.move()
     return new TmpFsAdapter(rootPath)
   }
 

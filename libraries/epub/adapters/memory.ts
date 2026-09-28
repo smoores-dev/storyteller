@@ -1,11 +1,14 @@
-import {
-  type Entry as YauzlEntry,
-  type ZipFile as YauzlZipFile,
-} from "yauzl-promise"
+import { openZip } from "#zip"
 
-import { openZip } from "../zip.ts"
+import type {
+  ArchiveSource,
+  EpubStorageAdapter,
+  EpubStorageKind,
+  ZipArchive,
+  ZipEntry,
+} from "./interface.ts"
 
-import type { EpubStorageAdapter, EpubStorageKind } from "./interface.ts"
+const utf8 = new TextDecoder("utf-8", { ignoreBOM: true })
 
 export interface MemoryAdapterOptions {
   /**
@@ -29,60 +32,48 @@ export class MemoryAdapter implements EpubStorageAdapter {
   static readonly capabilities = { writable: false } as const
 
   static async init(
-    source: string | Uint8Array,
+    source: ArchiveSource,
     opts: MemoryAdapterOptions = {},
   ): Promise<MemoryAdapter> {
     const { cache = true, signal } = opts
     signal?.throwIfAborted()
 
     const zip = await openZip(source)
-
-    const entries = new Map<string, YauzlEntry>()
-    try {
-      for await (const entry of zip) {
-        signal?.throwIfAborted()
-        if (entry.filename.endsWith("/")) continue
-        entries.set(entry.filename, entry)
-      }
-    } catch (error) {
+    if (signal?.aborted) {
       await zip.close()
-      throw error
+      signal.throwIfAborted()
     }
 
-    return new MemoryAdapter(zip, entries, cache ? new Map() : null)
+    return new MemoryAdapter(
+      zip,
+      new Map(zip.entries.map((entry) => [entry.filename, entry])),
+      cache ? new Map() : null,
+    )
   }
 
   private constructor(
-    private zip: YauzlZipFile,
-    private entries: Map<string, YauzlEntry>,
-    private cache: Map<string, Buffer> | null,
+    private zip: ZipArchive,
+    private entries: Map<string, ZipEntry>,
+    private cache: Map<string, Uint8Array> | null,
   ) {}
 
   async read(entry: string): Promise<Uint8Array>
   async read(entry: string, encoding: "utf-8"): Promise<string>
   async read(entry: string, encoding?: "utf-8"): Promise<string | Uint8Array> {
-    const cached = this.cache?.get(entry)
-    if (cached) {
-      return encoding ? cached.toString(encoding) : new Uint8Array(cached)
+    let data = this.cache?.get(entry)
+    if (!data) {
+      const zipEntry = this.entries.get(entry)
+      if (!zipEntry) {
+        const err = new Error(
+          `ENOENT: zip entry not found in EPUB archive: ${entry}`,
+        )
+        ;(err as Error & { code?: string }).code = "ENOENT"
+        throw err
+      }
+      data = await zipEntry.read()
+      this.cache?.set(entry, data)
     }
-
-    const zipEntry = this.entries.get(entry)
-    if (!zipEntry) {
-      const err = new Error(
-        `ENOENT: zip entry not found in EPUB archive: ${entry}`,
-      )
-      ;(err as Error & { code?: string }).code = "ENOENT"
-      throw err
-    }
-
-    const stream = await zipEntry.openReadStream()
-    const chunks: Buffer[] = []
-    for await (const chunk of stream) {
-      chunks.push(chunk as Buffer)
-    }
-    const buf = Buffer.concat(chunks)
-    this.cache?.set(entry, buf)
-    return encoding ? buf.toString(encoding) : new Uint8Array(buf)
+    return encoding ? utf8.decode(data) : new Uint8Array(data)
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
