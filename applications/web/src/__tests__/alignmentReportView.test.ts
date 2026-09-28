@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import {
   type ReportSpan,
@@ -163,11 +164,11 @@ type ReportInput = Omit<Parameters<typeof assembleReport>[0], "autoExclude"> & {
 const report = (input: ReportInput) =>
   assembleReport({ autoExclude: true, ...input })
 
-void describe("gradeForScore", () => {
-  void it("numbers the bands in grade order", () => {
+describe("gradeForScore", () => {
+  it("numbers the bands in grade order", () => {
     const cases: [number, number, (typeof ALIGNMENT_GRADES)[number]][] = [
-      [95, 98, "S"],
-      [90, 96, "A"],
+      [95, 99, "S"],
+      [90, 97, "A"],
       [89, 97, "B"],
       [95, 90, "C"],
       [60, 60, "D"],
@@ -180,17 +181,17 @@ void describe("gradeForScore", () => {
     }
   })
 
-  void it("only awards S when both sentences and audio are near perfect", () => {
+  it("only awards S when both sentences and audio are near perfect", () => {
     assert.deepStrictEqual(gradeForScore(100, 90), {
       grade: "C",
       band: 3,
       score: 97,
     })
-    assert.strictEqual(gradeForScore(98, 98).grade, "S")
-    assert.strictEqual(gradeForScore(100, 96).grade, "A")
+    assert.strictEqual(gradeForScore(98, 99).grade, "S")
+    assert.strictEqual(gradeForScore(100, 98).grade, "A")
   })
 
-  void it("fails a report with no score at all", () => {
+  it("fails a report with no score at all", () => {
     assert.deepStrictEqual(gradeForScore(null, null), {
       grade: "F",
       band: ALIGNMENT_GRADES.length - 1,
@@ -199,7 +200,7 @@ void describe("gradeForScore", () => {
   })
 })
 
-void describe("the score", () => {
+describe("the score", () => {
   const base = report({
     aligner: "ctc",
     spine: [item({ index: 1, href: "a.xhtml", sentences: 100 })],
@@ -210,7 +211,7 @@ void describe("the score", () => {
     ],
   })
 
-  void it("weighs sentences seventy percent and audio thirty", () => {
+  it("weighs sentences seventy percent and audio thirty", () => {
     const summary = summarizeReport(base)
     assert.strictEqual(summary.sentencesMatched, 80)
     assert.strictEqual(summary.sentencesTotal, 100)
@@ -220,7 +221,7 @@ void describe("the score", () => {
     assert.strictEqual(summary.grade, "D")
   })
 
-  void it("credits single interpolated sentences between matches", () => {
+  it("credits single interpolated sentences between matches", () => {
     const summary = summarizeReport(
       report({
         aligner: "ctc",
@@ -240,7 +241,7 @@ void describe("the score", () => {
     assert.strictEqual(summary.audioPlacedSeconds, 100)
   })
 
-  void it("measures audio against the audiobook duration when known", () => {
+  it("measures audio against the audiobook duration when known", () => {
     const summary = summarizeReport(base, null, 2000)
     assert.strictEqual(summary.audioPlacedSeconds, 500)
     assert.strictEqual(summary.audioTotalSeconds, 2000)
@@ -248,7 +249,7 @@ void describe("the score", () => {
     assert.strictEqual(summary.looseSeconds, 1500)
   })
 
-  void it("takes excluded tracks out of the audiobook duration", () => {
+  it("takes excluded tracks out of the audiobook duration", () => {
     const summary = summarizeReport(
       report({
         aligner: "ctc",
@@ -263,7 +264,7 @@ void describe("the score", () => {
     assert.strictEqual(summary.audioCoverage, 100)
   })
 
-  void it("fails when no audio is known", () => {
+  it("fails when no audio is known", () => {
     const summary = summarizeReport(
       report({
         aligner: "ctc",
@@ -279,7 +280,7 @@ void describe("the score", () => {
     assert.strictEqual(summary.failed, 1)
   })
 
-  void it("reports the aligner score separately, weighted by sentences", () => {
+  it("reports the aligner score separately, weighted by sentences", () => {
     const summary = summarizeReport(
       report({
         aligner: "ctc",
@@ -297,7 +298,7 @@ void describe("the score", () => {
     assert.strictEqual(summary.confidence, 95)
   })
 
-  void it("has no score when nothing counts", () => {
+  it("has no score when nothing counts", () => {
     const summary = summarizeReport(
       base,
       decide({ chapters: { "a.xhtml": "excluded" } }),
@@ -308,7 +309,7 @@ void describe("the score", () => {
     assert.strictEqual(summary.confidence, null)
   })
 
-  void it("leaves navigation and empty items out of the denominator", () => {
+  it("leaves navigation and empty items out of the denominator", () => {
     const summary = summarizeReport(
       report({
         aligner: "ctc",
@@ -341,7 +342,7 @@ void describe("the score", () => {
   })
 })
 
-void describe("judgments", () => {
+describe("judgments", () => {
   const base = report({
     aligner: "ctc",
     spine: [
@@ -356,7 +357,7 @@ void describe("judgments", () => {
     ],
   })
 
-  void it("approving makes the denominator match the numerator", () => {
+  it("approving makes the denominator match the numerator", () => {
     const summary = summarizeReport(
       base,
       decide({ chapters: { "a.xhtml": "approved" } }),
@@ -368,7 +369,7 @@ void describe("judgments", () => {
     assert.strictEqual(summary.audioPlacedSeconds, 1200)
   })
 
-  void it("excluding drops the chapter but leaves the track counted", () => {
+  it("excluding drops the chapter but leaves the track counted", () => {
     const summary = summarizeReport(
       base,
       decide({ chapters: { "a.xhtml": "excluded" } }),
@@ -379,7 +380,7 @@ void describe("judgments", () => {
     assert.strictEqual(summary.audioTotalSeconds, 1200)
   })
 
-  void it("excluding a track drops it from the audio totals", () => {
+  it("excluding a track drops it from the audio totals", () => {
     const summary = summarizeReport(
       base,
       decide({ audio: [{ track: "1.mp3", start: null, end: null }] }),
@@ -389,7 +390,7 @@ void describe("judgments", () => {
     assert.strictEqual(summary.sentencesTotal, 200)
   })
 
-  void it("reads the legacy ignored flag as excluded", () => {
+  it("reads the legacy ignored flag as excluded", () => {
     const overrides: AlignmentOverrides = {
       chapters: { "a.xhtml": { ignored: true } },
       audioFiles: { "2.mp3": { ignored: true } },
@@ -410,7 +411,7 @@ void describe("judgments", () => {
     assert.strictEqual(view.tracks[1]?.excluded, true)
   })
 
-  void it("excludes only the masked seconds of a track", () => {
+  it("excludes only the masked seconds of a track", () => {
     const summary = summarizeReport(
       base,
       decide({
@@ -425,7 +426,7 @@ void describe("judgments", () => {
     assert.strictEqual(summary.audioCoverage, 100)
   })
 
-  void it("counts every not-found chapter as zero until it is judged", () => {
+  it("counts every not-found chapter as zero until it is judged", () => {
     const withMissing = report({
       aligner: "ctc",
       spine: [
@@ -453,7 +454,7 @@ void describe("judgments", () => {
   })
 })
 
-void describe("exclusions", () => {
+describe("exclusions", () => {
   const base = report({
     aligner: "ctc",
     spine: [
@@ -486,7 +487,7 @@ void describe("exclusions", () => {
     ],
   })
 
-  void it("counts what the rules skipped and what deserves a listen", () => {
+  it("counts what the rules skipped and what deserves a listen", () => {
     const summary = summarizeReport(
       base,
       decide({ chapters: { "b.xhtml": "excluded" } }),
@@ -498,7 +499,7 @@ void describe("exclusions", () => {
     assert.strictEqual(summary.pending, 0)
   })
 
-  void it("marks decisions that only apply on the next run as pending", () => {
+  it("marks decisions that only apply on the next run as pending", () => {
     const summary = summarizeReport(
       base,
       decide({
@@ -510,7 +511,7 @@ void describe("exclusions", () => {
     assert.strictEqual(summary.excludedByRule, 1)
   })
 
-  void it("settles a review once the chapter is judged", () => {
+  it("settles a review once the chapter is judged", () => {
     const summary = summarizeReport(
       base,
       decide({
@@ -521,7 +522,7 @@ void describe("exclusions", () => {
     assert.strictEqual(summary.approved, 1)
   })
 
-  void it("upgrades a version three report", () => {
+  it("upgrades a version three report", () => {
     const v3: ReportV3 = {
       version: 3,
       aligner: "ctc",
@@ -584,7 +585,7 @@ void describe("exclusions", () => {
   })
 })
 
-void describe("labels", () => {
+describe("labels", () => {
   const view = (input: ReportV4, manifest?: object) =>
     buildReportView({
       report: input,
@@ -598,7 +599,7 @@ void describe("labels", () => {
       ebookManifest: manifest ?? null,
     })
 
-  void it("prefers the report title, then the manifest, then the stem", () => {
+  it("prefers the report title, then the manifest, then the stem", () => {
     const { items } = view(
       report({
         aligner: "ctc",
@@ -644,7 +645,7 @@ void describe("labels", () => {
     )
   })
 
-  void it("resolves the read href from the reading order", () => {
+  it("resolves the read href from the reading order", () => {
     const { items } = view(
       report({
         aligner: "ctc",
@@ -658,8 +659,8 @@ void describe("labels", () => {
   })
 })
 
-void describe("legacy reports", () => {
-  void it("orders tracks by name and stacks their offsets", () => {
+describe("legacy reports", () => {
+  it("orders tracks by name and stacks their offsets", () => {
     const converted = fromLegacyReport(
       legacy({
         chapters: [
@@ -687,7 +688,7 @@ void describe("legacy reports", () => {
     assert.strictEqual(converted.totals.unalignedTracks, 1)
   })
 
-  void it("turns a chapter hull into an aligned span with unmatched edges", () => {
+  it("turns a chapter hull into an aligned span with unmatched edges", () => {
     const converted = fromLegacyReport(
       legacy({
         chapters: [
@@ -726,7 +727,7 @@ void describe("legacy reports", () => {
     assert.strictEqual(converted.totals.matchedSentences, 5)
   })
 
-  void it("collapses chunk rows into one chapter with a weighted score", () => {
+  it("collapses chunk rows into one chapter with a weighted score", () => {
     const converted = fromLegacyReport(
       legacy({
         chapters: [
@@ -765,7 +766,7 @@ void describe("legacy reports", () => {
     )
   })
 
-  void it("folds a missed chunk into its found chapter", () => {
+  it("folds a missed chunk into its found chapter", () => {
     const converted = fromLegacyReport(
       legacy({
         chapters: [
@@ -784,7 +785,7 @@ void describe("legacy reports", () => {
     assert.strictEqual(converted.spine[0].status, "aligned")
   })
 
-  void it("keeps unaligned reasons and previews", () => {
+  it("keeps unaligned reasons and previews", () => {
     const converted = fromLegacyReport(
       legacy({
         chapters: [],
@@ -805,8 +806,8 @@ void describe("legacy reports", () => {
   })
 })
 
-void describe("summarizeReport for the stored columns", () => {
-  void it("fills the summary columns from either report shape", () => {
+describe("summarizeReport for the stored columns", () => {
+  it("fills the summary columns from either report shape", () => {
     const summary = summarizeColumns(
       legacy({
         chapters: [

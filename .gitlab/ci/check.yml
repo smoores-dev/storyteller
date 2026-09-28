@@ -41,20 +41,20 @@ check-docs:
     - yarn build:docs
 
 # TODO: fix and reenable!
-# test-web:
-#   image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main
-#   stage: check
-#   tags: [saas-linux-large-amd64]
-#   rules:
-#     - if:
-#         ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
-#         "main" && $CI_COMMIT_TAG == null))
-#       changes:
-#         - applications/web/**/*
-#   script:
-#     - npm i -g corepack
-#     - yarn
-#     - yarn test:web
+test-web:
+  image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main
+  stage: check
+  tags: [saas-linux-large-amd64]
+  rules:
+    - if:
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
+      changes:
+        - applications/web/**/*
+  script:
+    - npm i -g corepack
+    - yarn
+    - yarn test:web
 
 test-uri-fragment:
   image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main

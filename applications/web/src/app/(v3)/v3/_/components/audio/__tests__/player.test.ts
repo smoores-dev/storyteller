@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { beforeEach, describe, it } from "node:test"
+
+import { beforeEach, describe, it } from "vitest"
 
 import {
   type Clip,
@@ -88,8 +89,8 @@ function metadata(duration: number) {
   audio.fire("loadedmetadata")
 }
 
-void describe("clipSrc", () => {
-  void it("builds a plain url with no range", () => {
+describe("clipSrc", () => {
+  it("builds a plain url with no range", () => {
     assert.strictEqual(
       clipSrc({
         bookUuid: "abc",
@@ -101,7 +102,7 @@ void describe("clipSrc", () => {
     )
   })
 
-  void it("adds a media fragment for a range", () => {
+  it("adds a media fragment for a range", () => {
     assert.strictEqual(
       clipSrc({
         bookUuid: "abc",
@@ -115,7 +116,7 @@ void describe("clipSrc", () => {
     )
   })
 
-  void it("adds a start only fragment", () => {
+  it("adds a start only fragment", () => {
     assert.strictEqual(
       clipSrc({
         bookUuid: "abc",
@@ -128,7 +129,7 @@ void describe("clipSrc", () => {
     )
   })
 
-  void it("keeps path separators unencoded", () => {
+  it("keeps path separators unencoded", () => {
     assert.strictEqual(
       clipSrc({
         bookUuid: "abc",
@@ -141,33 +142,33 @@ void describe("clipSrc", () => {
   })
 })
 
-void describe("formatClock", () => {
-  void it("formats minutes and seconds", () => {
+describe("formatClock", () => {
+  it("formats minutes and seconds", () => {
     assert.strictEqual(formatClock(0), "0:00")
     assert.strictEqual(formatClock(8), "0:08")
     assert.strictEqual(formatClock(68.9), "1:08")
     assert.strictEqual(formatClock(1088), "18:08")
   })
 
-  void it("formats hours", () => {
+  it("formats hours", () => {
     assert.strictEqual(formatClock(3600), "1:00:00")
     assert.strictEqual(formatClock(3671), "1:01:11")
   })
 
-  void it("falls back for junk input", () => {
+  it("falls back for junk input", () => {
     assert.strictEqual(formatClock(-4), "0:00")
     assert.strictEqual(formatClock(Number.NaN), "0:00")
   })
 })
 
-void describe("clipKey", () => {
-  void it("separates clips by range", () => {
+describe("clipKey", () => {
+  it("separates clips by range", () => {
     assert.notStrictEqual(clipKey(clipA), clipKey({ ...clipA, end: 41 }))
     assert.strictEqual(clipKey(clipA), clipKey({ ...clipA }))
   })
 })
 
-void describe("player store", () => {
+describe("player store", () => {
   beforeEach(() => {
     stop()
     setRate(1)
@@ -175,7 +176,7 @@ void describe("player store", () => {
     audio.duration = 0
   })
 
-  void it("plays a clip from its start", () => {
+  it("plays a clip from its start", () => {
     play(clipA)
     assert.strictEqual(
       audio.src,
@@ -186,7 +187,7 @@ void describe("player store", () => {
     assert.strictEqual(audio.paused, false)
   })
 
-  void it("toggles when the same clip is played again", () => {
+  it("toggles when the same clip is played again", () => {
     play(clipA)
     play(clipA)
     assert.strictEqual(audio.paused, true)
@@ -194,7 +195,7 @@ void describe("player store", () => {
     assert.strictEqual(audio.paused, false)
   })
 
-  void it("clamps seeking to the clip window", () => {
+  it("clamps seeking to the clip window", () => {
     play(clipA)
     metadata(120)
     seek(200)
@@ -205,7 +206,7 @@ void describe("player store", () => {
     assert.strictEqual(audio.currentTime, 15)
   })
 
-  void it("leaves a start only clip free to seek anywhere", () => {
+  it("leaves a start only clip free to seek anywhere", () => {
     play({
       bookUuid: "book-1",
       path: "00003.mp4",
@@ -221,7 +222,7 @@ void describe("player store", () => {
     assert.strictEqual(audio.currentTime, 120)
   })
 
-  void it("seeks within the loaded file instead of reloading it", () => {
+  it("seeks within the loaded file instead of reloading it", () => {
     play(clipA)
     metadata(120)
     const loads = audio.loads
@@ -233,7 +234,7 @@ void describe("player store", () => {
     assert.strictEqual(audio.currentTime, 120)
   })
 
-  void it("releases the window for the whole file", () => {
+  it("releases the window for the whole file", () => {
     play(clipA)
     metadata(120)
     wholeFile()
@@ -243,7 +244,7 @@ void describe("player store", () => {
     assert.strictEqual(audio.currentTime, 120)
   })
 
-  void it("pauses at the clip end", () => {
+  it("pauses at the clip end", () => {
     play(clipA)
     metadata(120)
     audio.currentTime = 40
@@ -251,7 +252,7 @@ void describe("player store", () => {
     assert.strictEqual(audio.paused, true)
   })
 
-  void it("advances through a queue at each clip end", () => {
+  it("advances through a queue at each clip end", () => {
     playAll([clipA, clipB])
     metadata(120)
     audio.currentTime = 40
@@ -271,7 +272,7 @@ void describe("player store", () => {
     )
   })
 
-  void it("restarts from the clip start after reaching the end", () => {
+  it("restarts from the clip start after reaching the end", () => {
     play(clipA)
     metadata(120)
     audio.currentTime = 40
@@ -281,13 +282,13 @@ void describe("player store", () => {
     assert.strictEqual(audio.paused, false)
   })
 
-  void it("applies the playback rate to later clips", () => {
+  it("applies the playback rate to later clips", () => {
     setRate(1.5)
     play(clipA)
     assert.strictEqual(audio.playbackRate, 1.5)
   })
 
-  void it("stops and forgets the clip", () => {
+  it("stops and forgets the clip", () => {
     play(clipA)
     stop()
     assert.strictEqual(audio.paused, true)

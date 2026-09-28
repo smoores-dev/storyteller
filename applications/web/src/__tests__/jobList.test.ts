@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import { type DisplayJob } from "@/database/jobs"
 import {
@@ -41,8 +42,8 @@ function job(
 
 const uuids = (list: DisplayJob[]) => list.map((j) => j.uuid)
 
-void describe("jobMatchesFilter", () => {
-  void it("derives statuses from the list type", () => {
+describe("jobMatchesFilter", () => {
+  it("derives statuses from the list type", () => {
     assert.equal(
       jobMatchesFilter(job({ uuid: "a", status: "RUNNING" }), {
         type: "active",
@@ -63,7 +64,7 @@ void describe("jobMatchesFilter", () => {
     )
   })
 
-  void it("lets explicit statuses override the type", () => {
+  it("lets explicit statuses override the type", () => {
     assert.equal(
       jobMatchesFilter(job({ uuid: "a", status: "DONE" }), {
         type: "finished",
@@ -73,7 +74,7 @@ void describe("jobMatchesFilter", () => {
     )
   })
 
-  void it("matches search on the title, case-insensitively", () => {
+  it("matches search on the title, case-insensitively", () => {
     const j = job({ uuid: "a", bookTitle: "The Brothers Karamazov" })
     assert.equal(jobMatchesFilter(j, { search: "brothers" }), true)
     assert.equal(jobMatchesFilter(j, { search: "sisters" }), false)
@@ -83,15 +84,15 @@ void describe("jobMatchesFilter", () => {
     )
   })
 
-  void it("filters by book", () => {
+  it("filters by book", () => {
     const j = job({ uuid: "a" })
     assert.equal(jobMatchesFilter(j, { bookUuid: j.bookUuid as UUID }), true)
     assert.equal(jobMatchesFilter(j, { bookUuid: "other" as UUID }), false)
   })
 })
 
-void describe("compareJobs", () => {
-  void it("defaults to queue order with a stable tiebreak", () => {
+describe("compareJobs", () => {
+  it("defaults to queue order with a stable tiebreak", () => {
     const list = [
       job({ uuid: "c", position: 2 }),
       job({ uuid: "b", position: 1, createdAt: "2026-01-02T00:00:00Z" }),
@@ -101,7 +102,7 @@ void describe("compareJobs", () => {
     assert.deepEqual(uuids(list), ["a", "b", "c"])
   })
 
-  void it("sorts nulls first ascending and last descending, like sqlite", () => {
+  it("sorts nulls first ascending and last descending, like sqlite", () => {
     const list = [
       job({ uuid: "a", finishedAt: "2026-01-03T00:00:00Z" }),
       job({ uuid: "b", finishedAt: null }),
@@ -114,10 +115,10 @@ void describe("compareJobs", () => {
   })
 })
 
-void describe("applyJobEvent", () => {
+describe("applyJobEvent", () => {
   const active = { type: "active" as const }
 
-  void it("inserts a created job in queue order", () => {
+  it("inserts a created job in queue order", () => {
     const list = [
       job({ uuid: "a", position: 0 }),
       job({ uuid: "c", position: 2 }),
@@ -131,7 +132,7 @@ void describe("applyJobEvent", () => {
     assert.deepEqual(uuids(list), ["a", "b", "c"])
   })
 
-  void it("drops a job that leaves the active set", () => {
+  it("drops a job that leaves the active set", () => {
     const list = [job({ uuid: "a", status: "RUNNING" }), job({ uuid: "b" })]
     applyJobEvent(list, active, {
       type: "jobUpdated",
@@ -141,7 +142,7 @@ void describe("applyJobEvent", () => {
     assert.deepEqual(uuids(list), ["b"])
   })
 
-  void it("re-sorts after a position change", () => {
+  it("re-sorts after a position change", () => {
     const list = [
       job({ uuid: "a", position: 0, status: "RUNNING" }),
       job({ uuid: "b", position: 1 }),
@@ -160,7 +161,7 @@ void describe("applyJobEvent", () => {
     assert.deepEqual(uuids(list), ["c", "a", "b"])
   })
 
-  void it("keeps a limited list at its limit, newest finished first", () => {
+  it("keeps a limited list at its limit, newest finished first", () => {
     const finished = {
       type: "finished" as const,
       sort: "finishedAt" as const,
@@ -184,7 +185,7 @@ void describe("applyJobEvent", () => {
     assert.deepEqual(uuids(list), ["c", "a"])
   })
 
-  void it("asks for a refetch when a paged list cannot be patched locally", () => {
+  it("asks for a refetch when a paged list cannot be patched locally", () => {
     const paged = { type: "finished" as const, limit: 2, offset: 2 }
     const list = [
       job({ uuid: "a", status: "DONE" }),
@@ -208,7 +209,7 @@ void describe("applyJobEvent", () => {
     )
   })
 
-  void it("ignores jobs that never belonged", () => {
+  it("ignores jobs that never belonged", () => {
     const list = [job({ uuid: "a" })]
     applyJobEvent(list, active, {
       type: "jobUpdated",
@@ -224,8 +225,8 @@ void describe("applyJobEvent", () => {
   })
 })
 
-void describe("applyJobPatch", () => {
-  void it("merges into the cached job and applies list rules", () => {
+describe("applyJobPatch", () => {
+  it("merges into the cached job and applies list rules", () => {
     const list = [job({ uuid: "a", status: "RUNNING" }), job({ uuid: "b" })]
     applyJobPatch(list, { type: "active" }, "a" as UUID, {
       status: "CANCELED",
@@ -233,15 +234,15 @@ void describe("applyJobPatch", () => {
     assert.deepEqual(uuids(list), ["b"])
   })
 
-  void it("does nothing for jobs it cannot see", () => {
+  it("does nothing for jobs it cannot see", () => {
     const list = [job({ uuid: "a" })]
     applyJobPatch(list, { type: "active" }, "zzz" as UUID, { status: "PAUSED" })
     assert.deepEqual(uuids(list), ["a"])
   })
 })
 
-void describe("queueJobNext", () => {
-  void it("places the job right behind running jobs and renumbers", () => {
+describe("queueJobNext", () => {
+  it("places the job right behind running jobs and renumbers", () => {
     const list = [
       job({ uuid: "a", position: 0, status: "RUNNING" }),
       job({ uuid: "b", position: 1, status: "QUEUED" }),

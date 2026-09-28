@@ -297,7 +297,7 @@ describe("epub2 import strategies", () => {
     await folder.expectFiles(["book.epub", "book (v3).epub"])
   })
 
-  it("falls back to -epub3 for a suffix without a placeholder", async () => {
+  it("falls back to _epub3 for a suffix without a placeholder", async () => {
     using _db = setupTestDb({
       epub2ImportStrategy: "convert-alongside",
       epub2BackupSuffix: "_epub2",
@@ -322,7 +322,7 @@ describe("epub2 import strategies", () => {
     assert.strictEqual(books.length, 1)
     assert.strictEqual(
       books[0]?.ebook?.filepath,
-      await canonicalizePath(join(folder.path, "book-epub3.epub")),
+      await canonicalizePath(join(folder.path, "book_epub3.epub")),
     )
   })
 

@@ -73,7 +73,7 @@ describe("getSectionFacets show-all", () => {
     assert.strictEqual(byKey["no-media"], 0)
   })
 
-  it("grades: shows all 8 grades in A+…F order, empty ones at 0", async () => {
+  it("grades: shows all 6 grades in A+…F order, empty ones at 0", async () => {
     using ctx = setupTestDb()
     seedUser(ctx.sqlite)
 
@@ -93,14 +93,15 @@ describe("getSectionFacets show-all", () => {
     const facets = await getSectionFacets(userId, "grades")
     const byKey = Object.fromEntries(facets.map((f) => [f.key, f.bookCount]))
 
-    assert.strictEqual(facets.length, 8)
+    assert.strictEqual(facets.length, 6)
     assert.strictEqual(byKey["S"], 2)
-    assert.strictEqual(byKey["C"], 1)
     assert.strictEqual(byKey["A"], 0)
+    assert.strictEqual(byKey["B"], 0)
+    assert.strictEqual(byKey["C"], 1)
     assert.strictEqual(byKey["F"], 0)
     assert.deepStrictEqual(
       facets.map((f) => f.key),
-      ["S", "A", "A-", "B", "B-", "C", "D", "F"],
+      ["S", "A", "B", "C", "D", "F"],
     )
   })
 

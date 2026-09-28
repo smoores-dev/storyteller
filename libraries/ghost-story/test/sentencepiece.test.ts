@@ -1,5 +1,6 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+
+import { describe, it } from "vitest"
 
 import {
   encodeUnigram,
@@ -64,8 +65,8 @@ const vocab = new Map<string, number>(
 )
 vocab.set("<blk>", pieces.length)
 
-void describe("readSentencePieceModel", () => {
-  void it("reads pieces, scores, type and unk id", () => {
+describe("readSentencePieceModel", () => {
+  it("reads pieces, scores, type and unk id", () => {
     const model = readSentencePieceModel(modelBytes)
     assert.equal(model.type, "unigram")
     assert.equal(model.unkId, 0)
@@ -80,15 +81,15 @@ void describe("readSentencePieceModel", () => {
   })
 })
 
-void describe("encodeUnigram", () => {
+describe("encodeUnigram", () => {
   const tokenizer = unigramTokenizer(readSentencePieceModel(modelBytes), vocab)
 
-  void it("pads scores to the vocabulary and keeps the blank at zero", () => {
+  it("pads scores to the vocabulary and keeps the blank at zero", () => {
     assert.equal(tokenizer.scores.length, vocab.size)
     assert.equal(tokenizer.scores[pieces.length], 0)
   })
 
-  void it("picks the highest scoring segmentation", () => {
+  it("picks the highest scoring segmentation", () => {
     const { ids, offsets } = encodeUnigram(
       vocab,
       tokenizer,
@@ -101,7 +102,7 @@ void describe("encodeUnigram", () => {
     assert.deepEqual(Array.from(offsets), [0, 4, 7, 9])
   })
 
-  void it("falls back to unk for characters outside the pieces", () => {
+  it("falls back to unk for characters outside the pieces", () => {
     const { ids, offsets } = encodeUnigram(
       vocab,
       tokenizer,
@@ -114,7 +115,7 @@ void describe("encodeUnigram", () => {
     assert.deepEqual(Array.from(offsets), [0, 4, 5, 6])
   })
 
-  void it("encodes the empty string to no tokens", () => {
+  it("encodes the empty string to no tokens", () => {
     const { ids, offsets } = encodeUnigram(vocab, tokenizer, "")
     assert.equal(ids.length, 0)
     assert.deepEqual(Array.from(offsets), [0])

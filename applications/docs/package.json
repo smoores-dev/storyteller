@@ -13,7 +13,7 @@
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
-    "test": "node --import tsx --test 'src/studio/**/*.test.ts'"
+    "test": "vitest run"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6",
@@ -72,7 +72,7 @@
     "@types/react": "^18.0.0",
     "dotenv": "^16",
     "tailwindcss": "catalog:",
-    "tsx": "catalog:"
+    "vitest": "catalog:"
   },
   "browserslist": {
     "production": [

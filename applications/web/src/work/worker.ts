@@ -25,6 +25,7 @@ import {
   deleteProcessed,
   deleteProcessedAudio,
   deleteTranscriptions,
+  getProcessedAudioFiles,
 } from "@/assets/fs"
 import { writeMetadataToEpub } from "@/assets/metadata"
 import {
@@ -203,13 +204,31 @@ export default async function processBook({
     () => 0,
   )
 
+  const processedAudioCount = await getProcessedAudioFiles(book).then(
+    (filenames) => filenames.length,
+    () => 0,
+  )
+
   const transcribeIndex = STAGES.indexOf("TRANSCRIBE_CHAPTERS")
   const startIndex =
-    stageIndex > transcribeIndex && alignerInputCount === 0
-      ? transcribeIndex
-      : stageIndex
+    stageIndex > 0 && processedAudioCount === 0
+      ? 0
+      : stageIndex > transcribeIndex && alignerInputCount === 0
+        ? transcribeIndex
+        : stageIndex
 
-  if (startIndex < stageIndex) {
+  if (startIndex === 0 && stageIndex > 0) {
+    logger.info(
+      `No transcoded audio on disk for ${bookRefForLog}, restarting from the split step`,
+    )
+    book = await updateBook(null, {
+      readaloud: {
+        status: "PROCESSING",
+        currentStage: "SPLIT_TRACKS",
+        stageProgress: 0,
+      },
+    })
+  } else if (startIndex < stageIndex) {
     logger.info(
       `No ${alignerSettings.aligner === "ctc" ? "emissions" : "transcriptions"} on disk for ${bookRefForLog}, restarting from the transcription step`,
     )

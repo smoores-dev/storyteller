@@ -15600,9 +15600,9 @@ __metadata:
     remark-math: "npm:^6"
     sucrase: "npm:^3.35.1"
     tailwindcss: "catalog:"
-    tsx: "catalog:"
     unified: "npm:^11.0.4"
     unist-util-visit: "npm:^5.0.0"
+    vitest: "catalog:"
     yaml: "npm:^2.8.1"
   languageName: unknown
   linkType: soft
