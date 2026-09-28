@@ -1,7 +1,7 @@
 ---
-title: "v3.0.0-beta.32: Storyteller has a new aligner, and it's FAST"
+title: "v3.0.0-beta.44: Storyteller has a new aligner, and it's FAST"
 authors: tefkah
-date: 2026-09-20
+date: 2026-09-28
 ---
 
 import BenchChart from "../src/components/BenchChart"
@@ -356,6 +356,9 @@ But don't mind that: we want to talk about our new alignment process!
 - That pipeline can use two groups of models, MMS and Quartz/Citrinet
 - The Quartz/Citrinet variants can be up to 20 times faster than even the most
   highly optimized versions of the previous Whisper based transcription
+- It is available in Storyteller `v3.0.0-beta`,
+  `@storyteller-platform/ghost-story@^0.3.0` and
+  `@storyteller-platform/align@^0.2.0`
 - Maybe even faster in the future! Try it out now!!
 
 :::
@@ -368,6 +371,51 @@ But don't mind that: we want to talk about our new alignment process!
 />
 
 {/* truncate */}
+
+## How to try it out
+
+Okay before I get into the nitty gritty 80% of you aren't interested in, here's
+how to use it in Storyteller right now.
+
+1. Be sure to be on the latest version of Storyteller, `web-v3.0.0-beta` (.44 at
+   the time of writing). You can use the old schema for using gpu accelerated
+   versions as described [here](/docs/installation/gpu-configuration). So for
+   NVIDIA GPU acceleration you would want to use `web-v3.0.0-beta-cuda-13.1.0`
+   as your image tag, `web-v3.0.0-beta-rocm` for AMD etc.
+2. You will be confronted with this nice new prompt:
+   ![An modal showing two options: a card showing Transcription based alignment on the left, and a spinning blue-green crystal showing CTC based alignment on the right.](./images/quartz-8646b5d8471fb53636a5d8251757cec4ebc1618fba2e5834a1a04607f1290980.png)
+   Pick CTC based alignment!
+3. Go to align a new book (or an existing one)! We highly recommend starting
+   from scratch, this will make sure you are fully able to use the new Alignment
+   Report (documentation coming soon!)
+
+Now you will have two ways to run the CTC aligner:
+
+4. Run QuartzNet/MMS on this server.
+
+- If you are running on a non-CUDA hardware-accelerated image (i.e. `-rocm`,
+  `-vulkan`, or `-sycl`) you should pick `GPU (WebGPU)`.
+- If you are on a CUDA image, pick CUDA (duh)
+- Else, pick CPU (or if any of the above don't work)
+
+5. Run QuartzNet/MMS on another device using `ghost-story`!
+
+- Pick "On Another Server"
+- See [the documentation](/docs/tutorials/offloading-transcription) for more
+  information on how `ghost-story` used to work. We will create better
+  documentation soon, so we are assuming you are somewhat aware of the idea.
+  TL;DR: you want to do this when you are running Storyteller on a low powered
+  device, or on a Mac where Docker cannot access the GPU.
+- Run
+  ```sh
+  npx @storyteller-platform/ghost-story@latest serve --api-key <some api key>
+  ```
+- Fill out the API key and the server URL. See the above documentation for info
+  on what the URL should be
+
+6. Let er rip!
+
+## Nitty gritty
 
 Spurred on by
 [this MR](https://gitlab.com/storyteller-platform/storyteller/-/merge_requests/576)
@@ -394,7 +442,7 @@ alphabet (although we'll get back to that alphabet part). The model that we had
 been using is called MMS (Massively Multilingual Speech), developed by Meta
 in 2023.
 
-![Emissions for the word "all"](../../../docs/public/images/b3f79c102586507fea8cde1623b604a938cde486d678087325cba2f3fd726532.png)
+![Emissions for the word "all"](./images/quartz-b3f79c102586507fea8cde1623b604a938cde486d678087325cba2f3fd726532.png)
 
 Then we do some complicated math to figure out where this matches up with the
 actual chapters in the book, and do some even more complicated math to align
@@ -648,7 +696,7 @@ Let me just start with the final result:
   caption="MLX Swift port, fp16, 38 second chunks, two chunks per call. Same book, same machine."
 />
 
-![picture 2](../../../docs/public/images/f0d43085311d3b438d011f9ba2b03558b5402c1df2cc98ceb9e782bd11408162.png)
+![picture 2](./images/quartz-f0d43085311d3b438d011f9ba2b03558b5402c1df2cc98ceb9e782bd11408162.png)
 
 I, uhh.... That can't be right. Surely we've just added the same kind of error
 we had for the MMS MLX port right?
@@ -662,71 +710,10 @@ the other, takes 40 seconds for this book. The whole transcription took 69
 
 That's SO much faster than the ONNX runtime. How?
 
-It tooks quite a lot of steps to get here.
+It tooks quite a lot of steps to get here, but unfortunately I ran out of energy
+to write this! I owe you one.
 
-### Progression
-
-#### The size of your Moby Dick chunks matter a lot
-
-Due to Fourier Transform implementation details I don't fully understand, the
-
-<BenchChart
-  title="QuartzNet on MLX, Moby Dick"
-  unit="x"
-  rows={staircase}
-  caption=""
-/>
-
-(I ran out of energy to write this, see here the result of the progression)
-
-<BenchChart
-  title="QuartzNet on MLX, Moby Dick"
-  unit="x"
-  rows={mlxLadder}
-  caption="See table for some explanation"
-/>
-
-#### ONNX speedups
-
-Unlike for MLX, the Mel frontend (the thing turning the audio into a
-spectrogram) is not implemented in Swift. Instead, it was implemented in
-JavaScript, following roughly
-[this tutorial](https://haythamfayek.com/2016/04/21/speech-processing-for-machine-learning.html).
-However, this was quite slow: the MLX version took 1ms per 25 second chunk, but
-the JS version took 86ms!
-
-The solution? Well, the model is doing a bunch of convolutions already... why
-not have it do it? The model already had this feature, but it was dropped in the
-ONNX export. Later NVIDIA models retain this feature
-
-See for instance this handy-dandy visualization of the original NEMO model:
-
-<a
-  href="https://hfviewer.com/RobotsMali/stt-bm-quartznet15x5-v0?utm_source=huggingface&amp;utm_medium=embedded_model_card&amp;utm_campaign=RobotsMali__stt-bm-quartznet15x5-v0_card&amp;utm_content=embedded_card_open_viewer&amp;from=embedded-model-card"
-  target="_blank"
-  rel="noopener"
->
-  <img
-    src="https://hfviewer.com/api/card.svg?source=RobotsMali%2Fstt-bm-quartznet15x5-v0&amp;granularity=auto&amp;v=20260516-title-pills-card"
-    alt="Architecture graph for RobotsMali/stt-bm-quartznet15x5-v0. Open in hfviewer"
-    width="100%"
-  />
-</a>
-
-The reason for that is rather technical: basically ONNX does/did not support the
-specific operations needed to have the same kind of frontend as the original
-(NEMO) model. We put it back in manually.
-
-<BenchChart
-  title="QuartzNet through ONNX, step by step, whole Moby Dick"
-  unit="x"
-  rows={onnxLadder}
-  caption="onnxruntime-node 1.29 on M1 Max. Likely faster on CUDA"
-/>
-
-#### Results
-
-And once more, the whole final result table
+See here the result of the progression
 
 <BenchChart
   title="QuartzNet on MLX, Moby Dick"
@@ -765,6 +752,13 @@ If you pick any other language, we will fall back to using MMS.
 We plan on supporting more languages in the future! For that we likely will need
 your help to try and fine-tune the English model. Please let us know if you are
 interested in helping out on [our Discord](https://discord.gg/KhSvFqcrza).
+
+### Current status
+
+QuartzNet has performed so well in our tests that we now use it as the default
+model if you language is any of the above supported languages!
+
+If you are using any other language, we will fall back to using MMS.
 
 ### Gotta go even faster!
 
@@ -833,10 +827,10 @@ waiting for the model!
 We were basically doing something like this:
 
 ```
-  track 1  [decode ][model  ]
-  track 2                    [decode ][model]
-  track 3                                    [decode...
-  time --------------------------------------------->
+
+track 1 [decode ][model ] track 2 [decode ][model] track 3 [decode... time
+--------------------------------------------->
+
 ```
 
 Model inference is often done on the GPU, while audio decoding is done on the
@@ -847,11 +841,10 @@ I wanted to do something like this, maximize the amount of time the CPU is doing
 something useful while the model is busy.
 
 ```
-  track 1  [decode ][model ]
-  track 2           [dec]   [model ]
-  track 3                [dec]      [model ]
-  track 4                     [dec]         [model ]
-  time --------------------------------------------->
+
+track 1 [decode ][model ] track 2 [dec] [model ] track 3 [dec] [model ] track 4
+[dec] [model ] time --------------------------------------------->
+
 ```
 
 Unfortunately, I was testing that with our MLX models, which do run
@@ -866,10 +859,10 @@ chunk into the model, because it's too dang busy!
 So instead it turned into this again:
 
 ```
-  track 1  [decode ][model ]
-  track 2                     [dec][model ]
-  track 3                                    [dec][model ]
-  time --------------------------------------------->
+
+track 1 [decode ][model ] track 2 [dec][model ] track 3 [dec][model ] time
+--------------------------------------------->
+
 ```
 
 But actually _less_ efficient than before, because rather than our simple one at
@@ -899,22 +892,21 @@ Solution: break stuff up into more steps. First, we chop up our existing audio
 into a bunch of smaller, max 5 minute chunks.
 
 ```
-  track 1 (18:00) -> [1A ][1B ][1C ][1D] (5+5+5+3 minutes)
-  track 2 (15:00) -> [2A ][2B ][2C ]     (5+5+5 minutes)
-  track 3 (08:00) -> [3A ][3B]           (5+3 minutes)
+
+track 1 (18:00) -> [1A ][1B ][1C ][1D] (5+5+5+3 minutes) track 2 (15:00) -> [2A
+][2B ][2C ] (5+5+5 minutes) track 3 (08:00) -> [3A ][3B] (5+3 minutes)
+
 ```
 
 We then spawn $N$ `ffmpeg` processes (which is configurabl, for now we auto pick
 $N=(\text{\#cores}-2)$
 
 ```
-  ffmpeg 1     [1A  ][2A  ][3B  ]
-  ffmpeg 2     [1B  ][2B  ]
-  ffmpeg 3     [1C  ][2C  ]
-  ffmpeg 4     [1D  ][3A  ]
-  model              [1A][1B][1C][1D][2A][2B][2C][3A][3B]
-  write                             ^1           ^2     ^3
-  time --------------------------------------------------->
+
+ffmpeg 1 [1A ][2A ][3B ] ffmpeg 2 [1B ][2B ] ffmpeg 3 [1C ][2C ] ffmpeg 4 [1D
+][3A ] model [1A][1B][1C][1D][2A][2B][2C][3A][3B] write ^1 ^2 ^3 time
+--------------------------------------------------->
+
 ```
 
 Importantly: we need to write the output to a file, and not just try to keep it
@@ -992,8 +984,18 @@ next steps we can and will take to speed up the final step:
 
 ## What's next?
 
-Sleep. And... a way to use this model to offload the transcription step to a
-different device using `ghost-story`!
+Sleep. ~~And... a way to use this model to offload the transcription step to a
+different device using `ghost-story`!~~
+
+That is now _also_ possible! Use
+
+```sh
+npx @storyteller-platform/ghost-story@latest serve --api-key <some api key>
+```
+
+to spin up a CTC emission server, and configure it in your Storyteller settings.
+
+Have fun!
 
 ---
 
