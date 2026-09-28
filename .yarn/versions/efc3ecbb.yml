@@ -1,7 +1,5 @@
 releases:
   "@storyteller-platform/align": patch
-  "@storyteller-platform/docs": minor
-  "@storyteller-platform/ghost-story": minor
 
 declined:
   - "@storyteller-platform/web"

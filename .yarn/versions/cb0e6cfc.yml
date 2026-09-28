@@ -1,7 +1,0 @@
-releases:
-  "@storyteller-platform/docs": patch
-
-declined:
-  - "@storyteller-platform/tauri"
-  - "@storyteller-platform/web"
-  - "@storyteller-platform/opds"

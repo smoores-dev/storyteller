@@ -1,9 +1,7 @@
 releases:
   "@storyteller-platform/align": patch
   "@storyteller-platform/audiobook": patch
-  "@storyteller-platform/docs": patch
   "@storyteller-platform/epub": patch
-  "@storyteller-platform/ghost-story": patch
   "@storyteller-platform/mlx-audio": patch
   "@storyteller-platform/opds": minor
 

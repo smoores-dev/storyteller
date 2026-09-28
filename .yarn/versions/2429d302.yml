@@ -1,6 +1,5 @@
 releases:
   "@storyteller-platform/align": patch
-  "@storyteller-platform/ghost-story": patch
   "@storyteller-platform/mlx-audio": patch
 
 declined:
