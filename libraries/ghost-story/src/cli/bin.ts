@@ -12,6 +12,7 @@ import { ensureDirSync } from "fs-extra"
 import PQueue from "p-queue"
 import { z } from "zod/v4"
 
+import packageJson from "../../package.json" with { type: "json" }
 import { type RecognitionOptions } from "../api/Recognition.ts"
 import {
   BUILD_VARIANTS,
@@ -659,8 +660,8 @@ const vadCommand = defineCommand({
 const config = defineConfig({
   meta: {
     name: "ghost-story",
-    version: WHISPER_CPP_VERSION,
-    description: `Whisper.cpp management CLI (v${WHISPER_CPP_VERSION})`,
+    version: packageJson.version,
+    description: `Speech toolkit for Storyteller (whisper.cpp v${WHISPER_CPP_VERSION})`,
   },
   commands: {
     install: installCommand,
