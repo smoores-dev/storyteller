@@ -55,11 +55,11 @@ publish-web-gpu:
   parallel:
     matrix:
       - VARIANT: cuda-13.1.0
-        BASE_TAG: cuda-13.1-mr-656
+        BASE_TAG: cuda-13.1
       - VARIANT: cuda-12.9.0
-        BASE_TAG: cuda-12.9-mr-656
+        BASE_TAG: cuda-12.9-mr-730
       - VARIANT: cuda-11.8.0
-        BASE_TAG: cuda-11.8-mr-656
+        BASE_TAG: cuda-11.8
       - VARIANT: vulkan
         BASE_TAG: vulkan
       - VARIANT: rocm
