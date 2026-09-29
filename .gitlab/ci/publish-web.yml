@@ -57,7 +57,7 @@ publish-web-gpu:
       - VARIANT: cuda-13.1.0
         BASE_TAG: cuda-13.1
       - VARIANT: cuda-12.9.0
-        BASE_TAG: cuda-12.9-mr-730
+        BASE_TAG: cuda-12.9
       - VARIANT: cuda-11.8.0
         BASE_TAG: cuda-11.8
       - VARIANT: vulkan
