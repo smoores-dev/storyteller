@@ -31,6 +31,7 @@ import { type Timing } from "../utilities/Timing.ts"
 import { CONV_CTC_ONNX_FILE, loadConvCtcOnnxModel } from "./ConvCtcOnnx.ts"
 import { type EmissionTokenizer, type Emissions } from "./Emissions.ts"
 import { loadWav2Vec2OnnxModel } from "./Wav2Vec2Onnx.ts"
+import { ensureCudaProviders } from "./cudaProviders.ts"
 import { readSentencePieceModel, unigramTokenizer } from "./sentencepiece.ts"
 
 export interface CtcBackend {
@@ -242,6 +243,10 @@ async function loadBackend(
       compute: (chunks) => compute(model, chunks),
       [Symbol.asyncDispose]: model[Symbol.asyncDispose],
     }
+  }
+
+  if (run.device === "cuda") {
+    await ensureCudaProviders()
   }
 
   if (run.architecture === "wav2vec2") {

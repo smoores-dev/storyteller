@@ -12,6 +12,7 @@ import { ensureDirSync } from "fs-extra"
 import PQueue from "p-queue"
 import { z } from "zod/v4"
 
+import packageJson from "../../package.json" with { type: "json" }
 import { type RecognitionOptions } from "../api/Recognition.ts"
 import {
   BUILD_VARIANTS,
@@ -564,7 +565,29 @@ const serveCommand = defineCommand({
     if (options.whisperModel) {
       console.log(`  Whisper model: ${options.whisperModel}`)
     }
-    console.log(`  Listening on http://${options.host}:${options.port}`)
+    const { networkInterfaces } = await import("node:os")
+    const addresses =
+      options.host === "0.0.0.0" || options.host === "::"
+        ? [
+            "localhost",
+            ...Object.values(networkInterfaces())
+              .flat()
+              .filter(
+                (address) => address?.family === "IPv4" && !address.internal,
+              )
+              .map((address) => address?.address),
+          ]
+        : [options.host]
+    console.log(`  Listening on port ${options.port}. Reach it at:`)
+    for (const address of addresses) {
+      console.log(`    http://${address}:${options.port}`)
+    }
+    console.log(
+      `  From a Docker container on this machine, use http://host.docker.internal:${options.port}. Outside Docker Desktop that name needs extra_hosts: ["host.docker.internal:host-gateway"] in the container's compose file.`,
+    )
+    console.log(
+      "  Enter the same API key this server was started with in Storyteller.",
+    )
 
     let closing = false
     const shutdown = () => {
@@ -659,8 +682,8 @@ const vadCommand = defineCommand({
 const config = defineConfig({
   meta: {
     name: "ghost-story",
-    version: WHISPER_CPP_VERSION,
-    description: `Whisper.cpp management CLI (v${WHISPER_CPP_VERSION})`,
+    version: packageJson.version,
+    description: `Speech toolkit for Storyteller (whisper.cpp v${WHISPER_CPP_VERSION})`,
   },
   commands: {
     install: installCommand,

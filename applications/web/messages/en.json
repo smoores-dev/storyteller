@@ -892,13 +892,13 @@
               },
               "ctc-server": {
                 "label": "On another server",
-                "description": "Sends each audio file to a Ghost Story server on a faster machine, for example a computer with a GPU. Start one there with npx @storyteller-platform/ghost-story serve."
+                "description": "Offloads the analysis step to a Ghost Story server on a (hopefully!) faster machine, for example a PC with a GPU. Start one there with npx @storyteller-platform/ghost-story serve."
               }
             },
             "ctcServerUrl": "Server URL",
             "ctcServerUrlDescription": "e.g. http://192.168.1.19:8765",
             "ctcServerApiKey": "API key",
-            "ctcServerApiKeyDescription": "The key the server was started with.",
+            "ctcServerApiKeyDescription": "Key provided when starting the server.",
             "ctcServerTest": "Test connection",
             "ctcServerConnected": "Connected, runs on {device}",
             "ctcServerUnreachable": "Could not reach the server",
@@ -913,7 +913,7 @@
             "ctcModel": "Model",
             "ctcModelLanguages": "Available for {languages}.",
             "ctcDtype": "Precision",
-            "ctcDtypeDescription": "Half precision runs faster on a GPU.",
+            "ctcDtypeDescription": "On GPU we automatically use half precision for faster transcription, unless you pick full precision. This shouldn't really matter for alignment quality.",
             "ctcDtypes": {
               "auto": "Automatic",
               "fp32": "Full precision",

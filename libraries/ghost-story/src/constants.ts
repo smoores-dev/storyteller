@@ -243,16 +243,32 @@ export interface CtcDeviceCapabilities {
 
 const CTC_DEVICE_ORDER = ["cuda", "mlx", "dml", "webgpu", "cpu"] as const
 
+const VULKAN_ICD_DIRS = ["/usr/share/vulkan/icd.d", "/etc/vulkan/icd.d"]
+
+function wslWithoutDozen(): boolean {
+  if (process.platform !== "linux") return false
+  if (!/microsoft/i.test(process.getBuiltinModule("node:os").release())) {
+    return false
+  }
+  const fs = process.getBuiltinModule("node:fs")
+  const dozen = VULKAN_ICD_DIRS.some(
+    (dir) =>
+      fs.existsSync(dir) &&
+      fs.readdirSync(dir).some((file) => file.startsWith("dzn_icd")),
+  )
+  return !(dozen && fs.existsSync("/dev/dxg"))
+}
+
 export function ctcDeviceCapabilities(
   variant: string | null | undefined,
 ): CtcDeviceCapabilities {
   const variantName = variant ?? ""
-  const cpuVariant = variantName.includes("cpu") || variantName.includes("blas")
   const cuda = process.platform === "linux" && process.arch === "x64"
   const mlx = process.platform === "darwin" && process.arch === "arm64"
   const dml = process.platform === "win32"
   const webgpu =
-    !(process.platform === "linux" && process.arch === "arm64") && !cpuVariant
+    !(process.platform === "linux" && process.arch === "arm64") &&
+    !wslWithoutDozen()
 
   const available = CTC_DEVICE_ORDER.filter(
     (device) =>
@@ -299,7 +315,9 @@ export function resolveCtcDevice(
     return requested
   }
   console.warn(
-    `[ghost-story] The ${requested} device is not available here, using ${capabilities.default}`,
+    requested === "webgpu" && wslWithoutDozen()
+      ? `[ghost-story] Without Mesa's Dozen driver, WebGPU under WSL runs on the CPU through llvmpipe, which is slower than the cpu device, using ${capabilities.default}`
+      : `[ghost-story] The ${requested} device is not available here, using ${capabilities.default}`,
   )
   return capabilities.default
 }
