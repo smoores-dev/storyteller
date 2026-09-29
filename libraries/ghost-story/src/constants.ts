@@ -243,6 +243,13 @@ export interface CtcDeviceCapabilities {
 
 const CTC_DEVICE_ORDER = ["cuda", "mlx", "dml", "webgpu", "cpu"] as const
 
+function isWsl(): boolean {
+  return (
+    process.platform === "linux" &&
+    /microsoft/i.test(process.getBuiltinModule("node:os").release())
+  )
+}
+
 export function ctcDeviceCapabilities(
   variant: string | null | undefined,
 ): CtcDeviceCapabilities {
@@ -252,7 +259,9 @@ export function ctcDeviceCapabilities(
   const mlx = process.platform === "darwin" && process.arch === "arm64"
   const dml = process.platform === "win32"
   const webgpu =
-    !(process.platform === "linux" && process.arch === "arm64") && !cpuVariant
+    !(process.platform === "linux" && process.arch === "arm64") &&
+    !cpuVariant &&
+    !isWsl()
 
   const available = CTC_DEVICE_ORDER.filter(
     (device) =>
@@ -299,7 +308,9 @@ export function resolveCtcDevice(
     return requested
   }
   console.warn(
-    `[ghost-story] The ${requested} device is not available here, using ${capabilities.default}`,
+    requested === "webgpu" && isWsl()
+      ? `[ghost-story] WebGPU under WSL runs on the CPU through llvmpipe, which is slower than the cpu device, using ${capabilities.default}`
+      : `[ghost-story] The ${requested} device is not available here, using ${capabilities.default}`,
   )
   return capabilities.default
 }
