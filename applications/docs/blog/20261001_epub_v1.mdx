@@ -1,0 +1,194 @@
+---
+title: "Announcing @storyteller-platform/epub v1.0.0"
+authors: smoores
+date: 2026-10-01
+---
+
+Storyteller has had its own EPUB library for a very long time (originally
+published as `@smoores/epub`!). It's always been published to npm and
+documented, but it's also always had some limitations that we suspect have
+limited its utility outside of Storyteller itself.
+
+With this v1 release, we think we've eliminated many of those limitations. Let's
+talk about what's new!
+
+## Storage adapters
+
+`@storyteller-platform/epub` supports two storage adapters; `MemoryAdapter` and
+`TmpFsAdapter`.
+
+- `MemoryAdapter` unpacks files lazily into memory when their contents are read.
+  It's a read-only adapter — if you open an EPUB with
+  `Epub.using(MemoryAdapter).from(path)`, it will only have read methods (writes
+  are blocked in both the types and at runtime)
+- `TmpFsAdapter` unpacks files eagerly into a directory in `/tmp`. This is the
+  default adapter, and it allows writes as well as reads. If you're using Node
+  24+, be sure to use the `using` keyword, which will ensure that the temp
+  directory is cleaned up when the epub goes out of scope:
+  `using epub = await Epub.from(path)`
+
+## Browser support
+
+We now have browser support! Currently, this is only available for the
+`MemoryAdapter`:
+
+```tsx
+import { useState, useEffect } from "react"
+
+import {
+  Epub,
+  type EpubReader,
+  MemoryAdapter,
+} from "@storyteller-platform/epub"
+
+export function BookCover(file: File) {
+  const [cover, setCover] = useState<string | null>(null)
+
+  useEffect(() => {
+    let epub: EpubReader | null = null
+    let coverUrl: string | null = null
+
+    async function loadCover() {
+      // unfortunately Safari does not support `using` syntax yet
+      try {
+        epub = await Epub.using(MemoryAdapter).from(file)
+        const cover = await epub.getCoverImage()
+        if (cover) {
+          coverUrl = URL.createObjectURL(new Blob([new Uint8Array(cover)]))
+          setCover(coverUrl)
+        }
+      } finally {
+        epub?.discardAndClose()
+      }
+    }
+
+    loadCover()
+
+    return () => {
+      if (coverUrl) {
+        URL.revokeObjectURL(coverUrl)
+      }
+    }
+  }, [file])
+
+  return cover ? <img src={cover} alt="Cover" /> : null
+}
+```
+
+## Better XML/XHTML utilities
+
+This library was originally built around `fast-xml-parser`. While impressive in
+many ways, `fast-xml-parser` has an awkward API that is not well suited to being
+exposed to library consumers. Its XML namespace handling was also rather
+limited, which made namespace and prefix managing very hard to get right. This
+was especially rough, since EPUBs make heavy use of default and prefixed XML
+namespaces!
+
+Historically, `@storyteller-platform/epub` attempted to make it a big easier for
+consumers to work with XML by exporting a number of utilities for working with
+`fast-xml-parser` trees, like `Epub.getXmlChildren`, `Epub.getXmlAttributes`,
+etc.
+
+In v1, we've moved to `@xmldom/xmldom`, a spec compliant(-ish) XML DOM library.
+The API is just the DOM Level 2 API (plus `Node.prototype.textContent`), which
+will be familiar to anyone comfortable working with the DOM in a browser
+context. It has proper XML namespace support for parsing, serializing, and
+queries (such as `node.getAttributeNS()`), and better handling for processing
+instructions and doctype declarations.
+
+We've also refined and added to the utilities for building and working with XML
+trees. Inspired by [`xastscript`](https://github.com/syntax-tree/xastscript), we
+now export a hyperscript-style `x` interface that can be used to construct XML
+trees:
+
+```ts
+import { x } from "storyteller-platform/epub"
+
+const tree = x(
+  "package",
+  {
+    xmlns: "http://www.idpf.org/2007/opf",
+    "xml:lang": "en",
+    version: "3.0",
+    "unique-identifier": "pub-id",
+  },
+  x(
+    "metadata",
+    {
+      "xmlns:dc": "http://purl.org/dc/elements/1.1/",
+    },
+    x(
+      "dc:identifier",
+      {
+        id: "pub-id",
+      },
+      "urn:uuid:B9B412F2-CAAD-4A44-B91F-A375068478A0",
+    ),
+  ),
+)
+```
+
+`x` will handle `xmlns`, namespace prefix declarations like `xmlns:dc`, and
+prefixed elements and attributes like `dc:identifier` automatically.
+
+Also, and, look, _maybe_ we got carried away, but I think this is cool as all
+hell:
+
+### JSX
+
+You may have noticed that the hyperscript API we demonstrated above looks
+_really_ similar to JSX (that is the point of hyperscript, after all!). We also
+now have a `jsx-runtime` export, so you can literally write your EPUB XML with
+JSX:
+
+```tsx
+/** @jsxImportSource @storyteller-platform/epub */
+
+const tree = (
+  <package
+    xmlns="http://www.idpf.org/2007/opf"
+    xml:lang="en"
+    version="3.0"
+    unique-identifier="pub-id"
+  >
+    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <dc:identifier id="pub-id">
+        urn:uuid:B9B412F2-CAAD-4A44-B91F-A375068478A0
+      </dc:identifier>
+    </metadata>
+  </package>
+)
+```
+
+## Automatic EPUB 2 upgrades
+
+`@storyteller-platform/epub` only supports EPUB 3 publications, but many
+publishers still distribute EPUB 2 publications. We now export an `Epub.upgrade`
+function that can be used to upgrade an EPUB either in place or into a new
+location:
+
+```ts
+import { Epub } from "@storyteller-platform/epub"
+
+async function upgradeInPlace() {
+  using epub = await Epub.upgrade("path/to/epub2.epub")
+
+  await epub.saveAndClose()
+}
+
+function upgradeTo(output: string) {
+  await Epub.upgrade("/path/to/epub2.epub", {
+    outputPath: output,
+  })
+}
+```
+
+## Thanks
+
+Huge kudos to Thomas, who implemented the EPUB 2 upgrade, browser support, _and_
+the storage adapters.
+
+Thanks to all the Storyteller users who have load tested this library with,
+collectively, hundreds of thousands or EPUB publications.
+
+And thanks to you for reading!
