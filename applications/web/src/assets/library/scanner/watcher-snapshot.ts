@@ -12,8 +12,17 @@ export type ImportPathChange = {
   type: "create" | "update" | "delete"
 }
 
+const PLATFORM_BACKENDS: Partial<Record<NodeJS.Platform, watcher.BackendType>> =
+  {
+    linux: "inotify",
+    darwin: "fs-events",
+    win32: "windows",
+  }
+
+const backend = PLATFORM_BACKENDS[process.platform]
+
 const WATCHER_OPTIONS = {
-  backend: "watchman",
+  ...(backend && { backend }),
   ignore: [
     "**/*.watchman-cookie*",
     "**/*.json",
