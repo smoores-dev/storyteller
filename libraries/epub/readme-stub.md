@@ -98,12 +98,12 @@ scratch.
 ### Reading from a file
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller-platform/epub";
 
-using epub = await Epub.from("path/to/book.epub")
+using epub = await Epub.from("path/to/book.epub");
 // equivalent to
 // using epub = await Epub.using(TmpFsAdapter).from("path/to/book.epub")
-console.log(await epub.getTitle())
+console.log(await epub.getTitle());
 ```
 
 If you want to be a little more efficient and not unpack the entire EPUB file
@@ -112,10 +112,10 @@ Overlays/audio contents), you can instead lazily read the contents of the EPUB
 file into memory.
 
 ```ts
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter } from "@storyteller-platform/epub";
 
-using epub = await Epub.using(MemoryAdapter).from("path/to/book.epub")
-console.log(await epub.getTitle())
+using epub = await Epub.using(MemoryAdapter).from("path/to/book.epub");
+console.log(await epub.getTitle());
 ```
 
 ### Creating from scratch
@@ -129,27 +129,27 @@ non-core metadata may also be provided at creation time, or may be added
 incrementally after creation.
 
 ```ts
-import { randomUUID } from "node:crypto"
+import { randomUUID } from "node:crypto";
 
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller-platform/epub";
 
 // Implicitly uses the TmpFsAdapter
-const epub = await Epub.create({
+const epub = await Epub.create("/path/to/book.epub", {
   title: "S'mores For Everyone",
   // This should be the primary language of the publication.
   // Individual content resources may specify their own languages.
   language: new Intl.Locale("en-US"),
   // This can be any unique identifier, including UUIDs, ISBNs, etc
   identifier: randomUUID(),
-})
+});
 ```
 
 ### Adding a chapter
 
-```ts
-import { Epub, ManifestItem } from "@storyteller-platform/epub"
+```tsx
+import { Epub, type ManifestItem, x } from "@storyteller-platform/epub";
 
-const epub = await Epub.from("path/to/book.epub")
+const epub = await Epub.from("path/to/book.epub");
 
 // Construct a manifest item describing the chapter
 const manifestItem: ManifestItem = {
@@ -158,7 +158,7 @@ const manifestItem: ManifestItem = {
   // EPUB archive.
   href: "XHTML/chapter-one.xhtml",
   mediaType: "application/xhtml+xml",
-}
+};
 
 // You can specify the contents as a string
 const contents = `<?xml version="1.0" encoding="UTF-8"?>
@@ -171,52 +171,41 @@ const contents = `<?xml version="1.0" encoding="UTF-8"?>
     <h1>Chapter 1</h1>
     <p>At first, there were s'mores.</p>
   </body>
-</html>`
+</html>`;
 
 // Or you can specify the contents as an XML structure
-const xmlContents = epub.createXhtmlDocument([
-  Epub.createXmlElement("h1", {}, [Epub.createXmlTextNode("Chapter 1")]),
-  Epub.createXmlElement("p", {}, [
-    Epub.createXmlTextNode("At first, there were s'mores."),
-  ]),
-])
+const xmlContents = await epub.createXhtmlDocument([
+  x("h1", null, "Chapter 1"),
+  x("p", null, "At first, there were s'mores."),
+]);
+
+// Or, using JSX
+/** @jsxImportSource @storyteller-platform/epub */
+const xmlContents = await epub.createXhtmlDocument([
+  <h1>Chapter 1</h1>,
+  <p>At first, there were s'mores.</p>,
+]);
 
 // First, add the new item to the manifest, and add
 // its contents to the publication
-await epub.addManifestItem(manifestItem, contents, "utf-8")
+await epub.addManifestItem(manifestItem, contents, "utf-8");
 
 // OR, using the XMl:
-await epub.addManifestItem(manifestItem, xmlContents, "xml")
+await epub.addManifestItem(manifestItem, xmlContents, "xml");
 
 // Then add the item to the spine
-await epub.addSpineItem(manifestItem.id)
+await epub.addSpineItem(manifestItem.id);
 ```
 
 ### Writing to disk
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller-platform/epub";
 
-const epub = await Epub.from("path/to/book.epub")
-await epub.setTitle("S'mores for Everyone")
+const epub = await Epub.from("path/to/book.epub");
+await epub.setTitle("S'mores for Everyone");
 
-await epub.writeToFile("path/to/updated.epub")
-```
-
-### Writing to a byte array
-
-```ts
-import { randomUUID } from "node:crypto"
-
-import { Epub } from "@storyteller-platform/epub"
-
-const epub = await Epub.create({
-  title: "S'mores For Everyone",
-  language: new Intl.Locale("en-US"),
-  identifier: randomUUID(),
-})
-
-const data: Uint8Array = await epub.writeToArray()
+await epub.saveAndClose();
 ```
 
 For more details about using the API, see the [API documentation](#epub).
@@ -230,15 +219,15 @@ However, it does support upgrading an EPUB 2 file to EPUB 3, after which you can
 use the library like normal.
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller-platform/epub";
 
 using epub = await Epub.upgrade("path/to/epub2.epub", {
   // optional. if omitted the Epub
   outputPath: "path/to/epub3.epub",
-})
+});
 
 // if .saveAndClose() is not called and `outputPath` isn't provided, the Epub will return to it's unupgraded state
-await epub.saveAndClose()
+await epub.saveAndClose();
 
 // Do Epub stuff
 ```
@@ -251,45 +240,45 @@ In the browser, currently you can only use the `MemoryAdapter` to read EPUB
 files.
 
 ```tsx
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 
 import {
   Epub,
   type EpubReader,
   MemoryAdapter,
-} from "@storyteller-platform/epub"
+} from "@storyteller-platform/epub";
 
 export function BookCover(file: File) {
-  const [cover, setCover] = useState<string | null>(null)
+  const [cover, setCover] = useState<string | null>(null);
 
   useEffect(() => {
-    let epub: EpubReader | null = null
-    let coverUrl: string | null = null
+    let epub: EpubReader | null = null;
+    let coverUrl: string | null = null;
 
     async function loadCover() {
       // unfortunately Safari does not support `using` syntax yet
       try {
-        epub = await Epub.using(MemoryAdapter).from(file)
-        const cover = await epub.getCoverImage()
+        epub = await Epub.using(MemoryAdapter).from(file);
+        const cover = await epub.getCoverImage();
         if (cover) {
-          coverUrl = URL.createObjectURL(new Blob([new Uint8Array(cover)]))
-          setCover(coverUrl)
+          coverUrl = URL.createObjectURL(new Blob([new Uint8Array(cover)]));
+          setCover(coverUrl);
         }
       } finally {
-        epub?.discardAndClose()
+        epub?.discardAndClose();
       }
     }
 
-    loadCover()
+    loadCover();
 
     return () => {
       if (coverUrl) {
-        URL.revokeObjectURL(coverUrl)
+        URL.revokeObjectURL(coverUrl);
       }
-    }
-  }, [file])
+    };
+  }, [file]);
 
-  return cover ? <img src={cover} alt="Cover" /> : null
+  return cover ? <img src={cover} alt="Cover" /> : null;
 }
 ```
 

@@ -1,7 +1,5 @@
 releases:
-  "@storyteller-platform/align": patch
   "@storyteller-platform/audiobook": patch
-  "@storyteller-platform/epub": patch
   "@storyteller-platform/opds": minor
 
 declined:

@@ -1,6 +1,6 @@
 {
   "name": "@storyteller-platform/epub",
-  "version": "0.8.2",
+  "version": "1.0.0",
   "type": "module",
   "types": "dist/index.d.ts",
   "license": "MIT",
