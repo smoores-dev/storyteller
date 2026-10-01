@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc-plugin-markdown.org/schema.json",
-  "entryPoints": ["./index.ts"],
+  "entryPoints": ["./src/index.tsx"],
   "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-remark"],
   "readme": "none",
   "mergeReadme": false,

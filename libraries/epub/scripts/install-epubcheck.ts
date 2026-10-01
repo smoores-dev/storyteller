@@ -6,7 +6,7 @@ import path from "node:path"
 import { pipeline } from "node:stream/promises"
 import { fileURLToPath } from "node:url"
 
-import { openZip } from "../zip.node.ts"
+import { openZip } from "../src/zip.node.ts"
 
 const version = "5.3.0"
 

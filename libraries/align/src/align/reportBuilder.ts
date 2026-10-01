@@ -1,6 +1,6 @@
 import { basename } from "node:path"
 
-import { type WrittenAudioChapter } from "./audioChapters.ts"
+import { type WrittenAudioChapter } from "./audioChapters.tsx"
 import { type SentenceRange } from "./getSentenceRanges.ts"
 import { type Hole } from "./holes.ts"
 import {

@@ -1,9 +1,11 @@
+/** @jsxImportSource @storyteller-platform/epub */
+
 import { basename } from "node:path/posix"
 
 import { type SegmentationResult } from "@echogarden/text-segmentation"
 import { enumerate } from "itertools"
 
-import { Epub, type ManifestItem } from "@storyteller-platform/epub"
+import { type ManifestItem } from "@storyteller-platform/epub"
 
 import {
   type RangeState,
@@ -37,22 +39,15 @@ function holePar(
   id: string,
   hole: { audiofile: string; start: number; end: number },
 ) {
-  return Epub.createXmlElement(
-    "par",
-    {
-      id,
-      "epub:type": AUDIO_ONLY_TYPE,
-    },
-    [
-      Epub.createXmlElement("text", {
-        src: `../${chapter.href}#${fragment}`,
-      }),
-      Epub.createXmlElement("audio", {
-        src: `../Audio/${basename(hole.audiofile)}`,
-        clipBegin: `${hole.start.toFixed(3)}s`,
-        clipEnd: `${hole.end.toFixed(3)}s`,
-      }),
-    ],
+  return (
+    <par id={id} epub:type={AUDIO_ONLY_TYPE}>
+      <text src={`../${chapter.href}#${fragment}`} />
+      <audio
+        src={`../Audio/${basename(hole.audiofile)}`}
+        clipBegin={`${hole.start.toFixed(3)}s`}
+        clipEnd={`${hole.end.toFixed(3)}s`}
+      />
+    </par>
   )
 }
 
@@ -82,32 +77,26 @@ export function createAudioChapterOverlay(
   headingId: string,
   holes: { audiofile: string; start: number; end: number }[],
 ) {
-  return [
-    Epub.createXmlElement(
-      "smil",
-      {
-        xmlns: "http://www.w3.org/ns/SMIL",
-        "xmlns:epub": "http://www.idpf.org/2007/ops",
-        version: "3.0",
-        "epub:prefix": SMIL_PREFIX,
-      },
-      [
-        Epub.createXmlElement("body", {}, [
-          Epub.createXmlElement(
-            "seq",
-            {
-              id: `${chapter.id}_overlay`,
-              "epub:textref": `../${chapter.href}`,
-              "epub:type": "chapter",
-            },
-            holes.map((hole, index) =>
-              holePar(chapter, headingId, `${chapter.id}-a${index}`, hole),
-            ),
-          ),
-        ]),
-      ],
-    ),
-  ]
+  return (
+    <smil
+      xmlns="http://www.w3.org/ns/SMIL"
+      xmlns:epub="http://www.idpf.org/2007/ops"
+      version="3.0"
+      epub:prefix={SMIL_PREFIX}
+    >
+      <body>
+        <seq
+          id={`${chapter.id}_overlay`}
+          epub:textref={`../${chapter.href}`}
+          epub:type="chapter"
+        >
+          {holes.map((hole, index) =>
+            holePar(chapter, headingId, `${chapter.id}-a${index}`, hole),
+          )}
+        </seq>
+      </body>
+    </smil>
+  )
 }
 
 export function createMediaOverlay(
@@ -141,30 +130,24 @@ export function createMediaOverlay(
         holes,
       )
 
-  return [
-    Epub.createXmlElement(
-      "smil",
-      {
-        xmlns: "http://www.w3.org/ns/SMIL",
-        "xmlns:epub": "http://www.idpf.org/2007/ops",
-        version: "3.0",
-        "epub:prefix": SMIL_PREFIX,
-      },
-      [
-        Epub.createXmlElement("body", {}, [
-          Epub.createXmlElement(
-            "seq",
-            {
-              id: `${chapter.id}_overlay`,
-              "epub:textref": `../${chapter.href}`,
-              "epub:type": "chapter",
-            },
-            subSequences,
-          ),
-        ]),
-      ],
-    ),
-  ]
+  return (
+    <smil
+      xmlns="http://www.w3.org/ns/SMIL"
+      xmlns:epub="http://www.idpf.org/2007/ops"
+      version="3.0"
+      epub:prefix={SMIL_PREFIX}
+    >
+      <body>
+        <seq
+          id={`${chapter.id}_overlay`}
+          epub:textref={`../${chapter.href}`}
+          epub:type="chapter"
+        >
+          {subSequences}
+        </seq>
+      </body>
+    </smil>
+  )
 }
 
 function createTextRangeLargeSequences(
@@ -191,22 +174,22 @@ function createTextRangeLargeSequences(
 
     const sentences = sentenceRanges.slice(sentenceId, blockEnd)
 
-    return Epub.createXmlElement(
-      "seq",
-      {
-        id: `${chapter.id}-b${index}`,
-        "epub:type": "text-range-large",
-        "epub:textref": `../${chapter.href}#${fragment}`,
-      },
-      createTextRangeSmallSequences(
-        chapter,
-        granularity,
-        sentences,
-        wordRanges,
-        sentenceIdToFragment,
-        wordIdToFragment,
-        holes,
-      ),
+    return (
+      <seq
+        id={`${chapter.id}-b${index}`}
+        epub:type="text-range-large"
+        epub:textref={`../${chapter.href}#${fragment}`}
+      >
+        {createTextRangeSmallSequences(
+          chapter,
+          granularity,
+          sentences,
+          wordRanges,
+          sentenceIdToFragment,
+          wordIdToFragment,
+          holes,
+        )}
+      </seq>
     )
   })
 }
@@ -241,28 +224,25 @@ function createTextRangeSmallSequences(
 
   function sentenceElements(sentenceRange: SentenceRange) {
     if (granularity === "sentence" || !wordRanges.has(sentenceRange.id)) {
-      return sentenceRange.audioRanges.map((range, index) =>
-        Epub.createXmlElement(
-          "par",
-          {
-            id:
-              index === 0
-                ? `${chapter.id}-s${sentenceRange.id}`
-                : `${chapter.id}-s${sentenceRange.id}-a${index}`,
-            "epub:type": stateType(sentenceRange.state),
-          },
-          [
-            Epub.createXmlElement("text", {
-              src: `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-            }),
-            Epub.createXmlElement("audio", {
-              src: `../Audio/${basename(range.audiofile)}`,
-              clipBegin: `${range.start.toFixed(3)}s`,
-              clipEnd: `${range.end.toFixed(3)}s`,
-            }),
-          ],
-        ),
-      )
+      return sentenceRange.audioRanges.map((range, index) => (
+        <par
+          id={
+            index === 0
+              ? `${chapter.id}-s${sentenceRange.id}`
+              : `${chapter.id}-s${sentenceRange.id}-a${index}`
+          }
+          epub:type={stateType(sentenceRange.state)}
+        >
+          <text
+            src={`../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`}
+          />
+          <audio
+            src={`../Audio/${basename(range.audiofile)}`}
+            clipBegin={`${range.start.toFixed(3)}s`}
+            clipEnd={`${range.end.toFixed(3)}s`}
+          />
+        </par>
+      ))
     }
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -271,33 +251,25 @@ function createTextRangeSmallSequences(
     const wordToFragment = wordIdToFragment.get(sentenceRange.id)!
 
     return [
-      Epub.createXmlElement(
-        "seq",
-        {
-          id: `${chapter.id}-s${sentenceRange.id}`,
-          "epub:type": `text-range-small ${stateType(sentenceRange.state)}`,
-          "epub:textref": `../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`,
-        },
-        words.map((word) =>
-          Epub.createXmlElement(
-            "par",
-            {
-              id: `${chapter.id}-s${sentenceRange.id}-w${word.id}`,
-              "epub:type": stateType(word.state),
-            },
-            [
-              Epub.createXmlElement("text", {
-                src: `../${chapter.href}#${wordToFragment.get(word.id)}`,
-              }),
-              Epub.createXmlElement("audio", {
-                src: `../Audio/${basename(word.audiofile)}`,
-                clipBegin: `${word.start.toFixed(3)}s`,
-                clipEnd: `${word.end.toFixed(3)}s`,
-              }),
-            ],
-          ),
-        ),
-      ),
+      <seq
+        id={`${chapter.id}-s${sentenceRange.id}`}
+        epub:type={`text-range-small ${stateType(sentenceRange.state)}`}
+        epub:textref={`../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`}
+      >
+        {words.map((word) => (
+          <par
+            id={`${chapter.id}-s${sentenceRange.id}-w${word.id}`}
+            epub:type={stateType(word.state)}
+          >
+            <text src={`../${chapter.href}#${wordToFragment.get(word.id)}`} />
+            <audio
+              src={`../Audio/${basename(word.audiofile)}`}
+              clipBegin={`${word.start.toFixed(3)}s`}
+              clipEnd={`${word.end.toFixed(3)}s`}
+            />
+          </par>
+        ))}
+      </seq>,
     ]
   }
 }

@@ -6,8 +6,11 @@ import { type Logger } from "pino"
 
 import {
   Epub,
-  type ParsedXml,
-  type XmlElement,
+  type Document,
+  type Element,
+  findXmlChildByName,
+  insert,
+  NS,
 } from "@storyteller-platform/epub"
 import {
   type TimingAggregator,
@@ -86,26 +89,19 @@ export async function markup(
 
 export async function markupChapter(
   chapterId: string,
-  chapterXml: ParsedXml,
+  chapterXml: Document,
   granularity: "word" | "sentence",
   locale: Intl.Locale | null,
 ) {
   const timing = createTiming()
-  const html = Epub.findXmlChildByName("html", chapterXml)
+
+  const html = chapterXml.documentElement
   if (!html) throw new Error("Invalid XHTML document: no html element")
 
-  const body = Epub.findXmlChildByName("body", html["html"])
+  const body = findXmlChildByName("body", html)
   if (!body) throw new Error("Invalid XHTML document: No body element")
 
-  clearBodyElement(chapterXml)
-
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const taggedHtml = Epub.findXmlChildByName("html", chapterXml)!
-
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const taggedBody = Epub.findXmlChildByName("body", taggedHtml["html"])!
-
-  const original = parseDom(Epub.getXmlChildren(body))
+  const original = parseDom(body)
 
   const inlined = inlineFootnotes(original)
 
@@ -167,22 +163,36 @@ export async function markupChapter(
       inlined.footnotePairs,
       inlined.mapping,
     )
-    taggedBody["body"] = serializeDom(replaced)
+    const markedUpBody = serializeDom(replaced)
+
+    while (body.firstChild) body.removeChild(body.firstChild)
+    for (const node of markedUpBody) insert(body, node)
   })
 
-  addStorytellerPrefix(taggedHtml)
+  addStorytellerPrefix(html)
 
   return { markedUp: chapterXml, timing }
 }
 
-function addStorytellerPrefix(html: XmlElement) {
-  html[":@"] ??= {}
-  html[":@"]["@_xmlns:epub"] = "http://www.idpf.org/2007/ops"
+function addStorytellerPrefix(html: Element) {
+  // Both of these need setAttributeNS, never plain setAttribute, so that the
+  // tree in memory matches the bytes written out.
+  //
+  // The declaration has to carry the XMLNS namespace: the serializer only
+  // registers a prefix for its descendants when the declaration's `prefix` is
+  // `"xmlns"`, which setAttribute never sets, and the result is otherwise a
+  // redundant `xmlns:epub` on every generated span. `epub:prefix` is an
+  // ordinary attribute in the epub namespace, which is also how `x()` builds
+  // it everywhere else.
+  html.setAttributeNS(NS.xmlns, "xmlns:epub", NS.epub)
 
-  const existingPrefixValue = html[":@"]["@_epub:prefix"]
+  const existingPrefixValue = html.getAttribute("epub:prefix")
   if (!existingPrefixValue) {
-    html[":@"]["@_epub:prefix"] =
-      "storyteller: https://storyteller-platform.dev/docs/vocabulary"
+    html.setAttributeNS(
+      NS.epub,
+      "epub:prefix",
+      "storyteller: https://storyteller-platform.dev/docs/vocabulary",
+    )
     return
   }
 
@@ -198,21 +208,11 @@ function addStorytellerPrefix(html: XmlElement) {
     storyteller: "https://storyteller-platform.dev/docs/vocabulary",
   }
 
-  html[":@"]["@_epub:prefix"] = Object.entries(prefixes)
-    .map(([p, u]) => `${p}: ${u}`)
-    .join("\n    ")
-}
-
-function clearBodyElement(xml: ParsedXml) {
-  const html = Epub.findXmlChildByName("html", xml)
-  if (!html) throw new Error("Invalid XHTML: Found no html element")
-
-  const bodyIndex = html["html"].findIndex((element) => "body" in element)
-  const body = html["html"][bodyIndex]
-  if (!body) throw new Error("Invalid XHTML: Found no body element")
-
-  html["html"].splice(bodyIndex, 1, {
-    ...body,
-    body: [],
-  })
+  html.setAttributeNS(
+    NS.epub,
+    "epub:prefix",
+    Object.entries(prefixes)
+      .map(([p, u]) => `${p}: ${u}`)
+      .join("\n    "),
+  )
 }

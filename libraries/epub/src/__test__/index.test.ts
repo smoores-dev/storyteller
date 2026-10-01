@@ -3,6 +3,7 @@ import { cp, readdir, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
+import { type CharacterData, type Element } from "@xmldom/xmldom"
 import { describe, it } from "vitest"
 
 import { streamFile } from "@storyteller-platform/fs"
@@ -13,20 +14,22 @@ import {
   EpubReadOnlyError,
   MemoryAdapter,
   type MetadataEntry,
-  type ParsedXml,
   TmpFsAdapter,
-  type XmlElement,
-  type XmlTextNode,
-} from "./index.js"
+} from "../index.js"
+import { getXhtmlBody, parse, serialize, x } from "../xml.ts"
 
 describe("xhtml parsing", () => {
   it("can handle self-closing stop nodes", () => {
-    const xmlString = `<script src="script.js"/>`
-    const parsed = Epub.xhtmlParser.parse(xmlString) as ParsedXml
+    const xmlString = `<html xmlns="http://www.w3.org/1999/xhtml"><script src="script.js"/></html>`
+    const parsed = parse(xmlString, "application/xhtml+xml")
 
-    const built = Epub.xhtmlBuilder.build(parsed)
+    const built = serialize(parsed)
 
-    assert.strictEqual(built, xmlString)
+    assert.strictEqual(
+      built,
+      // XMLSerializer only self-closes tags that are self-closing in HTML
+      `<html xmlns="http://www.w3.org/1999/xhtml"><script src="script.js"></script></html>`,
+    )
   })
 })
 
@@ -103,13 +106,13 @@ describe("Epub", () => {
     using epub = await Epub.from(filepath)
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readXhtmlItemContents(spineItems[0]!.id)
-    const html = coverPageData[0] as XmlElement<"html">
+    const html = coverPageData.documentElement
     assert.ok(html)
-    const head = Epub.getXmlChildren(html)[1] as XmlElement<"head">
+    const head = html.children.item(0)
     assert.ok(head)
-    const title = Epub.getXmlChildren(head)[1] as XmlElement<"title">
+    const title = head.children.item(0)
     assert.ok(title)
-    const titleText = (Epub.getXmlChildren(title)[0] as XmlTextNode)["#text"]
+    const titleText = (title.firstChild as CharacterData).data
     assert.strictEqual(titleText, '"Cover"')
   })
 
@@ -133,13 +136,13 @@ describe("Epub", () => {
     using epub = await Epub.using(TmpFsAdapter).from(filepath)
     const spineItems = await epub.getSpineItems()
     const chapterOneData = await epub.readXhtmlItemContents(spineItems[1]!.id)
-    const html = chapterOneData[1] as XmlElement<"html">
+    const html = chapterOneData.documentElement
     assert.ok(html)
-    const head = Epub.getXmlChildren(html)[1] as XmlElement<"head">
+    const head = html.children.item(0)
     assert.ok(head)
-    const meta = Epub.getXmlChildren(head)[1] as XmlElement<"meta">
+    const meta = head.children.item(0)
     assert.ok(meta)
-    assert.strictEqual(meta[":@"]?.["@_charset"], "utf-8")
+    assert.strictEqual(meta.getAttribute("charset"), "utf-8")
   })
 
   it("can add metadata", async () => {
@@ -236,16 +239,16 @@ describe("Epub", () => {
     const spineItems = await epub.getSpineItems()
     const coverPageData = await epub.readXhtmlItemContents(spineItems[0]!.id)
 
-    const html = coverPageData[0] as XmlElement<"html">
+    const html = coverPageData.documentElement
     assert.ok(html)
-    const head = Epub.getXmlChildren(html)[1] as XmlElement<"head">
+    const head = html.children.item(0)
     assert.ok(head)
-    const title = Epub.getXmlChildren(head)[1] as XmlElement<"title">
+    const title = head.children.item(0)
     assert.ok(title)
-    const titleText = (Epub.getXmlChildren(title)[0] as XmlTextNode)["#text"]
+    const titleText = title.firstChild as CharacterData
 
-    assert.notStrictEqual(titleText, "Test title")
-    ;(Epub.getXmlChildren(title)[0] as XmlTextNode)["#text"] = "Test title"
+    assert.notStrictEqual(titleText.data, "Test title")
+    titleText.replaceData(0, titleText.data.length, "Test title")
     await epub.writeXhtmlItemContents(spineItems[0]!.id, coverPageData)
 
     await epub.saveAndClose()
@@ -257,21 +260,15 @@ describe("Epub", () => {
       updatedSpineItems[0]!.id,
     )
 
-    const updatedHtml = updatedCoverPageData[0] as XmlElement<"html">
+    const updatedHtml = updatedCoverPageData.documentElement
     assert.ok(updatedHtml)
-    const updatedHead = Epub.getXmlChildren(
-      updatedHtml,
-    )[1] as XmlElement<"head">
+    const updatedHead = updatedHtml.children.item(0)
     assert.ok(updatedHead)
-    const updatedTitle = Epub.getXmlChildren(
-      updatedHead,
-    )[1] as XmlElement<"title">
+    const updatedTitle = updatedHead.children.item(0)
     assert.ok(updatedTitle)
-    const updatedTitleText = (
-      Epub.getXmlChildren(updatedTitle)[0] as XmlTextNode
-    )["#text"]
+    const updatedTitleText = updatedTitle.firstChild as CharacterData
 
-    assert.strictEqual(updatedTitleText, "Test title")
+    assert.strictEqual(updatedTitleText.data, "Test title")
   })
 
   it("can add a new manifest item", async () => {
@@ -311,7 +308,7 @@ describe("Epub", () => {
     const testData = await epub.readXhtmlItemContents("testitem", "xhtml")
 
     assert.strictEqual(
-      Epub.getXhtmlTextContent(Epub.getXhtmlBody(testData)).trim(),
+      getXhtmlBody(testData).textContent?.trim(),
       "Test contents",
     )
   })
@@ -908,5 +905,43 @@ describe("Epub.from (read-only, extracted-dir)", () => {
     // doesn't have the runtime guard tripped
     await epub.setTitle("Mutated")
     assert.strictEqual(await epub.getTitle(), "Mutated")
+  })
+})
+
+describe("namespace fidelity", () => {
+  it("creates XHTML documents whose elements are in the XHTML namespace", async () => {
+    const outputPath = join("__fixtures__", "__output__", "namespaces.epub")
+    using epub = await Epub.using(TmpFsAdapter).create(outputPath, {
+      title: "Title",
+      language: new Intl.Locale("en-US"),
+      identifier: "1",
+    })
+
+    const document = await epub.createXhtmlDocument(
+      [
+        x(
+          "nav",
+          { "epub:type": "toc" },
+          x("h1", null, "Contents"),
+          x("ol", null, x("li", null, x("a", { href: "c1.xhtml" }, "One"))),
+        ),
+      ],
+      [x("title", null, "Nav")],
+    )
+
+    // `x()` builds elements in no namespace. Inserting them into a document has
+    // to give them the namespace the document declares, otherwise the tree
+    // reports something the serialized file does not say and nothing can be
+    // looked up by namespace.
+    const anonymous: string[] = []
+    const walk = (element: Element) => {
+      if (!element.namespaceURI) anonymous.push(element.nodeName)
+      for (const child of Array.from(element.children)) walk(child)
+    }
+    const root = document.documentElement
+    if (!root) throw new Error("no document element")
+    walk(root)
+
+    assert.deepStrictEqual(anonymous, [])
   })
 })

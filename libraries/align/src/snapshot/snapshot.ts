@@ -8,10 +8,12 @@ import {
 import { type Sentence } from "@echogarden/text-segmentation"
 
 import {
-  type ElementName,
+  type Document,
+  type Element,
   Epub,
-  type ParsedXml,
-  type XmlElement,
+  findXmlChildByName,
+  getXhtmlBody,
+  parse,
 } from "@storyteller-platform/epub"
 import {
   type RecognitionResult,
@@ -61,18 +63,18 @@ export async function createAlignmentSnapshot(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     .map((id) => manifest[id]!)
 
-  const mediaOverlays: ParsedXml[] = []
+  const mediaOverlays: Document[] = []
   for (const item of mediaOverlayItems) {
     const contents = await epub.readItemContents(item.id, "utf-8")
-    const parsed = Epub.xmlParser.parse(contents) as ParsedXml
+    const parsed = parse(contents, "text/xml")
     mediaOverlays.push(parsed)
-    const smil = Epub.findXmlChildByName("smil", parsed)
+    const smil = parsed.documentElement
     if (!smil) continue
-    const body = Epub.findXmlChildByName("body", Epub.getXmlChildren(smil))
+    const body = findXmlChildByName("body", smil)
     if (!body) continue
-    const seq = Epub.findXmlChildByName("seq", Epub.getXmlChildren(body))
+    const seq = findXmlChildByName("seq", body)
     if (!seq) continue
-    const textref = seq[":@"]?.["@_epub:textref"]
+    const textref = seq.getAttribute("epub:textref")
     if (!textref) continue
     newSnapshot += `// ${posixBasename(textref)}\n\n`
     const chapterContents = await epub.readFileContents(
@@ -80,8 +82,8 @@ export async function createAlignmentSnapshot(
       item.href,
       "utf-8",
     )
-    const chapterXml = Epub.xhtmlParser.parse(chapterContents) as ParsedXml
-    const original = parseDom(Epub.getXhtmlBody(chapterXml))
+    const chapterXml = parse(chapterContents, "application/xhtml+xml")
+    const original = parseDom(getXhtmlBody(chapterXml))
 
     const inlined = inlineFootnotes(original)
 
@@ -93,15 +95,15 @@ export async function createAlignmentSnapshot(
 
     let lastChapterSentence = -1
     const chapterSentences = segmentation.filter((s) => s.text.match(/\S/))
-    const pars = findAll("par", Epub.getXmlChildren(seq))
+    const pars = findAll("par", seq)
     for (const par of pars) {
       newSnapshot += `\n`
-      const text = Epub.findXmlChildByName("text", Epub.getXmlChildren(par))
+      const text = findXmlChildByName("text", par)
       if (!text) continue
-      const audio = Epub.findXmlChildByName("audio", Epub.getXmlChildren(par))
+      const audio = findXmlChildByName("audio", par)
       if (!audio) continue
 
-      const textSrc = text[":@"]?.["@_src"]
+      const textSrc = text.getAttribute("src")
       if (!textSrc) continue
       const result =
         textRef === "id-fragment"
@@ -126,11 +128,11 @@ export async function createAlignmentSnapshot(
 
       newSnapshot += `Text:  ${transliterate ? (await slugify(textSentence, locale)).result : textSentence}\n`
 
-      const audioSrc = audio[":@"]?.["@_src"]
+      const audioSrc = audio.getAttribute("src")
       if (!audioSrc) continue
 
-      const audioStart = audio[":@"]?.["@_clipBegin"]
-      const audioEnd = audio[":@"]?.["@_clipEnd"]
+      const audioStart = audio.getAttribute("clipBegin")
+      const audioEnd = audio.getAttribute("clipEnd")
       if (!audioStart || !audioEnd) continue
 
       const audioStartTime = parseFloat(audioStart.slice(0, -1))
@@ -230,18 +232,14 @@ function getTextSentenceIndexByIdFragment(textSrc: string) {
   return { fragment, sentenceId: parseInt(sentenceId!, 10) }
 }
 
-function findAll<Name extends ElementName>(
-  name: Name,
-  xml: ParsedXml,
-): XmlElement<Name>[] {
-  const result: XmlElement<Name>[] = []
+function findAll(name: string, root: Element): Element[] {
+  const result: Element[] = []
 
-  for (const child of xml) {
-    if (Epub.isXmlTextNode(child)) continue
-    if (Epub.getXmlElementName(child) === name) {
+  for (const child of Array.from(root.children)) {
+    if (child.nodeName === name) {
       result.push(child)
     }
-    result.push(...findAll(name, Epub.getXmlChildren(child)))
+    result.push(...findAll(name, child))
   }
 
   return result

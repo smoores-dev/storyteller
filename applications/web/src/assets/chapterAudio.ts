@@ -6,9 +6,12 @@ import {
   secondsToFrames,
 } from "@storyteller-platform/align/emissions"
 import {
-  Epub,
+  type Epub,
+  findXmlChildByName,
+  isElement,
   type ManifestItem,
-  type ParsedXml,
+  type Node as DomNode,
+  parse,
 } from "@storyteller-platform/epub"
 import { decodeEmissions } from "@storyteller-platform/ghost-story/emission-encoding"
 
@@ -22,7 +25,7 @@ type Heard = { text: string; time: number }
 
 type TranscriptWord = { text: string; startTime: number; endTime: number }
 
-function parseClock(value: string | undefined): number | null {
+function parseClock(value: string | null | undefined): number | null {
   if (!value) return null
   if (value.endsWith("ms")) return parseFloat(value) / 1000
   if (value.endsWith("min")) return parseFloat(value) * 60
@@ -33,28 +36,28 @@ function parseClock(value: string | undefined): number | null {
   return parts.reduce((total, part) => total * 60 + part, 0)
 }
 
-function parsOf(nodes: ParsedXml): Par[] {
+function parsOf(nodes: DomNode[]): Par[] {
   const pars: Par[] = []
   for (const node of nodes) {
-    if (Epub.isXmlTextNode(node)) continue
-    const children = Epub.getXmlChildren(node)
-    if (Epub.getXmlElementName(node) !== "par") {
+    if (!isElement(node)) continue
+    const children = Array.from(node.childNodes)
+    if (node.nodeName !== "par") {
       pars.push(...parsOf(children))
       continue
     }
-    const text = Epub.findXmlChildByName("text", children)
-    const audio = Epub.findXmlChildByName("audio", children)
-    const fragment = text?.[":@"]?.["@_src"]?.split("#")[1]
-    const src = audio?.[":@"]?.["@_src"]
-    const start = parseClock(audio?.[":@"]?.["@_clipBegin"])
-    const end = parseClock(audio?.[":@"]?.["@_clipEnd"])
+    const text = findXmlChildByName("text", node)
+    const audio = findXmlChildByName("audio", node)
+    const fragment = text?.getAttribute("src")?.split("#")[1]
+    const src = audio?.getAttribute("src")
+    const start = parseClock(audio?.getAttribute("clipBegin"))
+    const end = parseClock(audio?.getAttribute("clipEnd"))
     if (!fragment || !src || start === null || end === null) continue
     pars.push({
       fragment,
       audio: basename(src),
       start,
       end,
-      audioOnly: node[":@"]?.["@_epub:type"] === AUDIO_ONLY_TYPE,
+      audioOnly: node.getAttribute("epub:type") === AUDIO_ONLY_TYPE,
     })
   }
   return pars
@@ -166,7 +169,7 @@ export async function readChapterAudio(
   directories: { emissions: string; transcriptions: string },
 ): Promise<ChapterAudio> {
   const smil = await epub.readItemContents(overlay.id, "utf-8")
-  const pars = parsOf(Epub.xmlParser.parse(smil) as ParsedXml)
+  const pars = parsOf(Array.from(parse(smil, "text/xml").childNodes))
 
   const byAudio = new Map<string, Par[]>()
   for (const par of pars) {

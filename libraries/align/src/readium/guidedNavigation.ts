@@ -13,10 +13,12 @@ import { enumerate } from "itertools"
 import clockvalue from "smil-clockvalue"
 
 import {
-  Epub,
+  type Element,
+  type Epub,
+  findXmlChildByName,
+  findXmlDescendantByName,
   type ManifestItem,
-  type ParsedXml,
-  type XmlElement,
+  parse,
 } from "@storyteller-platform/epub"
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -121,9 +123,12 @@ export async function generateGuidedNavigationDocuments(epub: Epub) {
 
   for (const [i, overlay] of enumerate(mediaOverlays)) {
     const contents = await epub.readItemContents(overlay.id, "utf-8")
-    const xml = Epub.xmlParser.parse(contents) as ParsedXml
+    const xml = parse(contents, "text/xml")
 
-    const body = Epub.findXmlDescendantByName("body", xml)
+    const root = xml.documentElement
+    if (!root) continue
+
+    const body = findXmlDescendantByName("body", root)
 
     if (!body) continue
 
@@ -160,11 +165,7 @@ export async function generateGuidedNavigationDocuments(epub: Epub) {
 
     const guidedNavDoc = new GuidedNavigationDocument({
       links: new Links(links),
-      guided: await parseGuidedNavigationObjects(
-        epub,
-        overlay.href,
-        Epub.getXmlChildren(body),
-      ),
+      guided: await parseGuidedNavigationObjects(epub, overlay.href, body),
     })
 
     guidedNavDocs.push(guidedNavDoc)
@@ -176,35 +177,27 @@ export async function generateGuidedNavigationDocuments(epub: Epub) {
 async function parseGuidedNavigationObjects(
   epub: Epub,
   overlayHref: string,
-  xml: ParsedXml,
+  root: Element,
 ): Promise<GuidedNavigationObject[]> {
   const guidedNavObjects: GuidedNavigationObject[] = []
 
-  const children = xml.filter(
-    (node): node is XmlElement<"seq" | "par"> =>
-      !Epub.isXmlTextNode(node) &&
-      ["seq", "par"].includes(Epub.getXmlElementName(node)),
+  const children = Array.from(root.children).filter((node) =>
+    ["seq", "par"].includes(node.nodeName),
   )
 
   for (const element of children) {
-    if (Epub.getXmlElementName(element) === "par") {
-      const text = Epub.findXmlChildByName("text", Epub.getXmlChildren(element))
-      const audio = Epub.findXmlChildByName(
-        "audio",
-        Epub.getXmlChildren(element),
-      )
+    if (element.nodeName === "par") {
+      const text = findXmlChildByName("text", element)
+      const audio = findXmlChildByName("audio", element)
 
       if (!text || !audio) continue
 
-      const textSrc = Epub.getXmlAttributes(text)["src"]
-      const { src: audioSrc, clipBegin, clipEnd } = Epub.getXmlAttributes(audio)
+      const textSrc = text.getAttribute("src")
+      const audioSrc = audio.getAttribute("src")
+      const clipBegin = audio.getAttribute("clipBegin")
+      const clipEnd = audio.getAttribute("clipEnd")
 
-      if (
-        !textSrc ||
-        !audioSrc ||
-        clipBegin === undefined ||
-        clipEnd === undefined
-      ) {
+      if (!textSrc || !audioSrc || !clipBegin || !clipEnd) {
         continue
       }
 
@@ -218,7 +211,7 @@ async function parseGuidedNavigationObjects(
       const clipBeginSeconds = clockvalue(clipBegin) / 1000
       const clipEndSeconds = clockvalue(clipEnd) / 1000
 
-      const role = parseRoles(Epub.getXmlAttributes(element)["epub:type"])
+      const role = parseRoles(element.getAttribute("epub:type"))
 
       guidedNavObjects.push(
         new GuidedNavigationObject({
@@ -229,18 +222,17 @@ async function parseGuidedNavigationObjects(
       )
     }
 
-    if (Epub.getXmlElementName(element) === "seq") {
-      const attrs = Epub.getXmlAttributes(element)
-      const role = parseRoles(attrs["epub:type"])
+    if (element.nodeName === "seq") {
+      const role = parseRoles(element.getAttribute("epub:type"))
 
-      const textref = attrs["epub:textref"]
+      const textref = element.getAttribute("epub:textref")
 
       if (!textref) continue
 
       const children = await parseGuidedNavigationObjects(
         epub,
         overlayHref,
-        Epub.getXmlChildren(element),
+        element,
       )
 
       guidedNavObjects.push(
@@ -258,7 +250,7 @@ async function parseGuidedNavigationObjects(
   return guidedNavObjects
 }
 
-function parseRoles(epubType: string | undefined): Set<string> | null {
+function parseRoles(epubType: string | null | undefined): Set<string> | null {
   const roles = (epubType ?? "").split(/\s+/).filter((r) => r.length > 0)
   return roles.length > 0 ? new Set(roles) : null
 }

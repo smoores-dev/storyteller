@@ -1,4 +1,4 @@
-import { Epub, type ParsedXml, type XmlNode } from "@storyteller-platform/epub"
+import { type Node as DomNode, text, x } from "@storyteller-platform/epub"
 
 import { type Node, type Root, TextNode } from "./model.ts"
 
@@ -11,9 +11,9 @@ class Serializer {
     return this.serializeDomNodes(this.doc.children)
   }
 
-  serializeDomNode(node: Node | TextNode): XmlNode {
+  serializeDomNode(node: Node | TextNode): DomNode {
     if (node instanceof TextNode) {
-      return Epub.createXmlTextNode(node.text)
+      return text(node.text)
     }
 
     let attrs = node.attrs
@@ -30,14 +30,10 @@ class Serializer {
       }
     }
 
-    return Epub.createXmlElement(
-      node.tagName,
-      attrs,
-      this.serializeDomNodes(node.children),
-    )
+    return x(node.tagName, attrs, ...this.serializeDomNodes(node.children))
   }
 
-  serializeDomNodes(nodes: (Node | TextNode)[]): XmlNode[] {
+  serializeDomNodes(nodes: (Node | TextNode)[]): DomNode[] {
     const partitioned = nodes.reduce<(Node | TextNode)[][]>((acc, child) => {
       const lastPartition = acc.at(-1)
       if (!lastPartition) {
@@ -63,7 +59,7 @@ class Serializer {
       return [...acc, [child]]
     }, [])
 
-    const xmlChildren: XmlNode[] = []
+    const xmlChildren: DomNode[] = []
     for (const partition of partitioned) {
       xmlChildren.push(...this.serializePartition(partition))
     }
@@ -71,7 +67,7 @@ class Serializer {
     return xmlChildren
   }
 
-  serializePartition(nodes: (Node | TextNode)[]): XmlNode[] {
+  serializePartition(nodes: (Node | TextNode)[]): DomNode[] {
     const firstChild = nodes[0]
     if (!firstChild) return []
 
@@ -95,10 +91,10 @@ class Serializer {
     }
 
     return [
-      Epub.createXmlElement(
+      x(
         firstMark.tagName,
         attrs,
-        this.serializeDomNodes(
+        ...this.serializeDomNodes(
           nodes.map((node) => node.copy({ marks: node.marks.slice(1) })),
         ),
       ),
@@ -106,6 +102,6 @@ class Serializer {
   }
 }
 
-export function serializeDom(doc: Root): ParsedXml {
+export function serializeDom(doc: Root): DomNode[] {
   return new Serializer(doc).serialize()
 }

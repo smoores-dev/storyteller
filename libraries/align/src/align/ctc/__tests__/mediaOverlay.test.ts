@@ -2,10 +2,14 @@ import assert from "node:assert"
 
 import { describe, it } from "vitest"
 
-import { Epub, type ManifestItem } from "@storyteller-platform/epub"
+import {
+  findXmlChildByName,
+  isElement,
+  type ManifestItem,
+} from "@storyteller-platform/epub"
 
 import { SentenceRange, type WordRange } from "../../getSentenceRanges.ts"
-import { SMIL_PREFIX, createMediaOverlay } from "../mediaOverlay.ts"
+import { SMIL_PREFIX, createMediaOverlay } from "../mediaOverlay.tsx"
 
 const chapter: ManifestItem = {
   id: "ch1",
@@ -40,15 +44,9 @@ const fragments = new Map([
   [2, "ch1-s2"],
 ])
 
-function attributesOf(element: unknown) {
-  return Epub.getXmlAttributes(
-    element as Parameters<typeof Epub.getXmlAttributes>[0],
-  )
-}
-
 describe("createMediaOverlay", () => {
   it("declares the vocabulary and marks each par with its state", () => {
-    const [smil] = createMediaOverlay(
+    const smil = createMediaOverlay(
       chapter,
       "sentence",
       [range(0, "unmatched"), range(1, "matched"), range(2, "dropped")],
@@ -58,23 +56,21 @@ describe("createMediaOverlay", () => {
       new Map(),
     )
 
-    assert.strictEqual(attributesOf(smil)["epub:prefix"], SMIL_PREFIX)
+    assert.strictEqual(smil.getAttribute("epub:prefix"), SMIL_PREFIX)
 
-    const body = Epub.findXmlChildByName("body", Epub.getXmlChildren(smil!))
-    const seq = Epub.findXmlChildByName("seq", Epub.getXmlChildren(body!))
-    assert.strictEqual(attributesOf(seq)["epub:type"], "chapter")
+    const body = findXmlChildByName("body", smil)
+    const seq = findXmlChildByName("seq", body!)
+    assert.strictEqual(seq!.getAttribute("epub:type"), "chapter")
 
-    const pars = Epub.getXmlChildren(seq!).filter(
-      (node) => !Epub.isXmlTextNode(node),
-    )
+    const pars = Array.from(seq!.childNodes).filter(isElement)
     assert.deepStrictEqual(
-      pars.map((par) => attributesOf(par)["epub:type"]),
+      pars.map((par) => par.getAttribute("epub:type")),
       ["storyteller:unmatched", "storyteller:matched", "storyteller:dropped"],
     )
   })
 
   it("marks the sentence seq and the word pars in word mode", () => {
-    const [smil] = createMediaOverlay(
+    const smil = createMediaOverlay(
       chapter,
       "word",
       [range(0, "matched")],
@@ -92,24 +88,16 @@ describe("createMediaOverlay", () => {
       ]),
     )
 
-    const body = Epub.findXmlChildByName("body", Epub.getXmlChildren(smil!))
-    const chapterSeq = Epub.findXmlChildByName(
-      "seq",
-      Epub.getXmlChildren(body!),
-    )
-    const sentenceSeq = Epub.findXmlChildByName(
-      "seq",
-      Epub.getXmlChildren(chapterSeq!),
-    )
+    const body = findXmlChildByName("body", smil)
+    const chapterSeq = findXmlChildByName("seq", body!)
+    const sentenceSeq = findXmlChildByName("seq", chapterSeq!)
     assert.strictEqual(
-      attributesOf(sentenceSeq)["epub:type"],
+      sentenceSeq!.getAttribute("epub:type"),
       "text-range-small storyteller:matched",
     )
-    const pars = Epub.getXmlChildren(sentenceSeq!).filter(
-      (node) => !Epub.isXmlTextNode(node),
-    )
+    const pars = Array.from(sentenceSeq!.childNodes).filter(isElement)
     assert.deepStrictEqual(
-      pars.map((par) => attributesOf(par)["epub:type"]),
+      pars.map((par) => par.getAttribute("epub:type")),
       ["storyteller:matched", "storyteller:interpolated"],
     )
   })

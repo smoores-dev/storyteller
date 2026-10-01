@@ -7,7 +7,7 @@ import { join } from "node:path"
 import { describe, it } from "vitest"
 import { ZipFile } from "yazl"
 
-import { Epub, EpubVersionError, MemoryAdapter } from "./index.ts"
+import { Epub, EpubVersionError, MemoryAdapter } from "../index.tsx"
 
 async function buildZip(
   entries: Record<string, string | Buffer>,

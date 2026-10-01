@@ -2,7 +2,7 @@ import assert from "node:assert"
 
 import { describe, it } from "vitest"
 
-import { Epub } from "@storyteller-platform/epub"
+import { x } from "@storyteller-platform/epub"
 
 import { Mark, Node, Root, TextNode } from "../model.ts"
 import { serializeDom } from "../serializeDom.ts"
@@ -13,9 +13,7 @@ describe("serializeDom", () => {
       new Root([new Node("p", {}, [new TextNode("Hello, world!")])]),
     )
 
-    assert.deepStrictEqual(result, [
-      Epub.createXmlElement("p", {}, [Epub.createXmlTextNode("Hello, world!")]),
-    ])
+    assert.deepStrictEqual(result, [x("p", {}, "Hello, world!")])
   })
 
   it("should serialize nested marks", () => {
@@ -28,13 +26,7 @@ describe("serializeDom", () => {
     )
 
     assert.deepStrictEqual(result, [
-      Epub.createXmlElement("p", {}, [
-        Epub.createXmlElement("strong", {}, [
-          Epub.createXmlElement("em", {}, [
-            Epub.createXmlTextNode("Hello, world!"),
-          ]),
-        ]),
-      ]),
+      x("p", {}, x("strong", {}, x("em", {}, "Hello, world!"))),
     ])
   })
 
@@ -49,12 +41,7 @@ describe("serializeDom", () => {
     )
 
     assert.deepStrictEqual(result, [
-      Epub.createXmlElement("p", {}, [
-        Epub.createXmlElement("strong", {}, [
-          Epub.createXmlElement("em", {}, [Epub.createXmlTextNode("Hello,")]),
-          Epub.createXmlTextNode(" world!"),
-        ]),
-      ]),
+      x("p", {}, x("strong", {}, x("em", {}, "Hello,"), " world!")),
     ])
   })
 
@@ -68,11 +55,7 @@ describe("serializeDom", () => {
     )
 
     assert.deepStrictEqual(result, [
-      Epub.createXmlElement("p", { id: "p1" }, [
-        Epub.createXmlElement("span", { class: "red" }, [
-          Epub.createXmlTextNode("Hello, world!"),
-        ]),
-      ]),
+      x("p", { id: "p1" }, x("span", { class: "red" }, "Hello, world!")),
     ])
   })
 
@@ -96,15 +79,17 @@ describe("serializeDom", () => {
     )
 
     assert.deepStrictEqual(result, [
-      Epub.createXmlElement("p", {}, [
-        Epub.createXmlElement("span", {}, [
-          Epub.createXmlTextNode("Hello,"),
-          Epub.createXmlElement("span", { class: "x-ebookmaker-pageno" }, [
-            Epub.createXmlElement("a", { id: "Page_v" }),
-          ]),
-          Epub.createXmlTextNode(" world!"),
-        ]),
-      ]),
+      x(
+        "p",
+        {},
+        x(
+          "span",
+          {},
+          "Hello,",
+          x("span", { class: "x-ebookmaker-pageno" }, x("a", { id: "Page_v" })),
+          " world!",
+        ),
+      ),
     ])
   })
 })

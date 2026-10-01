@@ -9,7 +9,6 @@ check:
   script:
     - npm i -g corepack
     - yarn
-    - yarn workspace @storyteller-platform/align build
     - yarn check
 
 check-versions:

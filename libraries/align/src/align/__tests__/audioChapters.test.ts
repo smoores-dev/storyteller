@@ -7,7 +7,7 @@ import { describe, it } from "vitest"
 
 import { Epub } from "@storyteller-platform/epub"
 
-import { writeAudioChapters } from "../audioChapters.ts"
+import { writeAudioChapters } from "../audioChapters.tsx"
 
 const FIXTURE = join("src", "__fixtures__", "moby-dick-small.epub")
 

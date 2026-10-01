@@ -14,11 +14,16 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "lib": ["ESNext"],
+    // Enables the jsx-runtime for XML element creation.
+    // The actual pragma is defined per-file so that it
+    // doesn't interfere with React applications that
+    // depend on this lib.
+    "jsx": "react-jsx",
     "tsBuildInfoFile": ".tsbuild/tsconfig.tsbuildinfo",
     "outDir": ".tsbuild/types",
     "customConditions": ["@storyteller"]
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "./**/*.tsx"],
   "exclude": ["dist"],
   "references": [
     {

@@ -10,12 +10,23 @@
     // only legal when emitting declarations alone.
     "allowImportingTsExtensions": false,
     // Pinned so a file added to the program later cannot move the published layout.
-    "rootDir": ".",
+    // Set to ./src so the published layout stays dist/index.js, dist/files.node.js,
+    // dist/adapters/tmpfs.js rather than gaining a src/ level.
+    "rootDir": "./src",
     "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
     "outDir": "dist"
   },
   // scripts/install-epubcheck.ts downloads the vendored epubcheck; it never ships.
-  "exclude": ["dist", "scripts", "**/*.test.ts", "vitest.config.ts"],
+  // src/__test__ holds the test helpers (epubcheck.ts, spec-support.ts), which are
+  // not *.test.* and so need excluding by name to stay out of dist.
+  "exclude": [
+    "dist",
+    "scripts",
+    "src/__test__",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "vitest.config.ts"
+  ],
   "references": [
     { "path": "../fs" },
     { "path": "../path" },

@@ -25,9 +25,11 @@ import { type Logger } from "pino"
 import { ZipFile } from "yazl"
 
 import {
+  addLinkToXhtmlHead,
+  type Document,
   Epub,
+  getXhtmlBody,
   type ManifestItem,
-  type ParsedXml,
 } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
 import {
@@ -47,7 +49,7 @@ import {
   generateGuidedNavigationManifest,
 } from "../readium/guidedNavigation.ts"
 
-import { READALOUD_STYLESHEET, writeAudioChapters } from "./audioChapters.ts"
+import { READALOUD_STYLESHEET, writeAudioChapters } from "./audioChapters.tsx"
 import {
   type AlignmentDecisions,
   type ExclusionOptions,
@@ -56,7 +58,7 @@ import {
   chapterAligned,
   classifySpine,
 } from "./ctc/exclusions.ts"
-import { type ChapterHole, createMediaOverlay } from "./ctc/mediaOverlay.ts"
+import { type ChapterHole, createMediaOverlay } from "./ctc/mediaOverlay.tsx"
 import {
   type MappedTimeline,
   type SentenceRange,
@@ -98,7 +100,7 @@ function previewOf(sentences: { text: string }[]): string {
 
 type AlignedChapter = {
   chapter: ManifestItem
-  xml: ParsedXml
+  xml: Document
   sentenceRanges: SentenceRange[]
   wordRanges: WordRange[][]
   startOffset: number
@@ -339,7 +341,7 @@ export class Aligner {
   private async getChapterSentences(chapterId: string) {
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
-    const original = parseDom(Epub.getXhtmlBody(chapterXml))
+    const original = parseDom(getXhtmlBody(chapterXml))
 
     const inlined = inlineFootnotes(original)
 
@@ -486,15 +488,17 @@ export class Aligner {
         href: `MediaOverlays/${chapterStem}.smil`,
         mediaType: MediaType.SMIL.mime,
       },
-      createMediaOverlay(
-        chapter,
-        this.granularity,
-        sentenceRanges,
-        wordRangeMap,
-        sentenceIdToBlockFragment,
-        sentenceIdToFragment,
-        wordIdToFragment,
-        holes,
+      this.epub.createXmlDocument(
+        createMediaOverlay(
+          chapter,
+          this.granularity,
+          sentenceRanges,
+          wordRangeMap,
+          sentenceIdToBlockFragment,
+          sentenceIdToFragment,
+          wordIdToFragment,
+          holes,
+        ),
       ),
       "xml",
     )
@@ -611,7 +615,7 @@ export class Aligner {
       "Styles/storyteller-readaloud.css",
     )
 
-    Epub.addLinkToXhtmlHead(chapterXml, {
+    addLinkToXhtmlHead(chapterXml, {
       rel: "stylesheet",
       href: storytellerStylesheetUrl,
       type: MediaType.CSS.mime,

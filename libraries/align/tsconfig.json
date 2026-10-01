@@ -15,6 +15,11 @@
     "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
     "lib": ["esnext"],
+    // Enables the jsx-runtime for EPUB lib's XML element creation.
+    // The actual pragma is defined per-file so that it
+    // doesn't interfere with React applications that
+    // depend on this lib.
+    "jsx": "react-jsx",
     "tsBuildInfoFile": ".tsbuild/tsconfig.tsbuildinfo",
     "outDir": ".tsbuild/types",
     "typeRoots": [
@@ -26,6 +31,7 @@
   "include": [
     "package.json",
     "src/**/*.ts",
+    "src/**/*.tsx",
     "src/align/opencc/TSCharacters.json"
   ],
   "references": [

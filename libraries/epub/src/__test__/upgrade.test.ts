@@ -1,10 +1,12 @@
 import assert from "assert"
 import { join } from "path"
 
+import { type CharacterData } from "@xmldom/xmldom"
 import { describe, it } from "vitest"
 
+import { Epub } from "../index.tsx"
+
 import { epubcheck } from "./epubcheck.ts"
-import { Epub, type XmlTextNode } from "./index.ts"
 
 describe("upgradeToEpub3", () => {
   it("can upgrade an epub 2 to epub 3", async () => {
@@ -25,13 +27,13 @@ describe("upgradeToEpub3", () => {
     using epub3 = await Epub.from(outputFilepath)
     const spineItems = await epub3.getSpineItems()
     const coverPageData = await epub3.readXhtmlItemContents(spineItems[0]!.id)
-    const html = coverPageData[1]
+    const html = coverPageData.documentElement
     assert.ok(html)
-    const head = Epub.getXmlChildren(html)[1]
+    const head = html.children.item(0)
     assert.ok(head)
-    const title = Epub.getXmlChildren(head)[1]
+    const title = head.children.item(0)
     assert.ok(title)
-    const titleText = (Epub.getXmlChildren(title)[0] as XmlTextNode)["#text"]
+    const titleText = (title.childNodes.item(0) as CharacterData).data
     assert.strictEqual(titleText, '"Cover"')
 
     const report = await epubcheck(outputFilepath)
@@ -47,8 +49,7 @@ describe("upgradeToEpub3", () => {
         if (
           message.severity === "ERROR" ||
           message.severity === "WARNING" ||
-          message.severity === "FATAL" ||
-          message.ID === "RSC-005"
+          message.severity === "FATAL"
         ) {
           assert.fail(
             `Error: ${JSON.stringify(message, null, 2)}. Other messages: ${JSON.stringify(

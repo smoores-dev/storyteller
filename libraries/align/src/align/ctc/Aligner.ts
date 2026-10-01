@@ -11,7 +11,12 @@ import { enumerate, max } from "itertools"
 import memoize from "memoize"
 import { type Logger } from "pino"
 
-import { Epub, type ManifestItem } from "@storyteller-platform/epub"
+import {
+  addLinkToXhtmlHead,
+  Epub,
+  getXhtmlBody,
+  type ManifestItem,
+} from "@storyteller-platform/epub"
 import {
   type Timing,
   createAggregator,
@@ -30,7 +35,7 @@ import {
   READALOUD_STYLESHEET,
   type WrittenAudioChapter,
   writeAudioChapters,
-} from "../audioChapters.ts"
+} from "../audioChapters.tsx"
 import {
   type AudioRange,
   SentenceRange,
@@ -85,7 +90,7 @@ import {
   type ChapterHole,
   buildFragmentMaps,
   createMediaOverlay,
-} from "./mediaOverlay.ts"
+} from "./mediaOverlay.tsx"
 import { type AlignedChapter } from "./report.ts"
 import { type Match, findCtcBoundaries } from "./search.ts"
 
@@ -402,7 +407,7 @@ export class Aligner {
   private async getChapterSentences(chapterId: string) {
     const chapterXml = await this.epub.readXhtmlItemContents(chapterId)
 
-    const original = parseDom(Epub.getXhtmlBody(chapterXml))
+    const original = parseDom(getXhtmlBody(chapterXml))
 
     const inlined = inlineFootnotes(original)
 
@@ -538,15 +543,17 @@ export class Aligner {
         href: `MediaOverlays/${chapterStem}.smil`,
         mediaType: "application/smil+xml",
       },
-      createMediaOverlay(
-        chapter,
-        this.granularity,
-        sentenceRanges,
-        wordRangeMap,
-        sentenceIdToBlockFragment,
-        sentenceIdToFragment,
-        wordIdToFragment,
-        holes,
+      this.epub.createXmlDocument(
+        createMediaOverlay(
+          chapter,
+          this.granularity,
+          sentenceRanges,
+          wordRangeMap,
+          sentenceIdToBlockFragment,
+          sentenceIdToFragment,
+          wordIdToFragment,
+          holes,
+        ),
       ),
       "xml",
     )
@@ -1088,7 +1095,7 @@ export class Aligner {
       "Styles/storyteller-readaloud.css",
     )
 
-    Epub.addLinkToXhtmlHead(chapterXml, {
+    addLinkToXhtmlHead(chapterXml, {
       rel: "stylesheet",
       href: storytellerStylesheetUrl,
       type: "text/css",

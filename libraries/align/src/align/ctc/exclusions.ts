@@ -1,9 +1,11 @@
 import {
-  Epub,
+  type Document,
+  type Element,
   type EpubReader,
+  findXmlChildByName,
+  getXhtmlBody,
   type ManifestItem,
   type NavigationList,
-  type ParsedXml,
 } from "@storyteller-platform/epub"
 
 import {
@@ -140,49 +142,49 @@ function tokensInclude(tokens: string[], phrase: string): boolean {
   return haystack.includes(needle)
 }
 
-function textLength(xml: ParsedXml): number {
-  return Epub.getXhtmlTextContent(xml).replace(/\s+/g, "").length
+function textLength(element: Element): number {
+  return (element.textContent ?? "").replace(/\s+/g, "").length
 }
 
-function outermostTypes(xml: ParsedXml, into: Map<string, number>) {
-  for (const node of xml) {
-    if (Epub.isXmlTextNode(node)) continue
-    const children = Epub.getXmlChildren(node)
-    const type = Epub.getXmlAttributes(node)["epub:type"]
+function outermostTypes(element: Element, into: Map<string, number>) {
+  for (const node of Array.from(element.children)) {
+    const type = node.getAttribute("epub:type")
     if (!type) {
-      outermostTypes(children, into)
+      outermostTypes(node, into)
       continue
     }
-    const length = textLength(children)
+    const length = textLength(node)
     for (const value of type.trim().split(/\s+/)) {
       if (value) into.set(value, (into.get(value) ?? 0) + length)
     }
   }
 }
 
-export function contentTypes(xml: ParsedXml): string[] {
-  const html = Epub.findXmlChildByName("html", xml)
-  const body = html && Epub.findXmlChildByName("body", html["html"])
+export function contentTypes(document: Document): string[] {
+  const html = document.documentElement
+  if (!html) return []
+
+  const body = findXmlChildByName("body", html)
   if (!body) return []
   const found = new Set<string>()
-  const bodyType = Epub.getXmlAttributes(body)["epub:type"]
+  const bodyType = body.getAttribute("epub:type")
   if (bodyType) {
     for (const value of bodyType.trim().split(/\s+/)) {
       if (value) found.add(value)
     }
   }
   const typed = new Map<string, number>()
-  outermostTypes(body["body"], typed)
-  const total = textLength(body["body"])
+  outermostTypes(body, typed)
+  const total = textLength(body)
   for (const [type, length] of typed) {
     if (total === 0 || length / total >= CONTENT_TYPE_SHARE) found.add(type)
   }
   return [...found]
 }
 
-function hasText(xml: ParsedXml): boolean {
+function hasText(document: Document): boolean {
   try {
-    return /\S/.test(Epub.getXhtmlTextContent(Epub.getXhtmlBody(xml)))
+    return /\S/.test(getXhtmlBody(document).textContent ?? "")
   } catch {
     return false
   }
@@ -190,24 +192,24 @@ function hasText(xml: ParsedXml): boolean {
 
 const HEADINGS = new Set<string>(["h1", "h2", "h3"])
 
-function firstHeading(xml: ParsedXml): string | null {
-  for (const node of xml) {
-    if (Epub.isXmlTextNode(node)) {
-      continue
-    }
-    const children = Epub.getXmlChildren(node)
-    if (HEADINGS.has(Epub.getXmlElementName(node))) {
-      const text = Epub.getXhtmlTextContent(children).trim()
-      if (text) {
-        return text
+function firstHeading(document: Document): string | null {
+  const search = (element: Element): string | null => {
+    for (const node of Array.from(element.children)) {
+      if (HEADINGS.has(node.nodeName)) {
+        const text = (node.textContent ?? "").trim()
+        if (text) {
+          return text
+        }
+      }
+      const found = search(node)
+      if (found) {
+        return found
       }
     }
-    const found = firstHeading(children)
-    if (found) {
-      return found
-    }
+    return null
   }
-  return null
+
+  return document.documentElement ? search(document.documentElement) : null
 }
 
 export function normalizeTitle(title: string): string {
@@ -412,7 +414,7 @@ export async function classifySpine(
       }
     }
 
-    let xml: ParsedXml | null = null
+    let xml: Document | null = null
     if (isDocument) {
       try {
         xml = await epub.readXhtmlItemContents(item.id)

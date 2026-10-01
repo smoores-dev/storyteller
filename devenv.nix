@@ -57,6 +57,8 @@ in
     corepack.enable = true;
   };
 
+  languages.java.enable = true;
+
   tasks."repo:init" = {
     description = "Do necessary work for setting up development";
     exec = ''

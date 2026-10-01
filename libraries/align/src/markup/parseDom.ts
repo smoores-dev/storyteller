@@ -1,4 +1,9 @@
-import { Epub, type ParsedXml, type XmlNode } from "@storyteller-platform/epub"
+import {
+  type Element,
+  isElement,
+  isText,
+  type Node as DomNode,
+} from "@storyteller-platform/epub"
 
 import {
   FootnoteNode,
@@ -10,22 +15,33 @@ import {
 } from "./model.ts"
 import { BLOCKS } from "./semantics.ts"
 
-export function parseDom(xml: ParsedXml) {
+export function parseDom(body: Element) {
   const parser = new Parser()
-  return parser.parseDom(xml)
+  return parser.parseDom(body)
 }
 
 const FOOTNOTE_ROLES = ["footnote", "rearnote", "endnote", "note"]
 
+/**
+ * Snapshot an element's attributes. The markup model stores attributes as a
+ * plain record and re-serializes them, unlike the rest of the codebase, which
+ * reads them in place with `getAttribute()`.
+ */
+function attributeRecord(element: Element): Record<string, string> {
+  return Object.fromEntries(
+    Array.from(element.attributes).map((attr) => [attr.name, attr.value]),
+  )
+}
+
 class Parser {
   private footnoteIds = new Set<string>()
 
-  parseDom(xml: ParsedXml) {
-    const children = this.parseDomChildren(xml)
+  parseDom(body: Element) {
+    const children = this.parseDomChildren(Array.from(body.childNodes))
     return new Root(children)
   }
 
-  parseDomChildren(xml: ParsedXml, pos = 0) {
+  parseDomChildren(xml: DomNode[], pos = 0) {
     const children: (Node | TextNode)[] = []
     for (const child of xml) {
       const result = this.parseDomNode(child, pos)
@@ -38,16 +54,21 @@ class Parser {
   }
 
   parseDomNode(
-    xmlNode: XmlNode,
+    xmlNode: DomNode,
     pos: number,
     marks?: Mark[],
   ): Node | TextNode | (Node | TextNode)[] {
-    if (Epub.isXmlTextNode(xmlNode)) {
-      return new TextNode(xmlNode["#text"], marks)
+    if (isText(xmlNode)) {
+      return new TextNode(xmlNode.data, marks)
     }
 
-    const tagName = Epub.getXmlElementName(xmlNode)
-    const attrs = Epub.getXmlAttributes(xmlNode)
+    // Comments and other non-element nodes are dropped here because
+    // fast-xml-parser discarded them at parse time. Emitting a model node for
+    // one would shift every character offset after it.
+    if (!isElement(xmlNode)) return []
+
+    const tagName = xmlNode.nodeName
+    const attrs = attributeRecord(xmlNode)
     if (tagName === "a" && attrs["epub:type"] === "noteref") {
       const href = attrs["href"]
       const fragment = href?.split("#")[1]
@@ -64,7 +85,7 @@ class Parser {
         this.footnoteIds.has(attrs["id"]))
     ) {
       const blockChildren = this.parseDomChildren(
-        Epub.getXmlChildren(xmlNode),
+        Array.from(xmlNode.childNodes),
         pos + 1,
       )
 
@@ -85,21 +106,21 @@ class Parser {
 
     if (BLOCKS.includes(tagName)) {
       const blockChildren = this.parseDomChildren(
-        Epub.getXmlChildren(xmlNode),
+        Array.from(xmlNode.childNodes),
         pos + 1,
       )
 
       return new Node(tagName, attrs, blockChildren, marks)
     }
 
-    if (!Epub.getXmlChildren(xmlNode).length) {
-      return new Node(tagName, Epub.getXmlAttributes(xmlNode), [], marks)
+    if (!xmlNode.childNodes.length) {
+      return new Node(tagName, attrs, [], marks)
     }
 
-    return Epub.getXmlChildren(xmlNode).flatMap((child) =>
+    return Array.from(xmlNode.childNodes).flatMap((child) =>
       this.parseDomNode(child, pos, [
         ...(marks ?? []),
-        new Mark(tagName, Epub.getXmlAttributes(xmlNode)),
+        new Mark(tagName, attrs),
       ]),
     )
   }

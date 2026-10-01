@@ -4,7 +4,12 @@ import { dirname, join } from "node:path"
 
 import { describe, it, type TestContext } from "vitest"
 
-import { Epub, MemoryAdapter, type ParsedXml } from "@storyteller-platform/epub"
+import {
+  Epub,
+  MemoryAdapter,
+  parse,
+  serialize,
+} from "@storyteller-platform/epub"
 
 import { markupChapter } from "../markup.ts"
 
@@ -85,8 +90,8 @@ async function assertMarkupSnapshot(context: TestContext, output: string) {
 
 describe("markupChapter", () => {
   it("can tag sentences", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version="1.0" encoding="UTF-8"?>
+    const input = parse(
+      /* xml */ `<?xml version="1.0" encoding="UTF-8"?>
 
 <html>
   <head>
@@ -117,7 +122,9 @@ describe("markupChapter", () => {
     </p>
   </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -126,7 +133,7 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   // timeout to ensure no regression in speed
@@ -148,13 +155,13 @@ describe("markupChapter", () => {
         new Intl.Locale("en-US"),
       )
 
-      await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+      await assertMarkupSnapshot(t, serialize(output))
     },
   )
 
   it("can tag sentences with formatting marks", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version="1.0" encoding="UTF-8"?>
+    const input = parse(
+      /* xml */ `<?xml version="1.0" encoding="UTF-8"?>
 
 <html>
   <head>
@@ -170,7 +177,9 @@ describe("markupChapter", () => {
     </p>
   </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -179,12 +188,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can tag sentences with trailing atoms", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version="1.0" encoding="UTF-8"?>
+    const input = parse(
+      /* xml */ `<?xml version="1.0" encoding="UTF-8"?>
 
 <html>
   <head>
@@ -201,7 +210,9 @@ describe("markupChapter", () => {
     </p>
   </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -210,12 +221,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can tag sentences with formatting marks that overlap sentence boundaries", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version="1.0" encoding="UTF-8"?>
+    const input = parse(
+      /* xml */ `<?xml version="1.0" encoding="UTF-8"?>
 
 <html>
   <head>
@@ -231,7 +242,9 @@ describe("markupChapter", () => {
     </p>
   </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -240,12 +253,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can tag sentences with nested formatting marks", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version="1.0" encoding="UTF-8"?>
+    const input = parse(
+      /* xml */ `<?xml version="1.0" encoding="UTF-8"?>
 
 <html>
   <head>
@@ -261,7 +274,9 @@ describe("markupChapter", () => {
     </p>
   </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -270,12 +285,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can tag sentences with atoms", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version="1.0" encoding="UTF-8"?>
+    const input = parse(
+      /* xml */ `<?xml version="1.0" encoding="UTF-8"?>
 
 <html>
   <head>
@@ -291,7 +306,9 @@ describe("markupChapter", () => {
     </p>
   </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -300,12 +317,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can tag sentences in nested textblocks", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version='1.0' encoding='utf-8'?>
+    const input = parse(
+      /* xml */ `<?xml version='1.0' encoding='utf-8'?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"
       epub:prefix="z3998: http://www.daisy.org/z3998/2012/vocab/structure/#" lang="en" xml:lang="en">
@@ -331,7 +348,9 @@ describe("markupChapter", () => {
   </body>
 
 </html>
-    `) as ParsedXml
+    `,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -340,12 +359,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can tag sentences that cross textblock boundaries", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
-<?xml version="1.0" encoding="UTF-8"?>
+    const input = parse(
+      /* xml */ `<?xml version="1.0" encoding="UTF-8"?>
 
 <html>
   <head>
@@ -364,7 +383,9 @@ describe("markupChapter", () => {
     </p>
   </body>
 </html>
-    `) as ParsedXml
+    `,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -373,11 +394,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can handle soft page breaks", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
+    const input = parse(
+      /* xml */ `
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en-US" xml:lang="en-US">
   <head>
     <title>Chapter 1, Black Powder War</title>
@@ -404,7 +426,9 @@ describe("markupChapter", () => {
       <p class="para-p">“I beg you will not raise your hopes too high,” Laurence said, himself a little hopelessly: urging Temeraire to restraint had so far not produced any effect, and he did not expect a different event now. “You must be prepared to endure some delays; at home as much as here.”</p>
     </div>
   </body>
-</html>`) as ParsedXml
+</html>`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -413,11 +437,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can handle footnotes", async (t) => {
-    const input = Epub.xhtmlParser.parse(/* xml */ `
+    const input = parse(
+      /* xml */ `
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en-US" xml:lang="en-US">
   <head>
     <title>Chapter 1, Black Powder War</title>
@@ -445,7 +470,9 @@ describe("markupChapter", () => {
     </div>
     <aside epub:type="footnote" id="footnote"><p>It was really hot</p></aside>
   </body>
-</html>`) as ParsedXml
+</html>`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -454,19 +481,21 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can handle boolean-like text values", async (t) => {
-    const input = Epub.xhtmlParser.parse(`
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    const input = parse(
+      `<?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <head>
 </head>
 <body>
 <p>true</p>
 </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -475,19 +504,21 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can handle number-like text values", async (t) => {
-    const input = Epub.xhtmlParser.parse(`
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    const input = parse(
+      `<?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <head>
 </head>
 <body>
 <p>5.000</p>
 </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -496,19 +527,21 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can handle null-like text values", async (t) => {
-    const input = Epub.xhtmlParser.parse(`
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    const input = parse(
+      `<?xml version="1.0" encoding="UTF-8" standalone="no"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <head>
 </head>
 <body>
 <p>null</p>
 </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -517,12 +550,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("can preserve nbsp entities", async (t) => {
-    const input = Epub.xhtmlParser.parse(`
-<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    const input = parse(
+      `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ops="http://www.idpf.org/2007/ops" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <head>
 </head>
 <body>
@@ -532,7 +565,9 @@ describe("markupChapter", () => {
 <p>Second paragraph.</p>
 </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -541,12 +576,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("preserves top level svgs", async (t) => {
-    const input = Epub.xhtmlParser.parse(`
-<?xml version='1.0' encoding='utf-8'?>
+    const input = parse(
+      `<?xml version='1.0' encoding='utf-8'?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
@@ -555,7 +590,9 @@ describe("markupChapter", () => {
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1274 1920" height="100%" width="100%"><image xlink:href="image_rsrc8SD.jpg" height="1920" width="1274"/></svg></body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -564,12 +601,12 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 
   it("correctly marks up ruby tags", async (t) => {
-    const input = Epub.xhtmlParser.parse(`
-<?xml version='1.0' encoding='utf-8'?>
+    const input = parse(
+      `<?xml version='1.0' encoding='utf-8'?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
@@ -581,7 +618,9 @@ describe("markupChapter", () => {
 </p>
 </body>
 </html>
-`) as ParsedXml
+`,
+      "application/xhtml+xml",
+    )
 
     const { markedUp: output } = await markupChapter(
       "chapter_one",
@@ -590,6 +629,6 @@ describe("markupChapter", () => {
       new Intl.Locale("en-US"),
     )
 
-    await assertMarkupSnapshot(t, Epub.xhtmlBuilder.build(output))
+    await assertMarkupSnapshot(t, serialize(output))
   })
 })

@@ -8,7 +8,15 @@ import { promisify } from "node:util"
 import { scratchPath } from "@storyteller-platform/fs"
 
 const here = dirname(fileURLToPath(import.meta.url))
-const JAR = join(here, "vendors", "epubcheck-5.3.0", "epubcheck.jar")
+// Vendored epubcheck stays at the package root, two levels above this file.
+const JAR = join(
+  here,
+  "..",
+  "..",
+  "vendors",
+  "epubcheck-5.3.0",
+  "epubcheck.jar",
+)
 
 export interface Location {
   url: { hierachical: boolean; opaque: boolean }

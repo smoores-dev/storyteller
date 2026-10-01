@@ -1,14 +1,20 @@
+/** @jsxImportSource @storyteller-platform/epub */
+
 import { dirname, join, relative } from "node:path/posix"
 
 import {
+  type Element,
   Epub,
+  findXmlChildByName,
+  findXmlDescendantByName,
+  getXhtmlBody,
+  insert,
+  isElement,
   type ManifestItem,
-  type ParsedXml,
-  type XmlElement,
 } from "@storyteller-platform/epub"
 import { MediaType } from "@storyteller-platform/media-types"
 
-import { createAudioChapterOverlay } from "./ctc/mediaOverlay.ts"
+import { createAudioChapterOverlay } from "./ctc/mediaOverlay.tsx"
 import { getChapterDuration } from "./getSentenceRanges.ts"
 import { type AudioChapter, type Hole, type HoleAnchor } from "./holes.ts"
 
@@ -77,15 +83,13 @@ async function textRefId(
   item: ManifestItem,
 ): Promise<string | null> {
   const xhtml = await epub.readXhtmlItemContents(item.id)
-  const body = Epub.getXhtmlBody(xhtml)
-  const first = body.find(
-    (node): node is XmlElement => !Epub.isXmlTextNode(node),
-  )
+  const body = getXhtmlBody(xhtml)
+  const first = Array.from(body.childNodes).find(isElement)
   if (!first) return null
-  const existing = Epub.getXmlAttributes(first)["id"]
+  const existing = first.getAttribute("id")
   if (existing) return existing
   const id = `${item.id}-s0`
-  first[":@"] = { ...(first[":@"] ?? {}), "@_id": id }
+  first.setAttribute("id", id)
   await epub.writeXhtmlItemContents(item.id, xhtml)
   return id
 }
@@ -133,17 +137,17 @@ export async function writeAudioChapters(
 
     const document = await epub.createXhtmlDocument(
       [
-        Epub.createXmlElement("section", { "epub:type": "chapter" }, [
-          Epub.createXmlElement("h1", { id: headingId }, [{ "#text": title }]),
-        ]),
+        <section epub:type="chapter">
+          <h1 id={headingId}>{title}</h1>
+        </section>,
       ],
       [
-        Epub.createXmlElement("title", {}, [{ "#text": title }]),
-        Epub.createXmlElement("link", {
-          rel: "stylesheet",
-          type: "text/css",
-          href: relative(dirname(href), READALOUD_STYLESHEET),
-        }),
+        <title>{title}</title>,
+        <link
+          rel="stylesheet"
+          type="text/css"
+          href={relative(dirname(href), READALOUD_STYLESHEET)}
+        />,
       ],
       locale,
     )
@@ -161,7 +165,9 @@ export async function writeAudioChapters(
         href: `MediaOverlays/storyteller-audio-${n}.smil`,
         mediaType: MediaType.SMIL.mime,
       },
-      createAudioChapterOverlay(item, headingId, chapter.holes),
+      epub.createXmlDocument(
+        createAudioChapterOverlay(item, headingId, chapter.holes),
+      ),
       "xml",
     )
 
@@ -218,7 +224,9 @@ async function attachAudioChapter(
       href: `MediaOverlays/storyteller-audio-${n}.smil`,
       mediaType: MediaType.SMIL.mime,
     },
-    createAudioChapterOverlay(item, fragment, chapter.holes),
+    epub.createXmlDocument(
+      createAudioChapterOverlay(item, fragment, chapter.holes),
+    ),
     "xml",
   )
 
@@ -258,71 +266,60 @@ async function insertNavEntry(
   if (!navItem) return
 
   const nav = await epub.readXhtmlItemContents(navItem.id)
-  const toc = Epub.findXmlDescendantByName(
+  const navHtml = nav.documentElement
+  if (!navHtml) return
+
+  const toc = findXmlDescendantByName(
     "nav",
-    nav,
-    (node) => Epub.getXmlAttributes(node)["epub:type"] === "toc",
+    navHtml,
+    (node) => node.getAttribute("epub:type") === "toc",
   )
   if (!toc) return
-  const list = Epub.findXmlDescendantByName("ol", Epub.getXmlChildren(toc))
+  const list = findXmlDescendantByName("ol", toc)
   if (!list) return
 
-  const li = Epub.createXmlElement("li", {}, [
-    Epub.createXmlElement(
-      "a",
-      { href: relative(dirname(navItem.href), entry.href) },
-      [{ "#text": entry.title }],
-    ),
-  ])
+  const li = (
+    <li>
+      <a href={relative(dirname(navItem.href), entry.href)}>{entry.title}</a>
+    </li>
+  )
 
   const matches = findEntries(list, stem(anchor.href))
   const target = position === "after" ? matches.at(-1) : matches[0]
   if (target) {
-    target.children.splice(
-      position === "after" ? target.index + 1 : target.index,
-      0,
+    insert(
+      target.parentElement ?? list,
       li,
+      position === "after" ? target.nextSibling : target,
     )
   } else {
     const spine = await epub.getSpineItems()
     const order = new Map(spine.map((item, index) => [stem(item.href), index]))
     const anchorOrder = order.get(stem(anchor.href)) ?? -1
     const later = findEntries(list, null).find((entry) => {
-      const child = entry.children[entry.index]
-      const link =
-        child && !Epub.isXmlTextNode(child)
-          ? Epub.findXmlChildByName("a", Epub.getXmlChildren(child))
-          : undefined
-      const href = link ? Epub.getXmlAttributes(link)["href"] : undefined
+      const href = findXmlChildByName("a", entry)?.getAttribute("href")
       const entryOrder = href ? order.get(stem(href)) : undefined
       return entryOrder !== undefined && entryOrder > anchorOrder
     })
-    if (later) later.children.splice(later.index, 0, li)
-    else Epub.getXmlChildren(list).push(li)
+    if (later) insert(later.parentElement ?? list, li, later.nextSibling)
+    else insert(list, li)
   }
 
   await epub.writeXhtmlItemContents(navItem.id, nav)
 }
 
-type NavEntry = { children: ParsedXml; index: number }
-
-function findEntries(
-  list: XmlElement<"ol">,
-  target: string | null,
-): NavEntry[] {
-  const found: NavEntry[] = []
-  const children = Epub.getXmlChildren(list)
-  for (const [index, child] of children.entries()) {
-    if (Epub.isXmlTextNode(child) || Epub.getXmlElementName(child) !== "li") {
+function findEntries(list: Element, target: string | null): Element[] {
+  const found: Element[] = []
+  for (const child of Array.from(list.children)) {
+    if (child.nodeName !== "li") {
       continue
     }
-    const inner = Epub.getXmlChildren(child)
-    const link = Epub.findXmlChildByName("a", inner)
-    const href = link ? Epub.getXmlAttributes(link)["href"] : undefined
+    const link = findXmlChildByName("a", child)
+    const href = link?.getAttribute("href")
     if (href && (target === null || stem(href) === target)) {
-      found.push({ children, index })
+      found.push(child)
     }
-    const nested = Epub.findXmlChildByName("ol", inner)
+    const nested = findXmlChildByName("ol", child)
     if (nested) found.push(...findEntries(nested, target))
   }
   return found

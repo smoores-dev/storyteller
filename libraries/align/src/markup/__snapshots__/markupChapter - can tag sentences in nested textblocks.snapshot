@@ -1,5 +1,6 @@
-
-<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="storyteller: https://storyteller-platform.dev/docs/vocabulary" lang="en" xml:lang="en">
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" epub:prefix="storyteller: https://storyteller-platform.dev/docs/vocabulary" lang="en" xml:lang="en">
 
   <head>
     <link href="../styles/9781534431010.css" rel="stylesheet" type="text/css"/>
@@ -9,7 +10,7 @@
 
   <body>
     <blockquote class="blockquotelet">
-      <p class="blockno"><span aria-label="page 7" id="page_7" role="doc-pagebreak"/></p>
+      <p class="blockno"><span aria-label="page 7" id="page_7" role="doc-pagebreak"></span></p>
       <p class="blockno"><span id="chapter_one-s0" epub:type="storyteller:sentence-span">Look on my works, ye mighty, and despair!</span></p>
       <p class="blockno1"><span id="chapter_one-s1" epub:type="storyteller:sentence-span">A little joke.</span></p>
       <p class="blockno1"> </p>

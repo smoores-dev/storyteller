@@ -7,10 +7,10 @@ import { join } from "node:path"
 import { describe, it } from "vitest"
 import { ZipFile } from "yazl"
 
-import type { ArchiveSource } from "./adapters/interface.ts"
-import { TmpFsAdapter } from "./adapters/tmpfs.ts"
-import * as zipBrowser from "./zip.browser.ts"
-import * as zipNode from "./zip.node.ts"
+import type { ArchiveSource } from "../adapters/interface.ts"
+import { TmpFsAdapter } from "../adapters/tmpfs.ts"
+import * as zipBrowser from "../zip.browser.ts"
+import * as zipNode from "../zip.node.ts"
 
 const readers = { "zip.node.ts": zipNode, "zip.browser.ts": zipBrowser }
 

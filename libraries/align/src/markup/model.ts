@@ -1,9 +1,13 @@
 import { enumerate } from "itertools"
 
-import { type ElementName } from "@storyteller-platform/epub"
-
 import { ResolvedPos } from "./resolvedPos.ts"
 import { BLOCKS } from "./semantics.ts"
+
+/**
+ * An XML tag name. DOM exposes element names as plain strings, and the type
+ * this replaced was only ever "a string beginning with a letter".
+ */
+export type ElementName = string
 
 export class Root {
   public isLeaf = false

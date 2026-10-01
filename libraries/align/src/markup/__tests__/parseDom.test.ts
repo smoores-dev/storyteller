@@ -2,20 +2,19 @@ import assert from "node:assert"
 
 import { describe, it } from "vitest"
 
-import { Epub } from "@storyteller-platform/epub"
+import { type Element, x } from "@storyteller-platform/epub"
 
 import { FootnoteNode, Mark, Node, Root, TextNode } from "../model.ts"
 import { parseDom } from "../parseDom.ts"
 
+/** parseDom takes the body element; the tests build a sibling forest. */
+function body(children: Element[]) {
+  return x("body", {}, ...children)
+}
+
 describe("parseDom", () => {
   it("should parse hierarchical XML", () => {
-    const result = parseDom([
-      Epub.createXmlElement("p", {}, [
-        Epub.createXmlElement("span", {}, [
-          Epub.createXmlTextNode("Hello, world!"),
-        ]),
-      ]),
-    ])
+    const result = parseDom(body([x("p", {}, x("span", {}, "Hello, world!"))]))
 
     assert.deepStrictEqual(
       result,
@@ -26,15 +25,9 @@ describe("parseDom", () => {
   })
 
   it("should parse nested marks", () => {
-    const result = parseDom([
-      Epub.createXmlElement("p", {}, [
-        Epub.createXmlElement("strong", {}, [
-          Epub.createXmlElement("em", {}, [
-            Epub.createXmlTextNode("Hello, world!"),
-          ]),
-        ]),
-      ]),
-    ])
+    const result = parseDom(
+      body([x("p", {}, x("strong", {}, x("em", {}, "Hello, world!")))]),
+    )
 
     assert.deepStrictEqual(
       result,
@@ -47,13 +40,11 @@ describe("parseDom", () => {
   })
 
   it("should preserve attributes", () => {
-    const result = parseDom([
-      Epub.createXmlElement("p", { id: "p1" }, [
-        Epub.createXmlElement("span", { class: "red" }, [
-          Epub.createXmlTextNode("Hello, world!"),
-        ]),
+    const result = parseDom(
+      body([
+        x("p", { id: "p1" }, x("span", { class: "red" }, "Hello, world!")),
       ]),
-    ])
+    )
 
     assert.deepStrictEqual(
       result,
@@ -66,32 +57,34 @@ describe("parseDom", () => {
   })
 
   it("should identify footnotes and noterefs", () => {
-    const result = parseDom([
-      Epub.createXmlElement("p", { id: "p1" }, [
-        Epub.createXmlTextNode("Hello, world!"),
-        Epub.createXmlElement(
-          "a",
-          {
-            id: "note1",
-            "epub:type": "noteref",
-            href: "#note1-content",
-          },
-          [Epub.createXmlTextNode("1")],
-        ),
-      ]),
-      Epub.createXmlElement("aside", {}, [
-        Epub.createXmlElement(
+    const result = parseDom(
+      body([
+        x(
           "p",
-          { id: "note1-content", "epub:type": "footnote" },
-          [
-            Epub.createXmlElement("a", { href: "#note1" }, [
-              Epub.createXmlTextNode("1"),
-            ]),
-            Epub.createXmlTextNode("Footnote content"),
-          ],
+          { id: "p1" },
+          "Hello, world!",
+          x(
+            "a",
+            {
+              id: "note1",
+              "epub:type": "noteref",
+              href: "#note1-content",
+            },
+            "1",
+          ),
+        ),
+        x(
+          "aside",
+          {},
+          x(
+            "p",
+            { id: "note1-content", "epub:type": "footnote" },
+            x("a", { href: "#note1" }, "1"),
+            "Footnote content",
+          ),
         ),
       ]),
-    ])
+    )
 
     assert.deepStrictEqual(
       result,
@@ -121,28 +114,34 @@ describe("parseDom", () => {
   })
 
   it("should identify footnotes and noterefs when footnote role is missing", () => {
-    const result = parseDom([
-      Epub.createXmlElement("p", { id: "p1" }, [
-        Epub.createXmlTextNode("Hello, world!"),
-        Epub.createXmlElement(
-          "a",
-          {
-            id: "note1",
-            "epub:type": "noteref",
-            href: "#note1-content",
-          },
-          [Epub.createXmlTextNode("1")],
+    const result = parseDom(
+      body([
+        x(
+          "p",
+          { id: "p1" },
+          "Hello, world!",
+          x(
+            "a",
+            {
+              id: "note1",
+              "epub:type": "noteref",
+              href: "#note1-content",
+            },
+            "1",
+          ),
+        ),
+        x(
+          "aside",
+          {},
+          x(
+            "p",
+            { id: "note1-content" },
+            x("a", { href: "#note1" }, "1"),
+            "Footnote content",
+          ),
         ),
       ]),
-      Epub.createXmlElement("aside", {}, [
-        Epub.createXmlElement("p", { id: "note1-content" }, [
-          Epub.createXmlElement("a", { href: "#note1" }, [
-            Epub.createXmlTextNode("1"),
-          ]),
-          Epub.createXmlTextNode("Footnote content"),
-        ]),
-      ]),
-    ])
+    )
 
     assert.deepStrictEqual(
       result,
@@ -172,17 +171,25 @@ describe("parseDom", () => {
   })
 
   it("should preserve leaf nodes", () => {
-    const result = parseDom([
-      Epub.createXmlElement("p", {}, [
-        Epub.createXmlElement("span", {}, [
-          Epub.createXmlTextNode("Hello,"),
-          Epub.createXmlElement("span", { class: "x-ebookmaker-pageno" }, [
-            Epub.createXmlElement("a", { id: "Page_v" }),
-          ]),
-          Epub.createXmlTextNode(" world!"),
-        ]),
+    const result = parseDom(
+      body([
+        x(
+          "p",
+          {},
+          x(
+            "span",
+            {},
+            "Hello,",
+            x(
+              "span",
+              { class: "x-ebookmaker-pageno" },
+              x("a", { id: "Page_v" }),
+            ),
+            " world!",
+          ),
+        ),
       ]),
-    ])
+    )
 
     assert.deepStrictEqual(
       result,
