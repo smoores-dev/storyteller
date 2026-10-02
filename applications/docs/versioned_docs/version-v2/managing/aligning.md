@@ -85,7 +85,7 @@ This will go faster if you have faster CPU cores, more CPU cores, or a
 compatible GPU, but it's expected that the entire alignment process will take
 around 1-4 hours for most books on most relatively modern hardware.
 
-:::info GPU acceleration
+:::info[GPU acceleration]
 
 If you have a CUDA- or ROCm-capable GPU, and would like to use that rather than
 your CPU for transcription, check out the

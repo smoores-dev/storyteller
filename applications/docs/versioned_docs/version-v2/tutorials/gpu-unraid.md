@@ -5,7 +5,7 @@
 If you plan on hosting Storyteller on an [Unraid](https://unraid.net) server,
 you can install Storyteller via the Community Apps Plugin. Just search for
 Storyteller and follow the instructions in the template. **Make sure to follow
-[the instructions](installation/self-hosting.md#secrets) to generate a secure
+[the instructions](../installation/self-hosting.md#secrets) to generate a secure
 secret.**
 
 ### Mount the app files and media files on different shares

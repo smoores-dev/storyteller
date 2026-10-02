@@ -1,7 +1,7 @@
 # Welcome to Storyteller
 
 <div style={{maxWidth: 250, margin: 'auto'}}>
-![storyteller logo of a campfire](sts.png)
+<img src="sts.png" alt="storyteller logo of a campfire" />
 </div>
 
 **Storyteller** is a self-hosted platform for creating, reading, and managing
@@ -59,11 +59,7 @@ they want.
 Sharing your library with friends and family is as easy as sending them an email
 or messaging them a personalized link.
 
-### Individual control <span style={{fontSize: '1rem', fontWeight: 'normal'}}>(coming soon)</span>
-
-- Create notes and highlights which sync across devices.
-- Keep track of their last read date and personal ratings.
-- Create personal shelves to organize books in their own way.
+### Individual control
 
 Storyteller is _self-hosted_ software. This means that instead of running on
 servers owned by a company or other organization, it runs on your servers. You

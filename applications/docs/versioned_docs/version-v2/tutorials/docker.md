@@ -53,7 +53,7 @@ container for a given type of software. These images are what we publish to
 Storyteller’s Container Registry on GitLab, and they’re what users download when
 they want to run the Storyteller alignment server.
 
-:::info The gist
+:::info[The gist]
 
 Docker is a platform for creating, managing, and running **containers**, which
 are isolated environments for running software. Containers are defined by
@@ -87,7 +87,7 @@ them aren’t important if you’re just trying to run a container that someone 
 has built for you. Here’s how we could use Docker to retrieve the Storyteller
 image, create a container from it, and then start that container:
 
-:::info In the terminal
+:::info[In the terminal]
 
 The rest of this introduction will heavily utilize the terminal. This is an
 application available on Linux and macOS computers — on Windows, you may need to

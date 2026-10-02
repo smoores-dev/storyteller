@@ -1,6 +1,6 @@
 # Storyteller Web Reader
 
-:::warning Experimental feature
+:::warning[Experimental feature]
 
 Note: This feature is available experimentally, and may not be stable. Please
 don't log any issues with this feature, as it might change significantly in the
