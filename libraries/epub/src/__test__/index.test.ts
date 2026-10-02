@@ -906,6 +906,13 @@ describe("Epub.from (read-only, extracted-dir)", () => {
     await epub.setTitle("Mutated")
     assert.strictEqual(await epub.getTitle(), "Mutated")
   })
+
+  it("resolves fragment-only hrefs", async () => {
+    using epub = await Epub.from(fixture)
+
+    const resolved = await epub.resolveHref("#p01", "text/chapter1.xhtml")
+    assert.strictEqual(resolved, "text/chapter1.xhtml#p01")
+  })
 })
 
 describe("namespace fidelity", () => {

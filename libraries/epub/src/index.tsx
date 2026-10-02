@@ -2578,8 +2578,6 @@ export class Epub {
     relativeTo?: string,
     { toRoot }: { toRoot?: boolean | undefined } = {},
   ): Promise<string> {
-    if (href.startsWith("#")) return href
-
     const rootfile = await this.getRootfile()
 
     const from = relativeTo
