@@ -1,7 +1,6 @@
 /** @jsxImportSource @storyteller-platform/epub */
 
 import { type Document, type Element } from "@xmldom/xmldom"
-import { nanoid } from "nanoid"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -16,6 +15,7 @@ import {
   serialize,
   text,
   x,
+  xmlId,
 } from "./xml.ts"
 
 const GUIDE_TO_EPUBTYPE: Record<string, string> = {
@@ -122,7 +122,7 @@ function ensureId(element: Element): string {
   const existing = element.getAttribute("id")
   if (existing) return existing
 
-  const id = `id-${nanoid(8)}`
+  const id = `id-${xmlId(8)}`
   element.setAttribute("id", id)
   return id
 }

@@ -2,7 +2,6 @@
 import type { Attr, Document, Element, Node } from "@xmldom/xmldom"
 import { Mutex } from "async-mutex"
 import memoize from "mem"
-import { nanoid } from "nanoid"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -34,6 +33,7 @@ import {
   serialize,
   text,
   x,
+  xmlId,
 } from "./xml.ts"
 
 export { TmpFsAdapter } from "#tmpfs"
@@ -332,7 +332,7 @@ function spineReferenceable(
  * ```ts
  * import { Epub, getBody, findByName, textContent } from '@storyteller-platform/epub';
  *
- * const epub = await Epub.from('./path/to/book.epub');
+ * using epub = await Epub.from('./path/to/book.epub');
  * const title = await epub.getTitle();
  * const spineItems = await epub.getSpineItems();
  * const chptOne = spineItems[0];
@@ -343,8 +343,7 @@ function spineReferenceable(
  * const headingText = textContent(h1);
  *
  * await epub.setTitle(headingText);
- * await epub.writeToFile('./path/to/updated.epub');
- * await epub.close();
+ * await epub.saveAndClose();
  * ```
  *
  * @link https://www.w3.org/TR/epub-33/
@@ -903,7 +902,7 @@ export class Epub {
 
       if (!uniqueId) {
         // Create a new unique identifier id
-        const newUniqueId = nanoid()
+        const newUniqueId = xmlId()
         packageElement.setAttribute("unique-identifier", newUniqueId)
         uniqueId = newUniqueId
       }
@@ -1141,7 +1140,7 @@ export class Epub {
 
         const id =
           identifier.id ??
-          (identifier.identifierType !== undefined ? nanoid() : undefined)
+          (identifier.identifierType !== undefined ? xmlId() : undefined)
 
         insert(
           metadata,
@@ -1241,7 +1240,7 @@ export class Epub {
         const needsId =
           source.identifierType !== undefined || source.isPageBreakSource
 
-        const id = source.id ?? (needsId ? nanoid() : undefined)
+        const id = source.id ?? (needsId ? xmlId() : undefined)
 
         insert(
           metadata,
@@ -1501,7 +1500,7 @@ export class Epub {
             value: subject,
           }
         : subject
-    const subjectId = nanoid()
+    const subjectId = xmlId()
     await this.addMetadata({
       id: subjectId,
       type: "dc:subject",
@@ -1873,7 +1872,7 @@ export class Epub {
       for (let i = 0; i < entries.length; i++) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const entry = entries[i]!
-        const id = nanoid()
+        const id = xmlId()
 
         insert(metadata, <dc:title id={id}>{entry.title}</dc:title>)
 
@@ -1940,7 +1939,7 @@ export class Epub {
    * will be added to the end of the list.
    */
   async addCollection(collection: Collection, index?: number) {
-    const collectionId = nanoid()
+    const collectionId = xmlId()
 
     // Order matters for creators and contributors,
     // so we can't just append these to the end of the
@@ -2118,7 +2117,7 @@ export class Epub {
     index?: number,
     type: "creator" | "contributor" = "creator",
   ) {
-    const creatorId = nanoid()
+    const creatorId = xmlId()
 
     // Order matters for creators and contributors,
     // so we can't just append these to the end of the

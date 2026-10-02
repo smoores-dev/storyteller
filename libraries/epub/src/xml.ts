@@ -6,6 +6,13 @@ import xmldom, {
   type Text,
   type DocumentType,
 } from "@xmldom/xmldom"
+import { customAlphabet } from "nanoid"
+
+// XML IDs can't start with numbers or symbols. Only use characters for simplicity
+export const xmlId = customAlphabet(
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  22,
+)
 
 const { DOMParser } = xmldom
 
