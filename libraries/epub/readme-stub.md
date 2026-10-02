@@ -14,7 +14,6 @@ publications.
   - [Creating from scratch](#creating-from-scratch)
   - [Adding a chapter](#adding-a-chapter)
   - [Writing to disk](#writing-to-disk)
-  - [Writing to a byte array](#writing-to-a-byte-array)
   - [Upgrading an EPUB 2 to EPUB 3](#upgrading-an-epub-2-to-epub-3)
   - [Browser support](#browser-support)
 - [Development](#development)

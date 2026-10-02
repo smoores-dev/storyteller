@@ -1,5 +1,4 @@
 releases:
-  "@storyteller-platform/audiobook": patch
   "@storyteller-platform/opds": minor
 
 declined:
