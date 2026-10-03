@@ -6808,6 +6808,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@esfx/async-readerwriterlock@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@esfx/async-readerwriterlock@npm:1.0.0"
+  dependencies:
+    "@esfx/async-lockable": "npm:^1.0.0"
+    "@esfx/async-waitqueue": "npm:^1.0.0"
+    "@esfx/cancelable": "npm:^1.0.0"
+    "@esfx/disposable": "npm:^1.0.0"
+  checksum: 10c0/32e1f31cffcfef5f17793c10bae1981958c3239629ce1ab79a7ce0de7ec634ab4f58da7c70fbccc4396dba2cb89e3ce0ac216546ef6e33a1682d1b009ba7d0da
+  languageName: node
+  linkType: hard
+
 "@esfx/async-semaphore@npm:^1.0.0":
   version: 1.0.0
   resolution: "@esfx/async-semaphore@npm:1.0.0"
@@ -15604,6 +15616,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/epub@workspace:libraries/epub"
   dependencies:
+    "@esfx/async-readerwriterlock": "npm:^1.0.0"
     "@storyteller-platform/fs": "workspace:^"
     "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/path": "workspace:^"
@@ -15614,7 +15627,6 @@ __metadata:
     "@typescript/native": "npm:typescript@^7.0.2"
     "@xmldom/xmldom": "npm:^0.9.12"
     "@zip.js/zip.js": "catalog:"
-    async-mutex: "npm:^0.5.0"
     markdown-toc: "catalog:"
     mem: "npm:^8.0.0"
     nanoid: "npm:^5.1.5"
@@ -20660,15 +20672,6 @@ __metadata:
   version: 1.0.1
   resolution: "async-limiter@npm:1.0.1"
   checksum: 10c0/0693d378cfe86842a70d4c849595a0bb50dc44c11649640ca982fa90cbfc74e3cc4753b5a0847e51933f2e9c65ce8e05576e75e5e1fd963a086e673735b35969
-  languageName: node
-  linkType: hard
-
-"async-mutex@npm:^0.5.0":
-  version: 0.5.0
-  resolution: "async-mutex@npm:0.5.0"
-  dependencies:
-    tslib: "npm:^2.4.0"
-  checksum: 10c0/9096e6ad6b674c894d8ddd5aa4c512b09bb05931b8746ebd634952b05685608b2b0820ed5c406e6569919ff5fe237ab3c491e6f2887d6da6b6ba906db3ee9c32
   languageName: node
   linkType: hard
 

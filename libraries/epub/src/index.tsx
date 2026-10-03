@@ -1,6 +1,6 @@
 /** @jsxImportSource @storyteller-platform/epub */
+import { AsyncReaderWriterLock } from "@esfx/async-readerwriterlock"
 import type { Attr, Document, Element, Node } from "@xmldom/xmldom"
-import { Mutex } from "async-mutex"
 import memoize from "mem"
 
 import { MediaType } from "@storyteller-platform/media-types"
@@ -101,6 +101,18 @@ declare global {
     interface Locale {
       textInfo?: { direction: "rtl" | "ltr" }
     }
+  }
+}
+
+declare module "@esfx/async-readerwriterlock" {
+  interface AsyncReaderWriterLockReader {
+    [Symbol.dispose](): void
+  }
+  interface AsyncReaderWriterLockWriter {
+    [Symbol.dispose](): void
+  }
+  interface AsyncReaderWriterLockUpgradeableReader {
+    [Symbol.dispose](): void
   }
 }
 
@@ -383,7 +395,7 @@ export class Epub {
 
   private spine: { itemRef: string; linear: boolean }[] | null = null
 
-  private packageMutex = new Mutex()
+  private packageLock = new AsyncReaderWriterLock()
 
   /**
    * Storage backend kind in use for this instance
@@ -600,8 +612,18 @@ export class Epub {
     return packageDocument
   }
 
-  async getPackageElement() {
+  async getPackageElement(lock = true) {
+    using stack = new DisposableStack()
+
+    if (!lock) {
+      stack.adopt(await this.packageLock.read(), (lock) => {
+        lock.unlock()
+      })
+    }
+
     const packageDocument = await this.getPackageDocument()
+
+    stack.dispose()
 
     const packageElement =
       packageDocument.documentElement?.localName === "package"
@@ -623,7 +645,8 @@ export class Epub {
    * Since the reading the package document is an async process,
    * multiple simultaneously dispatched function calls that all
    * attempt to modify it can clobber each other's changes. This
-   * method uses a mutex to ensure that each update runs exclusively.
+   * method uses a read/write lock to ensure that each update runs
+   * exclusively.
    *
    * @param producer The function to update the package document. If
    *    it returns a new package document, that will be persisted, otherwise
@@ -637,28 +660,29 @@ export class Epub {
       | ((packageElement: Element) => Promise<void>),
   ) {
     this.assertWritable()
-    await this.packageMutex.runExclusive(async () => {
-      const packageDocument = await this.getPackageDocument()
 
-      const packageElement =
-        packageDocument.documentElement?.localName === "package"
-          ? packageDocument.documentElement
-          : null
+    using _ = await this.packageLock.write()
 
-      if (!packageElement) {
-        throw new Error(
-          "Failed to parse EPUB: Found no package element in package document",
-        )
-      }
+    const packageDocument = await this.getPackageDocument()
 
-      const produced = await producer(packageElement)
+    const packageElement =
+      packageDocument.documentElement?.localName === "package"
+        ? packageDocument.documentElement
+        : null
 
-      const updatedPackageDocument = serialize(produced ?? packageDocument)
+    if (!packageElement) {
+      throw new Error(
+        "Failed to parse EPUB: Found no package element in package document",
+      )
+    }
 
-      const rootfile = await this.getRootfile()
+    const produced = await producer(packageElement)
 
-      await this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
-    })
+    const updatedPackageDocument = serialize(produced ?? packageDocument)
+
+    const rootfile = await this.getRootfile()
+
+    await this.writeEntryContents(rootfile, updatedPackageDocument, "utf-8")
   }
 
   /**
@@ -674,7 +698,9 @@ export class Epub {
   async getManifest() {
     if (this.manifest !== null) return this.manifest
 
-    const packageElement = await this.getPackageElement()
+    using _ = await this.packageLock.read()
+
+    const packageElement = await this.getPackageElement(false)
 
     const manifest = findXmlChildByNameNS(NS.opf, "manifest", packageElement)
 
@@ -906,7 +932,7 @@ export class Epub {
    * @link https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
    */
   async setUniqueIdentifier(identifier: string) {
-    await this.withPackage(async (packageElement) => {
+    await this.withPackage((packageElement) => {
       const metadata = findXmlChildByNameNS(NS.opf, "metadata", packageElement)
       if (!metadata) {
         throw new Error(
@@ -914,7 +940,7 @@ export class Epub {
         )
       }
 
-      let uniqueId = await this.getUniqueIdentifierId()
+      let uniqueId = packageElement.getAttribute("unique-identifier") ?? null
 
       if (!uniqueId) {
         // Create a new unique identifier id
@@ -1818,8 +1844,18 @@ export class Epub {
    * @link https://www.w3.org/TR/epub-33/#sec-prefix-attr
    */
   async setPackageVocabularyPrefix(prefix: string, uri: string) {
-    await this.withPackage(async (packageElement) => {
-      const prefixes = await this.getPackageVocabularyPrefixes()
+    await this.withPackage((packageElement) => {
+      const prefixValue = packageElement.getAttribute("prefix")
+
+      const matches = prefixValue?.matchAll(/(?:([a-z]+): +(\S+)\s*)/gs)
+      const prefixes = matches
+        ? Array.from(matches).reduce<Record<string, string>>(
+            (acc, match) =>
+              match[1] && match[2] ? { ...acc, [match[1]]: match[2] } : acc,
+            {},
+          )
+        : {}
+
       prefixes[prefix] = uri
 
       packageElement.setAttribute(
@@ -2270,7 +2306,9 @@ export class Epub {
   private async getSpine() {
     if (this.spine !== null) return this.spine
 
-    const packageElement = await this.getPackageElement()
+    using _ = await this.packageLock.read()
+
+    const packageElement = await this.getPackageElement(false)
 
     const spine = findXmlChildByNameNS(NS.opf, "spine", packageElement)
 
@@ -2364,10 +2402,10 @@ export class Epub {
           ? null
           : (Array.from(spine.children)[index] ?? null),
       )
-    })
 
-    // Reset the spine cache
-    this.spine = null
+      // Reset the spine cache
+      this.spine = null
+    })
   }
 
   /**
@@ -2386,10 +2424,10 @@ export class Epub {
 
       const itemref = Array.from(spine.children)[index]
       if (itemref) spine.removeChild(itemref)
-    })
 
-    // Reset the spine cache
-    this.spine = null
+      // Reset the spine cache
+      this.spine = null
+    })
   }
 
   private async getNavigationChildren(
@@ -2906,12 +2944,11 @@ export class Epub {
       if (!href) return
 
       await this.removeEntry(href)
+      // Reset the cached manifest and spine, so that they will be read from
+      // the updated XML next time
+      this.manifest = null
+      this.spine = null
     })
-
-    // Reset the cached manifest and spine, so that they will be read from
-    // the updated XML next time
-    this.manifest = null
-    this.spine = null
   }
 
   /**
@@ -2988,10 +3025,10 @@ export class Epub {
           {...(item.properties && { properties: item.properties.join(" ") })}
         />,
       )
+      // Reset the cached manifest, so that it will be read from
+      // the updated XML next time
+      this.manifest = null
     })
-    // Reset the cached manifest, so that it will be read from
-    // the updated XML next time
-    this.manifest = null
 
     const rootfile = await this.getRootfile()
 
@@ -3050,11 +3087,10 @@ export class Epub {
         />,
         existing,
       )
+      // Reset the cached manifest, so that it will be read from
+      // the updated XML next time
+      this.manifest = null
     })
-
-    // Reset the cached manifest, so that it will be read from
-    // the updated XML next time
-    this.manifest = null
   }
 
   /**

@@ -62,12 +62,12 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@esfx/async-readerwriterlock": "^1.0.0",
     "@storyteller-platform/fs": "workspace:^",
     "@storyteller-platform/media-types": "workspace:^",
     "@storyteller-platform/path": "workspace:^",
     "@xmldom/xmldom": "^0.9.12",
     "@zip.js/zip.js": "catalog:",
-    "async-mutex": "^0.5.0",
     "mem": "^8.0.0",
     "nanoid": "^5.1.5",
     "yauzl-promise": "catalog:",
