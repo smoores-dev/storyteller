@@ -269,7 +269,10 @@ describe("hrefs pointing at entries whose names need percent encoding", () => {
     assert.ok((await epub.getItemArchiveLength("chapter")) > 0)
   })
 
-  it("reads an entry whose stored name encodes a character encodeURIComponent leaves bare", async () => {
+  // We specifically do not support this use case. A filename with an unnecessarily
+  // percent-encoded character (e.g. `-` -> `%2D`) MUST have a correctly encoded
+  // manifest href.
+  it.fails("reads an entry whose stored name encodes a character encodeURIComponent leaves bare", async () => {
     const name = "chapter%2Done.xhtml"
     const data = await buildZip({
       "META-INF/container.xml": CONTAINER_XML,

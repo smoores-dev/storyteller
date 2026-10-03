@@ -45,8 +45,13 @@ async function readCoverFromEpub(epub: EpubReader): Promise<CoverData | null> {
   const data = await epub.getCoverImage()
   if (!data) return null
 
+  let filename = basename(coverImageItem.href)
+  try {
+    filename = decodeURIComponent(filename)
+  } catch {}
+
   return {
-    filename: basename(coverImageItem.href),
+    filename,
     mimeType:
       coverImageItem.mediaType ??
       MediaType.fromPath(coverImageItem.href)?.mime ??
@@ -70,8 +75,13 @@ async function readAudioCoverFromReadaloud(
   if (!coverImageItem) return null
 
   const data = await epub.readItemContents(coverImageItem.id)
+  let filename = basename(coverImageItem.href)
+  try {
+    filename = decodeURIComponent(filename)
+  } catch {}
+
   return {
-    filename: basename(coverImageItem.href),
+    filename,
     mimeType: coverImageItem.mediaType ?? MediaType.JPEG.mime,
     data: new Uint8Array(data),
   }

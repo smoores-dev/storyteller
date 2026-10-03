@@ -247,6 +247,17 @@ export class EpubReadOnlyError extends Error {}
  */
 const ENTRY_ORIGIN = "epub:///"
 
+function ensureEncodedPath(href: string): string {
+  let decoded = href
+  try {
+    decoded = decodeURIComponent(href)
+  } catch {
+    // href may be un-encoded but contain a raw % symbol
+  }
+
+  return entryToUrlPath(decoded)
+}
+
 /**
  * Needs to be convoluted like this, bc
  * - `encodeURIComponent` escapes `/` and `\`
@@ -654,7 +665,9 @@ export class Epub {
    * Retrieve the manifest for the Epub.
    *
    * This is represented as a map from each manifest items'
-   * id to the rest of its properties.
+   * id to the rest of its properties. Manifest hrefs are
+   * always URI-encoded (e.g. `chapter one.xhtml` -> `chapter%20one.xhtml`),
+   * even if the raw XML is (incorrectly) not URI-encoded.
    *
    * @link https://www.w3.org/TR/epub-33/#sec-pkg-manifest
    */
@@ -671,27 +684,30 @@ export class Epub {
       )
     }
 
-    this.manifest = Array.from(manifest.children).reduce<
-      Record<string, ManifestItem>
-    >((acc, item) => {
+    const manifestRecord: Record<string, ManifestItem> = {}
+
+    for (const item of Array.from(manifest.children)) {
       const id = item.getAttribute("id")
-      const href = item.getAttribute("href")
+      const hrefAttr = item.getAttribute("href")
+      if (!hrefAttr) continue
+
+      const href = ensureEncodedPath(hrefAttr)
+
       if (!id || !href) {
-        return acc
+        continue
       }
 
-      return {
-        ...acc,
-        [id]: {
-          id,
-          href,
-          mediaType: item.getAttribute("media-type") ?? undefined,
-          mediaOverlay: item.getAttribute("media-overlay") ?? undefined,
-          fallback: item.getAttribute("fallback") ?? undefined,
-          properties: item.getAttribute("properties")?.split(" ") ?? undefined,
-        },
+      manifestRecord[id] = {
+        id,
+        href,
+        mediaType: item.getAttribute("media-type") ?? undefined,
+        mediaOverlay: item.getAttribute("media-overlay") ?? undefined,
+        fallback: item.getAttribute("fallback") ?? undefined,
+        properties: item.getAttribute("properties")?.split(" ") ?? undefined,
       }
-    }, {})
+    }
+
+    this.manifest = manifestRecord
 
     return this.manifest
   }
@@ -2539,6 +2555,7 @@ export class Epub {
     if (decoded === asWritten) {
       return decoded
     }
+
     if (await this.adapter.exists(decoded)) {
       return decoded
     }
@@ -2587,7 +2604,7 @@ export class Epub {
     const url = resolveEntryUrl(from, href)
     if (!url) return href
 
-    const entry = (await this.entryForUrl(url)).split("/")
+    const entry = url.pathname.slice(1).split("/")
 
     const base = toRoot ? [] : rootfile.split("/").slice(0, -1)
     let shared = 0
@@ -2597,9 +2614,9 @@ export class Epub {
 
     const relative = [
       ...Array<string>(base.length - shared).fill(".."),
-      ...entry.slice(shared).map(encodeURIComponent),
+      ...entry.slice(shared),
     ]
-    return relative.join("/") + url.hash
+    return ensureEncodedPath(relative.join("/")) + url.hash
   }
 
   /**
@@ -2931,6 +2948,12 @@ export class Epub {
     if (existingItems.some((existing) => existing.id === item.id)) {
       throw new Error(
         `Cannot add manifest item: an item with the id "${item.id}" already exists`,
+      )
+    }
+
+    if (item.href !== ensureEncodedPath(item.href)) {
+      throw new Error(
+        `Manifest hrefs must be URI encoded. Received ${item.href}`,
       )
     }
 

@@ -18,6 +18,8 @@ import {
 } from "../index.js"
 import { getXhtmlBody, parse, serialize, x } from "../xml.ts"
 
+import { buildZip } from "./spec-support.ts"
+
 describe("xhtml parsing", () => {
   it("can handle self-closing stop nodes", () => {
     const xmlString = `<html xmlns="http://www.w3.org/1999/xhtml"><script src="script.js"/></html>`
@@ -950,5 +952,126 @@ describe("namespace fidelity", () => {
     walk(root)
 
     assert.deepStrictEqual(anonymous, [])
+  })
+})
+
+const ENCODING_CONTAINER = (
+  fullPath: string,
+) => `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="${fullPath}" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`
+
+const ENCODING_OPF = (
+  manifestItems: string,
+) => `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id">
+  <metadata>
+    <dc:identifier id="pub-id">urn:uuid:2f8a1b3c-0f1e-4c9a-9c1a-7f2b1c3d4e5f</dc:identifier>
+    <dc:title>Encoding</dc:title>
+    <dc:language>en</dc:language>
+    <meta property="dcterms:modified">2020-01-01T00:00:00Z</meta>
+  </metadata>
+  <manifest>
+${manifestItems}
+  </manifest>
+  <spine><itemref idref="chapter"/></spine>
+</package>`
+
+const ENCODING_CHAPTER = `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter One</title></head><body><p>Chapter One</p></body></html>`
+
+describe("href encoding", () => {
+  const encodedItems = `    <item href="Text/Chapter%20One.xhtml" id="chapter" media-type="application/xhtml+xml"/>
+    <item href="Text/100%.xhtml" id="percent" media-type="application/xhtml+xml"/>`
+
+  async function encodedEpub() {
+    return Epub.using(MemoryAdapter).from(
+      await buildZip({
+        "META-INF/container.xml": ENCODING_CONTAINER("OEBPS/content.opf"),
+        "OEBPS/content.opf": ENCODING_OPF(encodedItems),
+        "OEBPS/Text/Chapter One.xhtml": ENCODING_CHAPTER,
+        "OEBPS/Text/100%.xhtml": ENCODING_CHAPTER,
+        "OEBPS/nav.xhtml": ENCODING_CHAPTER,
+      }),
+    )
+  }
+
+  it("returns manifest hrefs percent-encoded, and not double-encoded", async () => {
+    using epub = await encodedEpub()
+    const manifest = await epub.getManifest()
+
+    assert.strictEqual(manifest["chapter"]?.href, "Text/Chapter%20One.xhtml")
+    assert.strictEqual(manifest["percent"]?.href, "Text/100%25.xhtml")
+  })
+
+  it("encodes manifest hrefs the publication left unencoded", async () => {
+    const data = await buildZip({
+      "META-INF/container.xml": ENCODING_CONTAINER("OEBPS/content.opf"),
+      "OEBPS/content.opf": ENCODING_OPF(
+        `    <item href="Text/Chapter One.xhtml" id="chapter" media-type="application/xhtml+xml"/>`,
+      ),
+      "OEBPS/Text/Chapter One.xhtml": ENCODING_CHAPTER,
+    })
+    using epub = await Epub.using(MemoryAdapter).from(data)
+
+    assert.strictEqual(
+      (await epub.getManifest())["chapter"]?.href,
+      "Text/Chapter%20One.xhtml",
+    )
+  })
+
+  it("resolves hrefs to percent-encoded paths, and not double-encoded", async () => {
+    using epub = await encodedEpub()
+
+    assert.strictEqual(
+      await epub.resolveHref("Text/Chapter One.xhtml"),
+      "Text/Chapter%20One.xhtml",
+    )
+    assert.strictEqual(
+      await epub.resolveHref("Text/Chapter%20One.xhtml"),
+      "Text/Chapter%20One.xhtml",
+    )
+    assert.strictEqual(
+      await epub.resolveHref("Text/100%.xhtml"),
+      "Text/100%25.xhtml",
+    )
+    assert.strictEqual(
+      await epub.resolveHref("Text/Chapter One.xhtml#p1"),
+      "Text/Chapter%20One.xhtml#p1",
+    )
+    assert.strictEqual(
+      await epub.resolveHref("Text/Chapter One.xhtml", undefined, {
+        toRoot: true,
+      }),
+      "OEBPS/Text/Chapter%20One.xhtml",
+    )
+  })
+
+  it("finds the manifest entry for a href resolved from another entry", async () => {
+    using epub = await encodedEpub()
+    const manifest = await epub.getManifest()
+
+    const fromNav = await epub.resolveHref(
+      "Text/Chapter One.xhtml",
+      "nav.xhtml",
+    )
+    assert.strictEqual(fromNav, manifest["chapter"]?.href)
+    assert.strictEqual(
+      Object.values(manifest).find((item) => item.href === fromNav)?.id,
+      "chapter",
+    )
+
+    const percentFromNav = await epub.resolveHref(
+      "Text/100%.xhtml",
+      "nav.xhtml",
+    )
+    assert.strictEqual(percentFromNav, manifest["percent"]?.href)
+    assert.strictEqual(
+      Object.values(manifest).find((item) => item.href === percentFromNav)?.id,
+      "percent",
+    )
   })
 })
