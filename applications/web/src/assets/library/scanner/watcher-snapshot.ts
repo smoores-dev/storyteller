@@ -27,6 +27,8 @@ const WATCHER_OPTIONS = {
     "**/*.watchman-cookie*",
     "**/*.json",
     "**/.*",
+    // Synology "hidden" metadata directories
+    "**/@eaDir/**",
     "**/.autoimport/**",
     "**/image-cache/**",
     "**/uploads/**",

@@ -1,7 +1,7 @@
 import { exec } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { copyFile } from "node:fs/promises"
-import { basename, extname } from "node:path"
+import { basename, extname, sep } from "node:path"
 import { promisify } from "util"
 
 import memoize from "memoize"
@@ -23,7 +23,11 @@ export function isZipArchive(nameOrPath: string): boolean {
 }
 
 export function isHiddenFile(nameOrPath: string): boolean {
-  return basename(nameOrPath).startsWith(".")
+  return (
+    basename(nameOrPath).startsWith(".") ||
+    // Synology "hidden" file metadata directory
+    nameOrPath.split(sep).includes("@eaDir")
+  )
 }
 
 export function lookupAudioMime(nameOrPath: string): string | null {
