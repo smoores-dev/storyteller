@@ -101,6 +101,7 @@ const nextConfig: import("next").NextConfig = {
   },
   transpilePackages: [
     "@storyteller-platform/epub",
+    "@storyteller-platform/epubcfi",
     "@storyteller-platform/fs",
     "@storyteller-platform/path",
     "@storyteller-platform/audiobook",

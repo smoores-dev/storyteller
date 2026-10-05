@@ -1,0 +1,38 @@
+{
+    "compilerOptions": {
+        "types": ["node"],
+        "composite": true,
+        "strict": true,
+        "allowUnusedLabels": false,
+        "allowUnreachableCode": false,
+        "exactOptionalPropertyTypes": true,
+        "forceConsistentCasingInFileNames": true,
+        "allowImportingTsExtensions": true,
+        "rewriteRelativeImportExtensions": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitOverride": true,
+        "noImplicitReturns": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUncheckedIndexedAccess": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "isolatedModules": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "incremental": true,
+
+        "lib": ["es2023", "dom"],
+        "module": "node16",
+        "target": "es2022",
+        "moduleResolution": "node16",
+
+        "tsBuildInfoFile": ".tsbuild/tsconfig.tsbuildinfo",
+        "outDir": ".tsbuild/types",
+    },
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "dist",
+    ]
+}

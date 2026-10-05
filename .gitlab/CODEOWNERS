@@ -8,6 +8,8 @@
 !/Dockerfile*
 !/compose.yaml
 !/.dockerignore
+!/libraries/epub/
+!/libraries/epubcfi/
 !/libraries/ghost-story/
 !/libraries/okmain/
 !/libraries/opds/
@@ -43,6 +45,8 @@
 /docker-scripts @smoores @tefkah
 
 [Libraries]
+/libraries/epub/ @smoores @tefkah
+/libraries/epubcfi/ @smoores @tefkah
 /libraries/ghost-story/ @smoores @tefkah
 /libraries/okmain/ @smoores @tefkah
 /libraries/opds/ @smoores @tefkah

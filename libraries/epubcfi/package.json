@@ -1,0 +1,51 @@
+{
+  "name": "@storyteller-platform/epubcfi",
+  "version": "1.1.0",
+  "description": "A spec-compliant library for building, parsing and resolving EPUB CFIs (vendored from colibrio-web-epubcfi)",
+  "author": {
+    "name": "Andreas Duchen",
+    "email": "andreas@colibrio.com"
+  },
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "epub",
+    "cfi",
+    "epubcfi"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "src",
+    "build"
+  ],
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
+    "benchmark": "vitest bench",
+    "test": "vitest",
+    "coverage": "vitest run --coverage",
+    "playground": "yarn build && cd playground && npm install && npm update colibrio-epubcfi && npm start",
+    "playground:build": "yarn build && cd playground && npm install && npm update colibrio-epubcfi && npm run build"
+  },
+  "devDependencies": {
+    "@vitest/browser-playwright": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.8",
+    "playwright": "^1.52.0",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.8"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+    "name": "colibrio-epubcfi-playground",
+    "version": "1.0.0",
+    "description": "",
+    "type": "module",
+    "scripts": {
+        "start": "vite",
+        "build": "vite build"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git@bitbucket.org:colibrio/colibrio-public-epubcfi.git"
+    },
+    "dependencies": {
+        "colibrio-epubcfi": "./..",
+        "diff-match-patch": "^1.0.5"
+    },
+    "devDependencies": {
+        "@types/diff-match-patch": "^1.0.36",
+        "vite": "^8.0.16"
+    },
+    "private": true
+}

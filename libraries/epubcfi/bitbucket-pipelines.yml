@@ -1,0 +1,28 @@
+image: node:22-bookworm
+
+definitions:
+  caches:
+    npm-cache:
+      key:
+        files:
+          - package.json
+          - package-lock.json
+      path: node_modules
+
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Build project and run tests
+          size: 4x
+          caches:
+            - npm-cache
+          script:
+            - >
+              wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+                sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
+                apt-get update && \
+                apt-get install -y google-chrome-stable xvfb procps
+            - npm install
+            - npm run build
+            - npm run test -- --run

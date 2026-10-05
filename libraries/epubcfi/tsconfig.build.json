@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "emitDeclarationOnly": false,
+    "declaration": true,
+    "allowImportingTsExtensions": false,
+    "rootDir": "./src",
+    "tsBuildInfoFile": ".tsbuild/tsconfig.build.tsbuildinfo",
+    "outDir": "dist"
+  },
+  "exclude": [
+    "**/*.spec.ts",
+    "**/*.bench.ts"
+  ],
+  "references": [
+    { "path": "../fs" },
+    { "path": "../path" },
+    { "path": "../media-types" }
+  ]
+}
