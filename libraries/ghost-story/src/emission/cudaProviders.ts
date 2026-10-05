@@ -2,6 +2,7 @@ import { execFile } from "node:child_process"
 import { existsSync } from "node:fs"
 import * as nodeModule from "node:module"
 import { dirname, join } from "node:path"
+import { isSea } from "node:sea"
 import { promisify } from "node:util"
 
 const CUDA_PROVIDER_FILES = [
@@ -12,6 +13,9 @@ const CUDA_PROVIDER_FILES = [
 let pending: Promise<void> | null = null
 
 export function ensureCudaProviders(): Promise<void> {
+  // CUDA providers are bundled into the SEA
+  if (isSea()) return Promise.resolve()
+
   pending ??= installCudaProviders().catch((error: unknown) => {
     pending = null
     throw error

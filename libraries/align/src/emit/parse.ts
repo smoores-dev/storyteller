@@ -86,5 +86,36 @@ export const emitCommand = command(
     languageParser,
     loggingParser,
   ),
-  { description: message`Transcribe a directory of audiobook files.` },
+  {
+    brief: message`Analyze a directory of audiobook files for CTC alignment.
+
+`,
+    description: message`Takes a directory of audiobook files (treated as a
+single audiobook) and runs the CTC analyzer on them, outputting one emissions
+file per input audio file into the output directory.
+
+The analysis can be run locally (default) or remotely if --engine=ctc-server
+or --server-url is passed. If using the ctc-server engine, --server-url must
+point to hostname for a ghost-story server that is accessible by this machine.
+Audio will be streamed to the server, and then emissions will be streamed
+back to disk.
+
+The --device flag configures which hardware acceleration framework to use. On
+Linux and macOS, the default "auto" device will select "cpu"; on Windows, it
+will select "dml". It is highly recommended to choose --device=mlx on macOS,
+and --device=cuda if you have an NVIDIA graphics card, or --device=webgpu if
+you have any other graphics card. This will significantly improve analysis time.
+
+The --model flag defaults to "mms", which is the Massively Multilingual Speech
+model. This model supports over 1,000 languages, and generally has the most
+precise timing output. However, --model=quartznet15x5 can be more than 10x faster
+on most systems. It only supports Arabic, Catalan, German, English, Spanish,
+Faroese, French, Armenian, Icelandic, Kazakh, Maltese, Polish, Portuguese, Russian,
+Chinese (Mandarin), and Japanese.
+
+The --dtype flag should be set to fp32 when using --device=cpu, and otherwise set to
+fp16.
+
+`,
+  },
 )

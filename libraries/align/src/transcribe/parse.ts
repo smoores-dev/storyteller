@@ -137,5 +137,32 @@ export const transcribeCommand = command(
     transcribeParser,
     loggingParser,
   ),
-  { description: message`Transcribe a directory of audiobook files.` },
+  {
+    brief: message`Transcribe a directory of audiobook files.
+
+`,
+    description: message`Takes a directory of audiobook files (treated as a
+single audiobook) and transcribes them, outputting one transcription
+file per input audio file into the output directory.
+
+The input audiobook file directory MUST have been first processed with the
+stalign process command. See stalign help process for more information.
+
+The transcription can be run locally with whisper.cpp (the CLI will
+automatically download the appropriate pre-compiled whisper.cpp binary
+for your platform), remotely on an OpenAI-compatible whisper server
+(such as ghost-story), or on a paid transcription service, including
+Google Cloud, Microsoft Azure, Amazon Transcribe, or Deepgram.
+
+When running locally with --engine=whisper.cpp, it's recommended to
+use --model=tiny.en for English-language books, and --model=large-v3-turbo
+for books in languages other than English.
+
+You must pass the --language flag to specify the language of the book.
+If unspecified, the language will be assumed to be "en-US". The language
+must be a valid BCP-47 language code (e.g. "en", "de", "zh"). The
+locale (e.g. "US", "UK", "DE") is optional for this step.
+
+`,
+  },
 )

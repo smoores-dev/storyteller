@@ -11046,19 +11046,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@optique/core@npm:0.10.7, @optique/core@npm:^0.10.7":
-  version: 0.10.7
-  resolution: "@optique/core@npm:0.10.7"
-  checksum: 10c0/6626b1c73288fef078d43223a7f4b859c19f79ea51e034e29afaf032cd8ac714bf60858506f7d69c6c0a7465de0008a9c6c7c2993cdcf7e132e02c74b6725b19
+"@optique/core@npm:1.3.2, @optique/core@npm:^1.3.2":
+  version: 1.3.2
+  resolution: "@optique/core@npm:1.3.2"
+  checksum: 10c0/ec40402e5b6c86a8f65ce9be4f37acbadb212bcc2c71ed736c2eb79a0e06cc31189268668729e8c7068346deba1f398da8a2b693e51636a8acae581d540744e2
   languageName: node
   linkType: hard
 
-"@optique/run@npm:^0.10.7":
-  version: 0.10.7
-  resolution: "@optique/run@npm:0.10.7"
+"@optique/run@npm:^1.3.2":
+  version: 1.3.2
+  resolution: "@optique/run@npm:1.3.2"
   dependencies:
-    "@optique/core": "npm:0.10.7"
-  checksum: 10c0/b58feba461c29296037310f2f5653af136ea788634ba024d3ac6ec666d92a09a9b6c68e08f9764c592bf1b14a2572af096abfb2892cd589dfe6d5cc8d559ce4e
+    "@optique/core": "npm:1.3.2"
+  checksum: 10c0/6cbae5fde5583a9e31f3b1f4b17465137a16a9a399009ac96541de0cbf098ef4db1dd561632ac29126f07806cfd2408620ee9635602edce761a6045911b6ca25
   languageName: node
   linkType: hard
 
@@ -15485,8 +15485,8 @@ __metadata:
     "@echogarden/icu-segmentation-wasm": "npm:^0.2.2"
     "@echogarden/text-segmentation": "npm:^0.4.1"
     "@esfx/async-semaphore": "catalog:"
-    "@optique/core": "npm:^0.10.7"
-    "@optique/run": "npm:^0.10.7"
+    "@optique/core": "npm:^1.3.2"
+    "@optique/run": "npm:^1.3.2"
     "@readium/shared": "catalog:"
     "@storyteller-platform/audiobook": "workspace:^"
     "@storyteller-platform/epub": "workspace:^"

@@ -40,6 +40,16 @@ export const markupCommand = command(
     loggingParser,
   ),
   {
-    description: message`Mark up an EPUB file at the provided granularity level`,
+    brief: message`Mark up an EPUB file at the provided granularity level.
+
+`,
+    description: message`Takes an input EPUB file and produces a new EPUB
+with all of the same contents, but with a <span> HTML element with a unique
+ID around every sentence (and word, if --granularity=word is passed).
+
+This step is required for the align step with --text-ref=id-fragment. For
+--text-ref=text-fragment, this can be skipped.
+
+`,
   },
 )

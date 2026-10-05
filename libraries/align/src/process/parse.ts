@@ -16,16 +16,17 @@ import { path } from "@optique/run/valueparser"
 
 import { loggingParser, parallelismParser } from "../common/parse.ts"
 
-const codecParser = dependency(choice(["libopus", "lipmp3lame", "aac", "copy"]))
+const codecParser = dependency(choice(["libopus", "libmp3lame", "aac", "copy"]))
 
 const bitrateParser = codecParser.derive({
+  mode: "sync",
   metavar: "BITRATE",
   factory: (codec) => {
     switch (codec) {
       case "libopus": {
         return choice(["16K", "32K", "64K", "96K"])
       }
-      case "lipmp3lame": {
+      case "libmp3lame": {
         return choice(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])
       }
       default:
@@ -44,7 +45,7 @@ export const processParser = object("Audio processing", {
   ),
   bitrate: optional(
     option("--bitrate", bitrateParser, {
-      description: message`The audio bitrate to transcode to ()`,
+      description: message`The audio bitrate to transcode to`,
     }),
   ),
   maxLength: withDefault(
@@ -69,5 +70,19 @@ export const processCommand = command(
     processParser,
     loggingParser,
   ),
-  { description: message`Process audiobook files for transcription.` },
+  {
+    brief: message`Process audiobook files for transcription.
+
+`,
+    description: message`Takes a directory of audiobook files (treated as a singular audiobook) and:
+
+1. Splits them according to --max-length (default: 2hrs) and chapter boundaries
+
+2. Transcodes the audiobook files according to the --codec and --bitrate arguments, if provided.
+
+This step is only required for the whisper + error-align (i.e., non-CTC) alignment algorithm. You
+may still use it with CTC if you wish to transcode your input audiobook before aligning.
+
+`,
+  },
 )

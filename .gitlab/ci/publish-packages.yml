@@ -638,6 +638,16 @@ publish-align-sea-linux-x64:
     - apt update
     - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
+publish-align-sea-linux-x64-cuda:
+  image: node:25
+  extends: .publish-align-sea-base
+  variables:
+    VARIANT: "linux-x64-cuda"
+    STALIGN_CUDA: "true"
+  before_script:
+    - apt update
+    - DEBIAN_FRONTEND=noninteractive apt install -y jq
+
 publish-align-sea-linux-arm64:
   image: node:25
   extends: .publish-align-sea-base

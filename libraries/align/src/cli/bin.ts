@@ -123,7 +123,34 @@ async function main() {
     version: packageJson.version,
     completion: "command",
     help: "both",
-    description: message`A CLI to automatically align audiobooks and EPUB files, producing EPUBs with Media Overlays.`,
+    brief: message`A CLI to automatically align audiobooks and EPUB files,
+producing EPUBs with Media Overlays.
+
+stalign can be called with no subcommand to run a full alignment pipeline
+on a set of input files, or run with one subcommend at a time (process,
+transcribe/emit, markup, align) to run individual alignment steps.
+
+Run stalign help [subcommand] to see arguments and examples for individual
+subcommands. The arguments listed below are for the top-level command, which
+runs the entire alignment pipeline.
+
+`,
+    examples: message`To run the CTC aligner on an input audiobook and ebook (the --emissions flag is just used for caching emissions output in the case of a re-run):
+
+stalign --ctc --audiobook ./peter-and-wendy/audiobook --epub "./peter-and-wendy/text/Peter and Wendy.epub" --emissions ./cache/peter-and-wendy/emissions --output "./peter-and-wendy/aligned/Peter and Wendy (readaloud).epub"
+
+To run just the emissions step on an Apple computer with MLX and the quartznet model:
+
+staling emit --model quartznet15x5 --language en --device mlx --dtype fp16 ./peter-and-wendy/audiobook ./cache/peter-and-wendy/emissions
+
+To run just the markup step with multi-level (sentence and word) granularity:
+
+stalign markup --granularity word --language en "./peter-and-wendy/text/Peter and Wendy.epub" "./cache/peter-and-wendy/markedup/Peter and Wendy (marked up).epub"
+
+To run just the align step on the output of the emissions and markup examples:
+
+stalign align --ctc --audiobook ./peter-and-wendy/audiobook --epub "./cache/peter-and-wendy/markedup/Peter and Wendy (marked up).epub" --emissions ./cache/peter-and-wendy/emissions --output "./peter-and-wendy/aligned/Peter and Wendy (readaloud).epub"
+`,
   })
 
   const controller = new AbortController()
@@ -341,39 +368,43 @@ async function main() {
 
       epub.discardAndClose()
 
-      const processedAudio =
-        parsed.processedAudio ??
-        scratchPath(`stalign-processed-${randomUUID()}`)
+      const skipProcessing = parsed.codec === "copy" && "ctc" in parsed
+      const processedAudio = skipProcessing
+        ? parsed.audiobook
+        : (parsed.processedAudio ??
+          scratchPath(`stalign-processed-${randomUUID()}`))
 
-      if (!parsed.processedAudio) {
-        stack.defer(() => {
-          rmSync(processedAudio, { recursive: true, force: true })
-        })
-      }
+      if (!skipProcessing) {
+        if (!parsed.processedAudio) {
+          stack.defer(() => {
+            rmSync(processedAudio, { recursive: true, force: true })
+          })
+        }
 
-      const processTiming = await processAudiobook(
-        parsed.audiobook,
-        processedAudio,
-        {
-          encoding: {
-            codec: parsed.codec,
-            bitrate: parsed.bitrate,
+        const processTiming = await processAudiobook(
+          parsed.audiobook,
+          processedAudio,
+          {
+            encoding: {
+              codec: parsed.codec,
+              bitrate: parsed.bitrate,
+            },
+            maxLength: parsed.maxLength / 60,
+            parallelism: parsed.parallelTranscodes,
+            signal: controller.signal,
+            onProgress: updateProgressBar,
           },
-          maxLength: parsed.maxLength / 60,
-          parallelism: parsed.parallelTranscodes,
-          signal: controller.signal,
-          onProgress: updateProgressBar,
-        },
-      )
+        )
 
-      resetProgressBar()
+        resetProgressBar()
 
-      logger.info(
-        `Processing audiobook complete, processed files saved to ${processedAudio}.`,
-      )
+        logger.info(
+          `Processing audiobook complete, processed files saved to ${processedAudio}.`,
+        )
 
-      if (parsed.time) {
-        processTiming.print()
+        if (parsed.time) {
+          processTiming.print()
+        }
       }
 
       logger.info("Transcribing...")

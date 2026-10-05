@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 import { execFileSync } from "node:child_process"
-import { randomUUID } from "node:crypto"
+import { createHash } from "node:crypto"
 import {
   copyFileSync,
   existsSync,
@@ -12,21 +12,36 @@ import {
   writeFileSync,
 } from "node:fs"
 import { builtinModules } from "node:module"
-import { createRequire } from "node:module"
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
 import { build } from "esbuild"
 import nodeGypBuild from "node-gyp-build"
 
-const require = createRequire(import.meta.url)
 const nodePrefix = new Set(builtinModules)
 const discoveredAssets = new Map()
+const assetsByContent = new Map()
 
-// Asset names carry a fresh uuid on every run, so without this the directory
-// accumulates a full copy of every native library per compile.
+// Avoid embedding (large) CUDA libraries for non-CUDA builds
+const embedGpuProviders = Boolean(process.env.STALIGN_CUDA)
+const gpuProviderFiles = new Set([
+  "libonnxruntime_providers_cuda.so",
+  "libonnxruntime_providers_tensorrt.so",
+])
+let cudaProviderFound = false
+
 rmSync("bundle", { recursive: true, force: true })
 mkdirSync("bundle")
+
+const executable = process.platform === "win32" ? "stalign.exe" : "stalign"
+rmSync(executable, { force: true })
+
+function contentHash(file) {
+  return createHash("sha256")
+    .update(readFileSync(file))
+    .digest("hex")
+    .slice(0, 16)
+}
 
 /**
  * Shared libraries that have to sit next to a `.node` file at runtime.
@@ -65,7 +80,7 @@ await build({
   entryPoints: ["src/cli/bin.ts"],
   bundle: true,
   platform: "node",
-  sourcemap: "inline",
+  sourcemap: "external",
   format: "cjs",
   outExtension: {
     ".js": ".cjs",
@@ -78,6 +93,11 @@ await build({
   ],
   define: {
     "import.meta.dirname": "import_meta_dirname",
+  },
+  // @huggingface/transformers imports sharp for its image utilities, but
+  // we never use it.
+  alias: {
+    sharp: fileURLToPath(new URL("./sharp-stub.js", import.meta.url)),
   },
   plugins: [
     {
@@ -213,30 +233,45 @@ module.exports = function requireBinding() {
           const absPath = isAbsolute(args.path)
             ? args.path
             : resolve(args.resolveDir || process.cwd(), args.path)
-          const assetName = `${basename(absPath, ".node")}-${randomUUID()}.node`
-          discoveredAssets.set(assetName, absPath)
 
-          // Discover sibling shared libraries that the .node file depends on
-          // (e.g. libonnxruntime.so.1, libonnxruntime.1.24.3.dylib,
-          // onnxruntime.dll). These must be extracted to the same temp
-          // directory at runtime so the dynamic linker can find them.
-          const siblingLibs = []
+          const libraries = []
+          const addLibrary = (file, sourcePath) => {
+            const hash = contentHash(sourcePath)
+            let asset = assetsByContent.get(hash)
+            if (!asset) {
+              asset = `${file}-${hash}`
+              assetsByContent.set(hash, asset)
+              discoveredAssets.set(asset, sourcePath)
+            }
+            libraries.push([asset, file])
+          }
+          addLibrary(basename(absPath), absPath)
+
+          // Sibling shared libraries that the .node file depends on (e.g.
+          // libonnxruntime.so.1, libonnxruntime.1.24.3.dylib, onnxruntime.dll)
+          // have to be extracted to the same temp directory at runtime so the
+          // dynamic linker can find them.
           const libDir = dirname(absPath)
           try {
             for (const file of readdirSync(libDir)) {
-              if (isSiblingLibrary(file)) {
-                const libPath = join(libDir, file)
-                const libAssetName = `${file}-${randomUUID()}`
-                discoveredAssets.set(libAssetName, libPath)
-                siblingLibs.push({ name: libAssetName, file })
+              if (!isSiblingLibrary(file)) continue
+              if (gpuProviderFiles.has(file)) {
+                if (!embedGpuProviders) continue
+                cudaProviderFound ||=
+                  file === "libonnxruntime_providers_cuda.so"
               }
+              addLibrary(file, join(libDir, file))
             }
           } catch {}
 
-          const tmpDirName = `${basename(absPath, ".node")}-${randomUUID().slice(0, 8)}`
-          const siblingLibEntries = JSON.stringify(
-            siblingLibs.map((l) => [l.name, l.file]),
-          )
+          // Keyed on the extracted contents, which for macOS copies includes
+          // the rpath patch applied to them further down.
+          const dirPrefix = `stalign-${basename(absPath, ".node")}-`
+          const tmpDirName = `${dirPrefix}${createHash("sha256")
+            .update(JSON.stringify([process.platform === "darwin", libraries]))
+            .digest("hex")
+            .slice(0, 12)}`
+          const fileEntries = JSON.stringify(libraries)
 
           return {
             loader: "js",
@@ -247,21 +282,30 @@ const path = require('node:path');
 const { getRawAsset } = require('node:sea');
 
 const tmpDir = path.join(os.tmpdir(), ${JSON.stringify(tmpDirName)});
-fs.mkdirSync(tmpDir, { recursive: true });
-
 const tmpPath = path.join(tmpDir, ${JSON.stringify(basename(absPath))});
+const files = ${fileEntries};
 
-if (!fs.existsSync(tmpPath)) {
-  fs.writeFileSync(tmpPath, new Uint8Array(getRawAsset(${JSON.stringify(assetName)})));
-}
-
-const siblingLibs = ${siblingLibEntries};
-for (const [assetName, fileName] of siblingLibs) {
-  const libPath = path.join(tmpDir, fileName);
-  if (!fs.existsSync(libPath)) {
-    fs.writeFileSync(libPath, new Uint8Array(getRawAsset(assetName)));
+fs.mkdirSync(tmpDir, { recursive: true });
+for (const [asset, file] of files) {
+  const target = path.join(tmpDir, file);
+  if (!fs.existsSync(target)) {
+    fs.writeFileSync(target, new Uint8Array(getRawAsset(asset)));
   }
 }
+
+// Clear what an older build extracted and this one no longer uses: same addon,
+// different contents, untouched for a week.
+try {
+  for (const entry of fs.readdirSync(os.tmpdir())) {
+    if (entry === ${JSON.stringify(tmpDirName)} || !entry.startsWith(${JSON.stringify(dirPrefix)})) continue;
+    const stale = path.join(os.tmpdir(), entry);
+    try {
+      if (fs.statSync(stale).mtimeMs < Date.now() - 7 * 24 * 60 * 60 * 1000) {
+        fs.rmSync(stale, { recursive: true, force: true });
+      }
+    } catch {}
+  }
+} catch {}
 
 // Add the temp directory to the dynamic linker search path so that
 // shared library dependencies (e.g. libvips-cpp.dylib, libonnxruntime.so)
@@ -289,131 +333,16 @@ module.exports = mod.exports;
         // onResolve entirely and are routed straight to onLoad with the
         // default namespace, so we register a namespace-free handler.
         build.onLoad({ filter: /\.node$/ }, handleNodeFile)
-
-        // sharp uses dynamic require() with template literals to load
-        // platform-specific @img/sharp-${platform}/sharp.node, which esbuild
-        // can't resolve statically. We intercept sharp's lib/sharp.js module
-        // and replace it with code that loads the .node file from SEA assets.
-        build.onResolve({ filter: /^\.\/sharp$/ }, (args) => {
-          if (!args.resolveDir) return
-          const libDir = resolve(args.resolveDir)
-          if (!libDir.includes("sharp/lib")) return
-          return { path: join(libDir, "sharp.js"), namespace: "sharp-binding" }
-        })
-
-        build.onLoad(
-          { filter: /\.js$/, namespace: "sharp-binding" },
-          (args) => {
-            const resolveDir = dirname(args.path)
-
-            // Determine the runtime platform (same logic as sharp's libvips.js)
-            const { runtimePlatformArch } = require(
-              join(resolveDir, "libvips.js"),
-            )
-            const runtimePlatform = runtimePlatformArch()
-
-            // Resolve the @img/sharp-${platform}/sharp.node path
-            const sharpNodePath = fileURLToPath(
-              import.meta.resolve(
-                `@img/sharp-${runtimePlatform}/sharp.node`,
-                pathToFileURL(resolveDir + sep).href,
-              ),
-            )
-
-            // Resolve the @img/sharp-libvips-${platform}/lib directory
-            let libvipsDir
-            try {
-              const libvipsLibUrl = fileURLToPath(
-                import.meta.resolve(
-                  `@img/sharp-libvips-${runtimePlatform}/lib`,
-                  pathToFileURL(resolveDir + sep).href,
-                ),
-              )
-              libvipsDir = dirname(libvipsLibUrl)
-            } catch {}
-
-            // Discover sibling shared libraries from the libvips package
-            const siblingLibs = []
-            if (libvipsDir) {
-              try {
-                for (const file of readdirSync(libvipsDir)) {
-                  if (isSiblingLibrary(file)) {
-                    const libPath = join(libvipsDir, file)
-                    const libAssetName = `${file}-${randomUUID()}`
-                    discoveredAssets.set(libAssetName, libPath)
-                    siblingLibs.push({ name: libAssetName, file })
-                  }
-                }
-              } catch {}
-            }
-
-            // Also discover sibling libs in the sharp .node's own directory
-            const sharpLibDir = dirname(sharpNodePath)
-            try {
-              for (const file of readdirSync(sharpLibDir)) {
-                if (isSiblingLibrary(file)) {
-                  const libPath = join(sharpLibDir, file)
-                  const libAssetName = `${file}-${randomUUID()}`
-                  discoveredAssets.set(libAssetName, libPath)
-                  siblingLibs.push({ name: libAssetName, file })
-                }
-              }
-            } catch {}
-
-            // Register the .node file as a SEA asset
-            const assetName = `sharp-${runtimePlatform}-${randomUUID()}.node`
-            discoveredAssets.set(assetName, sharpNodePath)
-
-            const tmpDirName = `sharp-${runtimePlatform}-${randomUUID().slice(0, 8)}`
-            const siblingLibEntries = JSON.stringify(
-              siblingLibs.map((l) => [l.name, l.file]),
-            )
-
-            return {
-              loader: "js",
-              contents: `
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { getRawAsset } = require('node:sea');
-
-const tmpDir = path.join(os.tmpdir(), ${JSON.stringify(tmpDirName)});
-fs.mkdirSync(tmpDir, { recursive: true });
-
-const tmpPath = path.join(tmpDir, 'sharp.node');
-
-if (!fs.existsSync(tmpPath)) {
-  fs.writeFileSync(tmpPath, new Uint8Array(getRawAsset(${JSON.stringify(assetName)})));
-}
-
-const siblingLibs = ${siblingLibEntries};
-for (const [assetName, fileName] of siblingLibs) {
-  const libPath = path.join(tmpDir, fileName);
-  if (!fs.existsSync(libPath)) {
-    fs.writeFileSync(libPath, new Uint8Array(getRawAsset(assetName)));
-  }
-}
-
-// Add the temp directory to the dynamic linker search path so that
-// shared library dependencies (e.g. libvips-cpp.dylib) can be found
-// at dlopen time.
-const sep = process.platform === 'win32' ? ';' : ':';
-const ldPath = process.platform === 'win32' ? 'PATH' :
-  process.platform === 'darwin' ? 'DYLD_LIBRARY_PATH' : 'LD_LIBRARY_PATH';
-const existing = process.env[ldPath] || '';
-process.env[ldPath] = existing ? existing + sep + tmpDir : tmpDir;
-
-const mod = { exports: {} };
-process.dlopen(mod, tmpPath);
-module.exports = mod.exports;
-              `,
-            }
-          },
-        )
       },
     },
   ],
 })
+
+if (embedGpuProviders && !cudaProviderFound) {
+  throw new Error(
+    "STALIGN_CUDA is set but onnxruntime-node has no CUDA provider to embed (CUDA only supported for Linux builds)",
+  )
+}
 
 const assets = {}
 for (const [assetName, sourcePath] of discoveredAssets) {
@@ -450,7 +379,7 @@ for (const [assetName, sourcePath] of discoveredAssets) {
 
 const seaConfig = {
   main: join("bundle", "bin.cjs"),
-  output: process.platform === "win32" ? "stalign.exe" : "stalign",
+  output: executable,
   disableExperimentalSEAWarning: true,
   assets,
 }

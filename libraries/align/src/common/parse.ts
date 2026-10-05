@@ -46,7 +46,9 @@ export const languageParser = object({
 export const parallelismParser = object({
   parallelism: withDefault(
     option("--parallel", integer(), {
-      description: message`How many files to attempt to transcode in parallel.`,
+      description: message`How many files to attempt to transcode in parallel. Transcoding takes
+1 CPU core per file, so you can generally set this to the number of cores that you wish to be
+utilized during transcoding.`,
     }),
     1,
   ),
