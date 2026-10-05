@@ -1,3 +1,4 @@
+import type {Element, Node} from '../dom.js';
 import {DomUtils} from '../common/DomUtils.js';
 import {EpubCfiUtils} from '../EpubCfiUtils.js';
 import {IEpubCfiLocalPathNode} from '../model/IEpubCfiLocalPathNode.js';
@@ -127,7 +128,9 @@ export class EpubCfiLocalPathResolver {
     protected processTextStepValue(currentTargetElement: Element, step: IEpubCfiStepNode): void {
         const elementBeforeIndex = (step.stepValue >> 1) - 1;
 
-        if (elementBeforeIndex < currentTargetElement.childElementCount) {
+        /* FORK START */
+        if (elementBeforeIndex < currentTargetElement.children.length) {
+        /* FORK END */
 
             let childNodeIndex;
 
@@ -176,7 +179,9 @@ export class EpubCfiLocalPathResolver {
         const assertion = step.assertion;
 
         if (assertion && assertion.values.length === 1) {
-            if (this.localPath.virtualTarget !== null || !DomUtils.isElement(currentElement) || currentElement.id !== assertion.values[0]) {
+            /* FORK START */
+            if (this.localPath.virtualTarget !== null || !DomUtils.isElement(currentElement) || DomUtils.getElementId(currentElement) !== assertion.values[0]) {
+            /* FORK END */
                 // Uh-oh, we need to find the element by id!
                 let resolvedElement = currentElement.ownerDocument!.getElementById(assertion.values[0]);
                 if (resolvedElement && (currentElement.nodeName !== 'itemref' || resolvedElement.nodeName === 'itemref')) {
@@ -188,7 +193,9 @@ export class EpubCfiLocalPathResolver {
                     this.localPath.createResolverError(EpubCfiResolverErrorType.XML_ID_ASSERTION_FAILED, currentElement, assertion);
                 }
             }
-        } else if (this.localPath.virtualTarget === null && DomUtils.isElement(currentElement) && currentElement.id) {
+        /* FORK START */
+        } else if (this.localPath.virtualTarget === null && DomUtils.isElement(currentElement) && DomUtils.getElementId(currentElement)) {
+        /* FORK END */
             this.localPath.missingXmlIdAssertions = true;
         }
 

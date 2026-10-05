@@ -1,3 +1,4 @@
+import type {Element} from '../../dom.js';
 /**
  * Result object used by the EpubCfiResolver when it encounters an indirection where the caller must fetch a new document
  * in order to continue resolving the EPUBCFI.

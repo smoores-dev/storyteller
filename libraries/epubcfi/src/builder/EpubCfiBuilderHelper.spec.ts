@@ -5,14 +5,14 @@ import {EpubCfiOffsetType} from '../model/offset/EpubCfiOffsetType.js';
 import {IEpubCfiCharacterOffsetNode} from '../model/offset/IEpubCfiCharacterOffsetNode.js';
 import {EpubCfiBuilderHelper} from './EpubCfiBuilderHelper.js';
 import {IEpubCfiBuilderTextAssertionOptions} from './IEpubCfiBuilderTextAssertionOptions.js';
+import {all, one, parseDocument} from '../testing/dom.js';
 // @ts-ignore
 import testXhtml from './test-data/example-doc.xhtml?raw';
 
 describe('EpubCfiBuilderHelper', () => {
     describe('buildLocalPathToElement', () => {
         it('should report the path from HTML root down to element', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString(testXhtml, 'application/xhtml+xml');
+            const doc = parseDocument(testXhtml);
 
             let localPath = EpubCfiBuilderHelper.buildLocalPathToElement(doc.getElementById('title')!, false);
 
@@ -41,8 +41,7 @@ describe('EpubCfiBuilderHelper', () => {
 
     describe('appendTerminalLocalPath', () => {
         it('should create local path to elements', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString(testXhtml, 'application/xhtml+xml');
+            const doc = parseDocument(testXhtml);
             let paragraphElement = doc.getElementById('paragraph-1')!;
 
             let pathNode = EpubCfiBuilderHelper.appendTerminalLocalPath(paragraphElement.parentNode!, DomUtils.getNodeIndex(paragraphElement));
@@ -64,8 +63,7 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should create local path to text and set offset', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString(testXhtml, 'application/xhtml+xml');
+            const doc = parseDocument(testXhtml);
             let paragraphElement = doc.getElementById('paragraph-1')!;
             expect(paragraphElement.childNodes[2].nodeType).toBe(NodeType.TEXT_NODE);
 
@@ -85,8 +83,7 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should create local path to text and set offset', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString(testXhtml, 'application/xhtml+xml');
+            const doc = parseDocument(testXhtml);
             let paragraphElement = doc.getElementById('paragraph-1')!;
             let textNode = paragraphElement.childNodes[2];
             expect(textNode.nodeType).toBe(NodeType.TEXT_NODE);
@@ -107,88 +104,10 @@ describe('EpubCfiBuilderHelper', () => {
         });
     });
 
-    describe('appendTerminalDomRange', () => {
-        it('should create range path to a container element', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString(testXhtml, 'application/xhtml+xml');
-            let paragraphElement = doc.getElementById('paragraph-2')!;
-
-            let range = doc.createRange();
-            range.selectNode(paragraphElement);
-
-            let rootNode = EpubCfiBuilderHelper.appendTerminalDomRange(range);
-
-            let parentLocalPath = rootNode.parentPath!.localPaths[0];
-            expect(parentLocalPath.steps.length).toBe(2);
-            expect(parentLocalPath.steps[0].stepValue).toBe(4);
-            expect(parentLocalPath.steps[1].stepValue).toBe(2);
-            expect(parentLocalPath.indirection).toBeFalsy();
-            expect(rootNode.parentPath!.offset).toBeNull();
-
-            let rangeStartLocalPath = rootNode.rangeStartPath!.localPaths[0];
-            expect(rangeStartLocalPath.steps.length).toBe(1);
-            expect(rangeStartLocalPath.steps[0].stepValue).toBe(6);
-            expect(rangeStartLocalPath.steps[0].assertion).toEqual({
-                values: ['paragraph-2'],
-                parameters: [],
-            });
-
-            let rangeEndLocalPath = rootNode.rangeEndPath!.localPaths[0];
-            expect(rangeEndLocalPath.steps.length).toBe(1);
-            expect(rangeEndLocalPath.steps[0].stepValue).toBe(7);
-            expect(rootNode.rangeEndPath!.offset).toEqual({
-                type: EpubCfiOffsetType.CHARACTER,
-                characterOffset: 0,
-                assertion: null,
-            } as IEpubCfiCharacterOffsetNode);
-        });
-
-        it('should create range path to a character range within Text', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString(testXhtml, 'application/xhtml+xml');
-            let paragraphElement = doc.getElementById('paragraph-2')!;
-
-            let textNode = paragraphElement.childNodes[0];
-            expect(textNode.nodeType).toBe(NodeType.TEXT_NODE);
-
-            let range = doc.createRange();
-            range.setStart(textNode, 4);
-            range.setEnd(textNode, 9);
-
-            expect(range.toString()).toBe('graph');
-
-            let rootNode = EpubCfiBuilderHelper.appendTerminalDomRange(range);
-
-            let parentLocalPath = rootNode.parentPath!.localPaths[0];
-            expect(parentLocalPath.steps.length).toBe(4);
-            expect(parentLocalPath.steps[0].stepValue).toBe(4);
-            expect(parentLocalPath.steps[1].stepValue).toBe(2);
-            expect(parentLocalPath.steps[2].stepValue).toBe(6);
-            expect(parentLocalPath.steps[3].stepValue).toBe(1);
-            expect(parentLocalPath.indirection).toBeFalsy();
-            expect(rootNode.parentPath!.offset).toBeNull();
-
-            expect(rootNode.rangeStartPath!.localPaths.length).toBe(0);
-            expect(rootNode.rangeStartPath!.offset).toEqual({
-                type: EpubCfiOffsetType.CHARACTER,
-                characterOffset: 4,
-                assertion: null,
-            } as IEpubCfiCharacterOffsetNode);
-
-            expect(rootNode.rangeEndPath!.localPaths.length).toBe(0);
-            expect(rootNode.rangeEndPath!.offset).toEqual({
-                type: EpubCfiOffsetType.CHARACTER,
-                characterOffset: 9,
-                assertion: null,
-            } as IEpubCfiCharacterOffsetNode);
-        });
-    });
-
     describe('getTextContextAroundNode', () => {
         it('should correctly gather text crossing inline elements and snap to words', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><div><p>This is an <b>example</b> text for assertions.</p></div></body>', 'application/xhtml+xml');
-            let p = doc.querySelector('p')!;
+            const doc = parseDocument('<body><div><p>This is an <b>example</b> text for assertions.</p></div></body>');
+            let p = one(doc, 'p');
             let textNode = p.childNodes[2]!; // " text for assertions."
 
             let options: IEpubCfiBuilderTextAssertionOptions = {
@@ -202,9 +121,8 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should gather exact text when snapToWordBoundaries is false', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><div><p>This is an <b>example</b> text for assertions.</p></div></body>', 'application/xhtml+xml');
-            let p = doc.querySelector('p')!;
+            const doc = parseDocument('<body><div><p>This is an <b>example</b> text for assertions.</p></div></body>');
+            let p = one(doc, 'p');
             let textNode = p.childNodes[2]!;
 
             let options: IEpubCfiBuilderTextAssertionOptions = {
@@ -218,9 +136,8 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should return null when pre and post lengths are 0', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><p>Some text</p></body>', 'application/xhtml+xml');
-            let textNode = doc.querySelector('p')!.firstChild!;
+            const doc = parseDocument('<body><p>Some text</p></body>');
+            let textNode = one(doc, 'p')!.firstChild!;
 
             let options: IEpubCfiBuilderTextAssertionOptions = {
                 preLength: 0,
@@ -232,18 +149,16 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should return null when options are omitted', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><p>Some text</p></body>', 'application/xhtml+xml');
-            let textNode = doc.querySelector('p')!.firstChild!;
+            const doc = parseDocument('<body><p>Some text</p></body>');
+            let textNode = one(doc, 'p')!.firstChild!;
 
             let result = EpubCfiBuilderHelper.getTextContextAroundNode(textNode, 4, undefined);
             expect(result).toBeNull();
         });
 
         it('should gathering text at block element boundaries', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><div><p>Para one.</p><p>Para two.</p></div></body>', 'application/xhtml+xml');
-            let p = doc.querySelectorAll('p')[1]!;
+            const doc = parseDocument('<body><div><p>Para one.</p><p>Para two.</p></div></body>');
+            let p = all(doc, 'p')[1]!;
             let textNode = p.firstChild!; // "Para two."
 
             let options: IEpubCfiBuilderTextAssertionOptions = {
@@ -259,10 +174,8 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should limit expansion to wordBoundaryMaxExpansion when snapping', () => {
-            const domParser = new DOMParser();
-            // A long string without spaces
-            const doc = domParser.parseFromString('<body><p>Thisisaverylongstringwithoutanyspacesinit.</p></body>', 'application/xhtml+xml');
-            let textNode = doc.querySelector('p')!.firstChild!;
+            const doc = parseDocument('<body><p>Thisisaverylongstringwithoutanyspacesinit.</p></body>');
+            let textNode = one(doc, 'p')!.firstChild!;
 
             let options: IEpubCfiBuilderTextAssertionOptions = {
                 preLength: 4,
@@ -283,9 +196,8 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should handle metadata elements correctly', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><div><span>text before</span><script>const x = 1;</script><p>text</p><style>.a {}</style><p>text after</p></div></body>', 'application/xhtml+xml');
-            let p = doc.querySelector('p')!;
+            const doc = parseDocument('<body><div><span>text before</span><script>const x = 1;</script><p>text</p><style>.a {}</style><p>text after</p></div></body>');
+            let p = one(doc, 'p');
             let textNode = p.firstChild!;
 
             let options: IEpubCfiBuilderTextAssertionOptions = {
@@ -299,9 +211,8 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should handle edge cases where text is exactly at the boundary', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><p>  Leading space and trailing  </p></body>', 'application/xhtml+xml');
-            let textNode = doc.querySelector('p')!.firstChild!;
+            const doc = parseDocument('<body><p>  Leading space and trailing  </p></body>');
+            let textNode = one(doc, 'p')!.firstChild!;
 
             let options: IEpubCfiBuilderTextAssertionOptions = {
                 preLength: 5,
@@ -318,9 +229,8 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should normalize whitespace in assertions (collapse and trim)', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><p>   Lots \n of \t space   </p></body>', 'application/xhtml+xml');
-            let textNode = doc.querySelector('p')!.firstChild!;
+            const doc = parseDocument('<body><p>   Lots \n of \t space   </p></body>');
+            let textNode = one(doc, 'p')!.firstChild!;
 
             let options: IEpubCfiBuilderTextAssertionOptions = {
                 preLength: 15,
@@ -336,9 +246,8 @@ describe('EpubCfiBuilderHelper', () => {
         });
 
         it('should correctly collapse whitespace if the offset is in between whitespaces', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<body><div><p>This is an <b>example</b> text \n for assertions.</p></div></body>', 'application/xhtml+xml');
-            let p = doc.querySelector('p')!;
+            const doc = parseDocument('<body><div><p>This is an <b>example</b> text \n for assertions.</p></div></body>');
+            let p = one(doc, 'p');
             let textNode = p.childNodes[2]!; // " text \n for assertions."
             let options: IEpubCfiBuilderTextAssertionOptions = {
                 preLength: 5,

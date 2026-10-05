@@ -1,3 +1,4 @@
+import type {Document, Element, Node} from '../dom.js';
 import {DomUtils} from '../common/DomUtils.js';
 import {IEpubCfiLocalPathNode} from '../model/IEpubCfiLocalPathNode.js';
 import {EpubCfiIntendedTargetType} from './EpubCfiIntendedTargetType.js';
@@ -55,7 +56,9 @@ export class EpubCfiResolvedLocalPath {
         this.documentUrl = documentUrl;
         this.container = container;
         this.offset = offset;
-        this.isOpfDocument = this.getDocument().documentElement.nodeName === 'package';
+        /* FORK START */
+        this.isOpfDocument = this.getDocument().documentElement?.nodeName === 'package';
+        /* FORK END */
         this.intendedTargetType = intendedTargetType;
         this.virtualTarget = virtualTarget;
     }

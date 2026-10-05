@@ -1,3 +1,4 @@
+import type {Text} from '../../dom.js';
 import {isNumber} from '../../common/Utils.js';
 import {EpubCfiOffsetType} from '../../model/offset/EpubCfiOffsetType.js';
 import {IEpubCfiCharacterOffsetNode} from '../../model/offset/IEpubCfiCharacterOffsetNode.js';

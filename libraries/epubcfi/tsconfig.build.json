@@ -10,7 +10,7 @@
   },
   "exclude": [
     "**/*.spec.ts",
-    "**/*.bench.ts"
+    "src/testing"
   ],
   "references": [
     { "path": "../fs" },

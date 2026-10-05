@@ -32,6 +32,7 @@
     "test:audiobook": "yarn workspace @storyteller-platform/audiobook test",
     "test:docs": "yarn workspace @storyteller-platform/docs test",
     "test:epub": "yarn workspace @storyteller-platform/epub test",
+    "test:epubcfi": "yarn workspace @storyteller-platform/epubcfi test",
     "test:ghost-story": "yarn workspace @storyteller-platform/ghost-story test:emission-server",
     "test:mapping": "yarn workspace @storyteller-platform/mapping test",
     "test:media-types": "yarn workspace @storyteller-platform/media-types test",

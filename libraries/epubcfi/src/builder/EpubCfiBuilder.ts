@@ -1,3 +1,4 @@
+import type {Element, Node} from '../dom.js';
 import {EpubCfiError} from '../EpubCfiError.js';
 import {EpubCfiErrorType} from '../EpubCfiErrorType.js';
 import {EpubCfiUtils} from '../EpubCfiUtils.js';
@@ -334,7 +335,9 @@ export class EpubCfiBuilder {
                 assertion: null,
                 stepValue: terminalPath.virtualTarget === EpubCfiVirtualTarget.FIRST_CHILD ?
                     0 :
-                    terminalPath.container.childElementCount * 2 + 2,
+                    /* FORK START */
+                    terminalPath.container.children.length * 2 + 2,
+                    /* FORK END */
             });
             return true;
         }
@@ -390,12 +393,10 @@ export class EpubCfiBuilder {
         EpubCfiBuilderHelper.appendTerminalLocalPath(container, offset, this._rootNode.parentPath, undefined, this._textAssertionOptions);
     }
 
-    /**
-     * Appends a terminal range to the EPUB CFI model.
-     */
-    appendTerminalDomRange(range: Range): void {
-        EpubCfiBuilderHelper.appendTerminalDomRange(range, this._rootNode, this._textAssertionOptions);
-    }
+    /* FORK START */
+    // Removed appendTerminalDomRange(): it took a live DOM Range, which xmldom does
+    // not provide. Use appendTerminalDomPosition() for a single position.
+    /* FORK END */
 
     appendTerminalIndirection(): void {
         if (this._rootNode.rangeStartPath || this._rootNode.rangeEndPath) {

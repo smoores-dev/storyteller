@@ -1,3 +1,4 @@
+import type {Document, Element, Node} from '../dom.js';
 import {ArrayUtils} from '../common/ArrayUtils.js';
 import {DomUtils} from '../common/DomUtils.js';
 import {IEpubCfiPathNode} from '../model/IEpubCfiPathNode.js';

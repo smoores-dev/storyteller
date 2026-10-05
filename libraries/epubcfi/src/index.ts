@@ -2,6 +2,16 @@ export {EpubCfiError} from './EpubCfiError.js';
 export {EpubCfiErrorType} from './EpubCfiErrorType.js';
 export {EpubCfiUtils} from './EpubCfiUtils.js';
 
+// Re-exported so consumers do not need to depend on @xmldom/xmldom themselves.
+export type {
+    CharacterData,
+    Document,
+    DocumentFragment,
+    Element,
+    Node,
+    Text,
+} from './dom.js';
+
 export {EpubCfiBuilder} from './builder/EpubCfiBuilder.js';
 export type {IEpubCfiBuilderTextAssertionOptions} from './builder/IEpubCfiBuilderTextAssertionOptions.js';
 

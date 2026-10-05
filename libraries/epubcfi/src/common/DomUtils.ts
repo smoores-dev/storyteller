@@ -1,3 +1,4 @@
+import type {Document, DocumentFragment, Element, Node, Text} from '../dom.js';
 import {NodeType} from './definitions/NodeType.js';
 
 export class DomUtils {
@@ -49,13 +50,24 @@ export class DomUtils {
         return index;
     }
 
+    /* FORK START */
     static getElementIndex(element: Element): number {
+        // xmldom has no previousElementSibling, so count element siblings by hand.
         let index = 0;
-
-        while ((element = element.previousElementSibling!)) {
-            index++;
+        let current = element.previousSibling;
+        while (current) {
+            if (DomUtils.isElement(current)) {
+                index++;
+            }
+            current = current.previousSibling;
         }
         return index;
     }
+
+    // xmldom has no reflected `id`, and its getAttribute returns null rather than ''.
+    static getElementId(element: Element): string {
+        return element.getAttribute('id') ?? '';
+    }
+    /* FORK END */
 
 }

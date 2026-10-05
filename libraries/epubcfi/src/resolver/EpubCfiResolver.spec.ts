@@ -6,6 +6,8 @@ import {EpubCfiResolver} from './EpubCfiResolver.js';
 import {EpubCfiSideBias} from './EpubCfiSideBias.js';
 import {EpubCfiVirtualTarget} from './EpubCfiVirtualTarget.js';
 import {EpubCfiResolverErrorType} from './EpubCfiResolverErrorType.js';
+import {parseDocument} from '../testing/dom.js';
+import type {Element, Text} from '../dom.js';
 // @ts-ignore
 import testOpf from './test-data/testBookOpf.xml?raw';
 // @ts-ignore
@@ -13,26 +15,31 @@ import testChapter1 from './test-data/testChapter1.xhtml?raw';
 // @ts-ignore
 import testChapter2 from './test-data/testChapter2.xhtml?raw';
 
+const OPF_URL = 'com.colibrio://something/testBookOpf.xml';
+const CHAPTER1_URL = 'com.colibrio://something/testChapter1.xhtml';
+const CHAPTER2_URL = 'com.colibrio://something/testChapter2.xhtml';
+
+const id = (element: Element | null | undefined) => (element ? DomUtils.getElementId(element) : null);
+
 describe('EpubCfiResolver', () => {
 
     function resolveEpubCfi(epubcfi: string): EpubCfiResolvedTarget {
         let resolver = new EpubCfiResolver(epubcfi, { processTextAssertions: true });
 
-        let domParser = new DOMParser();
-        let currentDocument = domParser.parseFromString(testOpf, 'application/xml');
-        let currentDocUrl = new URL('com.colibrio://something/testBookOpf.xml');
+        let currentDocument = parseDocument(testOpf, 'application/xml');
+        let currentDocUrl = new URL(OPF_URL);
 
         let indirectionResult = resolver.continueResolving(currentDocument, currentDocUrl);
 
         expect(indirectionResult).not.toBeNull();
 
-        expect(indirectionResult?.documentUrl.toString()).toBe('com.colibrio://something/testBookOpf.xml');
+        expect(indirectionResult?.documentUrl.toString()).toBe(OPF_URL);
         expect(indirectionResult?.element.localName).toBe('itemref');
         expect(indirectionResult?.element.getAttribute('idref')).toBe('chapter-001');
 
-        let chapterDoc = domParser.parseFromString(testChapter1, 'application/xhtml+xml');
+        let chapterDoc = parseDocument(testChapter1);
 
-        indirectionResult = resolver.continueResolving(chapterDoc, new URL('com.colibrio://something/testChapter1.xhtml'));
+        indirectionResult = resolver.continueResolving(chapterDoc, new URL(CHAPTER1_URL));
 
         expect(indirectionResult).toBeNull();
         return resolver.getResolvedTarget();
@@ -53,7 +60,7 @@ describe('EpubCfiResolver', () => {
         let parentPath = resolvedTarget.parentPath!;
 
         expect(parentPath.intendedTargetType).toBe(EpubCfiIntendedTargetType.TEXT);
-        expect(parentPath.documentUrl.toString()).toBe('com.colibrio://something/testChapter1.xhtml');
+        expect(parentPath.documentUrl.toString()).toBe(CHAPTER1_URL);
         expect(DomUtils.isTextNode(parentPath.container)).toBeTruthy();
         expect(DomUtils.isTextNode(parentPath.getTargetNode())).toBeTruthy();
         expect(parentPath.offset).toBe(0);
@@ -62,12 +69,6 @@ describe('EpubCfiResolver', () => {
         expect((parentPath.container as Text).data).toBe('CHAPTER I');
 
         expect(parentPath.isMissingXmlIdAssertions()).toBeFalsy();
-
-        let range = resolvedTarget.createDomRange()!;
-        expect(range.collapsed).toBeTruthy();
-        expect(range.startContainer).toBe(parentPath.container);
-        expect(range.startOffset).toBe(parentPath.offset);
-        range.detach();
     });
 
     it('should resolve to a text location within the example EPUB using the async api', () => {
@@ -87,19 +88,13 @@ describe('EpubCfiResolver', () => {
         let parentPath = resolvedTarget.parentPath!;
 
         expect(parentPath.intendedTargetType).toBe(EpubCfiIntendedTargetType.TEXT);
-        expect(parentPath.documentUrl.toString()).toBe('com.colibrio://something/testChapter1.xhtml');
+        expect(parentPath.documentUrl.toString()).toBe(CHAPTER1_URL);
         expect(DomUtils.isTextNode(parentPath.container)).toBeTruthy();
         expect(DomUtils.isTextNode(parentPath.getTargetNode())).toBeTruthy();
         expect(parentPath.offset).toBe(0);
         expect(parentPath.textAssertionFailed).toBeFalsy();
         expect(parentPath.container.parentNode!.nodeName).toBe('h2');
         expect((parentPath.container as Text).data).toBe('CHAPTER I');
-
-        let range = resolvedTarget.createDomRange()!;
-        expect(range.collapsed).toBeTruthy();
-        expect(range.startContainer).toBe(parentPath.container);
-        expect(range.startOffset).toBe(parentPath.offset);
-        range.detach();
     });
 
     it('should resolve to a text location and match exact text assertion', () => {
@@ -127,10 +122,10 @@ describe('EpubCfiResolver', () => {
         // so stepsResolved should become false for the element path, but character assertion will still try to find "CHAPTER I" within the nearest container.
         // E.g. targeting a non-existent child but providing an assertion.
         let resolvedTarget = resolveEpubCfi('epubcfi(/6/8!/4/2[chapter-i]/8/2/1:3[CHA,PTER I])');
-        
+
         expect(resolvedTarget.hasErrors()).toBeTruthy(); // steps didn't resolve
         expect(resolvedTarget.isEveryStepResolved()).toBeFalsy();
-        
+
         let parentPath = resolvedTarget.parentPath!;
         expect(parentPath.textAssertionFailed).toBeFalsy(); // Text assertion recovered the offset to CHAPTER I
     });
@@ -140,13 +135,12 @@ describe('EpubCfiResolver', () => {
         // Target CHAPTER I, but use assertion that matches "Lorem ipsum".
         let resolver = new EpubCfiResolver('epubcfi(/6/8!/4/2[chapter-i]/2/2/1:3[Lorem ,ipsum])', { processTextAssertions: true });
 
-        let domParser = new DOMParser();
-        let currentDocument = domParser.parseFromString(testOpf, 'application/xml');
-        let currentDocUrl = new URL('com.colibrio://something/testBookOpf.xml');
+        let currentDocument = parseDocument(testOpf, 'application/xml');
+        let currentDocUrl = new URL(OPF_URL);
 
         resolver.continueResolving(currentDocument, currentDocUrl);
-        let chapterDoc = domParser.parseFromString(testChapter1, 'application/xhtml+xml');
-        resolver.continueResolving(chapterDoc, new URL('com.colibrio://something/testChapter1.xhtml'));
+        let chapterDoc = parseDocument(testChapter1);
+        resolver.continueResolving(chapterDoc, new URL(CHAPTER1_URL));
 
         let resolvedTarget = resolver.getResolvedTarget();
         expect(resolvedTarget.hasErrors()).toBeFalsy();
@@ -156,19 +150,18 @@ describe('EpubCfiResolver', () => {
     });
 
     it('should resolve text assertion to closest match and prefer forward match on tie', () => {
-        let domParser = new DOMParser();
-        let testDoc = domParser.parseFromString(`
+        let testDoc = parseDocument(`
             <html xmlns="http://www.w3.org/1999/xhtml">
             <head><title>Test</title></head>
             <body><p>apple banana orange banana apple</p></body>
             </html>
-        `, 'application/xhtml+xml');
+        `);
 
         // text content: "apple banana orange banana apple"
         // length: 32
         // match 1 (apple): indices 0-5, split point for [app,le] is 3.
         // match 2 (apple): indices 27-32, split point for [app,le] is 30.
-        
+
         // Exact middle between 3 and 30 is (3+30)/2 = 16.5
         // Distance from 16 to 3 is 13. Distance from 16 to 30 is 14. Closest is 3.
         let resolver = new EpubCfiResolver('epubcfi(/4/2/1:16[app,le])', { processTextAssertions: true });
@@ -192,12 +185,12 @@ describe('EpubCfiResolver', () => {
         // Now what if they are equidistant? Let's use indices 3 and 29. Wait, "apple" is 5 chars, so split is 3 and 27+3=30.
         // Difference is 27. Middle is 16.5. Let's create a string where distance is perfectly equal.
         // "apple banana xxxxx banana apple" -> 0 to 5, 26 to 31. Split 3 and 29. Diff 26. Mid 16.
-        let testDocTie = domParser.parseFromString(`
+        let testDocTie = parseDocument(`
             <html xmlns="http://www.w3.org/1999/xhtml">
             <head><title>Test</title></head>
             <body><p>apple banana xxxxx banana apple</p></body>
             </html>
-        `, 'application/xhtml+xml');
+        `);
         // match 1 split: 3. match 2 split: 29.
         // Target offset 16. Distance to 3 = 13. Distance to 29 = 13.
         // Tie breaker should pick the forward match (29).
@@ -221,19 +214,14 @@ describe('EpubCfiResolver', () => {
         expect(resolvedTarget.rangeStartPath!.virtualTarget).toBe(EpubCfiVirtualTarget.FIRST_CHILD);
         expect(resolvedTarget.rangeEndPath!.virtualTarget).toBe(EpubCfiVirtualTarget.LAST_CHILD);
 
-        let range = resolvedTarget.createDomRange()!;
-        expect(range).not.toBeNull();
-        expect(range.collapsed).toBeFalsy();
-
-        let startContainer = range.startContainer as Element;
-        let endContainer = range.endContainer as Element;
+        let startContainer = resolvedTarget.rangeStartPath!.container as Element;
+        let endContainer = resolvedTarget.rangeEndPath!.container as Element;
         expect(startContainer.nodeName).toBe('div');
         expect(endContainer.nodeName).toBe('div');
         expect(startContainer.getAttribute('class')).toBe('chapter-title-wrap');
         expect(endContainer.getAttribute('class')).toBe('chapter-title-wrap');
-        expect(range.startOffset).toBe(0);
-        expect(range.endOffset).toBe(endContainer.childNodes.length);
-        range.detach();
+        expect(resolvedTarget.rangeStartPath!.offset).toBe(0);
+        expect(resolvedTarget.rangeEndPath!.offset).toBe(endContainer.childNodes.length);
     });
 
     it('should resolve to a text range in the example EPUB', () => {
@@ -250,17 +238,17 @@ describe('EpubCfiResolver', () => {
         expect(resolvedTarget.rangeStartPath!.intendedTargetType).toBe(EpubCfiIntendedTargetType.TEXT);
         expect(resolvedTarget.rangeEndPath!.intendedTargetType).toBe(EpubCfiIntendedTargetType.TEXT);
 
-        let range = resolvedTarget.createDomRange()!;
-        expect(range.toString()).toBe('ipsum');
-        range.detach();
+        let start = resolvedTarget.rangeStartPath!;
+        let end = resolvedTarget.rangeEndPath!;
+        expect(start.container).toBe(end.container);
+        expect((start.container as Text).data.slice(start.offset, end.offset)).toBe('ipsum');
     });
 
     it('should give an invalid target if not redirected from OPF', () => {
         let resolver = new EpubCfiResolver('epubcfi(/6/8)');
 
-        let parser = new DOMParser();
-        let currentDocument = parser.parseFromString(testOpf, 'application/xml');
-        let currentDocUrl = new URL('com.colibrio://something/testBookOpf.xml');
+        let currentDocument = parseDocument(testOpf, 'application/xml');
+        let currentDocUrl = new URL(OPF_URL);
 
         let indirectionResult = resolver.continueResolving(currentDocument, currentDocUrl);
         expect(indirectionResult).toBeNull();
@@ -270,7 +258,6 @@ describe('EpubCfiResolver', () => {
         expect(resolvedTarget.hasErrors()).toBeTruthy();
         expect(resolvedTarget.isTargetingOpfDocument()).toBeTruthy();
         expect(resolvedTarget.isDomRange()).toBeFalsy();
-        expect(resolvedTarget.createDomRange()).toBeNull();
         expect(resolvedTarget.isOwnedBySingleDocument()).toBeTruthy();
         expect(resolvedTarget.hasElementOffsets()).toBeFalsy();
 
@@ -286,30 +273,29 @@ describe('EpubCfiResolver', () => {
         expect(resolvedTarget.isTargetingOpfDocument()).toBeFalsy();
         expect(resolvedTarget.isOwnedBySingleDocument()).toBeTruthy();
         expect(resolvedTarget.hasElementOffsets()).toBeFalsy();
-        let range = resolvedTarget.createDomRange()!;
-        expect((range.startContainer.childNodes[range.startOffset] as Element).localName).toBe('html');
+        let parentPath = resolvedTarget.parentPath!;
+        expect((parentPath.container.childNodes[parentPath.offset] as Element).localName).toBe('html');
 
         resolvedTarget = resolveEpubCfi('epubcfi(/6/8!/0)');
         expect(resolvedTarget.hasErrors()).toBeFalsy();
         expect(resolvedTarget.isTargetingOpfDocument()).toBeFalsy();
         expect(resolvedTarget.isOwnedBySingleDocument()).toBeTruthy();
         expect(resolvedTarget.hasElementOffsets()).toBeFalsy();
-        range = resolvedTarget.createDomRange()!;
-        expect((range.startContainer as Element).localName).toBe('html');
+        parentPath = resolvedTarget.parentPath!;
+        expect((parentPath.container as Element).localName).toBe('html');
     });
 
     it('should resolve epubcfi(/6,/8!/4/2[chapter-i],/10!/4/2[chapter-ii]/4) to a range partially covering 2 documents', () => {
         let resolver = new EpubCfiResolver('epubcfi(/6,/8!/4/2[chapter-i],/10!/4/2[chapter-ii]/4)');
 
-        let parser = new DOMParser();
-        let currentDocument = parser.parseFromString(testOpf, 'application/xml');
-        let currentDocUrl = new URL('com.colibrio://something/testBookOpf.xml');
+        let currentDocument = parseDocument(testOpf, 'application/xml');
+        let currentDocUrl = new URL(OPF_URL);
 
         let indirectionResult = resolver.continueResolving(currentDocument, currentDocUrl);
 
         expect(indirectionResult).not.toBeNull();
 
-        expect(indirectionResult?.documentUrl.toString()).toBe('com.colibrio://something/testBookOpf.xml');
+        expect(indirectionResult?.documentUrl.toString()).toBe(OPF_URL);
         expect(indirectionResult?.element.localName).toBe('itemref');
         expect(indirectionResult?.element.getAttribute('idref')).toBe('chapter-001');
 
@@ -332,28 +318,28 @@ describe('EpubCfiResolver', () => {
         expect(endPathElement?.localName).toBe('itemref');
         expect(endPathElement?.getAttribute('idref')).toBe('chapter-002');
 
-        const chapterDoc = parser.parseFromString(testChapter1, 'application/xhtml+xml');
+        const chapterDoc = parseDocument(testChapter1);
 
-        indirectionResult = resolver.continueResolving(chapterDoc, new URL('com.colibrio://something/testChapter1.xhtml'));
+        indirectionResult = resolver.continueResolving(chapterDoc, new URL(CHAPTER1_URL));
 
         expect(resolvedTarget.rangeStartPath!.indirectionsResolved).toBe(true);
         expect(resolvedTarget.rangeEndPath!.indirectionsResolved).toBe(false);
 
-        expect(indirectionResult?.documentUrl.toString()).toBe('com.colibrio://something/testBookOpf.xml');
+        expect(indirectionResult?.documentUrl.toString()).toBe(OPF_URL);
         expect(indirectionResult?.element.localName).toBe('itemref');
         expect(indirectionResult?.element.getAttribute('idref')).toBe('chapter-002');
 
-        const chapter2Doc = parser.parseFromString(testChapter2, 'application/xhtml+xml');
+        const chapter2Doc = parseDocument(testChapter2);
 
-        indirectionResult = resolver.continueResolving(chapter2Doc, new URL('com.colibrio://something/testChapter2.xhtml'));
+        indirectionResult = resolver.continueResolving(chapter2Doc, new URL(CHAPTER2_URL));
 
         expect(indirectionResult).toBeNull();
 
         expect(resolvedTarget.rangeEndPath!.indirectionsResolved).toBe(true);
 
         expect(resolvedTarget.isDomRange()).toBe(false);
-        expect(resolvedTarget.rangeStartPath?.getTargetElement()?.id).toBe('chapter-i');
-        expect(resolvedTarget.rangeEndPath?.getTargetElement()?.parentElement?.id).toBe('chapter-ii');
+        expect(id(resolvedTarget.rangeStartPath?.getTargetElement())).toBe('chapter-i');
+        expect(id(resolvedTarget.rangeEndPath?.getTargetElement()?.parentElement)).toBe('chapter-ii');
 
     });
 
@@ -362,9 +348,8 @@ describe('EpubCfiResolver', () => {
         // and a side bias, while the end path (/10) stays in the OPF and therefore finishes first.
         let resolver = new EpubCfiResolver('epubcfi(/6,/8!/4/2[chapter-i]/2/2/1:3[;s=b],/10)', { processTextAssertions: true });
 
-        let parser = new DOMParser();
-        let opfDoc = parser.parseFromString(testOpf, 'application/xml');
-        let indirectionResult = resolver.continueResolving(opfDoc, new URL('com.colibrio://something/testBookOpf.xml'));
+        let opfDoc = parseDocument(testOpf, 'application/xml');
+        let indirectionResult = resolver.continueResolving(opfDoc, new URL(OPF_URL));
 
         const resolvedTarget = resolver.getResolvedTarget();
 
@@ -373,8 +358,8 @@ describe('EpubCfiResolver', () => {
         expect(resolvedTarget.rangeEndPath!.indirectionsResolved).toBe(true);
         expect(indirectionResult?.element.getAttribute('idref')).toBe('chapter-001');
 
-        let chapterDoc = parser.parseFromString(testChapter1, 'application/xhtml+xml');
-        indirectionResult = resolver.continueResolving(chapterDoc, new URL('com.colibrio://something/testChapter1.xhtml'));
+        let chapterDoc = parseDocument(testChapter1);
+        indirectionResult = resolver.continueResolving(chapterDoc, new URL(CHAPTER1_URL));
         expect(indirectionResult).toBeNull();
 
         let rangeStartPath = resolvedTarget.rangeStartPath!;
@@ -390,9 +375,8 @@ describe('EpubCfiResolver', () => {
     it('should resolve epubcfi(/6,/8!/4/2[chapter-i],/10) so that endRange is finished first', () => {
         let resolver = new EpubCfiResolver('epubcfi(/6,/8!/4/2[chapter-i],/10)');
 
-        let parser = new DOMParser();
-        let currentDocument = parser.parseFromString(testOpf, 'application/xml');
-        let currentDocUrl = new URL('com.colibrio://something/testBookOpf.xml');
+        let currentDocument = parseDocument(testOpf, 'application/xml');
+        let currentDocUrl = new URL(OPF_URL);
 
         let indirectionResult = resolver.continueResolving(currentDocument, currentDocUrl);
         expect(indirectionResult).not.toBeNull();

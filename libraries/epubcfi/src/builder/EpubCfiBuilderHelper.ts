@@ -1,3 +1,4 @@
+import type {Element, Node} from '../dom.js';
 import {DomTreeWalker} from '../common/DomTreeWalker.js';
 import {DomUtils} from '../common/DomUtils.js';
 import {ReversedTopDownDomTreeWalker} from '../common/ReversedTopDownDomTreeWalker.js';
@@ -7,7 +8,6 @@ import {EpubCfiUtils} from '../EpubCfiUtils.js';
 import {IEpubCfiAssertionNode} from '../model/assertion/IEpubCfiAssertionNode.js';
 import {IEpubCfiLocalPathNode} from '../model/IEpubCfiLocalPathNode.js';
 import {IEpubCfiPathNode} from '../model/IEpubCfiPathNode.js';
-import {IEpubCfiRootNode} from '../model/IEpubCfiRootNode.js';
 import {IEpubCfiStepNode} from '../model/IEpubCfiStepNode.js';
 import {EpubCfiOffsetType} from '../model/offset/EpubCfiOffsetType.js';
 import {IEpubCfiCharacterOffsetNode} from '../model/offset/IEpubCfiCharacterOffsetNode.js';
@@ -20,48 +20,10 @@ const DEFAULT_WORD_BOUNDARY_MAX_EXPANSION = 20;
  */
 export class EpubCfiBuilderHelper {
 
-    static appendTerminalDomRange(
-        range: Range,
-        rootNode?: IEpubCfiRootNode,
-        options?: IEpubCfiBuilderTextAssertionOptions,
-    ): IEpubCfiRootNode {
-        if (!rootNode) {
-            rootNode = EpubCfiUtils.createEmptyRootNode();
-        }
-
-        if (range.collapsed) {
-            if (!rootNode.parentPath) {
-                rootNode.parentPath = EpubCfiUtils.createEmptyPathNode();
-            }
-            EpubCfiBuilderHelper.appendTerminalLocalPath(range.startContainer, range.startOffset, rootNode.parentPath, undefined, options);
-            return rootNode;
-        }
-
-        if (!rootNode.parentPath) {
-            rootNode.parentPath = EpubCfiUtils.createEmptyPathNode();
-        }
-        if (rootNode.rangeStartPath || rootNode.rangeEndPath) {
-            throw new EpubCfiError(EpubCfiErrorType.RANGE_PATHS_ALREADY_SET);
-        }
-        rootNode.rangeStartPath = EpubCfiUtils.createEmptyPathNode();
-        rootNode.rangeEndPath = EpubCfiUtils.createEmptyPathNode();
-
-        EpubCfiBuilderHelper.appendTerminalLocalPath(range.startContainer, range.startOffset, rootNode.rangeStartPath, range.commonAncestorContainer, options);
-        EpubCfiBuilderHelper.appendTerminalLocalPath(range.endContainer, range.endOffset, rootNode.rangeEndPath, range.commonAncestorContainer, options);
-
-        let hasLocalPaths = rootNode.parentPath.localPaths.length > 0;
-        if (DomUtils.isElement(range.commonAncestorContainer)) {
-            rootNode.parentPath.localPaths.push(EpubCfiBuilderHelper.buildLocalPathToElement(range.commonAncestorContainer, hasLocalPaths));
-        } else if (DomUtils.isElement(range.commonAncestorContainer.parentNode)) {
-            let localPath = EpubCfiBuilderHelper.buildLocalPathToElement(range.commonAncestorContainer.parentNode, hasLocalPaths);
-            localPath.steps.push(EpubCfiBuilderHelper.buildTextStep(range.commonAncestorContainer));
-            rootNode.parentPath.localPaths.push(localPath);
-        } else {
-            throw new EpubCfiError(EpubCfiErrorType.CONTAINER_NOT_ATTACHED_TO_DOCUMENT);
-        }
-
-        return rootNode;
-    }
+    /* FORK START */
+    // Removed EpubCfiBuilderHelper.appendTerminalDomRange(): it took a live DOM Range,
+    // which xmldom does not provide. Positions come in through appendTerminalLocalPath().
+    /* FORK END */
 
     static appendTerminalLocalPath(
         container: Node,
@@ -81,7 +43,9 @@ export class EpubCfiBuilderHelper {
                 // It's a virtual target!
                 steps.push({
                     assertion: null,
-                    stepValue: offset === 0 ? 0 : container.childElementCount * 2 + 2,
+                    /* FORK START */
+                    stepValue: offset === 0 ? 0 : container.children.length * 2 + 2,
+                    /* FORK END */
                 });
             } else {
                 steps = EpubCfiBuilderHelper.buildStepsToElement(container, stopNode);
@@ -171,9 +135,14 @@ export class EpubCfiBuilderHelper {
         for (let i = elements.length - 1; i >= 0; i--) {
             let element = elements[i];
             let xmlIdAssertion: IEpubCfiAssertionNode | null = null;
-            if (element.id) {
+            /* FORK START */
+            const elementId = DomUtils.getElementId(element);
+            if (elementId) {
+            /* FORK END */
                 xmlIdAssertion = {
-                    values: [element.id],
+                    /* FORK START */
+                    values: [elementId],
+                    /* FORK END */
                     parameters: [],
                 };
             }

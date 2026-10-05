@@ -1,3 +1,4 @@
+import type {Text} from '../../dom.js';
 /**
  * Describes the footprint of a single original DOM text node within
  * a normalized text string. Provides the necessary information to map

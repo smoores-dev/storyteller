@@ -1,3 +1,4 @@
+import type {Node} from '../dom.js';
 import { isFunction } from './Utils.js';
 import { DomTreeWalker } from './DomTreeWalker.js';
 

@@ -1,26 +1,9 @@
-import {playwright} from '@vitest/browser-playwright';
-import {defineConfig} from 'vitest/config';
+import {configDefaults, defineConfig} from 'vitest/config';
 
 export default defineConfig({
     test: {
-        browser: {
-            enabled: true,
-            headless: true,
-            screenshotFailures: false,
-
-            instances: [
-                {
-                    browser: 'chromium',
-                    provider: playwright(
-                        {
-                            launchOptions: {
-                                channel: 'chrome',
-                            },
-                        }
-                    ),
-                },
-            ],
-        },
+        environment: 'node',
+        exclude: [...configDefaults.exclude, '**/.tsbuild/**'],
         coverage: {
             include: ['src/**/*.ts'],
             exclude: ['**/*.spec.*'],

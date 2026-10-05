@@ -1,4 +1,6 @@
 import {describe, expect, it} from 'vitest';
+import {parseDocument} from '../testing/dom.js';
+import type {Text} from '../dom.js';
 import {DomUtils} from '../common/DomUtils.js';
 import {EpubCfiUtils} from '../EpubCfiUtils.js';
 import {EpubCfiParser} from '../parser/EpubCfiParser.js';
@@ -105,9 +107,8 @@ describe('EpubCfiBuilder', () => {
          */
         function resolve(epubcfi: string): EpubCfiResolvedTarget {
             let resolver = new EpubCfiResolver(epubcfi, {processTextAssertions: true});
-            let domParser = new DOMParser();
 
-            let opf = domParser.parseFromString(testOpf, 'application/xml');
+            let opf = parseDocument(testOpf, 'application/xml');
             let result = resolver.continueResolving(opf, new URL(OPF_URL));
 
             while (result) {
@@ -123,7 +124,7 @@ describe('EpubCfiBuilder', () => {
                 } else {
                     throw new Error(`Unexpected idref: ${idref}`);
                 }
-                let doc = domParser.parseFromString(raw, 'application/xhtml+xml');
+                let doc = parseDocument(raw, 'application/xhtml+xml');
                 result = resolver.continueResolving(doc, new URL(url));
             }
 
@@ -150,6 +151,14 @@ describe('EpubCfiBuilder', () => {
                 rangeStart: describePos(target.rangeStartPath),
                 rangeEnd: describePos(target.rangeEndPath),
             };
+        }
+
+        /** The text a range target covers, read off the resolved positions. */
+        function rangeText(target: EpubCfiResolvedTarget): string {
+            let start = target.rangeStartPath!;
+            let end = target.rangeEndPath!;
+            expect(start.container).toBe(end.container);
+            return (start.container as Text).data.slice(start.offset, end.offset);
         }
 
         it('round-trips a single text position', () => {
@@ -181,8 +190,7 @@ describe('EpubCfiBuilder', () => {
         });
 
         it('bakes in the corrected offset for a CFI repaired with text assertions', () => {
-            let domParser = new DOMParser();
-            let testDoc = domParser.parseFromString(`
+            let testDoc = parseDocument(`
                 <html xmlns="http://www.w3.org/1999/xhtml">
                 <head><title>Test</title></head>
                 <body><p>apple banana orange banana apple</p></body>
@@ -201,7 +209,7 @@ describe('EpubCfiBuilder', () => {
 
             let rebuiltResolver = new EpubCfiResolver(rebuiltCfi, {processTextAssertions: true});
             rebuiltResolver.continueResolving(
-                domParser.parseFromString(`
+                parseDocument(`
                     <html xmlns="http://www.w3.org/1999/xhtml">
                     <head><title>Test</title></head>
                     <body><p>apple banana orange banana apple</p></body>
@@ -237,13 +245,13 @@ describe('EpubCfiBuilder', () => {
             let original = resolve('epubcfi(/6/8!/4/2[chapter-i]/4/2/1,:6,:11)');
             expect(original.hasErrors()).toBeFalsy();
             expect(original.isOwnedBySingleDocument()).toBeTruthy();
-            expect(original.createDomRange()!.toString()).toBe('ipsum');
+            expect(rangeText(original)).toBe('ipsum');
 
             let rebuilt = resolve(EpubCfiBuilder.createFromResolvedTarget(original)!.toString());
             expect(rebuilt.hasErrors()).toBeFalsy();
             expect(rebuilt.hasWarnings()).toBeFalsy();
             expect(rebuilt.isDomRange()).toBeTruthy();
-            expect(rebuilt.createDomRange()!.toString()).toBe('ipsum');
+            expect(rangeText(rebuilt)).toBe('ipsum');
             expect(describeTarget(rebuilt)).toEqual(describeTarget(original));
         });
 
@@ -295,7 +303,7 @@ describe('EpubCfiBuilder', () => {
             const url = new URL('com.colibrio://offsets.xhtml');
             function resolveSingle(cfi: string): EpubCfiResolvedTarget {
                 const resolver = new EpubCfiResolver(cfi, {processTextAssertions: true});
-                resolver.continueResolving(new DOMParser().parseFromString(html, 'application/xhtml+xml'), url);
+                resolver.continueResolving(parseDocument(html, 'application/xhtml+xml'), url);
                 return resolver.getResolvedTarget();
             }
 
@@ -336,7 +344,7 @@ describe('EpubCfiBuilder', () => {
             const url = new URL('com.colibrio://range-repair.xhtml');
             function resolveSingle(cfi: string): EpubCfiResolvedTarget {
                 const resolver = new EpubCfiResolver(cfi, {processTextAssertions: true});
-                resolver.continueResolving(new DOMParser().parseFromString(html, 'application/xhtml+xml'), url);
+                resolver.continueResolving(parseDocument(html, 'application/xhtml+xml'), url);
                 return resolver.getResolvedTarget();
             }
 
@@ -359,7 +367,7 @@ describe('EpubCfiBuilder', () => {
             const url = new URL('com.colibrio://virtual.xhtml');
             function resolveSingle(cfi: string): EpubCfiResolvedTarget {
                 const resolver = new EpubCfiResolver(cfi, {processTextAssertions: true});
-                resolver.continueResolving(new DOMParser().parseFromString(html, 'application/xhtml+xml'), url);
+                resolver.continueResolving(parseDocument(html, 'application/xhtml+xml'), url);
                 return resolver.getResolvedTarget();
             }
 
@@ -383,7 +391,7 @@ describe('EpubCfiBuilder', () => {
             const url = new URL('com.colibrio://virtual.xhtml');
             function resolveSingle(cfi: string): EpubCfiResolvedTarget {
                 const resolver = new EpubCfiResolver(cfi, {processTextAssertions: true});
-                resolver.continueResolving(new DOMParser().parseFromString(html, 'application/xhtml+xml'), url);
+                resolver.continueResolving(parseDocument(html, 'application/xhtml+xml'), url);
                 return resolver.getResolvedTarget();
             }
 
@@ -399,7 +407,7 @@ describe('EpubCfiBuilder', () => {
             const url = new URL('com.colibrio://virtual.xhtml');
             function resolveSingle(cfi: string): EpubCfiResolvedTarget {
                 const resolver = new EpubCfiResolver(cfi, {processTextAssertions: true});
-                resolver.continueResolving(new DOMParser().parseFromString(html, 'application/xhtml+xml'), url);
+                resolver.continueResolving(parseDocument(html, 'application/xhtml+xml'), url);
                 return resolver.getResolvedTarget();
             }
 
@@ -474,8 +482,7 @@ describe('EpubCfiBuilder', () => {
         });
 
         it('should generate text assertions when building paths', () => {
-            const domParser = new DOMParser();
-            const doc = domParser.parseFromString('<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="p1">Assertion testing text</p></body></html>', 'application/xhtml+xml');
+            const doc = parseDocument('<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="p1">Assertion testing text</p></body></html>', 'application/xhtml+xml');
             const p = doc.getElementById('p1')!;
             const textNode = p.firstChild!; // "Assertion testing text"
 

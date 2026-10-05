@@ -1,3 +1,4 @@
+import type {Element} from '../dom.js';
 import {IEpubCfiRootNode} from '../model/IEpubCfiRootNode.js';
 import {IEpubCfiParserError} from '../parser/IEpubCfiParserError.js';
 import {EpubCfiResolvedPath} from './EpubCfiResolvedPath.js';
@@ -43,36 +44,10 @@ export class EpubCfiResolvedTarget {
         this.ast = ast;
     }
 
-    /**
-     * Creates a DOM Range from this instance.
-     * The created Range will be collapsed if this instance does not have any range path components.
-     *
-     * If this instance has a range that start and end in different Documents, the range will be collapsed to range start.
-     */
-    createDomRange(): Range | null {
-        if (this.isTargetingOpfDocument()) {
-            return null;
-        }
-
-        let range: Range | null = null;
-
-        // TODO: Note that this code only works when parsing down to first content document. It will fail if we add support for indirection into iframes
-
-        if (this.rangeStartPath && this.rangeEndPath) {
-            let startDocument = this.rangeStartPath.getDocument();
-            range = startDocument.createRange();
-            range.setStart(this.rangeStartPath.container, this.rangeStartPath.offset);
-
-            if (this.rangeEndPath.getDocument() === startDocument) {
-                range.setEnd(this.rangeEndPath.container, this.rangeEndPath.offset);
-            }
-        } else if (this.parentPath) {
-            range = this.parentPath.getDocument().createRange();
-            range.setStart(this.parentPath.container, this.parentPath.offset);
-        }
-
-        return range;
-    }
+    /* FORK START */
+    // Removed createDomRange(): xmldom has no Range. Callers read the resolved
+    // `container`/`offset` pairs off parentPath, rangeStartPath and rangeEndPath.
+    /* FORK END */
 
     /**
      * Get the element character offsets if any exists.
@@ -199,8 +174,7 @@ export class EpubCfiResolvedTarget {
     }
 
     /**
-     * If this instance represents a DOM Range.
-     * If this method returns false, createDomRange() will returned a collapsed Range instance.
+     * If this instance represents a range of CFI paths.
      */
     isDomRange(): boolean {
         let rangeStartPath = this.rangeStartPath;
@@ -295,7 +269,7 @@ export class EpubCfiResolvedTarget {
      * If this instance is targeting the OPF document instead of a content document.
      * Will return true if no indirection took place at all (i.e. still inside the OPF document)
      *
-     * If this method returns true, methods such as getTargetElement() and createDomRange() will return null.
+     * If this method returns true, methods such as getTargetElement() will return null.
      */
     isTargetingOpfDocument(): boolean {
         if (this.rangeStartPath && this.rangeEndPath) {

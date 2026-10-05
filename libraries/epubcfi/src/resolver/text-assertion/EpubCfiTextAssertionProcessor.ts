@@ -1,3 +1,4 @@
+import type {Node, Text} from '../../dom.js';
 import {DomTreeWalker} from '../../common/DomTreeWalker.js';
 import {DomUtils} from '../../common/DomUtils.js';
 import {ReversedTopDownDomTreeWalker} from '../../common/ReversedTopDownDomTreeWalker.js';

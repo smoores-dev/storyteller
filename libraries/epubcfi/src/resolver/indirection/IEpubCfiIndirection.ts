@@ -1,3 +1,4 @@
+import type {Node} from '../../dom.js';
 /**
  *
  */

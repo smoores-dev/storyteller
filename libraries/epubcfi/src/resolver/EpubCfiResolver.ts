@@ -1,3 +1,4 @@
+import type {Document, DocumentFragment, Element} from '../dom.js';
 import {ArrayUtils} from '../common/ArrayUtils.js';
 import {DomUtils} from '../common/DomUtils.js';
 import {isString} from '../common/Utils.js';
@@ -47,7 +48,10 @@ export class EpubCfiResolver {
         this._offsetProcessor = new EpubCfiOffsetProcessor(options);
     }
 
-    continueResolving(targetNode: Element | Document, documentUrl: URL): IEpubCfiIndirectionResult | null {
+    /* FORK START */
+    // DocumentFragment added to the union; the body has always accepted one.
+    continueResolving(targetNode: DocumentFragment | Element | Document, documentUrl: URL): IEpubCfiIndirectionResult | null {
+    /* FORK END */
         let targetElement: Element | null = null;
 
         if (DomUtils.isDocument(targetNode)) {
