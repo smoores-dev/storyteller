@@ -1,4 +1,5 @@
 publish-mobile:
+  extends: .yarn_cache
   stage: publish
   image: node:24
   rules:

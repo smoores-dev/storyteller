@@ -8,6 +8,7 @@ stages: # List of stages for jobs, and their order of execution
   - whisper-build
 
 include:
+  - local: ".gitlab/ci/yarn-cache.yml"
   - local: ".gitlab/ci/check.yml"
   - local: ".gitlab/ci/mr-changelog-trailers.yml"
   - local: ".gitlab/ci/base-images.yml"

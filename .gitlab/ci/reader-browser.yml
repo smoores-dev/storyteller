@@ -1,4 +1,5 @@
 test-reader-browser:
+  extends: .yarn_cache
   stage: check
   image: mcr.microsoft.com/playwright:v1.62.1-noble
   tags: [saas-linux-large-amd64]

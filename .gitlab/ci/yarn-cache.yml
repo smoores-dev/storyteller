@@ -1,0 +1,40 @@
+.yarn_cache:
+  variables:
+    YARN_GLOBAL_FOLDER: .yarn/ci-cache
+  cache:
+    key:
+      files:
+        - yarn.lock
+    paths:
+      - .yarn/ci-cache/
+    policy: pull
+
+# Standalone job that warms the cache in parallel with the rest of
+# the check stage. Doesn't really help with this run's check stage (will
+# download from npm instead), but warms it for the next run with the same
+# lockfile.
+yarn-cache:
+  extends: .yarn_cache
+  stage: check
+  image: node:24
+  tags:
+    - saas-linux-large-amd64
+  rules:
+    - if:
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
+  cache:
+    key:
+      files:
+        - yarn.lock
+    paths:
+      - .yarn/ci-cache/
+    policy: pull-push
+  script:
+    - |
+      if [ -n "$(ls -A "$YARN_GLOBAL_FOLDER/cache" 2>/dev/null)" ]; then
+        echo "Yarn cache is already warm for this lockfile, nothing to do."
+        exit 0
+      fi
+    - npm i -g corepack
+    - yarn install --mode=skip-build

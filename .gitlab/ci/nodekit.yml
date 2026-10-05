@@ -353,7 +353,7 @@ build-nodekit-win32-arm64-msvc:
 publish-nodekit:
   image: node:24
   stage: publish
-  extends: .nodekit-tag-rules
+  extends: [.nodekit-tag-rules, .yarn_cache]
   needs:
     - job: build-nodekit-darwin-arm64
       artifacts: true

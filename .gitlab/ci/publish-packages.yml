@@ -1,4 +1,5 @@
 publish-fs:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -59,6 +60,7 @@ release-fs:
           url: "https://npmjs.com/package/@storyteller-platform/fs"
 
 publish-epub:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -119,6 +121,7 @@ release-epub:
           url: "https://npmjs.com/package/@storyteller-platform/epub"
 
 publish-audiobook:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -179,6 +182,7 @@ release-audiobook:
           url: "https://npmjs.com/package/@storyteller-platform/audiobook"
 
 publish-path:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -239,6 +243,7 @@ release-path:
           url: "https://npmjs.com/package/@storyteller-platform/path"
 
 publish-media-types:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -299,6 +304,7 @@ release-media-types:
           url: "https://npmjs.com/package/@storyteller-platform/media-types"
 
 publish-uri-fragment:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -359,6 +365,7 @@ release-uri-fragment:
           url: "https://npmjs.com/package/@storyteller-platform/uri-fragment"
 
 publish-mapping:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -419,6 +426,7 @@ release-mapping:
           url: "https://npmjs.com/package/@storyteller-platform/mapping"
 
 publish-mlx-audio:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -479,6 +487,7 @@ release-mlx-audio:
           url: "https://npmjs.com/package/@storyteller-platform/mlx-audio"
 
 publish-ghost-story:
+  extends: .yarn_cache
   image: node:24
   stage: publish
   rules:
@@ -539,6 +548,7 @@ release-ghost-story:
           url: "https://npmjs.com/package/@storyteller-platform/ghost-story"
 
 .publish-align-sea-base:
+  extends: .yarn_cache
   stage: publish
   rules:
     - if:
@@ -659,6 +669,7 @@ publish-align-sea-linux-arm64:
     - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
 publish-align-sea-windows-x64:
+  extends: .yarn_cache
   stage: publish
   rules:
     - if:
@@ -735,6 +746,7 @@ publish-align-sea-windows-x64:
         -ContentType "application/octet-stream"
 
 publish-align:
+  extends: .yarn_cache
   image: node:25
   stage: publish
   rules:
@@ -803,7 +815,7 @@ release-align:
 .okmain-build-linux-base:
   stage: build-base
   image: node:24
-  extends: .okmain-tag-rules
+  extends: [.okmain-tag-rules, .yarn_cache]
   before_script:
     - apt update
     - DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends
@@ -829,7 +841,7 @@ release-align:
 .okmain-build-linux-musl-base:
   stage: build-base
   image: node:24-alpine
-  extends: .okmain-tag-rules
+  extends: [.okmain-tag-rules, .yarn_cache]
   before_script:
     - apk add --no-cache build-base curl pkgconf
     - npm i -g corepack
@@ -853,7 +865,7 @@ release-align:
 
 .okmain-build-macos-base:
   stage: build-base
-  extends: .okmain-tag-rules
+  extends: [.okmain-tag-rules, .yarn_cache]
   tags: [saas-macos-medium-m1]
   before_script:
     - brew install curl
@@ -882,7 +894,7 @@ release-align:
 
 .okmain-build-windows-base:
   stage: build-base
-  extends: .okmain-tag-rules
+  extends: [.okmain-tag-rules, .yarn_cache]
   tags: [saas-windows-medium-amd64]
   before_script:
     - |
@@ -983,7 +995,7 @@ build-okmain-win32-x64-msvc:
 publish-okmain:
   image: node:24
   stage: publish
-  extends: .okmain-tag-rules
+  extends: [.okmain-tag-rules, .yarn_cache]
   # all artifacts should be downloaded to the woking dir
   needs:
     - job: build-okmain-linux-x64-gnu
