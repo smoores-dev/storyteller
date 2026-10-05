@@ -4,6 +4,13 @@ smoores:
   url: https://smoores.dev
   image_url: https://gitlab.com/uploads/-/system/user/avatar/2464265/avatar.png?width=192
 
+jessrunnels:
+  name: Jessica Runnels
+  image_url: https://gitlab.com/uploads/-/system/user/avatar/19820808/avatar.png?v=1791122595&width=48
+  title: Product Manager
+  socials:
+    gitlab: https://gitlab.com/JessRunnels
+
 tefkah:
   name: Thomas F. K. Jorna
   image_url: https://avatars.githubusercontent.com/u/21983833?s=48&v=4
