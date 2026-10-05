@@ -148,9 +148,10 @@ with Hardcover at least, and maybe someday with Goodreads and/or The Story Graph
 as well.
 
 Regardless, what we _do_ have that no one else has is our multi-dimensional
-scoring system which was created by Thomas and adapted from my daughter, the
-book-tokker's personal rating system which she describes here:
-https://www.tiktok.com/@bookgabber/video/7579768390781340983
+scoring system which was adapted from my daughter, the book-tokker's personal
+rating system which she describes here:
+https://www.tiktok.com/@bookgabber/video/7579768390781340983. Thomas created an
+extremely cool version of it right in Storyteller.
 
 ![multi-dimensional rating system and review](./images/a-gorgeous-excitement.png)
 
@@ -202,8 +203,8 @@ books, they look beautiful, like this:
 Just look at some of those subtitles. So loooooong.
 
 I _love_ a nice clean data set and an easy-to-access subtitle field can be
-leveraged well to make presentation of your books nice and clean. And when we
-get editions (a future feature), subtitles will become even more important!
+leveraged well to make presentation of your books just lovely. And when we get
+editions (a future feature), subtitles will become even more important!
 
 ### Authors, Narrators, Translators, and Other Contributors
 
@@ -260,6 +261,26 @@ _absolutely_ want to check that the translation of your ebook and audiobook
 match, _especially_ for classics... (See https://welovetranslations.com)
 
 ![primary and secondary navigation bars showcasing translators](./images/translators.png)
+
+### Languages
+
+Generally (there are some exceptions obviously), a book is written in one
+language. IRL, as with almost all of this metadata, it probably doesn't matter
+if the language in the metadata matches the language in the book... Like, when
+you open it and start reading or listening, you will know what language that is.
+(Hopefully?)
+
+But for Storyteller, it is actually quite important. Even subtle differences
+between en-GB and en-US can help Storyteller do a better job with your
+alignments! If you are unsure if your book is -GB or -US, there is just plain en
+as well.
+
+Usually this data is correct in your epub, but once upon a time, a _bunch_ of my
+ebooks came out of Calibre with _unk_ for some unknown reason due to a Calibre
+bug, and my alignments were all failing. I had to fix them all.
+
+Long story short — check your languages and make sure they are correct! Your
+alignments scores will thank you!
 
 ### Series
 
@@ -541,11 +562,13 @@ Here are a few of my smart shelves:
   have a very hacky way of doing this — one that requires pristine descriptions,
   but it works for me... ;) )
 - Unread classics : books that are on my TBR **_or_** have no status **_and_**
-  have a publication date < 1966 (if it is older than me then it is a classic ;)
+  have a publication date < 1966 (If it is older than me then it is a classic ;)
   )
-- Missing Audible ID : audiobooks without an Audible ID (these are usually older
+- Missing Audible ID : audiobooks without an Audible ID (These are usually older
   books or books that I acquired in the UK that are not available in the US)
-- Missing IDs : ebooks missing either ASIN or ISBN. (I told you I was OCD...)
+- Missing IDs : ebooks missing either ASIN or ISBN. (Some people knit, some
+  people watch football, I tidy up my electronic media metadata. We all have
+  hobbies that we love.)
 - Translations : all books with a translator (I learned my lesson and do not
   want to have to go through _that_ again!)
 - Missing Matchbook : these are my books that should be align-able at some
@@ -560,6 +583,7 @@ But let your imagination go wild. How about:
 
 - Multi-cast recordings : audiobooks with more than 2 narrators
 - My most recent 5 star reviews : last 10 books you rated 4.5 or higher
+- Write a review: Books completed this year but missing a personal review
 - Unread Sanderson : all books by Brandon Sanderson that are not marked read
 - Unread "SHORT" Sanderson : as above, but less than 500 pages
 - New quick reads : less than 150 pages or 2 hours published since 2024 or added
