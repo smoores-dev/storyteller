@@ -20,11 +20,11 @@ amazing power of Storyteller v3's library management capabilities.
 
 But first, let me tell you two stories.
 
-When my firstborn was about 5 years old (she is almost 33 now), I put her down
-in front of the TV to watch _Belle on Ice_, She loved Beauty and the Beast and
-was enthralled. I went back into the kitchen and suddenly heard screaming from
-the living room. I ran in to see what the catastrophe was, and she was crying,
-"Where is Belle?!". The TV had a commercial on.
+When my firstborn was about 5 years old (she will be 32 in a week), I put her
+down in front of the TV to watch _Belle on Ice_, She loved Beauty and the Beast
+and was enthralled. I went back into the kitchen and suddenly heard screaming
+from the living room. I ran in to see what the catastrophe was, and she was
+crying, "Where is Belle?!". The TV had a commercial on.
 
 My child had never seen a commercial because even 30 years ago, I was cutting
 cords, ripping DVDs, and generally very, very into making our electronic media
