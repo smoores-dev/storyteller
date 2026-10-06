@@ -14,7 +14,6 @@ import {
   dirname as autoDirname,
   extname,
   join as autoJoin,
-  parse as autoParse,
 } from "node:path"
 import { basename, dirname, parse, relative } from "node:path/posix"
 
@@ -30,6 +29,7 @@ import {
   Epub,
   getXhtmlBody,
   type ManifestItem,
+  xmlId,
 } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
 import {
@@ -536,16 +536,21 @@ export class Aligner {
 
     await Promise.all(
       audiofiles.map(async (audiofile) => {
-        const { name, base } = autoParse(audiofile)
+        const base = autoBasename(audiofile)
 
-        const id = `audio_${name}`
+        const epubAudioHref = `Audio/${encodeURIComponent(base)}`
 
         // Make sure this file hasn't already been added
         // from a previous chapter
         const manifest = await this.epub.getManifest()
-        if (id in manifest) return
+        if (
+          Object.values(manifest).some((item) => item.href === epubAudioHref)
+        ) {
+          return
+        }
 
-        const epubAudioFilename = `Audio/${base}`
+        const id = xmlId()
+
         const duration = await getTrackDuration(audiofile)
         this.totalDuration += duration
 
@@ -555,7 +560,7 @@ export class Aligner {
         await this.epub.addManifestItem(
           {
             id,
-            href: epubAudioFilename,
+            href: epubAudioHref,
             mediaType,
           },
           audio,

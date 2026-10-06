@@ -77,6 +77,7 @@ export {
   serialize,
   text,
   x,
+  xmlId,
   XMLSerializer,
 } from "./xml.ts"
 export type { XmlDiagnostic } from "./xml.ts"
@@ -2951,6 +2952,12 @@ export class Epub {
     })
   }
 
+  private assertEncodedHref(href: string) {
+    if (href !== ensureEncodedPath(href)) {
+      throw new Error(`Manifest hrefs must be URI encoded. Received ${href}`)
+    }
+  }
+
   /**
    * Create a new manifest item and write its contents to a
    * new entry.
@@ -2988,11 +2995,7 @@ export class Epub {
       )
     }
 
-    if (item.href !== ensureEncodedPath(item.href)) {
-      throw new Error(
-        `Manifest hrefs must be URI encoded. Received ${item.href}`,
-      )
-    }
+    this.assertEncodedHref(item.href)
 
     // 4.2.1: hrefs that normalize and case-fold to the same path would
     // overwrite each other on a normalizing filesystem.
@@ -3057,6 +3060,8 @@ export class Epub {
    * @link https://www.w3.org/TR/epub-33/#sec-pkg-manifest
    */
   async updateManifestItem(id: string, newItem: Omit<ManifestItem, "id">) {
+    this.assertEncodedHref(newItem.href)
+
     await this.withPackage((packageElement) => {
       const manifest = findXmlChildByNameNS(NS.opf, "manifest", packageElement)
 

@@ -45,7 +45,7 @@ public enum SMILParser {
             if let mediaOverlayId = spineItem.mediaOverlay ?? manifestItem.mediaOverlay,
                 let smilItem = manifest[mediaOverlayId]
             {
-                let smilPath = resolvePath(smilItem.href, relativeTo: opfDir)
+                let smilPath = entryPath(forHref: smilItem.href, relativeTo: opfDir)
                 if let smilData = try? extractFile(from: archive, path: smilPath) {
                     let smilDir = (smilPath as NSString).deletingLastPathComponent
                     let entries = try parseSMIL(smilData, smilDir: smilDir, opfDir: opfDir)
@@ -201,7 +201,7 @@ public enum SMILParser {
         let ncxItem = manifest.values.first { $0.mediaType == "application/x-dtbncx+xml" }
 
         if let ncxItem = ncxItem {
-            let ncxPath = resolvePath(ncxItem.href, relativeTo: opfDir)
+            let ncxPath = entryPath(forHref: ncxItem.href, relativeTo: opfDir)
             debugLog("[SMILParser] Found NCX at: \(ncxPath)")
             if let ncxData = try? extractFile(from: archive, path: ncxPath) {
                 let entries = parseNCXTocEntries(ncxData)
@@ -223,7 +223,7 @@ public enum SMILParser {
         }
 
         if let navItem = navItem {
-            let navPath = resolvePath(navItem.href, relativeTo: opfDir)
+            let navPath = entryPath(forHref: navItem.href, relativeTo: opfDir)
             let navDir = (navPath as NSString).deletingLastPathComponent
             debugLog("[SMILParser] Found EPUB3 nav at: \(navPath)")
             if let navData = try? extractFile(from: archive, path: navPath) {
@@ -298,6 +298,10 @@ public enum SMILParser {
                 end: entry.end,
             )
         }
+    }
+
+    static func entryPath(forHref href: String, relativeTo base: String) -> String {
+        resolvePath(href.removingPercentEncoding ?? href, relativeTo: base)
     }
 
     static func resolvePath(_ path: String, relativeTo base: String) -> String {
@@ -634,7 +638,7 @@ private class SMILXMLDelegate: NSObject, XMLParserDelegate {
         if localName == "par" {
             if let textSrc = currentTextSrc, let audioSrc = currentAudioSrc {
                 let (textHref, textId) = parseTextSrc(textSrc)
-                let resolvedAudioPath = resolvePath(audioSrc, relativeTo: smilDir)
+                let resolvedAudioPath = entryPath(forHref: audioSrc, relativeTo: smilDir)
 
                 entries.append(
                     SMILParser.RawSMILEntry(
@@ -656,6 +660,10 @@ private class SMILXMLDelegate: NSObject, XMLParserDelegate {
         let id = components.count > 1 ? components[1] : ""
         let decodedHref = href.removingPercentEncoding ?? href
         return (decodedHref, id)
+    }
+
+    private func entryPath(forHref href: String, relativeTo base: String) -> String {
+        resolvePath(href.removingPercentEncoding ?? href, relativeTo: base)
     }
 
     private func resolvePath(_ path: String, relativeTo base: String) -> String {

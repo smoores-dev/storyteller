@@ -1,11 +1,6 @@
 import { readFile } from "node:fs/promises"
-import {
-  basename,
-  dirname,
-  parse,
-  parse as autoParse,
-  relative,
-} from "node:path/posix"
+import { basename as autoBasename } from "node:path"
+import { basename, dirname, parse, relative } from "node:path/posix"
 
 import { enumerate, max } from "itertools"
 import memoize from "memoize"
@@ -15,6 +10,7 @@ import {
   addLinkToXhtmlHead,
   Epub,
   getXhtmlBody,
+  xmlId,
   type ManifestItem,
 } from "@storyteller-platform/epub"
 import {
@@ -496,16 +492,21 @@ export class Aligner {
       audiofiles.map(async (audiofile) => {
         this.abortSignal?.throwIfAborted()
 
-        const { name, base } = autoParse(audiofile)
+        const base = autoBasename(audiofile)
 
-        const id = `audio_${name}`
+        const epubAudioHref = `Audio/${encodeURIComponent(base)}`
 
         // Make sure this file hasn't already been added
         // from a previous chapter
         const manifest = await this.epub.getManifest()
-        if (id in manifest) return
+        if (
+          Object.values(manifest).some((item) => item.href === epubAudioHref)
+        ) {
+          return
+        }
 
-        const epubAudioFilename = `Audio/${base}`
+        const id = xmlId()
+
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const duration = this.audioFileDurations[audiofile]!
         this.totalDuration += duration
@@ -516,7 +517,7 @@ export class Aligner {
         await this.epub.addManifestItem(
           {
             id,
-            href: epubAudioFilename,
+            href: epubAudioHref,
             mediaType,
           },
           audio,

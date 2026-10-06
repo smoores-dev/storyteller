@@ -207,7 +207,10 @@ export async function createAlignmentSnapshot(
       const audioStartTime = parseFloat(audioStart.slice(0, -1))
       const audioEndTime = parseFloat(audioEnd.slice(0, -1))
 
-      const audioFilename = posixBasename(audioSrc, posixExtname(audioSrc))
+      const audioFilename = posixBasename(
+        decodeURIComponent(audioSrc),
+        posixExtname(audioSrc),
+      )
       const emissionFilepath = emissionFilepaths.find((f) => {
         const withoutJson = basename(f, extname(f))
         return basename(withoutJson, extname(withoutJson)) === audioFilename

@@ -54,7 +54,7 @@ function parsOf(nodes: DomNode[]): Par[] {
     if (!fragment || !src || start === null || end === null) continue
     pars.push({
       fragment,
-      audio: basename(src),
+      audio: basename(decodeURIComponent(src)),
       start,
       end,
       audioOnly: node.getAttribute("epub:type") === AUDIO_ONLY_TYPE,

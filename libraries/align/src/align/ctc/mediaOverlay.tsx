@@ -43,7 +43,7 @@ function holePar(
     <par id={id} epub:type={AUDIO_ONLY_TYPE}>
       <text src={`../${chapter.href}#${fragment}`} />
       <audio
-        src={`../Audio/${basename(hole.audiofile)}`}
+        src={`../Audio/${encodeURIComponent(basename(hole.audiofile))}`}
         clipBegin={`${hole.start.toFixed(3)}s`}
         clipEnd={`${hole.end.toFixed(3)}s`}
       />
@@ -237,7 +237,7 @@ function createTextRangeSmallSequences(
             src={`../${chapter.href}#${sentenceIdToFragment.get(sentenceRange.id)}`}
           />
           <audio
-            src={`../Audio/${basename(range.audiofile)}`}
+            src={`../Audio/${encodeURIComponent(basename(range.audiofile))}`}
             clipBegin={`${range.start.toFixed(3)}s`}
             clipEnd={`${range.end.toFixed(3)}s`}
           />
@@ -263,7 +263,7 @@ function createTextRangeSmallSequences(
           >
             <text src={`../${chapter.href}#${wordToFragment.get(word.id)}`} />
             <audio
-              src={`../Audio/${basename(word.audiofile)}`}
+              src={`../Audio/${encodeURIComponent(basename(word.audiofile))}`}
               clipBegin={`${word.start.toFixed(3)}s`}
               clipEnd={`${word.end.toFixed(3)}s`}
             />
