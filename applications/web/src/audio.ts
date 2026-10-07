@@ -1,6 +1,4 @@
-import { exec } from "node:child_process"
-import { randomUUID } from "node:crypto"
-import { copyFile } from "node:fs/promises"
+import { execFile } from "node:child_process"
 import { basename, extname, sep } from "node:path"
 import { promisify } from "util"
 
@@ -10,9 +8,8 @@ import { AUDIO_ENCODERS, canCopyCodec } from "@storyteller-platform/audiobook"
 import { MediaType } from "@storyteller-platform/media-types"
 
 import { logger } from "./logging"
-import { quotePath } from "./shell"
 
-const execPromise = promisify(exec)
+const execFilePromise = promisify(execFile)
 
 export function isAudioFile(nameOrPath: string): boolean {
   return MediaType.fromPath(nameOrPath)?.kind === "audio"
@@ -116,15 +113,13 @@ function parseTrackInfo(format: FfmpegTrackFormat["format"]): TrackInfo {
   }
 }
 
-async function execCmd(command: string) {
-  let stdout: string = ""
-  let stderr: string = ""
+async function execCmd(command: string, args: string[]) {
   try {
     // cover art can be several megabytes, so we need a larger buffer
     // matches what is set in the audiobook package
-    ;({ stdout, stderr } = await execPromise(command, {
+    const { stdout } = await execFilePromise(command, args, {
       maxBuffer: 50 * 1024 * 1024,
-    }))
+    })
     return stdout
   } catch (error) {
     if (
@@ -137,15 +132,21 @@ async function execCmd(command: string) {
     }
 
     logger.error(error)
-    logger.info(stdout)
-    throw new Error(stderr)
+    if (error && typeof error === "object" && "stderr" in error) {
+      throw new Error(String(error.stderr))
+    }
+    throw error
   }
 }
 
 export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
-  const stdout = await execCmd(
-    `ffprobe -i ${quotePath(path)} -show_format -of json`,
-  )
+  const stdout = await execCmd("ffprobe", [
+    "-i",
+    path,
+    "-show_format",
+    "-of",
+    "json",
+  ])
   const info = JSON.parse(stdout) as FfmpegTrackFormat
   return parseTrackInfo(info.format)
 })
@@ -153,16 +154,6 @@ export const getTrackInfo = memoize(async function getTrackInfo(path: string) {
 export async function getTrackDuration(path: string) {
   const info = await getTrackInfo(path)
   return info["duration"]
-}
-
-type FfmpegStreams = {
-  streams: FfmpegStreamInfo[]
-}
-
-type FfmpegStreamInfo = {
-  disposition: {
-    attached_pic: number
-  }
 }
 
 type FfmpegChapters = {
@@ -200,56 +191,17 @@ function parseChapterInfo(ffmpegChapterInfo: FfmpegChapterInfo): ChapterInfo {
 export const getTrackChapters = memoize(async function getTrackChapters(
   path: string,
 ) {
-  const stdout = await execCmd(
-    `ffprobe -i ${quotePath(path)} -show_chapters -of json`,
-  )
+  const stdout = await execCmd("ffprobe", [
+    "-i",
+    path,
+    "-show_chapters",
+    "-of",
+    "json",
+  ])
 
   const { chapters } = JSON.parse(stdout) as FfmpegChapters
   return chapters.map((chapter) => parseChapterInfo(chapter))
 })
-
-const hasCoverArt = memoize(async function hasCoverArt(path: string) {
-  try {
-    const { stdout } = await execPromise(
-      `ffprobe -v quiet -show_streams -of json ${quotePath(path)}`,
-    )
-
-    const { streams } = JSON.parse(stdout) as FfmpegStreams
-
-    return streams.some((stream) => stream.disposition.attached_pic === 1)
-  } catch {
-    return null
-  }
-})
-
-async function constructExtractCoverArtCommand(
-  source: string,
-  destExtension: string,
-) {
-  if (destExtension === ".wav" || !(await hasCoverArt(source))) {
-    return ""
-  }
-
-  const command = "ffmpeg"
-  const args = [
-    "-nostdin",
-    "-i",
-    quotePath(source),
-    "-map",
-    "0:v",
-    "-c:v",
-    "copy",
-    "-vframes",
-    "1",
-    "-f",
-    "image2",
-    "-update",
-    "1",
-    "pipe:1",
-  ]
-
-  return `${command} ${args.join(" ")} | `
-}
 
 function commonFfmpegArguments(
   sourceExtension: string,
@@ -286,77 +238,6 @@ function commonFfmpegArguments(
   return args
 }
 
-export async function setCoverImage(audioPath: string, coverPath: string) {
-  const ext = extname(audioPath)
-  const tmpName = `/tmp/${randomUUID()}${ext}`
-
-  const command = "ffmpeg"
-  const args = [
-    "-nostdin",
-    "-y",
-    "-i",
-    quotePath(audioPath),
-    "-i",
-    quotePath(coverPath),
-    "-map",
-    "0:a",
-    "-map",
-    "1:v",
-    "-c",
-    "copy",
-    "-disposition:v:0",
-    "attached_pic",
-    "-metadata:s:v",
-    'title="Album cover"',
-    "-metadata:s:v",
-    'comment="Cover (front)"',
-    tmpName,
-  ]
-
-  const mvCommand = "mv"
-  const mvArgs = [tmpName, quotePath(audioPath)]
-
-  await execCmd(
-    `${command} ${args.join(" ")} && ${mvCommand} ${mvArgs.join(" ")}`,
-  )
-}
-
-export async function transcodeTrack(
-  path: string,
-  destination: string,
-  codec: string | null,
-  bitrate: string | null,
-) {
-  const sourceExtension = extname(path)
-  const destExtension = extname(destination)
-
-  const container = MediaType.fromExtension(sourceExtension)
-  if (
-    !codec &&
-    container !== null &&
-    container === MediaType.fromExtension(destExtension)
-  ) {
-    await copyFile(path, destination)
-    return
-  }
-
-  const command = "ffmpeg"
-  const args = [
-    "-nostdin",
-    "-i",
-    quotePath(path),
-    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
-    `"${destination}"`,
-  ]
-
-  const coverArtCommand = await constructExtractCoverArtCommand(
-    path,
-    destExtension,
-  )
-
-  await execCmd(`${coverArtCommand}${command} ${args.join(" ")}`)
-}
-
 export async function splitTrack(
   path: string,
   from: number,
@@ -369,24 +250,16 @@ export async function splitTrack(
   const sourceExtension = extname(path)
   const destExtension = extname(destination)
 
-  const command = "ffmpeg"
-  const args = [
+  await execCmd("ffmpeg", [
     "-nostdin",
     "-ss",
-    from,
+    String(from),
     "-to",
-    to,
+    String(to),
     "-i",
-    quotePath(path),
-    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
-    `"${destination}"`,
-  ]
-
-  const coverArtCommand = await constructExtractCoverArtCommand(
     path,
-    destExtension,
-  )
-
-  await execCmd(`${coverArtCommand}${command} ${args.join(" ")}`)
+    ...commonFfmpegArguments(sourceExtension, destExtension, codec, bitrate),
+    destination,
+  ])
   return true
 }

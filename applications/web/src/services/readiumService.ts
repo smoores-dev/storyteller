@@ -1,7 +1,6 @@
 import {
   type ChildProcess,
-  type ExecException,
-  exec,
+  execFile,
   execSync,
   spawn,
 } from "node:child_process"
@@ -402,12 +401,17 @@ export class ReadiumService {
     },
   ): Promise<ReadiumWebPublicationManifest> {
     const res = await new Promise((resolve, reject) => {
-      exec(
-        `readium manifest "${filepath}"${options.inferPageCount ? " --infer-page-count" : ""}`,
+      execFile(
+        "readium",
+        [
+          "manifest",
+          filepath,
+          ...(options.inferPageCount ? ["--infer-page-count"] : []),
+        ],
         {
           signal: options.signal,
         },
-        (error: ExecException | null, stdout: string, stderr: string) => {
+        (error: Error | null, stdout: string, stderr: string) => {
           if (error) {
             reject(error)
           } else {

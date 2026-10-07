@@ -1,4 +1,4 @@
-import { exec, execFile } from "node:child_process"
+import { execFile } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { writeFileSync } from "node:fs"
 import { cp, rm, writeFile } from "node:fs/promises"
@@ -10,19 +10,19 @@ import { extname } from "@storyteller-platform/path"
 
 import { imageTypeForCodec } from "./codecs.ts"
 
-const execPromise = promisify(exec)
 const execFilePromise = promisify(execFile)
 
-async function execCmd(command: string) {
-  let stdout: string = ""
-  let stderr: string = ""
+async function execCmd(command: string, args: string[]) {
   try {
-    ;({ stdout, stderr } = await execPromise(command))
-    return stdout
+    return await execFilePromise(command, args, {
+      maxBuffer: 50 * 1024 * 1024,
+    })
   } catch (error) {
     console.error(error)
-    console.warn(stdout)
-    throw new Error(stderr)
+    if (error && typeof error === "object" && "stderr" in error) {
+      throw new Error(String(error.stderr))
+    }
+    throw error
   }
 }
 
@@ -46,20 +46,11 @@ async function execCmdBuffer(command: string, args: string[]) {
       )
     }
 
-    if (error && typeof error === "object" && "stdout" in error) {
-      console.warn(error.stdout?.toString())
-      throw new Error(error.stdout?.toString())
+    if (error && typeof error === "object" && "stderr" in error) {
+      throw new Error(String(error.stderr))
     }
     throw error
   }
-}
-
-export function escapeQuotes(input: string) {
-  return input.replaceAll(/"/g, '\\"')
-}
-
-export function quotePath(path: string) {
-  return `"${path.replaceAll(/(["$`])/g, "\\$1")}"`
 }
 
 type FfprobeStreamOutput =
@@ -203,9 +194,17 @@ export type AttachedPic = AttachedPicMeta & {
 }
 
 export async function getTrackMetadata(path: string) {
-  const stdout = await execCmd(
-    `ffprobe -i ${quotePath(path)} -v quiet -show_format -show_chapters -show_streams -output_format json`,
-  )
+  const { stdout } = await execCmd("ffprobe", [
+    "-i",
+    path,
+    "-v",
+    "quiet",
+    "-show_format",
+    "-show_chapters",
+    "-show_streams",
+    "-output_format",
+    "json",
+  ])
 
   const { chapters, streams, format } = JSON.parse(stdout) as FfprobeOutput
 
@@ -307,61 +306,36 @@ export async function writeTrackMetadata(
   const metadataArgs: string[] = []
 
   if (extname(path).toLowerCase() === ".mp3") {
-    const { stderr } = await execPromise(
-      `ffprobe -i ${quotePath(path)} -v debug`,
-    )
+    const { stderr } = await execCmd("ffprobe", ["-i", path, "-v", "debug"])
 
     const match = stderr.match(/id3v2 ver:(3|4)/)
     const id3v2Version = (match?.[1] as "3" | "4" | undefined) ?? null
 
     if (id3v2Version) {
-      metadataArgs.push(`-id3v2_version ${id3v2Version}`)
+      metadataArgs.push("-id3v2_version", id3v2Version)
     }
   }
 
-  if (metadata.title) {
-    metadataArgs.push(`-metadata title="${escapeQuotes(metadata.title)}"`)
+  const tags = {
+    title: metadata.title,
+    subtitle: metadata.subtitle,
+    date: metadata.date,
+    album: metadata.album,
+    album_artist: metadata.albumArtist,
+    artist: metadata.artist,
+    performer: metadata.performer,
+    composer: metadata.composer,
+    comment: metadata.comment,
+    description: metadata.description,
+    publisher: metadata.publisher,
   }
-  if (metadata.subtitle) {
-    metadataArgs.push(`-metadata subtitle="${escapeQuotes(metadata.subtitle)}"`)
-  }
-  if (metadata.date) {
-    metadataArgs.push(`-metadata date="${escapeQuotes(metadata.date)}"`)
-  }
-  if (metadata.album) {
-    metadataArgs.push(`-metadata album="${escapeQuotes(metadata.album)}"`)
-  }
-  if (metadata.albumArtist) {
-    metadataArgs.push(
-      `-metadata album_artist="${escapeQuotes(metadata.albumArtist)}"`,
-    )
-  }
-  if (metadata.artist) {
-    metadataArgs.push(`-metadata artist="${escapeQuotes(metadata.artist)}"`)
-  }
-  if (metadata.performer) {
-    metadataArgs.push(
-      `-metadata performer="${escapeQuotes(metadata.performer)}"`,
-    )
-  }
-  if (metadata.composer) {
-    metadataArgs.push(`-metadata composer="${escapeQuotes(metadata.composer)}"`)
-  }
-  if (metadata.comment) {
-    metadataArgs.push(`-metadata comment="${escapeQuotes(metadata.comment)}"`)
-  }
-  if (metadata.description) {
-    metadataArgs.push(
-      `-metadata description="${escapeQuotes(metadata.description)}"`,
-    )
-  }
-  if (metadata.publisher) {
-    metadataArgs.push(
-      `-metadata publisher="${escapeQuotes(metadata.publisher)}"`,
-    )
+  for (const [key, value] of Object.entries(tags)) {
+    if (value) {
+      metadataArgs.push("-metadata", `${key}=${value}`)
+    }
   }
 
-  metadataArgs.push("-map 0:a -map_metadata 0")
+  metadataArgs.push("-map", "0:a", "-map_metadata", "0")
 
   const ext = extname(path)
   const tmpPath = scratchPath(
@@ -392,8 +366,8 @@ END=${Math.floor(chapter.endTime * 1000)}
 
     await writeFile(chapterFilePath, chapterFileContents)
 
-    args.push(`-i ${chapterFilePath}`)
-    metadataArgs.push(`-map_chapters 1`)
+    args.push("-i", chapterFilePath)
+    metadataArgs.push("-map_chapters", "1")
 
     if (attachedPic) {
       // Determine file extension from mime type
@@ -405,26 +379,23 @@ END=${Math.floor(chapter.endTime * 1000)}
       // Write cover art to temporary file
       await writeFile(picPath, attachedPic.data)
 
-      args.push(`-i ${picPath}`)
-      metadataArgs.push(`-map 2:v`)
-      metadataArgs.push(`-disposition:v:0 attached_pic`)
+      args.push("-i", picPath)
+      metadataArgs.push("-map", "2:v")
+      metadataArgs.push("-disposition:v:0", "attached_pic")
       if (attachedPic.name) {
-        metadataArgs.push(
-          `-metadata:s:v title="${escapeQuotes(attachedPic.name)}"`,
-        )
+        metadataArgs.push("-metadata:s:v", `title=${attachedPic.name}`)
       }
       if (attachedPic.kind !== "unknown") {
         metadataArgs.push(
-          `-metadata:s:v comment="${attachedPic.kind === "coverFront" ? "Cover (front)" : "Cover (back)"}"`,
+          "-metadata:s:v",
+          `comment=${attachedPic.kind === "coverFront" ? "Cover (front)" : "Cover (back)"}`,
         )
       }
     }
 
     args.push(...metadataArgs)
 
-    const cmd = `ffmpeg -i ${quotePath(path)} ${args.join(" ")} -codec copy "${tmpPath}"`
-
-    await execCmd(cmd)
+    await execCmd("ffmpeg", ["-i", path, ...args, "-codec", "copy", tmpPath])
     await cp(tmpPath, path, { force: true })
   } finally {
     try {
