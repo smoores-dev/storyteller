@@ -35,24 +35,29 @@
   ],
   "exports": {
     ".": {
+      "@storyteller": "./src/index.ts",
       "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "default": "./dist/index.js"
     },
     "./readium": {
+      "@storyteller": "./src/readium/index.ts",
       "types": "./src/readium/index.ts",
-      "default": "./src/readium/index.ts"
+      "default": "./dist/readium/index.js"
     },
     "./report": {
+      "@storyteller": "./src/align/report-v4.ts",
       "types": "./src/align/report-v4.ts",
-      "default": "./src/align/report-v4.ts"
+      "default": "./dist/align/report-v4.js"
     },
     "./exclusions": {
+      "@storyteller": "./src/align/ctc/exclusions.ts",
       "types": "./src/align/ctc/exclusions.ts",
-      "default": "./src/align/ctc/exclusions.ts"
+      "default": "./dist/align/ctc/exclusions.js"
     },
     "./emissions": {
+      "@storyteller": "./src/align/ctc/emissions.ts",
       "types": "./src/align/ctc/emissions.ts",
-      "default": "./src/align/ctc/emissions.ts"
+      "default": "./dist/align/ctc/emissions.js"
     }
   },
   "scripts": {

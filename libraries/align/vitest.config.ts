@@ -1,6 +1,13 @@
+import { defaultServerConditions } from "vite"
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({
+  ssr: {
+    resolve: {
+      // Resolve @storyteller-platform/epub to src rather than dist
+      conditions: ["@storyteller", ...defaultServerConditions],
+    },
+  },
   test: {
     include: ["src/**/*.test.ts"],
     testTimeout: 0,

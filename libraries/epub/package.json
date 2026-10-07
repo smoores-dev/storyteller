@@ -6,30 +6,63 @@
   "license": "MIT",
   "exports": {
     ".": {
+      "@storyteller": "./src/index.tsx",
       "types": "./src/index.tsx",
-      "default": "./src/index.tsx"
+      "default": "./dist/index.js"
     },
     "./jsx-runtime": {
+      "@storyteller": "./src/jsx-runtime.ts",
       "types": "./src/jsx-runtime.ts",
-      "default": "./src/jsx-runtime.ts"
+      "default": "./dist/jsx-runtime.js"
     },
     "./jsx-dev-runtime": {
+      "@storyteller": "./src/jsx-dev-runtime.ts",
       "types": "./src/jsx-dev-runtime.ts",
-      "default": "./src/jsx-dev-runtime.ts"
+      "default": "./dist/jsx-dev-runtime.js"
     }
   },
   "imports": {
     "#files": {
-      "node": "./src/files.node.ts",
-      "default": "./src/files.browser.ts"
+      "@storyteller": {
+        "node": "./src/files.node.ts",
+        "default": "./src/files.browser.ts"
+      },
+      "node": {
+        "types": "./src/files.node.ts",
+        "default": "./dist/files.node.js"
+      },
+      "default": {
+        "types": "./src/files.browser.ts",
+        "default": "./dist/files.browser.js"
+      }
     },
     "#tmpfs": {
-      "node": "./src/adapters/tmpfs.ts",
-      "default": "./src/adapters/tmpfs.browser.ts"
+      "@storyteller": {
+        "node": "./src/adapters/tmpfs.ts",
+        "default": "./src/adapters/tmpfs.browser.ts"
+      },
+      "node": {
+        "types": "./src/adapters/tmpfs.ts",
+        "default": "./dist/adapters/tmpfs.js"
+      },
+      "default": {
+        "types": "./src/adapters/tmpfs.browser.ts",
+        "default": "./dist/adapters/tmpfs.browser.js"
+      }
     },
     "#zip": {
-      "node": "./src/zip.node.ts",
-      "default": "./src/zip.browser.ts"
+      "@storyteller": {
+        "node": "./src/zip.node.ts",
+        "default": "./src/zip.browser.ts"
+      },
+      "node": {
+        "types": "./src/zip.node.ts",
+        "default": "./dist/zip.node.js"
+      },
+      "default": {
+        "types": "./src/zip.browser.ts",
+        "default": "./dist/zip.browser.js"
+      }
     }
   },
   "files": [
