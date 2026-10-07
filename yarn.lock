@@ -15557,6 +15557,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@storyteller-platform/crengine-xpointer@workspace:libraries/crengine-xpointer":
+  version: 0.0.0-use.local
+  resolution: "@storyteller-platform/crengine-xpointer@workspace:libraries/crengine-xpointer"
+  dependencies:
+    "@tsconfig/strictest": "catalog:"
+    "@types/node": "catalog:"
+    "@xmldom/xmldom": "catalog:"
+    typescript: "catalog:"
+    vite: "catalog:"
+    vitest: "catalog:"
+  languageName: unknown
+  linkType: soft
+
 "@storyteller-platform/docs@workspace:applications/docs":
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/docs@workspace:applications/docs"

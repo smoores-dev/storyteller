@@ -88,6 +88,8 @@
     "/libraries/StorytellerKit/Sources/Kit/Resources/WebResources/foliate-js/vendor/zip.js",
     "libraries/StorytellerKit/Tests/Browser/test-results/",
     "libraries/StorytellerKit/Tests/Browser/playwright-report/",
-    "/libraries/align/bundle/"
+    "/libraries/align/bundle/",
+    "tools/crengine-oracle/fixtures",
+    "libraries/crengine-xpointer/src/__test__/oracle"
   ]
 }

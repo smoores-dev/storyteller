@@ -30,6 +30,7 @@
     "postinstall": "husky",
     "test:align": "yarn workspace @storyteller-platform/align test",
     "test:audiobook": "yarn workspace @storyteller-platform/audiobook test",
+    "test:crengine-xpointer": "yarn workspace @storyteller-platform/crengine-xpointer test",
     "test:docs": "yarn workspace @storyteller-platform/docs test",
     "test:epub": "yarn workspace @storyteller-platform/epub test",
     "test:epubcfi": "yarn workspace @storyteller-platform/epubcfi test",

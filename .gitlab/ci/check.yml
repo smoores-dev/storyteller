@@ -75,6 +75,22 @@ test-uri-fragment:
     - yarn
     - yarn test:uri-fragment
 
+test-crengine-xpointer:
+  extends: .yarn_cache
+  image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main
+  stage: check
+  tags: [saas-linux-large-amd64]
+  rules:
+    - if:
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
+      changes:
+        - libraries/crengine-xpointer/**/*
+  script:
+    - npm i -g corepack
+    - yarn
+    - yarn test:crengine-xpointer
+
 test-mobile:
   extends: .yarn_cache
   image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main

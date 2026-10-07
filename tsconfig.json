@@ -23,6 +23,9 @@
       "path": "libraries/audiobook"
     },
     {
+      "path": "libraries/crengine-xpointer"
+    },
+    {
       "path": "libraries/path"
     },
     {

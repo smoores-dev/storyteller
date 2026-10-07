@@ -20,7 +20,10 @@ let
 in
 {
   packages = with pkgs; [
+    cmake
+    dejavu_fonts
     ffmpeg
+    freetype
     # Order is important here — we need sqlite-interactive's
     # sqlite3 executable to come first in the path,
     # but we also want the development headers, which are
@@ -32,6 +35,8 @@ in
     vtsls
     google-cloud-sdk
     gcc
+    xxhash
+    zlib
   ] ++ [
     # https://github.com/NixOS/nixpkgs/pull/546525
     (pkgs.buildGoModule (finalAttrs: {
@@ -50,6 +55,7 @@ in
     patched-whisper
   ];
   env.WHISPER_CPP_PATH = "${patched-whisper}";
+  env.ORACLE_FONT = "${pkgs.dejavu_fonts}/share/fonts/truetype/DejaVuSans.ttf";
 
   languages.javascript = {
     enable = true;

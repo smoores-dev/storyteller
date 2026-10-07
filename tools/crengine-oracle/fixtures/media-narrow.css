@@ -1,0 +1,3 @@
+.resp { display: block }
+@media (max-width: 500px) { .resp { display: inline } }
+@media (min-width: 800px) { .resp { white-space: pre } }

@@ -1,0 +1,7 @@
+#d1 { display: inline }
+span.s2 { display: block }
+li { display: inline }
+p#p1 { white-space: pre }
+#p2 .pre { white-space: pre }
+[data-hide] { display: none }
+section > div.inline-me { display: inline }
