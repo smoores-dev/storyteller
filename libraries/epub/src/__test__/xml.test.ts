@@ -28,6 +28,8 @@ const XML_PREFIX_NS = "http://www.w3.org/XML/1998/namespace"
 const OPF_NS = "http://www.idpf.org/2007/opf"
 const DC_NS = "http://purl.org/dc/elements/1.1/"
 const EPUB_NS = "http://www.idpf.org/2007/ops"
+const ENC_NS = "http://www.w3.org/2001/04/xmlenc#"
+const DS_NS = "http://www.w3.org/2000/09/xmldsig#"
 const XHTML_NS = "http://www.w3.org/1999/xhtml"
 const SMIL_NS = "http://www.w3.org/ns/SMIL"
 const NOVEL_NS = "https://storyteller-platform.dev/docs/vocabulary"
@@ -287,6 +289,8 @@ describe("x", () => {
       ["dc:title", DC_NS, "dc"],
       ["epub:direct-source", EPUB_NS, "epub"],
       ["opf:creator", OPF_NS, "opf"],
+      ["enc:EncryptedData", ENC_NS, "enc"],
+      ["ds:RetrievalMethod", DS_NS, "ds"],
     ])(
       "qualifies %s as %s in the %s namespace",
       (qualifiedName, uri, prefix) => {

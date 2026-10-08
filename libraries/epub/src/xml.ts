@@ -294,6 +294,8 @@ export const NS = {
   opf: "http://www.idpf.org/2007/opf",
   dc: "http://purl.org/dc/elements/1.1/",
   epub: "http://www.idpf.org/2007/ops",
+  enc: "http://www.w3.org/2001/04/xmlenc#",
+  ds: "http://www.w3.org/2000/09/xmldsig#",
 }
 
 const nsPrefixes = Object.keys(NS) as (keyof typeof NS)[]

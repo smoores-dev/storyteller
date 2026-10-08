@@ -15,6 +15,10 @@ import type {
   EpubStorageAdapterClass,
   EpubStorageKind,
 } from "./adapters/interface.ts"
+import {
+  type EncryptionSummary,
+  summarizeEncryptionDocument,
+} from "./encryption.ts"
 import * as Upgrade from "./upgrade.tsx"
 import {
   createDocument,
@@ -81,6 +85,7 @@ export {
   XMLSerializer,
 } from "./xml.ts"
 export type { XmlDiagnostic } from "./xml.ts"
+export type { EncryptionSummary } from "./encryption.ts"
 export type {
   Attr,
   Document,
@@ -545,6 +550,39 @@ export class Epub {
     return this.adapter.archiveLength(
       await this.resolveEntry(rootfile, manifestItem.href),
     )
+  }
+
+  /**
+   * The XML Document for this EPUB's META-INF/encryption.xml.
+   * Null if no encryption document exists.
+   *
+   * @see {@link https://www.w3.org/TR/epub/#sec-container-metainf-encryption.xml}
+   */
+  async getEncryptionDocument(): Promise<Document | null> {
+    if (!(await this.adapter.exists("META-INF/encryption.xml"))) {
+      return null
+    }
+
+    const encryptionString = await this.adapter.read(
+      "META-INF/encryption.xml",
+      "utf-8",
+    )
+
+    return parse(encryptionString, "text/xml")
+  }
+
+  /**
+   * A summary of the encryption information specified in this
+   * publication's META-INF/encryption.xml document.
+   *
+   * @see {@link https://www.w3.org/TR/epub/#sec-container-metainf-encryption.xml}
+   */
+  async getEncryptionSummary(): Promise<EncryptionSummary | null> {
+    const encryptionDoc = await this.getEncryptionDocument()
+
+    if (!encryptionDoc) return null
+
+    return summarizeEncryptionDocument(encryptionDoc)
   }
 
   async getRootfile() {

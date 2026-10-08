@@ -297,7 +297,7 @@ To get started with developing in the Storyteller monorepo, check out the
 
 ## Epub
 
-Defined in: [libraries/epub/src/index.tsx:375](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L375)
+Defined in: [libraries/epub/src/index.tsx:380](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L380)
 
 A single EPUB instance.
 
@@ -337,7 +337,7 @@ https://www.w3.org/TR/epub-33/
 
 > **new Epub**(`adapterClass`, `adapter`, `inputPath`, `readonlyOverride`): [`Epub`](#epub)
 
-Defined in: [libraries/epub/src/index.tsx:416](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L416)
+Defined in: [libraries/epub/src/index.tsx:421](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L421)
 
 Prefer the static factories ([Epub.using](#using), [Epub.from](#from),
 [Epub.create](#create), [Epub.upgrade](#upgrade)) over calling this constructor
@@ -363,31 +363,31 @@ else should need to.
 
 > `protected` **adapter**: [`EpubStorageAdapter`](#epubstorageadapter)
 
-Defined in: [libraries/epub/src/index.tsx:418](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L418)
+Defined in: [libraries/epub/src/index.tsx:423](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L423)
 
 #### adapterClass
 
 > `protected` **adapterClass**: [`EpubStorageAdapterClass`](#epubstorageadapterclass)
 
-Defined in: [libraries/epub/src/index.tsx:417](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L417)
+Defined in: [libraries/epub/src/index.tsx:422](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L422)
 
 #### inputPath
 
 > `protected` **inputPath**: `string` \| `undefined`
 
-Defined in: [libraries/epub/src/index.tsx:419](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L419)
+Defined in: [libraries/epub/src/index.tsx:424](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L424)
 
 #### readonlyOverride
 
 > `protected` **readonlyOverride**: `boolean` = `false`
 
-Defined in: [libraries/epub/src/index.tsx:420](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L420)
+Defined in: [libraries/epub/src/index.tsx:425](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L425)
 
 #### storage
 
 > `readonly` **storage**: [`EpubStorageKind`](#epubstoragekind)
 
-Defined in: [libraries/epub/src/index.tsx:408](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L408)
+Defined in: [libraries/epub/src/index.tsx:413](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L413)
 
 Storage backend kind in use for this instance
 
@@ -401,7 +401,7 @@ and the adapter's capability bag)
 
 > **\[dispose\]**(): `void`
 
-Defined in: [libraries/epub/src/index.tsx:3378](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3378)
+Defined in: [libraries/epub/src/index.tsx:3416](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3416)
 
 ##### Returns
 
@@ -411,7 +411,7 @@ Defined in: [libraries/epub/src/index.tsx:3378](https://gitlab.com/storyteller-p
 
 > **addCollection**(`collection`, `index?`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1994](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1994)
+Defined in: [libraries/epub/src/index.tsx:2032](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2032)
 
 Add a collection to the EPUB metadata.
 
@@ -434,7 +434,7 @@ will be added to the end of the list.
 
 > **addContributor**(`contributor`, `index?`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2303](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2303)
+Defined in: [libraries/epub/src/index.tsx:2341](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2341)
 
 Add a contributor to the EPUB metadata.
 
@@ -464,7 +464,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **addCreator**(`creator`, `index?`, `type?`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2168](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2168)
+Defined in: [libraries/epub/src/index.tsx:2206](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2206)
 
 Add a creator to the EPUB metadata.
 
@@ -494,7 +494,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **addManifestItem**(`item`, `contents`, `encoding`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2974](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2974)
+Defined in: [libraries/epub/src/index.tsx:3012](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3012)
 
 Create a new manifest item and write its contents to a
 new entry.
@@ -523,7 +523,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **addManifestItem**(`item`, `contents`, `encoding`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2979](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2979)
+Defined in: [libraries/epub/src/index.tsx:3017](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3017)
 
 Create a new manifest item and write its contents to a
 new entry.
@@ -552,7 +552,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **addManifestItem**(`item`, `contents`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2984](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2984)
+Defined in: [libraries/epub/src/index.tsx:3022](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3022)
 
 Create a new manifest item and write its contents to a
 new entry.
@@ -580,7 +580,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **addMetadata**(`entry`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:3111](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3111)
+Defined in: [libraries/epub/src/index.tsx:3149](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3149)
 
 Add a new metadata entry to the Epub.
 
@@ -607,7 +607,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
 > **addSpineItem**(`manifestId`, `index?`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2371](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2371)
+Defined in: [libraries/epub/src/index.tsx:2409](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2409)
 
 Add an item to the spine of the EPUB.
 
@@ -637,7 +637,7 @@ https://www.w3.org/TR/epub-33/#sec-spine-elem
 
 > **addSubject**(`subject`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1539](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1539)
+Defined in: [libraries/epub/src/index.tsx:1577](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1577)
 
 Add a subject to the EPUB metadata.
 
@@ -659,7 +659,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsubject
 
 > **copy**(`path?`): `Promise`\<[`Epub`](#epub)\>
 
-Defined in: [libraries/epub/src/index.tsx:513](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L513)
+Defined in: [libraries/epub/src/index.tsx:518](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L518)
 
 ##### Parameters
 
@@ -675,7 +675,7 @@ Defined in: [libraries/epub/src/index.tsx:513](https://gitlab.com/storyteller-pl
 
 > **createXhtmlDocument**(`body`, `head?`, `language?`): `Promise`\<[`Document`](#document-1)\>
 
-Defined in: [libraries/epub/src/index.tsx:2769](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2769)
+Defined in: [libraries/epub/src/index.tsx:2807](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2807)
 
 Create a new XHTML document with the given body
 and head.
@@ -696,7 +696,7 @@ and head.
 
 > **createXmlDocument**(`root`): [`Document`](#document-1)
 
-Defined in: [libraries/epub/src/index.tsx:2733](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2733)
+Defined in: [libraries/epub/src/index.tsx:2771](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2771)
 
 Create a new XML document with the given root node.
 
@@ -714,7 +714,7 @@ Create a new XML document with the given root node.
 
 > **discardAndClose**(): `void`
 
-Defined in: [libraries/epub/src/index.tsx:3328](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3328)
+Defined in: [libraries/epub/src/index.tsx:3366](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3366)
 
 ##### Returns
 
@@ -724,7 +724,7 @@ Defined in: [libraries/epub/src/index.tsx:3328](https://gitlab.com/storyteller-p
 
 > **findAllMetadataItems**(`predicate`): `Promise`\<[`MetadataEntry`](#metadataentry)[]\>
 
-Defined in: [libraries/epub/src/index.tsx:786](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L786)
+Defined in: [libraries/epub/src/index.tsx:824](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L824)
 
 Returns the item in the metadata element's children array
 that matches the provided predicate.
@@ -743,7 +743,7 @@ that matches the provided predicate.
 
 > **findMetadataItem**(`predicate`): `Promise`\<[`MetadataEntry`](#metadataentry) \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:777](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L777)
+Defined in: [libraries/epub/src/index.tsx:815](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L815)
 
 Returns the item in the metadata element's children array
 that matches the provided predicate.
@@ -762,7 +762,7 @@ that matches the provided predicate.
 
 > **getBaseDirection**(): `Promise`\<`"auto"` \| `"rtl"` \| `"ltr"`\>
 
-Defined in: [libraries/epub/src/index.tsx:1493](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1493)
+Defined in: [libraries/epub/src/index.tsx:1531](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1531)
 
 Retrieve the base direction from the package element.
 
@@ -781,7 +781,7 @@ https://www.w3.org/TR/epub-33/#attrdef-dir
 
 > **getCollections**(): `Promise`\<[`Collection`](#collection)[]\>
 
-Defined in: [libraries/epub/src/index.tsx:1954](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1954)
+Defined in: [libraries/epub/src/index.tsx:1992](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1992)
 
 Retrieve the list of collections.
 
@@ -793,7 +793,7 @@ Retrieve the list of collections.
 
 > **getContributors**(): `Promise`\<[`DcCreator`](#dccreator)[]\>
 
-Defined in: [libraries/epub/src/index.tsx:2155](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2155)
+Defined in: [libraries/epub/src/index.tsx:2193](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2193)
 
 Retrieve the list of contributors.
 
@@ -812,7 +812,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccontributor
 
 > **getCoverImage**(): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\> \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1389](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1389)
+Defined in: [libraries/epub/src/index.tsx:1427](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1427)
 
 Retrieve the cover image data as a byte array.
 
@@ -832,7 +832,7 @@ https://www.w3.org/TR/epub-33/#sec-cover-image
 
 > **getCoverImageItem**(): `Promise`\<[`ManifestItem`](#manifestitem) \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1370](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1370)
+Defined in: [libraries/epub/src/index.tsx:1408](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1408)
 
 Retrieve the cover image manifest item.
 
@@ -853,7 +853,7 @@ https://www.w3.org/TR/epub-33/#sec-cover-image
 
 > **getCreators**(`type`): `Promise`\<[`DcCreator`](#dccreator)[]\>
 
-Defined in: [libraries/epub/src/index.tsx:2091](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2091)
+Defined in: [libraries/epub/src/index.tsx:2129](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2129)
 
 Retrieve the list of creators.
 
@@ -875,7 +875,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **getDescription**(): `Promise`\<`string` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1812](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1812)
+Defined in: [libraries/epub/src/index.tsx:1850](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1850)
 
 Retrieve the Epub's description as specified in its
 package document metadata.
@@ -888,11 +888,45 @@ include HTML markup.
 
 `Promise`\<`string` \| `null`\>
 
+#### getEncryptionDocument()
+
+> **getEncryptionDocument**(): `Promise`\<[`Document`](#document-1) \| `null`\>
+
+Defined in: [libraries/epub/src/index.tsx:561](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L561)
+
+The XML Document for this EPUB's META-INF/encryption.xml.
+Null if no encryption document exists.
+
+##### Returns
+
+`Promise`\<[`Document`](#document-1) \| `null`\>
+
+##### See
+
+[https://www.w3.org/TR/epub/#sec-container-metainf-encryption.xml](https://www.w3.org/TR/epub/#sec-container-metainf-encryption.xml)
+
+#### getEncryptionSummary()
+
+> **getEncryptionSummary**(): `Promise`\<[`EncryptionSummary`](#encryptionsummary) \| `null`\>
+
+Defined in: [libraries/epub/src/index.tsx:580](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L580)
+
+A summary of the encryption information specified in this
+publication's META-INF/encryption.xml document.
+
+##### Returns
+
+`Promise`\<[`EncryptionSummary`](#encryptionsummary) \| `null`\>
+
+##### See
+
+[https://www.w3.org/TR/epub/#sec-container-metainf-encryption.xml](https://www.w3.org/TR/epub/#sec-container-metainf-encryption.xml)
+
 #### getGuideEntries()
 
 > **getGuideEntries**(): `Promise`\<[`GuideItem`](#guideitem)[]\>
 
-Defined in: [libraries/epub/src/index.tsx:3311](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3311)
+Defined in: [libraries/epub/src/index.tsx:3349](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3349)
 
 Retrieve the guide entries from the package document.
 
@@ -907,7 +941,7 @@ the landmarks nav, but many publications still include it.
 
 > **getIdentifier**(): `Promise`\<`string` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:878](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L878)
+Defined in: [libraries/epub/src/index.tsx:916](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L916)
 
 Retrieve the first identifier from the dc:identifier element
 in the EPUB metadata.
@@ -931,7 +965,7 @@ or [getIdentifiers](#getidentifiers) to get all identifiers.
 
 > **getIdentifiers**(): `Promise`\<[`EpubIdentifier`](#epubidentifier)[]\>
 
-Defined in: [libraries/epub/src/index.tsx:1044](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1044)
+Defined in: [libraries/epub/src/index.tsx:1082](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1082)
 
 Retrieve every `dc:identifier` entry, returned as found.
 
@@ -952,7 +986,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **getItemArchiveLength**(`id`): `Promise`\<`number`\>
 
-Defined in: [libraries/epub/src/index.tsx:539](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L539)
+Defined in: [libraries/epub/src/index.tsx:544](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L544)
 
 Length of the underlying archive entry for a manifest item, in bytes
 Necessary to compute the readium page count which is for COMPRESSED content
@@ -975,7 +1009,7 @@ Necessary to compute the readium page count which is for COMPRESSED content
 
 > **getLandmarks**(`__namedParameters`): `Promise`\<[`Navigation`](#navigation) \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:2556](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2556)
+Defined in: [libraries/epub/src/index.tsx:2594](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2594)
 
 Returns the structured landmarks navigation document
 as a Navigation object
@@ -999,7 +1033,7 @@ https://www.w3.org/TR/epub-33/#sec-nav-landmarks
 
 > **getLanguage**(): `Promise`\<`Locale` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1649](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1649)
+Defined in: [libraries/epub/src/index.tsx:1687](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1687)
 
 Retrieve the Epub's language as specified in its
 package document metadata.
@@ -1019,7 +1053,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dclanguage
 
 > **getLayout**(): `Promise`\<`"pre-paginated"` \| `"reflowable"`\>
 
-Defined in: [libraries/epub/src/index.tsx:1474](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1474)
+Defined in: [libraries/epub/src/index.tsx:1512](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1512)
 
 Retrieve the layout from the rendition:layout meta element
 in the EPUB metadata.
@@ -1038,7 +1072,7 @@ https://www.w3.org/TR/epub-33/#layout
 
 > **getManifest**(): `Promise`\<`Record`\<`string`, [`ManifestItem`](#manifestitem)\>\>
 
-Defined in: [libraries/epub/src/index.tsx:699](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L699)
+Defined in: [libraries/epub/src/index.tsx:737](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L737)
 
 Retrieve the manifest for the Epub.
 
@@ -1059,7 +1093,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
 > **getMetadata**(): `Promise`\<[`EpubMetadata`](#epubmetadata)\>
 
-Defined in: [libraries/epub/src/index.tsx:846](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L846)
+Defined in: [libraries/epub/src/index.tsx:884](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L884)
 
 Retrieve the metadata entries for the Epub.
 
@@ -1081,7 +1115,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
 > **getModifiedDate**(): `Promise`\<`Date` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1457](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1457)
+Defined in: [libraries/epub/src/index.tsx:1495](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1495)
 
 Retrieve the modified date from the dcterms:modified metadata
 in the EPUB metadata as a Date object.
@@ -1100,7 +1134,7 @@ https://www.w3.org/TR/epub-33/#sec-metadata-last-modified
 
 > **getNcxTableOfContents**(): `Promise`\<[`NavigationList`](#navigationlist)\>
 
-Defined in: [libraries/epub/src/index.tsx:3235](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3235)
+Defined in: [libraries/epub/src/index.tsx:3273](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3273)
 
 Parse the NCX table of contents, if one exists, and return
 a tree of TocEntry nodes.
@@ -1117,7 +1151,7 @@ NCX for backwards compatibility.
 
 > **getPackageDocumentSource**(): `Promise`\<`string`\>
 
-Defined in: [libraries/epub/src/index.tsx:593](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L593)
+Defined in: [libraries/epub/src/index.tsx:631](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L631)
 
 ##### Returns
 
@@ -1127,7 +1161,7 @@ Defined in: [libraries/epub/src/index.tsx:593](https://gitlab.com/storyteller-pl
 
 > **getPackageElement**(`lock`): `Promise`\<[`Element`](#element-1)\>
 
-Defined in: [libraries/epub/src/index.tsx:616](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L616)
+Defined in: [libraries/epub/src/index.tsx:654](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L654)
 
 ##### Parameters
 
@@ -1143,7 +1177,7 @@ Defined in: [libraries/epub/src/index.tsx:616](https://gitlab.com/storyteller-pl
 
 > **getPackageVocabularyPrefixes**(): `Promise`\<`Record`\<`string`, `string`\>\>
 
-Defined in: [libraries/epub/src/index.tsx:1829](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1829)
+Defined in: [libraries/epub/src/index.tsx:1867](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1867)
 
 Return the set of custom vocabulary prefixes set on this publication's
 root package element.
@@ -1162,7 +1196,7 @@ https://www.w3.org/TR/epub-33/#sec-prefix-attr
 
 > **getPageBreakSource**(): `Promise`\<[`EpubSource`](#epubsource) \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1081](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1081)
+Defined in: [libraries/epub/src/index.tsx:1119](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1119)
 
 Retrieve the `pageBreakSource` property (EPUB 3.4, spec D.2.9), the
 publication-level source for the source of its page break markers.
@@ -1183,7 +1217,7 @@ https://www.w3.org/TR/epub/#pageBreakSource
 
 > **getPageList**(`__namedParameters`): `Promise`\<[`Navigation`](#navigation) \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:2568](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2568)
+Defined in: [libraries/epub/src/index.tsx:2606](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2606)
 
 Returns the structured page list navigation document
 as a Navigation object
@@ -1207,7 +1241,7 @@ https://www.w3.org/TR/epub-33/#sec-nav-landmarks
 
 > **getPublicationDate**(): `Promise`\<`Date` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1426](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1426)
+Defined in: [libraries/epub/src/index.tsx:1464](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1464)
 
 Retrieve the publication date from the dc:date element
 in the EPUB metadata as a Date object.
@@ -1226,7 +1260,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcdate
 
 > **getRootfile**(): `Promise`\<`string`\>
 
-Defined in: [libraries/epub/src/index.tsx:550](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L550)
+Defined in: [libraries/epub/src/index.tsx:588](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L588)
 
 ##### Returns
 
@@ -1236,7 +1270,7 @@ Defined in: [libraries/epub/src/index.tsx:550](https://gitlab.com/storyteller-pl
 
 > **getSources**(): `Promise`\<[`EpubSource`](#epubsource)[]\>
 
-Defined in: [libraries/epub/src/index.tsx:1058](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1058)
+Defined in: [libraries/epub/src/index.tsx:1096](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1096)
 
 Retrieve every `dc:source` entry, returned as found.
 
@@ -1256,7 +1290,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsource
 
 > **getSpineItems**(): `Promise`\<[`ManifestItem`](#manifestitem) & `object`[]\>
 
-Defined in: [libraries/epub/src/index.tsx:2344](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2344)
+Defined in: [libraries/epub/src/index.tsx:2382](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2382)
 
 Retrieve the manifest items that make up the Epub's spine.
 
@@ -1275,7 +1309,7 @@ https://www.w3.org/TR/epub-33/#sec-spine-elem
 
 > **getSubjects**(): `Promise`\<(`string` \| [`DcSubject`](#dcsubject))[]\>
 
-Defined in: [libraries/epub/src/index.tsx:1604](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1604)
+Defined in: [libraries/epub/src/index.tsx:1642](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1642)
 
 Retrieve the list of subjects for this EPUB.
 
@@ -1296,7 +1330,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsubject
 
 > **getSubtitle**(): `Promise`\<`string` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1719](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1719)
+Defined in: [libraries/epub/src/index.tsx:1757](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1757)
 
 Retrieve the subtitle of the Epub, if it exists.
 
@@ -1312,7 +1346,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
 > **getTableOfContents**(`__namedParameters`): `Promise`\<[`Navigation`](#navigation) \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:2538](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2538)
+Defined in: [libraries/epub/src/index.tsx:2576](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2576)
 
 Returns the structured table of contents navigation document
 as a Navigation object.
@@ -1336,7 +1370,7 @@ https://www.w3.org/TR/epub-33/#sec-nav-toc
 
 > **getTitle**(`expanded`): `Promise`\<`string` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1695](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1695)
+Defined in: [libraries/epub/src/index.tsx:1733](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1733)
 
 Retrieve the title of the Epub.
 
@@ -1358,7 +1392,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
 > **getTitles**(): `Promise`\<`object`[]\>
 
-Defined in: [libraries/epub/src/index.tsx:1731](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1731)
+Defined in: [libraries/epub/src/index.tsx:1769](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1769)
 
 Retrieve all title entries of the Epub.
 
@@ -1374,7 +1408,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
 > **getType**(): `Promise`\<[`MetadataEntry`](#metadataentry) \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:1526](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1526)
+Defined in: [libraries/epub/src/index.tsx:1564](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1564)
 
 Retrieve the publication type from the dc:type element
 in the EPUB metadata.
@@ -1393,7 +1427,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctype
 
 > **getUniqueIdentifier**(): `Promise`\<`string` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:910](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L910)
+Defined in: [libraries/epub/src/index.tsx:948](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L948)
 
 Retrieve the identifier with the unique identifier id
 in the EPUB metadata.
@@ -1412,7 +1446,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **getUniqueIdentifierId**(): `Promise`\<`string` \| `null`\>
 
-Defined in: [libraries/epub/src/index.tsx:982](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L982)
+Defined in: [libraries/epub/src/index.tsx:1020](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1020)
 
 Retrieve the id of the publication's unique identifier, as declared by the
 package element's `unique-identifier` attribute.
@@ -1429,7 +1463,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **getVersion**(): `Promise`\<`string`\>
 
-Defined in: [libraries/epub/src/index.tsx:3222](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3222)
+Defined in: [libraries/epub/src/index.tsx:3260](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3260)
 
 Returns the EPUB version declared on the package element.
 
@@ -1443,7 +1477,7 @@ Returns the EPUB version declared on the package element.
 
 > **readFileContents**(`href`, `relativeTo?`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
-Defined in: [libraries/epub/src/index.tsx:2674](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2674)
+Defined in: [libraries/epub/src/index.tsx:2712](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2712)
 
 Retrieve the contents of a file, given its href.
 
@@ -1465,7 +1499,7 @@ and an encoding parameter.
 
 > **readFileContents**(`href`, `relativeTo`, `encoding`): `Promise`\<`string`\>
 
-Defined in: [libraries/epub/src/index.tsx:2675](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2675)
+Defined in: [libraries/epub/src/index.tsx:2713](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2713)
 
 Retrieve the contents of a file, given its href.
 
@@ -1490,7 +1524,7 @@ and an encoding parameter.
 
 > **readItemContents**(`id`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
-Defined in: [libraries/epub/src/index.tsx:2707](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2707)
+Defined in: [libraries/epub/src/index.tsx:2745](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2745)
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -1512,7 +1546,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **readItemContents**(`id`, `encoding`): `Promise`\<`string`\>
 
-Defined in: [libraries/epub/src/index.tsx:2708](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2708)
+Defined in: [libraries/epub/src/index.tsx:2746](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2746)
 
 Retrieve the contents of a manifest item, given its id.
 
@@ -1537,7 +1571,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **readXhtmlItemContents**(`id`, `as?`): `Promise`\<[`Document`](#document-1)\>
 
-Defined in: [libraries/epub/src/index.tsx:2819](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2819)
+Defined in: [libraries/epub/src/index.tsx:2857](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2857)
 
 Retrieves the contents of an XHTML item, given its manifest id.
 
@@ -1560,7 +1594,7 @@ https://www.w3.org/TR/epub-33/#sec-xhtml
 
 > **readXhtmlItemContents**(`id`, `as`): `Promise`\<`string`\>
 
-Defined in: [libraries/epub/src/index.tsx:2820](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2820)
+Defined in: [libraries/epub/src/index.tsx:2858](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2858)
 
 Retrieves the contents of an XHTML item, given its manifest id.
 
@@ -1583,7 +1617,7 @@ https://www.w3.org/TR/epub-33/#sec-xhtml
 
 > **removeCollection**(`index`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2058](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2058)
+Defined in: [libraries/epub/src/index.tsx:2096](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2096)
 
 Remove a collection from the EPUB metadata.
 
@@ -1604,7 +1638,7 @@ refers to the array returned by `epub.getCollections()`.
 
 > **removeContributor**(`index`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2287](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2287)
+Defined in: [libraries/epub/src/index.tsx:2325](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2325)
 
 Remove a contributor from the EPUB metadata.
 
@@ -1632,7 +1666,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **removeCreator**(`index`, `type`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2250](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2250)
+Defined in: [libraries/epub/src/index.tsx:2288](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2288)
 
 Remove a creator from the EPUB metadata.
 
@@ -1658,7 +1692,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **removeManifestItem**(`id`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2919](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2919)
+Defined in: [libraries/epub/src/index.tsx:2957](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2957)
 
 ##### Parameters
 
@@ -1674,7 +1708,7 @@ Defined in: [libraries/epub/src/index.tsx:2919](https://gitlab.com/storyteller-p
 
 > **removeMetadata**(`predicate`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:3197](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3197)
+Defined in: [libraries/epub/src/index.tsx:3235](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3235)
 
 Remove one or more metadata entries.
 
@@ -1700,7 +1734,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
 > **removeSpineItem**(`index`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2417](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2417)
+Defined in: [libraries/epub/src/index.tsx:2455](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2455)
 
 Remove the spine item at the specified index.
 
@@ -1722,7 +1756,7 @@ https://www.w3.org/TR/epub-33/#sec-spine-elem
 
 > **removeSubject**(`index`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1576](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1576)
+Defined in: [libraries/epub/src/index.tsx:1614](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1614)
 
 Remove a subject from the EPUB metadata.
 
@@ -1747,7 +1781,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dccreator
 
 > **replaceMetadata**(`predicate`, `entry`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:3146](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3146)
+Defined in: [libraries/epub/src/index.tsx:3184](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3184)
 
 Replace a metadata entry with a new one.
 
@@ -1774,7 +1808,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-metadata
 
 > **resolveHref**(`href`, `relativeTo?`, `__namedParameters?`): `Promise`\<`string`\>
 
-Defined in: [libraries/epub/src/index.tsx:2632](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2632)
+Defined in: [libraries/epub/src/index.tsx:2670](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2670)
 
 Returns a path-relative-scheme-less URL, relative to the
 container root.
@@ -1799,7 +1833,7 @@ a navigation document, is handed back unchanged.
 
 > **saveAndClose**(): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:3343](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3343)
+Defined in: [libraries/epub/src/index.tsx:3381](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3381)
 
 Write the current contents of the Epub to a new
 EPUB archive on disk.
@@ -1816,7 +1850,7 @@ timestamp.
 
 > **setCoverImage**(`href`, `data`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1403](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1403)
+Defined in: [libraries/epub/src/index.tsx:1441](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1441)
 
 Set the cover image for the EPUB.
 
@@ -1839,7 +1873,7 @@ the provided href within the publication.
 
 > **setDescription**(`description`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1796](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1796)
+Defined in: [libraries/epub/src/index.tsx:1834](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1834)
 
 Update the Epub's description metadata entry.
 
@@ -1861,7 +1895,7 @@ Otherwise creates a new element. Any non-ASCII symbols,
 
 > **setIdentifier**(`identifier`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:894](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L894)
+Defined in: [libraries/epub/src/index.tsx:932](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L932)
 
 Set the dc:identifier metadata element with the provided string.
 
@@ -1890,7 +1924,7 @@ Use [setUniqueIdentifier](#setuniqueidentifier) instead.
 
 > **setIdentifiers**(`identifiers`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1150](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1150)
+Defined in: [libraries/epub/src/index.tsx:1188](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1188)
 
 Replace the publication's `dc:identifier` entries.
 
@@ -1927,7 +1961,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **setLanguage**(`locale`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1678](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1678)
+Defined in: [libraries/epub/src/index.tsx:1716](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1716)
 
 Update the Epub's language metadata entry.
 
@@ -1952,7 +1986,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dclanguage
 
 > **setPackageVocabularyPrefix**(`prefix`, `uri`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1847](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1847)
+Defined in: [libraries/epub/src/index.tsx:1885](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1885)
 
 Set a custom vocabulary prefix on the root package element.
 
@@ -1975,7 +2009,7 @@ https://www.w3.org/TR/epub-33/#sec-prefix-attr
 
 > **setPageBreakSource**(`value`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1117](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1117)
+Defined in: [libraries/epub/src/index.tsx:1155](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1155)
 
 Set the `pageBreakSource` property (EPUB 3.4, spec D.2.9), or remove it when
 passed null. Replaces an existing `pageBreakSource` meta if present.
@@ -2000,7 +2034,7 @@ https://www.w3.org/TR/epub/#pageBreakSource
 
 > **setPublicationDate**(`date`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1441](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1441)
+Defined in: [libraries/epub/src/index.tsx:1479](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1479)
 
 Set the dc:date metadata element with the provided date.
 
@@ -2025,7 +2059,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcdate
 
 > **setSources**(`sources`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1255](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1255)
+Defined in: [libraries/epub/src/index.tsx:1293](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1293)
 
 Replace the publication's `dc:source` entries.
 
@@ -2056,7 +2090,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcsource
 
 > **setTitle**(`title`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1883](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1883)
+Defined in: [libraries/epub/src/index.tsx:1921](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1921)
 
 Set the title of the Epub.
 
@@ -2083,7 +2117,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctitle
 
 > **setTitles**(`entries`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1905](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1905)
+Defined in: [libraries/epub/src/index.tsx:1943](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1943)
 
 ##### Parameters
 
@@ -2099,7 +2133,7 @@ Defined in: [libraries/epub/src/index.tsx:1905](https://gitlab.com/storyteller-p
 
 > **setType**(`type`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:1510](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1510)
+Defined in: [libraries/epub/src/index.tsx:1548](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L1548)
 
 Set the dc:type metadata element.
 
@@ -2124,7 +2158,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dctype
 
 > **setUniqueIdentifier**(`identifier`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:935](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L935)
+Defined in: [libraries/epub/src/index.tsx:973](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L973)
 
 Set the unique identifier id for the EPUB.
 
@@ -2151,7 +2185,7 @@ https://www.w3.org/TR/epub-33/#sec-opf-dcidentifier
 
 > **updateManifestItem**(`id`, `newItem`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:3062](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3062)
+Defined in: [libraries/epub/src/index.tsx:3100](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3100)
 
 Update the manifest entry for an existing item.
 
@@ -2177,7 +2211,7 @@ https://www.w3.org/TR/epub-33/#sec-pkg-manifest
 
 > **withPackage**(`producer`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:656](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L656)
+Defined in: [libraries/epub/src/index.tsx:694](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L694)
 
 Safely modify the package document, without race conditions.
 
@@ -2203,7 +2237,7 @@ exclusively.
 
 > **writeItemContents**(`id`, `contents`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2875](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2875)
+Defined in: [libraries/epub/src/index.tsx:2913](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2913)
 
 Write new contents for an existing manifest item,
 specified by its id.
@@ -2230,7 +2264,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **writeItemContents**(`id`, `contents`, `encoding`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2876](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2876)
+Defined in: [libraries/epub/src/index.tsx:2914](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2914)
 
 Write new contents for an existing manifest item,
 specified by its id.
@@ -2258,7 +2292,7 @@ https://www.w3.org/TR/epub-33/#sec-contentdocs
 
 > **writeXhtmlItemContents**(`id`, `contents`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:2915](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2915)
+Defined in: [libraries/epub/src/index.tsx:2953](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L2953)
 
 Write new contents for an existing XHTML item,
 specified by its id.
@@ -2285,7 +2319,7 @@ https://www.w3.org/TR/epub-33/#sec-xhtml
 
 > `static` **assertEpub3**(`epub`): `Promise`\<`void`\>
 
-Defined in: [libraries/epub/src/index.tsx:503](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L503)
+Defined in: [libraries/epub/src/index.tsx:508](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L508)
 
 ##### Parameters
 
@@ -2301,7 +2335,7 @@ Defined in: [libraries/epub/src/index.tsx:503](https://gitlab.com/storyteller-pl
 
 > `static` **create**(`path`, `dublinCore`, `additionalMetadata`): `Promise`\<[`Epub`](#epub)\>
 
-Defined in: [libraries/epub/src/index.tsx:451](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L451)
+Defined in: [libraries/epub/src/index.tsx:456](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L456)
 
 Construct a new EPUB on a writable backend, optionally seeded
 with the provided metadata. Equivalent to
@@ -2323,7 +2357,7 @@ with the provided metadata. Equivalent to
 
 > `static` **formatSmilDuration**(`duration`): `string`
 
-Defined in: [libraries/epub/src/index.tsx:382](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L382)
+Defined in: [libraries/epub/src/index.tsx:387](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L387)
 
 Format a duration, provided as a number of seconds, as
 a SMIL clock value, to be used for Media Overlays.
@@ -2348,7 +2382,7 @@ https://www.w3.org/TR/epub-33/#sec-duration
 
 > `static` **from**(`pathOrData`): `Promise`\<[`Epub`](#epub)\>
 
-Defined in: [libraries/epub/src/index.tsx:487](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L487)
+Defined in: [libraries/epub/src/index.tsx:492](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L492)
 
 Open an existing EPUB publication, extracting it to a temp directory
 so writes can mutate the unpacked tree and rezip with `saveAndClose`.
@@ -2376,7 +2410,7 @@ when the archive is not a valid EPUB 3
 
 > `static` **from**(`pathOrData`, `options`): `Promise`\<[`EpubReader`](#epubreader)\>
 
-Defined in: [libraries/epub/src/index.tsx:488](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L488)
+Defined in: [libraries/epub/src/index.tsx:493](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L493)
 
 Open an existing EPUB publication, extracting it to a temp directory
 so writes can mutate the unpacked tree and rezip with `saveAndClose`.
@@ -2405,7 +2439,7 @@ when the archive is not a valid EPUB 3
 
 > `static` **from**(`pathOrData`, `options?`): `Promise`\<[`Epub`](#epub) \| [`EpubReader`](#epubreader)\>
 
-Defined in: [libraries/epub/src/index.tsx:492](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L492)
+Defined in: [libraries/epub/src/index.tsx:497](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L497)
 
 Open an existing EPUB publication, extracting it to a temp directory
 so writes can mutate the unpacked tree and rezip with `saveAndClose`.
@@ -2434,7 +2468,7 @@ when the archive is not a valid EPUB 3
 
 > `static` **upgrade**(`path`, `options`): `Promise`\<[`Epub`](#epub)\>
 
-Defined in: [libraries/epub/src/index.tsx:3371](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3371)
+Defined in: [libraries/epub/src/index.tsx:3409](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3409)
 
 Upgrade an EPUB 2 publication to EPUB 3 in place, returning a new,
 valid Epub 3 instance. Equivalent to
@@ -2455,7 +2489,7 @@ valid Epub 3 instance. Equivalent to
 
 > `static` **using**\<`A`\>(`adapterClass`): [`EpubFactory`](#epubfactory)\<`A`\>
 
-Defined in: [libraries/epub/src/index.tsx:471](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L471)
+Defined in: [libraries/epub/src/index.tsx:476](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L476)
 
 Specify the storage backend to use for the EPUB
 
@@ -2489,7 +2523,7 @@ using reader = await Epub.using(MemoryAdapter).from(buffer, { cache: false });
 
 ## EpubFactory\<A\>
 
-Defined in: [libraries/epub/src/index.tsx:3400](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3400)
+Defined in: [libraries/epub/src/index.tsx:3438](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3438)
 
 Adapter-bound factory returned by [Epub.using](#using).
 
@@ -2510,7 +2544,7 @@ gracefully when the adapter doesn't support the operation: `create` and
 
 > **new EpubFactory**\<`A`\>(`adapterClass`): [`EpubFactory`](#epubfactory)\<`A`\>
 
-Defined in: [libraries/epub/src/index.tsx:3401](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3401)
+Defined in: [libraries/epub/src/index.tsx:3439](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3439)
 
 ##### Parameters
 
@@ -2528,7 +2562,7 @@ Defined in: [libraries/epub/src/index.tsx:3401](https://gitlab.com/storyteller-p
 
 > `readonly` **adapterClass**: `A`
 
-Defined in: [libraries/epub/src/index.tsx:3401](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3401)
+Defined in: [libraries/epub/src/index.tsx:3439](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3439)
 
 ### Methods
 
@@ -2536,7 +2570,7 @@ Defined in: [libraries/epub/src/index.tsx:3401](https://gitlab.com/storyteller-p
 
 > **create**(`path`, `__namedParameters`, `additionalMetadata`): `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\>\>
 
-Defined in: [libraries/epub/src/index.tsx:3481](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3481)
+Defined in: [libraries/epub/src/index.tsx:3519](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3519)
 
 Construct a new EPUB on this factory's adapter, optionally seeded
 with the provided metadata. Requires a writable adapter that
@@ -2562,9 +2596,9 @@ when the adapter is read-only or does not implement initEmpty
 
 ##### Call Signature
 
-> **from**(`source`, `options`): `Promise`\<`Pick`\<[`Epub`](#epub), `"storage"` \| `"getItemArchiveLength"` \| `"getRootfile"` \| `"getPackageDocumentSource"` \| `"getPackageElement"` \| `"getManifest"` \| `"findMetadataItem"` \| `"findAllMetadataItems"` \| `"getMetadata"` \| `"getIdentifier"` \| `"getUniqueIdentifier"` \| `"getUniqueIdentifierId"` \| `"getIdentifiers"` \| `"getSources"` \| `"getPageBreakSource"` \| `"getCoverImageItem"` \| `"getCoverImage"` \| `"getPublicationDate"` \| `"getModifiedDate"` \| `"getLayout"` \| `"getBaseDirection"` \| `"getType"` \| `"getSubjects"` \| `"getLanguage"` \| `"getTitle"` \| `"getSubtitle"` \| `"getTitles"` \| `"getDescription"` \| `"getPackageVocabularyPrefixes"` \| `"getCollections"` \| `"getCreators"` \| `"getContributors"` \| `"getSpineItems"` \| `"getTableOfContents"` \| `"getLandmarks"` \| `"getPageList"` \| `"resolveHref"` \| `"readFileContents"` \| `"readItemContents"` \| `"readXhtmlItemContents"` \| `"getVersion"` \| `"getNcxTableOfContents"` \| `"getGuideEntries"` \| `"discardAndClose"`\> & `Disposable` & `object`\>
+> **from**(`source`, `options`): `Promise`\<`Pick`\<[`Epub`](#epub), `"storage"` \| `"getItemArchiveLength"` \| `"getEncryptionDocument"` \| `"getEncryptionSummary"` \| `"getRootfile"` \| `"getPackageDocumentSource"` \| `"getPackageElement"` \| `"getManifest"` \| `"findMetadataItem"` \| `"findAllMetadataItems"` \| `"getMetadata"` \| `"getIdentifier"` \| `"getUniqueIdentifier"` \| `"getUniqueIdentifierId"` \| `"getIdentifiers"` \| `"getSources"` \| `"getPageBreakSource"` \| `"getCoverImageItem"` \| `"getCoverImage"` \| `"getPublicationDate"` \| `"getModifiedDate"` \| `"getLayout"` \| `"getBaseDirection"` \| `"getType"` \| `"getSubjects"` \| `"getLanguage"` \| `"getTitle"` \| `"getSubtitle"` \| `"getTitles"` \| `"getDescription"` \| `"getPackageVocabularyPrefixes"` \| `"getCollections"` \| `"getCreators"` \| `"getContributors"` \| `"getSpineItems"` \| `"getTableOfContents"` \| `"getLandmarks"` \| `"getPageList"` \| `"resolveHref"` \| `"readFileContents"` \| `"readItemContents"` \| `"readXhtmlItemContents"` \| `"getVersion"` \| `"getNcxTableOfContents"` \| `"getGuideEntries"` \| `"discardAndClose"`\> & `Disposable` & `object`\>
 
-Defined in: [libraries/epub/src/index.tsx:3408](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3408)
+Defined in: [libraries/epub/src/index.tsx:3446](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3446)
 
 Open an existing EPUB through this factory's adapter
 
@@ -2577,7 +2611,7 @@ Open an existing EPUB through this factory's adapter
 
 ###### Returns
 
-`Promise`\<`Pick`\<[`Epub`](#epub), `"storage"` \| `"getItemArchiveLength"` \| `"getRootfile"` \| `"getPackageDocumentSource"` \| `"getPackageElement"` \| `"getManifest"` \| `"findMetadataItem"` \| `"findAllMetadataItems"` \| `"getMetadata"` \| `"getIdentifier"` \| `"getUniqueIdentifier"` \| `"getUniqueIdentifierId"` \| `"getIdentifiers"` \| `"getSources"` \| `"getPageBreakSource"` \| `"getCoverImageItem"` \| `"getCoverImage"` \| `"getPublicationDate"` \| `"getModifiedDate"` \| `"getLayout"` \| `"getBaseDirection"` \| `"getType"` \| `"getSubjects"` \| `"getLanguage"` \| `"getTitle"` \| `"getSubtitle"` \| `"getTitles"` \| `"getDescription"` \| `"getPackageVocabularyPrefixes"` \| `"getCollections"` \| `"getCreators"` \| `"getContributors"` \| `"getSpineItems"` \| `"getTableOfContents"` \| `"getLandmarks"` \| `"getPageList"` \| `"resolveHref"` \| `"readFileContents"` \| `"readItemContents"` \| `"readXhtmlItemContents"` \| `"getVersion"` \| `"getNcxTableOfContents"` \| `"getGuideEntries"` \| `"discardAndClose"`\> & `Disposable` & `object`\>
+`Promise`\<`Pick`\<[`Epub`](#epub), `"storage"` \| `"getItemArchiveLength"` \| `"getEncryptionDocument"` \| `"getEncryptionSummary"` \| `"getRootfile"` \| `"getPackageDocumentSource"` \| `"getPackageElement"` \| `"getManifest"` \| `"findMetadataItem"` \| `"findAllMetadataItems"` \| `"getMetadata"` \| `"getIdentifier"` \| `"getUniqueIdentifier"` \| `"getUniqueIdentifierId"` \| `"getIdentifiers"` \| `"getSources"` \| `"getPageBreakSource"` \| `"getCoverImageItem"` \| `"getCoverImage"` \| `"getPublicationDate"` \| `"getModifiedDate"` \| `"getLayout"` \| `"getBaseDirection"` \| `"getType"` \| `"getSubjects"` \| `"getLanguage"` \| `"getTitle"` \| `"getSubtitle"` \| `"getTitles"` \| `"getDescription"` \| `"getPackageVocabularyPrefixes"` \| `"getCollections"` \| `"getCreators"` \| `"getContributors"` \| `"getSpineItems"` \| `"getTableOfContents"` \| `"getLandmarks"` \| `"getPageList"` \| `"resolveHref"` \| `"readFileContents"` \| `"readItemContents"` \| `"readXhtmlItemContents"` \| `"getVersion"` \| `"getNcxTableOfContents"` \| `"getGuideEntries"` \| `"discardAndClose"`\> & `Disposable` & `object`\>
 
 ###### Throws
 
@@ -2587,7 +2621,7 @@ when the archive is not a valid EPUB 3
 
 > **from**(`source`, `options?`): `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\> & `object`\>
 
-Defined in: [libraries/epub/src/index.tsx:3412](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3412)
+Defined in: [libraries/epub/src/index.tsx:3450](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3450)
 
 Open an existing EPUB through this factory's adapter
 
@@ -2610,7 +2644,7 @@ when the archive is not a valid EPUB 3
 
 > **readPackageDocumentSource**(`source`, `options`): `Promise`\<`string`\>
 
-Defined in: [libraries/epub/src/index.tsx:3455](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3455)
+Defined in: [libraries/epub/src/index.tsx:3493](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3493)
 
 ##### Parameters
 
@@ -2627,7 +2661,7 @@ Defined in: [libraries/epub/src/index.tsx:3455](https://gitlab.com/storyteller-p
 
 > **upgrade**(`path`, `options`): `Promise`\<[`EpubInstanceFor`](#epubinstancefor)\<`A`\>\>
 
-Defined in: [libraries/epub/src/index.tsx:3608](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3608)
+Defined in: [libraries/epub/src/index.tsx:3646](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3646)
 
 Upgrade an EPUB 2 publication to EPUB 3 in place using this
 factory's adapter, returning a new, valid Epub 3 instance.
@@ -2665,7 +2699,7 @@ when the adapter is read-only
 
 ## EpubReadOnlyError
 
-Defined in: [libraries/epub/src/index.tsx:256](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L256)
+Defined in: [libraries/epub/src/index.tsx:261](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L261)
 
 ### Extends
 
@@ -2677,7 +2711,7 @@ Defined in: [libraries/epub/src/index.tsx:256](https://gitlab.com/storyteller-pl
 
 > **new EpubReadOnlyError**(`message?`): [`EpubReadOnlyError`](#epubreadonlyerror)
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1080
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1080](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1080)
 
 ##### Parameters
 
@@ -2697,7 +2731,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1080
 
 > **new EpubReadOnlyError**(`message?`, `options?`): [`EpubReadOnlyError`](#epubreadonlyerror)
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1080
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1080](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1080)
 
 ##### Parameters
 
@@ -2720,7 +2754,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1080
 
 > `optional` **cause**: `unknown`
 
-Defined in: node_modules/@typescript/old/lib/lib.es2022.error.d.ts:24
+Defined in: [node_modules/@typescript/old/lib/lib.es2022.error.d.ts:24](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es2022.error.d.ts#L24)
 
 ##### Inherited from
 
@@ -2730,7 +2764,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es2022.error.d.ts:24
 
 > **message**: `string`
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1075
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1075](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1075)
 
 ##### Inherited from
 
@@ -2740,7 +2774,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1075
 
 > **name**: `string`
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1074
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1074](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1074)
 
 ##### Inherited from
 
@@ -2750,7 +2784,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1074
 
 > `optional` **stack**: `string`
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1076
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1076](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1076)
 
 ##### Inherited from
 
@@ -2760,7 +2794,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1076
 
 > `static` **stackTraceLimit**: `number`
 
-Defined in: node_modules/@types/node/globals.d.ts:68
+Defined in: [node_modules/@types/node/globals.d.ts:68](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@types/node/globals.d.ts#L68)
 
 The `Error.stackTraceLimit` property specifies the number of stack frames
 collected by a stack trace (whether generated by `new Error().stack` or
@@ -2782,7 +2816,7 @@ not capture any frames.
 
 > `static` **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
 
-Defined in: node_modules/@types/node/globals.d.ts:52
+Defined in: [node_modules/@types/node/globals.d.ts:52](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@types/node/globals.d.ts#L52)
 
 Creates a `.stack` property on `targetObject`, which when accessed returns
 a string representing the location in the code at which
@@ -2847,7 +2881,7 @@ a();
 
 > `static` **isError**(`error`): `error is Error`
 
-Defined in: node_modules/@typescript/old/lib/lib.esnext.error.d.ts:21
+Defined in: [node_modules/@typescript/old/lib/lib.esnext.error.d.ts:21](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.esnext.error.d.ts#L21)
 
 Indicates whether the argument provided is a built-in Error instance or not.
 
@@ -2869,7 +2903,7 @@ Indicates whether the argument provided is a built-in Error instance or not.
 
 > `static` **prepareStackTrace**(`err`, `stackTraces`): `any`
 
-Defined in: node_modules/@types/node/globals.d.ts:56
+Defined in: [node_modules/@types/node/globals.d.ts:56](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@types/node/globals.d.ts#L56)
 
 ##### Parameters
 
@@ -2894,7 +2928,7 @@ https://v8.dev/docs/stack-trace-api#customizing-stack-traces
 
 ## EpubVersionError
 
-Defined in: [libraries/epub/src/index.tsx:255](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L255)
+Defined in: [libraries/epub/src/index.tsx:260](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L260)
 
 ### Extends
 
@@ -2906,7 +2940,7 @@ Defined in: [libraries/epub/src/index.tsx:255](https://gitlab.com/storyteller-pl
 
 > **new EpubVersionError**(`message?`): [`EpubVersionError`](#epubversionerror)
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1080
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1080](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1080)
 
 ##### Parameters
 
@@ -2926,7 +2960,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1080
 
 > **new EpubVersionError**(`message?`, `options?`): [`EpubVersionError`](#epubversionerror)
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1080
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1080](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1080)
 
 ##### Parameters
 
@@ -2949,7 +2983,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1080
 
 > `optional` **cause**: `unknown`
 
-Defined in: node_modules/@typescript/old/lib/lib.es2022.error.d.ts:24
+Defined in: [node_modules/@typescript/old/lib/lib.es2022.error.d.ts:24](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es2022.error.d.ts#L24)
 
 ##### Inherited from
 
@@ -2959,7 +2993,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es2022.error.d.ts:24
 
 > **message**: `string`
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1075
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1075](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1075)
 
 ##### Inherited from
 
@@ -2969,7 +3003,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1075
 
 > **name**: `string`
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1074
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1074](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1074)
 
 ##### Inherited from
 
@@ -2979,7 +3013,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1074
 
 > `optional` **stack**: `string`
 
-Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1076
+Defined in: [node_modules/@typescript/old/lib/lib.es5.d.ts:1076](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.es5.d.ts#L1076)
 
 ##### Inherited from
 
@@ -2989,7 +3023,7 @@ Defined in: node_modules/@typescript/old/lib/lib.es5.d.ts:1076
 
 > `static` **stackTraceLimit**: `number`
 
-Defined in: node_modules/@types/node/globals.d.ts:68
+Defined in: [node_modules/@types/node/globals.d.ts:68](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@types/node/globals.d.ts#L68)
 
 The `Error.stackTraceLimit` property specifies the number of stack frames
 collected by a stack trace (whether generated by `new Error().stack` or
@@ -3011,7 +3045,7 @@ not capture any frames.
 
 > `static` **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
 
-Defined in: node_modules/@types/node/globals.d.ts:52
+Defined in: [node_modules/@types/node/globals.d.ts:52](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@types/node/globals.d.ts#L52)
 
 Creates a `.stack` property on `targetObject`, which when accessed returns
 a string representing the location in the code at which
@@ -3076,7 +3110,7 @@ a();
 
 > `static` **isError**(`error`): `error is Error`
 
-Defined in: node_modules/@typescript/old/lib/lib.esnext.error.d.ts:21
+Defined in: [node_modules/@typescript/old/lib/lib.esnext.error.d.ts:21](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@typescript/old/lib/lib.esnext.error.d.ts#L21)
 
 Indicates whether the argument provided is a built-in Error instance or not.
 
@@ -3098,7 +3132,7 @@ Indicates whether the argument provided is a built-in Error instance or not.
 
 > `static` **prepareStackTrace**(`err`, `stackTraces`): `any`
 
-Defined in: node_modules/@types/node/globals.d.ts:56
+Defined in: [node_modules/@types/node/globals.d.ts:56](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@types/node/globals.d.ts#L56)
 
 ##### Parameters
 
@@ -3569,7 +3603,7 @@ Defined in: [libraries/epub/src/adapters/tmpfs.ts:79](https://gitlab.com/storyte
 
 ## AlternateScript
 
-Defined in: [libraries/epub/src/index.tsx:172](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L172)
+Defined in: [libraries/epub/src/index.tsx:177](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L177)
 
 ### Properties
 
@@ -3577,19 +3611,19 @@ Defined in: [libraries/epub/src/index.tsx:172](https://gitlab.com/storyteller-pl
 
 > **locale**: `Locale`
 
-Defined in: [libraries/epub/src/index.tsx:174](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L174)
+Defined in: [libraries/epub/src/index.tsx:179](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L179)
 
 #### name
 
 > **name**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:173](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L173)
+Defined in: [libraries/epub/src/index.tsx:178](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L178)
 
 ---
 
 ## Attr
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:664
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:664](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L664)
 
 A DOM element's attribute as an object. In most DOM methods, you will probably directly
 retrieve the attribute as a string (e.g., Element.getAttribute(), but certain functions (e.g.,
@@ -3607,7 +3641,7 @@ Element.getAttributeNode()) or means of iterating give Attr types.
 
 > `readonly` **ATTRIBUTE_NODE**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:592](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L592)
 
 ##### Inherited from
 
@@ -3617,7 +3651,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
 
 > `readonly` **baseURI**: `"about:blank"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:396
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:396](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L396)
 
 Always returns `about:blank` currently.
 
@@ -3631,7 +3665,7 @@ Always returns `about:blank` currently.
 
 > `readonly` **CDATA_SECTION_NODE**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:596
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:596](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L596)
 
 node is a CDATASection node.
 
@@ -3643,7 +3677,7 @@ node is a CDATASection node.
 
 > `readonly` **childNodes**: `NodeList`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:374
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:374](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L374)
 
 Returns the children.
 
@@ -3657,7 +3691,7 @@ Returns the children.
 
 > `optional` **columnNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:479
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:479](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L479)
 
 One based column position inside the parsed source,
 if the `locator` was not disabled.
@@ -3670,7 +3704,7 @@ if the `locator` was not disabled.
 
 > `readonly` **COMMENT_NODE**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:602
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:602](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L602)
 
 node is a Comment node.
 
@@ -3682,7 +3716,7 @@ node is a Comment node.
 
 > `readonly` **DOCUMENT_FRAGMENT_NODE**: `11`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:608
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:608](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L608)
 
 node is a DocumentFragment node.
 
@@ -3694,7 +3728,7 @@ node is a DocumentFragment node.
 
 > `readonly` **DOCUMENT_NODE**: `9`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:604
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:604](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L604)
 
 node is a document.
 
@@ -3706,7 +3740,7 @@ node is a document.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINED_BY**: `16`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:619
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:619](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L619)
 
 Set when other is a descendant of node.
 
@@ -3718,7 +3752,7 @@ Set when other is a descendant of node.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINS**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:617
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:617](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L617)
 
 Set when other is an ancestor of node.
 
@@ -3730,7 +3764,7 @@ Set when other is an ancestor of node.
 
 > `readonly` **DOCUMENT_POSITION_DISCONNECTED**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:611
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:611](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L611)
 
 Set when node and other are not in the same tree.
 
@@ -3742,7 +3776,7 @@ Set when node and other are not in the same tree.
 
 > `readonly` **DOCUMENT_POSITION_FOLLOWING**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:615
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:615](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L615)
 
 Set when other is following node.
 
@@ -3754,7 +3788,7 @@ Set when other is following node.
 
 > `readonly` **DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC**: `32`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:620](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L620)
 
 ##### Inherited from
 
@@ -3764,7 +3798,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
 
 > `readonly` **DOCUMENT_POSITION_PRECEDING**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:613
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:613](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L613)
 
 Set when other is preceding node.
 
@@ -3776,7 +3810,7 @@ Set when other is preceding node.
 
 > `readonly` **DOCUMENT_TYPE_NODE**: `10`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:606
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:606](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L606)
 
 node is a doctype.
 
@@ -3788,7 +3822,7 @@ node is a doctype.
 
 > `readonly` **ELEMENT_NODE**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:591
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:591](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L591)
 
 node is an element.
 
@@ -3800,7 +3834,7 @@ node is an element.
 
 > `readonly` **ENTITY_NODE**: `6`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:598](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L598)
 
 ##### Inherited from
 
@@ -3810,7 +3844,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
 
 > `readonly` **ENTITY_REFERENCE_NODE**: `5`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:597](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L597)
 
 ##### Inherited from
 
@@ -3820,7 +3854,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
 
 > `readonly` **firstChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:380
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:380](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L380)
 
 Returns the first child.
 
@@ -3834,7 +3868,7 @@ Returns the first child.
 
 > `readonly` **isConnected**: `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:402
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:402](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L402)
 
 Returns true if this node is inside of a document or is the document node itself.
 
@@ -3848,7 +3882,7 @@ Returns true if this node is inside of a document or is the document node itself
 
 > `readonly` **lastChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:386
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:386](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L386)
 
 Returns the last child.
 
@@ -3862,7 +3896,7 @@ Returns the last child.
 
 > `optional` **lineNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:474
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:474](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L474)
 
 Zero based line position inside the parsed source,
 if the `locator` was not disabled.
@@ -3875,7 +3909,7 @@ if the `locator` was not disabled.
 
 > **localName**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:390
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:390](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L390)
 
 The local part of the qualified name of this node.
 
@@ -3887,7 +3921,7 @@ The local part of the qualified name of this node.
 
 > `readonly` **name**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:667
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:667](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L667)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Attr/name)
 
@@ -3895,7 +3929,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:667
 
 > `readonly` **namespaceURI**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:669
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:669](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L669)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Attr/namespaceURI)
 
@@ -3907,7 +3941,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:669
 
 > `readonly` **nextSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:412
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:412](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L412)
 
 Returns the next sibling.
 
@@ -3921,7 +3955,7 @@ Returns the next sibling.
 
 > `readonly` **nodeName**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:418
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:418](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L418)
 
 Returns a string appropriate for the type of node.
 
@@ -3935,7 +3969,7 @@ Returns a string appropriate for the type of node.
 
 > `readonly` **nodeType**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:665
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:665](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L665)
 
 Returns the type of node.
 
@@ -3949,7 +3983,7 @@ Returns the type of node.
 
 > **nodeValue**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:426](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L426)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
 
@@ -3961,7 +3995,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
 
 > `readonly` **NOTATION_NODE**: `12`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:609](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L609)
 
 ##### Inherited from
 
@@ -3971,7 +4005,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
 
 > `readonly` **ownerDocument**: [`Document`](#document-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:670
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:670](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L670)
 
 Returns the node document. Returns null for documents.
 
@@ -3985,7 +4019,7 @@ Returns the node document. Returns null for documents.
 
 > `readonly` **ownerElement**: [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:672
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:672](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L672)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Attr/ownerElement)
 
@@ -3993,7 +4027,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:672
 
 > `readonly` **parentElement**: [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:444
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:444](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L444)
 
 Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
@@ -4007,7 +4041,7 @@ Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
 > `readonly` **parentNode**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:438
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:438](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L438)
 
 Returns the parent.
 
@@ -4021,7 +4055,7 @@ Returns the parent.
 
 > `readonly` **prefix**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:674
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:674](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L674)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Attr/prefix)
 
@@ -4033,7 +4067,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:674
 
 > `readonly` **previousSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:454
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:454](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L454)
 
 Returns the previous sibling.
 
@@ -4047,7 +4081,7 @@ Returns the previous sibling.
 
 > `readonly` **PROCESSING_INSTRUCTION_NODE**: `7`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:600
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L600)
 
 node is a ProcessingInstruction node.
 
@@ -4059,7 +4093,7 @@ node is a ProcessingInstruction node.
 
 > `readonly` **specified**: `true`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:679
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:679](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L679)
 
 ##### Deprecated
 
@@ -4069,7 +4103,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:679
 
 > `readonly` **TEXT_NODE**: `3`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:594
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:594](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L594)
 
 node is a Text node.
 
@@ -4081,7 +4115,7 @@ node is a Text node.
 
 > **textContent**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:468
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:468](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L468)
 
 The text content of this node and its descendants.
 
@@ -4105,7 +4139,7 @@ single text node; on other nodes it sets `data`, `value`, and `nodeValue` direct
 
 > **value**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:681
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:681](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L681)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Attr/value)
 
@@ -4115,7 +4149,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:681
 
 > **appendChild**(`node`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:482](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L482)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/appendChild)
 
@@ -4137,7 +4171,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
 
 > **cloneNode**(`deep?`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:533
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:533](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L533)
 
 Returns a copy of node. If deep is true, the copy also includes the node's descendants.
 
@@ -4167,7 +4201,7 @@ specific constraints.
 
 > **compareDocumentPosition**(`other`): `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:540
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:540](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L540)
 
 Returns a bitmask indicating the position of other relative to node.
 
@@ -4191,7 +4225,7 @@ Returns a bitmask indicating the position of other relative to node.
 
 > **contains**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:489
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:489](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L489)
 
 Checks whether `other` is an inclusive descendant of this node.
 
@@ -4215,7 +4249,7 @@ Checks whether `other` is an inclusive descendant of this node.
 
 > **getRootNode**(`options`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:502
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:502](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L502)
 
 Searches for the root node of this node.
 
@@ -4249,7 +4283,7 @@ Searches for the root node of this node.
 
 > **hasChildNodes**(): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:547
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:547](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L547)
 
 Returns whether node has children.
 
@@ -4267,7 +4301,7 @@ Returns whether node has children.
 
 > **insertBefore**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:550](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L550)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
 
@@ -4290,7 +4324,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
 
 > **isDefaultNamespace**(`namespace`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:553](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L553)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
 
@@ -4312,7 +4346,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
 
 > **isEqualNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:514
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:514](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L514)
 
 Checks whether the given node is equal to this node.
 
@@ -4343,7 +4377,7 @@ nested trees. `Attribute` nodes of each `Element` pair are also compared iterati
 
 > **isSameNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:521
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:521](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L521)
 
 Checks whether the given node is this node.
 
@@ -4367,7 +4401,7 @@ Checks whether the given node is this node.
 
 > **isSupported**(`feature`, `version`): `true`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:568
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:568](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L568)
 
 Checks whether the DOM implementation implements a specific feature and its version.
 
@@ -4402,7 +4436,7 @@ DOMImplementation.hasFeature
 
 > **lookupNamespaceURI**(`prefix`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:571](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L571)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
 
@@ -4424,7 +4458,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
 
 > **lookupPrefix**(`namespace`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:574](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L574)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
 
@@ -4446,7 +4480,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
 
 > **normalize**(): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:582
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:582](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L582)
 
 Removes empty exclusive Text nodes and concatenates the data of remaining contiguous
 exclusive Text nodes into the first of their nodes.
@@ -4465,7 +4499,7 @@ exclusive Text nodes into the first of their nodes.
 
 > **removeChild**(`child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:585](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L585)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
 
@@ -4487,7 +4521,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
 
 > **replaceChild**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:588](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L588)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
 
@@ -4510,7 +4544,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
 
 ## Collection
 
-Defined in: [libraries/epub/src/index.tsx:196](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L196)
+Defined in: [libraries/epub/src/index.tsx:201](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L201)
 
 ### Properties
 
@@ -4518,25 +4552,25 @@ Defined in: [libraries/epub/src/index.tsx:196](https://gitlab.com/storyteller-pl
 
 > **name**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:197](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L197)
+Defined in: [libraries/epub/src/index.tsx:202](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L202)
 
 #### position?
 
 > `optional` **position**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:199](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L199)
+Defined in: [libraries/epub/src/index.tsx:204](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L204)
 
 #### type?
 
 > `optional` **type**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:198](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L198)
+Defined in: [libraries/epub/src/index.tsx:203](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L203)
 
 ---
 
 ## DcCreator
 
-Defined in: [libraries/epub/src/index.tsx:177](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L177)
+Defined in: [libraries/epub/src/index.tsx:182](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L182)
 
 ### Properties
 
@@ -4544,37 +4578,37 @@ Defined in: [libraries/epub/src/index.tsx:177](https://gitlab.com/storyteller-pl
 
 > `optional` **alternateScripts**: [`AlternateScript`](#alternatescript)[]
 
-Defined in: [libraries/epub/src/index.tsx:182](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L182)
+Defined in: [libraries/epub/src/index.tsx:187](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L187)
 
 #### fileAs?
 
 > `optional` **fileAs**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:181](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L181)
+Defined in: [libraries/epub/src/index.tsx:186](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L186)
 
 #### name
 
 > **name**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:178](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L178)
+Defined in: [libraries/epub/src/index.tsx:183](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L183)
 
 #### role?
 
 > `optional` **role**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:179](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L179)
+Defined in: [libraries/epub/src/index.tsx:184](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L184)
 
 #### roleScheme?
 
 > `optional` **roleScheme**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:180](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L180)
+Defined in: [libraries/epub/src/index.tsx:185](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L185)
 
 ---
 
 ## DcSubject
 
-Defined in: [libraries/epub/src/index.tsx:139](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L139)
+Defined in: [libraries/epub/src/index.tsx:144](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L144)
 
 ### Properties
 
@@ -4582,25 +4616,25 @@ Defined in: [libraries/epub/src/index.tsx:139](https://gitlab.com/storyteller-pl
 
 > **authority**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:141](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L141)
+Defined in: [libraries/epub/src/index.tsx:146](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L146)
 
 #### term
 
 > **term**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:142](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L142)
+Defined in: [libraries/epub/src/index.tsx:147](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L147)
 
 #### value
 
 > **value**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:140](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L140)
+Defined in: [libraries/epub/src/index.tsx:145](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L145)
 
 ---
 
 ## Document
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1188
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1188](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1188)
 
 ### Extends
 
@@ -4612,7 +4646,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1188
 
 > `readonly` **ATTRIBUTE_NODE**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:592](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L592)
 
 ##### Inherited from
 
@@ -4622,7 +4656,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
 
 > `readonly` **baseURI**: `"about:blank"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:396
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:396](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L396)
 
 Always returns `about:blank` currently.
 
@@ -4636,7 +4670,7 @@ Always returns `about:blank` currently.
 
 > `readonly` **CDATA_SECTION_NODE**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:596
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:596](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L596)
 
 node is a CDATASection node.
 
@@ -4648,7 +4682,7 @@ node is a CDATASection node.
 
 > `readonly` **childNodes**: `NodeList`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:374
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:374](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L374)
 
 Returns the children.
 
@@ -4662,7 +4696,7 @@ Returns the children.
 
 > `readonly` **children**: `LiveNodeList`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1226
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1226](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1226)
 
 Returns a live collection of the direct child elements of this document.
 
@@ -4676,7 +4710,7 @@ https://dom.spec.whatwg.org/#dom-parentnode-children
 
 > `optional` **columnNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:479
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:479](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L479)
 
 One based column position inside the parsed source,
 if the `locator` was not disabled.
@@ -4689,7 +4723,7 @@ if the `locator` was not disabled.
 
 > `readonly` **COMMENT_NODE**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:602
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:602](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L602)
 
 node is a Comment node.
 
@@ -4701,7 +4735,7 @@ node is a Comment node.
 
 > `readonly` **contentType**: `MIME_TYPE`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1196
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1196](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1196)
 
 The mime type of the document is determined at creation time and can not be modified.
 
@@ -4715,13 +4749,13 @@ The mime type of the document is determined at creation time and can not be modi
 
 > `readonly` **doctype**: [`DocumentType`](#documenttype-2) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1211
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1211](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1211)
 
 #### DOCUMENT_FRAGMENT_NODE
 
 > `readonly` **DOCUMENT_FRAGMENT_NODE**: `11`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:608
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:608](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L608)
 
 node is a DocumentFragment node.
 
@@ -4733,7 +4767,7 @@ node is a DocumentFragment node.
 
 > `readonly` **DOCUMENT_NODE**: `9`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:604
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:604](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L604)
 
 node is a document.
 
@@ -4745,7 +4779,7 @@ node is a document.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINED_BY**: `16`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:619
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:619](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L619)
 
 Set when other is a descendant of node.
 
@@ -4757,7 +4791,7 @@ Set when other is a descendant of node.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINS**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:617
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:617](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L617)
 
 Set when other is an ancestor of node.
 
@@ -4769,7 +4803,7 @@ Set when other is an ancestor of node.
 
 > `readonly` **DOCUMENT_POSITION_DISCONNECTED**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:611
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:611](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L611)
 
 Set when node and other are not in the same tree.
 
@@ -4781,7 +4815,7 @@ Set when node and other are not in the same tree.
 
 > `readonly` **DOCUMENT_POSITION_FOLLOWING**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:615
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:615](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L615)
 
 Set when other is following node.
 
@@ -4793,7 +4827,7 @@ Set when other is following node.
 
 > `readonly` **DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC**: `32`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:620](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L620)
 
 ##### Inherited from
 
@@ -4803,7 +4837,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
 
 > `readonly` **DOCUMENT_POSITION_PRECEDING**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:613
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:613](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L613)
 
 Set when other is preceding node.
 
@@ -4815,7 +4849,7 @@ Set when other is preceding node.
 
 > `readonly` **DOCUMENT_TYPE_NODE**: `10`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:606
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:606](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L606)
 
 node is a doctype.
 
@@ -4827,7 +4861,7 @@ node is a doctype.
 
 > `readonly` **documentElement**: [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1217
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1217](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1217)
 
 Gets a reference to the root node of the document.
 
@@ -4837,7 +4871,7 @@ Gets a reference to the root node of the document.
 
 > `readonly` **ELEMENT_NODE**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:591
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:591](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L591)
 
 node is an element.
 
@@ -4849,7 +4883,7 @@ node is an element.
 
 > `readonly` **ENTITY_NODE**: `6`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:598](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L598)
 
 ##### Inherited from
 
@@ -4859,7 +4893,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
 
 > `readonly` **ENTITY_REFERENCE_NODE**: `5`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:597](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L597)
 
 ##### Inherited from
 
@@ -4869,7 +4903,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
 
 > `readonly` **firstChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:380
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:380](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L380)
 
 Returns the first child.
 
@@ -4883,7 +4917,7 @@ Returns the first child.
 
 > `readonly` **implementation**: `DOMImplementation`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1207
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1207](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1207)
 
 The implementation that created this document.
 
@@ -4891,7 +4925,7 @@ The implementation that created this document.
 
 > `readonly` **isConnected**: `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:402
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:402](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L402)
 
 Returns true if this node is inside of a document or is the document node itself.
 
@@ -4905,7 +4939,7 @@ Returns true if this node is inside of a document or is the document node itself
 
 > `readonly` **lastChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:386
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:386](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L386)
 
 Returns the last child.
 
@@ -4919,7 +4953,7 @@ Returns the last child.
 
 > `optional` **lineNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:474
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:474](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L474)
 
 Zero based line position inside the parsed source,
 if the `locator` was not disabled.
@@ -4932,7 +4966,7 @@ if the `locator` was not disabled.
 
 > **localName**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:390
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:390](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L390)
 
 The local part of the qualified name of this node.
 
@@ -4944,7 +4978,7 @@ The local part of the qualified name of this node.
 
 > `readonly` **namespaceURI**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:406
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:406](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L406)
 
 The namespace URI of this node.
 
@@ -4956,7 +4990,7 @@ The namespace URI of this node.
 
 > `readonly` **nextSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:412
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:412](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L412)
 
 Returns the next sibling.
 
@@ -4970,7 +5004,7 @@ Returns the next sibling.
 
 > `readonly` **nodeName**: `"#document"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1209
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1209](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1209)
 
 Returns a string appropriate for the type of node.
 
@@ -4984,7 +5018,7 @@ Returns a string appropriate for the type of node.
 
 > `readonly` **nodeType**: `9`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1210
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1210](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1210)
 
 Returns the type of node.
 
@@ -4998,7 +5032,7 @@ Returns the type of node.
 
 > **nodeValue**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:426](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L426)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
 
@@ -5010,7 +5044,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
 
 > `readonly` **NOTATION_NODE**: `12`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:609](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L609)
 
 ##### Inherited from
 
@@ -5020,7 +5054,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
 
 > `readonly` **ownerDocument**: [`Document`](#document-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1208
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1208](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1208)
 
 Returns the node document. Returns null for documents.
 
@@ -5034,7 +5068,7 @@ Returns the node document. Returns null for documents.
 
 > `readonly` **parentElement**: [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:444
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:444](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L444)
 
 Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
@@ -5048,7 +5082,7 @@ Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
 > `readonly` **parentNode**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:438
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:438](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L438)
 
 Returns the parent.
 
@@ -5062,7 +5096,7 @@ Returns the parent.
 
 > **prefix**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:448
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:448](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L448)
 
 The prefix of the namespace for this node.
 
@@ -5074,7 +5108,7 @@ The prefix of the namespace for this node.
 
 > `readonly` **previousSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:454
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:454](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L454)
 
 Returns the previous sibling.
 
@@ -5088,7 +5122,7 @@ Returns the previous sibling.
 
 > `readonly` **PROCESSING_INSTRUCTION_NODE**: `7`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:600
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L600)
 
 node is a ProcessingInstruction node.
 
@@ -5100,7 +5134,7 @@ node is a ProcessingInstruction node.
 
 > `readonly` **TEXT_NODE**: `3`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:594
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:594](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L594)
 
 node is a Text node.
 
@@ -5112,7 +5146,7 @@ node is a Text node.
 
 > **textContent**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:468
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:468](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L468)
 
 The text content of this node and its descendants.
 
@@ -5136,7 +5170,7 @@ single text node; on other nodes it sets `data`, `value`, and `nodeValue` direct
 
 > `readonly` **type**: `"xml"` \| `"html"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1201
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1201](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1201)
 
 ##### See
 
@@ -5149,7 +5183,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1201
 
 > **appendChild**(`node`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:482](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L482)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/appendChild)
 
@@ -5171,7 +5205,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
 
 > **cloneNode**(`deep?`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:533
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:533](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L533)
 
 Returns a copy of node. If deep is true, the copy also includes the node's descendants.
 
@@ -5201,7 +5235,7 @@ specific constraints.
 
 > **compareDocumentPosition**(`other`): `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:540
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:540](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L540)
 
 Returns a bitmask indicating the position of other relative to node.
 
@@ -5225,7 +5259,7 @@ Returns a bitmask indicating the position of other relative to node.
 
 > **contains**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:489
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:489](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L489)
 
 Checks whether `other` is an inclusive descendant of this node.
 
@@ -5249,7 +5283,7 @@ Checks whether `other` is an inclusive descendant of this node.
 
 > **createAttribute**(`localName`): [`Attr`](#attr-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1233
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1233](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1233)
 
 Creates an attribute object with a specified name.
 
@@ -5269,7 +5303,7 @@ Creates an attribute object with a specified name.
 
 > **createAttributeNS**(`namespace`, `qualifiedName`): [`Attr`](#attr-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1236
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1236](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1236)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/createAttributeNS)
 
@@ -5288,7 +5322,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1236
 
 > **createCDATASection**(`data`): `CDATASection`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1249
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1249](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1249)
 
 Returns a new CDATASection node whose data is `data`.
 
@@ -5318,7 +5352,7 @@ With code `INVALID_CHARACTER_ERR` if `data` contains `"]]>"`.
 
 > **createComment**(`data`): `Comment`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1261
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1261](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1261)
 
 Creates a comment object with the specified data.
 
@@ -5343,7 +5377,7 @@ production (W3C DOM Parsing §3.2.1.3). Without that option the data is emitted 
 
 > **createDocumentFragment**(): `DocumentFragment`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1268
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1268](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1268)
 
 Creates a new document.
 
@@ -5357,7 +5391,7 @@ Creates a new document.
 
 > **createElement**(`tagName`): [`Element`](#element-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1270
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1270](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1270)
 
 ##### Parameters
 
@@ -5373,7 +5407,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1270
 
 > **createElementNS**(`namespace`, `qualifiedName`): [`Element`](#element-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1292
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1292](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1292)
 
 Returns an element with namespace namespace. Its namespace prefix will be everything before
 ":" (U+003E) in qualifiedName or null. Its local name will be everything after ":" (U+003E)
@@ -5409,7 +5443,7 @@ When supplied, options's is can be used to create a customized built-in element.
 
 > **createEntityReference**(`name`): `EntityReference`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1319
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1319](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1319)
 
 Creates an EntityReference object.
 The current implementation does not fill the `childNodes` with those of the corresponding
@@ -5457,7 +5491,7 @@ https://www.w3.org/TR/DOM-Level-3-Core/core.html#ID-392B75AE
 
 > **createProcessingInstruction**(`target`, `data`): `ProcessingInstruction`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1338
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1338](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1338)
 
 Returns a ProcessingInstruction node whose target is target and data is data.
 
@@ -5493,7 +5527,7 @@ that option the target and data are emitted verbatim.
 
 > **createTextNode**(`data`): [`Text`](#text-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1351
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1351](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1351)
 
 Creates a text string from the specified value.
 
@@ -5511,7 +5545,7 @@ Creates a text string from the specified value.
 
 > **getElementById**(`elementId`): [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1356
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1356](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1356)
 
 Returns a reference to the first object with the specified value of the ID attribute.
 
@@ -5529,7 +5563,7 @@ Returns a reference to the first object with the specified value of the ID attri
 
 > **getElementsByClassName**(`classNames`): `LiveNodeList`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1373
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1373](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1373)
 
 Returns a LiveNodeList of all child elements which have **all** of the given class
 name(s).
@@ -5561,7 +5595,7 @@ it will automatically be removed. Be aware of this for iteration purposes.
 
 > **getElementsByTagName**(`qualifiedName`): `LiveNodeList`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1397
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1397](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1397)
 
 Returns a LiveNodeList of elements with the given qualifiedName.
 Searching for all descendants can be done by passing `*` as `qualifiedName`.
@@ -5600,7 +5634,7 @@ except that it only searches for elements that are descendants of the specified 
 
 > **getElementsByTagNameNS**(`namespaceURI`, `localName`): `LiveNodeList`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1409
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1409](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1409)
 
 Returns a `LiveNodeList` of elements with the given tag name belonging to the given
 namespace. The complete document is searched, including the root node.
@@ -5626,7 +5660,7 @@ with the same element and arguments repeatedly if the DOM changes in between cal
 
 > **getRootNode**(`options`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:502
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:502](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L502)
 
 Searches for the root node of this node.
 
@@ -5660,7 +5694,7 @@ Searches for the root node of this node.
 
 > **hasChildNodes**(): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:547
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:547](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L547)
 
 Returns whether node has children.
 
@@ -5678,7 +5712,7 @@ Returns whether node has children.
 
 > **importNode**\<`T`\>(`node`, `deep?`): `T`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1421
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1421](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1421)
 
 Imports a node from another document into this document, creating a new copy owned by this
 document. If `deep` is true, the copy also includes the node's descendants.
@@ -5710,7 +5744,7 @@ document. If `deep` is true, the copy also includes the node's descendants.
 
 > **insertBefore**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:550](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L550)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
 
@@ -5733,7 +5767,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
 
 > **isDefaultNamespace**(`namespace`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:553](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L553)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
 
@@ -5755,7 +5789,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
 
 > **isEqualNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:514
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:514](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L514)
 
 Checks whether the given node is equal to this node.
 
@@ -5786,7 +5820,7 @@ nested trees. `Attribute` nodes of each `Element` pair are also compared iterati
 
 > **isSameNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:521
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:521](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L521)
 
 Checks whether the given node is this node.
 
@@ -5810,7 +5844,7 @@ Checks whether the given node is this node.
 
 > **isSupported**(`feature`, `version`): `true`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:568
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:568](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L568)
 
 Checks whether the DOM implementation implements a specific feature and its version.
 
@@ -5845,7 +5879,7 @@ DOMImplementation.hasFeature
 
 > **lookupNamespaceURI**(`prefix`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:571](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L571)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
 
@@ -5867,7 +5901,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
 
 > **lookupPrefix**(`namespace`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:574](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L574)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
 
@@ -5889,7 +5923,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
 
 > **normalize**(): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:582
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:582](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L582)
 
 Removes empty exclusive Text nodes and concatenates the data of remaining contiguous
 exclusive Text nodes into the first of their nodes.
@@ -5908,7 +5942,7 @@ exclusive Text nodes into the first of their nodes.
 
 > **removeChild**(`child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:585](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L585)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
 
@@ -5930,7 +5964,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
 
 > **replaceChild**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:588](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L588)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
 
@@ -5953,7 +5987,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
 
 ## DocumentType
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1431
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1431](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1431)
 
 A Node containing a doctype.
 
@@ -5969,7 +6003,7 @@ A Node containing a doctype.
 
 > `readonly` **ATTRIBUTE_NODE**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:592](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L592)
 
 ##### Inherited from
 
@@ -5979,7 +6013,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
 
 > `readonly` **baseURI**: `"about:blank"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:396
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:396](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L396)
 
 Always returns `about:blank` currently.
 
@@ -5993,7 +6027,7 @@ Always returns `about:blank` currently.
 
 > `readonly` **CDATA_SECTION_NODE**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:596
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:596](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L596)
 
 node is a CDATASection node.
 
@@ -6005,7 +6039,7 @@ node is a CDATASection node.
 
 > `readonly` **childNodes**: `NodeList`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:374
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:374](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L374)
 
 Returns the children.
 
@@ -6019,7 +6053,7 @@ Returns the children.
 
 > `optional` **columnNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:479
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:479](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L479)
 
 One based column position inside the parsed source,
 if the `locator` was not disabled.
@@ -6032,7 +6066,7 @@ if the `locator` was not disabled.
 
 > `readonly` **COMMENT_NODE**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:602
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:602](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L602)
 
 node is a Comment node.
 
@@ -6044,7 +6078,7 @@ node is a Comment node.
 
 > `readonly` **DOCUMENT_FRAGMENT_NODE**: `11`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:608
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:608](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L608)
 
 node is a DocumentFragment node.
 
@@ -6056,7 +6090,7 @@ node is a DocumentFragment node.
 
 > `readonly` **DOCUMENT_NODE**: `9`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:604
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:604](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L604)
 
 node is a document.
 
@@ -6068,7 +6102,7 @@ node is a document.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINED_BY**: `16`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:619
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:619](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L619)
 
 Set when other is a descendant of node.
 
@@ -6080,7 +6114,7 @@ Set when other is a descendant of node.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINS**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:617
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:617](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L617)
 
 Set when other is an ancestor of node.
 
@@ -6092,7 +6126,7 @@ Set when other is an ancestor of node.
 
 > `readonly` **DOCUMENT_POSITION_DISCONNECTED**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:611
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:611](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L611)
 
 Set when node and other are not in the same tree.
 
@@ -6104,7 +6138,7 @@ Set when node and other are not in the same tree.
 
 > `readonly` **DOCUMENT_POSITION_FOLLOWING**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:615
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:615](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L615)
 
 Set when other is following node.
 
@@ -6116,7 +6150,7 @@ Set when other is following node.
 
 > `readonly` **DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC**: `32`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:620](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L620)
 
 ##### Inherited from
 
@@ -6126,7 +6160,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
 
 > `readonly` **DOCUMENT_POSITION_PRECEDING**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:613
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:613](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L613)
 
 Set when other is preceding node.
 
@@ -6138,7 +6172,7 @@ Set when other is preceding node.
 
 > `readonly` **DOCUMENT_TYPE_NODE**: `10`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:606
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:606](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L606)
 
 node is a doctype.
 
@@ -6150,7 +6184,7 @@ node is a doctype.
 
 > `readonly` **ELEMENT_NODE**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:591
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:591](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L591)
 
 node is an element.
 
@@ -6162,7 +6196,7 @@ node is an element.
 
 > `readonly` **ENTITY_NODE**: `6`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:598](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L598)
 
 ##### Inherited from
 
@@ -6172,7 +6206,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
 
 > `readonly` **ENTITY_REFERENCE_NODE**: `5`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:597](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L597)
 
 ##### Inherited from
 
@@ -6182,7 +6216,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
 
 > `readonly` **firstChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:380
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:380](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L380)
 
 Returns the first child.
 
@@ -6196,7 +6230,7 @@ Returns the first child.
 
 > `readonly` **internalSubset**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1449
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1449](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1449)
 
 The internal subset string (the raw content between `[` and `]`), or an empty string.
 Declared `readonly` by the WHATWG DOM spec; xmldom does not enforce this — direct
@@ -6209,7 +6243,7 @@ contains `"]>"`.
 
 > `readonly` **isConnected**: `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:402
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:402](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L402)
 
 Returns true if this node is inside of a document or is the document node itself.
 
@@ -6223,7 +6257,7 @@ Returns true if this node is inside of a document or is the document node itself
 
 > `readonly` **lastChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:386
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:386](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L386)
 
 Returns the last child.
 
@@ -6237,7 +6271,7 @@ Returns the last child.
 
 > `optional` **lineNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:474
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:474](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L474)
 
 Zero based line position inside the parsed source,
 if the `locator` was not disabled.
@@ -6250,7 +6284,7 @@ if the `locator` was not disabled.
 
 > **localName**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:390
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:390](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L390)
 
 The local part of the qualified name of this node.
 
@@ -6262,7 +6296,7 @@ The local part of the qualified name of this node.
 
 > `readonly` **name**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1440
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1440](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1440)
 
 The doctype name, stored verbatim.
 Declared `readonly` by the WHATWG DOM spec; xmldom does not enforce this — direct
@@ -6275,7 +6309,7 @@ is not a valid XML `Name` production (XML 1.0 [5]).
 
 > `readonly` **namespaceURI**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:406
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:406](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L406)
 
 The namespace URI of this node.
 
@@ -6287,7 +6321,7 @@ The namespace URI of this node.
 
 > `readonly` **nextSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:412
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:412](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L412)
 
 Returns the next sibling.
 
@@ -6301,7 +6335,7 @@ Returns the next sibling.
 
 > `readonly` **nodeName**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:418
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:418](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L418)
 
 Returns a string appropriate for the type of node.
 
@@ -6315,7 +6349,7 @@ Returns a string appropriate for the type of node.
 
 > `readonly` **nodeType**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:424
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:424](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L424)
 
 Returns the type of node.
 
@@ -6329,7 +6363,7 @@ Returns the type of node.
 
 > **nodeValue**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:426](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L426)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
 
@@ -6341,7 +6375,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
 
 > `readonly` **NOTATION_NODE**: `12`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:609](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L609)
 
 ##### Inherited from
 
@@ -6351,7 +6385,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
 
 > `readonly` **ownerDocument**: [`Document`](#document-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:432
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:432](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L432)
 
 Returns the node document. Returns null for documents.
 
@@ -6365,7 +6399,7 @@ Returns the node document. Returns null for documents.
 
 > `readonly` **parentElement**: [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:444
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:444](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L444)
 
 Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
@@ -6379,7 +6413,7 @@ Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
 > `readonly` **parentNode**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:438
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:438](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L438)
 
 Returns the parent.
 
@@ -6393,7 +6427,7 @@ Returns the parent.
 
 > **prefix**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:448
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:448](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L448)
 
 The prefix of the namespace for this node.
 
@@ -6405,7 +6439,7 @@ The prefix of the namespace for this node.
 
 > `readonly` **previousSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:454
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:454](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L454)
 
 Returns the previous sibling.
 
@@ -6419,7 +6453,7 @@ Returns the previous sibling.
 
 > `readonly` **PROCESSING_INSTRUCTION_NODE**: `7`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:600
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L600)
 
 node is a ProcessingInstruction node.
 
@@ -6431,7 +6465,7 @@ node is a ProcessingInstruction node.
 
 > `readonly` **publicId**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1458
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1458](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1458)
 
 The external subset public identifier, stored verbatim including surrounding quotes.
 Declared `readonly` by the WHATWG DOM spec; xmldom does not enforce this — direct
@@ -6444,7 +6478,7 @@ is non-empty and does not match the XML `PubidLiteral` production (XML 1.0 [12])
 
 > `readonly` **systemId**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1467
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1467](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1467)
 
 The external subset system identifier, stored verbatim including surrounding quotes.
 Declared `readonly` by the WHATWG DOM spec; xmldom does not enforce this — direct
@@ -6457,7 +6491,7 @@ is non-empty and does not match the XML `SystemLiteral` production (XML 1.0 [11]
 
 > `readonly` **TEXT_NODE**: `3`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:594
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:594](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L594)
 
 node is a Text node.
 
@@ -6469,7 +6503,7 @@ node is a Text node.
 
 > **textContent**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:468
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:468](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L468)
 
 The text content of this node and its descendants.
 
@@ -6495,7 +6529,7 @@ single text node; on other nodes it sets `data`, `value`, and `nodeValue` direct
 
 > **appendChild**(`node`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:482](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L482)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/appendChild)
 
@@ -6517,7 +6551,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
 
 > **cloneNode**(`deep?`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:533
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:533](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L533)
 
 Returns a copy of node. If deep is true, the copy also includes the node's descendants.
 
@@ -6547,7 +6581,7 @@ specific constraints.
 
 > **compareDocumentPosition**(`other`): `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:540
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:540](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L540)
 
 Returns a bitmask indicating the position of other relative to node.
 
@@ -6571,7 +6605,7 @@ Returns a bitmask indicating the position of other relative to node.
 
 > **contains**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:489
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:489](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L489)
 
 Checks whether `other` is an inclusive descendant of this node.
 
@@ -6595,7 +6629,7 @@ Checks whether `other` is an inclusive descendant of this node.
 
 > **getRootNode**(`options`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:502
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:502](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L502)
 
 Searches for the root node of this node.
 
@@ -6629,7 +6663,7 @@ Searches for the root node of this node.
 
 > **hasChildNodes**(): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:547
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:547](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L547)
 
 Returns whether node has children.
 
@@ -6647,7 +6681,7 @@ Returns whether node has children.
 
 > **insertBefore**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:550](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L550)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
 
@@ -6670,7 +6704,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
 
 > **isDefaultNamespace**(`namespace`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:553](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L553)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
 
@@ -6692,7 +6726,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
 
 > **isEqualNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:514
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:514](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L514)
 
 Checks whether the given node is equal to this node.
 
@@ -6723,7 +6757,7 @@ nested trees. `Attribute` nodes of each `Element` pair are also compared iterati
 
 > **isSameNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:521
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:521](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L521)
 
 Checks whether the given node is this node.
 
@@ -6747,7 +6781,7 @@ Checks whether the given node is this node.
 
 > **isSupported**(`feature`, `version`): `true`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:568
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:568](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L568)
 
 Checks whether the DOM implementation implements a specific feature and its version.
 
@@ -6782,7 +6816,7 @@ DOMImplementation.hasFeature
 
 > **lookupNamespaceURI**(`prefix`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:571](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L571)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
 
@@ -6804,7 +6838,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
 
 > **lookupPrefix**(`namespace`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:574](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L574)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
 
@@ -6826,7 +6860,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
 
 > **normalize**(): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:582
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:582](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L582)
 
 Removes empty exclusive Text nodes and concatenates the data of remaining contiguous
 exclusive Text nodes into the first of their nodes.
@@ -6845,7 +6879,7 @@ exclusive Text nodes into the first of their nodes.
 
 > **removeChild**(`child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:585](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L585)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
 
@@ -6867,7 +6901,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
 
 > **replaceChild**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:588](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L588)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
 
@@ -6890,7 +6924,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
 
 ## DublinCore
 
-Defined in: [libraries/epub/src/index.tsx:185](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L185)
+Defined in: [libraries/epub/src/index.tsx:190](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L190)
 
 ### Properties
 
@@ -6898,55 +6932,55 @@ Defined in: [libraries/epub/src/index.tsx:185](https://gitlab.com/storyteller-pl
 
 > `optional` **contributors**: [`DcCreator`](#dccreator)[]
 
-Defined in: [libraries/epub/src/index.tsx:192](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L192)
+Defined in: [libraries/epub/src/index.tsx:197](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L197)
 
 #### creators?
 
 > `optional` **creators**: [`DcCreator`](#dccreator)[]
 
-Defined in: [libraries/epub/src/index.tsx:191](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L191)
+Defined in: [libraries/epub/src/index.tsx:196](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L196)
 
 #### date?
 
 > `optional` **date**: `Date`
 
-Defined in: [libraries/epub/src/index.tsx:189](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L189)
+Defined in: [libraries/epub/src/index.tsx:194](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L194)
 
 #### identifier
 
 > **identifier**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:188](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L188)
+Defined in: [libraries/epub/src/index.tsx:193](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L193)
 
 #### language
 
 > **language**: `Locale`
 
-Defined in: [libraries/epub/src/index.tsx:187](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L187)
+Defined in: [libraries/epub/src/index.tsx:192](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L192)
 
 #### subjects?
 
 > `optional` **subjects**: (`string` \| [`DcSubject`](#dcsubject))[]
 
-Defined in: [libraries/epub/src/index.tsx:190](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L190)
+Defined in: [libraries/epub/src/index.tsx:195](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L195)
 
 #### title
 
 > **title**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:186](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L186)
+Defined in: [libraries/epub/src/index.tsx:191](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L191)
 
 #### type?
 
 > `optional` **type**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:193](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L193)
+Defined in: [libraries/epub/src/index.tsx:198](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L198)
 
 ---
 
 ## Element
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:842
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:842](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L842)
 
 Element is the most general base class from which all objects in a Document inherit. It only
 has methods and properties common to all kinds of elements. More specific classes inherit from
@@ -6964,7 +6998,7 @@ Element.
 
 > `readonly` **ATTRIBUTE_NODE**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:592](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L592)
 
 ##### Inherited from
 
@@ -6974,7 +7008,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
 
 > `readonly` **attributes**: `NamedNodeMap`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:846
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:846](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L846)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/attributes)
 
@@ -6982,7 +7016,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:846
 
 > `readonly` **baseURI**: `"about:blank"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:396
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:396](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L396)
 
 Always returns `about:blank` currently.
 
@@ -6996,7 +7030,7 @@ Always returns `about:blank` currently.
 
 > `readonly` **CDATA_SECTION_NODE**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:596
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:596](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L596)
 
 node is a CDATASection node.
 
@@ -7008,7 +7042,7 @@ node is a CDATASection node.
 
 > `readonly` **childNodes**: `NodeList`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:374
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:374](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L374)
 
 Returns the children.
 
@@ -7022,7 +7056,7 @@ Returns the children.
 
 > `readonly` **children**: `LiveNodeList`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:861
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:861](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L861)
 
 Returns a live collection of the direct child elements of this element.
 
@@ -7036,7 +7070,7 @@ https://dom.spec.whatwg.org/#dom-parentnode-children
 
 > `optional` **columnNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:479
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:479](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L479)
 
 One based column position inside the parsed source,
 if the `locator` was not disabled.
@@ -7049,7 +7083,7 @@ if the `locator` was not disabled.
 
 > `readonly` **COMMENT_NODE**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:602
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:602](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L602)
 
 node is a Comment node.
 
@@ -7061,7 +7095,7 @@ node is a Comment node.
 
 > `readonly` **DOCUMENT_FRAGMENT_NODE**: `11`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:608
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:608](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L608)
 
 node is a DocumentFragment node.
 
@@ -7073,7 +7107,7 @@ node is a DocumentFragment node.
 
 > `readonly` **DOCUMENT_NODE**: `9`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:604
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:604](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L604)
 
 node is a document.
 
@@ -7085,7 +7119,7 @@ node is a document.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINED_BY**: `16`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:619
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:619](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L619)
 
 Set when other is a descendant of node.
 
@@ -7097,7 +7131,7 @@ Set when other is a descendant of node.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINS**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:617
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:617](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L617)
 
 Set when other is an ancestor of node.
 
@@ -7109,7 +7143,7 @@ Set when other is an ancestor of node.
 
 > `readonly` **DOCUMENT_POSITION_DISCONNECTED**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:611
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:611](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L611)
 
 Set when node and other are not in the same tree.
 
@@ -7121,7 +7155,7 @@ Set when node and other are not in the same tree.
 
 > `readonly` **DOCUMENT_POSITION_FOLLOWING**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:615
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:615](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L615)
 
 Set when other is following node.
 
@@ -7133,7 +7167,7 @@ Set when other is following node.
 
 > `readonly` **DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC**: `32`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:620](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L620)
 
 ##### Inherited from
 
@@ -7143,7 +7177,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
 
 > `readonly` **DOCUMENT_POSITION_PRECEDING**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:613
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:613](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L613)
 
 Set when other is preceding node.
 
@@ -7155,7 +7189,7 @@ Set when other is preceding node.
 
 > `readonly` **DOCUMENT_TYPE_NODE**: `10`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:606
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:606](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L606)
 
 node is a doctype.
 
@@ -7167,7 +7201,7 @@ node is a doctype.
 
 > `readonly` **ELEMENT_NODE**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:591
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:591](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L591)
 
 node is an element.
 
@@ -7179,7 +7213,7 @@ node is an element.
 
 > `readonly` **ENTITY_NODE**: `6`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:598](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L598)
 
 ##### Inherited from
 
@@ -7189,7 +7223,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
 
 > `readonly` **ENTITY_REFERENCE_NODE**: `5`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:597](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L597)
 
 ##### Inherited from
 
@@ -7199,7 +7233,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
 
 > `readonly` **firstChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:380
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:380](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L380)
 
 Returns the first child.
 
@@ -7213,7 +7247,7 @@ Returns the first child.
 
 > `readonly` **isConnected**: `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:402
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:402](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L402)
 
 Returns true if this node is inside of a document or is the document node itself.
 
@@ -7227,7 +7261,7 @@ Returns true if this node is inside of a document or is the document node itself
 
 > `readonly` **lastChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:386
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:386](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L386)
 
 Returns the last child.
 
@@ -7241,7 +7275,7 @@ Returns the last child.
 
 > `optional` **lineNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:474
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:474](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L474)
 
 Zero based line position inside the parsed source,
 if the `locator` was not disabled.
@@ -7254,7 +7288,7 @@ if the `locator` was not disabled.
 
 > **localName**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:390
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:390](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L390)
 
 The local part of the qualified name of this node.
 
@@ -7266,7 +7300,7 @@ The local part of the qualified name of this node.
 
 > `readonly` **namespaceURI**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:406
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:406](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L406)
 
 The namespace URI of this node.
 
@@ -7278,7 +7312,7 @@ The namespace URI of this node.
 
 > `readonly` **nextSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:412
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:412](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L412)
 
 Returns the next sibling.
 
@@ -7292,7 +7326,7 @@ Returns the next sibling.
 
 > `readonly` **nodeName**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:418
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:418](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L418)
 
 Returns a string appropriate for the type of node.
 
@@ -7306,7 +7340,7 @@ Returns a string appropriate for the type of node.
 
 > `readonly` **nodeType**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:843
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:843](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L843)
 
 Returns the type of node.
 
@@ -7320,7 +7354,7 @@ Returns the type of node.
 
 > **nodeValue**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:426](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L426)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
 
@@ -7332,7 +7366,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
 
 > `readonly` **NOTATION_NODE**: `12`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:609](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L609)
 
 ##### Inherited from
 
@@ -7342,7 +7376,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
 
 > `readonly` **ownerDocument**: [`Document`](#document-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:432
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:432](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L432)
 
 Returns the node document. Returns null for documents.
 
@@ -7356,7 +7390,7 @@ Returns the node document. Returns null for documents.
 
 > `readonly` **parentElement**: [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:444
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:444](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L444)
 
 Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
@@ -7370,7 +7404,7 @@ Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
 > `readonly` **parentNode**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:438
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:438](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L438)
 
 Returns the parent.
 
@@ -7384,7 +7418,7 @@ Returns the parent.
 
 > **prefix**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:448
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:448](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L448)
 
 The prefix of the namespace for this node.
 
@@ -7396,7 +7430,7 @@ The prefix of the namespace for this node.
 
 > `readonly` **previousSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:454
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:454](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L454)
 
 Returns the previous sibling.
 
@@ -7410,7 +7444,7 @@ Returns the previous sibling.
 
 > `readonly` **PROCESSING_INSTRUCTION_NODE**: `7`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:600
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L600)
 
 node is a ProcessingInstruction node.
 
@@ -7422,7 +7456,7 @@ node is a ProcessingInstruction node.
 
 > `readonly` **tagName**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:852
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:852](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L852)
 
 Returns the HTML-uppercased qualified name.
 
@@ -7432,7 +7466,7 @@ Returns the HTML-uppercased qualified name.
 
 > `readonly` **TEXT_NODE**: `3`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:594
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:594](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L594)
 
 node is a Text node.
 
@@ -7444,7 +7478,7 @@ node is a Text node.
 
 > **textContent**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:468
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:468](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L468)
 
 The text content of this node and its descendants.
 
@@ -7470,7 +7504,7 @@ single text node; on other nodes it sets `data`, `value`, and `nodeValue` direct
 
 > **appendChild**(`node`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:482](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L482)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/appendChild)
 
@@ -7492,7 +7526,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
 
 > **cloneNode**(`deep?`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:533
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:533](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L533)
 
 Returns a copy of node. If deep is true, the copy also includes the node's descendants.
 
@@ -7522,7 +7556,7 @@ specific constraints.
 
 > **compareDocumentPosition**(`other`): `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:540
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:540](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L540)
 
 Returns a bitmask indicating the position of other relative to node.
 
@@ -7546,7 +7580,7 @@ Returns a bitmask indicating the position of other relative to node.
 
 > **contains**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:489
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:489](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L489)
 
 Checks whether `other` is an inclusive descendant of this node.
 
@@ -7570,7 +7604,7 @@ Checks whether `other` is an inclusive descendant of this node.
 
 > **getAttribute**(`qualifiedName`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:869
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:869](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L869)
 
 Returns element's first attribute whose qualified name is qualifiedName, and null if there
 is no such attribute otherwise.
@@ -7591,7 +7625,7 @@ is no such attribute otherwise.
 
 > **getAttributeNames**(): `string`[]
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:882
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:882](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L882)
 
 Returns the qualified names of all element's attributes. Can contain duplicates.
 
@@ -7605,7 +7639,7 @@ Returns the qualified names of all element's attributes. Can contain duplicates.
 
 > **getAttributeNode**(`qualifiedName`): [`Attr`](#attr-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:884
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:884](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L884)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNode)
 
@@ -7623,7 +7657,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:884
 
 > **getAttributeNodeNS**(`namespace`, `localName`): [`Attr`](#attr-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:886
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:886](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L886)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNodeNS)
 
@@ -7642,7 +7676,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:886
 
 > **getAttributeNS**(`namespace`, `localName`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:876
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:876](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L876)
 
 Returns element's attribute whose namespace is namespace and local name is localName, and
 null if there is no such attribute otherwise.
@@ -7664,7 +7698,7 @@ null if there is no such attribute otherwise.
 
 > **getElementsByClassName**(`classNames`): `LiveNodeList`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:905
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:905](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L905)
 
 Returns a LiveNodeList of all child elements which have **all** of the given class
 name(s).
@@ -7696,7 +7730,7 @@ it will automatically be removed. Be aware of this for iteration purposes.
 
 > **getElementsByTagName**(`qualifiedName`): `LiveNodeList`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:929
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:929](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L929)
 
 Returns a LiveNodeList of elements with the given qualifiedName.
 Searching for all descendants can be done by passing `*` as `qualifiedName`.
@@ -7735,7 +7769,7 @@ except that it only searches for elements that are descendants of the specified 
 
 > **getElementsByTagNameNS**(`namespaceURI`, `localName`): `LiveNodeList`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:938
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:938](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L938)
 
 Returns a `LiveNodeList` of elements with the given tag name belonging to the given
 namespace. It is similar to `Document.getElementsByTagNameNS`, except that its search is
@@ -7758,7 +7792,7 @@ restricted to descendants of the specified element.
 
 > **getQualifiedName**(): `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:943
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:943](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L943)
 
 ##### Returns
 
@@ -7768,7 +7802,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:943
 
 > **getRootNode**(`options`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:502
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:502](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L502)
 
 Searches for the root node of this node.
 
@@ -7802,7 +7836,7 @@ Searches for the root node of this node.
 
 > **hasAttribute**(`qualifiedName`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:950
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:950](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L950)
 
 Returns true if element has an attribute whose qualified name is qualifiedName, and false
 otherwise.
@@ -7823,7 +7857,7 @@ otherwise.
 
 > **hasAttributeNS**(`namespace`, `localName`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:957
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:957](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L957)
 
 Returns true if element has an attribute whose namespace is namespace and local name is
 localName.
@@ -7845,7 +7879,7 @@ localName.
 
 > **hasAttributes**(): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:963
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:963](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L963)
 
 Returns true if element has attributes, and false otherwise.
 
@@ -7859,7 +7893,7 @@ Returns true if element has attributes, and false otherwise.
 
 > **hasChildNodes**(): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:547
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:547](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L547)
 
 Returns whether node has children.
 
@@ -7877,7 +7911,7 @@ Returns whether node has children.
 
 > **insertBefore**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:550](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L550)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
 
@@ -7900,7 +7934,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
 
 > **isDefaultNamespace**(`namespace`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:553](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L553)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
 
@@ -7922,7 +7956,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
 
 > **isEqualNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:514
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:514](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L514)
 
 Checks whether the given node is equal to this node.
 
@@ -7953,7 +7987,7 @@ nested trees. `Attribute` nodes of each `Element` pair are also compared iterati
 
 > **isSameNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:521
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:521](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L521)
 
 Checks whether the given node is this node.
 
@@ -7977,7 +8011,7 @@ Checks whether the given node is this node.
 
 > **isSupported**(`feature`, `version`): `true`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:568
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:568](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L568)
 
 Checks whether the DOM implementation implements a specific feature and its version.
 
@@ -8012,7 +8046,7 @@ DOMImplementation.hasFeature
 
 > **lookupNamespaceURI**(`prefix`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:571](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L571)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
 
@@ -8034,7 +8068,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
 
 > **lookupPrefix**(`namespace`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:574](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L574)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
 
@@ -8056,7 +8090,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
 
 > **normalize**(): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:582
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:582](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L582)
 
 Removes empty exclusive Text nodes and concatenates the data of remaining contiguous
 exclusive Text nodes into the first of their nodes.
@@ -8075,7 +8109,7 @@ exclusive Text nodes into the first of their nodes.
 
 > **removeAttribute**(`qualifiedName`): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:969
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:969](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L969)
 
 Removes element's first attribute whose qualified name is qualifiedName.
 
@@ -8095,7 +8129,7 @@ Removes element's first attribute whose qualified name is qualifiedName.
 
 > **removeAttributeNode**(`attr`): [`Attr`](#attr-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:977
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:977](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L977)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/removeAttributeNode)
 
@@ -8113,7 +8147,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:977
 
 > **removeAttributeNS**(`namespace`, `localName`): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:975
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:975](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L975)
 
 Removes element's attribute whose namespace is namespace and local name is localName.
 
@@ -8134,7 +8168,7 @@ Removes element's attribute whose namespace is namespace and local name is local
 
 > **removeChild**(`child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:585](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L585)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
 
@@ -8156,7 +8190,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
 
 > **replaceChild**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:588](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L588)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
 
@@ -8179,7 +8213,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
 
 > **setAttribute**(`qualifiedName`, `value`): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:983
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:983](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L983)
 
 Sets the value of element's first attribute whose qualified name is qualifiedName to value.
 
@@ -8200,7 +8234,7 @@ Sets the value of element's first attribute whose qualified name is qualifiedNam
 
 > **setAttributeNode**(`attr`): [`Attr`](#attr-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:996
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:996](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L996)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNode)
 
@@ -8218,7 +8252,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:996
 
 > **setAttributeNodeNS**(`attr`): [`Attr`](#attr-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:998
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:998](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L998)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNodeNS)
 
@@ -8236,7 +8270,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:998
 
 > **setAttributeNS**(`namespace`, `qualifiedName`, `value`): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:990
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:990](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L990)
 
 Sets the value of element's attribute whose namespace is namespace and local name is
 localName to value.
@@ -8254,6 +8288,44 @@ localName to value.
 ##### Returns
 
 `void`
+
+---
+
+## EncryptionSummary
+
+Defined in: [libraries/epub/src/encryption.ts:5](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/encryption.ts#L5)
+
+### Properties
+
+#### contentAlgorithms
+
+> **contentAlgorithms**: `string`[]
+
+Defined in: [libraries/epub/src/encryption.ts:6](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/encryption.ts#L6)
+
+#### encryptedContentCount
+
+> **encryptedContentCount**: `number`
+
+Defined in: [libraries/epub/src/encryption.ts:10](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/encryption.ts#L10)
+
+#### encryptedKeyCount
+
+> **encryptedKeyCount**: `number`
+
+Defined in: [libraries/epub/src/encryption.ts:9](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/encryption.ts#L9)
+
+#### keyRetrievalTypes
+
+> **keyRetrievalTypes**: `string`[]
+
+Defined in: [libraries/epub/src/encryption.ts:8](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/encryption.ts#L8)
+
+#### keyWrappingAlgorithms
+
+> **keyWrappingAlgorithms**: `string`[]
+
+Defined in: [libraries/epub/src/encryption.ts:7](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/encryption.ts#L7)
 
 ---
 
@@ -8283,7 +8355,7 @@ Whether to remove the NCX file, as it's technically optional in EPUB 3.
 
 ## EpubIdentifier
 
-Defined in: [libraries/epub/src/index.tsx:145](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L145)
+Defined in: [libraries/epub/src/index.tsx:150](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L150)
 
 ### Properties
 
@@ -8291,13 +8363,13 @@ Defined in: [libraries/epub/src/index.tsx:145](https://gitlab.com/storyteller-pl
 
 > `optional` **id**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:147](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L147)
+Defined in: [libraries/epub/src/index.tsx:152](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L152)
 
 #### identifierType?
 
 > `optional` **identifierType**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:149](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L149)
+Defined in: [libraries/epub/src/index.tsx:154](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L154)
 
 the value of a refining `identifier-type` meta, if present
 
@@ -8305,7 +8377,7 @@ the value of a refining `identifier-type` meta, if present
 
 > `optional` **scheme**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:151](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L151)
+Defined in: [libraries/epub/src/index.tsx:156](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L156)
 
 the `scheme` of a refining `identifier-type` meta, or a legacy `opf:scheme` attribute
 
@@ -8313,7 +8385,7 @@ the `scheme` of a refining `identifier-type` meta, or a legacy `opf:scheme` attr
 
 > **value**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:146](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L146)
+Defined in: [libraries/epub/src/index.tsx:151](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L151)
 
 ---
 
@@ -8343,7 +8415,7 @@ the entry name, as it appears in the archive
 
 ## EpubSource
 
-Defined in: [libraries/epub/src/index.tsx:154](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L154)
+Defined in: [libraries/epub/src/index.tsx:159](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L159)
 
 ### Properties
 
@@ -8351,13 +8423,13 @@ Defined in: [libraries/epub/src/index.tsx:154](https://gitlab.com/storyteller-pl
 
 > `optional` **id**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:156](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L156)
+Defined in: [libraries/epub/src/index.tsx:161](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L161)
 
 #### identifierType?
 
 > `optional` **identifierType**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:158](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L158)
+Defined in: [libraries/epub/src/index.tsx:163](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L163)
 
 the value of a refining `identifier-type` meta, if present
 
@@ -8365,7 +8437,7 @@ the value of a refining `identifier-type` meta, if present
 
 > `optional` **isPageBreakSource**: `boolean`
 
-Defined in: [libraries/epub/src/index.tsx:169](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L169)
+Defined in: [libraries/epub/src/index.tsx:174](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L174)
 
 whether this source has a `source-of="pagination"` refinement
 or of a `<meta property="pageBreakSource">` element
@@ -8378,7 +8450,7 @@ be sure to get the source of pagination, use [Epub.getPageBreakSource](#getpageb
 
 > `optional` **scheme**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:160](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L160)
+Defined in: [libraries/epub/src/index.tsx:165](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L165)
 
 the `scheme` of a refining `identifier-type` meta, or a legacy `opf:scheme` attribute
 
@@ -8386,7 +8458,7 @@ the `scheme` of a refining `identifier-type` meta, or a legacy `opf:scheme` attr
 
 > **value**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:155](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L155)
+Defined in: [libraries/epub/src/index.tsx:160](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L160)
 
 ---
 
@@ -8678,7 +8750,7 @@ when false, the Epub class refuses every mutation method at runtime
 
 ## FromOptions
 
-Defined in: [libraries/epub/src/index.tsx:223](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L223)
+Defined in: [libraries/epub/src/index.tsx:228](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L228)
 
 ### Properties
 
@@ -8686,7 +8758,7 @@ Defined in: [libraries/epub/src/index.tsx:223](https://gitlab.com/storyteller-pl
 
 > `optional` **readonly**: `boolean`
 
-Defined in: [libraries/epub/src/index.tsx:228](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L228)
+Defined in: [libraries/epub/src/index.tsx:233](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L233)
 
 when true, mutation methods throw [EpubReadOnlyError](#epubreadonlyerror) at runtime
 
@@ -8700,7 +8772,7 @@ false;
 
 ## GuideItem
 
-Defined in: [libraries/epub/src/index.tsx:217](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L217)
+Defined in: [libraries/epub/src/index.tsx:222](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L222)
 
 ### Properties
 
@@ -8708,19 +8780,19 @@ Defined in: [libraries/epub/src/index.tsx:217](https://gitlab.com/storyteller-pl
 
 > **href**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:218](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L218)
+Defined in: [libraries/epub/src/index.tsx:223](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L223)
 
 #### title
 
 > **title**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:219](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L219)
+Defined in: [libraries/epub/src/index.tsx:224](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L224)
 
 #### type
 
 > **type**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:220](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L220)
+Defined in: [libraries/epub/src/index.tsx:225](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L225)
 
 ---
 
@@ -8782,7 +8854,7 @@ Defined in: [libraries/epub/src/adapters/memory.ts:21](https://gitlab.com/storyt
 
 ## Navigation
 
-Defined in: [libraries/epub/src/index.tsx:211](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L211)
+Defined in: [libraries/epub/src/index.tsx:216](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L216)
 
 ### Properties
 
@@ -8790,25 +8862,25 @@ Defined in: [libraries/epub/src/index.tsx:211](https://gitlab.com/storyteller-pl
 
 > **children**: [`NavigationList`](#navigationlist)
 
-Defined in: [libraries/epub/src/index.tsx:214](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L214)
+Defined in: [libraries/epub/src/index.tsx:219](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L219)
 
 #### role
 
 > **role**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:213](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L213)
+Defined in: [libraries/epub/src/index.tsx:218](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L218)
 
 #### title?
 
 > `optional` **title**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:212](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L212)
+Defined in: [libraries/epub/src/index.tsx:217](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L217)
 
 ---
 
 ## NavigationItem
 
-Defined in: [libraries/epub/src/index.tsx:202](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L202)
+Defined in: [libraries/epub/src/index.tsx:207](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L207)
 
 ### Properties
 
@@ -8816,31 +8888,31 @@ Defined in: [libraries/epub/src/index.tsx:202](https://gitlab.com/storyteller-pl
 
 > `optional` **children**: [`NavigationList`](#navigationlist)
 
-Defined in: [libraries/epub/src/index.tsx:206](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L206)
+Defined in: [libraries/epub/src/index.tsx:211](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L211)
 
 #### href?
 
 > `optional` **href**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:204](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L204)
+Defined in: [libraries/epub/src/index.tsx:209](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L209)
 
 #### role?
 
 > `optional` **role**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:205](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L205)
+Defined in: [libraries/epub/src/index.tsx:210](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L210)
 
 #### title
 
 > **title**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:203](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L203)
+Defined in: [libraries/epub/src/index.tsx:208](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L208)
 
 ---
 
 ## Node
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:368
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:368](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L368)
 
 The DOM Node interface is an abstract base class upon which many other DOM API objects are
 based, thus letting those object types to be used similarly and often interchangeably. As an
@@ -8874,13 +8946,13 @@ cannot have children will throw an exception.
 
 > `readonly` **ATTRIBUTE_NODE**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:592](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L592)
 
 #### baseURI
 
 > `readonly` **baseURI**: `"about:blank"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:396
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:396](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L396)
 
 Always returns `about:blank` currently.
 
@@ -8890,7 +8962,7 @@ Always returns `about:blank` currently.
 
 > `readonly` **CDATA_SECTION_NODE**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:596
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:596](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L596)
 
 node is a CDATASection node.
 
@@ -8898,7 +8970,7 @@ node is a CDATASection node.
 
 > `readonly` **childNodes**: `NodeList`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:374
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:374](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L374)
 
 Returns the children.
 
@@ -8908,7 +8980,7 @@ Returns the children.
 
 > `optional` **columnNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:479
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:479](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L479)
 
 One based column position inside the parsed source,
 if the `locator` was not disabled.
@@ -8917,7 +8989,7 @@ if the `locator` was not disabled.
 
 > `readonly` **COMMENT_NODE**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:602
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:602](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L602)
 
 node is a Comment node.
 
@@ -8925,7 +8997,7 @@ node is a Comment node.
 
 > `readonly` **DOCUMENT_FRAGMENT_NODE**: `11`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:608
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:608](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L608)
 
 node is a DocumentFragment node.
 
@@ -8933,7 +9005,7 @@ node is a DocumentFragment node.
 
 > `readonly` **DOCUMENT_NODE**: `9`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:604
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:604](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L604)
 
 node is a document.
 
@@ -8941,7 +9013,7 @@ node is a document.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINED_BY**: `16`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:619
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:619](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L619)
 
 Set when other is a descendant of node.
 
@@ -8949,7 +9021,7 @@ Set when other is a descendant of node.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINS**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:617
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:617](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L617)
 
 Set when other is an ancestor of node.
 
@@ -8957,7 +9029,7 @@ Set when other is an ancestor of node.
 
 > `readonly` **DOCUMENT_POSITION_DISCONNECTED**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:611
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:611](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L611)
 
 Set when node and other are not in the same tree.
 
@@ -8965,7 +9037,7 @@ Set when node and other are not in the same tree.
 
 > `readonly` **DOCUMENT_POSITION_FOLLOWING**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:615
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:615](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L615)
 
 Set when other is following node.
 
@@ -8973,13 +9045,13 @@ Set when other is following node.
 
 > `readonly` **DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC**: `32`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:620](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L620)
 
 #### DOCUMENT_POSITION_PRECEDING
 
 > `readonly` **DOCUMENT_POSITION_PRECEDING**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:613
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:613](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L613)
 
 Set when other is preceding node.
 
@@ -8987,7 +9059,7 @@ Set when other is preceding node.
 
 > `readonly` **DOCUMENT_TYPE_NODE**: `10`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:606
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:606](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L606)
 
 node is a doctype.
 
@@ -8995,7 +9067,7 @@ node is a doctype.
 
 > `readonly` **ELEMENT_NODE**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:591
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:591](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L591)
 
 node is an element.
 
@@ -9003,19 +9075,19 @@ node is an element.
 
 > `readonly` **ENTITY_NODE**: `6`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:598](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L598)
 
 #### ENTITY_REFERENCE_NODE
 
 > `readonly` **ENTITY_REFERENCE_NODE**: `5`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:597](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L597)
 
 #### firstChild
 
 > `readonly` **firstChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:380
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:380](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L380)
 
 Returns the first child.
 
@@ -9025,7 +9097,7 @@ Returns the first child.
 
 > `readonly` **isConnected**: `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:402
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:402](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L402)
 
 Returns true if this node is inside of a document or is the document node itself.
 
@@ -9035,7 +9107,7 @@ Returns true if this node is inside of a document or is the document node itself
 
 > `readonly` **lastChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:386
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:386](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L386)
 
 Returns the last child.
 
@@ -9045,7 +9117,7 @@ Returns the last child.
 
 > `optional` **lineNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:474
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:474](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L474)
 
 Zero based line position inside the parsed source,
 if the `locator` was not disabled.
@@ -9054,7 +9126,7 @@ if the `locator` was not disabled.
 
 > **localName**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:390
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:390](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L390)
 
 The local part of the qualified name of this node.
 
@@ -9062,7 +9134,7 @@ The local part of the qualified name of this node.
 
 > `readonly` **namespaceURI**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:406
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:406](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L406)
 
 The namespace URI of this node.
 
@@ -9070,7 +9142,7 @@ The namespace URI of this node.
 
 > `readonly` **nextSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:412
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:412](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L412)
 
 Returns the next sibling.
 
@@ -9080,7 +9152,7 @@ Returns the next sibling.
 
 > `readonly` **nodeName**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:418
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:418](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L418)
 
 Returns a string appropriate for the type of node.
 
@@ -9090,7 +9162,7 @@ Returns a string appropriate for the type of node.
 
 > `readonly` **nodeType**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:424
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:424](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L424)
 
 Returns the type of node.
 
@@ -9100,7 +9172,7 @@ Returns the type of node.
 
 > **nodeValue**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:426](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L426)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
 
@@ -9108,13 +9180,13 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
 
 > `readonly` **NOTATION_NODE**: `12`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:609](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L609)
 
 #### ownerDocument
 
 > `readonly` **ownerDocument**: [`Document`](#document-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:432
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:432](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L432)
 
 Returns the node document. Returns null for documents.
 
@@ -9124,7 +9196,7 @@ Returns the node document. Returns null for documents.
 
 > `readonly` **parentElement**: [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:444
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:444](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L444)
 
 Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
@@ -9134,7 +9206,7 @@ Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
 > `readonly` **parentNode**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:438
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:438](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L438)
 
 Returns the parent.
 
@@ -9144,7 +9216,7 @@ Returns the parent.
 
 > **prefix**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:448
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:448](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L448)
 
 The prefix of the namespace for this node.
 
@@ -9152,7 +9224,7 @@ The prefix of the namespace for this node.
 
 > `readonly` **previousSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:454
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:454](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L454)
 
 Returns the previous sibling.
 
@@ -9162,7 +9234,7 @@ Returns the previous sibling.
 
 > `readonly` **PROCESSING_INSTRUCTION_NODE**: `7`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:600
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L600)
 
 node is a ProcessingInstruction node.
 
@@ -9170,7 +9242,7 @@ node is a ProcessingInstruction node.
 
 > `readonly` **TEXT_NODE**: `3`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:594
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:594](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L594)
 
 node is a Text node.
 
@@ -9178,7 +9250,7 @@ node is a Text node.
 
 > **textContent**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:468
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:468](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L468)
 
 The text content of this node and its descendants.
 
@@ -9200,7 +9272,7 @@ single text node; on other nodes it sets `data`, `value`, and `nodeValue` direct
 
 > **appendChild**(`node`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:482](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L482)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/appendChild)
 
@@ -9218,7 +9290,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
 
 > **cloneNode**(`deep?`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:533
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:533](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L533)
 
 Returns a copy of node. If deep is true, the copy also includes the node's descendants.
 
@@ -9244,7 +9316,7 @@ specific constraints.
 
 > **compareDocumentPosition**(`other`): `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:540
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:540](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L540)
 
 Returns a bitmask indicating the position of other relative to node.
 
@@ -9264,7 +9336,7 @@ Returns a bitmask indicating the position of other relative to node.
 
 > **contains**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:489
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:489](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L489)
 
 Checks whether `other` is an inclusive descendant of this node.
 
@@ -9284,7 +9356,7 @@ Checks whether `other` is an inclusive descendant of this node.
 
 > **getRootNode**(`options`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:502
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:502](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L502)
 
 Searches for the root node of this node.
 
@@ -9314,7 +9386,7 @@ Searches for the root node of this node.
 
 > **hasChildNodes**(): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:547
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:547](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L547)
 
 Returns whether node has children.
 
@@ -9328,7 +9400,7 @@ Returns whether node has children.
 
 > **insertBefore**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:550](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L550)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
 
@@ -9347,7 +9419,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
 
 > **isDefaultNamespace**(`namespace`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:553](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L553)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
 
@@ -9365,7 +9437,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
 
 > **isEqualNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:514
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:514](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L514)
 
 Checks whether the given node is equal to this node.
 
@@ -9392,7 +9464,7 @@ nested trees. `Attribute` nodes of each `Element` pair are also compared iterati
 
 > **isSameNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:521
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:521](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L521)
 
 Checks whether the given node is this node.
 
@@ -9412,7 +9484,7 @@ Checks whether the given node is this node.
 
 > **isSupported**(`feature`, `version`): `true`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:568
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:568](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L568)
 
 Checks whether the DOM implementation implements a specific feature and its version.
 
@@ -9443,7 +9515,7 @@ DOMImplementation.hasFeature
 
 > **lookupNamespaceURI**(`prefix`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:571](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L571)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
 
@@ -9461,7 +9533,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
 
 > **lookupPrefix**(`namespace`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:574](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L574)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
 
@@ -9479,7 +9551,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
 
 > **normalize**(): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:582
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:582](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L582)
 
 Removes empty exclusive Text nodes and concatenates the data of remaining contiguous
 exclusive Text nodes into the first of their nodes.
@@ -9494,7 +9566,7 @@ exclusive Text nodes into the first of their nodes.
 
 > **removeChild**(`child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:585](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L585)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
 
@@ -9512,7 +9584,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
 
 > **replaceChild**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:588](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L588)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
 
@@ -9531,7 +9603,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
 
 ## Text
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1051
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1051](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1051)
 
 The textual content of Element or Attr. If an element has no markup within its content, it has
 a single child implementing Text that contains the element's text. However, if the element
@@ -9549,7 +9621,7 @@ contains markup, it is parsed into information items and Text nodes that form it
 
 > `readonly` **ATTRIBUTE_NODE**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:592](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L592)
 
 ##### Inherited from
 
@@ -9559,7 +9631,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:592
 
 > `readonly` **baseURI**: `"about:blank"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:396
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:396](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L396)
 
 Always returns `about:blank` currently.
 
@@ -9573,7 +9645,7 @@ Always returns `about:blank` currently.
 
 > `readonly` **CDATA_SECTION_NODE**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:596
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:596](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L596)
 
 node is a CDATASection node.
 
@@ -9585,7 +9657,7 @@ node is a CDATASection node.
 
 > `readonly` **childNodes**: `NodeList`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:374
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:374](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L374)
 
 Returns the children.
 
@@ -9599,7 +9671,7 @@ Returns the children.
 
 > `optional` **columnNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:479
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:479](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L479)
 
 One based column position inside the parsed source,
 if the `locator` was not disabled.
@@ -9612,7 +9684,7 @@ if the `locator` was not disabled.
 
 > `readonly` **COMMENT_NODE**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:602
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:602](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L602)
 
 node is a Comment node.
 
@@ -9624,7 +9696,7 @@ node is a Comment node.
 
 > **data**: `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1019
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1019](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1019)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/data)
 
@@ -9636,7 +9708,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1019
 
 > `readonly` **DOCUMENT_FRAGMENT_NODE**: `11`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:608
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:608](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L608)
 
 node is a DocumentFragment node.
 
@@ -9648,7 +9720,7 @@ node is a DocumentFragment node.
 
 > `readonly` **DOCUMENT_NODE**: `9`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:604
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:604](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L604)
 
 node is a document.
 
@@ -9660,7 +9732,7 @@ node is a document.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINED_BY**: `16`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:619
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:619](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L619)
 
 Set when other is a descendant of node.
 
@@ -9672,7 +9744,7 @@ Set when other is a descendant of node.
 
 > `readonly` **DOCUMENT_POSITION_CONTAINS**: `8`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:617
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:617](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L617)
 
 Set when other is an ancestor of node.
 
@@ -9684,7 +9756,7 @@ Set when other is an ancestor of node.
 
 > `readonly` **DOCUMENT_POSITION_DISCONNECTED**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:611
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:611](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L611)
 
 Set when node and other are not in the same tree.
 
@@ -9696,7 +9768,7 @@ Set when node and other are not in the same tree.
 
 > `readonly` **DOCUMENT_POSITION_FOLLOWING**: `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:615
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:615](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L615)
 
 Set when other is following node.
 
@@ -9708,7 +9780,7 @@ Set when other is following node.
 
 > `readonly` **DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC**: `32`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:620](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L620)
 
 ##### Inherited from
 
@@ -9718,7 +9790,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
 
 > `readonly` **DOCUMENT_POSITION_PRECEDING**: `2`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:613
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:613](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L613)
 
 Set when other is preceding node.
 
@@ -9730,7 +9802,7 @@ Set when other is preceding node.
 
 > `readonly` **DOCUMENT_TYPE_NODE**: `10`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:606
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:606](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L606)
 
 node is a doctype.
 
@@ -9742,7 +9814,7 @@ node is a doctype.
 
 > `readonly` **ELEMENT_NODE**: `1`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:591
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:591](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L591)
 
 node is an element.
 
@@ -9754,7 +9826,7 @@ node is an element.
 
 > `readonly` **ENTITY_NODE**: `6`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:598](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L598)
 
 ##### Inherited from
 
@@ -9764,7 +9836,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
 
 > `readonly` **ENTITY_REFERENCE_NODE**: `5`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:597](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L597)
 
 ##### Inherited from
 
@@ -9774,7 +9846,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
 
 > `readonly` **firstChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:380
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:380](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L380)
 
 Returns the first child.
 
@@ -9788,7 +9860,7 @@ Returns the first child.
 
 > `readonly` **isConnected**: `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:402
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:402](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L402)
 
 Returns true if this node is inside of a document or is the document node itself.
 
@@ -9802,7 +9874,7 @@ Returns true if this node is inside of a document or is the document node itself
 
 > `readonly` **lastChild**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:386
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:386](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L386)
 
 Returns the last child.
 
@@ -9816,7 +9888,7 @@ Returns the last child.
 
 > `readonly` **length**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1021
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1021](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1021)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/length)
 
@@ -9828,7 +9900,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1021
 
 > `optional` **lineNumber**: `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:474
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:474](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L474)
 
 Zero based line position inside the parsed source,
 if the `locator` was not disabled.
@@ -9841,7 +9913,7 @@ if the `locator` was not disabled.
 
 > **localName**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:390
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:390](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L390)
 
 The local part of the qualified name of this node.
 
@@ -9853,7 +9925,7 @@ The local part of the qualified name of this node.
 
 > `readonly` **namespaceURI**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:406
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:406](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L406)
 
 The namespace URI of this node.
 
@@ -9865,7 +9937,7 @@ The namespace URI of this node.
 
 > `readonly` **nextSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:412
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:412](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L412)
 
 Returns the next sibling.
 
@@ -9879,7 +9951,7 @@ Returns the next sibling.
 
 > **nodeName**: `"#text"` \| `"#cdata-section"`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1052
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1052](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1052)
 
 Returns a string appropriate for the type of node.
 
@@ -9893,7 +9965,7 @@ Returns a string appropriate for the type of node.
 
 > **nodeType**: `3` \| `4`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1053
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1053](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1053)
 
 Returns the type of node.
 
@@ -9907,7 +9979,7 @@ Returns the type of node.
 
 > **nodeValue**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:426](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L426)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
 
@@ -9919,7 +9991,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
 
 > `readonly` **NOTATION_NODE**: `12`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:609](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L609)
 
 ##### Inherited from
 
@@ -9929,7 +10001,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
 
 > `readonly` **ownerDocument**: [`Document`](#document-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1022
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1022](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1022)
 
 Returns the node document. Returns null for documents.
 
@@ -9943,7 +10015,7 @@ Returns the node document. Returns null for documents.
 
 > `readonly` **parentElement**: [`Element`](#element-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:444
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:444](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L444)
 
 Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
@@ -9957,7 +10029,7 @@ Returns the parent `Node` if it is of type `Element`, otherwise `null`.
 
 > `readonly` **parentNode**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:438
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:438](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L438)
 
 Returns the parent.
 
@@ -9971,7 +10043,7 @@ Returns the parent.
 
 > **prefix**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:448
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:448](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L448)
 
 The prefix of the namespace for this node.
 
@@ -9983,7 +10055,7 @@ The prefix of the namespace for this node.
 
 > `readonly` **previousSibling**: [`Node`](#node-1) \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:454
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:454](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L454)
 
 Returns the previous sibling.
 
@@ -9997,7 +10069,7 @@ Returns the previous sibling.
 
 > `readonly` **PROCESSING_INSTRUCTION_NODE**: `7`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:600
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:600](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L600)
 
 node is a ProcessingInstruction node.
 
@@ -10009,7 +10081,7 @@ node is a ProcessingInstruction node.
 
 > `readonly` **TEXT_NODE**: `3`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:594
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:594](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L594)
 
 node is a Text node.
 
@@ -10021,7 +10093,7 @@ node is a Text node.
 
 > **textContent**: `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:468
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:468](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L468)
 
 The text content of this node and its descendants.
 
@@ -10047,7 +10119,7 @@ single text node; on other nodes it sets `data`, `value`, and `nodeValue` direct
 
 > **appendChild**(`node`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:482](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L482)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/appendChild)
 
@@ -10069,7 +10141,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
 
 > **appendData**(`data`): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1024
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1024](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1024)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/appendData)
 
@@ -10091,7 +10163,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1024
 
 > **cloneNode**(`deep?`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:533
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:533](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L533)
 
 Returns a copy of node. If deep is true, the copy also includes the node's descendants.
 
@@ -10121,7 +10193,7 @@ specific constraints.
 
 > **compareDocumentPosition**(`other`): `number`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:540
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:540](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L540)
 
 Returns a bitmask indicating the position of other relative to node.
 
@@ -10145,7 +10217,7 @@ Returns a bitmask indicating the position of other relative to node.
 
 > **contains**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:489
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:489](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L489)
 
 Checks whether `other` is an inclusive descendant of this node.
 
@@ -10169,7 +10241,7 @@ Checks whether `other` is an inclusive descendant of this node.
 
 > **deleteData**(`offset`, `count`): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1026
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1026](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1026)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/deleteData)
 
@@ -10192,7 +10264,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1026
 
 > **getRootNode**(`options`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:502
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:502](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L502)
 
 Searches for the root node of this node.
 
@@ -10226,7 +10298,7 @@ Searches for the root node of this node.
 
 > **hasChildNodes**(): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:547
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:547](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L547)
 
 Returns whether node has children.
 
@@ -10244,7 +10316,7 @@ Returns whether node has children.
 
 > **insertBefore**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:550](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L550)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
 
@@ -10267,7 +10339,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
 
 > **insertData**(`offset`, `data`): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1028
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1028](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1028)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/insertData)
 
@@ -10290,7 +10362,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1028
 
 > **isDefaultNamespace**(`namespace`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:553](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L553)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
 
@@ -10312,7 +10384,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
 
 > **isEqualNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:514
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:514](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L514)
 
 Checks whether the given node is equal to this node.
 
@@ -10343,7 +10415,7 @@ nested trees. `Attribute` nodes of each `Element` pair are also compared iterati
 
 > **isSameNode**(`other`): `boolean`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:521
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:521](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L521)
 
 Checks whether the given node is this node.
 
@@ -10367,7 +10439,7 @@ Checks whether the given node is this node.
 
 > **isSupported**(`feature`, `version`): `true`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:568
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:568](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L568)
 
 Checks whether the DOM implementation implements a specific feature and its version.
 
@@ -10402,7 +10474,7 @@ DOMImplementation.hasFeature
 
 > **lookupNamespaceURI**(`prefix`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:571](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L571)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
 
@@ -10424,7 +10496,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
 
 > **lookupPrefix**(`namespace`): `string` \| `null`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:574](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L574)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
 
@@ -10446,7 +10518,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
 
 > **normalize**(): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:582
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:582](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L582)
 
 Removes empty exclusive Text nodes and concatenates the data of remaining contiguous
 exclusive Text nodes into the first of their nodes.
@@ -10465,7 +10537,7 @@ exclusive Text nodes into the first of their nodes.
 
 > **removeChild**(`child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:585](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L585)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
 
@@ -10487,7 +10559,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
 
 > **replaceChild**(`node`, `child`): [`Node`](#node-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:588](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L588)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
 
@@ -10510,7 +10582,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
 
 > **replaceData**(`offset`, `count`, `data`): `void`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1030
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1030](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1030)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceData)
 
@@ -10534,7 +10606,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1030
 
 > **splitText**(`offset`): [`Text`](#text-1)
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1059
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1059](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1059)
 
 Splits data at the given offset and returns the remainder as Text node.
 
@@ -10554,7 +10626,7 @@ Splits data at the given offset and returns the remainder as Text node.
 
 > **substringData**(`offset`, `count`): `string`
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1032
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1032](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1032)
 
 [MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/substringData)
 
@@ -10601,7 +10673,7 @@ Defined in: [libraries/epub/src/adapters/interface.ts:12](https://gitlab.com/sto
 
 > **Attr** = `InstanceOf`\<[`Attr`](#attr-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:664
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:664](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L664)
 
 A DOM element's attribute as an object. In most DOM methods, you will probably directly
 retrieve the attribute as a string (e.g., Element.getAttribute(), but certain functions (e.g.,
@@ -10615,7 +10687,7 @@ Element.getAttributeNode()) or means of iterating give Attr types.
 
 > **Document** = `InstanceOf`\<[`Document`](#document-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1188
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1188](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1188)
 
 ---
 
@@ -10623,7 +10695,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1188
 
 > **DocumentType** = `InstanceOf`\<`DocumentFragment`\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1431
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:1431](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L1431)
 
 ---
 
@@ -10631,7 +10703,7 @@ Defined in: node_modules/@xmldom/xmldom/index.d.ts:1431
 
 > **Element** = `InstanceOf`\<[`Element`](#element-1)\>
 
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:842
+Defined in: [node_modules/@xmldom/xmldom/index.d.ts:842](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/node_modules/@xmldom/xmldom/index.d.ts#L842)
 
 Element is the most general base class from which all objects in a Document inherit. It only
 has methods and properties common to all kinds of elements. More specific classes inherit from
@@ -10645,7 +10717,7 @@ Element.
 
 > **EpubInstanceFor**\<`A`\> = `A`\[`"capabilities"`\]\[`"writable"`\] _extends_ `true` ? [`Epub`](#epub) : [`EpubReader`](#epubreader)
 
-Defined in: [libraries/epub/src/index.tsx:3389](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3389)
+Defined in: [libraries/epub/src/index.tsx:3427](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L3427)
 
 Resolves to [Epub](#epub) for writable adapters, [EpubReader](#epubreader) for read-only ones.
 
@@ -10664,7 +10736,7 @@ The conditional pivots on `capabilities.writable`, which must be a literal
 
 > **EpubMetadata** = [`MetadataEntry`](#metadataentry)[]
 
-Defined in: [libraries/epub/src/index.tsx:137](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L137)
+Defined in: [libraries/epub/src/index.tsx:142](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L142)
 
 ---
 
@@ -10672,7 +10744,7 @@ Defined in: [libraries/epub/src/index.tsx:137](https://gitlab.com/storyteller-pl
 
 > **EpubReader** = `Pick`\<[`Epub`](#epub), `"storage"` \| `"findMetadataItem"` \| `"findAllMetadataItems"` \| `"resolveHref"` \| `"readFileContents"` \| `"readItemContents"` \| `"readXhtmlItemContents"` \| `"discardAndClose"` \| `Extract`\<keyof [`Epub`](#epub), `` `get${string}` ``\>\> & `Disposable`
 
-Defined in: [libraries/epub/src/index.tsx:235](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L235)
+Defined in: [libraries/epub/src/index.tsx:240](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L240)
 
 Read-only view of an EPUB
 Returned by Epub.using(MemoryAdapter).from(...) and by Epub.from(path, { readonly: true })
@@ -10700,7 +10772,7 @@ Built-in adapters:
 
 > **InMemoryEpubReader** = [`EpubReader`](#epubreader) & `object`
 
-Defined in: [libraries/epub/src/index.tsx:253](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L253)
+Defined in: [libraries/epub/src/index.tsx:258](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L258)
 
 Readonly Epub-instance backed by an in-memory zip handle
 Returned by `Epub.using(MemoryAdapter).from(...)`
@@ -10717,7 +10789,7 @@ Returned by `Epub.using(MemoryAdapter).from(...)`
 
 > **ManifestItem** = `object`
 
-Defined in: [libraries/epub/src/index.tsx:120](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L120)
+Defined in: [libraries/epub/src/index.tsx:125](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L125)
 
 ### Properties
 
@@ -10725,849 +10797,40 @@ Defined in: [libraries/epub/src/index.tsx:120](https://gitlab.com/storyteller-pl
 
 > `optional` **fallback**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:125](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L125)
+Defined in: [libraries/epub/src/index.tsx:130](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L130)
 
 #### href
 
 > **href**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:122](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L122)
+Defined in: [libraries/epub/src/index.tsx:127](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L127)
 
 #### id
 
 > **id**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:121](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L121)
+Defined in: [libraries/epub/src/index.tsx:126](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L126)
 
 #### mediaOverlay?
 
 > `optional` **mediaOverlay**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:126](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L126)
+Defined in: [libraries/epub/src/index.tsx:131](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L131)
 
 #### mediaType?
 
 > `optional` **mediaType**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:124](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L124)
+Defined in: [libraries/epub/src/index.tsx:129](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L129)
 
 #### properties?
 
 > `optional` **properties**: `string`[]
 
-Defined in: [libraries/epub/src/index.tsx:127](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L127)
+Defined in: [libraries/epub/src/index.tsx:132](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L132)
 
 #### title?
 
 > `optional` **title**: `string`
 
-Defined in: [libraries/epub/src/index.tsx:123](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L123)
-
----
-
-## MetadataEntry
-
-> **MetadataEntry** = `object`
-
-Defined in: [libraries/epub/src/index.tsx:130](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L130)
-
-### Properties
-
-#### id?
-
-> `optional` **id**: `string`
-
-Defined in: [libraries/epub/src/index.tsx:131](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L131)
-
-#### properties
-
-> **properties**: `Record`\<`string`, `string`\>
-
-Defined in: [libraries/epub/src/index.tsx:133](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L133)
-
-#### type
-
-> **type**: `string`
-
-Defined in: [libraries/epub/src/index.tsx:132](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L132)
-
-#### value
-
-> **value**: `string` \| `undefined`
-
-Defined in: [libraries/epub/src/index.tsx:134](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L134)
-
----
-
-## NavigationList
-
-> **NavigationList** = [`NavigationItem`](#navigationitem)[]
-
-Defined in: [libraries/epub/src/index.tsx:209](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/index.tsx#L209)
-
----
-
-## Node
-
-> **Node** = `InstanceOf`\<[`Node`](#node-1)\> & `object`
-
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:368
-
-### Type Declaration
-
-#### ATTRIBUTE_NODE
-
-> `readonly` **ATTRIBUTE_NODE**: `2`
-
-#### CDATA_SECTION_NODE
-
-> `readonly` **CDATA_SECTION_NODE**: `4`
-
-node is a CDATASection node.
-
-#### COMMENT_NODE
-
-> `readonly` **COMMENT_NODE**: `8`
-
-node is a Comment node.
-
-#### DOCUMENT_FRAGMENT_NODE
-
-> `readonly` **DOCUMENT_FRAGMENT_NODE**: `11`
-
-node is a DocumentFragment node.
-
-#### DOCUMENT_NODE
-
-> `readonly` **DOCUMENT_NODE**: `9`
-
-node is a document.
-
-#### DOCUMENT_POSITION_CONTAINED_BY
-
-> `readonly` **DOCUMENT_POSITION_CONTAINED_BY**: `16`
-
-Set when other is a descendant of node.
-
-#### DOCUMENT_POSITION_CONTAINS
-
-> `readonly` **DOCUMENT_POSITION_CONTAINS**: `8`
-
-Set when other is an ancestor of node.
-
-#### DOCUMENT_POSITION_DISCONNECTED
-
-> `readonly` **DOCUMENT_POSITION_DISCONNECTED**: `1`
-
-Set when node and other are not in the same tree.
-
-#### DOCUMENT_POSITION_FOLLOWING
-
-> `readonly` **DOCUMENT_POSITION_FOLLOWING**: `4`
-
-Set when other is following node.
-
-#### DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC
-
-> `readonly` **DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC**: `32`
-
-#### DOCUMENT_POSITION_PRECEDING
-
-> `readonly` **DOCUMENT_POSITION_PRECEDING**: `2`
-
-Set when other is preceding node.
-
-#### DOCUMENT_TYPE_NODE
-
-> `readonly` **DOCUMENT_TYPE_NODE**: `10`
-
-node is a doctype.
-
-#### ELEMENT_NODE
-
-> `readonly` **ELEMENT_NODE**: `1`
-
-node is an element.
-
-#### ENTITY_NODE
-
-> `readonly` **ENTITY_NODE**: `6`
-
-#### ENTITY_REFERENCE_NODE
-
-> `readonly` **ENTITY_REFERENCE_NODE**: `5`
-
-#### NOTATION_NODE
-
-> `readonly` **NOTATION_NODE**: `12`
-
-#### PROCESSING_INSTRUCTION_NODE
-
-> `readonly` **PROCESSING_INSTRUCTION_NODE**: `7`
-
-node is a ProcessingInstruction node.
-
-#### TEXT_NODE
-
-> `readonly` **TEXT_NODE**: `3`
-
-node is a Text node.
-
----
-
-## Text
-
-> **Text** = `InstanceOf`\<[`Text`](#text-1)\>
-
-Defined in: node_modules/@xmldom/xmldom/index.d.ts:1051
-
-The textual content of Element or Attr. If an element has no markup within its content, it has
-a single child implementing Text that contains the element's text. However, if the element
-contains markup, it is parsed into information items and Text nodes that form its children.
-
-**This implementation differs from the specification:** not constructable,
-use `document.createTextNode(data)` instead.
-
-[MDN Reference](https://developer.mozilla.org/docs/Web/API/Text)
-
----
-
-## XmlDiagnostic
-
-> **XmlDiagnostic** = `object`
-
-Defined in: [libraries/epub/src/xml.ts:240](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L240)
-
-### Properties
-
-#### column?
-
-> `optional` **column**: `number`
-
-Defined in: [libraries/epub/src/xml.ts:245](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L245)
-
-#### level
-
-> **level**: `"warning"` \| `"error"` \| `"fatalError"`
-
-Defined in: [libraries/epub/src/xml.ts:242](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L242)
-
-#### line?
-
-> `optional` **line**: `number`
-
-Defined in: [libraries/epub/src/xml.ts:244](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L244)
-
-#### message
-
-> **message**: `string`
-
-Defined in: [libraries/epub/src/xml.ts:243](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L243)
-
----
-
-## NS
-
-> `const` **NS**: `object`
-
-Defined in: [libraries/epub/src/xml.ts:290](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L290)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Type Declaration
-
-#### dc
-
-> **dc**: `string` = `"http://purl.org/dc/elements/1.1/"`
-
-#### epub
-
-> **epub**: `string` = `"http://www.idpf.org/2007/ops"`
-
-#### opf
-
-> **opf**: `string` = `"http://www.idpf.org/2007/opf"`
-
-#### xhtml
-
-> **xhtml**: `string` = `"http://www.w3.org/1999/xhtml"`
-
-#### xml
-
-> **xml**: `string` = `"http://www.w3.org/XML/1998/namespace"`
-
-#### xmlns
-
-> **xmlns**: `string` = `"http://www.w3.org/2000/xmlns/"`
-
----
-
-## xmlId()
-
-> `const` **xmlId**: (`size?`) => `string`
-
-Defined in: [libraries/epub/src/xml.ts:12](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L12)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type     |
-| --------- | -------- |
-| `size?`   | `number` |
-
-### Returns
-
-`string`
-
----
-
-## XMLSerializer
-
-> **XMLSerializer**: _typeof_ `XMLSerializer`
-
-Defined in: [libraries/epub/src/xml.ts:19](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L19)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
----
-
-## addLinkToXhtmlHead()
-
-> **addLinkToXhtmlHead**(`document`, `link`): `void`
-
-Defined in: [libraries/epub/src/xml.ts:222](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L222)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter   | Type                                                       |
-| ----------- | ---------------------------------------------------------- |
-| `document`  | [`Document`](#document-1)                                  |
-| `link`      | \{ `href`: `string`; `rel`: `string`; `type`: `string`; \} |
-| `link.href` | `string`                                                   |
-| `link.rel`  | `string`                                                   |
-| `link.type` | `string`                                                   |
-
-### Returns
-
-`void`
-
----
-
-## adoptNamespaces()
-
-> **adoptNamespaces**(`node`): `void`
-
-Defined in: [libraries/epub/src/xml.ts:61](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L61)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type                    |
-| --------- | ----------------------- |
-| `node`    | [`Element`](#element-1) |
-
-### Returns
-
-`void`
-
-### Privateremarks
-
-`x()` builds elements in no namespace. That serializes correctly, because a
-child in no namespace inherits the enclosing default namespace on the way
-out, but in memory the elements report `namespaceURI === null` and so are
-invisible to namespace-aware queries such as `getElementsByTagNameNS`.
-Calling this after inserting a node makes the tree report the namespace its
-position implies.
-
----
-
-## createDocument()
-
-> **createDocument**(`namespaceUri`, `qualifiedName`, `docType?`): [`Document`](#document-1)
-
-Defined in: [libraries/epub/src/xml.ts:358](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L358)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter       | Type                                        |
-| --------------- | ------------------------------------------- |
-| `namespaceUri`  | `string` \| `null`                          |
-| `qualifiedName` | `string`                                    |
-| `docType?`      | [`DocumentType`](#documenttype-2) \| `null` |
-
-### Returns
-
-[`Document`](#document-1)
-
----
-
-## createDocumentType()
-
-> **createDocumentType**(`qualifiedName`, `publicId?`, `systemId?`): [`DocumentType`](#documenttype-2)
-
-Defined in: [libraries/epub/src/xml.ts:370](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L370)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter       | Type     |
-| --------------- | -------- |
-| `qualifiedName` | `string` |
-| `publicId?`     | `string` |
-| `systemId?`     | `string` |
-
-### Returns
-
-[`DocumentType`](#documenttype-2)
-
----
-
-## declareDefaultNamespace()
-
-> **declareDefaultNamespace**(`element`, `uri`): `void`
-
-Defined in: [libraries/epub/src/xml.ts:85](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L85)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type                    |
-| --------- | ----------------------- |
-| `element` | [`Element`](#element-1) |
-| `uri`     | `string`                |
-
-### Returns
-
-`void`
-
----
-
-## findXmlChildByName()
-
-> **findXmlChildByName**(`name`, `element`, `filter?`): [`Element`](#element-1) \| `undefined`
-
-Defined in: [libraries/epub/src/xml.ts:164](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L164)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type                    |
-| --------- | ----------------------- |
-| `name`    | `string`                |
-| `element` | [`Element`](#element-1) |
-| `filter?` | (`node`) => `boolean`   |
-
-### Returns
-
-[`Element`](#element-1) \| `undefined`
-
----
-
-## findXmlChildByNameNS()
-
-> **findXmlChildByNameNS**(`namespaceUri`, `name`, `element`, `filter?`): [`Element`](#element-1) \| `undefined`
-
-Defined in: [libraries/epub/src/xml.ts:141](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L141)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter      | Type                    |
-| -------------- | ----------------------- |
-| `namespaceUri` | `string` \| `null`      |
-| `name`         | `string`                |
-| `element`      | [`Element`](#element-1) |
-| `filter?`      | (`node`) => `boolean`   |
-
-### Returns
-
-[`Element`](#element-1) \| `undefined`
-
----
-
-## findXmlDescendantByName()
-
-> **findXmlDescendantByName**(`name`, `element`, `filter?`): [`Element`](#element-1) \| `undefined`
-
-Defined in: [libraries/epub/src/xml.ts:210](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L210)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type                    |
-| --------- | ----------------------- |
-| `name`    | `string`                |
-| `element` | [`Element`](#element-1) |
-| `filter?` | (`node`) => `boolean`   |
-
-### Returns
-
-[`Element`](#element-1) \| `undefined`
-
----
-
-## findXmlDescendantByNameNS()
-
-> **findXmlDescendantByNameNS**(`namespaceUri`, `name`, `element`, `filter?`): [`Element`](#element-1) \| `undefined`
-
-Defined in: [libraries/epub/src/xml.ts:179](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L179)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter      | Type                    |
-| -------------- | ----------------------- |
-| `namespaceUri` | `string` \| `null`      |
-| `name`         | `string`                |
-| `element`      | [`Element`](#element-1) |
-| `filter?`      | (`node`) => `boolean`   |
-
-### Returns
-
-[`Element`](#element-1) \| `undefined`
-
----
-
-## getXhtmlBody()
-
-> **getXhtmlBody**(`document`): [`Element`](#element-1)
-
-Defined in: [libraries/epub/src/xml.ts:127](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L127)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter  | Type                      |
-| ---------- | ------------------------- |
-| `document` | [`Document`](#document-1) |
-
-### Returns
-
-[`Element`](#element-1)
-
----
-
-## insert()
-
-> **insert**\<`T`\>(`parent`, `child`, `reference?`): `T`
-
-Defined in: [libraries/epub/src/xml.ts:96](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L96)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Type Parameters
-
-| Type Parameter                  |
-| ------------------------------- |
-| `T` _extends_ [`Node`](#node-1) |
-
-### Parameters
-
-| Parameter    | Type                        |
-| ------------ | --------------------------- |
-| `parent`     | [`Element`](#element-1)     |
-| `child`      | `T`                         |
-| `reference?` | [`Node`](#node-1) \| `null` |
-
-### Returns
-
-`T`
-
----
-
-## isCdata()
-
-> **isCdata**(`n`): `n is CharacterData`
-
-Defined in: [libraries/epub/src/xml.ts:29](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L29)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type              |
-| --------- | ----------------- |
-| `n`       | [`Node`](#node-1) |
-
-### Returns
-
-`n is CharacterData`
-
----
-
-## isComment()
-
-> **isComment**(`n`): `n is CharacterData`
-
-Defined in: [libraries/epub/src/xml.ts:33](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L33)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type              |
-| --------- | ----------------- |
-| `n`       | [`Node`](#node-1) |
-
-### Returns
-
-`n is CharacterData`
-
----
-
-## isElement()
-
-> **isElement**(`n`): `n is Element`
-
-Defined in: [libraries/epub/src/xml.ts:21](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L21)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type              |
-| --------- | ----------------- |
-| `n`       | [`Node`](#node-1) |
-
-### Returns
-
-`n is Element`
-
----
-
-## isText()
-
-> **isText**(`n`): `n is CharacterData`
-
-Defined in: [libraries/epub/src/xml.ts:25](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L25)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type              |
-| --------- | ----------------- |
-| `n`       | [`Node`](#node-1) |
-
-### Returns
-
-`n is CharacterData`
-
----
-
-## parse()
-
-> **parse**(`xml`, `mediaType`, `onError?`): [`Document`](#document-1)
-
-Defined in: [libraries/epub/src/xml.ts:248](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L248)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter   | Type                     |
-| ----------- | ------------------------ |
-| `xml`       | `string`                 |
-| `mediaType` | `string`                 |
-| `onError?`  | (`diagnostic`) => `void` |
-
-### Returns
-
-[`Document`](#document-1)
-
----
-
-## replace()
-
-> **replace**\<`T`\>(`parent`, `newChild`, `oldChild`): `T`
-
-Defined in: [libraries/epub/src/xml.ts:112](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L112)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Type Parameters
-
-| Type Parameter                  |
-| ------------------------------- |
-| `T` _extends_ [`Node`](#node-1) |
-
-### Parameters
-
-| Parameter  | Type                    |
-| ---------- | ----------------------- |
-| `parent`   | [`Element`](#element-1) |
-| `newChild` | `T`                     |
-| `oldChild` | [`Node`](#node-1)       |
-
-### Returns
-
-`T`
-
----
-
-## serialize()
-
-> **serialize**(`doc`, `options?`): `string`
-
-Defined in: [libraries/epub/src/xml.ts:268](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L268)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter           | Type                          |
-| ------------------- | ----------------------------- |
-| `doc`               | [`Node`](#node-1)             |
-| `options?`          | \{ `validate?`: `boolean`; \} |
-| `options.validate?` | `boolean`                     |
-
-### Returns
-
-`string`
-
----
-
-## text()
-
-> **text**(`data`): [`Text`](#text-1)
-
-Defined in: [libraries/epub/src/xml.ts:354](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L354)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter | Type     |
-| --------- | -------- |
-| `data`    | `string` |
-
-### Returns
-
-[`Text`](#text-1)
-
----
-
-## x()
-
-> **x**(`name`, `attributes?`, ...`children?`): [`Element`](#element-1)
-
-Defined in: [libraries/epub/src/xml.ts:301](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/xml.ts#L301)
-
-The XML surface. Publication-level operations live on [Epub](#epub); for
-building and inspecting XML trees directly, use these.
-
-The DOM node types are re-exported so that callers do not need to depend on
-`@xmldom/xmldom` themselves.
-
-### Parameters
-
-| Parameter      | Type                                                       |
-| -------------- | ---------------------------------------------------------- |
-| `name`         | `string`                                                   |
-| `attributes?`  | `Record`\<`string`, `string` \| `undefined`\> \| `null`    |
-| ...`children?` | (`string` \| [`Node`](#node-1) \| `null` \| `undefined`)[] |
-
-### Returns
-
-[`Element`](#element-1)
+Defined in: [libraries/epub/src/index.tsx:128](https://gitlab.com/sto
