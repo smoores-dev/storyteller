@@ -1,0 +1,6 @@
+releases:
+  "@storyteller-platform/align": patch
+  "@storyteller-platform/audiobook": patch
+
+declined:
+  - "@storyteller-platform/web"

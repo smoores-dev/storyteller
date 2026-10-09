@@ -57,6 +57,7 @@ type FfprobeStreamOutput =
   | {
       index: string
       codec_name: string
+      codec_type: string
       codec_long_name: string
       r_frame_rate: string
       avg_frame_rate: string
@@ -92,6 +93,7 @@ type FfprobeStreamOutput =
   | {
       index: string
       codec_name: "mjpeg" | "jpeg" | "png" | "bmp" | "gif"
+      codec_type: "video"
       codec_long_name: string
       r_frame_rate: string
       avg_frame_rate: string
@@ -230,6 +232,8 @@ export async function getTrackMetadata(path: string) {
 
   return {
     duration: parseFloat(format.duration),
+    audioCodec: streams.find((stream) => stream.codec_type === "audio")
+      ?.codec_name,
     bitRate:
       format.bit_rate !== undefined
         ? parseFloat(format.bit_rate)
@@ -295,6 +299,9 @@ function escapeFfmetadata(str: string): string {
     .replaceAll(/\n/g, "\\n")
 }
 
+const IPOD_EXTENSIONS = new Set([".m4a", ".m4b"])
+const IPOD_AUDIO_CODECS = new Set(["aac", "alac", "ac3"])
+
 export async function writeTrackMetadata(
   path: string,
   trackInfo: TrackInfo,
@@ -338,6 +345,13 @@ export async function writeTrackMetadata(
   metadataArgs.push("-map", "0:a", "-map_metadata", "0")
 
   const ext = extname(path)
+  if (
+    IPOD_EXTENSIONS.has(ext.toLowerCase()) &&
+    !IPOD_AUDIO_CODECS.has(trackInfo.audioCodec ?? "")
+  ) {
+    metadataArgs.push("-f", "mp4")
+  }
+
   const tmpPath = scratchPath(
     `storyteller-platform-audiobook-${randomUUID()}${ext}`,
   )
