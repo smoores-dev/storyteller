@@ -243,6 +243,8 @@ export interface CtcDeviceCapabilities {
 
 const CTC_DEVICE_ORDER = ["cuda", "mlx", "dml", "webgpu", "cpu"] as const
 
+const SONOMA_DARWIN_MAJOR = 23
+
 const VULKAN_ICD_DIRS = ["/usr/share/vulkan/icd.d", "/etc/vulkan/icd.d"]
 
 function wslWithoutDozen(): boolean {
@@ -264,7 +266,11 @@ export function ctcDeviceCapabilities(
 ): CtcDeviceCapabilities {
   const variantName = variant ?? ""
   const cuda = process.platform === "linux" && process.arch === "x64"
-  const mlx = process.platform === "darwin" && process.arch === "arm64"
+  const mlx =
+    process.platform === "darwin" &&
+    process.arch === "arm64" &&
+    parseInt(process.getBuiltinModule("node:os").release()) >=
+      SONOMA_DARWIN_MAJOR
   const dml = process.platform === "win32"
   const webgpu =
     !(process.platform === "linux" && process.arch === "arm64") &&

@@ -79,6 +79,7 @@ build-whisper-darwin-arm64-coreml:
     CMAKE_FLAGS: "-DWHISPER_COREML=1"
     CFLAGS: ""
     CXXFLAGS: ""
+    MACOSX_DEPLOYMENT_TARGET: "13.3"
   before_script:
     - brew install cmake git curl
   script:
@@ -88,8 +89,17 @@ build-whisper-darwin-arm64-coreml:
       ${CI_PROJECT_DIR}/scripts/whisper-server-config.patch && git apply
       ${CI_PROJECT_DIR}/scripts/whisper-utf8-json-fix.patch && cd ..
     - cd whisper-src
-    - cmake -B build -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS}
+    - cmake -B build -DBUILD_SHARED_LIBS=OFF ${CMAKE_FLAGS} -DGGML_NATIVE=OFF
     - cmake --build build -j --config Release
+    - |
+      for bin in build/bin/*; do
+        file -b "$bin" | grep -q Mach-O || continue
+        minos=$(vtool -show-build "$bin" | awk '/minos/ {print $2; exit}')
+        echo "$bin minos $minos"
+        if [ "$minos" != "$MACOSX_DEPLOYMENT_TARGET" ]; then
+          echo "expected minos $MACOSX_DEPLOYMENT_TARGET" && exit 1
+        fi
+      done
     - mkdir -p ../dist
     - cp -r build/bin ../dist/bin
     - chmod +x ../dist/bin/*
