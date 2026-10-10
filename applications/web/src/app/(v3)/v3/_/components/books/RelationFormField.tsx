@@ -19,6 +19,7 @@ import { useBookForm } from "./BookDetails/BookFormProvider"
 import { type BookFormValues } from "./BookDetails/schema"
 import {
   RelationAddButton,
+  type RelationChipDecoration,
   RelationChipEditor,
   type RelationChipItem,
 } from "./RelationChipEditor"
@@ -34,29 +35,56 @@ export type RelationFieldName =
 
 type Entry<N extends RelationFieldName> = BookFormValues[N][number]
 
-type RelationFormFieldProps<N extends RelationFieldName, C> = {
-  name: N
+type RelationChipFieldProps<E, C> = {
+  values: E[]
+  onChange: (next: E[]) => void
   source: RelationSource
-  entryId: (entry: Entry<N>) => string
+  entryId: (entry: E) => string
   itemId: (item: RelationItem) => string
-  toChip: (entry: Entry<N>) => C
-  entryFromPick: (item: RelationItem, current: Entry<N>[]) => Entry<N>
-  createEntry?: (name: string, current: Entry<N>[]) => Entry<N> | null
+  toChip: (entry: E) => C
+  entryFromPick: (item: RelationItem, current: E[]) => E
+  createEntry?: (name: string, current: E[]) => E | null
   onCreate?: (name: string) => void
   createLabel?: (search: string) => string
   searchPlaceholder: string
   label?: string
   badgeVariant?: "outline" | "secondary"
   renderBadgeExtra?: (chip: C) => ReactNode
+  decorate?: (chip: C) => RelationChipDecoration
   className?: string
   children?: ReactNode
 }
 
+type RelationFormFieldProps<N extends RelationFieldName, C> = Omit<
+  RelationChipFieldProps<Entry<N>, C>,
+  "values" | "onChange"
+> & { name: N }
+
 export function RelationFormField<
   N extends RelationFieldName,
   C extends RelationChipItem,
->({
-  name,
+>({ name, ...props }: RelationFormFieldProps<N, C>) {
+  const { form } = useBookForm()
+
+  const values = useWatch({
+    control: form.control,
+    name,
+  }) as Entry<N>[]
+
+  return (
+    <RelationChipField
+      {...props}
+      values={values}
+      onChange={(next) => {
+        form.setValue(name, next as never, { shouldDirty: true })
+      }}
+    />
+  )
+}
+
+export function RelationChipField<E, C extends RelationChipItem>({
+  values,
+  onChange,
   source,
   entryId,
   itemId,
@@ -69,20 +97,14 @@ export function RelationFormField<
   label,
   badgeVariant = "outline",
   renderBadgeExtra,
+  decorate,
   className,
   children,
-}: RelationFormFieldProps<N, C>) {
-  const { form } = useBookForm()
+}: RelationChipFieldProps<E, C>) {
   const tLabels = useTranslation("Labels")
 
-  const values = useWatch({
-    control: form.control,
-    name,
-  }) as Entry<N>[]
-
-  const mutate = (fn: (current: Entry<N>[]) => Entry<N>[]) => {
-    const current = form.getValues(name) as Entry<N>[]
-    form.setValue(name, fn(current) as never, { shouldDirty: true })
+  const mutate = (fn: (current: E[]) => E[]) => {
+    onChange(fn(values))
   }
 
   const applied = useMemo(() => new Set(values.map(entryId)), [values, entryId])
@@ -131,8 +153,10 @@ export function RelationFormField<
         )
       }}
       renderBadgeExtra={renderBadgeExtra}
+      decorate={decorate}
       className={className}
     >
+      {children}
       <RelationAddMenu
         source={source}
         applied={applied}
@@ -142,7 +166,6 @@ export function RelationFormField<
         createLabel={createLabel ?? defaultCreateLabel}
         searchPlaceholder={searchPlaceholder}
       />
-      {children}
     </RelationChipEditor>
   )
 

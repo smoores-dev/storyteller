@@ -36,6 +36,7 @@ import {
   type ExtractedIdentifiers,
   type NewIdentifier,
   linkExtractedIdentifiers,
+  mergeBookIdentifiers,
 } from "./identifiers"
 import { IMAGE_COLUMNS } from "./images"
 import type { DB } from "./schema"
@@ -561,10 +562,17 @@ const externalDataQuery = <EB extends ExpressionBuilder<DB, any>>(eb: EB) => {
         "externalSource.uuid",
         "externalData.externalSourceUuid",
       )
+      .innerJoin(
+        "identifierType",
+        "identifierType.uuid",
+        "identifier.identifierTypeUuid",
+      )
       .select([
         "externalData.uuid",
         "externalData.rating",
         "externalData.fetchedAt",
+        "identifier.value as identifierValue",
+        "identifierType.kind as identifierKind",
         "externalSource.uuid as sourceUuid",
         "externalSource.name as sourceName",
         "externalSource.color as sourceColor",
@@ -1078,6 +1086,7 @@ export async function getBooks(
   return rows.map((row) => ({
     ...row,
     publicationDate: toIsoDateString(row.publicationDate),
+    releaseDate: toIsoDateString(row.releaseDate),
   }))
 }
 
@@ -1677,6 +1686,7 @@ export async function updateBook(
         .where("bookUuid", "in", relations.books)
         .execute()
 
+      await mergeBookIdentifiers(tr, uuid, relations.books)
       const allBookUuids = [uuid, ...relations.books]
 
       // find the most recent position per user

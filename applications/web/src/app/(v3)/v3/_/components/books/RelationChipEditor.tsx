@@ -1,6 +1,6 @@
 "use client"
 
-import { type ReactNode } from "react"
+import { type CSSProperties, type ReactNode } from "react"
 
 import { Badge } from "@v3/_/components/ui/badge"
 import { DynamicIcon } from "@v3/_/components/ui/dynamic-icon"
@@ -17,6 +17,12 @@ export type RelationChipItem = {
   url?: string
   icon?: string | null
   color?: string | null
+}
+
+export type RelationChipDecoration = {
+  className?: string
+  style?: CSSProperties
+  prefix?: ReactNode
 }
 
 type RelationItem = RelationChipItem
@@ -44,6 +50,7 @@ const RelationChip = ({
   canInteract,
   onRemoveItem,
   renderBadgeExtra,
+  decoration,
   label,
 }: {
   item: RelationItem
@@ -51,10 +58,12 @@ const RelationChip = ({
   canInteract: boolean
   onRemoveItem: (item: RelationItem) => void
   renderBadgeExtra?: (item: RelationItem) => ReactNode
+  decoration?: RelationChipDecoration | undefined
   label: string
 }) => {
   const base = (
     <>
+      {decoration?.prefix}
       <RelationGlyph item={item} />
       <span className="truncate">{item.name}</span>
       {renderBadgeExtra?.(item)}
@@ -76,13 +85,18 @@ const RelationChip = ({
     </>
   )
 
-  const shape = "group/badge h-6 gap-1 rounded-full px-2.5 text-xs font-normal"
+  const shape = cn(
+    "group/badge h-6 gap-1 rounded-full px-2.5 text-xs font-normal",
+    canInteract && "pr-1.5",
+    decoration?.className,
+  )
 
   if (item.url) {
     return (
       <Badge
         variant={badgeVariant}
-        className={cn(shape, canInteract && "pr-1.5")}
+        className={shape}
+        style={decoration?.style}
         render={
           <V3Link
             href={item.url}
@@ -95,10 +109,7 @@ const RelationChip = ({
     )
   }
   return (
-    <Badge
-      variant={badgeVariant}
-      className={cn(shape, canInteract && "pr-1.5")}
-    >
+    <Badge variant={badgeVariant} className={shape} style={decoration?.style}>
       {base}
     </Badge>
   )
@@ -114,6 +125,7 @@ type RelationChipEditorProps<T extends RelationItem> = {
 
   onRemoveItem: (item: T) => void | Promise<void>
   renderBadgeExtra?: (item: T) => ReactNode
+  decorate?: ((item: T) => RelationChipDecoration) | undefined
   children?: ReactNode
   canInteract: boolean
   className?: string
@@ -126,6 +138,7 @@ export function RelationChipEditor<T extends RelationItem>({
   source,
   onRemoveItem,
   renderBadgeExtra,
+  decorate,
   children,
   canInteract,
   className,
@@ -150,6 +163,7 @@ export function RelationChipEditor<T extends RelationItem>({
           renderBadgeExtra={
             renderBadgeExtra as (item: RelationItem) => ReactNode
           }
+          decoration={decorate?.(item)}
           label={tLabels("delete.withInput", { input: item.name })}
         />
       ))}

@@ -9,6 +9,14 @@ import {
 import { v4 as uuidv4 } from "uuid"
 
 import { type EmissionCapabilities } from "@storyteller-platform/ghost-story/emission-client"
+import {
+  type BookMetadataCandidate,
+  type BookMetadataProvider,
+  type BookMetadataSearchResult,
+  type CoverCandidate,
+  type CoverSearchQuery,
+  type MetadataSearchQuery,
+} from "@storyteller-platform/nodekit/types"
 import { type JsColor } from "@storyteller-platform/okmain"
 
 import {
@@ -57,6 +65,7 @@ import {
 } from "@/database/libraryCounts"
 import { type RewritePreview, type RewriteResult } from "@/database/pathRewrite"
 import { type Position } from "@/database/positions"
+import { type MetadataProvidersResponse } from "@/database/providerTokens"
 import {
   type RatingDimensionScores,
   computeRatingAverage,
@@ -101,6 +110,9 @@ import {
   queueJobNext,
 } from "@/jobList"
 import { type OrphanFolder, type StorageUsage } from "@/maintenance"
+import { type AutoImportResult } from "@/metadataAutoImport"
+import { type CoverImportRequest } from "@/metadataImport"
+import { type MetadataImportBody } from "@/metadataImportTypes"
 import { type JobsQueryV2 } from "@/schemas/v2/job"
 import { type TranscodedAudioFile } from "@/schemas/v2/transcodedAudio"
 import { type ShelfFilter } from "@/shelves"
@@ -223,6 +235,7 @@ export const api = createApi({
     "CacheUsage",
     "MaintenanceStorage",
     "Orphans",
+    "MetadataProviders",
   ],
   endpoints: (build) => ({
     createInvite: build.mutation<Invite, InviteRequest>({
@@ -334,7 +347,12 @@ export const api = createApi({
         method: "PUT",
         body: settings,
       }),
-      invalidatesTags: ["MaxUploadChunkSize", "Settings", "ImportRules"],
+      invalidatesTags: [
+        "MaxUploadChunkSize",
+        "Settings",
+        "ImportRules",
+        "MetadataProviders",
+      ],
     }),
     updatePreferenceDefaults: build.mutation<
       PreferenceDefaults,
@@ -911,6 +929,7 @@ export const api = createApi({
           language?: BookUpdate["language"]
           status?: UUID | undefined
           publicationDate?: BookUpdate["publicationDate"]
+          releaseDate?: BookUpdate["releaseDate"]
           authors?: string[]
           creators?: CreatorRelation[]
           pageCount?: number | null
@@ -956,6 +975,9 @@ export const api = createApi({
         }
         if (updatedFields.includes("publicationDate")) {
           body.append("publicationDate", JSON.stringify(update.publicationDate))
+        }
+        if (updatedFields.includes("releaseDate")) {
+          body.append("releaseDate", JSON.stringify(update.releaseDate))
         }
         if (updatedFields.includes("status")) {
           body.append("status", JSON.stringify(update.status))
@@ -1094,6 +1116,8 @@ export const api = createApi({
                 draft.description = update.description
               if (update.publicationDate !== undefined)
                 draft.publicationDate = update.publicationDate
+              if (update.releaseDate !== undefined)
+                draft.releaseDate = update.releaseDate
 
               if (update.status !== undefined) {
                 const statuses = api.endpoints.listStatuses.select()(getState())
@@ -2636,6 +2660,109 @@ export const api = createApi({
         "Books",
       ],
     }),
+    metadataSearch: build.query<
+      BookMetadataSearchResult[],
+      Omit<MetadataSearchQuery, "providers">
+    >({
+      query: (params) => ({ url: "/metadata", params }),
+    }),
+    metadataBook: build.query<
+      BookMetadataCandidate,
+      { provider: BookMetadataProvider; id: string; region?: string }
+    >({
+      query: (params) => ({ url: "/metadata/book", params }),
+    }),
+    metadataCoverSearch: build.query<
+      CoverCandidate[],
+      Omit<CoverSearchQuery, "providers">
+    >({
+      query: (params) => ({ url: "/metadata/covers", params }),
+    }),
+    getMetadataProviders: build.query<MetadataProvidersResponse, void>({
+      query: () => "/metadata/providers",
+      providesTags: ["MetadataProviders"],
+    }),
+    setHardcoverToken: build.mutation<MetadataProvidersResponse, string>({
+      query: (token) => ({
+        url: "/metadata/providers",
+        method: "PUT",
+        body: { token },
+      }),
+      invalidatesTags: ["MetadataProviders"],
+    }),
+    clearHardcoverToken: build.mutation<MetadataProvidersResponse, void>({
+      query: () => ({ url: "/metadata/providers", method: "DELETE" }),
+      invalidatesTags: ["MetadataProviders"],
+    }),
+    importBookMetadata: build.mutation<
+      BookWithRelations,
+      { bookUuid: UUID } & MetadataImportBody
+    >({
+      query: ({ bookUuid, ...body }) => ({
+        url: `/books/${bookUuid}/metadata-import`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { bookUuid }) => [
+        "Creators",
+        "Authors",
+        "Narrators",
+        "Series",
+        "Tags",
+        "Books",
+        "Identifiers",
+        { type: "Books", id: bookUuid },
+        { type: "BookIdentifiers", id: bookUuid },
+      ],
+    }),
+    autoImportBookMetadata: build.mutation<
+      AutoImportResult,
+      { bookUuid: UUID }
+    >({
+      query: ({ bookUuid }) => ({
+        url: `/books/${bookUuid}/metadata-auto-import`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { bookUuid }) => [
+        { type: "Books", id: bookUuid },
+        { type: "BookIdentifiers", id: bookUuid },
+      ],
+    }),
+    refreshBookRatings: build.mutation<BookWithRelations, { bookUuid: UUID }>({
+      query: ({ bookUuid }) => ({
+        url: `/books/${bookUuid}/ratings-refresh`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { bookUuid }) => [
+        { type: "Books", id: bookUuid },
+      ],
+    }),
+    deleteExternalRating: build.mutation<
+      BookWithRelations,
+      { bookUuid: UUID; ratingUuid: UUID }
+    >({
+      query: ({ bookUuid, ratingUuid }) => ({
+        url: `/books/${bookUuid}/external-ratings/${ratingUuid}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { bookUuid }) => [
+        { type: "Books", id: bookUuid },
+      ],
+    }),
+    importBookCover: build.mutation<
+      BookWithRelations,
+      { bookUuid: UUID } & CoverImportRequest
+    >({
+      query: ({ bookUuid, ...body }) => ({
+        url: `/books/${bookUuid}/cover-import`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { bookUuid }) => [
+        "Books",
+        { type: "Books", id: bookUuid },
+      ],
+    }),
   }),
 })
 
@@ -2801,6 +2928,17 @@ export const {
   useMergeIdentifierTypesMutation,
   useListBookIdentifiersQuery,
   useUpdateBookIdentifiersMutation,
+  useLazyMetadataSearchQuery,
+  useLazyMetadataBookQuery,
+  useMetadataCoverSearchQuery,
+  useGetMetadataProvidersQuery,
+  useSetHardcoverTokenMutation,
+  useClearHardcoverTokenMutation,
+  useImportBookMetadataMutation,
+  useAutoImportBookMetadataMutation,
+  useRefreshBookRatingsMutation,
+  useDeleteExternalRatingMutation,
+  useImportBookCoverMutation,
   useGetBookOpfQuery,
   useGetBookMediaOverlayQuery,
 } = api

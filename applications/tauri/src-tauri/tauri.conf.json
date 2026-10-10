@@ -54,7 +54,7 @@
     },
     "linux": {
       "deb": {
-        "depends": []
+        "depends": ["libcurl4t64 | libcurl4", "libxml2 | libxml2-16"]
       }
     }
   },

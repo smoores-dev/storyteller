@@ -77,6 +77,7 @@ const DEFAULT_SETTINGS: Settings = {
   epub2ImportStrategy: "backup-and-convert",
   epub2BackupSuffix: DEFAULT_EPUB_SUFFIX_TEMPLATE,
   cleanCacheAfterReadaloud: true,
+  metadataAutoImportThresholds: { audnexus: "high", hardcover: "high" },
   metadataFieldOverrides: {
     cover: "merge",
     title: "merge",

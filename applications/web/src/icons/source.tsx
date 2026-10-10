@@ -8,6 +8,7 @@ import {
   IconArrowAutofitDown,
   IconArrowAutofitWidth,
   IconArrowBack,
+  IconArrowBackUp,
   IconArrowDown,
   IconArrowLeft,
   IconArrowMerge,
@@ -26,6 +27,7 @@ import {
   IconBug,
   IconCalendar,
   IconCalendarCheck,
+  IconCalendarEvent,
   IconCalendarPlus,
   IconCertificate,
   IconChartBar,
@@ -58,6 +60,7 @@ import {
   IconFileText,
   IconFileUpload,
   IconFilter2,
+  IconFlask,
   IconFolder,
   IconFolders,
   IconGitMerge,
@@ -77,6 +80,8 @@ import {
   IconLayoutGrid,
   IconLayoutList,
   IconLayoutSidebar,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
   IconLetterCase,
   IconLibrary,
   IconLink,
@@ -133,6 +138,7 @@ import {
   IconSortDescending,
   IconSortDescendingLetters,
   IconSortDescendingNumbers,
+  IconSparkles,
   IconSquare,
   IconSquareCheck,
   IconStack2,
@@ -237,6 +243,9 @@ export const FileText = /*#__PURE__*/ styled(IconFileText)
 export const FileUpload = /*#__PURE__*/ styled(IconFileUpload)
 export const Database = /*#__PURE__*/ styled(IconDatabase)
 export const Server = /*#__PURE__*/ styled(IconServer)
+export const Sparkles = /*#__PURE__*/ styled(IconSparkles)
+export const Flask = /*#__PURE__*/ styled(IconFlask)
+export const Undo = /*#__PURE__*/ styled(IconArrowBackUp)
 export const Folder = /*#__PURE__*/ styled(IconFolder)
 
 export const Tag = /*#__PURE__*/ styled(IconTag)
@@ -252,6 +261,10 @@ export const Briefcase = /*#__PURE__*/ styled(IconBriefcase)
 export const LayoutGrid = /*#__PURE__*/ styled(IconLayoutGrid)
 export const LayoutList = /*#__PURE__*/ styled(IconLayoutList)
 export const LayoutSidebar = /*#__PURE__*/ styled(IconLayoutSidebar)
+export const SidebarCollapse = /*#__PURE__*/ styled(
+  IconLayoutSidebarLeftCollapse,
+)
+export const SidebarExpand = /*#__PURE__*/ styled(IconLayoutSidebarLeftExpand)
 export const Columns = /*#__PURE__*/ styled(IconColumns)
 export const Columns3 = /*#__PURE__*/ styled(IconColumns3)
 export const List = /*#__PURE__*/ styled(IconList)
@@ -274,6 +287,7 @@ export const Users = /*#__PURE__*/ styled(IconUsers)
 
 export const Calendar = /*#__PURE__*/ styled(IconCalendar)
 export const CalendarCheck = /*#__PURE__*/ styled(IconCalendarCheck)
+export const CalendarEvent = /*#__PURE__*/ styled(IconCalendarEvent)
 export const CalendarPlus = /*#__PURE__*/ styled(IconCalendarPlus)
 export const Clock = /*#__PURE__*/ styled(IconClock)
 export const History = /*#__PURE__*/ styled(IconHistory)

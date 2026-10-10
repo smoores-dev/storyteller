@@ -1,0 +1,9 @@
+releases:
+  "@storyteller-platform/align": patch
+  "@storyteller-platform/audiobook": patch
+  "@storyteller-platform/docs": patch
+  "@storyteller-platform/nodekit": patch
+
+declined:
+  - "@storyteller-platform/tauri"
+  - "@storyteller-platform/web"

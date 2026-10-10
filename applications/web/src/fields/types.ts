@@ -44,6 +44,8 @@ export type FilterEntityType =
   | "creator"
   | "identifierType"
 
+export type ImportMode = "whole" | "each"
+
 export const ASSET_FORMATS = ["ebook", "audiobook", "readaloud"] as const
 export type AssetFormat = (typeof ASSET_FORMATS)[number]
 
@@ -61,6 +63,8 @@ export type FieldDefBase = {
   qualifier?: { kind: QualifierKind }
   formats?: readonly AssetFormat[]
   countable?: true
+  compact?: true
+  importable?: ImportMode
   entity?: FilterEntityType
   qualifierEntity?: FilterEntityType
   alias?: { of: string; qualifier: string }

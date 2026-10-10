@@ -23,7 +23,7 @@ import {
   type MetadataFieldMode,
   type MetadataFieldOverrides,
 } from "@/database/settingsTypes"
-import { toIsoDateTimeString } from "@/dates"
+import { toIsoDateString, toIsoDateTimeString } from "@/dates"
 import { logger } from "@/logging"
 
 import { persistCover } from "./covers"
@@ -417,6 +417,12 @@ export async function getMetadataFromAudiobook(audiobook: Audiobook) {
     update.description = description
   }
 
+  const releaseDate = toIsoDateString(await audiobook.getReleaseDate())
+  if (releaseDate) {
+    update ??= {}
+    update.releaseDate = releaseDate
+  }
+
   const authorNames = await audiobook.getAuthors()
   const authors: CreatorRelation[] = authorNames.map((name) => ({
     name,
@@ -783,6 +789,13 @@ async function compareAudiobookToMetadata(
   if (description !== book.description) {
     return false
   }
+  const bookReleaseDate = toIsoDateString(book.releaseDate)?.slice(0, 10)
+  if (bookReleaseDate) {
+    const releaseDate = await audiobook.getReleaseDate()
+    if (toIsoDateString(releaseDate)?.slice(0, 10) !== bookReleaseDate) {
+      return false
+    }
+  }
   return true
 }
 
@@ -832,6 +845,10 @@ export async function writeMetadataToAudiobook(
       if (book.description) {
         await audiobook.setDescription(book.description)
       }
+      const releaseDate = toIsoDateString(book.releaseDate)
+      if (releaseDate) {
+        await audiobook.setReleaseDate(new Date(releaseDate))
+      }
       await audiobook.saveAndClose()
     }
   } catch (e) {
@@ -868,6 +885,10 @@ export async function writeMetadataToAudiobook(
       }
       if (book.description) {
         await processedAudiobook.setDescription(book.description)
+      }
+      const releaseDate = toIsoDateString(book.releaseDate)
+      if (releaseDate) {
+        await processedAudiobook.setReleaseDate(new Date(releaseDate))
       }
       await processedAudiobook.saveAndClose()
     }

@@ -279,7 +279,11 @@ export async function getSettings(): Promise<Settings> {
 
   const { settings: configSettings } = await loadConfigFile()
 
-  return { ...(stored as Settings), ...configSettings }
+  const { hardcoverApiToken: _, ...settings } = {
+    ...(stored as Settings),
+    ...configSettings,
+  }
+  return settings
 }
 
 export async function updateSettings(settings: Settings) {
@@ -289,6 +293,7 @@ export async function updateSettings(settings: Settings) {
   for (const [settingName, value] of Object.entries(settings)) {
     if (lockedKeys.has(settingName as keyof Settings)) continue
     if (settingName === "dataDirAnchor") continue
+    if (settingName === "hardcoverApiToken") continue
 
     const unchanged =
       JSON.stringify(existingSettings[settingName as keyof Settings]) ===

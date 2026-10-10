@@ -47,6 +47,7 @@ const FIELD_ICONS: Record<FieldIconKey, FieldIconDef> = {
   alignmentSentenceCoverage: { base: icon.TextGrammar },
   alignmentAudioCoverage: { base: icon.Volume },
   publicationDate: { base: icon.Calendar },
+  releaseDate: { base: icon.CalendarEvent },
   createdAt: { base: icon.CalendarPlus },
   updatedAt: { base: icon.History },
   alignedAt: { base: icon.CalendarCheck },

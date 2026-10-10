@@ -96,7 +96,7 @@ function ContributorsEditor() {
   )
 }
 
-function ContributorRolePicker({
+export function ContributorRolePicker({
   value,
   onChange,
 }: {

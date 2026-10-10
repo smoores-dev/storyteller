@@ -59,6 +59,7 @@ function parseFormDataFields(formData: FormData) {
       "coverColorsOverride",
     ),
     publicationDate: getField<string | null>(formData, "publicationDate"),
+    releaseDate: getField<string | null>(formData, "releaseDate"),
     status: getField<UUID>(formData, "status"),
     userBookRating: getField<UserBookRatingRelation | null>(
       formData,

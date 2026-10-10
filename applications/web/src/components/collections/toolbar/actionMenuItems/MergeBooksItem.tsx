@@ -295,6 +295,10 @@ export function MergeBooksItem({ selected, onCommit }: Props) {
                   ...update,
                   publicationDate:
                     publicationDate && new Date(publicationDate).toISOString(),
+                  releaseDate:
+                    audiobook?.releaseDate ||
+                    readaloud?.releaseDate ||
+                    ebook?.releaseDate,
                 },
                 relations: {
                   creators: [

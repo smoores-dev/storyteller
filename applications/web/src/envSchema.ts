@@ -131,6 +131,12 @@ export const documentedServerEnvVars = {
     .describe(
       "[Path to a JSON configuration file.](#declarative-configuration) Settings in this file override database settings and cannot be changed via the UI.",
     ),
+  HARDCOVER_API_TOKEN: z
+    .string()
+    .optional()
+    .describe(
+      "Hardcover API token used when none has been saved through the settings UI.",
+    ),
   PUID: z.coerce
     .number()
     .optional()

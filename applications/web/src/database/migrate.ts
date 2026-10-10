@@ -107,6 +107,9 @@ const jsMigrations: Record<string, () => Promise<void>> = {
   "121_regrade_alignment_reports.sql": (
     await import("./migrations/121_regrade_alignment_reports.sql")
   ).default,
+  "123_metadata_import.sql": (
+    await import("./migrations/123_metadata_import.sql")
+  ).default,
 }
 
 async function isFirstStartup() {

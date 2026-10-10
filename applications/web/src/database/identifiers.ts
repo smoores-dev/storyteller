@@ -17,6 +17,7 @@ export const IDENTIFIER_KINDS = [
   "isbn-13",
   "hardcover-edition-id",
   "hardcover-book-slug",
+  "hardcover-book-id",
 ] as const
 export type IdentifierKind = (typeof IDENTIFIER_KINDS)[number]
 
@@ -268,4 +269,63 @@ export async function mergeIdentifierTypes(
       .where("uuid", "in", sourceUuids)
       .execute()
   })
+}
+
+export async function mergeBookIdentifiers(
+  tr: Kysely<DB>,
+  bookUuid: UUID,
+  from: UUID[],
+) {
+  const bookLevel = await tr
+    .selectFrom("identifier")
+    .select([
+      "uuid",
+      "bookUuid",
+      "identifierTypeUuid",
+      "value",
+      (eb) =>
+        eb
+          .exists(
+            eb
+              .selectFrom("externalData")
+              .select("externalData.uuid")
+              .whereRef("externalData.identifierUuid", "=", "identifier.uuid"),
+          )
+          .as("hasExternalData"),
+    ])
+    .where("bookUuid", "in", [bookUuid, ...from])
+    .where("ebookUuid", "is", null)
+    .where("audiobookUuid", "is", null)
+    .where("readaloudUuid", "is", null)
+    .execute()
+
+  const rank = (row: (typeof bookLevel)[number]) =>
+    (row.hasExternalData ? 0 : 2) + (row.bookUuid === bookUuid ? 0 : 1)
+
+  const kept = new Map<string, (typeof bookLevel)[number]>()
+  for (const row of bookLevel) {
+    const key = `${row.identifierTypeUuid}\u0000${row.value}`
+    const current = kept.get(key)
+    if (!current || rank(row) < rank(current)) kept.set(key, row)
+  }
+
+  const keptUuids = new Set([...kept.values()].map((row) => row.uuid))
+  const dropped = bookLevel.filter((row) => !keptUuids.has(row.uuid))
+
+  if (dropped.length) {
+    await tr
+      .deleteFrom("identifier")
+      .where(
+        "uuid",
+        "in",
+        dropped.map((row) => row.uuid),
+      )
+      .execute()
+  }
+
+  await tr
+    .updateTable("identifier")
+    .set({ bookUuid })
+    .where("bookUuid", "in", from)
+    .execute()
 }

@@ -15,7 +15,7 @@ type LanguageInfo = {
   maximized: string | null
 }
 
-function describeLanguage(code: string, locale: string): LanguageInfo {
+export function describeLanguage(code: string, locale: string): LanguageInfo {
   const trimmed = code.trim()
   if (!trimmed) return { displayName: null, maximized: null }
 
@@ -97,31 +97,7 @@ export function LanguageEdit() {
         )}
       />
 
-      {/* preview only what the code widens to -- no curated list */}
-      <div
-        className={cn(
-          "text-xs",
-          !language.trim()
-            ? "text-muted-foreground"
-            : info.maximized
-              ? "text-muted-foreground"
-              : "text-destructive",
-        )}
-      >
-        {!language.trim() ? (
-          "No language set"
-        ) : info.maximized ? (
-          <>
-            {info.displayName ?? language.trim()}
-            <span className="text-muted-foreground/70">
-              {" · "}
-              {info.maximized}
-            </span>
-          </>
-        ) : (
-          "Not a valid language code"
-        )}
-      </div>
+      <LanguagePreview language={language} />
     </div>
   )
 
@@ -131,5 +107,42 @@ export function LanguageEdit() {
     <InlineFieldChrome name="language" size={size} inline>
       {editor}
     </InlineFieldChrome>
+  )
+}
+
+export function LanguagePreview({
+  language,
+  className,
+}: {
+  language: string
+  className?: string
+}) {
+  const locale = useLocale()
+  const info = describeLanguage(language, locale)
+
+  return (
+    <div
+      className={cn(
+        "text-xs",
+        !language.trim() || info.maximized
+          ? "text-muted-foreground"
+          : "text-destructive",
+        className,
+      )}
+    >
+      {!language.trim() ? (
+        "No language set"
+      ) : info.maximized ? (
+        <>
+          {info.displayName ?? language.trim()}
+          <span className="text-muted-foreground/70">
+            {" · "}
+            {info.maximized}
+          </span>
+        </>
+      ) : (
+        "Not a valid language code"
+      )}
+    </div>
   )
 }

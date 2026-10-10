@@ -156,6 +156,7 @@ function stringColumn(column: StringBookColumn): FieldSqlImpl {
 
 type DateBookColumn =
   | "book.publicationDate"
+  | "book.releaseDate"
   | "book.createdAt"
   | "book.updatedAt"
   | "book.alignedAt"
@@ -1000,6 +1001,7 @@ export const FIELD_SQL = {
   alignedByStorytellerVersion: stringColumn("book.alignedByStorytellerVersion"),
 
   publicationDate: dateColumn("book.publicationDate"),
+  releaseDate: dateColumn("book.releaseDate"),
   createdAt: dateColumn("book.createdAt"),
   updatedAt: dateColumn("book.updatedAt"),
   alignedAt: dateColumn("book.alignedAt"),

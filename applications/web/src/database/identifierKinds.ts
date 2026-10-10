@@ -57,6 +57,16 @@ export const CORE_IDENTIFIERS: Record<IdentifierKind, CoreIdentifierSpec> = {
     renderUrl: (value) =>
       `https://hardcover.app/books/${encodeURIComponent(value.trim())}`,
   },
+  "hardcover-book-id": {
+    kind: "hardcover-book-id",
+    displayName: "Hardcover Book ID",
+    validate: (value) => HARDCOVER_EDITION_ID.test(value.trim()),
+    renderUrl: (_value, siblings) => {
+      const slug = siblings.get("hardcover-book-slug")
+      if (!slug) return null
+      return `https://hardcover.app/books/${encodeURIComponent(slug.trim())}`
+    },
+  },
   "hardcover-edition-id": {
     kind: "hardcover-edition-id",
     displayName: "Hardcover Edition ID",

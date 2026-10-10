@@ -43,6 +43,7 @@ export const bookFormSchema = z.object({
       message: "Not a valid language code",
     }),
   publicationDate: z.string().nullable(),
+  releaseDate: z.string().nullable(),
   pageCount: z.number().int().positive().nullable(),
   duration: z.number().positive().nullable(),
   authors: z.array(z.string()),

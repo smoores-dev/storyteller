@@ -5,7 +5,7 @@ import { type UUID } from "@/uuid"
 import { db } from "./connection"
 import { type DB } from "./schema"
 
-export const EXTERNAL_SOURCE_KINDS = ["hardcover"] as const
+export const EXTERNAL_SOURCE_KINDS = ["hardcover", "audible"] as const
 export type ExternalSourceKind = (typeof EXTERNAL_SOURCE_KINDS)[number]
 
 export type ExternalSource = Selectable<DB["externalSource"]>
@@ -61,6 +61,20 @@ export async function upsertExternalData(value: NewExternalData) {
       }),
     )
     .execute()
+}
+
+export async function deleteExternalDataForBook(bookUuid: UUID, uuid: UUID) {
+  const result = await db
+    .deleteFrom("externalData")
+    .where("uuid", "=", uuid)
+    .where("identifierUuid", "in", (eb) =>
+      eb
+        .selectFrom("identifier")
+        .select("uuid")
+        .where("bookUuid", "=", bookUuid),
+    )
+    .executeTakeFirst()
+  return result.numDeletedRows > 0n
 }
 
 export async function getExternalDatasForBook(bookUuid: UUID) {

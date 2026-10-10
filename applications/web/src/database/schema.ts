@@ -105,6 +105,7 @@ export interface Book {
   pageCount: number | null
   publicationDate: string | null
   rating: number | null
+  releaseDate: string | null
   subtitle: string | null
   title: string
   updatedAt: Generated<string>

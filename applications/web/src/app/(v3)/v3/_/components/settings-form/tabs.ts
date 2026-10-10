@@ -35,6 +35,7 @@ export const SETTINGS_SECTIONS = [
   { id: "importRules", page: "files", key: "importRules" },
   { id: "scanning", page: "files", key: "scanning" },
   { id: "readBehavior", page: "metadata", key: "readBehavior" },
+  { id: "metadataProviders", page: "metadata", key: "metadataProviders" },
   { id: "defaultStatus", page: "metadata", key: "defaultStatus" },
   { id: "alignment", page: "processing", key: "alignment" },
   { id: "audio", page: "processing", key: "audio" },

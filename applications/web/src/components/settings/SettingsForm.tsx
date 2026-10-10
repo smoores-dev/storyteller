@@ -1205,6 +1205,7 @@ export function SettingsForm({
     autoIgnoreRules: settings.autoIgnoreRules ?? [],
     deleteRuleUuids: [],
     cleanCacheAfterReadaloud: settings.cleanCacheAfterReadaloud,
+    metadataAutoImportThresholds: settings.metadataAutoImportThresholds,
   }
 
   const form = useForm({

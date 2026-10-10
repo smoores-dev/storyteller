@@ -57,6 +57,23 @@ describe("Audiobook", () => {
     assert.strictEqual(title, "Test Title")
   })
 
+  it("can set the release date of an audiobook", async () => {
+    await cp(
+      "src/__fixtures__/sleepy_hollow_irving_64kb.mp3",
+      "src/__fixtures__/__output__/sleepy_hollow_release_date.mp3",
+    )
+    using audiobook = await Audiobook.from(
+      "src/__fixtures__/__output__/sleepy_hollow_release_date.mp3",
+    )
+    await audiobook.setReleaseDate(new Date("2007-03-14T00:00:00.000Z"))
+    await audiobook.saveAndClose()
+    using actual = await Audiobook.from(
+      "src/__fixtures__/__output__/sleepy_hollow_release_date.mp3",
+    )
+    const releaseDate = await actual.getReleaseDate()
+    assert.strictEqual(releaseDate?.toISOString(), "2007-03-14T00:00:00.000Z")
+  })
+
   it("can get the cover of an audiobook", async () => {
     await cp(
       "src/__fixtures__/sleepy_hollow_irving_64kb.mp3",

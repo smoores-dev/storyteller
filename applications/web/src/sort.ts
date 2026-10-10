@@ -1,5 +1,5 @@
 import { type BookWithRelations } from "@/database/books"
-import { ALIGNMENT_GRADES, FIELD_REGISTRY } from "@/fields"
+import { ALIGNMENT_GRADES, COMPACT_FIELDS, FIELD_REGISTRY } from "@/fields"
 import { type ShelfFilterNode } from "@/shelves"
 import { type UUID } from "@/uuid"
 
@@ -94,18 +94,9 @@ export function deriveDisplayFields(
   return secondary === "title" ? ["title"] : [secondary, "title"]
 }
 
-const COMPACT_DISPLAY_FIELDS: ReadonlySet<DisplayField> = new Set([
-  "pageCount",
-  "duration",
-  "fileSize",
-  "publicationDate",
-  "userRating",
-  "alignmentConfidence",
-  "alignmentGrade",
-  "alignmentPreviousGrade",
-  "alignmentSentenceCoverage",
-  "alignmentAudioCoverage",
-])
+const COMPACT_DISPLAY_FIELDS: ReadonlySet<DisplayField> = new Set(
+  COMPACT_FIELDS,
+)
 
 const MAX_COMPACT_PER_ROW = 3
 
@@ -160,6 +151,8 @@ function sortValue(
       return book.updatedAt
     case "publicationDate":
       return book.publicationDate
+    case "releaseDate":
+      return book.releaseDate
     case "userRating":
       return book.userBookRating?.rating ?? null
     case "pageCount":

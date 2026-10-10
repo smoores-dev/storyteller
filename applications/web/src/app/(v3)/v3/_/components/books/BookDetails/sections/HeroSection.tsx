@@ -24,6 +24,10 @@ import { bookDuration, bookPageCount } from "@v3/_/lib/bookMetrics"
 
 import { EditableText } from "@/app/(v3)/v3/_/components/books/BookDetails/EditableText"
 import {
+  ImportDialog,
+  type ImportTab,
+} from "@/app/(v3)/v3/_/components/books/BookDetails/ImportDialog"
+import {
   DurationEdit,
   PageCountEdit,
 } from "@/app/(v3)/v3/_/components/books/BookDetails/MetricEdit"
@@ -105,6 +109,7 @@ export function HeroSection({
   const [authorsExpanded, setAuthorsExpanded] = useState(false)
   const [narratorsExpanded, setNarratorsExpanded] = useState(false)
   const [ratingOverrideActive, setRatingOverrideActive] = useState(false)
+  const [importTab, setImportTab] = useState<ImportTab | null>(null)
 
   const visibleAuthors = authorsExpanded
     ? authors
@@ -180,7 +185,16 @@ export function HeroSection({
           transition={layoutTransition}
           className="shrink-0"
         >
-          <CoverEditor compact={compact} />
+          <CoverEditor
+            compact={compact}
+            onSearchCovers={
+              permissions?.bookUpdate
+                ? () => {
+                    setImportTab("covers")
+                  }
+                : undefined
+            }
+          />
         </motion.div>
 
         <motion.div
@@ -515,6 +529,9 @@ export function HeroSection({
       )}
 
       {processingDialog}
+      {permissions?.bookUpdate && (
+        <ImportDialog book={book} tab={importTab} onTabChange={setImportTab} />
+      )}
     </div>
   )
 }

@@ -15890,6 +15890,75 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@storyteller-platform/nodekit-darwin-arm64@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-darwin-arm64@npm:0.1.0"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-darwin-x64@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-darwin-x64@npm:0.1.0"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-linux-arm64-gnu@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-linux-arm64-gnu@npm:0.1.0"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-linux-x64-gnu@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-linux-x64-gnu@npm:0.1.0"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-win32-arm64-msvc@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-win32-arm64-msvc@npm:0.1.0"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-win32-x64-msvc@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-win32-x64-msvc@npm:0.1.0"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit@npm:0.1.0"
+  dependencies:
+    "@storyteller-platform/nodekit-darwin-arm64": "npm:0.1.0"
+    "@storyteller-platform/nodekit-darwin-x64": "npm:0.1.0"
+    "@storyteller-platform/nodekit-linux-arm64-gnu": "npm:0.1.0"
+    "@storyteller-platform/nodekit-linux-x64-gnu": "npm:0.1.0"
+    "@storyteller-platform/nodekit-win32-arm64-msvc": "npm:0.1.0"
+    "@storyteller-platform/nodekit-win32-x64-msvc": "npm:0.1.0"
+  dependenciesMeta:
+    "@storyteller-platform/nodekit-darwin-arm64":
+      optional: true
+    "@storyteller-platform/nodekit-darwin-x64":
+      optional: true
+    "@storyteller-platform/nodekit-linux-arm64-gnu":
+      optional: true
+    "@storyteller-platform/nodekit-linux-x64-gnu":
+      optional: true
+    "@storyteller-platform/nodekit-win32-arm64-msvc":
+      optional: true
+    "@storyteller-platform/nodekit-win32-x64-msvc":
+      optional: true
+  checksum: 10c0/3ba676a690a677c05d6c25027b58f82f644e86f7a39b0c539bdf013eeb26fe8177e8f3c9e743b3acc76ed6f4838a77e454f9b1f48f42da3ebdc5a46414fbd655
+  languageName: node
+  linkType: hard
+
 "@storyteller-platform/nodekit@workspace:libraries/nodekit":
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/nodekit@workspace:libraries/nodekit"
@@ -16119,6 +16188,7 @@ __metadata:
     "@storyteller-platform/fs": "workspace:*"
     "@storyteller-platform/ghost-story": "workspace:*"
     "@storyteller-platform/media-types": "workspace:^"
+    "@storyteller-platform/nodekit": "npm:0.1.0"
     "@storyteller-platform/okmain": "npm:0.2.3-rc.3"
     "@storyteller-platform/opds": "workspace:*"
     "@t3-oss/env-nextjs": "npm:^0.13.8"

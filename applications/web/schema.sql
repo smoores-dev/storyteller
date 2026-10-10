@@ -22,7 +22,7 @@ CREATE TABLE "book" (
   language TEXT DEFAULT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-, publication_date TEXT, aligned_by_storyteller_version TEXT, aligned_at TEXT, aligned_with TEXT, description TEXT, rating REAL, subtitle TEXT, "duration" real, "page_count" integer, asset_dir text NOT NULL DEFAULT '', "cover_colors_override" text);
+, publication_date TEXT, aligned_by_storyteller_version TEXT, aligned_at TEXT, aligned_with TEXT, description TEXT, rating REAL, subtitle TEXT, "duration" real, "page_count" integer, asset_dir text NOT NULL DEFAULT '', "cover_colors_override" text, release_date TEXT);
 CREATE TRIGGER book_update_trigger AFTER
 UPDATE ON book FOR EACH ROW BEGIN
 UPDATE book

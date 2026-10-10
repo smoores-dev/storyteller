@@ -34,9 +34,16 @@ export class NodeKitLoadError extends Error {
 const moduleFile =
   typeof __filename === "string" ? __filename : fileURLToPath(import.meta.url)
 
-const require = createRequire(moduleFile)
+const moduleFileIsReal = existsSync(moduleFile)
 
-const packageDir = resolve(dirname(moduleFile), "..")
+const packageDir = moduleFileIsReal ? resolve(dirname(moduleFile), "..") : null
+
+const requireBases = [
+  ...(moduleFileIsReal ? [moduleFile] : []),
+  resolve(process.cwd(), "noop.js"),
+]
+
+const requires = requireBases.map((base) => createRequire(base))
 
 export const ADDON_SOURCES = ["local", "npm"] as const
 
@@ -122,7 +129,7 @@ function localPaths(file: string): string[] {
   const cwd = process.cwd()
 
   const paths = [
-    resolve(packageDir, file),
+    ...(packageDir ? [resolve(packageDir, file)] : []),
     resolve(cwd, file),
     resolve(cwd, "StorytellerNodeKit.node"),
   ]
@@ -136,15 +143,19 @@ function localPaths(file: string): string[] {
 }
 
 function npmCandidate(packageName: string): AddonCandidate {
-  try {
-    return {
-      source: "npm",
-      path: require.resolve(packageName),
-      exists: true,
+  for (const candidateRequire of requires) {
+    try {
+      return {
+        source: "npm",
+        path: candidateRequire.resolve(packageName),
+        exists: true,
+      }
+    } catch {
+      continue
     }
-  } catch {
-    return { source: "npm", path: packageName, exists: false }
   }
+
+  return { source: "npm", path: packageName, exists: false }
 }
 
 export function describeAddonResolution(): AddonResolution {

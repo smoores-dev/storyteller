@@ -4,6 +4,7 @@ import {
   type DatePreset,
   type FieldDef,
   type FieldType,
+  type ImportMode,
   type RetiredFieldDef,
 } from "./types"
 
@@ -39,6 +40,7 @@ export const FIELD_REGISTRY = {
     quick: false,
     token: "title",
     labelKey: "title",
+    importable: "whole",
     group: "text",
     type: "string",
   },
@@ -48,6 +50,7 @@ export const FIELD_REGISTRY = {
     quick: false,
     token: "subtitle",
     labelKey: "subtitle",
+    importable: "whole",
     group: "text",
     type: "string",
   },
@@ -57,6 +60,7 @@ export const FIELD_REGISTRY = {
     quick: false,
     token: "description",
     labelKey: "description",
+    importable: "whole",
     group: "text",
     type: "string",
   },
@@ -68,6 +72,7 @@ export const FIELD_REGISTRY = {
     quick: true,
     token: "language",
     labelKey: "language",
+    importable: "whole",
     group: "text",
     type: "string",
     defaultOperator: "isAnyOf",
@@ -100,6 +105,7 @@ export const FIELD_REGISTRY = {
     scale: { min: 0, step: 1, unit: "count" },
     token: "pages",
     labelKey: "pageCount",
+    compact: true,
     options: [
       { min: 0, max: 150, label: "< 150" },
       { min: 150, max: 400, label: "150-400" },
@@ -118,6 +124,7 @@ export const FIELD_REGISTRY = {
     scale: { min: 0, unit: "seconds" },
     token: "duration",
     labelKey: "duration",
+    compact: true,
     options: [
       { min: 0, max: 3 * 3600, label: "< 3h" },
       { min: 3 * 3600, max: 10 * 3600, label: "3-10h" },
@@ -137,6 +144,23 @@ export const FIELD_REGISTRY = {
     scale: { unit: "year" },
     token: "published",
     labelKey: "publicationDate",
+    importable: "whole",
+    compact: true,
+    group: "dates",
+    type: "date",
+  },
+  releaseDate: {
+    control: "date-range",
+    sortable: true,
+    quick: false,
+    defaultSort: "desc",
+    qualifier: { kind: "datePart" },
+    formats: ["audiobook", "readaloud"],
+    scale: { unit: "year" },
+    token: "released",
+    labelKey: "releaseDate",
+    importable: "whole",
+    compact: true,
     group: "dates",
     type: "date",
   },
@@ -173,6 +197,7 @@ export const FIELD_REGISTRY = {
     scale: { min: 0, step: 500, unit: "bytes" },
     token: "size",
     labelKey: "fileSize",
+    compact: true,
     options: [
       { min: 0, max: 5 * 1024 * 1024, label: "< 5 MB" },
       { min: 5 * 1024 * 1024, max: 20 * 1024 * 1024, label: "5-20 MB" },
@@ -204,6 +229,7 @@ export const FIELD_REGISTRY = {
     source: "tags",
     token: "tag",
     labelKey: "tags",
+    importable: "each",
     group: "relations",
     type: "array",
     entity: "tag",
@@ -228,6 +254,7 @@ export const FIELD_REGISTRY = {
     source: "series",
     token: "series",
     labelKey: "series",
+    importable: "whole",
     group: "relations",
     type: "array",
     entity: "series",
@@ -241,6 +268,7 @@ export const FIELD_REGISTRY = {
     source: "authors",
     token: "author",
     labelKey: "authors",
+    importable: "each",
     group: "creators",
     type: "array",
     entity: "creator",
@@ -254,6 +282,8 @@ export const FIELD_REGISTRY = {
     source: "narrators",
     token: "narrator",
     labelKey: "narrators",
+    importable: "each",
+    formats: ["audiobook", "readaloud"],
     group: "creators",
     type: "array",
     entity: "creator",
@@ -281,6 +311,7 @@ export const FIELD_REGISTRY = {
     qualifier: { kind: "role" },
     token: "author",
     labelKey: "creators",
+    importable: "each",
     group: "creators",
     type: "array",
     entity: "creator",
@@ -322,6 +353,7 @@ export const FIELD_REGISTRY = {
     scale: { min: 0, max: 5, step: 0.5, unit: "count" },
     token: "rating",
     labelKey: "userRating",
+    compact: true,
     options: [
       { min: 0, max: 0.99, label: "☆☆☆☆☆" },
       { min: 1, max: 1.99, label: "★☆☆☆☆" },
@@ -368,6 +400,7 @@ export const FIELD_REGISTRY = {
     token: "grade",
     options: [...ALIGNMENT_GRADES],
     labelKey: "alignmentGrade",
+    compact: true,
     group: "alignment",
     type: "enum",
   },
@@ -379,6 +412,7 @@ export const FIELD_REGISTRY = {
     token: "previousGrade",
     options: [...ALIGNMENT_GRADES],
     labelKey: "alignmentPreviousGrade",
+    compact: true,
     group: "alignment",
     type: "enum",
   },
@@ -390,6 +424,7 @@ export const FIELD_REGISTRY = {
     scale: { min: 0, max: 100, unit: "percent" },
     token: "confidence",
     labelKey: "alignmentConfidence",
+    compact: true,
     group: "alignment",
     defaultOperator: "greaterOrEqual",
   },
@@ -400,6 +435,7 @@ export const FIELD_REGISTRY = {
     type: "number",
     token: "sentences",
     labelKey: "alignmentSentenceCoverage",
+    compact: true,
     scale: { min: 0, max: 100, unit: "percent" },
     group: "alignment",
     defaultOperator: "greaterOrEqual",
@@ -411,6 +447,7 @@ export const FIELD_REGISTRY = {
     type: "number",
     token: "audio",
     labelKey: "alignmentAudioCoverage",
+    compact: true,
     scale: { min: 0, max: 100, unit: "percent" },
     group: "alignment",
     defaultOperator: "greaterOrEqual",
@@ -498,6 +535,28 @@ export const ENUM_FIELDS = Object.keys(FIELD_REGISTRY).filter(
   (f) => FIELD_REGISTRY[f as Field].type === "enum",
 ) as EnumField[]
 
+export type ImportableField = AcceptedKeys<
+  typeof FIELD_REGISTRY,
+  { importable: ImportMode }
+>
+export const IMPORTABLE_FIELDS = FIELDS.filter(
+  (f) => "importable" in FIELD_REGISTRY[f],
+) as ImportableField[]
+
+export function isImportableField(value: string): value is ImportableField {
+  return (IMPORTABLE_FIELDS as string[]).includes(value)
+}
+
+export type ImportEachField = AcceptedKeys<
+  typeof FIELD_REGISTRY,
+  { importable: "each" }
+>
+export const IMPORT_EACH_FIELDS = FIELDS.filter(
+  (f) =>
+    "importable" in FIELD_REGISTRY[f] &&
+    FIELD_REGISTRY[f].importable === "each",
+) as ImportEachField[]
+
 export type CanBeEmptyField = Exclude<Field, "search">
 export const CAN_BE_EMPTY_FIELDS = FIELDS.filter(
   (f) => f !== "search",
@@ -510,6 +569,14 @@ export type CountableField = AcceptedKeys<
 export const COUNTABLE_FIELDS = FIELDS.filter(
   (f) => "countable" in FIELD_REGISTRY[f] && FIELD_REGISTRY[f].countable,
 ) as CountableField[]
+
+export type CompactField = AcceptedKeys<
+  typeof FIELD_REGISTRY,
+  { compact: true }
+>
+export const COMPACT_FIELDS = FIELDS.filter(
+  (f) => "compact" in FIELD_REGISTRY[f] && FIELD_REGISTRY[f].compact,
+) as CompactField[]
 
 export type QuickFilterField = AcceptedKeys<
   typeof FIELD_REGISTRY,

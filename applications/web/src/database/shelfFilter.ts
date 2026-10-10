@@ -458,6 +458,8 @@ export function buildSortExpression(
       return sql`book.updated_at`
     case "publicationDate":
       return sql`book.publication_date`
+    case "releaseDate":
+      return sql`book.release_date`
     case "alignedAt":
       return sql`book.aligned_at`
     case "lastRead":

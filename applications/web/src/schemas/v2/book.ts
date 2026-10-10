@@ -194,6 +194,11 @@ export const BookSchemaV2 = z.object({
       description: "The date that this book was first published.",
     }),
   ),
+  releaseDate: z.nullish(
+    z.coerce.date().meta({
+      description: "The date that this book's audio recording was released.",
+    }),
+  ),
   rating: z.nullish(
     z.number().meta({
       deprecated: true,
@@ -393,6 +398,9 @@ const BookUpdateValuesSchemaV2 = z.object({
   publicationDate: z.string().nullable().optional().meta({
     description: "The date that this book was first published.",
   }),
+  releaseDate: z.string().nullable().optional().meta({
+    description: "The date that this book's audio recording was released.",
+  }),
   coverColorsOverride: z.array(JsColorSchemaV2).nullable().optional(),
   status: uuidv4.optional().meta({
     description: "The current user's reading status for this book.",
@@ -465,6 +473,18 @@ export const BookUpdateRequestSchemaV2 = z
         message: `"${data.publicationDate}" is not a valid publication date. Use a year, YYYY-MM-DD, or a full ISO timestamp.`,
       })
     }
+
+    if (
+      mask.has("releaseDate") &&
+      data.releaseDate &&
+      !toIsoDateString(data.releaseDate)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["releaseDate"],
+        message: `"${data.releaseDate}" is not a valid release date. Use a year, YYYY-MM-DD, or a full ISO timestamp.`,
+      })
+    }
   })
   .transform((data) => {
     const mask = new Set(data.fields)
@@ -499,6 +519,11 @@ export const BookUpdateRequestSchemaV2 = z
         ...(mask.has("publicationDate") && {
           publicationDate: data.publicationDate
             ? toIsoDateString(data.publicationDate)
+            : null,
+        }),
+        ...(mask.has("releaseDate") && {
+          releaseDate: data.releaseDate
+            ? toIsoDateString(data.releaseDate)
             : null,
         }),
         ...(mask.has("pageCount") && { pageCount: data.pageCount }),

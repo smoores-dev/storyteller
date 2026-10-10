@@ -140,7 +140,7 @@ export class AudiobookEntry {
 
   async setReleaseDate(date: Date): Promise<void> {
     const tags = await this.getMetadataTags()
-    tags.date = `${date.getDate().toString().padStart(2, "0")}-${date.getMonth().toString().padStart(2, "0")}-${date.getFullYear()}`
+    tags.date = date.toISOString().slice(0, 10)
   }
 
   async getDuration(): Promise<number> {

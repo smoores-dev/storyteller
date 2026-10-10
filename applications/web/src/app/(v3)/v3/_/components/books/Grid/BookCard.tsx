@@ -150,6 +150,12 @@ export function SecondaryText({
       ) : (
         none
       )
+    case "releaseDate":
+      return book.releaseDate ? (
+        <span>{book.releaseDate.slice(0, 4)}</span>
+      ) : (
+        none
+      )
     case "createdAt":
       return (
         <span>

@@ -275,7 +275,13 @@ function CoverSlot({
   )
 }
 
-export function CoverEditor({ compact }: { compact: boolean }) {
+export function CoverEditor({
+  compact,
+  onSearchCovers,
+}: {
+  compact: boolean
+  onSearchCovers?: (() => void) | undefined
+}) {
   const {
     book,
     form,
@@ -334,18 +340,32 @@ export function CoverEditor({ compact }: { compact: boolean }) {
 
   if (!editing) {
     const editAction = canEdit && (
-      <TooltipButton
-        variant="secondary"
-        size="icon-sm"
-        onClick={() => {
-          setEditingCovers(true)
-        }}
-        aria-label={t("cover.edit")}
-        tooltip={t("cover.edit")}
-        className="tint-surface bg-background/85 text-foreground/70 hover:text-foreground rounded-full p-1.5"
-      >
-        <icon.Edit className="size-4" />
-      </TooltipButton>
+      <>
+        <TooltipButton
+          variant="secondary"
+          size="icon-sm"
+          onClick={() => {
+            setEditingCovers(true)
+          }}
+          aria-label={t("cover.edit")}
+          tooltip={t("cover.edit")}
+          className="tint-surface bg-background/85 text-foreground/70 hover:text-foreground rounded-full p-1.5"
+        >
+          <icon.Edit className="size-4" />
+        </TooltipButton>
+        {onSearchCovers && (
+          <TooltipButton
+            variant="secondary"
+            size="icon-sm"
+            onClick={onSearchCovers}
+            aria-label={t.plain("coverImport.open")}
+            tooltip={t("coverImport.open")}
+            className="tint-surface bg-background/85 text-foreground/70 hover:text-foreground rounded-full p-1.5"
+          >
+            <icon.Search className="size-4" />
+          </TooltipButton>
+        )}
+      </>
     )
 
     const resizeHandle = (

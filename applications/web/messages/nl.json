@@ -172,6 +172,7 @@
       "updatedAt": "Bijgewerkt op",
       "title": "Titel",
       "publicationDate": "Publicatie datum",
+      "releaseDate": "Verschijningsdatum",
       "reset": "Sortering herstellen"
     },
     "displayOptions": {
@@ -430,7 +431,29 @@
     "editShelves": "Schappen bewerken",
     "removedFromShelf": "{count, number} boek(en) verwijderd van {name}",
     "processingUnavailable": "Niet beschikbaar voor: {books}",
-    "updateShelfFailed": "Bijwerken van schap mislukt"
+    "updateShelfFailed": "Bijwerken van schap mislukt",
+    "importMetadataEach": "Metadata importeren, boek voor boek",
+    "addMetadataAutomatically": "Metadata automatisch toevoegen",
+    "bulkMetadataImport": {
+      "title": "Metadata automatisch toevoegen",
+      "description": "Zoek {count, plural, one {# geselecteerd boek} other {# geselecteerde boeken}} op en vul de lege velden in. Velden die al een waarde hebben blijven zoals ze zijn.",
+      "threshold": "{provider}: {confidence} of beter",
+      "changeInSettings": "<link>Wijzig dit in de instellingen</link>",
+      "start": "Starten",
+      "stop": "Stoppen",
+      "progress": "{done, number} van {count, number} boeken",
+      "summary": "{applied, plural, one {# boek bijgewerkt} other {# boeken bijgewerkt}}, {review, plural, one {# om na te kijken} other {# om na te kijken}}",
+      "review": "{count, plural, one {# boek} other {# boeken}} nakijken",
+      "status": {
+        "pending": "Wacht",
+        "running": "Zoeken",
+        "applied": "{count, plural, =0 {Niets in te vullen} one {# veld ingevuld} other {# velden ingevuld}}",
+        "unsure": "Geen zekere match",
+        "noMatch": "Niet gevonden",
+        "failed": "Mislukt",
+        "notSearched": "Niet gezocht"
+      }
+    }
   },
   "ShelfPage": {
     "emptyShelf": "Deze plank is leeg",
@@ -587,6 +610,7 @@
       "updatedAt": "Datum bijgewerkt",
       "title": "Titel",
       "publicationDate": "Publicatiedatum",
+      "releaseDate": "Verschijningsdatum",
       "rating": "Beoordeling"
     },
     "orderDirection": {
@@ -700,6 +724,27 @@
             "title": "Metadata uit bestanden",
             "description": "Hoe scans metadata uit boekbestanden toepassen.",
             "tip": "Samenvoegen past bij de meeste bibliotheken. Bewerk je je boeken ook in een ander programma, zoals Calibre of Audiobookshelf, kies dan Altijd overschrijven zodat die wijzigingen hier verschijnen."
+          },
+          "metadataProviders": {
+            "title": "Metadatabronnen",
+            "description": "Doorzoek deze bronnen naar metadata en omslagen vanaf de pagina van een boek.",
+            "tip": "Audnexus levert luisterboekgegevens van Audible. Hardcover levert boekgegevens, beoordelingen en omslagen. Apple Books levert omslagen.",
+            "unavailable": "Niet beschikbaar op deze server",
+            "unavailableTip": "De metadata-add-on kon niet worden geladen. Die is er voor macOS, Linux en Windows op x64 en arm64.",
+            "noTokenNeeded": "Klaar",
+            "tokenMissing": "Token nodig",
+            "tokenSaved": "Token opgeslagen",
+            "tokenFromConfig": "Token ingesteld in het configuratiebestand",
+            "tokenFromEnv": "Token ingesteld via HARDCOVER_API_TOKEN",
+            "tokenUnreadable": "Het opgeslagen token kan niet meer worden gelezen. Voer het opnieuw in.",
+            "tokenLabel": "API-token",
+            "tokenTip": "Je vindt je token op hardcover.app onder Settings en dan API access. Storyteller controleert het bij Hardcover voordat het wordt opgeslagen.",
+            "tokenPlaceholder": "Plak je Hardcover-token",
+            "tokenReplacePlaceholder": "Plak een nieuw token om het opgeslagen token te vervangen",
+            "tokenRejected": "Hardcover heeft dit token niet geaccepteerd.",
+            "tokenUnverified": "Kan Hardcover niet bereiken om dit token te controleren. Probeer het later opnieuw.",
+            "thresholdLabel": "Automatisch toepassen vanaf",
+            "thresholdTip": "Metadata automatisch toevoegen vult lege velden zonder te vragen in vanuit een match op dit niveau of hoger."
           },
           "defaultStatus": {
             "title": "Standaardstatus",
@@ -1605,7 +1650,10 @@
       "apply": "Toepassen",
       "adjustScores": "Scores aanpassen",
       "addDimension": "{label} toevoegen",
-      "removeDimension": "{label} verwijderen"
+      "removeDimension": "{label} verwijderen",
+      "refreshRatings": "Beoordelingen vernieuwen",
+      "editRatings": "Beoordelingen aanpassen",
+      "removeRating": "Beoordeling van {source} verwijderen"
     },
     "scan": {
       "title": "Scan",
@@ -1699,6 +1747,85 @@
     "unsavedChanges": {
       "title": "Je hebt niet-opgeslagen wijzigingen",
       "description": "Sla ze op of verwerp ze voordat je dit boek verlaat."
+    },
+    "metadataImport": {
+      "open": "Metadata importeren",
+      "title": "Metadata importeren",
+      "region": "Audible-winkel",
+      "field": "Veld",
+      "none": "Geen",
+      "expand": "Meer tonen",
+      "collapse": "Minder tonen",
+      "rating": "Beoordeling",
+      "narratedBy": "Voorgelezen door {narrators}",
+      "toggleEditions": "Edities tonen",
+      "noEditions": "Geen edities",
+      "anyEdition": "Elke editie",
+      "confidence": {
+        "certain": "Zekere match",
+        "high": "Sterke match",
+        "medium": "Mogelijke match",
+        "low": "Zwakke match"
+      },
+      "noResults": "Geen resultaten",
+      "changeCount": "{count, plural, =0 {Er verandert geen veld} one {Er verandert # veld} other {Er veranderen # velden}}",
+      "scopes": {
+        "book": "Boek",
+        "ebook": "E-book",
+        "audiobook": "Luisterboek",
+        "readaloud": "Readaloud"
+      },
+      "step": "{index, number} van {count, number}",
+      "skip": "Overslaan",
+      "regionTip": "Audnexus zoekt boeken op in één Audible-winkel tegelijk. Titels, vertellers en verschijningsdatums kunnen per winkel verschillen, dus kies de winkel waar dit luisterboek verkocht wordt.",
+      "selectAllFrom": "Alles van {source} selecteren",
+      "result": "Resultaat",
+      "undoAll": "Alle wijzigingen ongedaan maken",
+      "undo": "Ongedaan maken",
+      "was": "Was {value}",
+      "wasEmpty": "Was leeg",
+      "from": "Van {source}",
+      "edited": "Door jou aangepast",
+      "editValue": "Klik om aan te passen",
+      "removeValue": "{value} verwijderen",
+      "restore": "Terugzetten",
+      "hideResults": "Zoekresultaten verbergen",
+      "showResults": "Zoekresultaten tonen",
+      "seriesPosition": "Positie in de serie",
+      "applied": "Wijzigingen toegepast",
+      "applyFailed": "Toepassen is mislukt. Probeer het opnieuw.",
+      "applyAndNext": "Toepassen en volgende"
+    },
+    "coverImport": {
+      "open": "Omslagen zoeken",
+      "refresh": "Opnieuw zoeken",
+      "textSide": "Boekomslag",
+      "audioSide": "Luisterboekomslag",
+      "currentCover": "Huidig omslag",
+      "noCandidates": "Geen omslagen gevonden",
+      "preview": "Op volle grootte openen",
+      "selectedCount": "{count, plural, =0 {Geen omslagen gekozen} one {# omslag gekozen} other {# omslagen gekozen}}",
+      "failed": "Het omslag kon niet worden toegepast. Probeer het opnieuw.",
+      "noCover": "Nog geen omslag",
+      "keepCurrent": "Huidige omslag houden",
+      "keepNone": "Selectie wissen",
+      "applied": "Omslagen bijgewerkt"
+    },
+    "metadataProviders": {
+      "unavailableTitle": "Metadata importeren is niet beschikbaar",
+      "unavailableDescription": "Deze server kon de metadata-add-on niet laden.",
+      "noToken": "Hardcover heeft een API-token nodig. <link>Voeg er een toe in de instellingen</link>.",
+      "tokenRejected": "Hardcover heeft het opgeslagen token geweigerd. Werk het bij in de instellingen.",
+      "rateLimited": "{provider} krijgt te veel verzoeken. Wacht een minuut en zoek dan opnieuw.",
+      "searchFailed": "Zoeken bij {provider} is mislukt. Probeer het zo opnieuw."
+    },
+    "importDialog": {
+      "metadata": "Metadata",
+      "covers": "Omslagen",
+      "metadataTitle": "Metadata importeren",
+      "coversTitle": "Omslagen importeren",
+      "experimental": "Experimenteel! Verandert waarschijnlijk binnenkort",
+      "searchPlaceholder": "Titel en auteur"
     }
   },
   "Labels": {
@@ -2011,7 +2138,9 @@
       "resetToDefaults": "Standaardwaarden herstellen",
       "none": "Geen",
       "showMore": "Meer tonen",
-      "showLess": "Minder tonen"
+      "showLess": "Minder tonen",
+      "apply": "Toepassen",
+      "close": "Sluiten"
     },
     "states": {
       "saving": "Opslaan...",
@@ -2027,6 +2156,7 @@
         "createdAt": "Toegevoegd",
         "updatedAt": "Bijgewerkt",
         "publicationDate": "Publicatiedatum",
+        "releaseDate": "Verschijningsdatum",
         "userRating": "Mijn score",
         "pageCount": "Pagina's",
         "duration": "Duur",
@@ -2064,6 +2194,7 @@
         "createdAt": "Toeg.",
         "updatedAt": "Bijgew.",
         "publicationDate": "Gepubl.",
+        "releaseDate": "Verschenen",
         "userRating": "Score",
         "pageCount": "Pag.",
         "duration": "Duur",

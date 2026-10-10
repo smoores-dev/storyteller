@@ -1120,7 +1120,7 @@ html:not(.dark) [data-shell="spine"] [data-slot="sidebar"] {
   }
 }
 
-button {
+button:not(:disabled) {
   cursor: pointer;
 }
 

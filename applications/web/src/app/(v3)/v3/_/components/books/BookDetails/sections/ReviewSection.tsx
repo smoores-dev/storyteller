@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { useBookForm } from "@v3/_/components/books/BookDetails/BookFormProvider"
 import { MultidimensionalRating } from "@v3/_/components/books/BookDetails/sections/MultidimensionalRatingLazy"
@@ -13,6 +13,7 @@ import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { SEAMLESS_BOX } from "@/app/(v3)/v3/_/components/books/BookDetails/EditableText"
+import { ExternalRating } from "@/app/(v3)/v3/_/components/books/BookDetails/ExternalRating"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import {
   type RatingDimensionScores,
@@ -22,6 +23,8 @@ import {
 import * as icon from "@/icons"
 import {
   useDeleteUserBookRatingMutation,
+  useDeleteExternalRatingMutation,
+  useRefreshBookRatingsMutation,
   useSetUserBookRatingMutation,
 } from "@/store/api"
 
@@ -112,7 +115,7 @@ function InlineRatingNumber({
 }
 
 export function ReviewSection({ className }: { className?: string }) {
-  const { book } = useBookForm()
+  const { book, canEdit, isEditing } = useBookForm()
   const t = useTranslation("BookDetailsPage")
   const c = useCommon()
   const { ratingDimensions } = useUserPreferences()
@@ -120,6 +123,26 @@ export function ReviewSection({ className }: { className?: string }) {
   const [setUserBookRating, { isLoading: isSaving }] =
     useSetUserBookRatingMutation()
   const [deleteUserBookRating] = useDeleteUserBookRatingMutation()
+  const [refreshRatings, { isLoading: isRefreshing }] =
+    useRefreshBookRatingsMutation()
+  const [deleteExternalRating] = useDeleteExternalRatingMutation()
+  const [ratingsActive, setRatingsActive] = useState(false)
+  const editingRatings = canEdit && (ratingsActive || isEditing)
+
+  const identifierSiblings = useMemo(
+    () =>
+      new Map(
+        [
+          ...book.identifiers,
+          ...(book.ebook?.identifiers ?? []),
+          ...(book.audiobook?.identifiers ?? []),
+          ...(book.readaloud?.identifiers ?? []),
+        ].flatMap((identifier) =>
+          identifier.kind ? [[identifier.kind, identifier.value] as const] : [],
+        ),
+      ),
+    [book],
+  )
 
   const currentRating = book.userBookRating?.rating ?? null
   const currentReview = book.userBookRating?.review ?? ""
@@ -311,6 +334,90 @@ export function ReviewSection({ className }: { className?: string }) {
               placeholder={t("review.ratePlaceholder")}
               onCommit={applyManualRating}
             />
+          </div>
+        )}
+
+        {book.externalData.length > 0 && (
+          <div className="group/ratings flex items-center gap-1">
+            <div className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1">
+              {book.externalData.map((externalData) => (
+                <span
+                  key={externalData.uuid}
+                  className="inline-flex items-center gap-0.5"
+                >
+                  <ExternalRating
+                    externalData={externalData}
+                    siblings={identifierSiblings}
+                  />
+                  {editingRatings && (
+                    <TooltipButton
+                      variant="ghost"
+                      size="icon-xs"
+                      className="text-muted-foreground"
+                      tooltip={t("review.removeRating", {
+                        source: externalData.sourceName,
+                      })}
+                      aria-label={t.plain("review.removeRating", {
+                        source: externalData.sourceName,
+                      })}
+                      onClick={() => {
+                        void deleteExternalRating({
+                          bookUuid: book.uuid,
+                          ratingUuid: externalData.uuid,
+                        })
+                      }}
+                    >
+                      <icon.Close className="size-3" />
+                    </TooltipButton>
+                  )}
+                </span>
+              ))}
+              {canEdit && !editingRatings && (
+                <TooltipButton
+                  variant="ghost"
+                  size="icon-xs"
+                  className="text-muted-foreground -ml-2 opacity-0 transition-opacity group-hover/ratings:opacity-100 focus-visible:opacity-100"
+                  onClick={() => {
+                    setRatingsActive(true)
+                  }}
+                  tooltip={t("review.editRatings")}
+                  aria-label={t.plain("review.editRatings")}
+                >
+                  <icon.Edit className="size-3.5 stroke-[1.5]" />
+                </TooltipButton>
+              )}
+            </div>
+            {editingRatings && (
+              <TooltipButton
+                variant="ghost"
+                size="icon-xs"
+                className="text-muted-foreground shrink-0"
+                disabled={isRefreshing}
+                onClick={() => {
+                  void refreshRatings({ bookUuid: book.uuid })
+                }}
+                tooltip={t("review.refreshRatings")}
+                aria-label={t.plain("review.refreshRatings")}
+              >
+                <icon.Refresh
+                  className={cn("size-3.5", isRefreshing && "animate-spin")}
+                />
+              </TooltipButton>
+            )}
+            {ratingsActive && !isEditing && (
+              <TooltipButton
+                variant="ghost"
+                size="icon-xs"
+                className="text-muted-foreground shrink-0"
+                onClick={() => {
+                  setRatingsActive(false)
+                }}
+                tooltip={c("actions.done")}
+                aria-label={c.plain("actions.done")}
+              >
+                <icon.Check className="size-3.5" />
+              </TooltipButton>
+            )}
           </div>
         )}
 

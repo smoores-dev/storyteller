@@ -52,6 +52,12 @@ export function ColumnValue({
         year: "numeric",
         timeZone: "UTC",
       })
+    case "releaseDate":
+      if (!book.releaseDate) return "\u2014"
+      return dateTime(new Date(book.releaseDate), {
+        year: "numeric",
+        timeZone: "UTC",
+      })
     case "createdAt":
       return dateTime(new Date(book.createdAt), {
         dateStyle: "medium",
@@ -150,6 +156,7 @@ export const columnWidths: Record<DisplayField, number> = {
   fileSize: 40,
   language: 50,
   publicationDate: 50,
+  releaseDate: 50,
   createdAt: 80,
   updatedAt: 100,
   alignedAt: 80,

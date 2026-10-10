@@ -43,6 +43,7 @@ const untracedRuntimePackages = packageClosure([
   "@huggingface/transformers",
   "@parcel/watcher",
   "kuromoji",
+  "@storyteller-platform/nodekit",
 ])
 
 function packageGlobs(name: string) {
@@ -122,6 +123,7 @@ const nextConfig: import("next").NextConfig = {
     "@parcel/watcher",
     "@reflink/reflink",
     "@storyteller-platform/okmain",
+    "@storyteller-platform/nodekit",
   ],
   output: "standalone",
   outputFileTracingRoot: repoRoot,

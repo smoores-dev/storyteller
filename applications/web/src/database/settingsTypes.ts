@@ -18,6 +18,7 @@ import {
   watchRuleValidationMessage,
 } from "@/database/importRules.validation"
 import { PreferenceDefaultsSchema } from "@/database/userPreferencesTypes"
+import { MATCH_CONFIDENCES } from "@/metadata/match"
 import { type UUID } from "@/uuid"
 
 export const TranscriptionEngineSchema = z.enum(RECOGNITION_ENGINES)
@@ -282,6 +283,7 @@ export const ENCRYPTED_SETTING_KEYS = [
   "openAiApiKey",
   "deepgramApiKey",
   "ctcServerApiKey",
+  "hardcoverApiToken",
 ] as const
 
 export const ALIGNMENT_GRANULARITY_OPTIONS = ["word", "sentence"] as const
@@ -349,6 +351,11 @@ export const SettingsSchema = z.object({
   openAiModelName: z.string().nullable(),
   deepgramApiKey: z.string().nullable(),
   deepgramModel: z.string().nullable(),
+  hardcoverApiToken: z.string().nullable().optional(),
+  metadataAutoImportThresholds: z.object({
+    audnexus: z.enum(MATCH_CONFIDENCES),
+    hardcover: z.enum(MATCH_CONFIDENCES),
+  }),
   // Parallelization settings
   parallelTranscodes: z.number(),
   parallelTranscribes: z.number(),
@@ -439,6 +446,7 @@ export const SETTINGS_DEFAULTS = {
   openAiModelName: null,
   deepgramApiKey: null,
   deepgramModel: "nova-3",
+  hardcoverApiToken: null,
   parallelTranscodes: 1,
   parallelTranscribes: 1,
   authProviders: [],
@@ -457,6 +465,7 @@ export const SETTINGS_DEFAULTS = {
   epub2ImportStrategy: "backup-and-convert",
   epub2BackupSuffix: DEFAULT_EPUB_SUFFIX_TEMPLATE,
   cleanCacheAfterReadaloud: false,
+  metadataAutoImportThresholds: { audnexus: "high", hardcover: "high" },
 } satisfies Settings
 
 // settings-only schema for config file validation;

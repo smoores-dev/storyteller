@@ -188,3 +188,48 @@ describe("updateBook merge positions", () => {
     assert.ok(book?.position, "target should have a position after merge")
   })
 })
+
+describe("updateBook merge identifiers", () => {
+  it("moves the merged books' identifiers and ratings onto the target", async () => {
+    using db = setupTestDb()
+    const [targetUuid, mergedUuid] = seedBooks(db, [
+      { title: "target", ebook: "/tmp/target.epub" },
+      { title: "merged", audiobook: "/tmp/merged" },
+    ]) as [UUID, UUID]
+    db.sqlite.exec(`
+      INSERT INTO external_source (name, kind) VALUES ('Audible', 'audible');
+      INSERT INTO identifier_type (name, kind) VALUES ('Audible ASIN', 'audible'), ('ISBN-13', 'isbn-13');
+      INSERT INTO identifier (uuid, book_uuid, identifier_type_uuid, value)
+      SELECT 'target-asin', '${targetUuid}', uuid, 'B002V1OF70' FROM identifier_type WHERE kind = 'audible';
+      INSERT INTO identifier (uuid, book_uuid, identifier_type_uuid, value)
+      SELECT 'merged-asin', '${mergedUuid}', uuid, 'B002V1OF70' FROM identifier_type WHERE kind = 'audible';
+      INSERT INTO identifier (book_uuid, identifier_type_uuid, value)
+      SELECT '${mergedUuid}', uuid, '9780441013593' FROM identifier_type WHERE kind = 'isbn-13';
+      INSERT INTO identifier (book_uuid, identifier_type_uuid, value, audiobook_uuid)
+      SELECT '${mergedUuid}', identifier_type.uuid, 'B002V1OF70', audiobook.uuid
+      FROM identifier_type, audiobook
+      WHERE identifier_type.kind = 'audible' AND audiobook.book_uuid = '${mergedUuid}';
+      INSERT INTO external_data (identifier_uuid, external_source_uuid, rating)
+      SELECT 'merged-asin', uuid, 4.5 FROM external_source WHERE kind = 'audible';
+    `)
+
+    await updateBook(targetUuid, null, { books: [mergedUuid] })
+
+    const book = await getBook(targetUuid)
+    assert.ok(book)
+    assert.deepStrictEqual(
+      book.identifiers.map((entry) => `${entry.kind}:${entry.value}`).sort(),
+      ["audible:B002V1OF70", "isbn-13:9780441013593"],
+    )
+    assert.deepStrictEqual(
+      book.audiobook?.identifiers.map(
+        (entry) => `${entry.kind}:${entry.value}`,
+      ),
+      ["audible:B002V1OF70"],
+    )
+    assert.deepStrictEqual(
+      book.externalData.map((entry) => [entry.identifierValue, entry.rating]),
+      [["B002V1OF70", 4.5]],
+    )
+  })
+})

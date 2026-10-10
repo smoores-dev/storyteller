@@ -21,11 +21,19 @@ import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
 import { AddToShelfList } from "@/app/(v3)/v3/_/components/books/ActionMenu/AddToShelfList"
 import { SetStatusList } from "@/app/(v3)/v3/_/components/books/ActionMenu/SetStatusList"
+import {
+  ImportDialog,
+  type ImportTab,
+} from "@/app/(v3)/v3/_/components/books/BookDetails/ImportDialog"
 import { useProcessingRun } from "@/app/(v3)/v3/_/components/books/BookDetails/useProcessingRun"
 import {
   BulkCoverColorsDialog,
   selectionHasColors,
 } from "@/app/(v3)/v3/_/components/books/BulkCoverColorsDialog"
+import {
+  BulkImportMetadataDialog,
+  type BulkImportMode,
+} from "@/app/(v3)/v3/_/components/books/BulkImportMetadataDialog"
 import { CreateCollectionDialog } from "@/app/(v3)/v3/_/components/books/CreateCollectionDialog"
 import { CreateSeriesDialog } from "@/app/(v3)/v3/_/components/books/CreateSeriesDialog"
 import { CreateTagDialog } from "@/app/(v3)/v3/_/components/books/CreateTagDialog"
@@ -135,6 +143,7 @@ export function useBookActionItems({
   onAfterDestructive?: () => void
 }) {
   const t = useTranslation("BookActions")
+  const tBook = useTranslation("BookDetailsPage")
   const tp = useTranslation("Processing")
   const c = useCommon()
   const permissions = usePermissions()
@@ -169,6 +178,12 @@ export function useBookActionItems({
   const [createShelfName, setCreateShelfName] = useState("")
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [coverColorsOpen, setCoverColorsOpen] = useState(false)
+  const [importTab, setImportTab] = useState<ImportTab | null>(null)
+  const [bulkImportMode, setBulkImportMode] = useState<BulkImportMode | null>(
+    null,
+  )
+
+  const singleBook = mode === "single" ? books[0] : undefined
 
   const epubBooks = books.filter((b) => b.ebook)
 
@@ -305,6 +320,7 @@ export function useBookActionItems({
           description: ebookBook.description || audiobookBook.description,
           publicationDate:
             ebookBook.publicationDate || audiobookBook.publicationDate,
+          releaseDate: audiobookBook.releaseDate || ebookBook.releaseDate,
         },
         relations: {
           creators: Object.values(uniqueCreators),
@@ -532,6 +548,25 @@ export function useBookActionItems({
       submenu: () => <SetStatusList books={books} bookUuids={bookUuids} />,
     })
 
+    if (canUpdate) {
+      entries.push({
+        key: "importMetadataEach",
+        label: t.plain("importMetadataEach"),
+        icon: <icon.FileImport className="size-4" />,
+        onSelect: () => {
+          setBulkImportMode("review")
+        },
+      })
+      entries.push({
+        key: "addMetadataAutomatically",
+        label: t.plain("addMetadataAutomatically"),
+        icon: <icon.Sparkles className="size-4" />,
+        onSelect: () => {
+          setBulkImportMode("auto")
+        },
+      })
+    }
+
     if (canUpdate && selectionHasColors(books)) {
       entries.push({
         key: "coverColors",
@@ -553,6 +588,25 @@ export function useBookActionItems({
         },
       })
     }
+  }
+
+  if (canUpdate && singleBook) {
+    entries.push({
+      key: "importMetadata",
+      label: tBook.plain("metadataImport.open"),
+      icon: <icon.FileImport className="size-4" />,
+      onSelect: () => {
+        setImportTab("metadata")
+      },
+    })
+    entries.push({
+      key: "importCovers",
+      label: tBook.plain("coverImport.open"),
+      icon: <icon.Search className="size-4" />,
+      onSelect: () => {
+        setImportTab("covers")
+      },
+    })
   }
 
   if (
@@ -681,6 +735,13 @@ export function useBookActionItems({
 
   const dialogs = (
     <>
+      {singleBook && canUpdate && (
+        <ImportDialog
+          book={singleBook}
+          tab={importTab}
+          onTabChange={setImportTab}
+        />
+      )}
       <DeleteBooksDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
@@ -688,6 +749,16 @@ export function useBookActionItems({
         onConfirm={handleDelete}
         isLoading={isDeleting}
       />
+      {mode === "bulk" && canUpdate && (
+        <BulkImportMetadataDialog
+          books={books}
+          mode={bulkImportMode ?? "review"}
+          open={bulkImportMode !== null}
+          onOpenChange={(open) => {
+            if (!open) setBulkImportMode(null)
+          }}
+        />
+      )}
       <BulkCoverColorsDialog
         open={coverColorsOpen}
         onOpenChange={setCoverColorsOpen}
