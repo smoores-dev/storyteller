@@ -1,5 +1,4 @@
 releases:
-  "@storyteller-platform/nodekit": minor
   "@storyteller-platform/okmain": minor
   "@storyteller-platform/opds": minor
 
