@@ -6,7 +6,6 @@ import org.readium.r2.shared.extensions.toMap
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.Url
-import org.readium.r2.shared.util.fromEpubHref
 import java.io.Serializable
 import java.net.URI
 
@@ -71,14 +70,14 @@ data class OverlayPar(
 class STMediaOverlays(val link: Link, private val nodes: List<MediaOverlayNode> = listOf()) {
     fun clip(ref: String): OverlayPar? {
         val fragmentNode = findNode(ref, this.nodes) ?: return null
-        val textResource = fragmentNode.text.path ?: return null
+        val textResource = fragmentNode.text.removeFragment().toString()
         return OverlayPar.fromReadiumClip(fragmentNode.clip ?: return null, textResource)
     }
 
     fun clips(): List<OverlayPar> {
         val nodes = collectNodes(this.nodes)
         return nodes.mapNotNull {
-            val textResource = it.text.path ?: return@mapNotNull null
+            val textResource = it.text.removeFragment().toString()
             return@mapNotNull OverlayPar.fromReadiumClip(
                 it.clip ?: return@mapNotNull null,
                 textResource,
@@ -89,8 +88,7 @@ class STMediaOverlays(val link: Link, private val nodes: List<MediaOverlayNode> 
     fun fragments(): List<TextFragment> {
         val nodes = collectNodes(this.nodes)
         return nodes.map { it.text }.mapNotNull { text: Url ->
-            val path = text.path ?: return@mapNotNull null
-            val href = Url.fromEpubHref(path) ?: return@mapNotNull null
+            val href = text.removeFragment()
             val fragment = text.fragment ?: return@mapNotNull null
             return@mapNotNull TextFragment(href = href, fragment = fragment)
         }
@@ -99,8 +97,7 @@ class STMediaOverlays(val link: Link, private val nodes: List<MediaOverlayNode> 
     fun fragment(clipUrl: String, position: Double): TextFragment? {
         val node = findNode(clipUrl, position, this.nodes)
         val text = node?.text ?: return null
-        val path = text.path ?: return null
-        val href = Url.fromEpubHref(path) ?: return null
+        val href = text.removeFragment()
         val fragment = text.fragment ?: return null
         return TextFragment(href = href, fragment = fragment)
     }

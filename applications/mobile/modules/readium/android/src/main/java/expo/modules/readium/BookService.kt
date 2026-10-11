@@ -322,7 +322,8 @@ object BookService {
                 searchForClipByProgression(bookUuid, chapterClips, tocProgression) ?: return fallbackLink
 
             val clipResource =
-                publication.resources.first { it.href.toString() == clip.audioResource }
+                publication.resources.firstOrNull { it.href.toString() == clip.audioResource }
+                    ?: return fallbackLink
 
             val linkUrl = RelativeUrl("${clipResource.href}#t=${clip.start}")
                 ?: return fallbackLink

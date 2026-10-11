@@ -609,7 +609,7 @@ class PlaybackService : MediaLibraryService() {
                 }
                 .build()
 
-            val fileUri = Uri.fromFile(File(extractedDir, href))
+            val fileUri = Uri.fromFile(File(extractedDir, Uri.decode(href)))
             val item = MediaItem.Builder()
                 .setMediaId(href)
                 .setUri(fileUri)

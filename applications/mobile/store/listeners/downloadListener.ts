@@ -356,7 +356,7 @@ startAppListening({
       }
     } catch (e) {
       logger.error(`Failed to download book`)
-      logger.error({ err: e })
+      logger.error(describeError(e))
       const { bookUuid, format } = action.meta.arg.originalArgs
 
       await db

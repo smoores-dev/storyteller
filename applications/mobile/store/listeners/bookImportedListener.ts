@@ -206,7 +206,7 @@ async function importLocalBook(
 
     await deleteImportScratchFiles(uuid, format).catch((e: unknown) => {
       logger.error(`Failed to clean up scratch files for book ${uuid}`)
-      logger.error({ err: e })
+      logger.error(describeError(e))
     })
   } catch (e) {
     try {
@@ -244,7 +244,7 @@ startAppListening({
       router.push({ pathname: "/book/[uuid]", params: { uuid } })
     } catch (e) {
       logger.error("Failed to import local book file")
-      logger.error({ err: e })
+      logger.error(describeError(e))
       listenerApi.dispatch(
         transferFeedbackSlice.actions.bookTransferFailed(
           `Failed to import book: ${describeError(e)}`,

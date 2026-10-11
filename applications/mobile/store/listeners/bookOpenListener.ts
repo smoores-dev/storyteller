@@ -1,6 +1,7 @@
 import { File } from "expo-file-system"
 
 import { db } from "@/database/db"
+import { describeError } from "@/describeError"
 import { logger } from "@/logger"
 import {
   type ReadiumManifest,
@@ -254,7 +255,7 @@ startAppListening({
         } catch (e) {
           // A position that cannot be resolved must not keep the book from opening
           logger.debug(`Could not resolve a clip for the saved position`)
-          logger.debug({ err: e })
+          logger.debug(describeError(e))
         }
 
         // A remapped position names a resource but not a fragment within it, so

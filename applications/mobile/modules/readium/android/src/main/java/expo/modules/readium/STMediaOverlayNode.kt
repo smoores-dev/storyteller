@@ -27,17 +27,17 @@ class MediaOverlayNode(
 ) : Serializable {
 
     val audioFile: String?
-        get() = audio?.removeFragment()?.path!!
+        get() = audio?.removeFragment()?.toString()
     val audioTime: String?
         get() = audio?.fragment
     val textFile: String
-        get() = text.removeFragment().path!!
+        get() = text.removeFragment().toString()
     val fragmentId: String?
         get() = text.fragment
     val clip: Clip?
         get() {
             val audio = audio ?: throw Exception("audio")
-            val audioFile = audio.removeFragment().path ?: throw Exception("audioFile")
+            val audioFile = audio.removeFragment().toString()
             val times = audio.fragment ?: ""
             val (start, end) = parseTimer(times)
             return Clip(audioFile, fragmentId ?: return null, start, end)
