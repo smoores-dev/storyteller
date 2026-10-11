@@ -70,38 +70,9 @@ class EpubFragment(
             listener = listener,
             paginationListener = listener,
             configuration = EpubNavigatorFragment.Configuration {
-                servedAssets = listOf(
-                    "fonts/OpenDyslexic.otf",
-                    "fonts/Literata_500Medium.ttf"
-                )
+                servedAssets = listOf("fonts/Literata_500Medium.ttf")
                 shouldApplyInsetsPadding = false
                 disablePageTurnsWhileScrolling = true
-
-                addFontFamilyDeclaration(FontFamily("OpenDyslexic")) {
-                    addFontFace {
-                        addSource("fonts/OpenDyslexic-Regular.ttf")
-                        setFontStyle(FontStyle.NORMAL)
-                        setFontWeight(FontWeight.NORMAL)
-                    }
-
-                    addFontFace {
-                        addSource("fonts/OpenDyslexic-Bold.ttf")
-                        setFontStyle(FontStyle.NORMAL)
-                        setFontWeight(FontWeight.BOLD)
-                    }
-
-                    addFontFace {
-                        addSource("fonts/OpenDyslexic-Bold-Italic.ttf")
-                        setFontStyle(FontStyle.ITALIC)
-                        setFontWeight(FontWeight.BOLD)
-                    }
-
-                    addFontFace {
-                        addSource("fonts/OpenDyslexic-Italic.ttf")
-                        setFontStyle(FontStyle.ITALIC)
-                        setFontWeight(FontWeight.NORMAL)
-                    }
-                }
 
                 addFontFamilyDeclaration(FontFamily("Literata")) {
                     addFontFace {
@@ -111,15 +82,9 @@ class EpubFragment(
                     }
                 }
 
-                listener.props!!.customFonts.forEach {
-                    addFontFamilyDeclaration(FontFamily(it.name)) {
-                        addFontFace {
-                            addSource(it.uri)
-                            setFontStyle(FontStyle.NORMAL)
-                            setFontWeight(FontWeight.NORMAL)
-                        }
-                    }
-                }
+                // Custom fonts are imported at runtime, so they live outside the app's assets,
+                // which is the only place Readium can serve an `addSource` path from on Android.
+                // EpubView injects them into the pages as data URLs instead.
 
                 selectionActionModeCallback = SelectionActionModeCallback(listener)
 

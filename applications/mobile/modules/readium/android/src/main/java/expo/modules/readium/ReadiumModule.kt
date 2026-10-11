@@ -344,15 +344,12 @@ class ReadiumModule : Module(), Listener {
             }
 
             Prop("customFonts") { view: EpubView, prop: List<Map<String, String>> ->
-                val customFonts =
-                    prop.map {
-                        val uri = it["uri"] as String
-                        val name = it["name"] as String
-                        val type = it["type"] as String
-                        CustomFont(uri, name, type)
-                    }
+                view.pendingProps.customFonts = prop.mapNotNull { font ->
+                    val uri = font["uri"]?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                    val name = font["name"]?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
 
-                view.pendingProps.customFonts = customFonts
+                    CustomFont(uri, name, font["type"] ?: "ttf")
+                }
             }
 
             Prop("fontFamily") { view: EpubView, prop: String ->

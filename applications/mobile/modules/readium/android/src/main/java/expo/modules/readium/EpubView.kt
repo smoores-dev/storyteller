@@ -4,7 +4,10 @@ package expo.modules.readium
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.text.Html
+import android.util.Base64
+import android.util.Log
 import android.view.KeyEvent
 import android.webkit.JavascriptInterface
 import androidx.annotation.ColorInt
@@ -16,8 +19,10 @@ import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.readium.r2.navigator.DecorableNavigator
 import org.readium.r2.navigator.Decoration
@@ -40,6 +45,7 @@ import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import kotlin.math.abs
 import kotlin.math.ceil
+import java.io.File
 
 data class Highlight(val id: String, @ColorInt val color: Int, val locator: Locator)
 
@@ -195,6 +201,64 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
         scrollMode = null
     )
     var props: FinalizedProps? = null
+
+    // @font-face rules for the fonts imported by the user, see injectCustomFonts()
+    private var customFontsCss: String = ""
+
+    // Readium can only serve the font sources of `addFontFamilyDeclaration` from the app's
+    // assets, so the fonts imported by the user are embedded as data URLs instead.
+    private fun applyCustomFonts(customFonts: List<CustomFont>) {
+        customFontsCss = ""
+
+        activity?.lifecycleScope?.launch {
+            val css = withContext(Dispatchers.IO) { buildCustomFontsCss(customFonts) }
+
+            customFontsCss = css
+            injectCustomFonts()
+        }
+    }
+
+    private fun buildCustomFontsCss(customFonts: List<CustomFont>): String =
+        customFonts.mapNotNull { font ->
+            val family = font.name
+                .filterNot { it == '"' || it == '\\' || it.code < 0x20 || it.code == 0x7f }
+                .trim()
+            if (family.isEmpty()) return@mapNotNull null
+
+            val bytes = try {
+                File(Uri.parse(font.uri).path ?: font.uri).readBytes()
+            } catch (e: Exception) {
+                Log.w("StorytellerFonts", "Could not read the custom font ${font.name}", e)
+                null
+            } ?: return@mapNotNull null
+
+            val type = if (font.type.equals("otf", ignoreCase = true)) "otf" else "ttf"
+            val source = Base64.encodeToString(bytes, Base64.NO_WRAP)
+
+            "@font-face { font-family: \"$family\"; font-style: normal; font-weight: normal;" +
+                " src: url(data:font/$type;base64,$source) }"
+        }.joinToString("\n")
+
+    private fun injectCustomFonts() {
+        val css = customFontsCss
+        if (css.isEmpty()) return
+
+        activity?.lifecycleScope?.launch {
+            navigator?.evaluateJavascript(
+                """
+                (function() {
+                  var style = document.getElementById('storyteller-custom-fonts');
+                  if (!style) {
+                    style = document.createElement('style');
+                    style.id = 'storyteller-custom-fonts';
+                    document.head.appendChild(style);
+                  }
+                  style.textContent = ${JSONObject.quote(css)};
+                })();
+                """.trimIndent()
+            )
+        }
+    }
 
     private fun isSameLocatorPosition(lhs: Locator?, rhs: Locator?): Boolean {
         if (lhs == null || rhs == null) {
@@ -494,6 +558,8 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
         props = finalProps
         val scrollModeChanged = oldProps?.let { finalProps.scrollMode != it.scrollMode } ?: false
+        val customFontsChanged = finalProps.customFonts != oldProps?.customFonts
+        val fontFamilyChanged = finalProps.fontFamily != oldProps?.fontFamily
         val enteredPageLayout = oldProps?.scrollMode == true && !finalProps.scrollMode
         val locatorChangedFromExternalUpdate = finalProps.locator != null &&
             !isSameLocatorPosition(finalProps.locator, oldProps?.locator) &&
@@ -510,10 +576,18 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
         if (
             finalProps.bookUuid != oldProps?.bookUuid ||
-            finalProps.customFonts != oldProps?.customFonts
+            customFontsChanged
         ) {
             destroyNavigator()
             initializeNavigator()
+        }
+
+        if (customFontsChanged) {
+            applyCustomFonts(finalProps.customFonts)
+        }
+
+        if (fontFamilyChanged) {
+            injectCustomFonts()
         }
 
         layoutBehavior.submitModePreferences(this, layoutChange)
@@ -1325,6 +1399,8 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
     }
 
     override fun onPageLoaded() {
+        injectCustomFonts()
+
         if (!firstPageLoaded.isCompleted) {
             firstPageLoaded.complete(Unit)
         }
