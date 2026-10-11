@@ -69,9 +69,7 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
                   <FieldDescription>{t("accent.hint")}</FieldDescription>
                   <AccentColorPicker
                     value={field.value ?? null}
-                    onChange={(value) => {
-                      field.onChange(value)
-                    }}
+                    onChange={field.onChange}
                     defaultLabel={t("accent.useDefault")}
                     customLabel={t("accent.custom")}
                     defaultColor={accentDefault ?? null}
@@ -91,9 +89,7 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
                   <FieldDescription>{t("accent.shell.hint")}</FieldDescription>
                   <SegmentedControl
                     value={field.value ?? shellThemeDefault}
-                    onChange={(value) => {
-                      field.onChange(value)
-                    }}
+                    onChange={field.onChange}
                     options={shellThemeOptions}
                   />
                   <FieldDescription>
@@ -122,9 +118,7 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
                   </SettingLabel>
                   <SegmentedControl
                     value={field.value ?? colorModeDefault}
-                    onChange={(value) => {
-                      field.onChange(value)
-                    }}
+                    onChange={field.onChange}
                     options={colorModeOptions}
                   />
                 </Field>

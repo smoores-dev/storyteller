@@ -2,10 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { type SingleParser, parseAsString, useQueryState } from "nuqs"
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
-import { type FieldErrors, useForm } from "react-hook-form"
+import { type FieldErrors, useForm, useFormState } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
 
@@ -21,6 +20,7 @@ import {
   NavSidebarHeader,
   NavSidebarList,
   NavSidebarSearch,
+  NAV_SIDEBAR_WIDTH,
   type NavSidebarTab,
 } from "@v3/_/components/ui/nav-sidebar"
 import {
@@ -237,8 +237,6 @@ function settingsFormValues(settings: Settings) {
   }
 }
 
-const SETTINGS_SIDEBAR_WIDTH = 220
-
 type SidebarTabDef = NavSidebarTab<Tab>
 
 export function SettingsForm({
@@ -275,18 +273,13 @@ export function SettingsForm({
     resolver: zodResolver(SettingsSchema),
     defaultValues: settingsFormValues(settings),
   })
-  const { handleSubmit, formState } = form
-  const errorCount = Object.keys(formState.errors).length
-  const { dirtyFields, isDirty } = formState
+  const { errors, dirtyFields, isDirty } = useFormState({
+    control: form.control,
+  })
+  const errorCount = Object.keys(errors).length
 
   const onSubmit = async (data: z.output<typeof SettingsSchema>) => {
     const changed = Object.keys(dirtyFields) as (keyof Settings)[]
-
-    if (changed.length === 0) {
-      toast.success(t("settingsSavedSuccessfully"))
-      return
-    }
-
     const payload = Object.fromEntries(
       changed.map((key) => [key, data[key]]),
     ) as Partial<Settings>
@@ -351,8 +344,6 @@ export function SettingsForm({
     [t, hasUsers],
   )
 
-  const searchParams = useSearchParams()
-
   const [activeTabRaw, setActiveTab] = useQueryState(
     "tab",
     parseAsString.withOptions({ history: "push" }) as SingleParser<Tab>,
@@ -361,17 +352,16 @@ export function SettingsForm({
     void setActiveTab(tab)
   })
 
-  const canonicaliseTabEvent = useEffectEvent((tab: Tab | null) => {
-    void setActiveTab(tab, { history: "replace" })
+  const canonicaliseTabEvent = useEffectEvent(() => {
+    const canonicalTab = resolveTab(activeTabRaw)
+    if (activeTabRaw && canonicalTab !== activeTabRaw) {
+      void setActiveTab(canonicalTab, { history: "replace" })
+    }
   })
 
   useEffect(() => {
-    const searchTab = resolveTab(searchParams.get("tab"))
-    if (searchTab !== activeTabRaw) {
-      canonicaliseTabEvent(searchTab)
-    }
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+    canonicaliseTabEvent()
+  }, [])
 
   const [targetSection, setTargetSection] = useQueryState(
     "section",
@@ -561,7 +551,7 @@ export function SettingsForm({
         {isFormTab ? (
           <form
             id="settings-form"
-            onSubmit={handleSubmit(onSubmit, onInvalidSubmit)}
+            onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)}
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
           >
             <PageContent className="p-4">
@@ -634,7 +624,7 @@ export function SettingsForm({
 
   return (
     <PageLayout>
-      <PageSidebar width={SETTINGS_SIDEBAR_WIDTH}>{sidebarContent}</PageSidebar>
+      <PageSidebar width={NAV_SIDEBAR_WIDTH}>{sidebarContent}</PageSidebar>
 
       <PageMain>
         <PageHeader>

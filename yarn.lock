@@ -16265,7 +16265,7 @@ __metadata:
     qrcode: "npm:^1.5.4"
     react: "catalog:"
     react-dom: "catalog:"
-    react-hook-form: "npm:^7.70.0"
+    react-hook-form: "npm:8.0.0-beta.4"
     react-is: "npm:^19.1.0"
     react-redux: "catalog:"
     react-window: "npm:^2.1.0"
@@ -36689,12 +36689,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-hook-form@npm:^7.70.0":
-  version: 7.70.0
-  resolution: "react-hook-form@npm:7.70.0"
+"react-hook-form@npm:8.0.0-beta.4":
+  version: 8.0.0-beta.4
+  resolution: "react-hook-form@npm:8.0.0-beta.4"
   peerDependencies:
+    "@types/react": "*"
     react: ^16.8.0 || ^17 || ^18 || ^19
-  checksum: 10c0/009c9c86b9ddb4f68964a121693fedcf61d656bc30052b217d4c87002ee26d6c5540cabd193abca4eb290775fdcd3c0a06b3b96fd54d9fead0c0d268a1760a5e
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/31ec55c32e5a885c1dc2c23e672d17509e11b4020f784a250cb75b2bbaf96394f4ebcb39832c1248ec95f5d636f28cab3fcfd508b2668a95090fe4871da104cb
   languageName: node
   linkType: hard
 

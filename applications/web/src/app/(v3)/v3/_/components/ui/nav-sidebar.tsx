@@ -18,6 +18,8 @@ import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { V3Link } from "@v3/_/components/v3-link"
 import { cn } from "@v3/_/lib/utils"
 
+export const NAV_SIDEBAR_WIDTH = 220
+
 export type NavSidebarTab<T extends string = string> = {
   value: T
   label: string

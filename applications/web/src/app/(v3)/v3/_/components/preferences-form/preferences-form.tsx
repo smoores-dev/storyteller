@@ -2,9 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type Locale } from "next-intl"
-import { type SingleParser, parseAsString, useQueryState } from "nuqs"
+import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { type FieldErrors, useForm } from "react-hook-form"
+import { type FieldErrors, useForm, useFormState } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
 
@@ -19,6 +19,7 @@ import {
   NavSidebarHeader,
   NavSidebarList,
   NavSidebarSearch,
+  NAV_SIDEBAR_WIDTH,
   type NavSidebarTab,
 } from "@v3/_/components/ui/nav-sidebar"
 import {
@@ -54,9 +55,12 @@ import { GeneralTab } from "./general-tab"
 import { LibraryDefaultsProvider } from "./library-defaults"
 import { ProfileTab } from "./profile-tab"
 import { type IsMatch, SearchContext } from "./shared"
-import { type PreferenceTab, type SectionKeywords, type Tab } from "./tabs"
-
-const SIDEBAR_WIDTH = 200
+import {
+  PREFERENCE_TABS,
+  type PreferenceTab,
+  type SectionKeywords,
+  type Tab,
+} from "./tabs"
 
 const formTabs: Tab[] = ["general", "appearance", "books"]
 const userTabs: Tab[] = ["profile"]
@@ -91,20 +95,13 @@ export function PreferencesForm({
     resolver: zodResolver(UserPreferencesFormSchema),
     defaultValues: preferences,
   })
+  const { dirtyFields, isDirty } = useFormState({ control: form.control })
 
   const [updateSettings, { isLoading: isSaving }] =
     useUpdateUserSettingsMutation()
 
   const onSubmit = async (data: z.output<typeof UserPreferencesFormSchema>) => {
-    const changed = Object.keys(
-      form.formState.dirtyFields,
-    ) as (keyof UserPreferencesForm)[]
-
-    if (changed.length === 0) {
-      toast.success(t("savedSuccessfully"))
-      return
-    }
-
+    const changed = Object.keys(dirtyFields) as (keyof UserPreferencesForm)[]
     const payload = Object.fromEntries(
       changed.map((key) => [key, data[key]]),
     ) as Partial<UserPreferencesForm>
@@ -153,7 +150,7 @@ export function PreferencesForm({
 
   const [activeTabRaw, setActiveTab] = useQueryState(
     "tab",
-    parseAsString as SingleParser<Tab>,
+    parseAsStringLiteral(PREFERENCE_TABS),
   )
 
   const activeTab: Tab | null = isMobile
@@ -259,7 +256,7 @@ export function PreferencesForm({
         <Button
           type="submit"
           form="preferences-form"
-          disabled={isSaving}
+          disabled={isSaving || !isDirty}
           size="sm"
         >
           {isSaving && <Spinner />}
@@ -323,7 +320,7 @@ export function PreferencesForm({
                     <Button
                       type="submit"
                       form="preferences-form"
-                      disabled={isSaving}
+                      disabled={isSaving || !isDirty}
                       size="sm"
                     >
                       {isSaving && <Spinner />}
@@ -353,7 +350,7 @@ export function PreferencesForm({
 
   return (
     <PageLayout>
-      <PageSidebar width={SIDEBAR_WIDTH}>{sidebarContent}</PageSidebar>
+      <PageSidebar width={NAV_SIDEBAR_WIDTH}>{sidebarContent}</PageSidebar>
 
       <PageMain>
         <PageHeader>

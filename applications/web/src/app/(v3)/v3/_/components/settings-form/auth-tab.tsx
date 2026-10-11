@@ -140,7 +140,7 @@ export function AuthenticationSection() {
           </CardHeader>
           <CardContent className="space-y-4">
             {authProviders.map((provider, index) => (
-              <Card key={provider.id} className="relative">
+              <Card key={provider.key} className="relative">
                 <Button
                   type="button"
                   variant="ghost"

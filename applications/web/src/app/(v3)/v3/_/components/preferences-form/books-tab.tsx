@@ -131,7 +131,6 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
   } = useFieldArray({
     control: form.control,
     name: "ratingDimensions",
-    keyName: "_key",
   })
 
   const primaryColor =
@@ -158,9 +157,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                       </SettingLabel>
                       <SegmentedControl
                         value={field.value ?? gridCoverDisplayDefault}
-                        onChange={(value) => {
-                          field.onChange(value)
-                        }}
+                        onChange={field.onChange}
                         options={gridCoverOptions}
                       />
                     </Field>
@@ -178,9 +175,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                         </SettingLabel>
                         <SegmentedControl
                           value={field.value ?? doubleCoverAlignmentDefault}
-                          onChange={(value) => {
-                            field.onChange(value)
-                          }}
+                          onChange={field.onChange}
                           options={alignmentOptions}
                         />
                       </Field>
@@ -208,9 +203,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                       </SettingLabel>
                       <SegmentedControl
                         value={coverFit}
-                        onChange={(value) => {
-                          field.onChange(value)
-                        }}
+                        onChange={field.onChange}
                         options={coverFitOptions}
                       />
                     </Field>
@@ -242,9 +235,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                   <FieldDescription>{t("opening.hint")}</FieldDescription>
                   <SegmentedControl
                     value={field.value ?? bookOpenTargetDefault}
-                    onChange={(value) => {
-                      field.onChange(value)
-                    }}
+                    onChange={field.onChange}
                     options={openTargetOptions}
                   />
                 </Field>
@@ -273,9 +264,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                   </FieldDescription>
                   <SegmentedControl
                     value={field.value ?? bookDetailDisplayDefault}
-                    onChange={(value) => {
-                      field.onChange(value)
-                    }}
+                    onChange={field.onChange}
                     options={detailDisplayOptions}
                   />
                 </Field>
@@ -306,9 +295,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                   </SettingLabel>
                   <SegmentedControl
                     value={field.value ?? ratingIconDefault}
-                    onChange={(value) => {
-                      field.onChange(value)
-                    }}
+                    onChange={field.onChange}
                     options={ratingIconOptions}
                   />
                   <div className="mt-4 flex flex-col gap-2">
@@ -365,7 +352,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
                 <div className="flex flex-col gap-2">
                   {dimensions.map((dimension, index) => (
                     <div
-                      key={dimension._key}
+                      key={dimension.key}
                       className="flex items-center gap-2"
                     >
                       <Controller

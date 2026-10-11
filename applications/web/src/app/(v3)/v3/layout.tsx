@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server"
 import localFont from "next/font/local"
 import { cookies, headers } from "next/headers"
 import Script from "next/script"
-import { NuqsAdapter } from "nuqs/adapters/next"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
 
 import { PiPProvider } from "@v3/_/components/reader/PipProvider"
 import { ReaderAudioProvider } from "@v3/_/components/reader/ReaderAudioProvider"
