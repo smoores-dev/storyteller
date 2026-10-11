@@ -82,6 +82,7 @@ await build({
   platform: "node",
   sourcemap: "external",
   format: "cjs",
+  conditions: ["@storyteller"],
   outExtension: {
     ".js": ".cjs",
   },

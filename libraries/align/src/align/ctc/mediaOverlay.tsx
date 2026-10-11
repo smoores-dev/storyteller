@@ -1,6 +1,6 @@
 /** @jsxImportSource @storyteller-platform/epub */
 
-import { basename } from "node:path/posix"
+import { basename } from "node:path"
 
 import { type SegmentationResult } from "@echogarden/text-segmentation"
 import { enumerate } from "itertools"
