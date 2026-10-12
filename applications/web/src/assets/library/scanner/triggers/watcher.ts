@@ -82,6 +82,7 @@ function bucketByBookFolder(
 export class Watcher {
   private readonly entryLocks = new Map<string, AsyncMutex>()
   private readonly controllers = new Map<ControllerKey, AbortController>()
+  private readonly closing = new Set<Promise<void>>()
   private started = false
 
   async start(): Promise<void> {
@@ -133,7 +134,7 @@ export class Watcher {
       this.controllers.delete("rules")
     }
 
-    this.entryLocks.clear()
+    await Promise.all(this.closing)
 
     const watchRules = await getWatchRules()
     this.startWatchRules(watchRules)
@@ -147,15 +148,15 @@ export class Watcher {
     this.controllers.delete(uuid)
   }
 
-  stop(): Promise<void> {
+  async stop(): Promise<void> {
     for (const controller of this.controllers.values()) {
       controller.abort()
     }
 
     this.controllers.clear()
+    await Promise.all(this.closing)
     this.entryLocks.clear()
     this.started = false
-    return Promise.resolve()
   }
 
   private startWatcher(
@@ -178,8 +179,11 @@ export class Watcher {
     }
 
     const scanLock = new AsyncMutex()
+    const subscriptionLock = new AsyncMutex()
     const pendingEvents: WatcherEvent[] = []
     let flushTimer: NodeJS.Timeout | null = null
+    let resubscribeTimer: NodeJS.Timeout | null = null
+    let resubscribeAttempts = 0
     let closed = false
     let subscription: Awaited<ReturnType<typeof watcher.subscribe>> | null =
       null
@@ -193,17 +197,23 @@ export class Watcher {
         flushTimer = null
       }
 
-      if (subscription) {
-        try {
-          await subscription.unsubscribe()
-        } catch (error) {
-          logger.error({
-            msg: "Failed to unsubscribe watcher",
-            importPath,
-            err: error,
-          })
-        }
+      if (resubscribeTimer) {
+        clearTimeout(resubscribeTimer)
+        resubscribeTimer = null
+      }
+
+      await subscriptionLock.lock()
+      try {
+        await subscription?.unsubscribe()
+      } catch (error) {
+        logger.error({
+          msg: "Failed to unsubscribe watcher",
+          importPath,
+          err: error,
+        })
+      } finally {
         subscription = null
+        subscriptionLock.unlock()
       }
 
       if (entryLock.isLocked) {
@@ -342,10 +352,98 @@ export class Watcher {
       scheduleFlush(0)
     }
 
+    const subscribe = async () => {
+      await subscriptionLock.lock()
+      try {
+        if (closed) return false
+
+        subscription = await watcher.subscribe(
+          importPath,
+          (error, events) => {
+            if (error) {
+              logger.error({
+                msg: "Watcher subscription error, resubscribing",
+                importPath,
+                err: error,
+              })
+              scheduleResubscribe()
+              return
+            }
+
+            handleEvents(events)
+          },
+          getWatcherOptions(),
+        )
+        return true
+      } finally {
+        subscriptionLock.unlock()
+      }
+    }
+
+    const resubscribe = async () => {
+      if (controller.signal.aborted || closed) return
+
+      await subscriptionLock.lock()
+      try {
+        await subscription?.unsubscribe()
+      } catch (error) {
+        logger.debug({
+          msg: "Failed to unsubscribe dead watcher",
+          importPath,
+          err: error,
+        })
+      } finally {
+        subscription = null
+        subscriptionLock.unlock()
+      }
+
+      try {
+        if (!(await subscribe())) return
+      } catch (error) {
+        logger.error({
+          msg: "Failed to resubscribe watcher",
+          importPath,
+          err: error,
+        })
+        scheduleResubscribe()
+        return
+      }
+
+      resubscribeAttempts = 0
+      logger.info({ msg: "Watcher resubscribed", importPath })
+
+      try {
+        await bootstrapWatcher()
+      } catch (error) {
+        logger.error({
+          msg: "Failed to catch up on changes after resubscribing",
+          importPath,
+          err: error,
+        })
+      }
+    }
+
+    // we need to manually try to resub
+    // at various points bc parcel doesn't implement EINTR correctly
+    // see https://github.com/parcel-bundler/watcher/issues/253
+    const scheduleResubscribe = () => {
+      if (controller.signal.aborted || closed || resubscribeTimer) return
+
+      const delayMs = Math.min(1000 * 2 ** resubscribeAttempts, 60_000)
+      resubscribeAttempts++
+      resubscribeTimer = setTimeout(() => {
+        resubscribeTimer = null
+        void resubscribe()
+      }, delayMs)
+      resubscribeTimer.unref()
+    }
+
     controller.signal.addEventListener(
       "abort",
       () => {
-        void closeWatcher()
+        const done = closeWatcher()
+        this.closing.add(done)
+        void done.finally(() => this.closing.delete(done))
       },
       { once: true },
     )
@@ -362,23 +460,7 @@ export class Watcher {
           return
         }
 
-        subscription = await watcher.subscribe(
-          importPath,
-          (error, events) => {
-            if (error) {
-              logger.error({
-                msg: "Watcher subscription error",
-                importPath,
-                err: error,
-              })
-              return
-            }
-
-            handleEvents(events)
-          },
-          getWatcherOptions(),
-        )
-
+        await subscribe()
         await bootstrapWatcher()
       } catch (error) {
         logger.error({

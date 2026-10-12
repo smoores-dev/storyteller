@@ -1,7 +1,8 @@
 import assert from "node:assert"
 import { join } from "node:path"
 
-import { describe, it } from "vitest"
+import parcelWatcher from "@parcel/watcher"
+import { describe, it, vi } from "vitest"
 
 import { setupTestDb } from "@/__tests__/harness/testDb"
 import { createTestLibrary, waitForWatcher } from "@/__tests__/harness/testFs"
@@ -11,6 +12,73 @@ import { getBooks } from "@/database/books"
 import { createImportRule } from "@/database/importRules"
 
 describe("Watcher", () => {
+  it("resubscribes after the subscription dies and picks up missed changes", async () => {
+    using _db = setupTestDb()
+    await using library = await createTestLibrary("watcher-resubscribe")
+
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
+
+    const realSubscribe = parcelWatcher.subscribe.bind(parcelWatcher)
+    const first: { mute?: () => void; fail?: () => void } = {}
+    const subscribe = vi
+      .spyOn(parcelWatcher, "subscribe")
+      .mockImplementation((dir, callback, options) => {
+        if (dir !== absoluteRoot || first.mute) {
+          return realSubscribe(dir, callback, options)
+        }
+
+        let dead = false
+        first.mute = () => {
+          dead = true
+        }
+        first.fail = () => {
+          void callback(
+            new Error("Unable to poll: Interrupted system call"),
+            [],
+          )
+        }
+
+        return realSubscribe(
+          dir,
+          (error, events) => (dead ? undefined : callback(error, events)),
+          options,
+        )
+      })
+
+    try {
+      await using watcher = new Watcher()
+      await watcher.start()
+      await waitForWatcher(2000)
+
+      assert.ok(
+        first.mute && first.fail,
+        "first subscription should be captured",
+      )
+      first.mute()
+
+      await library.createBookFolder("while-dead", { ebook: "moby-dick" })
+      await waitForWatcher(2000)
+
+      const booksWhileDead = await getBooks()
+      assert.strictEqual(booksWhileDead.length, 0)
+
+      first.fail()
+      await waitForWatcher(6000)
+
+      const rootSubscriptions = subscribe.mock.calls.filter(
+        ([dir]) => dir === absoluteRoot,
+      )
+      assert.strictEqual(rootSubscriptions.length, 2)
+
+      const books = await getBooks()
+      assert.strictEqual(books.length, 1)
+      assert.strictEqual(books[0]?.title, "Moby Dick; Or, The Whale")
+    } finally {
+      subscribe.mockRestore()
+    }
+  })
+
   it("detects a new epub file added to a watched directory", async () => {
     using _db = setupTestDb()
     await using library = await createTestLibrary("watcher-detect")
@@ -77,6 +145,57 @@ describe("Watcher", () => {
     const books = await getBooks()
     assert.strictEqual(books.length, 1)
     assert.strictEqual(books[0]?.title, "Moby Dick; Or, The Whale")
+  })
+
+  it("waits for the old subscription to close before resubscribing on reload", async () => {
+    using _db = setupTestDb()
+    await using library = await createTestLibrary("watcher-reload-same")
+
+    const absoluteRoot = await canonicalizePath(library.root)
+    await createImportRule({ kind: "watch", path: absoluteRoot })
+
+    const realSubscribe = parcelWatcher.subscribe.bind(parcelWatcher)
+    const calls: string[] = []
+    const subscribe = vi
+      .spyOn(parcelWatcher, "subscribe")
+      .mockImplementation(async (dir, callback, options) => {
+        const subscription = await realSubscribe(dir, callback, options)
+        if (dir !== absoluteRoot) return subscription
+
+        calls.push("subscribe")
+        return {
+          unsubscribe: async () => {
+            calls.push("unsubscribe start")
+            await subscription.unsubscribe()
+            await waitForWatcher(500)
+            calls.push("unsubscribe end")
+          },
+        }
+      })
+
+    try {
+      await using watcher = new Watcher()
+      await watcher.start()
+      await waitForWatcher(1000)
+
+      await watcher.reload()
+      await waitForWatcher(1000)
+
+      assert.deepStrictEqual(calls, [
+        "subscribe",
+        "unsubscribe start",
+        "unsubscribe end",
+        "subscribe",
+      ])
+
+      await library.createBookFolder("after-reload", { ebook: "moby-dick" })
+      await waitForWatcher(5000)
+
+      const books = await getBooks()
+      assert.strictEqual(books.length, 1)
+    } finally {
+      subscribe.mockRestore()
+    }
   })
 
   it("detects multiple formats added sequentially to same book folder", async () => {

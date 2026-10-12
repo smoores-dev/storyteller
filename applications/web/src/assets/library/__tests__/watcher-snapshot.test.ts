@@ -1,5 +1,6 @@
 import assert from "node:assert"
 import { execFile } from "node:child_process"
+import { mkdir, rm } from "node:fs/promises"
 import { promisify } from "node:util"
 
 import { describe, it } from "vitest"
@@ -23,6 +24,35 @@ async function countZombieChildren() {
 }
 
 describe("watcher snapshots", () => {
+  it("reports a missing snapshot for a path that was never snapshotted", async () => {
+    await using library = await createTestLibrary("watcher-snapshot-missing")
+    await library.createBookFolder("book", { dummyEpub: true })
+
+    const before = await readSnapshotChanges(library.root)
+    assert.deepStrictEqual(before, { snapshotExists: false, changes: [] })
+
+    await writeWatcherSnapshot(library.root)
+
+    const after = await readSnapshotChanges(library.root)
+    assert.strictEqual(after.snapshotExists, true)
+  })
+
+  it.skipIf(process.platform !== "darwin")(
+    "treats a snapshot older than a recreated root as missing",
+    async () => {
+      await using library = await createTestLibrary(
+        "watcher-snapshot-recreated",
+      )
+      await writeWatcherSnapshot(library.root)
+
+      await rm(library.root, { recursive: true })
+      await mkdir(library.root)
+
+      const changes = await readSnapshotChanges(library.root)
+      assert.deepStrictEqual(changes, { snapshotExists: false, changes: [] })
+    },
+  )
+
   it.skipIf(process.platform === "win32")(
     "do not leave zombie child processes behind",
     async () => {

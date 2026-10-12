@@ -1,3 +1,5 @@
+import { join } from "node:path"
+
 import { defaultServerConditions } from "vite"
 import { defineConfig } from "vitest/config"
 
@@ -13,6 +15,14 @@ export default defineConfig({
   },
   test: {
     include: ["src/**/*.test.ts"],
+    env: {
+      STORYTELLER_DATA_DIR: join(
+        import.meta.dirname,
+        "src/__fixtures__/__output__",
+      ),
+      STORYTELLER_TEST_DB: "1",
+      STORYTELLER_SECRET_KEY: "test-secret-key",
+    },
     testTimeout: 0,
     hookTimeout: 0,
   },
