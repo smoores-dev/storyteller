@@ -22,8 +22,14 @@ public class ReadiumModule: Module {
             return await AudiobookPlayerActor.shared.getIsPlaying()
         }
 
-        AsyncFunction("getCurrentClip") {
-            return await AudiobookPlayerActor.shared.getCurrentClip()?.toJson()
+        AsyncFunction("getCurrentClip") { () async -> [String : Any]? in
+            guard let (overlayPar, locator) = await AudiobookPlayerActor.shared.getCurrentClipAndLocator() else {
+                return nil
+            }
+
+            var json = overlayPar.toJson()
+            json["locator"] = locator.json
+            return json
         }
 
         AsyncFunction("loadTracks") { (tracksJson: [[String:Any?]]) in

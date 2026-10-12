@@ -73,6 +73,7 @@ in
       enable = true;
       reactNative.enable = true;
       sources.enable = true;
+      emulator.enable = true;
     };
   };
 

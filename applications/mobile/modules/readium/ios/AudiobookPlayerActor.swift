@@ -296,6 +296,18 @@ public actor AudiobookPlayerActor {
         return searchForClip(clips: clips, position: getPosition())
     }
 
+    func getCurrentClipAndLocator() async -> (OverlayPar, Locator)? {
+        guard let clip = getCurrentClip() else {
+            return nil
+        }
+
+        guard let bookUuid = bookUuid, let locator = try? await BookService.shared.getLocatorFor(bookId: bookUuid, href: clip.textResource, fragment: clip.fragmentId) else {
+            return nil
+        }
+
+        return (clip, locator)
+    }
+
     func getTracks() -> [Track] {
         return tracks
     }

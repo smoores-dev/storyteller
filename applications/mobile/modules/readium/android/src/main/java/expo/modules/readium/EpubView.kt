@@ -714,7 +714,9 @@ class EpubView(context: Context, appContext: AppContext) : ExpoView(context, app
 
         val navigator = this.navigator ?: return
         val activity: FragmentActivity? = appContext.currentActivity as FragmentActivity?
-        activity?.supportFragmentManager?.commitNow {
+        // allowStateLoss prevents throwing when the navigator is unmounted while
+        // the app is backgrounded
+        activity?.supportFragmentManager?.commitNow(allowStateLoss = true) {
             setReorderingAllowed(true)
             remove(navigator.requireParentFragment())
         }

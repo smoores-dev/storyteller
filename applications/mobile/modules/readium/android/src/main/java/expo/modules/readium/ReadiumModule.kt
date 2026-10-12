@@ -49,9 +49,17 @@ class ReadiumModule : Module(), Listener {
             player.getIsPlaying()
         }
 
-        AsyncFunction("getCurrentClip") { ->
-            val overlayPar = player.getCurrentClip() ?: return@AsyncFunction null
-            return@AsyncFunction overlayPar.toJson()
+        AsyncFunction("getCurrentClip") Coroutine { ->
+            val overlayPar = player.getCurrentClip() ?: return@Coroutine null
+            val bookUuid = player.bookUuid ?: return@Coroutine null
+
+            val locator = BookService.buildFragmentLocator(
+                bookUuid,
+                Url.fromEpubHref(overlayPar.textResource)!!,
+                overlayPar.fragmentId,
+            )
+
+            return@Coroutine overlayPar.toJson() + mapOf("locator" to locator.toJSON().toMap())
         }
 
         AsyncFunction("loadTracks") Coroutine { tracksJson: List<Map<String, Any?>> ->
@@ -359,6 +367,10 @@ class ReadiumModule : Module(), Listener {
             OnViewDidUpdateProps { view: EpubView ->
                 view.player = player
                 view.finalizeProps()
+            }
+
+            OnViewDestroys { view: EpubView ->
+                view.destroyNavigator()
             }
         }
     }
