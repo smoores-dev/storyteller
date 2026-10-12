@@ -85,6 +85,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             targetSdkVersion: 36,
             buildToolsVersion: "36.0.0",
             usesCleartextTraffic: true,
+            // Required for Play Store builds as of 02/27/2027
+            enableMinifyInReleaseBuilds: true,
           },
         },
       ],
