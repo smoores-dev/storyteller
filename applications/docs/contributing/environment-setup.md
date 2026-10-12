@@ -26,6 +26,26 @@ status directly in your terminal prompt.
 
 :::
 
+### Android
+
+The Android SDK, NDK, and emulator system images add over 20 GB to the
+environment, so they are not installed by default. You need them to run
+`yarn sim:android` in `applications/mobile`, or to build the Android client in
+`applications/clients`. To install them, put the following in
+`devenv.local.yaml`:
+
+```yaml
+profile: android
+nixpkgs:
+  allow_unfree: true
+```
+
+`nixpkgs.allow_unfree` is required because Google distributes parts of the
+Android SDK under non-free licenses. To use the profile once without a config
+file, run `devenv --profile android shell`. Building the native Android client
+additionally requires a swift.org toolchain with the matching Android SDK
+bundle; see `applications/clients/CONTRIBUTING.md`.
+
 ## Manual Setup
 
 If you prefer to manage your environment yourself, install the following

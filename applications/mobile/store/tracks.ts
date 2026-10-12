@@ -48,9 +48,7 @@ export async function generateTracks(
   const audioLinks = manifest?.readingOrder ?? []
 
   return audioLinks.map((audioLink) => {
-    const uri = encodeURI(
-      getLocalBookFileUrl(book.uuid, format, audioLink.href),
-    )
+    const uri = getLocalBookFileUrl(book.uuid, format, audioLink.href)
 
     return {
       bookUuid: book.uuid,

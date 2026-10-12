@@ -140,6 +140,7 @@ const {
   deleteImportedBookFiles,
   deleteImportScratchFiles,
   deleteLocalBookFiles,
+  getLocalBookFileUrl,
 } = await import("./files")
 
 const UUID = "11111111-1111-4111-8111-111111111111"
@@ -278,3 +279,55 @@ test("leaves other formats alone when one format is requested", async () => {
   // Deleting a single download must not remove the book's covers.
   assert.ok(!paths.some((path) => path.includes("/covers/")))
 })
+
+function resolvesTo(url: string, relativeFilepath: string) {
+  const decoded = url
+    .split("/")
+    .map((segment) => decodeURIComponent(segment))
+    .join("/")
+
+  assert.ok(
+    decoded.endsWith(relativeFilepath),
+    `${url} resolves to ${decoded}, not .../${relativeFilepath}`,
+  )
+}
+
+test.each(["readaloud", "ebook", "audiobook"] as const)(
+  `resolves a percent-encoded href to the extracted file (%s)`,
+  (format) => {
+    resolvesTo(
+      getLocalBookFileUrl(
+        UUID,
+        format,
+        "Audio/01_An_Unexpected_Party_%5B2019_Edition%5D.mp3",
+      ),
+      "Audio/01_An_Unexpected_Party_[2019_Edition].mp3",
+    )
+    resolvesTo(
+      getLocalBookFileUrl(
+        UUID,
+        format,
+        "Audio/01%20-%20Chapter%2001%20%26%20More.mp4",
+      ),
+      "Audio/01 - Chapter 01 & More.mp4",
+    )
+    resolvesTo(
+      getLocalBookFileUrl(UUID, format, "Audio/It%27s_a.mp3"),
+      "Audio/It's_a.mp3",
+    )
+    resolvesTo(
+      getLocalBookFileUrl(UUID, format, "Audio/00000-00001-00002.mp4"),
+      "Audio/00000-00001-00002.mp4",
+    )
+  },
+)
+
+test.each(["readaloud", "ebook", "audiobook"] as const)(
+  `drops a media fragment from the href (%s)`,
+  (format) => {
+    resolvesTo(
+      getLocalBookFileUrl(UUID, format, "Audio/01%20One.mp3#t=12.5"),
+      "Audio/01 One.mp3",
+    )
+  },
+)

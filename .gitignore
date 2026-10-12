@@ -29,6 +29,8 @@ tsbuild
 
 # direnv/devenv config and cache
 local.envrc
+devenv.local.nix
+devenv.local.yaml
 .direnv
 .devenv
 /.devenv-initialized
@@ -46,3 +48,7 @@ logs/
 /.build/
 /.swiftpm/
 /storyteller-debug.apk
+
+# generated when the Android devenv profile is active
+local.properties
+/.android/

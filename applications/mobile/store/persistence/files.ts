@@ -97,28 +97,30 @@ export function getLocalBookExtractedUrl(
   return `${getBookExtractedDirectoryUrl()}${bookUuid}/${format}/`
 }
 
+/**
+ * The path of a manifest/media-overlay href on disk, i.e. what the archive extractor wrote.
+ *
+ * Hrefs arrive percent-encoded from the native layer (Readium's `Link.href`), while zip entries
+ * are extracted under their literal names, so the href has to be decoded before it can be used as
+ * a path. A malformed escape is treated as a literal path rather than throwing.
+ */
+function hrefToPath(href: string) {
+  const url = new URL(href, "publication:///")
+  return decodeURIComponent(url.pathname.slice(1))
+}
+
+/**
+ * The `file` URL of a resource inside an extracted book.
+ */
 export function getLocalBookFileUrl(
   bookUuid: UUID,
   format: "readaloud" | "ebook" | "audiobook",
-  relativeFilepath: string,
+  href: string,
 ) {
-  return `${getLocalBookExtractedUrl(bookUuid, format)}${
-    format === "audiobook"
-      ? relativeFilepath
-      : relativeFilepath
-          .split("/")
-
-          .map((s) =>
-            encodeURIComponent(s)
-              // The sync system percent-encodes single quotes as %27,
-              // but Readium decodes them back to single quotes,
-              // so we need to replace single quotes with percent-encoded
-              // %27 (as %2527) in order to match the actual file names
-              // on disk
-              .replaceAll("'", "%2527"),
-          )
-          .join("/")
-  }`
+  return `${getLocalBookExtractedUrl(bookUuid, format)}${hrefToPath(href)
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/")}`
 }
 
 export async function readBookFile(

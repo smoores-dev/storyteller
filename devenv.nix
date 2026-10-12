@@ -65,6 +65,17 @@ in
 
   languages.java.enable = true;
 
+  # Android tooling is opt-in: the SDK, NDK, and emulator system images add
+  # over 20 GB to the environment. See
+  # applications/docs/contributing/environment-setup.md#android.
+  profiles.android.module = {
+    android = {
+      enable = true;
+      reactNative.enable = true;
+      sources.enable = true;
+    };
+  };
+
   tasks."repo:init" = {
     description = "Do necessary work for setting up development";
     exec = ''
