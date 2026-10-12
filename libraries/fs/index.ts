@@ -1,6 +1,6 @@
 import { open } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { resolve } from "node:path"
+import { sep, resolve } from "node:path"
 
 /**
  * Like readFile, but streams the file into memory in chunks
@@ -45,4 +45,24 @@ export function scratchPath(...segments: string[]): string {
     process.env["STORYTELLER_SCRATCH_DIR"] || tmpdir(),
     ...segments,
   )
+}
+
+/**
+ * Detect whether a file is meant to be "hidden", per OS-specific
+ * file naming conventions.
+ *
+ * Returns true for files whose basename begins with a dot (e.g. `.env`)
+ * or whose paths contain the segment `@eaDir` (e.g. `@eaDir/file.mp3`),
+ * which is Synology's "metadata" directory name.
+ */
+export function isHiddenFile(nameOrPath: string): boolean {
+  const segments = nameOrPath.split(sep)
+  for (const segment of segments) {
+    // Synology "hidden" file metadata directory
+    if (segment === "@eaDir") return true
+
+    if (segment.startsWith(".")) return true
+  }
+
+  return false
 }

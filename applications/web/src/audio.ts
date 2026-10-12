@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process"
-import { basename, extname, sep } from "node:path"
+import { extname } from "node:path"
 import { promisify } from "util"
 
 import memoize from "memoize"
@@ -17,14 +17,6 @@ export function isAudioFile(nameOrPath: string): boolean {
 
 export function isZipArchive(nameOrPath: string): boolean {
   return MediaType.fromPath(nameOrPath)?.kind === "archive"
-}
-
-export function isHiddenFile(nameOrPath: string): boolean {
-  return (
-    basename(nameOrPath).startsWith(".") ||
-    // Synology "hidden" file metadata directory
-    nameOrPath.split(sep).includes("@eaDir")
-  )
 }
 
 export function lookupAudioMime(nameOrPath: string): string | null {

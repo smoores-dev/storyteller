@@ -31,7 +31,7 @@ import {
   type ManifestItem,
   xmlId,
 } from "@storyteller-platform/epub"
-import { scratchPath } from "@storyteller-platform/fs"
+import { isHiddenFile, scratchPath } from "@storyteller-platform/fs"
 import {
   createAggregator,
   createTiming,
@@ -158,7 +158,9 @@ export async function align(
 
   const audiobookFiles = await readdir(audiobookDir).then((filenames) =>
     filenames
-      .filter((f) => MediaType.fromPath(f)?.kind === "audio")
+      .filter(
+        (f) => !isHiddenFile(f) && MediaType.fromPath(f)?.kind === "audio",
+      )
       .map((f) => autoJoin(audiobookDir, f)),
   )
 
@@ -167,7 +169,7 @@ export async function align(
   const transcriptions = await readdir(transcriptionsDir)
     .then((filenames) =>
       filenames
-        .filter((f) => f.endsWith(".json"))
+        .filter((f) => !isHiddenFile(f) && f.endsWith(".json"))
         .map((f) => autoJoin(transcriptionsDir, f)),
     )
     .then((filepaths) =>

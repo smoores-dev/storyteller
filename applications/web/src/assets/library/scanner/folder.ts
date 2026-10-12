@@ -3,9 +3,10 @@ import { readdir, realpath } from "node:fs/promises"
 import { extname, join, resolve, sep } from "node:path"
 
 import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { isHiddenFile } from "@storyteller-platform/fs"
 
 import { isInsideInternalDirectory } from "@/assets/library/internalDirs"
-import { isAudioFile, isHiddenFile } from "@/audio"
+import { isAudioFile } from "@/audio"
 import { type BookWithRelations } from "@/database/books"
 import { getIgnorePaths } from "@/database/importRules"
 import { getSetting } from "@/database/settings"

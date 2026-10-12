@@ -3,12 +3,7 @@ import { join } from "node:path"
 
 import { describe, it } from "vitest"
 
-import {
-  getTrackDuration,
-  isAudioFile,
-  isHiddenFile,
-  isZipArchive,
-} from "@/audio"
+import { getTrackDuration, isAudioFile, isZipArchive } from "@/audio"
 
 describe("getTrackInfo", () => {
   it("can get track duration from an mp3 file", async () => {
@@ -82,21 +77,5 @@ describe("isZipArchive", () => {
     assert.ok(isZipArchive("book.zip"))
     assert.ok(isZipArchive("book.ZIP"))
     assert.ok(!isZipArchive("book.epub"))
-  })
-})
-
-describe("isHiddenFile", () => {
-  it("catches hidden files, including ones that shadow real audio names", () => {
-    assert.ok(isHiddenFile("._Track 01.mp3"))
-    assert.ok(isHiddenFile("/library/A Book/._Track 01.mp3"))
-    assert.ok(isHiddenFile(".DS_Store"))
-    assert.ok(isHiddenFile(".hidden.mp3"))
-  })
-
-  it("leaves visible files alone", () => {
-    assert.ok(!isHiddenFile("Track 01.mp3"))
-    assert.ok(!isHiddenFile("/library/A Book/Track 01.mp3"))
-    assert.ok(!isHiddenFile("_underscore name.mp3"))
-    assert.ok(!isHiddenFile("Thumbs.db"))
   })
 })

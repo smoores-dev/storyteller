@@ -42,7 +42,6 @@ check-docs:
     - yarn
     - yarn build:docs
 
-# TODO: fix and reenable!
 test-web:
   extends: .yarn_cache
   image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main
@@ -74,6 +73,22 @@ test-uri-fragment:
     - npm i -g corepack
     - yarn
     - yarn test:uri-fragment
+
+test-fs:
+  extends: .yarn_cache
+  image: registry.gitlab.com/storyteller-platform/storyteller/storyteller-base:main
+  stage: check
+  tags: [saas-linux-large-amd64]
+  rules:
+    - if:
+        ($CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH ==
+        "main" && $CI_COMMIT_TAG == null))
+      changes:
+        - libraries/fs/**/*
+  script:
+    - npm i -g corepack
+    - yarn
+    - yarn test:fs
 
 test-crengine-xpointer:
   extends: .yarn_cache

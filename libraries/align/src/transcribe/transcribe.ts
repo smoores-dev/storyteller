@@ -13,6 +13,7 @@ import { basename, extname, join, resolve } from "node:path"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { type Logger } from "pino"
 
+import { isHiddenFile } from "@storyteller-platform/fs"
 import {
   type TimingAggregator,
   type WhisperCppOptions,
@@ -78,7 +79,7 @@ export async function transcribe(
 
   const allFiles = await readdir(input, { recursive: true })
   const filenames = allFiles.filter(
-    (f) => MediaType.fromPath(f)?.kind === "audio",
+    (f) => !isHiddenFile(f) && MediaType.fromPath(f)?.kind === "audio",
   )
 
   if (!filenames.length) {

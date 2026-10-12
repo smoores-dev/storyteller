@@ -6,10 +6,11 @@ import {
   type AudiobookInputs,
 } from "@storyteller-platform/audiobook"
 import { type InMemoryEpubReader } from "@storyteller-platform/epub"
+import { isHiddenFile } from "@storyteller-platform/fs"
 
 import { openOrUpgradeEpub } from "@/assets/library/scanner/create-book"
 import { defineStep } from "@/assets/library/scanner/step"
-import { isAudioFile, isHiddenFile } from "@/audio"
+import { isAudioFile } from "@/audio"
 import { updateBook } from "@/database/books"
 
 import { type FingerPrinted } from "./check-fingerprint"

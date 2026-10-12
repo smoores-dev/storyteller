@@ -1,8 +1,10 @@
 import { readdir } from "node:fs/promises"
 
+import { isHiddenFile } from "@storyteller-platform/fs"
+
 import { normalizeReport } from "@/alignmentReportView"
 import { getProcessedAudioFilepath } from "@/assets/paths"
-import { getTrackDuration, isAudioFile, isHiddenFile } from "@/audio"
+import { getTrackDuration, isAudioFile } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import { getAlignmentReportForBook } from "@/database/alignmentReports"
 import { getBook } from "@/database/books"

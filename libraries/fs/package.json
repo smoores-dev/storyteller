@@ -15,12 +15,16 @@
   ],
   "scripts": {
     "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
-    "prepack": "yarn build"
+    "prepack": "yarn build",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@tsconfig/strictest": "catalog:",
     "@types/node": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",

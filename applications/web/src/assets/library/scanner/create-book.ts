@@ -10,6 +10,7 @@ import {
   type InMemoryEpubReader,
   MemoryAdapter,
 } from "@storyteller-platform/epub"
+import { isHiddenFile } from "@storyteller-platform/fs"
 
 import { move } from "@/assets/fs"
 import { type PipelineCtx, type ScanCtx } from "@/assets/library/scanner/ctx"
@@ -18,7 +19,7 @@ import {
   releasePrefixAfterSettle,
   suppressPrefix,
 } from "@/assets/library/scanner/write-intent"
-import { isAudioFile, isHiddenFile } from "@/audio"
+import { isAudioFile } from "@/audio"
 import {
   type BookWithRelations,
   createBookFromAudiobook,

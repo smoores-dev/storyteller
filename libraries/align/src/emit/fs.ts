@@ -14,6 +14,7 @@ import { type Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
 import { setTimeout } from "node:timers/promises"
 
+import { isHiddenFile } from "@storyteller-platform/fs"
 import {
   type EmissionData,
   type Emissions,
@@ -238,7 +239,11 @@ export class EmissionsReader {
 
     const allFiles = await readdir(fileOrDirectory, { recursive: true })
     return allFiles
-      .filter((f) => extname(f) === ".emissions" || extname(f) === ".json")
+      .filter(
+        (f) =>
+          !isHiddenFile(f) &&
+          (extname(f) === ".emissions" || extname(f) === ".json"),
+      )
       .toSorted()
       .map((f) => join(fileOrDirectory, f))
   }

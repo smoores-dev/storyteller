@@ -3,6 +3,7 @@ import { basename, extname, join } from "node:path"
 
 import { type Logger } from "pino"
 
+import { isHiddenFile } from "@storyteller-platform/fs"
 import {
   type CtcServer,
   type LoadedCtcModel,
@@ -83,7 +84,7 @@ export async function emit(
   const allFiles = await readdir(input, { recursive: true })
   const filenames = allFiles
     .toSorted()
-    .filter((f) => MediaType.fromPath(f)?.kind === "audio")
+    .filter((f) => !isHiddenFile(f) && MediaType.fromPath(f)?.kind === "audio")
 
   if (!filenames.length) {
     throw new Error(

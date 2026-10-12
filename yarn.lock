@@ -15627,6 +15627,7 @@ __metadata:
     tailwindcss: "catalog:"
     unified: "npm:^11.0.4"
     unist-util-visit: "npm:^5.0.0"
+    vite: "catalog:"
     vitest: "catalog:"
     yaml: "npm:^2.8.1"
   languageName: unknown
@@ -15671,6 +15672,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:5.0.0"
     "@xmldom/xmldom": "catalog:"
     typescript: "catalog:"
+    vite: "catalog:"
     vitest: "catalog:"
   languageName: unknown
   linkType: soft
@@ -15682,6 +15684,8 @@ __metadata:
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
     typescript: "catalog:"
+    vite: "catalog:"
+    vitest: "catalog:"
   languageName: unknown
   linkType: soft
 

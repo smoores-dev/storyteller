@@ -9,6 +9,7 @@ import {
   Audiobook,
   outputContainer,
 } from "@storyteller-platform/audiobook"
+import { isHiddenFile } from "@storyteller-platform/fs"
 import {
   type TimingAggregator,
   createAggregator,
@@ -50,6 +51,7 @@ export async function processAudiobook(
 
   const allFiles = await readdir(input, { recursive: true })
   const filenames = allFiles.filter((f) => {
+    if (isHiddenFile(f)) return false
     const kind = MediaType.fromPath(f)?.kind
     return kind === "audio" || kind === "archive"
   })
