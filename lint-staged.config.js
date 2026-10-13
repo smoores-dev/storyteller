@@ -11,6 +11,10 @@ const config = {
     "yarn workspace @storyteller-platform/epub readme",
     "git add libraries/epub/README.md",
   ],
+  "{README.md,.github/README.md}": () => [
+    "tsx ./scripts/githubReadme.mts",
+    "git add .github/README.md",
+  ],
   "applications/web/src/env.ts": () =>
     "tsx ./applications/web/scripts/generate-env-docs.ts",
   "applications/docs/docs/installation/self-hosting.md": () =>

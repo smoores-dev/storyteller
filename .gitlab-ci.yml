@@ -22,3 +22,4 @@ include:
   - local: ".gitlab/ci/clients.yml"
   - local: ".gitlab/ci/reader-browser.yml"
   - local: ".gitlab/ci/nodekit.yml"
+  - local: ".gitlab/ci/mirror-github.yml"

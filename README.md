@@ -7,10 +7,10 @@
   <tbody>
     <tr>
       <td align="center" width="14.28%">
-        <img height="500" src="docs/static/img/league-of-dragons-text.png" />
+        <img height="500" src="applications/docs/static/img/league-of-dragons-text.png" />
       </td>
       <td align="center" width="14.28%">
-        <img height="500" src="docs/static/img/league-of-dragons-audio.png" />
+        <img height="500" src="applications/docs/static/img/league-of-dragons-audio.png" />
       </td>
     </tr>
   </tbody>
