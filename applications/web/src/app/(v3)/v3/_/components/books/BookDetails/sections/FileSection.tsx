@@ -2,6 +2,7 @@
 
 import { revealItemInDir } from "@tauri-apps/plugin-opener"
 import { type ComponentType, useMemo, useState } from "react"
+import { toast } from "sonner"
 
 import { Badge } from "@v3/_/components/ui/badge"
 import {
@@ -11,15 +12,22 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@v3/_/components/ui/dropdown-menu"
 
-import { useBookForm } from "@/app/(v3)/v3/_/components/books/BookDetails/BookFormProvider"
 import { EditAssetDirDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/EditAssetDirDialog"
 import { EditIdentifiersDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/EditIdentifiersDialog"
 import { ReplaceFileDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/ReplaceFileDialog"
 import { ShowOpfDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/ShowOpfDialog"
 import { UploadFileDialog } from "@/app/(v3)/v3/_/components/books/BookDetails/UploadFileDialog"
+import { useSendToKindle } from "@/app/(v3)/v3/_/components/books/SendToKindle"
+import {
+  canShareFiles,
+  shareBookFile,
+} from "@/app/(v3)/v3/_/components/books/bookSharing"
 import { openTauriFileDialog } from "@/app/(v3)/v3/_/components/files/ServerFileBrowser"
 import { ConfirmDialog } from "@/app/(v3)/v3/_/components/ui/confirm-dialog"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
@@ -28,7 +36,6 @@ import {
   useCommon,
   useTranslation,
 } from "@/app/(v3)/v3/_/hooks/use-translation"
-import { cn } from "@/cn"
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import { type BookWithRelations } from "@/database/books"
@@ -137,6 +144,7 @@ function FormatFileRow({
   onReplaceServer,
   onReplaceUpload,
   onRemove,
+  onSendToKindle,
 }: {
   book: BookWithRelations
   format: Format
@@ -146,15 +154,15 @@ function FormatFileRow({
   onReplaceServer: () => void
   onReplaceUpload: () => void
   onRemove: () => void
+  onSendToKindle: (modifiers?: { shiftKey?: boolean }) => void
 }) {
   const fmt = book[format]
 
   const canEdit = usePermission("bookUpdate")
   const canDownload = usePermission("bookDownload")
-  const { isEditing } = useBookForm()
-
   const t = useTranslation("BookDetailsPage")
   const tLabels = useTranslation("Labels")
+  const tShare = useTranslation("Sharing")
   const c = useCommon()
 
   const [editingIdentifiers, setEditingIdentifiers] = useState(false)
@@ -184,6 +192,10 @@ function FormatFileRow({
   const isEpub2 = "isEpub2" in fmt && fmt.isEpub2
 
   const filepath = fmt.filepath ?? ""
+  const available = !!filepath && !fmt.missing
+  const canSendToKindle = canDownload && format === "ebook" && available
+  const canReveal = isTauri && !!filepath
+  const hasMenu = canEdit || canSendToKindle || canReveal
 
   const FORMAT_LABELS: Record<Format, string> = {
     ebook: t.plain("fileInformation.ebook"),
@@ -222,21 +234,15 @@ function FormatFileRow({
             </Badge>
           )}
 
-          {(canEdit || canDownload) && (
-            <div className="flex grow items-center justify-end gap-1">
-              {/* downloading is a file action, so it lives on the file rather
-                  than in the hero. a missing file has nothing to send. */}
-              {canDownload && !!filepath && !fmt.missing && (
+          {(hasMenu || (canDownload && available)) && (
+            <div className="flex grow items-center justify-end gap-0.5">
+              {canDownload && available && (
                 <TooltipButton
                   variant="ghost"
                   size="icon-sm"
                   nativeButton={false}
                   tooltip={t.plain("downloads.download")}
-                  className={cn(
-                    "text-muted-foreground font-thin opacity-0 transition-opacity",
-                    "group-hover/file:opacity-100",
-                    isEditing && "opacity-100",
-                  )}
+                  className="text-muted-foreground font-thin"
                   aria-label={`Download ${FORMAT_LABELS[format]}`}
                   render={
                     <a href={getDownloadUrl(book.uuid, format)} download>
@@ -246,117 +252,143 @@ function FormatFileRow({
                 />
               )}
 
-              {canEdit && (
-                <>
-                  {format !== "audiobook" && !!filepath && !fmt.missing && (
-                    <TooltipButton
-                      variant="ghost"
-                      size="icon-sm"
-                      tooltip="Show OPF"
-                      className={cn(
-                        "text-muted-foreground font-thin opacity-0 transition-opacity",
-                        "group-hover/file:opacity-100",
-                        isEditing && "opacity-100",
-                      )}
-                      aria-label={`Show ${FORMAT_LABELS[format]} OPF`}
-                      onClick={() => {
-                        setShowingOpf(true)
-                      }}
-                    >
-                      <icon.Bug className="h-3.5 w-3.5 stroke-[1.5]" />
-                    </TooltipButton>
-                  )}
-
-                  {isTauri ? (
-                    <TooltipButton
-                      variant="ghost"
-                      size="icon-sm"
-                      tooltip={c.plain("actions.replace")}
-                      className={cn(
-                        "text-muted-foreground font-thin opacity-0 transition-opacity",
-                        "group-hover/file:opacity-100",
-                        isEditing && "opacity-100",
-                      )}
-                      aria-label={`Replace ${format} file`}
-                      onClick={onReplace}
-                    >
-                      <icon.Replace className="h-3.5 w-3.5 stroke-[1.5]" />
-                    </TooltipButton>
-                  ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <TooltipButton
-                            variant="ghost"
-                            size="icon-sm"
-                            tooltip={c.plain("actions.replace")}
-                            className={cn(
-                              "text-muted-foreground font-thin opacity-0 transition-opacity",
-                              "group-hover/file:opacity-100",
-                              isEditing && "opacity-100",
-                            )}
-                            aria-label={`Replace ${format} file`}
+              {hasMenu && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <TooltipButton
+                        variant="ghost"
+                        size="icon-sm"
+                        tooltip={tShare.plain("moreActions")}
+                        className="text-muted-foreground font-thin"
+                        aria-label={`${tShare.plain("moreActions")} ${FORMAT_LABELS[format]}`}
+                      >
+                        <icon.Dots className="h-3.5 w-3.5 stroke-[1.5]" />
+                      </TooltipButton>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-fit">
+                    {canSendToKindle && (
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          onClick={(event) => {
+                            onSendToKindle({ shiftKey: event.shiftKey })
+                          }}
+                          className="whitespace-nowrap"
+                        >
+                          <icon.Send className="mr-2 h-4 w-4" />
+                          {tShare("sendToKindle")}
+                        </DropdownMenuItem>
+                        {canShareFiles() && (
+                          <DropdownMenuItem
+                            onClick={() => {
+                              shareBookFile(
+                                book,
+                                tShare.plain("shareFile"),
+                              ).catch(() => {
+                                toast.error(tShare.plain("shareFailed"))
+                              })
+                            }}
+                            className="whitespace-nowrap"
                           >
-                            <icon.Replace className="h-3.5 w-3.5 stroke-[1.5]" />
-                          </TooltipButton>
-                        }
-                      />
-                      <DropdownMenuContent align="end" className="w-fit">
-                        <DropdownMenuItem
-                          onClick={onReplaceServer}
-                          className="whitespace-nowrap"
-                        >
-                          <icon.Server className="mr-2 h-4 w-4" />
-                          {c("actions.import")}
-                        </DropdownMenuItem>
+                            <icon.Share className="mr-2 h-4 w-4" />
+                            {tShare("shareFile")}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuGroup>
+                    )}
 
+                    {canSendToKindle && (canEdit || canReveal) && (
+                      <DropdownMenuSeparator />
+                    )}
+
+                    {canEdit &&
+                      (isTauri ? (
                         <DropdownMenuItem
-                          onClick={onReplaceUpload}
+                          onClick={onReplace}
                           className="whitespace-nowrap"
                         >
-                          <icon.Upload className="mr-2 h-4 w-4" />
-                          {c("actions.upload")}
+                          <icon.Replace className="mr-2 h-4 w-4" />
+                          {c("actions.replace")}
                         </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                  {identifiers.length === 0 && (
-                    <TooltipButton
-                      variant="ghost"
-                      onClick={() => {
-                        setEditingIdentifiers(true)
-                      }}
-                      size="xs"
-                      className={cn(
-                        "text-muted-foreground/60 relative font-sans text-xs tracking-wide uppercase transition-colors",
-                        "font-normal opacity-0 transition-opacity",
-                        "group-hover/file:opacity-100",
-                        isEditing && "opacity-100",
-                      )}
-                      tooltip={t("identifiers.add")}
-                      aria-label={t("identifiers.add")}
-                    >
-                      <span>ID</span>
-                      <icon.Plus className="absolute -top-0.5 -right-0.5 size-2.5" />
-                    </TooltipButton>
-                  )}
-                  {canRemove && (
-                    <TooltipButton
-                      variant="ghost"
-                      size="icon-sm"
-                      tooltip={c.plain("actions.remove")}
-                      className={cn(
-                        "text-muted-foreground/60 hover:text-foreground opacity-0 transition-opacity",
-                        "group-hover/file:opacity-100",
-                        isEditing && "opacity-100",
-                      )}
-                      aria-label={c.plain("actions.remove")}
-                      onClick={onRemove}
-                    >
-                      <icon.Trash className="h-3.5 w-3.5" />
-                    </TooltipButton>
-                  )}
-                </>
+                      ) : (
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger className="whitespace-nowrap">
+                            <icon.Replace className="mr-2 h-4 w-4" />
+                            {c("actions.replace")}
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="w-fit">
+                            <DropdownMenuItem
+                              onClick={onReplaceServer}
+                              className="whitespace-nowrap"
+                            >
+                              <icon.Server className="mr-2 h-4 w-4" />
+                              {c("actions.import")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={onReplaceUpload}
+                              className="whitespace-nowrap"
+                            >
+                              <icon.Upload className="mr-2 h-4 w-4" />
+                              {c("actions.upload")}
+                            </DropdownMenuItem>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                      ))}
+
+                    {canEdit && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setEditingIdentifiers(true)
+                        }}
+                        className="whitespace-nowrap"
+                      >
+                        <icon.Edit className="mr-2 h-4 w-4" />
+                        {identifiers.length > 0
+                          ? t("identifiers.edit")
+                          : t("identifiers.add")}
+                      </DropdownMenuItem>
+                    )}
+
+                    {canReveal && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          void revealItemInDir(filepath)
+                        }}
+                        className="whitespace-nowrap"
+                      >
+                        <icon.ExternalLink className="mr-2 h-4 w-4" />
+                        Show in file manager
+                      </DropdownMenuItem>
+                    )}
+
+                    {canEdit && format !== "audiobook" && available && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setShowingOpf(true)
+                        }}
+                        className="whitespace-nowrap"
+                      >
+                        <icon.Bug className="mr-2 h-4 w-4" />
+                        Show OPF
+                      </DropdownMenuItem>
+                    )}
+
+                    {canEdit && canRemove && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={onRemove}
+                          className="whitespace-nowrap"
+                        >
+                          <icon.Trash className="mr-2 h-4 w-4" />
+                          {c("actions.remove")}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           )}
@@ -371,8 +403,8 @@ function FormatFileRow({
           {duration != null && <span>{formatTimeHuman(duration)}</span>}
           {!!fileSize && <span>{fileSize}</span>}
         </div>
-        {(identifiers.length > 0 || canEdit) && (
-          <div className="group/identifiers mt-1.5 flex flex-wrap items-stretch gap-1">
+        {identifiers.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap items-stretch gap-1">
             {identifiers.map((identifier) => (
               <IdentifierChip
                 key={`${identifier.uuid}-${identifier.value}`}
@@ -390,25 +422,6 @@ function FormatFileRow({
                 copiedLabel={t.plain("identifiers.copied")}
               />
             ))}
-
-            {canEdit && identifiers.length > 0 && (
-              <TooltipButton
-                variant="ghost"
-                size="icon-sm"
-                tooltip={t.plain("identifiers.edit")}
-                aria-label={t.plain("identifiers.edit")}
-                className={cn(
-                  "text-muted-foreground/60 hover:text-foreground h-auto w-6 self-stretch opacity-0 transition-opacity",
-                  "group-hover/identifiers:opacity-100",
-                  isEditing && "opacity-100",
-                )}
-                onClick={() => {
-                  setEditingIdentifiers(true)
-                }}
-              >
-                <icon.Edit className="size-3 stroke-[1.5]" />
-              </TooltipButton>
-            )}
           </div>
         )}
       </div>
@@ -435,21 +448,6 @@ function FormatFileRow({
             if (!next) setEditingIdentifiers(false)
           }}
         />
-      )}
-
-      {isTauri && filepath && (
-        <TooltipButton
-          variant="ghost"
-          size="icon-sm"
-          className="text-muted-foreground mt-0.5 shrink-0"
-          tooltip="Show in file manager"
-          aria-label={`Show ${format} file in file manager`}
-          onClick={() => {
-            void revealItemInDir(filepath)
-          }}
-        >
-          <icon.ExternalLink className="h-3.5 w-3.5" />
-        </TooltipButton>
       )}
     </div>
   )
@@ -489,6 +487,7 @@ export function FileSection({
   const t = useTranslation("BookDetailsPage")
   const [removeAsset, { isLoading: isRemoving }] = useRemoveBookAssetMutation()
   const [replaceAsset] = useReplaceBookAssetMutation()
+  const sendToKindle = useSendToKindle()
 
   const FORMAT_LABELS: Record<Format, string> = {
     ebook: t("fileInformation.ebook"),
@@ -547,8 +546,6 @@ export function FileSection({
 
   const assetFolder =
     assetsDir && book.assetDir ? `${assetsDir}/${book.assetDir}` : book.assetDir
-
-  const { isEditing } = useBookForm()
 
   return (
     <CollapsibleSection
@@ -646,11 +643,14 @@ export function FileSection({
             onRemove={() => {
               setRemoveTarget(format)
             }}
+            onSendToKindle={(modifiers) => {
+              sendToKindle.send([book], modifiers)
+            }}
           />
         ))}
 
         {canEdit && assetFolder && (
-          <div className="group/asset-folder flex flex-col gap-0.5 text-xs">
+          <div className="flex flex-col gap-0.5 text-xs">
             <div className="flex items-center justify-between gap-1">
               <span className="text-muted-foreground font-sans text-xs">
                 {t("fileInformation.assetFolder")}
@@ -664,11 +664,7 @@ export function FileSection({
                   onClick={() => {
                     setEditingAssetDir(true)
                   }}
-                  className={cn(
-                    "opacity-0 transition-opacity group-hover/asset-folder:opacity-100",
-                    "text-muted-foreground -my-1 h-5 w-5",
-                    isEditing && "opacity-100",
-                  )}
+                  className="text-muted-foreground -my-1 h-5 w-5"
                 >
                   <icon.Edit className="h-3 w-3" />
                 </TooltipButton>
@@ -678,11 +674,7 @@ export function FileSection({
                     variant="ghost"
                     tooltip="Show asset folder in file manager"
                     aria-label="Show asset folder in file manager"
-                    className={cn(
-                      "opacity-0 transition-opacity group-hover/asset-folder:opacity-100",
-                      "text-muted-foreground -my-1 h-5 w-5",
-                      isEditing && "opacity-100",
-                    )}
+                    className="text-muted-foreground -my-1 h-5 w-5"
                     onClick={() => {
                       void revealItemInDir(assetFolder)
                     }}
@@ -693,7 +685,7 @@ export function FileSection({
               </div>
             </div>
 
-            <code className={cn("break-all")}>{assetFolder}</code>
+            <code className="break-all">{assetFolder}</code>
           </div>
         )}
       </div>
@@ -738,6 +730,8 @@ export function FileSection({
         cancelLabel="Cancel"
         variant="destructive"
       />
+
+      {sendToKindle.dialog}
 
       {editingAssetDir && (
         <EditAssetDirDialog

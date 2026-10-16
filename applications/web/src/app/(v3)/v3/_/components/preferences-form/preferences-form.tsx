@@ -67,6 +67,37 @@ const userTabs: Tab[] = ["profile"]
 
 type SidebarTabDef = NavSidebarTab<Tab>
 
+function formatFieldErrors(errors: Record<string, unknown>): string[] {
+  const messages: string[] = []
+
+  for (const [field, error] of Object.entries(errors)) {
+    if (!error || typeof error !== "object") {
+      continue
+    }
+
+    if ("message" in error && typeof error.message === "string") {
+      messages.push(`${field}: ${error.message}`)
+      continue
+    }
+
+    if (Array.isArray(error)) {
+      messages.push(...formatArrayFieldErrors(error))
+    }
+  }
+
+  return messages
+}
+
+function formatArrayFieldErrors(items: unknown[]): string[] {
+  return items.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return []
+    }
+
+    return formatFieldErrors(item as Record<string, unknown>)
+  })
+}
+
 export function PreferencesForm({
   user,
   preferences,
@@ -76,6 +107,7 @@ export function PreferencesForm({
   disablePasswordLogin,
   preferenceDefaults,
   preferenceDefaultsLocked,
+  kindleSender,
 }: {
   user: User
   preferences: UserPreferencesForm
@@ -85,6 +117,7 @@ export function PreferencesForm({
   disablePasswordLogin: boolean
   preferenceDefaults: PreferenceDefaults
   preferenceDefaultsLocked: boolean
+  kindleSender: string | null
 }) {
   const t = useTranslation("PreferencesPage")
   const c = useCommon()
@@ -124,9 +157,7 @@ export function PreferencesForm({
     errors: FieldErrors<z.output<typeof UserPreferencesFormSchema>>,
   ) => {
     toast.error(t("failedToSave"), {
-      description: Object.entries(errors)
-        .map(([field, error]) => `${field}: ${error.message}`)
-        .join("\n"),
+      description: formatFieldErrors(errors).join("\n"),
     })
   }
 
@@ -244,7 +275,9 @@ export function PreferencesForm({
           disablePasswordLogin={disablePasswordLogin}
         />
       )}
-      {activeTab === "general" && <GeneralTab form={form} />}
+      {activeTab === "general" && (
+        <GeneralTab form={form} kindleSender={kindleSender} />
+      )}
       {activeTab === "appearance" && <AppearanceTab form={form} />}
       {activeTab === "books" && <BooksTab form={form} />}
     </LibraryDefaultsProvider>

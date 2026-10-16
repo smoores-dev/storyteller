@@ -101,6 +101,7 @@ export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([])(
         disablePasswordLogin={settings.disablePasswordLogin}
         preferenceDefaults={prefDefaults}
         preferenceDefaultsLocked={preferenceDefaultsLocked}
+        kindleSender={settings.smtpHost ? settings.smtpFrom : null}
       />
     )
   },

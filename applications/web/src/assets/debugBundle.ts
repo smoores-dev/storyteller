@@ -1,11 +1,10 @@
 import { createWriteStream } from "node:fs"
-import { cp, mkdir, readFile, readdir, rm, stat } from "node:fs/promises"
+import { cp, mkdir, readFile, rm, stat } from "node:fs/promises"
 import { dirname, join, resolve, sep } from "node:path"
 import { type Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
 
 import { type Entry, open as openZip, type ZipFile as ZipReader } from "yauzl"
-import { ZipFile } from "yazl"
 
 import { type AnyReport } from "@/alignmentReportView"
 import { scan } from "@/assets/library/scanner/scan"
@@ -16,6 +15,7 @@ import {
   getProcessedAudioFilepath,
   getTranscriptionsFilepath,
 } from "@/assets/paths"
+import { addDirectory, addFile, createZip, endZip } from "@/assets/zip"
 import { isAudioFile } from "@/audio"
 import { createAlignmentReport } from "@/database/alignmentReports"
 import { type BookWithRelations, getBook } from "@/database/books"
@@ -23,54 +23,11 @@ import { type UUID } from "@/uuid"
 
 const BUNDLE_MANIFEST = "bundle.json"
 
-async function addFile(
-  zipfile: ZipFile,
-  filepath: string,
-  name: string,
-  compress = false,
-) {
-  try {
-    await stat(filepath)
-  } catch {
-    return
-  }
-
-  zipfile.addFile(filepath, name, { compress })
-}
-
-async function addDirectory(
-  zipfile: ZipFile,
-  dir: string,
-  prefix: string,
-  {
-    compress = false,
-    include,
-  }: { compress?: boolean; include?: (filename: string) => boolean } = {},
-) {
-  let filenames: string[]
-  try {
-    filenames = await readdir(dir)
-  } catch {
-    return
-  }
-
-  for (const filename of filenames) {
-    if (include && !include(filename)) continue
-    zipfile.addFile(join(dir, filename), `${prefix}/${filename}`, { compress })
-  }
-}
-
 export async function createDebugBundle(book: BookWithRelations) {
-  const zipfile = new ZipFile()
-
-  // this needs to be first. if we add an epub first, Archive Util on Macos
-  // will think the whole thing is an epub.
-  zipfile.addBuffer(
-    Buffer.from(
-      JSON.stringify({ bookId: book.uuid, title: book.title }, null, 2),
-    ),
-    BUNDLE_MANIFEST,
-  )
+  const zipfile = createZip({
+    name: BUNDLE_MANIFEST,
+    data: JSON.stringify({ bookId: book.uuid, title: book.title }, null, 2),
+  })
 
   if (book.ebook?.filepath) {
     await addFile(zipfile, book.ebook.filepath, "ebook.epub")
@@ -81,34 +38,29 @@ export async function createDebugBundle(book: BookWithRelations) {
   }
 
   if (book.audiobook?.filepath) {
-    await addDirectory(zipfile, book.audiobook.filepath, "audiobook", {
-      include: isAudioFile,
-    })
+    await addDirectory(
+      zipfile,
+      book.audiobook.filepath,
+      "audiobook",
+      isAudioFile,
+    )
   }
 
   await addDirectory(
     zipfile,
     getProcessedAudioFilepath(book),
     "transcoded-audio",
-    { include: isAudioFile },
+    isAudioFile,
   )
   await addDirectory(zipfile, getEmissionsFilepath(book), "emissions")
-  await addDirectory(
-    zipfile,
-    getTranscriptionsFilepath(book),
-    "transcriptions",
-    { compress: true },
-  )
+  await addDirectory(zipfile, getTranscriptionsFilepath(book), "transcriptions")
   await addFile(
     zipfile,
     getAlignmentReportFilepath(book),
     "alignment-report.json",
-    true,
   )
 
-  zipfile.end()
-
-  return zipfile.outputStream as Readable
+  return endZip(zipfile)
 }
 
 function openZipFile(path: string): Promise<ZipReader> {

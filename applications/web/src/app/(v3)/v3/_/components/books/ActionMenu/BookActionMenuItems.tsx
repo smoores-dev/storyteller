@@ -17,6 +17,8 @@ import {
   DialogTitle,
 } from "@v3/_/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@v3/_/components/ui/radio-group"
+import { useVersionBasePath } from "@v3/_/components/version-context"
+import { usePostDownload } from "@v3/_/hooks/use-post-download"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
 import { AddToShelfList } from "@/app/(v3)/v3/_/components/books/ActionMenu/AddToShelfList"
@@ -38,6 +40,12 @@ import { CreateCollectionDialog } from "@/app/(v3)/v3/_/components/books/CreateC
 import { CreateSeriesDialog } from "@/app/(v3)/v3/_/components/books/CreateSeriesDialog"
 import { CreateTagDialog } from "@/app/(v3)/v3/_/components/books/CreateTagDialog"
 import { DeleteBooksDialog } from "@/app/(v3)/v3/_/components/books/DeleteBooksDialog"
+import { useSendToKindle } from "@/app/(v3)/v3/_/components/books/SendToKindle"
+import {
+  bookLink,
+  canShareFiles,
+  shareBookFile,
+} from "@/app/(v3)/v3/_/components/books/bookSharing"
 import {
   RelationEditList,
   membershipFromBooks,
@@ -51,10 +59,20 @@ import {
   FilterableMenuSubContent,
   FilterableMenuSubTrigger,
 } from "@/app/(v3)/v3/_/components/ui/filterable-menu"
+import {
+  DOWNLOAD_FORMATS,
+  DOWNLOAD_SELECTIONS,
+  type DownloadSelection,
+  downloadSummary,
+  downloadableAsset,
+} from "@/bookDownloads"
+import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations, type CreatorRelation } from "@/database/books"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
+import { kindleRefusal } from "@/kindle"
 import {
+  getDownloadUrl,
   useAddBooksToCollectionsMutation,
   useBulkRelocateToInternalMutation,
   useClearBooksCacheMutation,
@@ -85,6 +103,13 @@ export type BookActionEntry = {
   separatorBefore?: boolean
   disabled?: boolean
   title?: string
+}
+
+const DOWNLOAD_ICONS: Record<DownloadSelection, ReactNode> = {
+  ebook: <icon.BookAlt className="size-4" />,
+  audiobook: <icon.Headphones className="size-4" />,
+  readaloud: <IconReadaloud className="size-4" />,
+  all: <icon.FileZip className="size-4" />,
 }
 
 const actionRowClassName =
@@ -151,6 +176,11 @@ export function useBookActionItems({
   const canDelete = !!permissions?.bookDelete
   const canProcess = !!permissions?.bookProcess
   const canCreateCollection = !!permissions?.collectionCreate
+  const canDownload = !!permissions?.bookDownload
+  const tShare = useTranslation("Sharing")
+  const kindle = useSendToKindle()
+  const postDownload = usePostDownload()
+  const basePath = useVersionBasePath()
 
   const bookUuids = books.map((b) => b.uuid)
   const count = books.length
@@ -590,6 +620,143 @@ export function useBookActionItems({
     }
   }
 
+  if (canDownload) {
+    const downloads = DOWNLOAD_SELECTIONS.map((selection) => ({
+      selection,
+      ...downloadSummary(books, selection),
+    })).filter(({ selection, count }) => {
+      if (count === 0) {
+        return false
+      }
+
+      if (selection !== "all") {
+        return true
+      }
+
+      return (
+        DOWNLOAD_FORMATS.filter((format) =>
+          books.some((book) => downloadableAsset(book, format)),
+        ).length > 1
+      )
+    })
+
+    if (downloads.length > 0) {
+      entries.push({
+        key: "download",
+        separatorBefore: entries.length > 0,
+        label: tShare.plain("download"),
+        icon: <icon.Download className="size-4" />,
+        submenuSearchable: false,
+        submenu: ({ close }) => (
+          <>
+            {downloads.map(({ selection, count, bytes }) => (
+              <FilterableMenuItem
+                key={selection}
+                onSelect={() => {
+                  if (singleBook && selection !== "all") {
+                    window.location.href = getDownloadUrl(
+                      singleBook.uuid,
+                      selection,
+                    )
+                  } else {
+                    postDownload.download("/api/v2/books/files", {
+                      format: selection,
+                      bookUuids,
+                    })
+                  }
+
+                  close()
+                }}
+                className={actionRowClassName}
+              >
+                {DOWNLOAD_ICONS[selection]}
+                {tShare(`formats.${selection}`)}
+                <span className="text-muted-foreground ml-auto pl-6 whitespace-nowrap tabular-nums">
+                  {singleBook
+                    ? formatBytes(bytes)
+                    : tShare.plain("summary", {
+                        count,
+                        size: formatBytes(bytes),
+                      })}
+                </span>
+              </FilterableMenuItem>
+            ))}
+          </>
+        ),
+      })
+    }
+
+    const kindleBlocked = kindleRefusal(books)
+
+    if (mode === "bulk") {
+      entries.push({
+        key: "sendToKindle",
+        label: tShare.plain("sendToKindle"),
+        icon: <icon.Send className="size-4" />,
+        title: kindleBlocked ? kindle.refusalMessage(kindleBlocked) : undefined,
+        onSelect: (modifiers) => {
+          kindle.send(books, modifiers)
+        },
+      })
+    }
+
+    if (singleBook) {
+      const hasEbook = !kindleBlocked
+      entries.push({
+        key: "share",
+        label: tShare.plain("share"),
+        icon: <icon.Share className="size-4" />,
+        submenuSearchable: false,
+        submenu: ({ close }) => (
+          <>
+            {hasEbook && (
+              <FilterableMenuItem
+                onSelect={(modifiers) => {
+                  kindle.send([singleBook], modifiers)
+                  close()
+                }}
+                className={actionRowClassName}
+              >
+                <icon.Send className="size-4" />
+                {tShare("sendToKindle")}
+              </FilterableMenuItem>
+            )}
+            {hasEbook && canShareFiles() && (
+              <FilterableMenuItem
+                onSelect={() => {
+                  shareBookFile(singleBook, tShare.plain("shareFile")).catch(
+                    () => {
+                      toast.error(tShare.plain("shareFailed"))
+                    },
+                  )
+                  close()
+                }}
+                className={actionRowClassName}
+              >
+                <icon.Share className="size-4" />
+                {tShare("shareFile")}
+              </FilterableMenuItem>
+            )}
+            <FilterableMenuItem
+              onSelect={() => {
+                void navigator.clipboard
+                  .writeText(bookLink(basePath, singleBook.uuid))
+                  .then(() => {
+                    toast.success(tShare.plain("linkCopied"))
+                  })
+                close()
+              }}
+              className={actionRowClassName}
+            >
+              <icon.Link className="size-4" />
+              {tShare("copyLink")}
+            </FilterableMenuItem>
+          </>
+        ),
+      })
+    }
+  }
+
   if (canUpdate && singleBook) {
     entries.push({
       key: "importMetadata",
@@ -708,7 +875,7 @@ export function useBookActionItems({
       label: "Download debug bundle",
       icon: <icon.Bug className="size-4" />,
       onSelect: () => {
-        window.location.href = `/api/v2/books/${bookUuid}/debug/bundle`
+        postDownload.download(`/api/v2/books/${bookUuid}/debug/bundle`)
       },
     })
   }
@@ -865,6 +1032,8 @@ export function useBookActionItems({
       )}
 
       {processingRun.dialog}
+      {kindle.dialog}
+      {postDownload.form}
     </>
   )
 

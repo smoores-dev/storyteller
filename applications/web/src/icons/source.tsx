@@ -161,6 +161,10 @@ import {
   IconVolume,
   IconVolumeOff,
   IconX,
+  IconDeviceTablet,
+  IconFileZip,
+  IconSend,
+  IconShare,
 } from "@tabler/icons-react"
 
 import { IconReadaloud } from "@/components/icons/IconReadaloud"
@@ -364,3 +368,7 @@ export const RewindForward15 = /*#__PURE__*/ styled(IconRewindForward15)
 export const Aa = /*#__PURE__*/ styled(IconLetterCase)
 export const Outbound = /*#__PURE__*/ styled(IconOutbound)
 export const TextGrammar = /*#__PURE__*/ styled(IconTextGrammar)
+export const DeviceTablet = /*#__PURE__*/ styled(IconDeviceTablet)
+export const FileZip = /*#__PURE__*/ styled(IconFileZip)
+export const Send = /*#__PURE__*/ styled(IconSend)
+export const Share = /*#__PURE__*/ styled(IconShare)

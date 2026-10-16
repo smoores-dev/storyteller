@@ -1923,6 +1923,16 @@ export const api = createApi({
       }),
       invalidatesTags: ["UserSettings"],
     }),
+    sendToKindle: build.mutation<
+      { sent: number; skipped: number },
+      { books: UUID[]; to?: string[] }
+    >({
+      query: (body) => ({
+        url: "/books/kindle",
+        method: "POST",
+        body,
+      }),
+    }),
     setUserSetting: build.mutation<
       Record<string, unknown>,
       SingleUserSettingUpdate
@@ -2941,6 +2951,7 @@ export const {
   useImportBookCoverMutation,
   useGetBookOpfQuery,
   useGetBookMediaOverlayQuery,
+  useSendToKindleMutation,
 } = api
 
 export function getDownloadUrl(

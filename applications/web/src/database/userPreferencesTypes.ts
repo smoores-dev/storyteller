@@ -33,6 +33,14 @@ export const RatingIcons = ["star", "heart"] as const
 
 export const BookOpenTargets = ["panel", "page"] as const
 
+export const KindleAddressSchema = z.object({
+  name: z.string(),
+  email: z.email(),
+  default: z.boolean().optional(),
+})
+
+export type KindleAddress = z.infer<typeof KindleAddressSchema>
+
 export const UserPreferencesSchema = z.object({
   locale: z.string().nullable(),
   defaultView: z.enum(ViewKinds),
@@ -57,12 +65,14 @@ export const UserPreferencesSchema = z.object({
   defaultStatusUuid: z.string().nullable(),
   layoutAnimations: z.boolean(),
   animatePanelOpen: z.boolean(),
+  kindleAddresses: z.array(KindleAddressSchema),
 })
 
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>
 
 const NON_NULLABLE_KEYS = [
   "locale",
+  "kindleAddresses",
 ] as const satisfies (keyof UserPreferences)[]
 
 export const UserPreferencesFormSchema = UserPreferencesSchema.extend({
@@ -95,6 +105,7 @@ export type UserPreferencesForm = z.infer<typeof UserPreferencesFormSchema>
 
 export const NON_LIBRARY_DEFAULT_KEYS = {
   defaultStatusUuid: true, // null already means "use library default"
+  kindleAddresses: true,
 } as const satisfies Partial<Record<keyof UserPreferences, true>>
 
 export const PreferenceDefaultsSchema = UserPreferencesSchema.omit(
@@ -136,6 +147,7 @@ export const defaultUserPreferences: UserPreferences = {
   defaultStatusUuid: null,
   layoutAnimations: true,
   animatePanelOpen: true,
+  kindleAddresses: [],
 }
 
 const LEGACY_COLOR_MODES: Record<string, ColorMode> = {
@@ -146,16 +158,34 @@ const LEGACY_COLOR_MODES: Record<string, ColorMode> = {
 
 const LIBRARY_DEFAULT_KEY_SET = new Set<string>(LIBRARY_DEFAULT_KEYS)
 
-export function resolveUserPreferences(
+function migrateRawPreferences(
   raw: Record<string, unknown> | undefined | null,
-  serverDefaults: PreferenceDefaults = {},
-): UserPreferences {
+): Record<string, unknown> {
   const migrated: Record<string, unknown> = { ...(raw ?? {}) }
 
   if (typeof migrated["colorMode"] === "string") {
     migrated["colorMode"] =
       LEGACY_COLOR_MODES[migrated["colorMode"]] ?? migrated["colorMode"]
   }
+
+  if (
+    !("kindleAddresses" in migrated) &&
+    typeof migrated["kindleEmail"] === "string" &&
+    migrated["kindleEmail"].trim() !== ""
+  ) {
+    migrated["kindleAddresses"] = [
+      { name: "", email: migrated["kindleEmail"].trim(), default: true },
+    ]
+  }
+
+  return migrated
+}
+
+export function resolveUserPreferences(
+  raw: Record<string, unknown> | undefined | null,
+  serverDefaults: PreferenceDefaults = {},
+): UserPreferences {
+  const migrated = migrateRawPreferences(raw)
 
   const validDefaults = PreferenceDefaultsSchema.safeParse(serverDefaults)
   const resolved: UserPreferences = {
@@ -166,32 +196,41 @@ export function resolveUserPreferences(
   for (const key of Object.keys(
     UserPreferencesSchema.shape,
   ) as (keyof UserPreferences)[]) {
-    if (!(key in migrated)) continue
-    const result = UserPreferencesSchema.shape[key].safeParse(migrated[key])
-    if (!result.success) continue
+    if (!(key in migrated)) {
+      continue
+    }
 
-    if (LIBRARY_DEFAULT_KEY_SET.has(key) && result.data == null) continue
+    const result = UserPreferencesSchema.shape[key].safeParse(migrated[key])
+    if (!result.success) {
+      continue
+    }
+
+    if (LIBRARY_DEFAULT_KEY_SET.has(key) && result.data == null) {
+      continue
+    }
+
     resolved[key] = result.data as never
   }
+
   return resolved
 }
 
 export function formUserPreferences(
   raw: Record<string, unknown> | undefined | null,
 ): UserPreferencesForm {
-  const migrated: Record<string, unknown> = { ...(raw ?? {}) }
-
-  if (typeof migrated["colorMode"] === "string") {
-    migrated["colorMode"] =
-      LEGACY_COLOR_MODES[migrated["colorMode"]] ?? migrated["colorMode"]
-  }
+  const migrated = migrateRawPreferences(raw)
 
   const result = {} as Record<keyof UserPreferencesForm, unknown>
   for (const key of Object.keys(
     UserPreferencesFormSchema.shape,
   ) as (keyof UserPreferencesForm)[]) {
     const parsed = UserPreferencesFormSchema.shape[key].safeParse(migrated[key])
-    result[key] = parsed.success ? parsed.data : null
+    result[key] = parsed.success
+      ? parsed.data
+      : LIBRARY_DEFAULT_KEY_SET.has(key)
+        ? null
+        : defaultUserPreferences[key]
   }
+
   return result as UserPreferencesForm
 }

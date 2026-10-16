@@ -1518,6 +1518,20 @@
               "list": "List",
               "table": "Table"
             }
+          },
+          "kindle": {
+            "title": "Send to Kindle",
+            "description": "Storyteller can directly email your ebooks to your Kindle device. Requires an approved sender in your Amazon account.",
+            "label": "Kindle email addresses",
+            "namePlaceholder": "Name (e.g. Paperwhite)",
+            "emailPlaceholder": "name@kindle.com",
+            "add": "Add address",
+            "remove": "Remove address",
+            "default": "Default address",
+            "setDefault": "Set as default",
+            "senderLabel": "Approved sender",
+            "senderHint": "Add this address to the approved senders in your Amazon account, under Personal document settings.",
+            "notConfigured": "An Admin needs to set up email sending on this server to enable Send to Kindle."
           }
         }
       },
@@ -2734,6 +2748,50 @@
     "fullscreen": {
       "title": "Enable fullscreen",
       "exitFullscreen": "Exit fullscreen"
+    }
+  },
+  "Sharing": {
+    "download": "Download",
+    "formats": {
+      "ebook": "Ebook",
+      "audiobook": "Audiobook",
+      "readaloud": "Readaloud",
+      "all": "All formats"
+    },
+    "summary": "{count, plural, one {# book} other {# books}} · {size}",
+    "share": "Share",
+    "sendToKindle": "Send to Kindle",
+    "shareFile": "Share file",
+    "shareFailed": "Couldn't share this file",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "moreActions": "More actions",
+    "kindle": {
+      "sending": "Sending to Kindle…",
+      "sent": "{count, plural, one {Sent to your Kindle} other {Sent # books to your Kindle}}",
+      "skipped": "{count, plural, one {# book has no ebook and was left out} other {# books have no ebook and were left out}}",
+      "failed": "Couldn't send to Kindle",
+      "smtpNotConfigured": "Email isn't set up on this server",
+      "smtpNotConfiguredHint": "Ask an admin to set up email in the server settings.",
+      "openEmailSettings": "Email settings",
+      "refusal": {
+        "no-ebook": "There's no ebook to send",
+        "too-many": "Kindle takes up to {max} books at a time",
+        "too-large": "Kindle takes up to {max} at a time"
+      },
+      "addressTitle": "Your Kindle address",
+      "addressDescription": "Amazon shows it under Manage your content and devices, then Preferences, then Personal document settings.",
+      "nameLabel": "Name",
+      "namePlaceholder": "Paperwhite",
+      "addressLabel": "Kindle email address",
+      "approveSender": "Add this address to the approved senders on that same Amazon page, or your Kindle won't get the books.",
+      "saveAndSend": "Save and send",
+      "saveFailed": "Couldn't save your Kindle address",
+      "pickTitle": "Send to Kindle",
+      "pickDescription": "Choose which Kindle address to send to.",
+      "defaultBadge": "Default",
+      "send": "Send",
+      "shiftHint": "hold shift to send to default"
     }
   }
 }

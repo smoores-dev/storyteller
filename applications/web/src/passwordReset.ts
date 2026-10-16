@@ -1,12 +1,11 @@
 import { randomBytes } from "node:crypto"
 
-import { createTransport } from "nodemailer"
-
 import { db } from "./database/connection"
 import { getSettings } from "./database/settings"
 import { getUserByUsernameOrEmail } from "./database/users"
 import { env } from "./env"
 import { logger } from "./logging"
+import { sendMail } from "./mail"
 
 // Reset tokens share the verification_token table; namespacing the identifier
 // keeps them from colliding with other verification tokens.
@@ -51,21 +50,9 @@ export async function consumePasswordResetToken(token: string) {
 }
 
 export async function sendPasswordReset(email: string, token: string) {
-  const settings = await getSettings()
-  const {
-    libraryName,
-    webUrl,
-    smtpFrom,
-    smtpHost,
-    smtpPassword,
-    smtpPort,
-    smtpUsername,
-    smtpSsl,
-    smtpRejectUnauthorized,
-  } = settings
+  const { libraryName, webUrl } = await getSettings()
 
-  const message = {
-    from: smtpFrom,
+  await sendMail({
     to: email,
     subject: `Reset your password for the "${libraryName}" Storyteller library`,
     text: `
@@ -79,28 +66,7 @@ ${webUrl}/reset-password/${token}
 
 This link will expire in ${env.STORYTELLER_PASSWORD_RESET_EXPIRATION_MINUTES} minutes. If you didn't expect this, you can safely ignore this email.
 `,
-  }
-
-  if (!smtpHost) {
-    logger.info("No SMTP client configured. Printing message to log:")
-    logger.info(message.text)
-    return
-  }
-
-  const transporter = createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpSsl ?? true,
-    tls: {
-      rejectUnauthorized: smtpRejectUnauthorized ?? true,
-    },
-    auth: {
-      user: smtpUsername,
-      pass: smtpPassword,
-    },
   })
-
-  await transporter.sendMail(message)
 }
 
 // Self-service entry point: resolve the identifier to an account and email it a

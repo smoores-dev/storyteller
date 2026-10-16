@@ -1384,6 +1384,20 @@
               "list": "Lijst",
               "table": "Tabel"
             }
+          },
+          "kindle": {
+            "title": "Naar Kindle sturen",
+            "description": "Waar Naar Kindle sturen je e-books aflevert.",
+            "label": "Kindle-e-mailadressen",
+            "namePlaceholder": "Naam (bijv. Paperwhite)",
+            "emailPlaceholder": "naam@kindle.com",
+            "add": "Adres toevoegen",
+            "remove": "Adres verwijderen",
+            "default": "Standaardadres",
+            "setDefault": "Instellen als standaard",
+            "senderLabel": "Goedgekeurde afzender",
+            "senderHint": "Voeg dit adres toe aan de goedgekeurde afzenders in je Amazon-account, onder Instellingen voor persoonlijke documenten.",
+            "notConfigured": "E-mail is niet ingesteld op deze server, dus Naar Kindle sturen werkt pas als een beheerder het instelt."
           }
         }
       },
@@ -2472,6 +2486,50 @@
     "fullscreen": {
       "title": "Volledig scherm",
       "exitFullscreen": "Volledig scherm sluiten"
+    }
+  },
+  "Sharing": {
+    "download": "Downloaden",
+    "formats": {
+      "ebook": "E-book",
+      "audiobook": "Luisterboek",
+      "readaloud": "Readaloud",
+      "all": "Alle formaten"
+    },
+    "summary": "{count, plural, one {# boek} other {# boeken}} · {size}",
+    "share": "Delen",
+    "sendToKindle": "Naar Kindle sturen",
+    "shareFile": "Bestand delen",
+    "shareFailed": "Dit bestand kon niet gedeeld worden",
+    "copyLink": "Link kopiëren",
+    "linkCopied": "Link gekopieerd",
+    "moreActions": "Meer acties",
+    "kindle": {
+      "sending": "Naar Kindle sturen…",
+      "sent": "{count, plural, one {Naar je Kindle gestuurd} other {# boeken naar je Kindle gestuurd}}",
+      "skipped": "{count, plural, one {# boek heeft geen e-book en is overgeslagen} other {# boeken hebben geen e-book en zijn overgeslagen}}",
+      "failed": "Naar Kindle sturen is mislukt",
+      "smtpNotConfigured": "E-mail is niet ingesteld op deze server",
+      "smtpNotConfiguredHint": "Vraag een beheerder om e-mail in te stellen in de serverinstellingen.",
+      "openEmailSettings": "E-mailinstellingen",
+      "refusal": {
+        "no-ebook": "Er is geen e-book om te sturen",
+        "too-many": "Kindle neemt maximaal {max} boeken tegelijk aan",
+        "too-large": "Kindle neemt maximaal {max} tegelijk aan"
+      },
+      "addressTitle": "Je Kindle-adres",
+      "addressDescription": "Amazon toont het onder Inhoud en apparaten beheren, dan Voorkeuren, dan Instellingen voor persoonlijke documenten.",
+      "nameLabel": "Naam",
+      "namePlaceholder": "Paperwhite",
+      "addressLabel": "Kindle-e-mailadres",
+      "approveSender": "Voeg dit adres toe aan de goedgekeurde afzenders op diezelfde Amazon-pagina, anders komen de boeken niet aan.",
+      "saveAndSend": "Opslaan en sturen",
+      "saveFailed": "Je Kindle-adres kon niet worden opgeslagen",
+      "pickTitle": "Naar Kindle sturen",
+      "pickDescription": "Kies naar welk Kindle-adres je wilt sturen.",
+      "defaultBadge": "Standaard",
+      "send": "Sturen",
+      "shiftHint": "houd shift ingedrukt om naar standaard te sturen"
     }
   }
 }
