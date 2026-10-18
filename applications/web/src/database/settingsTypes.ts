@@ -19,6 +19,7 @@ import {
 } from "@/database/importRules.validation"
 import { PreferenceDefaultsSchema } from "@/database/userPreferencesTypes"
 import { MATCH_CONFIDENCES } from "@/metadata/match"
+import { type RegistrySortField, SORTABLE_FIELDS } from "@/sort"
 import { type UUID } from "@/uuid"
 
 export const TranscriptionEngineSchema = z.enum(RECOGNITION_ENGINES)
@@ -133,6 +134,10 @@ export const OpdsFormatSchema = z.enum([
   "both",
 ])
 export type OpdsFormat = z.infer<typeof OpdsFormatSchema>
+
+export const OpdsSortFieldSchema = z.enum(
+  SORTABLE_FIELDS as [RegistrySortField, ...RegistrySortField[]],
+)
 
 const optionalUrlSchema = z.union([z.literal(""), z.url()]).optional()
 
@@ -371,6 +376,8 @@ export const SettingsSchema = z.object({
   opdsEnabled: z.boolean().nullable(),
   opdsPageSize: z.number().nullable(),
   opdsFormat: OpdsFormatSchema.nullable(),
+  opdsSortField: OpdsSortFieldSchema.nullable(),
+  opdsSortDirection: z.enum(["asc", "desc"]).nullable(),
   // Scanning settings
   scanCronExpression: z.string().nullable(),
   backupCronExpression: z.string().nullable().optional(),
@@ -457,6 +464,8 @@ export const SETTINGS_DEFAULTS = {
   opdsEnabled: true,
   opdsPageSize: 50,
   opdsFormat: null,
+  opdsSortField: "title",
+  opdsSortDirection: "asc",
   scanCronExpression: null,
   backupCronExpression: null,
   backupRetentionCount: null,

@@ -213,6 +213,19 @@
   "CollectionsPage": {
     "title": "Collections"
   },
+  "Opds": {
+    "catalog": "Storyteller Catalog",
+    "allBooks": "All Books",
+    "searchResults": "Search results for {query}",
+    "searchName": "Storyteller Search",
+    "searchDescription": "Search your Storyteller library.",
+    "sortBy": "Sort by",
+    "order": "Order",
+    "asc": "Ascending",
+    "desc": "Descending",
+    "format": "Format",
+    "allFormats": "All formats"
+  },
   "NotFoundPage": {
     "title": "Page not found",
     "description": "We couldn't find the page you were looking for. It may have moved or no longer exists.",
@@ -1117,6 +1130,11 @@
             "formatEbookHint": "Plain EPUB which works on every reader",
             "formatBoth": "Both readaloud and ebook",
             "formatBothHint": "Offers both files",
+            "sort": "Default order",
+            "sortTip": "Used for All Books and other lists without an order of their own. Series keep their reading order, ratings list the highest first, and shelves keep the order you set. Readers that support OPDS facets can pick a different order.",
+            "sortDirection": "Direction",
+            "sortAsc": "Ascending",
+            "sortDesc": "Descending",
             "urlsTitle": "Feed URLs",
             "urlV1": "OPDS 1.2 (widest support)",
             "urlV2": "OPDS 2.0 (JSON)"

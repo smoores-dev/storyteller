@@ -94,4 +94,47 @@ describe("toAtomXml", () => {
     assert.doesNotMatch(xml, /copies/)
     assert.doesNotMatch(xml, /holds/)
   })
+
+  it("marks the active facet and counts navigation entries", () => {
+    const xml = toAtomXml(
+      parse({
+        metadata: { title: "Facets" },
+        links: [{ rel: "self", href: "/feed", type: "application/opds+json" }],
+        navigation: [
+          {
+            href: "/authors/1",
+            title: "Ada",
+            type: "application/opds+json",
+            properties: { numberOfItems: 3 },
+          },
+        ],
+        facets: [
+          {
+            metadata: { title: "Sort by" },
+            links: [
+              {
+                href: "/feed?sort=title",
+                title: "Title",
+                rel: "self",
+                type: "application/opds+json",
+              },
+              {
+                href: "/feed?sort=authors",
+                title: "Authors",
+                type: "application/opds+json",
+              },
+            ],
+          },
+        ],
+      }),
+    )
+
+    assert.strictEqual(SyntaxValidator.validate(xml), true)
+    assert.match(
+      xml,
+      /href="\/feed\?sort=title" rel="http:\/\/opds-spec\.org\/facet"[^>]* opds:activeFacet="true"/,
+    )
+    assert.strictEqual(xml.match(/opds:activeFacet/g)?.length, 1)
+    assert.match(xml, /href="\/authors\/1"[^>]* thr:count="3"/)
+  })
 })

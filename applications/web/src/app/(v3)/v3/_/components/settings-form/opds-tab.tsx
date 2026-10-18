@@ -21,6 +21,8 @@ import { Switch } from "@v3/_/components/ui/switch"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { SETTINGS_DEFAULTS } from "@/database/settingsTypes"
+import { type Field as BookField, getFieldDef } from "@/fields"
+import { GENERAL_SORT_FIELDS } from "@/sort"
 
 import {
   LockTooltip,
@@ -37,6 +39,7 @@ import {
 export function OpdsSection() {
   const { form, lockedSettings } = useSettingsForm()
   const t = useTranslation("SettingsPage.tabs.server.sections.opds")
+  const tField = useTranslation("Common.fields.label")
   const opdsEnabled = useWatch({ control: form.control, name: "opdsEnabled" })
   const webUrl = useWatch({ control: form.control, name: "webUrl" })
 
@@ -57,6 +60,16 @@ export function OpdsSection() {
     },
     { value: "ebook", label: t("formatEbook"), hint: t("formatEbookHint") },
     { value: "both", label: t("formatBoth"), hint: t("formatBothHint") },
+  ]
+
+  const sortOptions = GENERAL_SORT_FIELDS.map((value) => ({
+    value,
+    label: tField(value),
+  }))
+
+  const directionOptions = [
+    { value: "asc", label: t("sortAsc") },
+    { value: "desc", label: t("sortDesc") },
   ]
 
   return (
@@ -133,6 +146,64 @@ export function OpdsSection() {
                       {formatOptions.map(({ value, label, hint }) => (
                         <SelectItem key={value} value={value}>
                           <OptionWithHint label={label} hint={hint} />
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+
+              <SettingsFormField
+                name="opdsSortField"
+                label={t("sort")}
+                tip={t("sortTip")}
+                render={(field, fieldState, isLocked) => (
+                  <Select
+                    disabled={isLocked}
+                    aria-invalid={fieldState.invalid}
+                    items={sortOptions}
+                    value={field.value ?? SETTINGS_DEFAULTS.opdsSortField}
+                    onValueChange={(value) => {
+                      field.onChange(value)
+                      form.setValue(
+                        "opdsSortDirection",
+                        getFieldDef(value as BookField).defaultSort ?? "asc",
+                        { shouldDirty: true },
+                      )
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sortOptions.map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+
+              <SettingsFormField
+                name="opdsSortDirection"
+                label={t("sortDirection")}
+                render={(field, fieldState, isLocked) => (
+                  <Select
+                    disabled={isLocked}
+                    aria-invalid={fieldState.invalid}
+                    items={directionOptions}
+                    value={field.value ?? SETTINGS_DEFAULTS.opdsSortDirection}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {directionOptions.map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
                         </SelectItem>
                       ))}
                     </SelectContent>

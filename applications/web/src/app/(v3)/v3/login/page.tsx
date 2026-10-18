@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 
 import { apiHost } from "@/app/apiHost"
 import { fetchApiRoute } from "@/app/fetchApiRoute"
-import { createConfig, getCurrentUser, nextAuth } from "@/auth/auth"
+import { getCurrentUser, nextAuth } from "@/auth/auth"
 import { type PublicProvider } from "@/auth/providers"
 import { getCookieDomain, getCookieSecure } from "@/cookies"
 import { getPreferenceDefaults, getSettings } from "@/database/settings"
@@ -14,16 +14,16 @@ import { getUsers } from "@/database/users"
 
 import { LoginForm, type LoginFormData } from "./LoginForm"
 
-function defaultRedirectCallback({
-  url,
-  baseUrl,
-}: {
-  url: string
-  baseUrl: string
-}) {
-  if (url.startsWith("/")) return `${baseUrl}${url}`
-  else if (new URL(url).origin === baseUrl) return url
-  return baseUrl
+function localCallbackUrl(url: string | undefined): string | null {
+  if (!url?.startsWith("/")) {
+    return null
+  }
+
+  if (url.startsWith("//") || url.startsWith("/\\")) {
+    return null
+  }
+
+  return url
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,7 +33,11 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>
+}) {
   const [users, settings] = await Promise.all([getUsers(), getSettings()])
 
   if (users.length === 0) {
@@ -42,9 +46,10 @@ export default async function LoginPage() {
 
   const currentUser = await getCurrentUser()
   if (currentUser) {
+    const { callbackUrl } = await searchParams
     const basePath =
       (await headers()).get("x-v3-rewritten") === "1" ? "" : "/v3"
-    redirect(basePath || "/")
+    redirect(localCallbackUrl(callbackUrl) ?? (basePath || "/"))
   }
 
   async function credentialsLogin(data: LoginFormData, callbackUrl?: string) {
@@ -100,27 +105,7 @@ export default async function LoginPage() {
     const reqHeaders = await headers()
     const basePath = reqHeaders.get("x-v3-rewritten") === "1" ? "" : "/v3"
 
-    if (!callbackUrl) {
-      redirect(basePath || "/")
-    }
-
-    const cookieOrigin = (await headers()).get("Origin")
-
-    const domain = getCookieDomain(cookieOrigin)
-    const config = await createConfig(undefined)
-    const callbacks = config.callbacks
-
-    const redirectCallback = callbacks?.redirect ?? defaultRedirectCallback
-    const isValidRedirect = redirectCallback({
-      url: callbackUrl,
-      baseUrl: config.cookies?.sessionToken?.options?.domain ?? domain ?? "",
-    })
-
-    if (isValidRedirect) {
-      redirect(callbackUrl)
-    }
-
-    redirect(basePath || "/")
+    redirect(localCallbackUrl(callbackUrl) ?? (basePath || "/"))
   }
 
   async function oauthLogin(providerId: string, callbackUrl?: string) {

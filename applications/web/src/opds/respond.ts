@@ -3,11 +3,13 @@ import { type NextRequest, NextResponse } from "next/server"
 import { type Feed, OPDS_JSON, toAtomXml } from "@storyteller-platform/opds"
 
 import { withHasPermission } from "@/auth/auth"
-import type { OpdsFormat } from "@/database/settingsTypes"
 import { OPDS_AUTH_OPTIONS } from "@/opds/auth"
-import { type OpdsVersion } from "@/opds/builders"
+import {
+  type BuildContext,
+  type OpdsVersion,
+  parseVersion,
+} from "@/opds/builders"
 import { createOPDSResponse, getOPDSConfig } from "@/opds/utils"
-import type { UUID } from "@/uuid"
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -15,15 +17,13 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 } as const
 
-export const parseVersion = (raw: string | undefined): OpdsVersion =>
-  raw === "v2" ? "v2" : "v1"
-
 export const respond = (version: OpdsVersion, feed: Feed): Response => {
   if (version === "v2") {
     return new NextResponse(JSON.stringify(feed.serialize()), {
       headers: { "Content-Type": OPDS_JSON, ...CORS },
     })
   }
+
   const kind = feed.publications ? "acquisition" : "navigation"
   return createOPDSResponse(toAtomXml(feed, { pretty: true }), kind)
 }
@@ -31,25 +31,15 @@ export const respond = (version: OpdsVersion, feed: Feed): Response => {
 export const opdsOptions = (_request: NextRequest) =>
   new NextResponse(null, { headers: CORS })
 
-interface OpdsConfig {
-  enabled: boolean | null
-  pageSize: number | null
-  format: OpdsFormat
-}
+const notFound = () => new NextResponse("Not found", { status: 404 })
 
-interface BuildArgs<P> {
-  version: OpdsVersion
-  userId: UUID
-  params: P
-  config: OpdsConfig
-  page: number
-  searchParams: URLSearchParams
-}
-
-export const handleOpds = <P extends Record<string, string>>(
-  build: (args: BuildArgs<P>) => Promise<Feed | Response>,
+export const handleOpds = (
+  build: (
+    ctx: BuildContext,
+    params: Partial<Record<string, string>>,
+  ) => Promise<Feed | null>,
 ) =>
-  withHasPermission<Promise<P>>(
+  withHasPermission<Promise<Partial<Record<string, string>>>>(
     "bookRead",
     OPDS_AUTH_OPTIONS,
   )(async (request, context) => {
@@ -60,16 +50,23 @@ export const handleOpds = <P extends Record<string, string>>(
 
     const params = await context.params
     const version = parseVersion(params["version"])
-    const page = parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10)
+    if (!version) {
+      return notFound()
+    }
 
-    const result = await build({
-      version,
-      userId: request.auth.user.id,
+    const searchParams = request.nextUrl.searchParams
+    const feed = await build(
+      {
+        version,
+        viewer: request.auth.user,
+        format: config.format,
+        sort: config.sort,
+        pageSize: config.pageSize,
+        page: parseInt(searchParams.get("page") ?? "1", 10),
+        params: searchParams,
+      },
       params,
-      config,
-      page,
-      searchParams: request.nextUrl.searchParams,
-    })
+    )
 
-    return result instanceof Response ? result : respond(version, result)
+    return feed ? respond(version, feed) : notFound()
   })

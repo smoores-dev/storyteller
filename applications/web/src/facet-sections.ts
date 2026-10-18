@@ -6,6 +6,7 @@ export type FacetSectionDef = {
   labelBase: string
   badge: boolean
   emptyValuesPermission: Permission | null
+  opds: boolean
   none: { field: Field; qualifier?: string } | null
 }
 
@@ -15,6 +16,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Series",
     badge: true,
     emptyValuesPermission: "bookUpdate",
+    opds: true,
     none: { field: "series" },
   },
   authors: {
@@ -22,6 +24,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Authors",
     badge: true,
     emptyValuesPermission: "bookUpdate",
+    opds: true,
     none: { field: "creators", qualifier: "aut" },
   },
   narrators: {
@@ -29,6 +32,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Narrators",
     badge: true,
     emptyValuesPermission: "bookUpdate",
+    opds: true,
     none: { field: "creators", qualifier: "nrt" },
   },
   translators: {
@@ -36,6 +40,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Translators",
     badge: true,
     emptyValuesPermission: "bookUpdate",
+    opds: true,
     none: { field: "creators", qualifier: "trl" },
   },
   tags: {
@@ -43,6 +48,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Tags",
     badge: true,
     emptyValuesPermission: "bookUpdate",
+    opds: true,
     none: { field: "tags" },
   },
   collections: {
@@ -50,6 +56,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Collections",
     badge: false,
     emptyValuesPermission: null,
+    opds: true,
     none: { field: "collections" },
   },
   statuses: {
@@ -57,6 +64,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Status",
     badge: true,
     emptyValuesPermission: null,
+    opds: true,
     none: { field: "status" },
   },
   publicationYears: {
@@ -65,6 +73,7 @@ export const FACET_SECTION_REGISTRY = {
     badge: true,
     // doesn't need one bc publicationYears is not a facet backed by a table
     emptyValuesPermission: null,
+    opds: true,
     none: { field: "publicationDate" },
   },
   ratings: {
@@ -72,6 +81,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Rating",
     badge: true,
     emptyValuesPermission: null,
+    opds: true,
     none: { field: "userRating" },
   },
   formats: {
@@ -79,6 +89,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Formats",
     badge: false,
     emptyValuesPermission: null,
+    opds: true,
     none: null,
   },
   grades: {
@@ -86,6 +97,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Grades",
     badge: false,
     emptyValuesPermission: null,
+    opds: false,
     none: null,
   },
   shelves: {
@@ -93,6 +105,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Shelves",
     badge: false,
     emptyValuesPermission: null,
+    opds: true,
     none: null,
   },
   identifiers: {
@@ -100,6 +113,7 @@ export const FACET_SECTION_REGISTRY = {
     labelBase: "Identifier",
     badge: true,
     emptyValuesPermission: "bookUpdate",
+    opds: false,
     none: { field: "identifiers" },
   },
 } as const satisfies Record<string, FacetSectionDef>
@@ -123,6 +137,23 @@ export type BadgeFacetSection = {
 export const BADGE_FACET_SECTIONS = FACET_SECTIONS.filter(
   (s) => FACET_SECTION_REGISTRY[s].badge,
 ) as BadgeFacetSection[]
+
+export type OpdsFacetSection = {
+  [S in FacetSection]: (typeof FACET_SECTION_REGISTRY)[S]["opds"] extends true
+    ? S
+    : never
+}[FacetSection]
+
+export const OPDS_FACET_SECTIONS = FACET_SECTIONS.filter(
+  (s) => FACET_SECTION_REGISTRY[s].opds,
+) as OpdsFacetSection[]
+
+export function opdsSectionPath(section: OpdsFacetSection): string {
+  return FACET_SECTION_REGISTRY[section].slug ?? section
+}
+
+export const OPDS_SECTION_PATHS: Partial<Record<string, OpdsFacetSection>> =
+  Object.fromEntries(OPDS_FACET_SECTIONS.map((s) => [opdsSectionPath(s), s]))
 
 export const FACET_SECTION_SLUGS: Partial<Record<string, FacetSection>> =
   Object.fromEntries(

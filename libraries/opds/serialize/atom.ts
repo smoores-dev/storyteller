@@ -121,20 +121,35 @@ const publicationEntryXml = (publication: OPDSPublication): XmlNode => {
   if (links.length > 0) entry["link"] = links
   return entry
 }
+
+const withCount = (node: XmlNode, link: Link): XmlNode => {
+  const count = otherProps(link)["numberOfItems"]
+  if (typeof count === "number") {
+    node["@_thr:count"] = count
+  }
+
+  return node
+}
+
 const navigationEntryXml = (link: Link): XmlNode => ({
   id: link.href,
   title: link.title ?? "",
-  link: linkXml(link),
+  link: withCount(linkXml(link), link),
 })
 
 const facetLinksXml = (facet: Facet): XmlNode[] => {
   const group = plainText(facet.metadata?.title)
   return facet.links.items.map((link) => {
-    const node = linkXml(link)
+    const node = withCount(linkXml(link), link)
     node["@_rel"] = REL.facet
-    if (group) node["@_opds:facetGroup"] = group
-    const count = otherProps(link)["numberOfItems"]
-    if (typeof count === "number") node["@_thr:count"] = count
+    if (group) {
+      node["@_opds:facetGroup"] = group
+    }
+
+    if (link.rels?.has("self")) {
+      node["@_opds:activeFacet"] = "true"
+    }
+
     return node
   })
 }
@@ -207,6 +222,7 @@ export const toAtomXml = (
     attributeNamePrefix: "@_",
     format: options.pretty ?? true,
     suppressEmptyNode: true,
+    suppressBooleanAttributes: false,
   })
   const body = builder.build({ feed: root })
   return `<?xml version="1.0" encoding="UTF-8"?>\n${body}`

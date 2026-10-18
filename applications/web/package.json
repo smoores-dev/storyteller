@@ -94,7 +94,6 @@
     "nodemailer": "^6.9.13",
     "nuqs": "^2.8.9",
     "onnxruntime-node": "catalog:",
-    "opds-ts": "^2.1.0",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
     "piscina": "^4.4.0",

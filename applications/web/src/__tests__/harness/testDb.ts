@@ -70,6 +70,8 @@ const DEFAULT_SETTINGS: Settings = {
   opdsEnabled: null,
   opdsPageSize: null,
   opdsFormat: null,
+  opdsSortField: null,
+  opdsSortDirection: null,
   scanCronExpression: null,
   backupCronExpression: null,
   backupRetentionCount: null,

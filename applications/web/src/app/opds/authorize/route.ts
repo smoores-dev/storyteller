@@ -1,34 +1,42 @@
-import { nextAuth } from "@/auth/auth"
+import { type NextRequest } from "next/server"
+
+import { createSessionTokenForUserId, nextAuth } from "@/auth/auth"
 
 export const dynamic = "force-dynamic"
 
+const toLogin = (request: NextRequest) =>
+  new Response(null, {
+    status: 302,
+    headers: {
+      Location: `/login?callbackUrl=${encodeURIComponent(`/opds/authorize${request.nextUrl.search}`)}`,
+      "Cache-Control": "no-store",
+    },
+  })
+
 export const GET: ReturnType<typeof nextAuth.auth> = await (nextAuth.auth(
-  (request) => {
-    if (!request.auth) {
-      return new Response(null, {
-        status: 301,
-        headers: {
-          Location: `/login?callbackUrl=${encodeURIComponent("/opds/authorize")}`,
-        },
-      })
+  async (request) => {
+    if (!request.auth?.user.id) {
+      return toLogin(request)
     }
 
-    const authToken = request.cookies.get("st_token")?.value
-    if (!authToken) {
-      return new Response(null, {
-        status: 301,
-        headers: {
-          Location: `/login?callbackUrl=${encodeURIComponent("/opds/authorize")}`,
-        },
-      })
-    }
+    const token = await createSessionTokenForUserId(request.auth.user.id)
 
-    const authDocumentId = `/opds/auth/auth.json`
-    const callbackUrl = `opds://authorize/?id=${encodeURIComponent(authDocumentId)}&access_token=${encodeURIComponent(authToken)}&token_type=bearer`
+    const callback = new URLSearchParams({
+      id: "/opds/auth/auth.json",
+      access_token: token.access_token,
+      token_type: token.token_type,
+    })
+    const state = request.nextUrl.searchParams.get("state")
+    if (state !== null) {
+      callback.set("state", state)
+    }
 
     return new Response(null, {
       status: 302,
-      headers: { Location: callbackUrl },
+      headers: {
+        Location: `opds://authorize/?${callback.toString()}`,
+        "Cache-Control": "no-store",
+      },
     })
   },
 ) as unknown as Promise<ReturnType<typeof nextAuth.auth>>)
