@@ -38,7 +38,10 @@ describe("getSectionFacets show-all", () => {
     rate.run(userId, b2, 5) // 4.5-5
     rate.run(userId, b3, 0.5) // 0.5-1.49
 
-    const facets = await getSectionFacets(userId, "ratings")
+    const facets = await getSectionFacets(
+      { id: userId, permissions: null },
+      "ratings",
+    )
     const byKey = Object.fromEntries(facets.map((f) => [f.key, f.bookCount]))
 
     assert.strictEqual(facets.length, 6)
@@ -58,7 +61,10 @@ describe("getSectionFacets show-all", () => {
       { title: "b", ebook: "b.epub" },
     ])
 
-    const facets = await getSectionFacets(userId, "formats")
+    const facets = await getSectionFacets(
+      { id: userId, permissions: null },
+      "formats",
+    )
     const byKey = Object.fromEntries(facets.map((f) => [f.key, f.bookCount]))
 
     assert.strictEqual(facets.length, 9)
@@ -90,7 +96,10 @@ describe("getSectionFacets show-all", () => {
     report.run("aaaaaaaa-0000-0000-0000-000000000002", b2, "{}", "S")
     report.run("aaaaaaaa-0000-0000-0000-000000000003", b3, "{}", "C")
 
-    const facets = await getSectionFacets(userId, "grades")
+    const facets = await getSectionFacets(
+      { id: userId, permissions: null },
+      "grades",
+    )
     const byKey = Object.fromEntries(facets.map((f) => [f.key, f.bookCount]))
 
     assert.strictEqual(facets.length, 6)
@@ -119,7 +128,10 @@ describe("getSectionFacets show-all", () => {
       )
       .run(b1, status.uuid, userId)
 
-    const facets = await getSectionFacets(userId, "statuses")
+    const facets = await getSectionFacets(
+      { id: userId, permissions: null },
+      "statuses",
+    )
     const byName = Object.fromEntries(facets.map((f) => [f.name, f.bookCount]))
 
     assert.strictEqual(facets.length, 3)
@@ -161,7 +173,10 @@ describe("getSectionFacets show-all", () => {
       )
       .run("44444444-4444-4444-4444-444444444444", userId, "Smart", filter)
 
-    const facets = await getSectionFacets(userId, "shelves")
+    const facets = await getSectionFacets(
+      { id: userId, permissions: null },
+      "shelves",
+    )
     const byName = Object.fromEntries(facets.map((f) => [f.name, f.bookCount]))
 
     assert.strictEqual(byName["Manual"], 1)
@@ -194,7 +209,7 @@ describe("book totals", () => {
       )
       .run(hidden, "55555555-5555-5555-5555-555555555555")
 
-    const counts = await getLibraryCounts(userId)
+    const counts = await getLibraryCounts({ id: userId, permissions: null })
     assert.strictEqual(counts.books, 3)
 
     const all = await countBooks(userId, {})

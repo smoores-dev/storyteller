@@ -12,7 +12,7 @@ export const GET = withHasPermission("bookList")(async (request) => {
     return NextResponse.json({ error: "Invalid section" }, { status: 400 })
   }
 
-  const facets = await getSectionFacets(request.auth.user.id, section)
+  const facets = await getSectionFacets(request.auth.user, section)
 
   return NextResponse.json(facets)
 })

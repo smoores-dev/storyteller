@@ -21,7 +21,10 @@ describe("getSectionFacets formats", () => {
       { title: "empty" },
     ])
 
-    const facets = await getSectionFacets(userId, "formats")
+    const facets = await getSectionFacets(
+      { id: userId, permissions: null },
+      "formats",
+    )
     const byKey = Object.fromEntries(facets.map((f) => [f.key, f.bookCount]))
 
     assert.strictEqual(byKey["ebook"], 3)
@@ -50,7 +53,10 @@ describe("getSectionFacets formats", () => {
       .prepare(`UPDATE readaloud SET status = 'PROCESSING' WHERE book_uuid = ?`)
       .run(uuid)
 
-    const facets = await getSectionFacets(userId, "formats")
+    const facets = await getSectionFacets(
+      { id: userId, permissions: null },
+      "formats",
+    )
     const byKey = Object.fromEntries(facets.map((f) => [f.key, f.bookCount]))
 
     assert.strictEqual(byKey["readaloud"], 0)
@@ -69,7 +75,10 @@ describe("getSectionFacets formats", () => {
       .prepare(`UPDATE ebook SET missing = 1 WHERE book_uuid = ?`)
       .run(gone)
 
-    const facets = await getSectionFacets(userId, "formats")
+    const facets = await getSectionFacets(
+      { id: userId, permissions: null },
+      "formats",
+    )
     const byKey = Object.fromEntries(facets.map((f) => [f.key, f.bookCount]))
 
     assert.strictEqual(byKey["missing-files"], 1)

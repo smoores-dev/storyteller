@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
  * publication years, ratings) plus per-collection and per-shelf book counts
  */
 export const GET = withHasPermission("bookList")(async (request) => {
-  const counts = await getLibraryCounts(request.auth.user.id)
+  const counts = await getLibraryCounts(request.auth.user)
 
   return NextResponse.json(counts)
 })
