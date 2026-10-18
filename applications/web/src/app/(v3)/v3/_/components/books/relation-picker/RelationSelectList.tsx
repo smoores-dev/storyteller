@@ -10,9 +10,9 @@ import {
   type RelationSource,
   useRelationItems,
 } from "@/app/(v3)/v3/_/hooks/use-relation-items"
-import { marcRelators } from "@/components/books/edit/marcRelators"
 import { type Field } from "@/fields"
 import * as icon from "@/icons"
+import { marcRelators } from "@/metadata/marcRelators"
 
 export type RelationRowState = "primary" | "secondary" | "none"
 

@@ -1,7 +1,7 @@
 import { type Insertable, type Selectable, type Updateable, sql } from "kysely"
 
-import { type Role } from "@/components/books/edit/marcRelators"
 import { BookEvents } from "@/events"
+import { type Role } from "@/metadata/marcRelators"
 import { type UUID } from "@/uuid"
 
 import { getBooks } from "./books"

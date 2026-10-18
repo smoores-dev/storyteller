@@ -22,10 +22,10 @@ import {
   useFormatDuration,
   useFormatRelativeTime,
 } from "@/app/(v3)/v3/_/lib/formatters"
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations } from "@/database/books"
 import { usePermission } from "@/hooks/usePermission"
 import * as icon from "@/icons"
+import { IconReadaloud } from "@/icons/IconReadaloud"
 import {
   useCancelProcessingMutation,
   useGetAlignmentEstimateQuery,

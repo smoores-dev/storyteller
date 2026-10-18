@@ -6,16 +6,12 @@ import {
 import { Locator, getHtmlId } from "@readium/shared"
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { type BookWithRelations } from "@/database/books"
 import {
   getLocatorWithClosestPositionAsync,
   translateLocator,
-} from "@v3/_/components/reader/BookService"
-import {
-  isScrollingLayout,
-  isVerticalPublication,
-} from "@v3/_/components/reader/helpers"
-
-import { type BookWithRelations } from "@/database/books"
+} from "@/reader/BookService"
+import { isScrollingLayout, isVerticalPublication } from "@/reader/helpers"
 import { syncPosition } from "@/store/actions"
 import { useGetPositionQuery } from "@/store/api"
 import { useAppDispatch, useAppSelector } from "@/store/appState"

@@ -48,6 +48,11 @@
     "resetLinkSent": "If an account matches, we sent a password reset link to its email address.",
     "backToLogin": "Back to login"
   },
+  "AuthDeniedPage": {
+    "title": "Access denied",
+    "description": "Your account is not authorized to use this server.",
+    "backToLogin": "Back to login"
+  },
   "ResetPasswordPage": {
     "title": "Reset password",
     "chooseANewPassword": "Choose a new password",
@@ -1696,7 +1701,6 @@
       "en": "English",
       "nl": "Dutch"
     },
-    "switchToClassic": "Switch to classic UI",
     "switchToNew": "Try new interface",
     "hideCollections": "Hide all collections",
     "hideShelves": "Hide all shelves",

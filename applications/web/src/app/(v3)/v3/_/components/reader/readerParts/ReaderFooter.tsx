@@ -1,10 +1,7 @@
-import { type Locator } from "@readium/shared"
 import { motion, useReducedMotion } from "motion/react"
 import { useEffect, useState } from "react"
 
 import { ProgressBar } from "@v3/_/components/reader/ProgressBar"
-import { withActiveFrame } from "@v3/_/components/reader/frameUtils"
-import { isRtlPublication } from "@v3/_/components/reader/helpers"
 import { useReaderShortcuts } from "@v3/_/components/reader/hooks/useReaderKeyboard"
 import { BookInfo } from "@v3/_/components/reader/preferenceItems/BookInfo"
 import { HoldButton } from "@v3/_/components/reader/preferenceItems/HoldButton"
@@ -15,6 +12,8 @@ import { cn } from "@v3/_/lib/utils"
 
 import { type BookWithRelations } from "@/database/books"
 import * as icon from "@/icons"
+import { withActiveFrame } from "@/reader/frameUtils"
+import { isRtlPublication } from "@/reader/helpers"
 import {
   nextPagePressed,
   pauseButtonPressed,
@@ -37,14 +36,6 @@ import {
   selectIsLoadingPublication,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
-
-export type TocItem = {
-  id: string
-  title: string | undefined
-  href: string
-  level: number
-  locator: Locator | null
-}
 
 type Props = {
   book: BookWithRelations

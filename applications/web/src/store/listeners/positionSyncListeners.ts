@@ -1,6 +1,6 @@
 import { isAnyOf } from "@reduxjs/toolkit"
 
-import { isSameLocator } from "@/components/reader/locators"
+import { isSameLocator } from "@/reader/locators"
 import { serverPositionUpdated, syncPosition } from "@/store/actions"
 import { api } from "@/store/api"
 import { preferencesSlice } from "@/store/slices/preferencesSlice"

@@ -1,6 +1,5 @@
 import { sql } from "kysely"
 
-import { type Role } from "@/components/books/edit/marcRelators"
 import {
   BADGE_FACET_SECTIONS,
   type BadgeFacetSection,
@@ -10,6 +9,7 @@ import {
   isFacetSection,
 } from "@/facet-sections"
 import { ALIGNMENT_GRADES, FORMAT_VALUES, resolveFieldAlias } from "@/fields"
+import { type Role } from "@/metadata/marcRelators"
 import {
   type ShelfFilter,
   type ShelfFilterIssue,

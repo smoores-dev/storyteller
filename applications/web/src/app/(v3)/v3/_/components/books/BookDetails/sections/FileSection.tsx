@@ -36,8 +36,6 @@ import {
   useCommon,
   useTranslation,
 } from "@/app/(v3)/v3/_/hooks/use-translation"
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
-import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import { type BookWithRelations } from "@/database/books"
 import {
   getCoreIdentifier,
@@ -45,8 +43,10 @@ import {
 } from "@/database/identifierKinds"
 import { type IdentifierKind } from "@/database/identifiers"
 import { defaultMetadataFieldOverrides } from "@/database/settingsTypes"
+import { formatTimeHuman } from "@/formatTime"
 import { usePermission } from "@/hooks/usePermission"
 import * as icon from "@/icons"
+import { IconReadaloud } from "@/icons/IconReadaloud"
 import {
   getDownloadUrl,
   useRemoveBookAssetMutation,

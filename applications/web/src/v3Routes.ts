@@ -17,6 +17,7 @@ export const V3_ROOTS = [
   "forgot-password",
   "reset-password",
   "invites",
+  "auth",
   "device",
   "preferences",
   "shelves",

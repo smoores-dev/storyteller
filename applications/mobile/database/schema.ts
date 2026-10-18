@@ -84,7 +84,7 @@ export interface BookToCreator {
   createdAt: Generated<string>
   creatorUuid: UUID
   role:
-    | import("@storyteller-platform/web/src/components/books/edit/marcRelators").Role
+    | import("@storyteller-platform/web/src/metadata/marcRelators").Role
     | null
   updatedAt: Generated<string>
   uuid: UUID

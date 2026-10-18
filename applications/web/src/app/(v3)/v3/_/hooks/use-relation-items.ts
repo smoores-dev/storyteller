@@ -1,8 +1,8 @@
 import { useLocale } from "next-intl"
 import { useMemo } from "react"
 
-import { type Role } from "@/components/books/edit/marcRelators"
 import { type FacetSource, type Field } from "@/fields"
+import { type Role } from "@/metadata/marcRelators"
 import {
   useListAuthorsQuery,
   useListCollectionsQuery,

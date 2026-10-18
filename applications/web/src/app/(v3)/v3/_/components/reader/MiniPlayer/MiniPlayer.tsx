@@ -26,13 +26,13 @@ import {
   MINI_PLAYER_HEIGHT,
   MINI_PLAYER_WIDTH,
 } from "@v3/_/components/reader/constants"
-import { formatTime } from "@v3/_/components/reader/preferenceItems/formatTime"
 import { TooltipButton } from "@v3/_/components/ui/tooltip-button"
 import { V3Link } from "@v3/_/components/v3-link"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type BookWithRelations } from "@/database/books"
+import { formatTime } from "@/formatTime"
 import * as icon from "@/icons"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import { closeMiniPlayer, playerPositionSeeked } from "@/store/actions"

@@ -5,7 +5,7 @@ import {
   type Publication,
 } from "@readium/shared"
 
-import { type TocItem } from "@/components/reader/readerParts/ReaderFooter"
+import { type TocItem } from "@/reader/BookService"
 
 export type TextAudioMap = Map<
   string,

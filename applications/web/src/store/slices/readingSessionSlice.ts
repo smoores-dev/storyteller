@@ -6,8 +6,8 @@ import {
   createSlice,
 } from "@reduxjs/toolkit"
 
-import { isSameLocator } from "@/components/reader/locators"
 import type { BookWithRelations } from "@/database/books"
+import { isSameLocator } from "@/reader/locators"
 import type { RootState } from "@/store/appState"
 import {
   getPublication,

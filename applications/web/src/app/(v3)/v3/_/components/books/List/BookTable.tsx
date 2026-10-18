@@ -67,10 +67,10 @@ import {
   TableRow,
 } from "@/app/(v3)/v3/_/components/ui/table"
 import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations } from "@/database/books"
 import { getFieldDef } from "@/fields"
 import * as icon from "@/icons"
+import { IconReadaloud } from "@/icons/IconReadaloud"
 import { type DisplayField, type SortDirection, type SortField } from "@/sort"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {

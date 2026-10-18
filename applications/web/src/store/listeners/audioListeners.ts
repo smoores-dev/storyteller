@@ -4,9 +4,9 @@ import {
   type AudioClip,
   getAudiobookLocator,
   getFragmentForClip,
-} from "@/components/reader/BookService"
-import { withActiveFrame } from "@/components/reader/frameUtils"
-import { isSameLocator } from "@/components/reader/locators"
+} from "@/reader/BookService"
+import { withActiveFrame } from "@/reader/frameUtils"
+import { isSameLocator } from "@/reader/locators"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   bookLocatorChanged,

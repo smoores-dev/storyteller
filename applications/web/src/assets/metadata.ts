@@ -10,7 +10,6 @@ import { type Epub, type EpubReader } from "@storyteller-platform/epub"
 import { MediaType } from "@storyteller-platform/media-types"
 
 import { isAudioFile } from "@/audio"
-import { type Role, isRole } from "@/components/books/edit/marcRelators"
 import {
   type Book,
   type BookRelationsUpdate,
@@ -25,6 +24,7 @@ import {
 } from "@/database/settingsTypes"
 import { toIsoDateString, toIsoDateTimeString } from "@/dates"
 import { logger } from "@/logging"
+import { type Role, isRole } from "@/metadata/marcRelators"
 
 import { persistCover } from "./covers"
 import { getProcessedAudioFiles } from "./fs"

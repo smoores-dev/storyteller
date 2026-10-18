@@ -30,10 +30,10 @@ import {
 } from "@/app/(v3)/v3/_/components/books/search-highlight"
 import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-provider"
 import { V3Link } from "@/app/(v3)/v3/_/components/v3-link"
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations } from "@/database/books"
 import type { GridCardSize } from "@/database/userPreferencesTypes"
 import * as icon from "@/icons"
+import { IconReadaloud } from "@/icons/IconReadaloud"
 import {
   type CreatorDisplayField,
   type DisplayField,

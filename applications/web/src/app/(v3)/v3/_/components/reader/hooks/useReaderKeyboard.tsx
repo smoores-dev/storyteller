@@ -1,7 +1,6 @@
 import { type Hotkey, useHotkeys } from "@tanstack/react-hotkeys"
 
-import { isRtlPublication } from "@v3/_/components/reader/helpers"
-
+import { isRtlPublication } from "@/reader/helpers"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   nextPagePressed,

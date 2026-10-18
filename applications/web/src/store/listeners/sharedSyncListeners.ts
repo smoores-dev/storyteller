@@ -3,7 +3,7 @@
 import { type Locator } from "@readium/shared"
 import { isAnyOf } from "@reduxjs/toolkit"
 
-import { getApiUrlFromResourceHref } from "@/components/reader/BookService"
+import { getApiUrlFromResourceHref } from "@/reader/BookService"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   type SkipPartButtonPayload,

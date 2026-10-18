@@ -7,14 +7,14 @@ import {
 } from "@v3/_/components/ui/filterable-menu"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
+import * as icon from "@/icons"
 import {
   type MarcRelator,
   commonCreatorRelators,
   commonMarcRelators,
   creatorRelators,
   marcRelators,
-} from "@/components/books/edit/marcRelators"
-import * as icon from "@/icons"
+} from "@/metadata/marcRelators"
 
 const ROLE_LABELS = new Map<string, string>(
   marcRelators.map((r) => [r.value as string, r.label]),

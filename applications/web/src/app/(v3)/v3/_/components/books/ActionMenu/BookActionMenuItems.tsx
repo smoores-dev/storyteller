@@ -66,7 +66,6 @@ import {
   downloadSummary,
   downloadableAsset,
 } from "@/bookDownloads"
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations, type CreatorRelation } from "@/database/books"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
@@ -108,7 +107,7 @@ export type BookActionEntry = {
 const DOWNLOAD_ICONS: Record<DownloadSelection, ReactNode> = {
   ebook: <icon.BookAlt className="size-4" />,
   audiobook: <icon.Headphones className="size-4" />,
-  readaloud: <IconReadaloud className="size-4" />,
+  readaloud: <icon.Readaloud className="size-4" />,
   all: <icon.FileZip className="size-4" />,
 }
 

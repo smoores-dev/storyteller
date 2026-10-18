@@ -25,8 +25,8 @@ import { cn } from "@v3/_/lib/utils"
 
 import { type Invite } from "@/apiModels"
 import { type Providers, type PublicProvider } from "@/auth/providers"
-import { FallbackIcon, ProviderIcons } from "@/components/icons/ProviderIcons"
 import * as icon from "@/icons"
+import { FallbackIcon, ProviderIcons } from "@/icons/ProviderIcons"
 import { api } from "@/store/api"
 import { useAppDispatch } from "@/store/appState"
 

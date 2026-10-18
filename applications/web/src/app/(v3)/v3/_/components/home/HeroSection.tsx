@@ -8,9 +8,9 @@ import { useUserPreferences } from "@v3/_/components/user-preferences-provider"
 import { V3Link } from "@v3/_/components/v3-link"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
 import { type BookWithRelations } from "@/database/books"
 import { STATUS_READING } from "@/database/statusKinds"
+import { formatTimeHuman } from "@/formatTime"
 import * as icon from "@/icons"
 import {
   useListInfiniteBooksInfiniteQuery,

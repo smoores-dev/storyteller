@@ -3,9 +3,9 @@
 import { ToggleGroup, ToggleGroupItem } from "@v3/_/components/ui/toggle-group"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { type BookWithRelations } from "@/database/books"
 import * as icon from "@/icons"
+import { IconReadaloud } from "@/icons/IconReadaloud"
 
 export type BookFormat = "ebook" | "readaloud" | "audiobook"
 

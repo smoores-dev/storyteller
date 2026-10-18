@@ -1,7 +1,7 @@
 import { EpubPreferences } from "@readium/navigator"
 import { isAnyOf } from "@reduxjs/toolkit"
 
-import { withActiveFrame } from "@/components/reader/frameUtils"
+import { withActiveFrame } from "@/reader/frameUtils"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import { closeMiniPlayer } from "@/store/actions"
 import { getNavigator } from "@/store/readerRegistry"

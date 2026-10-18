@@ -1,11 +1,11 @@
 import { type Locator } from "@readium/shared"
 import { useEffect, useMemo, useState } from "react"
 
-import { getPositionsForTocItem } from "@v3/_/components/reader/BookService"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 import { useFormatDuration } from "@v3/_/lib/formatters"
 
 import { type BookWithRelations } from "@/database/books"
+import { getPositionsForTocItem } from "@/reader/BookService"
 import { useAppSelector } from "@/store/appState"
 import {
   getPositions,

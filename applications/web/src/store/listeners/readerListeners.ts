@@ -5,15 +5,15 @@ import { type ListenerEffectAPI, isAnyOf } from "@reduxjs/toolkit"
 import {
   getLocatorForFragment,
   getLocatorWithClosestPositionAsync,
-} from "@/components/reader/BookService"
-import { withActiveFrame } from "@/components/reader/frameUtils"
+} from "@/reader/BookService"
+import { withActiveFrame } from "@/reader/frameUtils"
 import {
   findFirstVisibleLocator,
   isLocatorWithinViewport,
   isScrollingLayout,
   scrollToLocator,
-} from "@/components/reader/helpers"
-import { isSameLocator } from "@/components/reader/locators"
+} from "@/reader/helpers"
+import { isSameLocator } from "@/reader/locators"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   bookLocatorChanged,

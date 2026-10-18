@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import type { TocItem } from "@/components/reader/BookService"
+import type { TocItem } from "@/reader/BookService"
 
 export type RepeatMode = "track" | "playlist" | "none"
 

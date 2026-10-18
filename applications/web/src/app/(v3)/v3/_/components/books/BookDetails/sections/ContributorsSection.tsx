@@ -11,8 +11,8 @@ import {
 } from "@v3/_/components/ui/filterable-menu"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
-import { DEFAULT_CREATOR_ROLE } from "@/components/books/edit/marcRelators"
 import * as icon from "@/icons"
+import { DEFAULT_CREATOR_ROLE } from "@/metadata/marcRelators"
 
 import { CollapsibleSection } from "./CollapsibleSection"
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 
 import { withHasPermission } from "@/auth/auth"
-import { type Role } from "@/components/books/edit/marcRelators"
 import { getCreators } from "@/database/creators"
+import { type Role } from "@/metadata/marcRelators"
 
 /**
  * @summary List all creators

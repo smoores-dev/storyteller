@@ -54,7 +54,6 @@ import {
 } from "@/app/(v3)/v3/_/components/metadata/provider-notice"
 import { SourceIcon } from "@/app/(v3)/v3/_/components/metadata/source-icon"
 import { cn } from "@/cn"
-import { DEFAULT_CREATOR_ROLE } from "@/components/books/edit/marcRelators"
 import { type BookWithRelations } from "@/database/books"
 import { getCoreIdentifier } from "@/database/identifierKinds"
 import {
@@ -73,6 +72,7 @@ import {
 } from "@/fields"
 import * as icon from "@/icons"
 import { identifierKey, proposedIdentifiers } from "@/metadata/identifiers"
+import { DEFAULT_CREATOR_ROLE } from "@/metadata/marcRelators"
 import {
   type MatchConfidence,
   type MatchSubject,

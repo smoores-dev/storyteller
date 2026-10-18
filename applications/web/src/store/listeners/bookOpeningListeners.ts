@@ -8,6 +8,7 @@ import {
 
 import { MediaType } from "@storyteller-platform/media-types"
 
+import type { BookWithRelations } from "@/database/books"
 import {
   type TocItem,
   getApiUrlFromResourceHref,
@@ -16,8 +17,7 @@ import {
   getTocItemsWithLocator,
   translateLocator,
   traverseToc,
-} from "@/components/reader/BookService"
-import type { BookWithRelations } from "@/database/books"
+} from "@/reader/BookService"
 import { type AudioTrack, readerPlayer } from "@/services/AudioPlayerService"
 import { syncPosition } from "@/store/actions"
 import { api, getCoverUrl } from "@/store/api"

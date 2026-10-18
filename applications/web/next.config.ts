@@ -72,10 +72,6 @@ const withNextIntl = createNextIntlPlugin({
   },
 })
 
-const unlessV2Cookie = [
-  { type: "cookie" as const, key: "frontend-version", value: "v2" },
-]
-
 const nextConfig: import("next").NextConfig = {
   redirects: () => [
     {
@@ -83,13 +79,14 @@ const nextConfig: import("next").NextConfig = {
       destination: "/opds/v1",
       permanent: true,
     },
+    { source: "/account", destination: "/preferences", permanent: false },
+    { source: "/users", destination: "/settings?tab=users", permanent: false },
   ],
   rewrites: () => ({
     beforeFiles: [
-      { source: "/", missing: unlessV2Cookie, destination: "/v3" },
+      { source: "/", destination: "/v3" },
       ...V3_ROOTS.map((root) => ({
         source: `/${root}/:path*`,
-        missing: unlessV2Cookie,
         destination: `/v3/${root}/:path*`,
       })),
     ],
@@ -139,7 +136,6 @@ const nextConfig: import("next").NextConfig = {
   reactCompiler: true,
   productionBrowserSourceMaps: true,
   experimental: {
-    optimizePackageImports: ["@mantine/core", "@mantine/hooks"],
     authInterrupts: true,
     turbopackSourceMaps: true,
   },

@@ -6,7 +6,7 @@ import { useWatch } from "react-hook-form"
 import { bookDuration, bookPageCount } from "@v3/_/lib/bookMetrics"
 import { cn } from "@v3/_/lib/utils"
 
-import { formatTimeHuman } from "@/components/reader/preferenceItems/formatTime"
+import { formatTimeHuman } from "@/formatTime"
 
 import { useBookForm } from "./BookFormProvider"
 import { SEAMLESS_BOX } from "./EditableText"

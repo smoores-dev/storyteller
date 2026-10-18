@@ -167,7 +167,7 @@ import {
   IconShare,
 } from "@tabler/icons-react"
 
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
+import { IconReadaloud } from "@/icons/IconReadaloud"
 
 import { styled } from "./styled"
 

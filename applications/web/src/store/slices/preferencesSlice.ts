@@ -7,8 +7,8 @@ import {
 
 import { bookCoverSwatches } from "@v3/_/components/books/coverSwatches"
 
-import { isSafari } from "@/components/reader/helpers"
 import { type BookWithRelations } from "@/database/books"
+import { isSafari } from "@/reader/helpers"
 import { type RootState } from "@/store/appState"
 import { type UUID } from "@/uuid"
 

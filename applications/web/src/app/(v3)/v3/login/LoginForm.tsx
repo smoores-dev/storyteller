@@ -26,8 +26,8 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type Providers, type PublicProvider } from "@/auth/providers"
-import { FallbackIcon, ProviderIcons } from "@/components/icons/ProviderIcons"
 import * as icon from "@/icons"
+import { FallbackIcon, ProviderIcons } from "@/icons/ProviderIcons"
 import { api } from "@/store/api"
 import { useAppDispatch } from "@/store/appState"
 

@@ -7,13 +7,13 @@ import {
   sql,
 } from "kysely"
 
-import { type Role } from "@/components/books/edit/marcRelators"
 import {
   type AssetFormat,
   type BaseField,
   FORMAT_VALUES,
   type FormatValue,
 } from "@/fields"
+import { type Role } from "@/metadata/marcRelators"
 import {
   type ShelfFilterOperator,
   type ShelfFilterValue,

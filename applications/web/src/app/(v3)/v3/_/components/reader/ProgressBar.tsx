@@ -10,6 +10,7 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 import { cn } from "@v3/_/lib/utils"
 
 import { type BookWithRelations } from "@/database/books"
+import { formatTime } from "@/formatTime"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   playerPositionSeeked,
@@ -24,7 +25,6 @@ import {
   type ProgressMark,
   useFormattedProgress,
 } from "./hooks/useFormattedProgress"
-import { formatTime } from "./preferenceItems/formatTime"
 
 const TRACK_CLASS = "bg-reader-border/60 absolute inset-x-0 top-0 h-1"
 const FILL_CLASS = "bg-reader-accent absolute inset-y-0 left-0"

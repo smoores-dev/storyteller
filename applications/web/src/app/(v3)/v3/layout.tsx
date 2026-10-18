@@ -18,9 +18,9 @@ import {
 import { VersionProvider } from "@v3/_/components/version-context"
 import { DocumentTitleProvider } from "@v3/_/hooks/use-document-title"
 
-import StoreProvider from "@/components/StoreProvider"
 import { getSetting } from "@/database/settings"
 import { env } from "@/env"
+import StoreProvider from "@/store/StoreProvider"
 import {
   type UISettings,
   UI_SETTINGS_COOKIE_NAME,

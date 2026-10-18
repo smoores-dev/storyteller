@@ -4,7 +4,6 @@ import { extname } from "node:path"
 import { type NextRequest, after } from "next/server"
 
 import { assertHasPermission } from "@/auth/auth"
-import { isReadiumServiceError } from "@/components/reader/BookService"
 import {
   type BookFormat,
   type BookWithRelations,
@@ -14,6 +13,7 @@ import {
 import { getSettings } from "@/database/settings"
 import type { UserWithPermissions } from "@/database/users"
 import { logger } from "@/logging"
+import { isReadiumServiceError } from "@/reader/BookService"
 import { getReadiumService } from "@/services/readiumService"
 import { getContentTimestamp } from "@/utils/cacheBustingFetch"
 import type { UUID } from "@/uuid"

@@ -15,6 +15,7 @@ import { cn } from "@v3/_/lib/utils"
 
 import type { BookWithRelations } from "@/database/books"
 import * as icon from "@/icons"
+import { isRtlPublication, isVerticalPublication } from "@/reader/helpers"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import { nextPagePressed, previousPagePressed } from "@/store/actions"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
@@ -39,7 +40,6 @@ import {
 
 import { usePiPWindow } from "./PipProvider"
 import { MINI_PLAYER_HEIGHT, MINI_PLAYER_WIDTH } from "./constants"
-import { isRtlPublication, isVerticalPublication } from "./helpers"
 import { getClientXY } from "./hooks/mouseHelpers"
 import { useNavigator } from "./hooks/useNavigator"
 import { NavigatorEventsProvider } from "./hooks/useNavigatorEvents"

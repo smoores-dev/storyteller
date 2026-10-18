@@ -33,9 +33,9 @@ import {
 } from "@/app/(v3)/v3/_/components/books/BookDetails/MetricEdit"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import { cn } from "@/cn"
-import { IconReadaloud } from "@/components/icons/IconReadaloud"
 import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
+import { IconReadaloud } from "@/icons/IconReadaloud"
 import {
   useDeleteUserBookRatingMutation,
   useSetUserBookRatingMutation,

@@ -13,10 +13,9 @@ export function proxy(request: NextRequest) {
 
   if (pathname.startsWith("/v3")) return NextResponse.next()
 
-  const versionCookie = request.cookies.get("frontend-version")?.value
-  const wantsV2 = versionCookie === "v2"
-
-  if (wantsV2 || !hasV3Route(pathname)) return NextResponse.next()
+  if (!hasV3Route(pathname)) {
+    return NextResponse.next()
+  }
 
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set("x-v3-rewritten", "1")

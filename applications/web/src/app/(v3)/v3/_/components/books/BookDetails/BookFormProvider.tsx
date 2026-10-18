@@ -27,9 +27,9 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 import { useUnsavedChangesGuard } from "@v3/_/hooks/use-unsaved-changes"
 import { apiErrorMessage } from "@v3/_/lib/api-error"
 
-import { type Role } from "@/components/books/edit/marcRelators"
 import { type BookWithRelations } from "@/database/books"
 import { usePermission } from "@/hooks/usePermission"
+import { type Role } from "@/metadata/marcRelators"
 import { useUpdateBookMutation } from "@/store/api"
 import { type UUID } from "@/uuid"
 

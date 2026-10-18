@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 
-import { type Role } from "@/components/books/edit/marcRelators"
+import { type Role } from "@/metadata/marcRelators"
 import {
   useAddBooksToCollectionsMutation,
   useAddBooksToSeriesMutation,

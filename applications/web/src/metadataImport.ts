@@ -7,7 +7,6 @@ import {
   type CoverCandidate,
 } from "@storyteller-platform/nodekit"
 
-import { isRole, marcRelators } from "@/components/books/edit/marcRelators"
 import {
   type BookUpdate,
   type BookWithRelations,
@@ -34,6 +33,7 @@ import {
   identifierKey,
   proposedIdentifiers,
 } from "@/metadata/identifiers"
+import { isRole, marcRelators } from "@/metadata/marcRelators"
 import {
   COVER_SIDES,
   type CoverSide,

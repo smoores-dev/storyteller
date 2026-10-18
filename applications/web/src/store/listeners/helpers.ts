@@ -18,8 +18,8 @@ import {
   getLocatorForFragment,
   getLocatorWithClosestPositionAsync,
   getResourceHrefFromApiUrl,
-} from "@/components/reader/BookService"
-import { withActiveFrame } from "@/components/reader/frameUtils"
+} from "@/reader/BookService"
+import { withActiveFrame } from "@/reader/frameUtils"
 import { readerPlayer } from "@/services/AudioPlayerService"
 import {
   getAudioToTextMap,

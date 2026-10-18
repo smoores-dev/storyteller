@@ -35,7 +35,6 @@ import {
 import { type UpgradeResult } from "@/app/api/v2/books/[bookId]/upgrade-epub/route"
 import { type BackupInfo } from "@/backups"
 import { type ChapterAudio } from "@/chapterAudio"
-import { type Role } from "@/components/books/edit/marcRelators"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -110,6 +109,7 @@ import {
   queueJobNext,
 } from "@/jobList"
 import { type OrphanFolder, type StorageUsage } from "@/maintenance"
+import { type Role } from "@/metadata/marcRelators"
 import { type AutoImportResult } from "@/metadataAutoImport"
 import { type CoverImportRequest } from "@/metadataImport"
 import { type MetadataImportBody } from "@/metadataImportTypes"

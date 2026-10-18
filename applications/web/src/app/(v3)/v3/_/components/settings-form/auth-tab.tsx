@@ -36,9 +36,9 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { Providers } from "@/auth/providers"
 import { cn } from "@/cn"
-import { FallbackIcon, ProviderIcons } from "@/components/icons/ProviderIcons"
 import type { UserPermissionSet } from "@/database/users"
 import * as icon from "@/icons"
+import { FallbackIcon, ProviderIcons } from "@/icons/ProviderIcons"
 
 import { LockTooltip, useSettingsForm } from "./SettingsFormProvider"
 import { type SettingsFormForm, SettingsSection, safeUrl } from "./shared"

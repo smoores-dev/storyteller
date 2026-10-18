@@ -179,17 +179,6 @@ export function NavUser({
                   </Link>
                 }
               />
-
-              <DropdownMenuItem
-                onClick={() => {
-                  document.cookie =
-                    "frontend-version=v2; path=/; max-age=31536000"
-                  window.location.href = "/"
-                }}
-              >
-                <icon.ArrowBack />
-                {t("switchToClassic")}
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem

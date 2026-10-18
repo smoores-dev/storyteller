@@ -1,6 +1,6 @@
 "use client"
 
-import { isSafari } from "@/components/reader/helpers"
+import { isSafari } from "@/reader/helpers"
 
 /**
  * 🛎️ shame

@@ -7,7 +7,7 @@ import {
   useState,
 } from "react"
 
-import { withActiveFrame } from "@v3/_/components/reader/frameUtils"
+import { withActiveFrame } from "@/reader/frameUtils"
 
 import { getClientXY } from "./mouseHelpers"
 
