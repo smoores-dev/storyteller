@@ -21,7 +21,9 @@
   ],
   "types": "dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    "@storyteller": "./src/index.ts",
+    "types": "./src/index.ts",
+    "default": "./dist/index.js"
   },
   "scripts": {
     "build": "rm -rf dist .tsbuild && tsc -b tsconfig.build.json",
