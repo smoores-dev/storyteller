@@ -157,15 +157,11 @@ export async function upsertProgression(
           .updateTable("progression")
           .set({
             ...progression,
-            format,
             modified: progression.modified as unknown as Date,
             deviceId: device.id,
             deviceName: device.name,
-            userId,
-            bookUuid,
           })
-          .where("userId", "=", userId)
-          .where("bookUuid", "=", bookUuid)
+          .where("uuid", "=", uuid)
           .execute()
 
         logger.debug("Updated existing progression")
