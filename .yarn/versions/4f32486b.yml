@@ -1,6 +1,4 @@
 releases:
-  "@storyteller-platform/align": patch
-  "@storyteller-platform/audiobook": patch
   "@storyteller-platform/docs": patch
 
 declined:
