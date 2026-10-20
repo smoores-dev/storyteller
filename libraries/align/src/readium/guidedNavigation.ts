@@ -108,37 +108,41 @@ export function generateGuidedNavigationManifest(
 export async function generateGuidedNavigationDocuments(epub: EpubReader) {
   const manifest = await epub.getManifest()
   const spine = await epub.getSpineItems()
-  const mediaOverlays: ManifestItem[] = []
+  const mediaOverlays: [ManifestItem, ManifestItem | null][] = []
 
   for (const item of spine) {
-    if (!item.mediaOverlay) continue
+    if (!item.mediaOverlay) {
+      mediaOverlays.push([item, null])
+      continue
+    }
 
     const mediaOverlayItem = manifest[item.mediaOverlay]
-    if (!mediaOverlayItem) continue
+    if (!mediaOverlayItem) {
+      mediaOverlays.push([item, null])
+      continue
+    }
 
-    mediaOverlays.push(mediaOverlayItem)
+    mediaOverlays.push([item, mediaOverlayItem])
   }
 
   const guidedNavDocs: GuidedNavigationDocument[] = []
 
-  for (const [i, overlay] of enumerate(mediaOverlays)) {
-    const contents = await epub.readItemContents(overlay.id, "utf-8")
-    const xml = parse(contents, "text/xml")
+  for (const [i, [spineItem, overlay]] of enumerate(mediaOverlays)) {
+    const contents =
+      overlay && (await epub.readItemContents(overlay.id, "utf-8"))
+    const xml = contents === null ? null : parse(contents, "text/xml")
 
-    const root = xml.documentElement
-    if (!root) continue
+    const root = xml?.documentElement
 
-    const body = findXmlDescendantByName("body", root)
-
-    if (!body) continue
+    const body = root && findXmlDescendantByName("body", root)
 
     const links: Link[] = []
-    const prevOverlay = mediaOverlays[i - 1]
-    if (prevOverlay) {
+    const prevSpineItem = mediaOverlays[i - 1]?.[0]
+    if (prevSpineItem) {
       links.push(
         new Link({
           rels: new Set(["prev"]),
-          href: `GND/${prevOverlay.id}.json`,
+          href: `GND/${prevSpineItem.id}.json`,
           type: MediaType.GUIDED_NAVIGATION.mime,
         }),
       )
@@ -147,17 +151,17 @@ export async function generateGuidedNavigationDocuments(epub: EpubReader) {
     links.push(
       new Link({
         rels: new Set(["self"]),
-        href: `GND/${overlay.id}.json`,
+        href: `GND/${spineItem.id}.json`,
         type: MediaType.GUIDED_NAVIGATION.mime,
       }),
     )
 
-    const nextOverlay = mediaOverlays[i + 1]
-    if (nextOverlay) {
+    const nextSpineItem = mediaOverlays[i + 1]?.[0]
+    if (nextSpineItem) {
       links.push(
         new Link({
           rels: new Set(["next"]),
-          href: `GND/${nextOverlay.id}.json`,
+          href: `GND/${nextSpineItem.id}.json`,
           type: MediaType.GUIDED_NAVIGATION.mime,
         }),
       )
@@ -165,7 +169,12 @@ export async function generateGuidedNavigationDocuments(epub: EpubReader) {
 
     const guidedNavDoc = new GuidedNavigationDocument({
       links: new Links(links),
-      guided: await parseGuidedNavigationObjects(epub, overlay.href, body),
+      guided: await parseGuidedNavigationObjects(
+        epub,
+        overlay?.href,
+        body,
+        spineItem.href,
+      ),
     })
 
     guidedNavDocs.push(guidedNavDoc)
@@ -176,10 +185,24 @@ export async function generateGuidedNavigationDocuments(epub: EpubReader) {
 
 async function parseGuidedNavigationObjects(
   epub: EpubReader,
-  overlayHref: string,
-  root: Element,
+  overlayHref: string | undefined,
+  root: Element | null | undefined,
+  fallbackTextref: string,
 ): Promise<GuidedNavigationObject[]> {
   const guidedNavObjects: GuidedNavigationObject[] = []
+
+  if (!overlayHref || !root) {
+    guidedNavObjects.push(
+      new GuidedNavigationObject({
+        textref: await epub.resolveHref(fallbackTextref, overlayHref, {
+          toRoot: true,
+        }),
+        role: new Set(["chapter"]),
+      }),
+    )
+
+    return guidedNavObjects
+  }
 
   const children = Array.from(root.children).filter((node) =>
     ["seq", "par"].includes(node.nodeName),
@@ -233,6 +256,7 @@ async function parseGuidedNavigationObjects(
         epub,
         overlayHref,
         element,
+        fallbackTextref,
       )
 
       guidedNavObjects.push(
