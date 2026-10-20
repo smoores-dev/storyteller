@@ -17,6 +17,8 @@ COPY libraries/align/package.json ./libraries/align/package.json
 COPY libraries/align/binding.gyp ./libraries/align/binding.gyp
 COPY libraries/align/prebuilds/linux-x64 ./libraries/align/prebuilds/linux-x64
 COPY libraries/align/prebuilds/linux-arm64 ./libraries/align/prebuilds/linux-arm64
+COPY libraries/crengine-xpointer/package.json ./libraries/crengine-xpointer/package.json
+COPY libraries/epubcfi/package.json ./libraries/epubcfi/package.json
 COPY libraries/fs/package.json ./libraries/fs/package.json
 COPY libraries/mapping/package.json ./libraries/mapping/package.json
 COPY libraries/epub/package.json ./libraries/epub/package.json
