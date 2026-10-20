@@ -14,7 +14,7 @@ import clockvalue from "smil-clockvalue"
 
 import {
   type Element,
-  type Epub,
+  type EpubReader,
   findXmlChildByName,
   findXmlDescendantByName,
   type ManifestItem,
@@ -105,7 +105,7 @@ export function generateGuidedNavigationManifest(
   })
 }
 
-export async function generateGuidedNavigationDocuments(epub: Epub) {
+export async function generateGuidedNavigationDocuments(epub: EpubReader) {
   const manifest = await epub.getManifest()
   const spine = await epub.getSpineItems()
   const mediaOverlays: ManifestItem[] = []
@@ -175,7 +175,7 @@ export async function generateGuidedNavigationDocuments(epub: Epub) {
 }
 
 async function parseGuidedNavigationObjects(
-  epub: Epub,
+  epub: EpubReader,
   overlayHref: string,
   root: Element,
 ): Promise<GuidedNavigationObject[]> {

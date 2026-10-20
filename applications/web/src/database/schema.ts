@@ -385,6 +385,31 @@ export interface Position {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface Progression {
+  bookUuid: import("@/uuid").UUID
+  createdAt: Generated<string>
+  deviceId: string
+  deviceName: string
+  format: "ebook" | "audiobook" | "readaloud"
+  modified: Date
+  progression: number
+  title: string | null
+  updatedAt: Generated<string>
+  userId: import("@/uuid").UUID
+  uuid: Generated<import("@/uuid").UUID>
+}
+
+export interface ProgressionReference {
+  createdAt: Generated<string>
+  kind: NonNullable<
+    import("@/progress/uriReference").UriReference["fragmentKind"]
+  >
+  progressionUuid: import("@/uuid").UUID
+  updatedAt: Generated<string>
+  uuid: Generated<import("@/uuid").UUID>
+  value: string
+}
+
 export interface Readaloud {
   bookUuid: import("@/uuid").UUID
   coverBlurhash: string | null
@@ -639,6 +664,8 @@ export interface DB {
   job: Job
   migration: Migration
   position: Position
+  progression: Progression
+  progressionReference: ProgressionReference
   readaloud: Readaloud
   series: Series
   serverIdentity: ServerIdentity

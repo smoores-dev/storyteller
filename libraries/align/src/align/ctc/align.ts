@@ -63,7 +63,7 @@ export async function ctcAlign(
       .filter(
         (f) => !isHiddenFile(f) && MediaType.fromPath(f)?.kind === "audio",
       )
-      .toSorted()
+      .toSorted((a, b) => a.localeCompare(b, undefined, { numeric: true }))
       .map((f) => autoJoin(audiobookDir, f)),
   )
 

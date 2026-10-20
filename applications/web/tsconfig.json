@@ -12,8 +12,7 @@
     // and `smil-clockvalue` only have ambient `declare module` shims in
     // `../../types`, so they have to be loaded explicitly for the imports in the
     // workspace sources this project type-checks to resolve.
-    "types": ["node", "node-gyp-build", "smil-clockvalue"],
-    "preserveSymlinks": true,
+    "types": ["node", "smil-clockvalue"],
     "skipLibCheck": true,
     "checkJs": false,
     "forceConsistentCasingInFileNames": true,
@@ -71,6 +70,9 @@
   "references": [
     {
       "path": "../../libraries/epub"
+    },
+    {
+      "path": "../../libraries/epubcfi"
     },
     {
       "path": "../../libraries/fs"

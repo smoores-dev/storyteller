@@ -80,18 +80,43 @@ export function buildChapterXPointer(
   return `${prefix}${buildXPointer(body, position, options)}`
 }
 
+/**
+ * Which chapter a pointer addresses, 0-based, or `null` when it addresses none.
+ *
+ * For the case where the pointer arrives first and the chapter has to be found from it — the
+ * index is what `resolveChapterXPointer` and `buildChapterXPointer` want as `spineIndex`, and
+ * what indexes the list `getSpineItems()` returns.
+ *
+ * A pointer that stops at the fragment (`/body[1]/DocFragment[2]`) names its chapter too, since
+ * that is a path crengine writes for the fragment itself — and it is a pointer you can only use
+ * to pick a chapter. A chapter document has no fragment node, so {@link resolveChapterXPointer}
+ * returns `null` for it.
+ */
+export function chapterIndexOf(xpointer: string): number | null {
+  if (xpointer.length === 0 || xpointer[0] === "#") return null
+  const steps = parseXPointerSteps(xpointer)
+  return steps === null ? null : chapterIndexOfSteps(steps)
+}
+
 /** Whether the path begins `/body[?]/DocFragment[spineIndex + 1]/body[?]`. */
 function startsAtChapter(
   steps: readonly XPointerStep[],
   spineIndex: number,
 ): boolean {
-  const [first, second, third] = steps
-  if (first === undefined || second === undefined || third === undefined)
-    return false
-  if (!isNamedStep(first, "body")) return false
-  if (!isNamedStep(third, "body")) return false
-  if (second.kind !== "element" || second.name !== FRAGMENT) return false
-  return second.index === spineIndex + 1
+  if (chapterIndexOfSteps(steps) !== spineIndex) return false
+  const third = steps[2]
+  return third !== undefined && isNamedStep(third, "body")
+}
+
+/** The chapter `/body[?]/DocFragment[n]/…` addresses: `n - 1`, the fragment being 1-based. */
+function chapterIndexOfSteps(steps: readonly XPointerStep[]): number | null {
+  const [first, second] = steps
+  if (first === undefined || second === undefined) return null
+  if (first.kind !== "element" || first.name !== "body") return null
+  if (second.kind !== "element" || second.name !== FRAGMENT) return null
+  // `[0]` matches nothing, and an omitted index only happens in the legacy dialect, where the
+  // first fragment of the kind is not necessarily the first chapter. Either way: no chapter.
+  return second.index >= 1 ? second.index - 1 : null
 }
 
 function isNamedStep(step: XPointerStep, name: string): boolean {

@@ -1,7 +1,7 @@
 export class MediaTemporalDimension {
   public format: "npt"
   public timeStart: string
-  public timeEnd?: string
+  public timeEnd?: string | undefined
 
   constructor(dimensionValue?: string) {
     if (dimensionValue === undefined) {

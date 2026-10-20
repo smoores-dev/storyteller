@@ -38,24 +38,12 @@ export async function getSafeChapterRanges(
     return ranges.map((r) => ({ filepath: input, title: null, ...r }))
   }
 
-  const initialRanges = chapters.map((chapter, index) => {
-    const next = chapters[index + 1]
-    if (!next)
-      return {
-        filepath: chapter.filename,
-        title: chapter.title,
-        start: chapter.start ?? 0,
-        end: duration,
-      }
-
-    const end =
-      next.filename === chapter.filename ? (next.start ?? duration) : duration
-
+  const initialRanges = chapters.map((chapter) => {
     return {
       filepath: chapter.filename,
       title: chapter.title,
-      start: chapter.start ?? 0,
-      end,
+      start: chapter.start,
+      end: chapter.end,
     }
   })
 

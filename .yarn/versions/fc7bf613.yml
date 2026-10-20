@@ -1,0 +1,9 @@
+releases:
+  "@storyteller-platform/align": patch
+  "@storyteller-platform/audiobook": minor
+  "@storyteller-platform/epub": patch
+  "@storyteller-platform/uri-fragment": patch
+
+declined:
+  - "@storyteller-platform/web"
+  - "@storyteller-platform/crengine-xpointer"

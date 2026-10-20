@@ -1,8 +1,13 @@
 export class CharacterRange {
   public offset: number
-  public end?: number
+  public end?: number | undefined
 
-  constructor(value: string) {
+  constructor(value?: string) {
+    if (value === undefined) {
+      this.offset = 0
+      return
+    }
+
     const [offsetString, endString] = value.split(",")
     // oxlint-disable-next-line typescript/no-non-null-assertion
     const offset = parseInt(offsetString!, 10)

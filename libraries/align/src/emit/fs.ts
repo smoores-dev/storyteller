@@ -244,7 +244,7 @@ export class EmissionsReader {
           !isHiddenFile(f) &&
           (extname(f) === ".emissions" || extname(f) === ".json"),
       )
-      .toSorted()
+      .toSorted((a, b) => a.localeCompare(b, undefined, { numeric: true }))
       .map((f) => join(fileOrDirectory, f))
   }
 

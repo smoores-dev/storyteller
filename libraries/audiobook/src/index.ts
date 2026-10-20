@@ -24,6 +24,8 @@ export {
 
 export type { AudiobookChapter }
 
+export type { AudiobookEntry }
+
 export interface AudiobookMetadata {
   title?: string | null
   subtitle?: string | null
@@ -57,11 +59,11 @@ export class Audiobook {
 
   static async from(...inputs: AudiobookInputs) {
     const audiobook = new Audiobook(inputs)
-    audiobook.entries = await audiobook.getEntries()
+    audiobook.entries = await audiobook.buildEntries()
     return audiobook
   }
 
-  private async getEntries() {
+  private async buildEntries() {
     if (this.isZip) {
       const [first] = this.inputs
       const extractPath = scratchPath(
@@ -121,6 +123,10 @@ export class Audiobook {
     for (const entry of this.entries) {
       await setter(entry)
     }
+  }
+
+  getEntries(): AudiobookEntry[] {
+    return this.entries
   }
 
   async getTitle(): Promise<string | null> {
@@ -268,6 +274,7 @@ export class Audiobook {
         chapters.push({
           filename: entry.filename,
           start: 0,
+          end: await entry.getDuration(),
           title:
             (await entry.getTrackTitle()) ??
             basename(entry.filename, extname(entry.filename)),

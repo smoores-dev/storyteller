@@ -161,6 +161,7 @@ export async function align(
       .filter(
         (f) => !isHiddenFile(f) && MediaType.fromPath(f)?.kind === "audio",
       )
+      .toSorted((a, b) => a.localeCompare(b, undefined, { numeric: true }))
       .map((f) => autoJoin(audiobookDir, f)),
   )
 
@@ -170,6 +171,7 @@ export async function align(
     .then((filenames) =>
       filenames
         .filter((f) => !isHiddenFile(f) && f.endsWith(".json"))
+        .toSorted((a, b) => a.localeCompare(b, undefined, { numeric: true }))
         .map((f) => autoJoin(transcriptionsDir, f)),
     )
     .then((filepaths) =>

@@ -153,7 +153,7 @@ describe("getSafeChapterRanges", () => {
 
     assert.deepStrictEqual(
       ranges.map((r) => r.start),
-      chapters.map((c) => c.start ?? 0),
+      chapters.map((c) => c.start),
     )
   })
 

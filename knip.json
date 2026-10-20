@@ -20,7 +20,7 @@
     "sycl-ls",
     "readium"
   ],
-  "ignoreUnresolved": ["node-gyp-build", "smil-clockvalue"],
+  "ignoreUnresolved": ["node-gyp-build"],
   "workspaces": {
     ".": {
       "entry": [

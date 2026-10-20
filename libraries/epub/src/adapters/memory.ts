@@ -57,6 +57,10 @@ export class MemoryAdapter implements EpubStorageAdapter {
     private cache: Map<string, Uint8Array> | null,
   ) {}
 
+  get rootPath() {
+    return null
+  }
+
   async read(entry: string): Promise<Uint8Array>
   async read(entry: string, encoding: "utf-8"): Promise<string>
   async read(entry: string, encoding?: "utf-8"): Promise<string | Uint8Array> {

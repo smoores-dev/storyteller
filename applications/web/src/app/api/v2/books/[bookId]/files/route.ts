@@ -1,24 +1,21 @@
 import { createHash } from "node:crypto"
 import { createWriteStream } from "node:fs"
-import { type FileHandle, mkdir, open, readdir } from "node:fs/promises"
-import { dirname, extname, join } from "node:path"
+import { type FileHandle, mkdir, open } from "node:fs/promises"
+import { relative, dirname, extname, join } from "node:path"
 
 import { createReadableStreamFromReadable } from "@remix-run/node"
 import contentDisposition from "content-disposition"
 import { after } from "next/server"
 import { ZipFile } from "yazl"
 
-import {
-  Audiobook,
-  type AudiobookInputs,
-} from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller-platform/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
 import { MediaType } from "@storyteller-platform/media-types"
 
+import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import { getExtractedCover } from "@/assets/covers"
 import { computeFileHash } from "@/assets/fs"
-import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
 import {
   type BookWithRelations,
@@ -75,15 +72,12 @@ async function getFilepath(
     return filepath
   }
 
-  const entries = await readdir(filepath, { recursive: true })
-  const audioFiles = entries.filter(
-    (entry) => isAudioFile(entry) || isZipArchive(entry),
-  )
+  const audioFiles = await getAudiobookTracks(filepath)
 
   if (audioFiles.length === 1 && !rpf) {
     // We just confirmed there was one of these
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return join(filepath, audioFiles[0]!)
+    return join(filepath, audioFiles[0])
   }
 
   const zipFilepath = scratchPath("storyteller-downloads", `${book.uuid}.zip`)
@@ -104,18 +98,16 @@ async function getFilepath(
   zipfile.outputStream.pipe(writeStream)
 
   for (const audioFile of audioFiles) {
-    zipfile.addFile(join(filepath, audioFile), audioFile, { compress: false })
+    zipfile.addFile(audioFile, relative(filepath, audioFile), {
+      compress: false,
+    })
   }
 
   if (rpf) {
     const epubPath = book.readaloud?.filepath ?? book.ebook?.filepath
     using epub = epubPath ? await Epub.from(epubPath) : null
 
-    using audiobook = await Audiobook.from(
-      ...(audioFiles.map((audioFile) =>
-        join(filepath, audioFile),
-      ) as AudiobookInputs),
-    )
+    using audiobook = await Audiobook.from(...audioFiles)
 
     const audiocover = await getExtractedCover(book, "audiobook")
     if (audiocover) {

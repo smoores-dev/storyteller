@@ -54,6 +54,7 @@ export interface EpubListEntry {
  * eg the TmpFsAdapter trying to read `OEBPS/a%20b.xhtml`, whereas it was stored as `OEBPS/a b.xhtml`
  */
 export interface EpubStorageAdapter {
+  readonly rootPath: string | null
   read(entry: string): Promise<Uint8Array>
   read(entry: string, encoding: "utf-8"): Promise<string>
 

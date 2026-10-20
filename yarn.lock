@@ -15393,7 +15393,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/crengine-xpointer@workspace:libraries/crengine-xpointer":
+"@storyteller-platform/crengine-xpointer@workspace:^, @storyteller-platform/crengine-xpointer@workspace:libraries/crengine-xpointer":
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/crengine-xpointer@workspace:libraries/crengine-xpointer"
   dependencies:
@@ -15500,7 +15500,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/epubcfi@workspace:libraries/epubcfi":
+"@storyteller-platform/epubcfi@workspace:^, @storyteller-platform/epubcfi@workspace:libraries/epubcfi":
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/epubcfi@workspace:libraries/epubcfi"
   dependencies:
@@ -15980,7 +15980,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storyteller-platform/uri-fragment@workspace:libraries/uri-fragment":
+"@storyteller-platform/uri-fragment@workspace:^, @storyteller-platform/uri-fragment@workspace:libraries/uri-fragment":
   version: 0.0.0-use.local
   resolution: "@storyteller-platform/uri-fragment@workspace:libraries/uri-fragment"
   dependencies:
@@ -16019,13 +16019,16 @@ __metadata:
     "@speed-highlight/core": "npm:^2.1.0"
     "@storyteller-platform/align": "workspace:*"
     "@storyteller-platform/audiobook": "workspace:^"
+    "@storyteller-platform/crengine-xpointer": "workspace:^"
     "@storyteller-platform/epub": "workspace:*"
+    "@storyteller-platform/epubcfi": "workspace:^"
     "@storyteller-platform/fs": "workspace:*"
     "@storyteller-platform/ghost-story": "workspace:*"
     "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/nodekit": "npm:0.1.0"
     "@storyteller-platform/okmain": "npm:0.2.3-rc.3"
     "@storyteller-platform/opds": "workspace:*"
+    "@storyteller-platform/uri-fragment": "workspace:^"
     "@t3-oss/env-nextjs": "npm:^0.13.8"
     "@tabler/icons-react": "npm:^3.35.0"
     "@tailwindcss/postcss": "catalog:"
@@ -16073,6 +16076,7 @@ __metadata:
     jsonwebtoken: "npm:^9.0.2"
     kysely: "npm:^0.28.2"
     kysely-codegen: "npm:^0.18.5"
+    lru-cache: "npm:^11.5.3"
     match-sorter: "npm:^6.3.4"
     memoize: "catalog:"
     motion: "npm:^12.40.0"
@@ -16097,6 +16101,7 @@ __metadata:
     recharts: "npm:canary"
     shadcn: "npm:^4.0.6"
     sharp: "npm:^0.34.3"
+    smil-clockvalue: "npm:^0.0.1"
     sonner: "npm:^2.0.7"
     tailwind-merge: "catalog:"
     tailwindcss: "catalog:"
@@ -30486,6 +30491,13 @@ __metadata:
   version: 11.2.4
   resolution: "lru-cache@npm:11.2.4"
   checksum: 10c0/4a24f9b17537619f9144d7b8e42cd5a225efdfd7076ebe7b5e7dc02b860a818455201e67fbf000765233fe7e339d3c8229fc815e9b58ee6ede511e07608c19b2
+  languageName: node
+  linkType: hard
+
+"lru-cache@npm:^11.5.3":
+  version: 11.5.3
+  resolution: "lru-cache@npm:11.5.3"
+  checksum: 10c0/2ad9bce6343a3544a1fd15364d8b35609aa52b2593d21fdc4877cabfe003b0f3deca4f9d6e9d13262f06e9e3d159de45c0a2f3edfc3adb46192333b5f146d8ed
   languageName: node
   linkType: hard
 

@@ -50,11 +50,13 @@ export async function processAudiobook(
   await mkdir(output, { recursive: true })
 
   const allFiles = await readdir(input, { recursive: true })
-  const filenames = allFiles.filter((f) => {
-    if (isHiddenFile(f)) return false
-    const kind = MediaType.fromPath(f)?.kind
-    return kind === "audio" || kind === "archive"
-  })
+  const filenames = allFiles
+    .filter((f) => {
+      if (isHiddenFile(f)) return false
+      const kind = MediaType.fromPath(f)?.kind
+      return kind === "audio" || kind === "archive"
+    })
+    .toSorted((a, b) => a.localeCompare(b, undefined, { numeric: true }))
   options.logger?.debug(`Found ${filenames.length} files to process`)
 
   const outputFiles: string[] = []

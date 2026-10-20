@@ -67,12 +67,12 @@ export async function getDeviceVerificationUrl({
   deviceCode: string
   fallbackOrigin?: string
 }) {
-  const baseUrl = await getDeviceVerificationBaseUrl(fallbackOrigin)
+  const baseUrl = await getStorytellerBaseUrl(fallbackOrigin)
   return new URL(getDeviceVerificationPath(deviceCode), baseUrl).toString()
 }
 
 export async function getDeviceEntryUrl(fallbackOrigin?: string) {
-  const baseUrl = await getDeviceVerificationBaseUrl(fallbackOrigin)
+  const baseUrl = await getStorytellerBaseUrl(fallbackOrigin)
   return new URL(getDeviceEntryPath(), baseUrl).toString()
 }
 
@@ -83,14 +83,14 @@ export async function getDeviceQrCodeUrl({
   deviceCode: string
   fallbackOrigin?: string
 }) {
-  const baseUrl = await getDeviceVerificationBaseUrl(fallbackOrigin)
+  const baseUrl = await getStorytellerBaseUrl(fallbackOrigin)
   return new URL(
     `/api/v2/device/qr/${encodeURIComponent(deviceCode)}`,
     baseUrl,
   ).toString()
 }
 
-async function getDeviceVerificationBaseUrl(fallbackOrigin?: string) {
+export async function getStorytellerBaseUrl(fallbackOrigin?: string) {
   const configuredWebUrl = (await getSettings()).webUrl
 
   const candidates =

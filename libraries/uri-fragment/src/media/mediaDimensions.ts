@@ -2,10 +2,10 @@ import { MediaSpatialDimension } from "./mediaSpatial.ts"
 import { MediaTemporalDimension } from "./mediaTemporal.ts"
 
 export class MediaDimensions {
-  temporal?: MediaTemporalDimension
-  spatial?: MediaSpatialDimension
+  temporal?: MediaTemporalDimension | undefined
+  spatial?: MediaSpatialDimension | undefined
   tracks: string[] = []
-  id?: string
+  id?: string | undefined
   unknown: string[] = []
 
   constructor(entries: [string, string][] = []) {

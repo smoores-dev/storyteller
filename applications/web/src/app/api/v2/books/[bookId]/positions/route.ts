@@ -1,12 +1,20 @@
 import { withHasPermission } from "@/auth/auth"
-import { getBookUuid } from "@/database/books"
+import { getBook, getBookUuid } from "@/database/books"
 import {
   type Position,
   PositionConflictError,
   getPosition,
   upsertPosition,
 } from "@/database/positions"
+import {
+  ProgressionConflictError,
+  ProgressionNoopError,
+  upsertProgression,
+} from "@/database/progressions.ts"
+import { getStorytellerBaseUrl } from "@/deviceAuthorization.ts"
 import { env } from "@/env"
+import { logger } from "@/logging.ts"
+import { locatorToProgressionDocument } from "@/progress/locators/toProgressionDocument.ts"
 import type { UUID } from "@/uuid"
 
 type Params = Promise<{
@@ -38,6 +46,13 @@ export const POST = withHasPermission<Params>("bookRead")(async (
     return Response.json({ message: "Book not found" }, { status: 404 })
   }
   const user = request.auth.user
+  const book = await getBook(bookUuid, user.id)
+  if (!book) {
+    return Response.json(
+      { message: `Could not find book with id ${bookUuid}` },
+      { status: 404 },
+    )
+  }
 
   try {
     await upsertPosition(user.id, bookUuid, body.locator, body.timestamp)
@@ -49,6 +64,40 @@ export const POST = withHasPermission<Params>("bookRead")(async (
       )
     }
     throw e
+  }
+
+  const fallbackOrigin = request.headers.get("Origin") ?? request.nextUrl.origin
+  const baseUrl = await getStorytellerBaseUrl(fallbackOrigin)
+
+  try {
+    const progressionResult = await locatorToProgressionDocument(
+      book,
+      body.locator,
+      body.timestamp,
+      baseUrl,
+    )
+
+    // If the upsert succeeds, also update the v3 progression document
+    if (progressionResult) {
+      try {
+        await upsertProgression(user.id, bookUuid, progressionResult)
+      } catch (e) {
+        if (
+          e instanceof ProgressionConflictError ||
+          e instanceof ProgressionNoopError
+        ) {
+          // ignore
+        } else {
+          throw e
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore
+    logger.debug({
+      msg: "Failed to upgrade locator to v3 progression document",
+      err: e,
+    })
   }
 
   return new Response(null, { status: 204 })

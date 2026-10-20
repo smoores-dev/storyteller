@@ -1,5 +1,9 @@
 export { resolveXPointer } from "./resolveXPointer.ts"
-export { resolveChapterXPointer, buildChapterXPointer } from "./chapters.ts"
+export {
+  resolveChapterXPointer,
+  buildChapterXPointer,
+  chapterIndexOf,
+} from "./chapters.ts"
 export type { ChapterOptions } from "./chapters.ts"
 export { crengineView } from "./view.ts"
 export type { CrengineView, CrengineViewOptions } from "./view.ts"

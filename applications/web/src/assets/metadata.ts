@@ -1,4 +1,3 @@
-import { readdir } from "node:fs/promises"
 import { extname, join } from "node:path"
 
 import {
@@ -9,7 +8,7 @@ import {
 import { type Epub, type EpubReader } from "@storyteller-platform/epub"
 import { MediaType } from "@storyteller-platform/media-types"
 
-import { isAudioFile } from "@/audio"
+import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import {
   type Book,
   type BookRelationsUpdate,
@@ -805,11 +804,8 @@ export async function writeMetadataToAudiobook(
 ) {
   if (!book.audiobook) return
   const directory = book.audiobook.filepath
-  const entries = await readdir(directory, { recursive: true })
 
-  const tracks = entries
-    .filter((entry) => isAudioFile(entry))
-    .map((track) => join(directory, track))
+  const tracks = await getAudiobookTracks(directory)
   let coverPath: null | string = null
   if (cover) {
     const ext =
@@ -829,7 +825,7 @@ export async function writeMetadataToAudiobook(
   }
 
   try {
-    using audiobook = await Audiobook.from(...(tracks as AudiobookInputs))
+    using audiobook = await Audiobook.from(...tracks)
     if (!(await compareAudiobookToMetadata(audiobook, book, coverPath))) {
       if (coverPath) {
         await audiobook.setCoverArt(await getAttachedImageFromPath(coverPath))

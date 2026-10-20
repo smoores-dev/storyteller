@@ -515,6 +515,10 @@ export class Epub {
     }
   }
 
+  get adapterRootPath() {
+    return this.adapter.rootPath
+  }
+
   async copy(path?: string): Promise<Epub> {
     if (!this.adapter.duplicate) {
       throw new Error(
@@ -640,7 +644,7 @@ export class Epub {
     return packageDocumentString
   }
 
-  private async getPackageDocument() {
+  async getPackageDocument() {
     const packageDocument = parse(
       await this.getPackageDocumentSource(),
       "text/xml",

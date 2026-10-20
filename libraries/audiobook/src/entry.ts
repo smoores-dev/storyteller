@@ -175,28 +175,23 @@ export class AudiobookEntry {
       filename: this.filename,
       title: chapter.title ?? null,
       start: chapter.startTime,
+      end: chapter.endTime,
     }))
   }
 
   async setChapters(chapters: AudiobookChapter[]): Promise<void> {
     const info = await this.getInfo()
-    const duration = await this.getDuration()
     const ffmpegChapters: TrackInfo["chapters"] = []
-    for (let i = 0; i < ffmpegChapters.length; i++) {
+    for (let i = 0; i < chapters.length; i++) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const chapter = chapters[i]!
-      const prevFfmpegChapter = ffmpegChapters[i - 1]
 
       ffmpegChapters.push({
         id: i,
-        startTime: chapter.start ?? 0,
+        startTime: chapter.start,
         title: chapter.title ?? `ch${i}`,
-        endTime: duration,
+        endTime: chapter.end,
       })
-
-      if (prevFfmpegChapter) {
-        prevFfmpegChapter.endTime = chapter.start ?? 0
-      }
     }
     info.chapters = ffmpegChapters
   }

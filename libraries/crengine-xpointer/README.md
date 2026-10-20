@@ -147,6 +147,7 @@ produced on the KOReader client, you can use a `crengineView`:
 ```ts
 import {
   buildChapterXPointer,
+  chapterIndexOf,
   crengineView,
   resolveChapterXPointer,
 } from "@storyteller-platform/crengine-xpointer"
@@ -165,6 +166,16 @@ const position = resolveChapterXPointer(chapter, pointer, {
 
 buildChapterXPointer(chapter, position, { spineIndex: 2, view })
 // → the pointer a device resolves back to that position
+```
+
+When a pointer arrives before you know which chapter it belongs to,
+`chapterIndexOf` reads that index out of the path, and returns `null` for a
+pointer that does not address a chapter (`#id`, or a path built against a tree
+that has no `DocFragment` layer):
+
+```ts
+const spineIndex = chapterIndexOf("/body[1]/DocFragment[3]/body[1]/p[1]")
+// → 2, the index into `getSpineItems()`
 ```
 
 Note that despite crengine xpointer indices being 1-based, `spineIndex` should

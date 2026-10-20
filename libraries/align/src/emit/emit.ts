@@ -83,8 +83,8 @@ export async function emit(
 
   const allFiles = await readdir(input, { recursive: true })
   const filenames = allFiles
-    .toSorted()
     .filter((f) => !isHiddenFile(f) && MediaType.fromPath(f)?.kind === "audio")
+    .toSorted((a, b) => a.localeCompare(b, undefined, { numeric: true }))
 
   if (!filenames.length) {
     throw new Error(

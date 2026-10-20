@@ -57,7 +57,7 @@ export class FragmentDirective {
 }
 
 export class UriFragment {
-  public identifier?: FragmentIdentifier
+  public identifier?: FragmentIdentifier | undefined
   public directive = new FragmentDirective()
 
   constructor(input?: string) {
@@ -213,6 +213,11 @@ export class UriFragment {
   }
 
   toString(): string {
-    return `#${this.identifierString()}${this.directive.toString()}`
+    const identifier = this.identifierString()
+    const directive = this.directive.toString()
+
+    if (!identifier && !directive) return ""
+
+    return `#${identifier}${directive}`
   }
 }

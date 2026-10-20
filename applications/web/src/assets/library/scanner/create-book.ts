@@ -1,5 +1,5 @@
-import { readdir, rm } from "node:fs/promises"
-import { basename, extname, join } from "node:path"
+import { rm } from "node:fs/promises"
+import { basename, extname } from "node:path"
 
 import {
   Audiobook,
@@ -10,8 +10,8 @@ import {
   type InMemoryEpubReader,
   MemoryAdapter,
 } from "@storyteller-platform/epub"
-import { isHiddenFile } from "@storyteller-platform/fs"
 
+import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import { move } from "@/assets/fs"
 import { type PipelineCtx, type ScanCtx } from "@/assets/library/scanner/ctx"
 import { type Candidate } from "@/assets/library/scanner/types"
@@ -19,7 +19,6 @@ import {
   releasePrefixAfterSettle,
   suppressPrefix,
 } from "@/assets/library/scanner/write-intent"
-import { isAudioFile } from "@/audio"
 import {
   type BookWithRelations,
   createBookFromAudiobook,
@@ -205,10 +204,7 @@ export async function openAudiobookDir(
 ): Promise<OpenedAudiobookResult | null> {
   let tracks: AudiobookInputs
   try {
-    const entries = await readdir(candidate.filepath, { recursive: true })
-    tracks = entries
-      .filter((entry) => isAudioFile(entry) && !isHiddenFile(entry))
-      .map((entry) => join(candidate.filepath, entry)) as AudiobookInputs
+    tracks = await getAudiobookTracks(candidate.filepath)
   } catch (error) {
     ctx.report.warn({
       step: "open-audiobook",

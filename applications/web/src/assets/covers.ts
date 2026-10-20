@@ -1,10 +1,7 @@
 import { mkdir, open, readdir, rm, writeFile } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 
-import {
-  Audiobook,
-  type AudiobookInputs,
-} from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller-platform/audiobook"
 import {
   Epub,
   type EpubReader,
@@ -13,7 +10,7 @@ import {
 import { scratchPath } from "@storyteller-platform/fs"
 import { MediaType } from "@storyteller-platform/media-types"
 
-import { isAudioFile } from "@/audio"
+import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import { type Book, touchBook } from "@/database/books"
 
 import { getAudioCoverItem } from "./metadata"
@@ -216,12 +213,9 @@ export async function extractCoverFromAudioFiles(
 ): Promise<CoverData | null> {
   if (typeof source !== "string") return readCoverFromAudiobook(source)
 
-  const entries = await readdir(source)
-  const audioFiles = entries.filter((entry) => isAudioFile(entry))
+  const tracks = await getAudiobookTracks(source)
 
-  using audiobook = await Audiobook.from(
-    ...(audioFiles.map((file) => join(source, file)) as AudiobookInputs),
-  )
+  using audiobook = await Audiobook.from(...tracks)
   return await readCoverFromAudiobook(audiobook)
 }
 

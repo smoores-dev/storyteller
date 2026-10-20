@@ -82,7 +82,7 @@ export class TmpFsAdapter implements EpubStorageAdapter {
     return new TmpFsAdapter(rootPath)
   }
 
-  private constructor(private readonly rootPath: string) {}
+  private constructor(public readonly rootPath: string) {}
 
   private diskPath(entry: string): string {
     if (!isStorableEntryName(entry)) {

@@ -141,7 +141,7 @@ export function getXhtmlBody(document: Document): Element {
 export function findXmlChildByNameNS(
   namespaceUri: string | null,
   name: string,
-  element: Element,
+  element: Element | Document,
   filter?: (node: Element) => boolean,
 ): Element | undefined {
   for (const child of Array.from(element.children)) {
@@ -163,7 +163,7 @@ export function findXmlChildByNameNS(
  */
 export function findXmlChildByName(
   name: string,
-  element: Element,
+  element: Element | Document,
   filter?: (node: Element) => boolean,
 ): Element | undefined {
   return findXmlChildByNameNS(null, name, element, filter)
@@ -179,7 +179,7 @@ export function findXmlChildByName(
 export function findXmlDescendantByNameNS(
   namespaceUri: string | null,
   name: string,
-  element: Element,
+  element: Element | Document,
   filter?: (node: Element) => boolean,
 ): Element | undefined {
   const queue = Array.from(element.children)
@@ -209,7 +209,7 @@ export function findXmlDescendantByNameNS(
  */
 export function findXmlDescendantByName(
   name: string,
-  element: Element,
+  element: Element | Document,
   filter?: (node: Element) => boolean,
 ): Element | undefined {
   return findXmlDescendantByNameNS(null, name, element, filter)
