@@ -50,6 +50,9 @@ export interface Book {
   serverUuid: UUID | null
   ebookCoverUrl: string | null
   audiobookCoverUrl: string | null
+  textCoverSha256: string | null
+  audioCoverSha256: string | null
+  serverUpdatedAt: string | null
   updatedAt: Generated<string>
   uuid: UUID
 }

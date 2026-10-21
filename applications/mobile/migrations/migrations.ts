@@ -45,6 +45,10 @@ import {
   down as addReadaloudDecoratorStylePreferencesDown,
   up as addReadaloudDecoratorStylePreferencesUp,
 } from "./1782777600001_add_readaloud_decorator_style_preferences"
+import {
+  down as addBookCoverShasDown,
+  up as addBookCoverShasUp,
+} from "./1792504252170_add_book_cover_shas"
 
 export const migrations = {
   "1757893743063_init": {
@@ -96,5 +100,9 @@ export const migrations = {
   "1782777600001_add_readaloud_decorator_style_preferences": {
     up: addReadaloudDecoratorStylePreferencesUp,
     down: addReadaloudDecoratorStylePreferencesDown,
+  },
+  "1792504252170_add_book_cover_shas": {
+    up: addBookCoverShasUp,
+    down: addBookCoverShasDown,
   },
 }

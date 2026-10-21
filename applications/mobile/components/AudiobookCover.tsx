@@ -30,11 +30,7 @@ export function AudiobookCover({ book, style }: Props) {
   const audiobookCoverUrl = book?.audiobookCoverUrl
     ? new URL(book.audiobookCoverUrl, documentDirectory!).toString()
     : server && book
-      ? getCoverUrl(server.baseUrl, book.uuid, {
-          height: 232,
-          width: 232,
-          audio: true,
-        })
+      ? getCoverUrl(server.baseUrl, book, "audio")
       : null
 
   if (!audiobookCoverUrl) return null

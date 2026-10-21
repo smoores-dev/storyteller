@@ -1,3 +1,4 @@
+import { documentDirectory } from "expo-file-system/legacy"
 import { Image } from "expo-image"
 import { type Insertable, type Transaction, type Updateable, sql } from "kysely"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
@@ -215,6 +216,9 @@ export function bookQuery(options?: { withManifests?: boolean }) {
       "book.serverUuid",
       "book.ebookCoverUrl",
       "book.audiobookCoverUrl",
+      "book.textCoverSha256",
+      "book.audioCoverSha256",
+      "book.serverUpdatedAt",
       "book.uuid",
     ])
     .select((eb) => [
@@ -452,27 +456,44 @@ export async function deleteBooks(uuids: UUID[]) {
   await db.deleteFrom("book").where("uuid", "in", uuids).execute()
 }
 
+export async function getBookCoverShas(uuids: UUID[]) {
+  const shaRows = await db
+    .selectFrom("book")
+    .select(["uuid", "textCoverSha256", "audioCoverSha256", "serverUpdatedAt"])
+    .where("uuid", "in", uuids)
+    .execute()
+
+  return Object.fromEntries(shaRows.map((row) => [row.uuid, row]))
+}
+
 export async function detachBooksFromServer(
   server: Omit<Server, "lastListBooksResponse">,
   uuids: UUID[],
 ) {
   if (!uuids.length) return
+  const shasByUuid = await getBookCoverShas(uuids)
+
   const urls = await Promise.all(
-    uuids.map(async (uuid) => ({
-      ebook: await Image.getCachePathAsync(
-        getCoverUrl(server.baseUrl, uuid, {
-          height: 353,
-          width: 232,
-        }),
-      ),
-      audiobook: await Image.getCachePathAsync(
-        getCoverUrl(server.baseUrl, uuid, {
-          height: 232,
-          width: 232,
-          audio: true,
-        }),
-      ),
-    })),
+    uuids.map(async (uuid) => {
+      const shas = shasByUuid[uuid]
+      if (!shas) return
+
+      const ebookCoverUrl = getCoverUrl(server.baseUrl, shas, "text")
+      const audiobookCoverUrl = getCoverUrl(server.baseUrl, shas, "audio")
+
+      return {
+        ebook:
+          (await Image.getCachePathAsync(ebookCoverUrl))?.replace(
+            documentDirectory!,
+            "",
+          ) ?? null,
+        audiobook:
+          (await Image.getCachePathAsync(audiobookCoverUrl))?.replace(
+            documentDirectory!,
+            "",
+          ) ?? null,
+      }
+    }),
   )
 
   await db

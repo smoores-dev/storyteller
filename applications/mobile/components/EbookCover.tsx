@@ -30,10 +30,7 @@ export function EbookCover({ book, style }: Props) {
   const ebookCoverUrl = book?.ebookCoverUrl
     ? new URL(book.ebookCoverUrl, documentDirectory!).toString()
     : server && book
-      ? getCoverUrl(server.baseUrl, book.uuid, {
-          height: 352,
-          width: 232,
-        })
+      ? getCoverUrl(server.baseUrl, book, "text")
       : null
 
   if (!ebookCoverUrl) return null

@@ -159,14 +159,59 @@ export function getDownloadUrl(
   return url.toString()
 }
 
+export const COVER_SIZES = {
+  text: { width: 232, height: 352 },
+  audio: { width: 232, height: 232 },
+} as const
+
+export function getImageUrl(baseUrl: string, sha256: string, size: number) {
+  const url = new URL(`/api/v2/images/${sha256}`, baseUrl)
+  url.searchParams.append("s", Math.round(size).toString())
+  return url.toString()
+}
+
 export function getCoverUrl(
+  baseUrl: string,
+  book: {
+    uuid: string
+    textCoverSha256: string | null
+    audioCoverSha256: string | null
+    serverUpdatedAt: string | null
+  },
+  kind: "text" | "audio",
+): string {
+  const sha256 = kind === "text" ? book.textCoverSha256 : book.audioCoverSha256
+
+  if (sha256 === null) {
+    return getLegacyCoverUrl(baseUrl, book.uuid, {
+      width: COVER_SIZES[kind].width,
+      height: COVER_SIZES[kind].height,
+      audio: kind === "audio",
+      serverUpdatedAt: book.serverUpdatedAt,
+    })
+  }
+
+  return getImageUrl(
+    baseUrl,
+    sha256,
+    Math.max(COVER_SIZES[kind].height, COVER_SIZES[kind].width),
+  )
+}
+
+export function getLegacyCoverUrl(
   baseUrl: string,
   bookUuid: string,
   {
     height,
     width,
     audio = false,
-  }: { height?: number; width?: number; audio?: boolean } = {},
+    serverUpdatedAt,
+  }: {
+    height?: number
+    width?: number
+    audio?: boolean
+    serverUpdatedAt?: string | null
+  } = {},
 ) {
   const url = new URL(`/api/v2/books/${bookUuid}/cover`, baseUrl)
 
@@ -178,6 +223,9 @@ export function getCoverUrl(
   }
   if (width) {
     url.searchParams.append("w", width.toString())
+  }
+  if (serverUpdatedAt) {
+    url.searchParams.append("v", new Date(serverUpdatedAt).valueOf().toString())
   }
   return url.toString()
 }

@@ -2,7 +2,7 @@ import { documentDirectory } from "expo-file-system/legacy"
 import { Image } from "expo-image"
 import * as SecureStore from "expo-secure-store"
 
-import { updateBook } from "@/database/books"
+import { getBookCoverShas, updateBook } from "@/database/books"
 import { localApi } from "@/store/localApi"
 import { getCoverUrl } from "@/store/serverApi"
 
@@ -16,27 +16,26 @@ startAppListening({
 
     await SecureStore.deleteItemAsync(`server.${serverUuid}.token`)
 
+    const shasByUuid = await getBookCoverShas(downloadedBooks)
+
     for (const uuid of downloadedBooks) {
+      const shas = shasByUuid[uuid]
+      if (!shas) continue
+
+      const ebookCoverUrl = getCoverUrl(server.baseUrl, shas, "text")
+      const audiobookCoverUrl = getCoverUrl(server.baseUrl, shas, "audio")
+
       await updateBook(uuid, {
         ebookCoverUrl:
-          (
-            await Image.getCachePathAsync(
-              getCoverUrl(server.baseUrl, uuid, {
-                height: 352,
-                width: 232,
-              }),
-            )
-          )?.replace(documentDirectory!, "") ?? null,
+          (await Image.getCachePathAsync(ebookCoverUrl))?.replace(
+            documentDirectory!,
+            "",
+          ) ?? null,
         audiobookCoverUrl:
-          (
-            await Image.getCachePathAsync(
-              getCoverUrl(server.baseUrl, uuid, {
-                height: 232,
-                width: 232,
-                audio: true,
-              }),
-            )
-          )?.replace(documentDirectory!, "") ?? null,
+          (await Image.getCachePathAsync(audiobookCoverUrl))?.replace(
+            documentDirectory!,
+            "",
+          ) ?? null,
       })
     }
   },

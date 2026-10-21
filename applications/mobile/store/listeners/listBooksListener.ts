@@ -333,18 +333,38 @@ startAppListening({
 
       Image.prefetch(
         serverBooks.flatMap((book) => [
-          getCoverUrl(server.baseUrl, book.uuid, { height: 352, width: 232 }),
-          getCoverUrl(server.baseUrl, book.uuid, {
-            height: 232,
-            width: 232,
-            audio: true,
-          }),
+          getCoverUrl(
+            server.baseUrl,
+            {
+              uuid: book.uuid,
+              textCoverSha256:
+                book.ebook?.cover?.sha256 ??
+                book.readaloud?.cover?.sha256 ??
+                null,
+              audioCoverSha256: book.audiobook?.cover?.sha256 ?? null,
+              serverUpdatedAt: book.updatedAt,
+            },
+            "text",
+          ),
+          getCoverUrl(
+            server.baseUrl,
+            {
+              uuid: book.uuid,
+              textCoverSha256:
+                book.ebook?.cover?.sha256 ??
+                book.readaloud?.cover?.sha256 ??
+                null,
+              audioCoverSha256: book.audiobook?.cover?.sha256 ?? null,
+              serverUpdatedAt: book.updatedAt,
+            },
+            "audio",
+          ),
         ]),
         {
           cachePolicy: "disk",
-          headers: { Authorization: `Bearer: ${accessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         },
-      )
+      ).catch(() => {})
 
       logger.debug(`Updating ${existingBooks.length} books from server`)
       await upsertServerBooks(existingBooks, server.uuid)
