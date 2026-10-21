@@ -22,7 +22,14 @@ export async function convertEpubDomPointReference(
     dirname(await epubA.getRootfile()),
     domPointRef.rootHref,
   )
-  const contents = await epubB.readFileContents(href, undefined, "utf-8")
+  let contents!: string
+  try {
+    contents = await epubB.readFileContents(href, undefined, "utf-8")
+  } catch {
+    // If EPUB B doesn't have the href from EPUB A,
+    // just bail and don't try to convert the domPoint
+    return null
+  }
   const doc = parse(contents, "application/xhtml+xml")
 
   const domPoint = domPointFromCharacterCount(

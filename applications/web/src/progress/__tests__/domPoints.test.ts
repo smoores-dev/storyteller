@@ -394,17 +394,17 @@ describe("between two epubs of a book", () => {
     expect(offset(domPointReferenceToCharacterReference(back!))).toBe(7)
   })
 
-  it("has nothing to convert for a resource the other archive lacks", async () => {
+  it("returns null when the EPUBs have different XHTML file names", async () => {
     using second = await Epub.using(MemoryAdapter).from(secondEbook)
     using plain = await Epub.using(MemoryAdapter).from(ebook)
 
     const domPointRef = await point(secondEbook, char(CHAPTER_1, 15))
 
-    await expect(
-      convertEpubDomPointReference(second, plain, {
+    expect(
+      await convertEpubDomPointReference(second, plain, {
         ...domPointRef,
         rootHref: "OEBPS/Text/gone.xhtml",
       }),
-    ).rejects.toThrow()
+    ).toBeNull()
   })
 })

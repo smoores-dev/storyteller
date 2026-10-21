@@ -52,6 +52,7 @@ export type ServerCapability =
   | "opds"
   | "progress-sync"
   | "readaloud-process"
+  | "progress-sync/v3"
 
 export type ServerIconInfo = {
   sha256: string
@@ -95,6 +96,7 @@ function getCapabilities(opdsEnabled: boolean | null): ServerCapability[] {
     "metadata-edit",
     "progress-sync",
     "readaloud-process",
+    "progress-sync/v3",
   ]
 
   if (opdsEnabled) capabilities.push("opds")
