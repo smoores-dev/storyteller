@@ -1,3 +1,12 @@
 {
-  "sidebar": ["welcome", "new-page"]
+  "sidebar": [
+    "welcome",
+    "new-page",
+    {
+      "type": "category",
+      "label": "API",
+      "collapsed": false,
+      "items": ["api/progress"]
+    }
+  ]
 }
