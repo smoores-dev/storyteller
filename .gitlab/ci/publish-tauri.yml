@@ -86,9 +86,9 @@ publish-tauri-macos:
         exit 1
       fi
     - curl -fsSL
-      "https://nodejs.org/dist/v24.18.0/node-v24.18.0-darwin-arm64.tar.gz" | tar
+      "https://nodejs.org/dist/v24.22.1/node-v24.22.1-darwin-arm64.tar.gz" | tar
       -xz -C "$HOME"
-    - export PATH="$HOME/node-v24.18.0-darwin-arm64/bin:$PATH"
+    - export PATH="$HOME/node-v24.22.1-darwin-arm64/bin:$PATH"
     - node --version
     - command -v cargo || (curl --proto '=https' --tlsv1.2 -sSf
       https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain

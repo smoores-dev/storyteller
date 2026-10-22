@@ -1,4 +1,4 @@
-export const NODE_VERSION = "24.18.0"
+export const NODE_VERSION = "24.22.1"
 export const READIUM_VERSION = "0.9.1"
 
 export type Platform = "darwin" | "linux" | "win32"
