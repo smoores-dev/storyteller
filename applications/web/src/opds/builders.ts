@@ -11,6 +11,7 @@ import {
 } from "@readium/shared"
 import he from "he"
 import { createTranslator } from "next-intl"
+import { z } from "zod"
 
 import { MediaType } from "@storyteller-platform/media-types"
 import {
@@ -22,6 +23,7 @@ import {
   FeedMetadata,
   NavigationLink,
   NavigationLinks,
+  ProgressionLink,
   OPDSPublication,
   OPDS_AUTHENTICATION_JSON,
   OPDS_JSON,
@@ -41,7 +43,7 @@ import {
   NONE_FACET_KEY,
   getSectionFacets,
 } from "@/database/libraryCounts"
-import type { OpdsFormat } from "@/database/settingsTypes"
+import { type OpdsFormat, OpdsFormatSchema } from "@/database/settingsTypes"
 import { getShelfBooks } from "@/database/shelves"
 import {
   FACET_BOOKS,
@@ -55,12 +57,7 @@ import {
   type OpdsFacetSection,
   opdsSectionPath,
 } from "@/facet-sections"
-import {
-  FIELD_REGISTRY,
-  type Field,
-  type FormatValue,
-  getFieldDef,
-} from "@/fields"
+import { FIELD_REGISTRY, type Field, getFieldDef } from "@/fields"
 import { type ShelfFilterNode } from "@/shelves"
 import { GENERAL_SORT_FIELDS, type SortDirection, type SortField } from "@/sort"
 import { getCoverUrl } from "@/store/api"
@@ -70,7 +67,8 @@ import messages from "../../messages/en.json"
 
 const t = createTranslator({ locale: "en", messages })
 
-export type OpdsVersion = "v1" | "v2"
+const OpdsVersionSchema = z.enum(["v1", "v2"])
+export type OpdsVersion = z.infer<typeof OpdsVersionSchema>
 
 export interface OpdsSort {
   field: SortField
@@ -80,7 +78,7 @@ export interface OpdsSort {
 export interface BuildContext {
   version: OpdsVersion
   viewer: FacetViewer
-  format: OpdsFormat
+  formats: OpdsFormat[]
   sort: OpdsSort
   pageSize: number | null
   page: number
@@ -95,23 +93,12 @@ const PAGE_PARAM = "page"
 
 const KEPT_PARAMS = [SEARCH_PARAM, SORT_PARAM, ORDER_PARAM, FORMAT_PARAM]
 
-const OPDS_FORMAT_FILTERS = [
-  "ebook",
-  "audiobook",
-  "readaloud",
-] as const satisfies readonly FormatValue[]
+const OrderSchema = z.enum(["asc", "desc"])
 
-export const parseVersion = (raw: string | undefined): OpdsVersion | null => {
-  if (raw === undefined || raw === "v1") {
-    return "v1"
-  }
+export const OpdsPageSchema = z.coerce.number().int().min(1).catch(1)
 
-  if (raw === "v2") {
-    return "v2"
-  }
-
-  return null
-}
+export const parseVersion = (raw: string | undefined): OpdsVersion | null =>
+  OpdsVersionSchema.default("v1").safeParse(raw).data ?? null
 
 export const baseFor = (version: OpdsVersion) =>
   version === "v2" ? "/opds/v2" : "/opds/v1"
@@ -212,25 +199,23 @@ const parseSort = (
   ctx: BuildContext,
   allowed: readonly SortField[],
 ): OpdsSort | null => {
-  const field = ctx.params.get(SORT_PARAM)
-  if (!field || !allowed.includes(field as SortField)) {
+  const field = z.enum(allowed).safeParse(ctx.params.get(SORT_PARAM)).data
+  if (!field) {
     return null
   }
 
-  const order = ctx.params.get(ORDER_PARAM)
   return {
-    field: field as SortField,
+    field,
     direction:
-      order === "asc" || order === "desc"
-        ? order
-        : defaultDirection(field as SortField),
+      OrderSchema.safeParse(ctx.params.get(ORDER_PARAM)).data ??
+      defaultDirection(field),
   }
 }
 
-const parseFormat = (ctx: BuildContext): FormatValue | null => {
-  const format = ctx.params.get(FORMAT_PARAM)
-  return OPDS_FORMAT_FILTERS.find((value) => value === format) ?? null
-}
+const parseFormat = (
+  raw: string | null,
+  choices: readonly OpdsFormat[],
+): OpdsFormat | null => z.enum(choices).safeParse(raw).data ?? null
 
 const authenticate = () =>
   new Properties({
@@ -240,120 +225,23 @@ const authenticate = () =>
     }),
   })
 
-/**
- * which formats to include
- */
-const includedFormats = (
-  format: OpdsFormat,
-  has: { readaloud: boolean; ebook: boolean; audiobook: boolean },
-) => {
+function formatSuffix(format: OpdsFormat) {
   switch (format) {
-    case "ebook":
-      // prefer the plain ebook, fall back to readaloud when it's the only epub
-      return {
-        readaloud: has.readaloud && !has.ebook,
-        ebook: has.ebook,
-        audiobook: has.audiobook,
-      }
-    case "both":
-      return {
-        readaloud: has.readaloud,
-        ebook: has.ebook,
-        audiobook: has.audiobook,
-      }
-    case "readaloud":
-    default:
-      // prefer the readaloud, fall back to the plain ebook
-      return {
-        readaloud: has.readaloud,
-        ebook: has.ebook && !has.readaloud,
-        audiobook: has.audiobook,
-      }
+    case "ebook": {
+      return ""
+    }
+    case "audiobook": {
+      return " (audiobook)"
+    }
+    case "readaloud": {
+      return " (readaloud)"
+    }
   }
 }
 
-/** maps a book row to an OPDS publication, shared by both projections */
-export const bookToPublication = (
-  book: BookWithRelations,
-  format: OpdsFormat = "readaloud",
-): OPDSPublication => {
-  const hasEbook = !!book.ebook && !book.ebook.missing
-  const hasAudiobook = !!book.audiobook && !book.audiobook.missing
-  const hasReadaloud =
-    !!book.readaloud &&
-    !book.readaloud.missing &&
-    book.readaloud.status === "ALIGNED"
-
-  const include = includedFormats(format, {
-    readaloud: hasReadaloud,
-    ebook: hasEbook,
-    audiobook: hasAudiobook,
-  })
-
-  const links: Link[] = []
-  if (include.readaloud) {
-    links.push(
-      new AcquisitionLink({
-        href: `/api/v2/books/${book.uuid}/files?format=readaloud`,
-        rel: "acquisition",
-        type: MediaType.EPUB.mime,
-      }),
-    )
-  }
-
-  if (include.ebook) {
-    links.push(
-      new AcquisitionLink({
-        href: `/api/v2/books/${book.uuid}/files?format=ebook`,
-        rel: "acquisition",
-        type: MediaType.EPUB.mime,
-      }),
-    )
-  }
-
-  if (include.audiobook) {
-    links.push(
-      new AcquisitionLink({
-        href: `/api/v2/books/${book.uuid}/files?format=audiobook-rpf`,
-        rel: "acquisition",
-        type: MediaType.AUDIOBOOK_PACKAGE.mime,
-      }),
-    )
-  }
-
-  // one cover: portrait for text, square for audio-only (matches legacy).
-  const images: Link[] = []
-  if (include.readaloud || include.ebook) {
-    images.push(
-      new Link({
-        href: getCoverUrl(book.uuid, {
-          height: 225,
-          width: 147,
-          updatedAt: book.updatedAt,
-        }),
-        rels: new Set([THUMBNAIL_REL]),
-        type: MediaType.JPEG.mime,
-        properties: authenticate(),
-      }),
-    )
-  } else if (include.audiobook) {
-    images.push(
-      new Link({
-        href: getCoverUrl(book.uuid, {
-          height: 147,
-          width: 147,
-          updatedAt: book.updatedAt,
-          audio: true,
-        }),
-        rels: new Set([THUMBNAIL_REL]),
-        type: MediaType.JPEG.mime,
-        properties: authenticate(),
-      }),
-    )
-  }
-
-  const metadata = new Metadata({
-    title: new LocalizedString(book.title),
+function bookToMetadata(book: BookWithRelations, format: OpdsFormat) {
+  return new Metadata({
+    title: new LocalizedString(book.title + formatSuffix(format)),
     identifier: `urn:uuid:${book.uuid}`,
     typeUri: "http://schema.org/Book",
     subtitle: book.subtitle ? new LocalizedString(book.subtitle) : undefined,
@@ -362,9 +250,12 @@ export const bookToPublication = (
     published: book.publicationDate
       ? new Date(book.publicationDate)
       : undefined,
-    duration: book.audiobook?.duration ?? book.readaloud?.duration ?? undefined,
+    duration:
+      format === "ebook" ? undefined : (book[format]?.duration ?? undefined),
     numberOfPages:
-      book.ebook?.pageCount ?? book.readaloud?.pageCount ?? undefined,
+      format === "audiobook"
+        ? undefined
+        : (book[format]?.pageCount ?? undefined),
     authors: new Contributors(
       book.authors.map(
         (author) =>
@@ -402,12 +293,77 @@ export const bookToPublication = (
         )
       : undefined,
   })
+}
 
-  return new OPDSPublication({
-    metadata,
-    links: new Links(links),
-    images: images.length ? new Links(images) : undefined,
-  })
+/** maps a book row to an OPDS publication, shared by both projections */
+export const bookToPublication = (
+  book: BookWithRelations,
+  formats: readonly OpdsFormat[] = OpdsFormatSchema.options,
+): OPDSPublication[] => {
+  const available: Record<OpdsFormat, boolean> = {
+    readaloud:
+      !!book.readaloud &&
+      !book.readaloud.missing &&
+      book.readaloud.status === "ALIGNED",
+    ebook: !!book.ebook && !book.ebook.missing,
+    audiobook: !!book.audiobook && !book.audiobook.missing,
+  }
+
+  const publications: OPDSPublication[] = []
+
+  for (const format of OpdsFormatSchema.options) {
+    if (!formats.includes(format) || !available[format]) {
+      continue
+    }
+
+    const metadata = bookToMetadata(book, format)
+
+    const links = [
+      new ProgressionLink({
+        href: `/api/v3/books/${book.uuid}/progress?format=${format}`,
+        properties: authenticate(),
+      }),
+      new AcquisitionLink({
+        href: `/api/v2/books/${book.uuid}/files?format=${format}`,
+        rel: "acquisition",
+        type:
+          format === "audiobook"
+            ? MediaType.AUDIOBOOK_PACKAGE.mime
+            : MediaType.EPUB.mime,
+      }),
+    ]
+
+    const images = [
+      new Link({
+        href: getCoverUrl(book.uuid, {
+          ...(format === "audiobook"
+            ? {
+                height: 147,
+                width: 147,
+              }
+            : {
+                height: 225,
+                width: 147,
+              }),
+          updatedAt: book.updatedAt,
+          audio: format === "audiobook",
+        }),
+        rels: new Set([THUMBNAIL_REL]),
+        type: MediaType.JPEG.mime,
+        properties: authenticate(),
+      }),
+    ]
+
+    publications.push(
+      new OPDSPublication({
+        metadata,
+        links: new Links(links),
+        images: new Links(images),
+      }),
+    )
+  }
+
+  return publications
 }
 
 const latestModified = (books: BookWithRelations[]): string => {
@@ -416,8 +372,7 @@ const latestModified = (books: BookWithRelations[]): string => {
   }
 
   const latest = books.reduce((acc, book) => {
-    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
-    const time = new Date(book.updatedAt as Date | string).getTime()
+    const time = new Date(book.updatedAt).getTime()
     return Math.max(acc, time)
   }, 0)
   return new Date(latest).toISOString()
@@ -434,11 +389,10 @@ const resolvePagination = (ctx: BuildContext): ResolvedPagination | null => {
     return null
   }
 
-  const currentPage = Math.max(1, Number.isNaN(ctx.page) ? 1 : ctx.page)
   return {
-    currentPage,
+    currentPage: ctx.page,
     pageSize: ctx.pageSize,
-    offset: (currentPage - 1) * ctx.pageSize,
+    offset: (ctx.page - 1) * ctx.pageSize,
   }
 }
 
@@ -503,16 +457,22 @@ const fetchBooks = async (
   ctx: BuildContext,
   source: BooksSource,
   sort: OpdsSort | null,
-  format: FormatValue | null,
+  formats: readonly OpdsFormat[],
   pagination: ResolvedPagination | null,
 ): Promise<{ books: BookWithRelations[]; total: number }> => {
-  const formatFilter: ShelfFilterNode | undefined = format
-    ? { type: "condition", field: "format", operator: "is", value: format }
-    : undefined
+  const formatFilter: ShelfFilterNode = {
+    type: "or",
+    children: formats.map((value) => ({
+      type: "condition",
+      field: "format",
+      operator: "is",
+      value,
+    })),
+  }
 
   if (source.kind === "shelf") {
     const all = await getShelfBooks(source.shelfUuid, ctx.viewer.id, {
-      ...(formatFilter ? { filter: formatFilter } : {}),
+      filter: formatFilter,
       ...(sort
         ? { sortField: sort.field, orderDirection: sort.direction }
         : {}),
@@ -550,7 +510,8 @@ const feedFacets = (
   selfPath: string,
   activeSort: OpdsSort | null,
   sortFields: readonly SortField[],
-  format: FormatValue | null,
+  formatChoices: readonly OpdsFormat[],
+  format: OpdsFormat | null,
 ): Facet[] => {
   const params = keptParams(ctx)
   const type = feedType(ctx.version, "acquisition")
@@ -602,18 +563,21 @@ const feedFacets = (
     )
   }
 
-  facets.push(
-    facet(t("Opds.format"), [
-      facetLink({ [FORMAT_PARAM]: null }, t("Opds.allFormats"), !format),
-      ...OPDS_FORMAT_FILTERS.map((value) =>
-        facetLink(
-          { [FORMAT_PARAM]: value },
-          t(`Common.fields.options.format.${value}`),
-          format === value,
+  if (formatChoices.length > 1) {
+    facets.push(
+      facet(t("Opds.format"), [
+        facetLink({ [FORMAT_PARAM]: null }, t("Opds.allFormats"), !format),
+        ...formatChoices.map((value) =>
+          facetLink(
+            { [FORMAT_PARAM]: value },
+            t(`Opds.formats.${value}`),
+            format === value,
+          ),
         ),
-      ),
-    ]),
-  )
+      ]),
+    )
+  }
+
   return facets
 }
 
@@ -623,6 +587,7 @@ interface BooksFeedOptions {
   source: BooksSource
   sort: OpdsSort | null
   sortFields: readonly SortField[]
+  formats?: OpdsFormat[]
 }
 
 const buildBooksFeed = async (
@@ -631,12 +596,14 @@ const buildBooksFeed = async (
 ): Promise<Feed> => {
   const pagination = resolvePagination(ctx)
   const sort = parseSort(ctx, options.sortFields) ?? options.sort
-  const format = parseFormat(ctx)
+  const formatChoices = options.formats ?? ctx.formats
+  const format = parseFormat(ctx.params.get(FORMAT_PARAM), formatChoices)
+  const formats = format ? [format] : formatChoices
   const { books, total } = await fetchBooks(
     ctx,
     options.source,
     sort,
-    format,
+    formats,
     pagination,
   )
 
@@ -657,8 +624,15 @@ const buildBooksFeed = async (
       ...pageLinks(ctx, "acquisition", options.selfPath, pagination, total),
       ...searchLinks(ctx.version),
     ]),
-    publications: books.map((book) => bookToPublication(book, ctx.format)),
-    facets: feedFacets(ctx, options.selfPath, sort, options.sortFields, format),
+    publications: books.flatMap((book) => bookToPublication(book, formats)),
+    facets: feedFacets(
+      ctx,
+      options.selfPath,
+      sort,
+      options.sortFields,
+      formatChoices,
+      format,
+    ),
   })
 }
 
@@ -726,8 +700,12 @@ const valueName = (section: OpdsFacetSection, value: FacetValue): string => {
     return t(`LibraryPage.${labelBase}.none`)
   }
 
-  if (section === "formats") {
-    return t(`Common.fields.options.format.${value.key as FormatValue}`)
+  const format =
+    section === "formats"
+      ? parseFormat(value.key, OpdsFormatSchema.options)
+      : null
+  if (format) {
+    return t(`Opds.formats.${format}`)
   }
 
   return value.name
@@ -738,7 +716,9 @@ const sectionValues = async (
   section: OpdsFacetSection,
 ): Promise<FacetValue[]> =>
   (await getSectionFacets(ctx.viewer, section)).filter(
-    (value) => value.bookCount > 0,
+    (value) =>
+      value.bookCount > 0 &&
+      (section !== "formats" || parseFormat(value.key, ctx.formats) !== null),
   )
 
 export const buildRootCatalog = async (ctx: BuildContext): Promise<Feed> => {
@@ -822,6 +802,7 @@ export const buildSectionBooks = async (
   }
 
   const query = facetBooksQuery(def, key)
+  const format = section === "formats" ? parseFormat(key, ctx.formats) : null
   const inSeries = !!query.series
   const ownSort =
     def.sort && (def.sort.field !== "seriesPosition" || inSeries)
@@ -832,6 +813,7 @@ export const buildSectionBooks = async (
     title,
     selfPath,
     source: { kind: "query", query },
+    ...(format ? { formats: [format] } : {}),
     sort: ownSort ?? ctx.sort,
     sortFields: inSeries
       ? ["seriesPosition", ...GENERAL_SORT_FIELDS]

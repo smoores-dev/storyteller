@@ -221,6 +221,12 @@ export const TABLE = {
     extensions: [],
     aliases: [],
   },
+  "application/opds-progression+json": {
+    name: "OPDS_PROGRESSION",
+    kind: "data",
+    extensions: [],
+    aliases: [],
+  },
   "application/atom+xml": {
     name: "ATOM",
     kind: "manifest",

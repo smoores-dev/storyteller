@@ -139,9 +139,14 @@ const nextConfig: import("next").NextConfig = {
     authInterrupts: true,
     turbopackSourceMaps: true,
   },
-  ...(process.env.NODE_ENV === "development" && process.env["EXTRA_DEV_ORIGINS"]
+  ...(process.env.NODE_ENV === "development"
     ? {
-        allowedDevOrigins: [process.env["EXTRA_DEV_ORIGINS"]],
+        allowedDevOrigins: [
+          ...(process.env["EXTRA_DEV_ORIGINS"]
+            ? [process.env["EXTRA_DEV_ORIGINS"]]
+            : []),
+          "127.0.0.1",
+        ],
       }
     : {}),
 }

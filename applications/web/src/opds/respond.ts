@@ -6,6 +6,7 @@ import { withHasPermission } from "@/auth/auth"
 import { OPDS_AUTH_OPTIONS } from "@/opds/auth"
 import {
   type BuildContext,
+  OpdsPageSchema,
   type OpdsVersion,
   parseVersion,
 } from "@/opds/builders"
@@ -59,10 +60,10 @@ export const handleOpds = (
       {
         version,
         viewer: request.auth.user,
-        format: config.format,
+        formats: config.formats,
         sort: config.sort,
         pageSize: config.pageSize,
-        page: parseInt(searchParams.get("page") ?? "1", 10),
+        page: OpdsPageSchema.parse(searchParams.get("page") ?? undefined),
         params: searchParams,
       },
       params,

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { z } from "zod"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
@@ -7,45 +8,26 @@ import { logger } from "@/logging"
 
 export const dynamic = "force-dynamic"
 
+const TokenRequestSchema = z.object({
+  grant_type: z.string(),
+  username: z.string(),
+  password: z.string(),
+})
+
 export async function POST(request: Request) {
   try {
-    let password: string | null = null
-    let username: string | null = null
-    let grant_type: string | null = null
+    let body: unknown
     try {
-      if (request.headers.get("Content-Type") === MediaType.JSON.mime) {
-        const body = (await request.json()) as {
-          username: string
-          password: string
-          grant_type: string
-        }
-        password = body.password
-        username = body.username
-        grant_type = body.grant_type
-      } else {
-        const body = await request.formData()
-        const pw = body.get("password")?.valueOf()
-        const uname = body.get("username")?.valueOf()
-        const gtype = body.get("grant_type")?.valueOf()
-        if (
-          typeof pw !== "string" ||
-          typeof uname !== "string" ||
-          typeof gtype !== "string"
-        ) {
-          return NextResponse.json(
-            {
-              error: "invalid_request",
-              error_description: "Invalid request body",
-            },
-            { status: 400 },
-          )
-        }
-        password = pw
-        username = uname
-        grant_type = gtype
-      }
+      body =
+        request.headers.get("Content-Type") === MediaType.JSON.mime
+          ? await request.json()
+          : Object.fromEntries(await request.formData())
     } catch (err) {
       logger.error({ msg: "Error parsing request body", err })
+    }
+
+    const parsed = TokenRequestSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
         {
           error: "invalid_request",
@@ -54,6 +36,8 @@ export async function POST(request: Request) {
         { status: 400 },
       )
     }
+
+    const { grant_type, username, password } = parsed.data
 
     if (grant_type !== "password") {
       return NextResponse.json(

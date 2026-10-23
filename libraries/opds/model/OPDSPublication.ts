@@ -1,9 +1,14 @@
-import { Link, Links, Metadata } from "@readium/shared"
+import { Link, Links, Metadata, type Properties } from "@readium/shared"
 
 import { type Result, err, ok } from "../result.ts"
 import { type OPDSPublication as OPDSPublicationJSON } from "../types/feed.ts"
 
-import { ACQUISITION_RELS, ACQUISITION_RELS_ARRAY } from "./constants.ts"
+import {
+  ACQUISITION_RELS,
+  ACQUISITION_RELS_ARRAY,
+  OPDS_PROGRESSION,
+  PROGRESSION_REL,
+} from "./constants.ts"
 
 const opdsRels = new Set(ACQUISITION_RELS_ARRAY)
 
@@ -36,6 +41,38 @@ export class AcquisitionLink extends Link {
     }
     return new AcquisitionLink(
       json as ConstructorParameters<typeof AcquisitionLink>[0],
+    )
+  }
+}
+
+/**
+ * A link that represents the user's current progression in a publication
+ * Since this extends {@link Link}, it does not follow the same Result pattern as other models.
+ */
+export class ProgressionLink extends Link {
+  constructor(values: { href: string; properties?: Properties }) {
+    super({
+      href: values.href,
+      rels: new Set([PROGRESSION_REL]),
+      type: OPDS_PROGRESSION,
+      ...(values.properties ? { properties: values.properties } : {}),
+    })
+  }
+
+  static override deserialize(json: unknown): ProgressionLink | undefined {
+    if (
+      typeof json !== "object" ||
+      json === null ||
+      !("href" in json) ||
+      !("rel" in json) ||
+      json.rel !== PROGRESSION_REL ||
+      !("type" in json) ||
+      json.type !== OPDS_PROGRESSION
+    ) {
+      throw new Error("invalid progression link")
+    }
+    return new ProgressionLink(
+      json as ConstructorParameters<typeof ProgressionLink>[0],
     )
   }
 }
@@ -82,16 +119,18 @@ export class OPDSPublication {
       ])
     }
 
-    for (const [i, link] of links.items.entries()) {
-      if (!Array.from(link.rels ?? []).some((rel) => opdsRels.has(rel))) {
-        return err([
-          {
-            path: `${path}/links/${i}`,
-            message: "missing acquisition link",
-            keyword: "construct",
-          },
-        ])
-      }
+    if (
+      !links.items.some((link) =>
+        Array.from(link.rels ?? []).some((rel) => opdsRels.has(rel)),
+      )
+    ) {
+      return err([
+        {
+          path: `${path}/links`,
+          message: "missing acquisition link",
+          keyword: "construct",
+        },
+      ])
     }
 
     return ok(

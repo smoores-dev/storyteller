@@ -11,7 +11,7 @@ export async function getOPDSConfig() {
   return {
     enabled: settings.opdsEnabled,
     pageSize: settings.opdsPageSize,
-    format: settings.opdsFormat ?? "readaloud",
+    formats: settings.opdsFormats,
     sort: {
       field: settings.opdsSortField ?? SETTINGS_DEFAULTS.opdsSortField,
       direction:

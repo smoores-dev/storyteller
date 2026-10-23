@@ -1,6 +1,10 @@
 export { type DeserializeOptions, Feed } from "./model/Feed.ts"
 export { FeedMetadata } from "./model/FeedMetadata.ts"
-export { AcquisitionLink, OPDSPublication } from "./model/OPDSPublication.ts"
+export {
+  AcquisitionLink,
+  ProgressionLink,
+  OPDSPublication,
+} from "./model/OPDSPublication.ts"
 export { Facet } from "./model/Facet.ts"
 export { Group } from "./model/Group.ts"
 export {

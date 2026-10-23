@@ -190,7 +190,7 @@ const context = (
 ): BuildContext => ({
   version: "v1",
   viewer,
-  format: "readaloud",
+  formats: ["readaloud", "ebook", "audiobook"],
   sort: { field: "title", direction: "asc" },
   pageSize: null,
   page: Number(params["page"] ?? "1"),
@@ -198,10 +198,18 @@ const context = (
   ...overrides,
 })
 
-const titles = (feed: Feed | null) =>
+const entries = (feed: Feed | null) =>
   feed?.publications?.map((publication) =>
     publication.metadata.title.getTranslation(),
   ) ?? []
+
+const titles = (feed: Feed | null) => [
+  ...new Set(
+    entries(feed).map((title) =>
+      title.replace(/ \((audiobook|readaloud)\)$/, ""),
+    ),
+  ),
+]
 
 const navTitles = (feed: Feed) =>
   feed.navigation?.items.map((link) => link.title) ?? []
@@ -217,15 +225,14 @@ const activeFacet = (feed: Feed, group: string) =>
     ?.title
 
 const acquisitionFormats = (feed: Feed) =>
-  new Map(
-    feed.publications?.map((publication) => [
-      publication.metadata.title.getTranslation(),
-      publication.links.items
-        .map((link) => /format=([a-z-]+)/.exec(link.href)?.[1])
-        .filter(Boolean)
-        .sort(),
-    ]),
-  )
+  feed.publications?.map((publication) =>
+    publication.links.items
+      .map((link) => /\/files\?format=([a-z-]+)/.exec(link.href)?.[1])
+      .filter(Boolean),
+  ) ?? []
+
+const facetTitles = (feed: Feed, group: string) =>
+  facetGroup(feed, group)?.links.items.map((link) => link.title)
 
 const assertValidV2 = (feed: Feed | null) => {
   assert.ok(feed)
@@ -401,8 +408,11 @@ describe("OPDS ordering", () => {
     seedLibrary(ctx)
 
     const feed = await buildAllBooks(context({ format: "audiobook" }))
-    assert.deepStrictEqual(titles(feed), ["Banana Split", "Mango"])
-    assert.strictEqual(activeFacet(feed, "Format"), "Has audiobook")
+    assert.deepStrictEqual(entries(feed), [
+      "Banana Split (audiobook)",
+      "Mango (audiobook)",
+    ])
+    assert.strictEqual(activeFacet(feed, "Format"), "Audiobook")
   })
 })
 
@@ -518,39 +528,79 @@ describe("OPDS facet feeds", () => {
   })
 })
 
-describe("OPDS format setting", () => {
-  it("readaloud (default): prefers read-aloud, audiobook always served", async () => {
+describe("OPDS formats", () => {
+  it("lists each format of a book as its own entry", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
-    const formats = acquisitionFormats(await buildAllBooks(context()))
-    assert.deepStrictEqual(formats.get("apple orchard"), ["readaloud"])
-    assert.deepStrictEqual(formats.get("Zebra Tales"), ["ebook"])
-    assert.deepStrictEqual(formats.get("Mango"), ["audiobook-rpf"])
-    assert.deepStrictEqual(formats.get("Banana Split"), [
-      "audiobook-rpf",
-      "ebook",
+    const feed = await buildAllBooks(context())
+    assert.deepStrictEqual(entries(feed), [
+      "apple orchard (readaloud)",
+      "apple orchard",
+      "Banana Split",
+      "Banana Split (audiobook)",
+      "Mango (audiobook)",
+      "Zebra Tales",
+    ])
+    assert.deepStrictEqual(acquisitionFormats(feed), [
+      ["readaloud"],
+      ["ebook"],
+      ["ebook"],
+      ["audiobook"],
+      ["audiobook"],
+      ["ebook"],
     ])
   })
 
-  it("ebook: prefers the plain ebook, audiobook always served", async () => {
+  it("leaves out the formats the setting turns off", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
-    const formats = acquisitionFormats(
-      await buildAllBooks(context({}, { format: "ebook" })),
-    )
-    assert.deepStrictEqual(formats.get("apple orchard"), ["ebook"])
-    assert.deepStrictEqual(formats.get("Mango"), ["audiobook-rpf"])
+    const feed = await buildAllBooks(context({}, { formats: ["ebook"] }))
+    assert.deepStrictEqual(entries(feed), [
+      "apple orchard",
+      "Banana Split",
+      "Zebra Tales",
+    ])
+    assert.strictEqual(feed.metadata.numberOfItems, 3)
+    assert.strictEqual(facetGroup(feed, "Format"), undefined)
   })
 
-  it("both: serves read-aloud and ebook together", async () => {
+  it("only offers format facets the setting allows", async () => {
     using ctx = setupTestDb()
     seedLibrary(ctx)
 
-    const formats = acquisitionFormats(
-      await buildAllBooks(context({}, { format: "both" })),
+    const feed = await buildAllBooks(
+      context({ format: "readaloud" }, { formats: ["ebook", "audiobook"] }),
     )
-    assert.deepStrictEqual(formats.get("apple orchard"), ["ebook", "readaloud"])
+    assert.deepStrictEqual(facetTitles(feed, "Format"), [
+      "All formats",
+      "Ebook",
+      "Audiobook",
+    ])
+    assert.strictEqual(activeFacet(feed, "Format"), "All formats")
+    assert.ok(!entries(feed).some((title) => title.endsWith("(readaloud)")))
+  })
+
+  it("serves one format per By Format feed", async () => {
+    using ctx = setupTestDb()
+    seedLibrary(ctx)
+
+    const scoped = context({}, { formats: ["ebook", "audiobook"] })
+    const nav = await buildSectionNav(scoped, "formats")
+    assert.deepStrictEqual(navTitles(nav).sort(), ["Audiobook", "Ebook"])
+
+    assert.strictEqual(
+      await buildSectionBooks(scoped, "formats", "readaloud"),
+      null,
+    )
+
+    const feed = await buildSectionBooks(scoped, "formats", "audiobook")
+    assert.ok(feed)
+    assert.deepStrictEqual(entries(feed), [
+      "Banana Split (audiobook)",
+      "Mango (audiobook)",
+    ])
+    assert.strictEqual(facetGroup(feed, "Format"), undefined)
   })
 })

@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react"
 import { Controller, useWatch } from "react-hook-form"
 
+import { Checkbox } from "@v3/_/components/ui/checkbox"
 import {
   Field,
   FieldDescription,
   FieldError,
+  FieldGroup,
   FieldLabel,
 } from "@v3/_/components/ui/field"
 import { Input } from "@v3/_/components/ui/input"
@@ -20,7 +22,11 @@ import {
 import { Switch } from "@v3/_/components/ui/switch"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { SETTINGS_DEFAULTS } from "@/database/settingsTypes"
+import {
+  type OpdsFormat,
+  OpdsFormatSchema,
+  SETTINGS_DEFAULTS,
+} from "@/database/settingsTypes"
 import { type Field as BookField, getFieldDef } from "@/fields"
 import { GENERAL_SORT_FIELDS } from "@/sort"
 
@@ -52,15 +58,11 @@ export function OpdsSection() {
   const opdsV1Url = safeUrl(base, "/opds/v1")
   const opdsV2Url = safeUrl(base, "/opds/v2")
 
-  const formatOptions = [
-    {
-      value: "readaloud",
-      label: t("formatReadaloud"),
-      hint: t("formatReadaloudHint"),
-    },
-    { value: "ebook", label: t("formatEbook"), hint: t("formatEbookHint") },
-    { value: "both", label: t("formatBoth"), hint: t("formatBothHint") },
-  ]
+  const formatOptions: Record<OpdsFormat, string> = {
+    readaloud: t("formatReadaloud"),
+    ebook: t("formatEbook"),
+    audiobook: t("formatAudiobook"),
+  }
 
   const sortOptions = GENERAL_SORT_FIELDS.map((value) => ({
     value,
@@ -128,28 +130,43 @@ export function OpdsSection() {
               />
 
               <SettingsFormField
-                name="opdsFormat"
-                label={t("format")}
-                tip={t("formatTip")}
-                render={(field, fieldState, isLocked) => (
-                  <Select
-                    disabled={isLocked}
-                    aria-invalid={fieldState.invalid}
-                    items={formatOptions}
-                    value={field.value ?? "readaloud"}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formatOptions.map(({ value, label, hint }) => (
-                        <SelectItem key={value} value={value}>
-                          <OptionWithHint label={label} hint={hint} />
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                name="opdsFormats"
+                label={t("formats")}
+                tip={t("formatsTip")}
+                render={(field, _fieldState, isLocked) => (
+                  <FieldGroup className="gap-3">
+                    {OpdsFormatSchema.options.map((format) => {
+                      const checked = field.value.includes(format)
+                      return (
+                        <Field
+                          key={format}
+                          orientation="horizontal"
+                          className="items-center"
+                        >
+                          <Checkbox
+                            id={`opdsFormats-${format}`}
+                            disabled={
+                              isLocked || (checked && field.value.length === 1)
+                            }
+                            checked={checked}
+                            onCheckedChange={() => {
+                              field.onChange(
+                                checked
+                                  ? field.value.filter((f) => f !== format)
+                                  : OpdsFormatSchema.options.filter(
+                                      (f) =>
+                                        f === format || field.value.includes(f),
+                                    ),
+                              )
+                            }}
+                          />
+                          <FieldLabel htmlFor={`opdsFormats-${format}`}>
+                            <OptionWithHint label={formatOptions[format]} />
+                          </FieldLabel>
+                        </Field>
+                      )
+                    })}
+                  </FieldGroup>
                 )}
               />
 

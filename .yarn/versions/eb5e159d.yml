@@ -1,0 +1,11 @@
+releases:
+  "@storyteller-platform/docs": patch
+  "@storyteller-platform/media-types": patch
+  "@storyteller-platform/opds": patch
+
+declined:
+  - "@storyteller-platform/web"
+  - "@storyteller-platform/align"
+  - "@storyteller-platform/audiobook"
+  - "@storyteller-platform/epub"
+  - "@storyteller-platform/ghost-story"

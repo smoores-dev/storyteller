@@ -122,17 +122,7 @@ export function renderEpubSuffix(template: string, version: 2 | 3): string {
   return version === 2 ? template : LEGACY_EPUB3_SUFFIX
 }
 
-// which epub edition a book exposes in the OPDS feed. read-aloud epubs carry
-// media overlays and are large, so low-powered clients (kindle, kobo) often
-// want the plain ebook instead. an audiobook is always served when available.
-export const OpdsFormatSchema = z.enum([
-  // read-aloud if present, else the plain ebook. the default.
-  "readaloud",
-  // plain ebook if present, else read-aloud.
-  "ebook",
-  // both the read-aloud and the plain ebook.
-  "both",
-])
+export const OpdsFormatSchema = z.enum(["readaloud", "ebook", "audiobook"])
 export type OpdsFormat = z.infer<typeof OpdsFormatSchema>
 
 export const OpdsSortFieldSchema = z.enum(
@@ -375,7 +365,7 @@ export const SettingsSchema = z.object({
   // OPDS settings
   opdsEnabled: z.boolean().nullable(),
   opdsPageSize: z.number().nullable(),
-  opdsFormat: OpdsFormatSchema.nullable(),
+  opdsFormats: z.array(OpdsFormatSchema),
   opdsSortField: OpdsSortFieldSchema.nullable(),
   opdsSortDirection: z.enum(["asc", "desc"]).nullable(),
   // Scanning settings
@@ -463,7 +453,7 @@ export const SETTINGS_DEFAULTS = {
   maxUploadChunkSize: null,
   opdsEnabled: true,
   opdsPageSize: 50,
-  opdsFormat: null,
+  opdsFormats: [...OpdsFormatSchema.options],
   opdsSortField: "title",
   opdsSortDirection: "asc",
   scanCronExpression: null,

@@ -69,7 +69,7 @@ const DEFAULT_SETTINGS: Settings = {
   maxUploadChunkSize: null,
   opdsEnabled: null,
   opdsPageSize: null,
-  opdsFormat: null,
+  opdsFormats: ["readaloud", "ebook", "audiobook"],
   opdsSortField: null,
   opdsSortDirection: null,
   scanCronExpression: null,

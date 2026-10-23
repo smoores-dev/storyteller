@@ -224,7 +224,12 @@
     "asc": "Ascending",
     "desc": "Descending",
     "format": "Format",
-    "allFormats": "All formats"
+    "allFormats": "All formats",
+    "formats": {
+      "readaloud": "Readaloud",
+      "ebook": "Ebook",
+      "audiobook": "Audiobook"
+    }
   },
   "NotFoundPage": {
     "title": "Page not found",
@@ -1122,14 +1127,11 @@
             "enabled": "Enable OPDS",
             "enabledDescription": "Lets compatible readers browse and download your library.",
             "pageSize": "Page size",
-            "format": "Preferred ebook",
-            "formatTip": "An audiobook is always offered when available.",
-            "formatReadaloud": "Readaloud, or ebook if unavailable",
-            "formatReadaloudHint": "Full readaloud: large, and many e-readers can't play the synchronized audio.",
-            "formatEbook": "Ebook, or readaloud if unavailable",
-            "formatEbookHint": "Plain EPUB which works on every reader",
-            "formatBoth": "Both readaloud and ebook",
-            "formatBothHint": "Offers both files",
+            "formats": "Formats",
+            "formatsTip": "Determine which formats appear in the OPDS feed.",
+            "formatReadaloud": "Readaloud",
+            "formatEbook": "Ebook",
+            "formatAudiobook": "Audiobook",
             "sort": "Default order",
             "sortTip": "Used for All Books and other lists without an order of their own. Series keep their reading order, ratings list the highest first, and shelves keep the order you set. Readers that support OPDS facets can pick a different order.",
             "sortDirection": "Direction",
