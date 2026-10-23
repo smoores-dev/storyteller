@@ -15,8 +15,11 @@ export function useCreateEntity(entityType?: LibraryEntityType) {
 
   const canCreate =
     (entityType === "collection" && !!permissions?.collectionCreate) ||
-    ((entityType === "tag" || entityType === "series") &&
-      !!permissions?.bookUpdate) ||
+    // Disabling series creation for now: empty series are never returned
+    // anywhere books can be added to a series, so a series created this
+    // way always stays empty
+    // ((entityType === "tag" || entityType === "series") &&
+    (entityType === "tag" && !!permissions?.bookUpdate) ||
     (entityType === "status" && !!permissions?.settingsUpdate)
 
   const createLabel =

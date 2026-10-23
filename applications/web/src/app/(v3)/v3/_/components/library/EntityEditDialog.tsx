@@ -13,7 +13,11 @@ import { ShelfEditor } from "@v3/_/components/shelves/ShelfEditor"
 import { CreateCollectionDialog } from "@/app/(v3)/v3/_/components/books/CreateCollectionDialog"
 import { EditSeriesDialog } from "@/app/(v3)/v3/_/components/books/EditSeriesDialog"
 import { type ShelfWithBooks } from "@/database/shelves"
-import { useGetCreatorQuery, useListUserShelvesQuery } from "@/store/api"
+import {
+  useGetCreatorQuery,
+  useListSeriesQuery,
+  useListUserShelvesQuery,
+} from "@/store/api"
 import { type UUID } from "@/uuid"
 
 export function EntityEditDialog({
@@ -49,14 +53,10 @@ export function EntityEditDialog({
 
   if (entityType === "series") {
     return (
-      <EditSeriesDialog
+      <EditSeriesDialogForItem
         open={open}
         onOpenChange={onOpenChange}
-        series={
-          item
-            ? { uuid: item.key as UUID, name: item.name, description: null }
-            : null
-        }
+        item={item}
       />
     )
   }
@@ -118,6 +118,37 @@ function EditCreatorDialogByUuid({
       open={open}
       onOpenChange={onOpenChange}
       creator={creator ?? null}
+    />
+  )
+}
+
+function EditSeriesDialogForItem({
+  open,
+  onOpenChange,
+  item,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  item: FacetValue | null
+}) {
+  // Items don't contain description, so look up the full series
+  const { series } = useListSeriesQuery(undefined, {
+    skip: !open || !item,
+    selectFromResult: ({ data }) => ({
+      series: data?.find((s) => s.uuid === item?.key),
+    }),
+  })
+
+  return (
+    <EditSeriesDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      series={
+        series ??
+        (item
+          ? { uuid: item.key as UUID, name: item.name, description: null }
+          : null)
+      }
     />
   )
 }

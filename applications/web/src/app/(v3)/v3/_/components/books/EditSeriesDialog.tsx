@@ -119,45 +119,51 @@ export function EditSeriesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[85vh] flex-col gap-0">
+        <DialogHeader className="pb-4">
           <DialogTitle>Edit Series</DialogTitle>
           <DialogDescription>
             Update the series name and description.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <FieldGroup className="py-4">
-            <Field>
-              <FieldLabel htmlFor="edit-series-name">Name</FieldLabel>
-              <Input
-                id="edit-series-name"
-                placeholder="Series name"
-                {...register("name")}
-              />
-              {errors.name && <FieldError>{errors.name.message}</FieldError>}
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="edit-series-description">
-                Description
-              </FieldLabel>
-              <Textarea
-                id="edit-series-description"
-                placeholder="Optional description..."
-                rows={3}
-                {...register("description")}
-              />
-            </Field>
-          </FieldGroup>
-          <div className="py-4">
-            <h2 className="text-sm font-medium">Books in this series</h2>
-            <div className="grid grid-cols-1 gap-2">
-              {booksData?.pages.flat().map((book) => (
-                <div key={book.uuid}>{book.title}</div>
-              ))}
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          {/* Only the body scrolls, so the footer stays reachable for long series */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-px">
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="edit-series-name">Name</FieldLabel>
+                <Input
+                  id="edit-series-name"
+                  placeholder="Series name"
+                  {...register("name")}
+                />
+                {errors.name && <FieldError>{errors.name.message}</FieldError>}
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="edit-series-description">
+                  Description
+                </FieldLabel>
+                <Textarea
+                  id="edit-series-description"
+                  placeholder="Optional description..."
+                  rows={3}
+                  {...register("description")}
+                />
+              </Field>
+            </FieldGroup>
+            <div className="py-4">
+              <h2 className="pb-1 text-sm font-medium">Books in this series</h2>
+              <div className="grid grid-cols-1 gap-2">
+                {booksData?.pages.flat().map((book) => (
+                  <div key={book.uuid}>{book.title}</div>
+                ))}
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button
               type="button"
               variant="outline"
