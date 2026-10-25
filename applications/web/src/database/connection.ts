@@ -8,6 +8,7 @@ import { PHASE_PRODUCTION_BUILD } from "next/constants.js"
 
 import { DB_DIR } from "@/directories"
 import { env } from "@/env"
+import { logger } from "@/logging"
 
 import { createKyselyDb } from "./factory"
 import type { DB } from "./schema"
@@ -30,6 +31,21 @@ if (!SKIP_INIT) {
   sqlite.function("uuid", () => randomUUID())
   sqlite.pragma("journal_mode = WAL")
   sqlite.pragma("busy_timeout = 5000")
+
+  // needs to optimize occasionally per connection, bc other
+  // connections don't see it
+  optimize("optimize = 0x10002")
+  setInterval(() => {
+    optimize("optimize")
+  }, 60 * 60_000).unref()
+}
+
+function optimize(pragma: string) {
+  try {
+    sqlite.pragma(pragma)
+  } catch (err) {
+    logger.warn({ msg: "Failed to refresh database query planner stats", err })
+  }
 }
 
 export let db: Kysely<DB> = SKIP_INIT

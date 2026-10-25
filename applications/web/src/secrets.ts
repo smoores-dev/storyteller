@@ -25,6 +25,8 @@ declare global {
   var secretEncryptionKey: Promise<Buffer> | undefined
   // eslint-disable-next-line no-var
   var secretDecryptFailureLogged: boolean | undefined
+  // eslint-disable-next-line no-var
+  var secretDecryptions: Map<string, Promise<string | null>> | undefined
 }
 
 function logDecryptFailure(message: string) {
@@ -67,12 +69,33 @@ export async function encryptSecret(plaintext: string): Promise<string> {
   ].join(":")
 }
 
-export async function decryptSecret(value: string): Promise<string | null> {
-  if (!isEncrypted(value)) return value
+export function decryptSecret(
+  value: string,
+  key?: string,
+): Promise<string | null> {
+  if (!isEncrypted(value)) {
+    return Promise.resolve(value)
+  }
 
+  globalThis.secretDecryptions ??= new Map()
+  let decrypted = globalThis.secretDecryptions.get(value)
+  if (!decrypted) {
+    decrypted = decryptValue(value, key)
+    globalThis.secretDecryptions.set(value, decrypted)
+  }
+
+  return decrypted
+}
+
+async function decryptValue(
+  value: string,
+  key?: string,
+): Promise<string | null> {
   const [iv, tag, ciphertext] = value.slice(PREFIX.length).split(":")
   if (!iv || !tag || !ciphertext) {
-    logDecryptFailure("A stored secret is malformed and could not be decrypted")
+    logDecryptFailure(
+      `${key ? `"${key}"` : "A stored secret"} is malformed and could not be decrypted`,
+    )
     return null
   }
 
@@ -91,7 +114,7 @@ export async function decryptSecret(value: string): Promise<string | null> {
     ]).toString("utf-8")
   } catch {
     logDecryptFailure(
-      "Could not decrypt a stored secret. This usually means STORYTELLER_SECRET_KEY changed since the secret was saved. Re-enter the affected credential in settings to store it again.",
+      `Could not decrypt ${key ? `"${key}"` : "a stored secret"}. This usually means STORYTELLER_SECRET_KEY changed since the secret was saved. Re-enter ${key} credential in settings to store it again.`,
     )
     return null
   }

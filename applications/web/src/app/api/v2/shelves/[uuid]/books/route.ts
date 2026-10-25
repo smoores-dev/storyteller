@@ -68,7 +68,10 @@ export const GET = withHasPermission<Params>("bookList")(async (
   }
 
   try {
-    const books = await getShelfBooks(uuid, user.id, opts)
+    const books = await getShelfBooks(uuid, user.id, {
+      ...opts,
+      includeManifest: false,
+    })
     return NextResponse.json(books)
   } catch (error) {
     if (error instanceof ShelfFilterInvalidError) {

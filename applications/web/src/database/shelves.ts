@@ -21,10 +21,11 @@ import { type UUID } from "@/uuid"
 export { HomeSectionKind, SHELF_ORDER_BY_FIELDS } from "@/shelves"
 export type { ShelfOrderBy } from "@/shelves"
 
-import { type BookWithRelations, booksQuery } from "./books"
+import { type BookWithRelations, hydrateBooks } from "./books"
 import { db } from "./connection"
 import { type DB } from "./schema"
 import {
+  bookVisibleTo,
   buildBookSearchExpression,
   buildFilterExpression,
   buildSortExpression,
@@ -421,6 +422,7 @@ export type GetShelfBooksOptions = {
   filter?: ShelfFilter
   search?: string
   sortField?: SortField
+  includeManifest?: boolean
 }
 
 export async function getShelfBooks(
@@ -443,7 +445,10 @@ export async function getShelfBooks(
     return []
   }
 
-  let query = booksQuery(userId)
+  let query = db
+    .selectFrom("book")
+    .select("book.uuid")
+    .where((eb) => bookVisibleTo(eb, userId))
 
   if (hasFilter && hasManualBooks) {
     query = query.where((eb) =>
@@ -497,7 +502,7 @@ export async function getShelfBooks(
       buildSortExpression(opts.sortField, { userId }),
       orderDirection,
     )
-    return await query.execute()
+    return await hydrateBooks(query, userId, opts)
   }
 
   const rawOrderBy: string = opts?.orderBy ?? shelfOrderBy ?? "createdAt"
@@ -522,7 +527,7 @@ export async function getShelfBooks(
       )
     }
     query = query.orderBy("book.createdAt", orderDirection)
-    return await query.execute()
+    return await hydrateBooks(query, userId, opts)
   }
 
   query = query.orderBy(
@@ -530,5 +535,5 @@ export async function getShelfBooks(
     orderDirection,
   )
 
-  return await query.execute()
+  return await hydrateBooks(query, userId, opts)
 }

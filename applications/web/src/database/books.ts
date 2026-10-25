@@ -872,6 +872,36 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
     .groupBy("book.uuid")
 }
 
+// optimization for big libraries:
+// rather than creating one big query that does a ton of selects and subqueris
+// and only then filters (slow)
+// we first do a very basic ass query for just the ids
+// and then "hydrate" the books, fetching the big stuff
+// this is MUCH MUCH faster even on modest libraries
+// the loss of needing to do the query in two steps is neglible
+// to the penalty the "normal" way has
+export async function hydrateBooks(
+  page: SelectQueryBuilder<DB, "book", { uuid: UUID }>,
+  userId?: UUID,
+  options?: BooksQueryOptions,
+) {
+  const queryResult = await page.execute()
+  const uuids = queryResult.map((row) => row.uuid)
+
+  const rows = await booksQuery(userId, options)
+    // needs to be like this rather than where("book.uuid", "in", [...])
+    // bc a: faster
+    // b: where in has a 36k limit, not inconceivable
+    .where(
+      sql<boolean>`book.uuid in (select value from json_each(${JSON.stringify(uuids)}))`,
+    )
+    .execute()
+
+  // need to do this bc the uuids are in the correct order
+  const byUuid = new Map(rows.map((row) => [row.uuid, row]))
+  return uuids.flatMap((uuid) => byUuid.get(uuid) ?? [])
+}
+
 export async function getAlignedReadaloudBooks(userId?: UUID) {
   return await booksQuery(userId)
     .innerJoin("readaloud", "readaloud.bookUuid", "book.uuid")
@@ -1049,14 +1079,18 @@ export async function getBooks(
   userId?: UUID,
   opts?: GetBooksOptions,
 ) {
-  let query = applyBookFilters(
-    booksQuery(userId, opts),
+  let page = applyBookFilters(
+    db.selectFrom("book").select("book.uuid"),
     bookUuids,
     userId,
     opts,
   )
     .$if(!!opts?.limit, (qb) => qb.limit(opts?.limit ?? 10))
     .$if(!!opts?.offset, (qb) => qb.offset(opts?.offset ?? 0))
+
+  if (userId) {
+    page = page.where((eb) => bookVisibleTo(eb, userId))
+  }
 
   const sort: BookSort =
     opts?.sort ??
@@ -1065,23 +1099,21 @@ export async function getBooks(
       : [])
 
   if (opts?.search) {
-    query = query
-      .clearOrderBy()
-      .orderBy(buildBookSearchRelevance(opts.search), "asc")
+    page = page.orderBy(buildBookSearchRelevance(opts.search), "asc")
   } else {
     for (const { field, direction } of sort) {
-      query = query.orderBy(
+      page = page.orderBy(
         buildSortExpression(field, { userId, seriesContext: opts?.series }),
         direction,
       )
     }
 
     if (sort.length > 0 && sort[sort.length - 1]?.field !== "createdAt") {
-      query = query.orderBy(sql`book.created_at`, "desc")
+      page = page.orderBy(sql`book.created_at`, "desc")
     }
   }
 
-  const rows = await query.execute()
+  const rows = await hydrateBooks(page, userId, opts)
 
   return rows.map((row) => ({
     ...row,

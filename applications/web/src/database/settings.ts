@@ -27,7 +27,7 @@ import {
 
 async function decryptSettingValue(name: string, value: unknown) {
   if (isEncryptedSettingKey(name) && typeof value === "string" && value) {
-    return (await decryptSecret(value)) ?? ""
+    return (await decryptSecret(value, name)) ?? ""
   }
 
   if (name === "authProviders" && Array.isArray(value)) {
@@ -35,7 +35,10 @@ async function decryptSettingValue(name: string, value: unknown) {
       (value as AuthProvider[]).map(async (provider) => ({
         ...provider,
         clientSecret: provider.clientSecret
-          ? ((await decryptSecret(provider.clientSecret)) ?? "")
+          ? ((await decryptSecret(
+              provider.clientSecret,
+              provider.issuer ?? "Custom Provider",
+            )) ?? "")
           : provider.clientSecret,
       })),
     )
