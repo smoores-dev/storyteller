@@ -307,6 +307,10 @@ function commonFfmpegArguments(options: FfmpegArgumentOptions) {
     args.push("-map_chapters", "-1")
   }
 
+  if (MediaType.MP4_AUDIO.extensions.includes(destExtension)) {
+    args.push("-movflags", "+faststart")
+  }
+
   return args
 }
 
