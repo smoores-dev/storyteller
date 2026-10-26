@@ -60,6 +60,7 @@ export async function getProgressionDocument(
 export async function upsertProgression(
   userId: UUID,
   bookUuid: UUID,
+  format: "ebook" | "audiobook" | "readaloud" | null,
   progressionDocuments: Partial<
     Record<
       "ebook" | "audiobook" | "readaloud",
@@ -191,9 +192,11 @@ export async function upsertProgression(
       }
     }
 
-    const progression = Object.values(progressionDocuments)[0]?.progression
+    const firstDocument = Object.values(progressionDocuments)[0]
 
-    if (progression === undefined) return
+    if (firstDocument == undefined) return
+
+    const progression = firstDocument.progression
 
     const statuses = await tr.selectFrom("status").selectAll().execute()
 
@@ -228,6 +231,53 @@ export async function upsertProgression(
         .set({ statusUuid: read.uuid })
         .where("bookToStatus.bookUuid", "=", bookUuid)
         .where("bookToStatus.userId", "=", userId)
+        .execute()
+    }
+
+    const charRef =
+      progressionDocuments.readaloud?.references.find(
+        (ref) => ref.fragmentKind === "char",
+      ) ??
+      progressionDocuments.ebook?.references.find(
+        (ref) => ref.fragmentKind === "char",
+      )
+    const mediaRef =
+      progressionDocuments.readaloud?.references.find(
+        (ref) => ref.fragmentKind === "media",
+      ) ??
+      progressionDocuments.audiobook?.references.find(
+        (ref) => ref.fragmentKind === "media",
+      )
+
+    const last = await tr
+      .selectFrom("progressionHistory")
+      .select(["modified"])
+      .where("userId", "=", userId)
+      .where("bookUuid", "=", bookUuid)
+      .orderBy("modified", "desc")
+      .executeTakeFirst()
+
+    // Only update at most once every 5 minutes
+    if (
+      !last ||
+      new Date(firstDocument.modified).valueOf() - last.modified.valueOf() >
+        5 * 60 * 1000
+    ) {
+      await tr
+        .insertInto("progressionHistory")
+        .values({
+          userId,
+          bookUuid,
+          sourceFormat: format,
+          deviceId: firstDocument.device.id,
+          deviceName: firstDocument.device.name,
+          modified: firstDocument.modified as unknown as Date,
+          progression: firstDocument.progression,
+          title: firstDocument.title,
+          charRef: charRef?.href,
+          mediaRef: mediaRef?.href,
+        })
+        .onConflict((oc) => oc.doNothing())
         .execute()
     }
   })

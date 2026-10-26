@@ -399,6 +399,22 @@ export interface Progression {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface ProgressionHistory {
+  bookUuid: import("@/uuid").UUID
+  charRef: string | null
+  createdAt: Generated<string>
+  deviceId: string
+  deviceName: string
+  mediaRef: string | null
+  modified: Date
+  progression: number
+  sourceFormat: string | null
+  title: string | null
+  updatedAt: Generated<string>
+  userId: import("@/uuid").UUID
+  uuid: Generated<import("@/uuid").UUID>
+}
+
 export interface ProgressionReference {
   createdAt: Generated<string>
   kind: NonNullable<
@@ -665,6 +681,7 @@ export interface DB {
   migration: Migration
   position: Position
   progression: Progression
+  progressionHistory: ProgressionHistory
   progressionReference: ProgressionReference
   readaloud: Readaloud
   series: Series

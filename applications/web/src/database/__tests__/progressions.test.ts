@@ -104,9 +104,25 @@ async function storedProgression(
     .executeTakeFirstOrThrow()
 }
 
+async function storedHistory() {
+  return ctx.db
+    .selectFrom("progressionHistory")
+    .select([
+      "modified",
+      "progression",
+      "deviceName",
+      "charRef",
+      "mediaRef",
+      "sourceFormat",
+    ])
+    .where("userId", "=", userId)
+    .orderBy("modified", "asc")
+    .execute()
+}
+
 describe("upsertProgression", () => {
   it("creates the book's progression", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.5,
@@ -125,7 +141,7 @@ describe("upsertProgression", () => {
   })
 
   it("updates the stored progression when a newer one arrives", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.2,
@@ -135,7 +151,7 @@ describe("upsertProgression", () => {
       },
     })
 
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-02-01T00:00:00.000Z",
         progression: 0.75,
@@ -154,7 +170,7 @@ describe("upsertProgression", () => {
   })
 
   it("rejects a progression older than the stored one", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-06-01T00:00:00.000Z",
         progression: 0.5,
@@ -165,7 +181,7 @@ describe("upsertProgression", () => {
     })
 
     await expect(
-      upsertProgression(userId, bookUuid, {
+      upsertProgression(userId, bookUuid, "ebook", {
         ebook: {
           modified: "2024-05-01T00:00:00.000Z",
           progression: 0.2,
@@ -182,7 +198,7 @@ describe("upsertProgression", () => {
   })
 
   it("rejects a progression with the timestamp it already has", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-06-01T00:00:00.000Z",
         progression: 0.5,
@@ -193,7 +209,7 @@ describe("upsertProgression", () => {
     })
 
     await expect(
-      upsertProgression(userId, bookUuid, {
+      upsertProgression(userId, bookUuid, "ebook", {
         ebook: {
           modified: "2024-06-01T00:00:00.000Z",
           progression: 0.9,
@@ -206,7 +222,7 @@ describe("upsertProgression", () => {
   })
 
   it("keeps each reader's progression to themselves", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.2,
@@ -218,7 +234,7 @@ describe("upsertProgression", () => {
 
     const otherId = await createReader(ctx, "second-reader")
 
-    await upsertProgression(otherId, bookUuid, {
+    await upsertProgression(otherId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-02-01T00:00:00.000Z",
         progression: 0.8,
@@ -239,7 +255,7 @@ describe("upsertProgression", () => {
   })
 
   it("keeps each reader's progress to themselves", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.2,
@@ -251,7 +267,7 @@ describe("upsertProgression", () => {
 
     const otherId = await createReader(ctx, "second-reader")
 
-    await upsertProgression(otherId, bookUuid, {
+    await upsertProgression(otherId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-02-01T00:00:00.000Z",
         progression: 0.5,
@@ -284,7 +300,7 @@ describe("upsertProgression", () => {
   })
 
   it("writes a progression and reference for every format and fragment kind", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.5,
@@ -339,7 +355,7 @@ describe("upsertProgression", () => {
   })
 
   it("replaces the stored reference of a format and kind", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.2,
@@ -349,7 +365,7 @@ describe("upsertProgression", () => {
       },
     })
 
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-02-01T00:00:00.000Z",
         progression: 0.5,
@@ -371,7 +387,7 @@ describe("upsertProgression", () => {
 
 describe("the book's status", () => {
   it("moves a book the reader started to Reading", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.0,
@@ -385,7 +401,7 @@ describe("the book's status", () => {
   })
 
   it("marks a book Read at the last two percent", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.98,
@@ -401,7 +417,7 @@ describe("the book's status", () => {
   it("does not move a Read book back to Reading", async () => {
     await setStatus("Read")
 
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.1,
@@ -415,6 +431,98 @@ describe("the book's status", () => {
   })
 })
 
+describe("the progression history", () => {
+  it("records where the reader was", async () => {
+    await upsertProgression(userId, bookUuid, "ebook", {
+      ebook: {
+        modified: "2024-01-01T00:00:00.000Z",
+        progression: 0.25,
+        device: DEVICE,
+        title: "Chapter One",
+        references: references("27"),
+      },
+    })
+
+    expect(await storedHistory()).toEqual([
+      {
+        modified: new Date("2024-01-01T00:00:00.000Z"),
+        progression: 0.25,
+        sourceFormat: "ebook",
+        deviceName: "iPad Pro",
+        charRef: `${CHAPTER_1}#char=27`,
+        mediaRef: null,
+      },
+    ])
+  })
+
+  it("records at most one entry every five minutes", async () => {
+    await upsertProgression(userId, bookUuid, "ebook", {
+      ebook: {
+        modified: "2024-01-01T00:00:00.000Z",
+        progression: 0.1,
+        device: DEVICE,
+        title: "Chapter One",
+        references: [],
+      },
+    })
+
+    await upsertProgression(userId, bookUuid, "ebook", {
+      ebook: {
+        modified: "2024-01-01T00:06:00.000Z",
+        progression: 0.2,
+        device: DEVICE,
+        title: "Chapter One",
+        references: [],
+      },
+    })
+
+    await upsertProgression(userId, bookUuid, "ebook", {
+      ebook: {
+        modified: "2024-01-01T00:07:00.000Z",
+        progression: 0.3,
+        device: DEVICE,
+        title: "Chapter One",
+        references: [],
+      },
+    })
+
+    expect((await storedHistory()).map((row) => row.modified)).toEqual([
+      new Date("2024-01-01T00:00:00.000Z"),
+      new Date("2024-01-01T00:06:00.000Z"),
+    ])
+  })
+
+  it("records one entry per update, with a reference for each format", async () => {
+    await upsertProgression(userId, bookUuid, "ebook", {
+      ebook: {
+        modified: "2024-01-01T00:00:00.000Z",
+        progression: 0.5,
+        device: DEVICE,
+        title: "Chapter One",
+        references: references("27"),
+      },
+      audiobook: {
+        modified: "2024-01-01T00:00:00.000Z",
+        progression: 0.5,
+        device: DEVICE,
+        title: "Chapter One",
+        references: [new UriReference(`${AUDIO_1}#t=150`)],
+      },
+    })
+
+    expect(await storedHistory()).toEqual([
+      {
+        modified: new Date("2024-01-01T00:00:00.000Z"),
+        progression: 0.5,
+        sourceFormat: "ebook",
+        deviceName: "iPad Pro",
+        charRef: `${CHAPTER_1}#char=27`,
+        mediaRef: `${AUDIO_1}#t=150`,
+      },
+    ])
+  })
+})
+
 describe("getProgressionDocument", () => {
   it("returns nothing for a book with no progression", async () => {
     expect(
@@ -423,7 +531,7 @@ describe("getProgressionDocument", () => {
   })
 
   it("returns the stored progression with its references", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.5,
@@ -445,7 +553,7 @@ describe("getProgressionDocument", () => {
   })
 
   it("returns no progression for a format with no references", async () => {
-    await upsertProgression(userId, bookUuid, {
+    await upsertProgression(userId, bookUuid, "ebook", {
       ebook: {
         modified: "2024-01-01T00:00:00.000Z",
         progression: 0.5,

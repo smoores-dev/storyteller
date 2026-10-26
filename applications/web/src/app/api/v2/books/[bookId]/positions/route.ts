@@ -80,7 +80,7 @@ export const POST = withHasPermission<Params>("bookRead")(async (
     // If the upsert succeeds, also update the v3 progression document
     if (progressionResult) {
       try {
-        await upsertProgression(user.id, bookUuid, progressionResult)
+        await upsertProgression(user.id, bookUuid, null, progressionResult)
       } catch (e) {
         if (
           e instanceof ProgressionConflictError ||

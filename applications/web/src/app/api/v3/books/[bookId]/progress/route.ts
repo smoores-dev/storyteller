@@ -87,7 +87,7 @@ export const POST = withHasPermission<Params>("bookRead")(async (
   const result = progressionDocuments[format]
 
   try {
-    await upsertProgression(userId, bookUuid, progressionDocuments)
+    await upsertProgression(userId, bookUuid, format, progressionDocuments)
   } catch (e) {
     if (e instanceof ProgressionConflictError) {
       return Response.json({ message: e.message }, { status: 409 })
@@ -210,7 +210,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
       return Response.json({ message: "No progression found" }, { status: 404 })
     }
     try {
-      await upsertProgression(userId, bookUuid, progressionResult)
+      await upsertProgression(userId, bookUuid, null, progressionResult)
     } catch (e) {
       // ignore
       logger.debug({ msg: `Failed to save newly migrated v3`, err: e })
