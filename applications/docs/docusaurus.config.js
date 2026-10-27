@@ -27,6 +27,9 @@ const studio = {
   // repository folders outside this site the studio may edit (library READMEs)
   externalRoots: ["libraries"],
   editPath: "/edit",
+  hourlyRequestLimit: Number(process.env.STUDIO_GITLAB_HOURLY_LIMIT ?? 5000),
+  releasePackage:
+    process.env.STUDIO_RELEASE_PACKAGE ?? "@storyteller-platform/docs",
 }
 
 generateLibraryDocs({

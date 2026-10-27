@@ -6,22 +6,27 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
 
 import type { GitLabClient } from "../gitlab/client"
-import { base64ToBlob } from "../images/naming"
 import type { ChangesetData } from "../model/changeset"
+import { cached } from "../storage/cache"
+
+import { knownBlobId } from "./hooks"
 
 export const ASSET_SCHEME = "studio-asset:"
 
 export interface AssetResolver {
   resolve: (repoPath: string) => Promise<string | null>
+  draftUrl: (repoPath: string) => string | null
   version: number
 }
 
 const AssetContext = createContext<AssetResolver>({
   resolve: () => Promise.resolve(null),
+  draftUrl: () => null,
   version: 0,
 })
 
@@ -34,52 +39,101 @@ export function invalidateRemoteAssets() {
   remoteAssetCache.clear()
 }
 
+const REVOKE_DELAY_MS = 10_000
+
+function retire(url: string) {
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS)
+}
+
+function structureOf(draft: ChangesetData | null): string {
+  return Object.entries(draft?.changes ?? {})
+    .filter(([, change]) => change.kind !== "text")
+    .map(([path, change]) =>
+      change.kind === "move"
+        ? `${path}<${change.from}`
+        : `${path}:${change.kind}`,
+    )
+    .sort()
+    .join("\n")
+}
+
 export function useAssetResolver(
   client: GitLabClient,
   projectId: number | null,
   branch: string,
   draft: ChangesetData | null,
 ): AssetResolver {
-  const [draftUrls, setDraftUrls] = useState<Map<string, string>>(new Map())
+  const urls = useRef(new Map<string, { blob: Blob; url: string }>())
+  const structure = useRef("")
+  const latest = useRef(draft)
+  latest.current = draft
   const [version, setVersion] = useState(0)
   useEffect(() => {
-    const next = new Map<string, string>()
+    const map = urls.current
+    let changed = false
+    const live = new Set<string>()
     for (const [path, change] of Object.entries(draft?.changes ?? {})) {
       if (change.kind !== "binary") continue
-      next.set(
-        path,
-        URL.createObjectURL(base64ToBlob(change.base64, change.mime)),
-      )
+      live.add(path)
+      const existing = map.get(path)
+      if (existing?.blob === change.blob) continue
+      if (existing) retire(existing.url)
+      map.set(path, {
+        blob: change.blob,
+        url: URL.createObjectURL(change.blob),
+      })
+      changed = true
     }
-    setDraftUrls(next)
-    setVersion((v) => v + 1)
-    return () => {
-      for (const url of next.values()) URL.revokeObjectURL(url)
+    for (const [path, entry] of [...map]) {
+      if (live.has(path)) continue
+      retire(entry.url)
+      map.delete(path)
+      changed = true
     }
+    const next = structureOf(draft)
+    if (next !== structure.current) {
+      structure.current = next
+      changed = true
+    }
+    if (changed) setVersion((current) => current + 1)
   }, [draft])
+  useEffect(() => {
+    const map = urls.current
+    return () => {
+      for (const entry of map.values()) URL.revokeObjectURL(entry.url)
+      map.clear()
+    }
+  }, [])
   return useMemo(
     () => ({
       version,
+      draftUrl: (requested: string) => urls.current.get(requested)?.url ?? null,
       resolve: (requested: string) => {
-        const local = draftUrls.get(requested)
+        const local = urls.current.get(requested)?.url
         if (local) return Promise.resolve(local)
-        const change = draft?.changes[requested]
+        const change = latest.current?.changes[requested]
         if (change?.kind === "delete") return Promise.resolve(null)
         const repoPath = change?.kind === "move" ? change.from : requested
         if (projectId === null) return Promise.resolve(null)
         const key = `${projectId}:${branch}:${repoPath}`
         let pending = remoteAssetCache.get(key)
         if (pending === undefined) {
-          pending = client
-            .getRawBlob(projectId, branch, repoPath)
+          const blobId = knownBlobId(projectId, branch, repoPath)
+          pending = cached<Blob>(
+            blobId ? `asset:${projectId}:${blobId}` : null,
+            () => client.getRawBlob(projectId, branch, repoPath),
+          )
             .then((blob) => URL.createObjectURL(blob))
-            .catch(() => null)
+            .catch(() => {
+              remoteAssetCache.delete(key)
+              return null
+            })
           remoteAssetCache.set(key, pending)
         }
         return pending
       },
     }),
-    [client, projectId, branch, draft, draftUrls, version],
+    [client, projectId, branch, version],
   )
 }
 

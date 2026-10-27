@@ -10,6 +10,8 @@ export interface StudioConfig {
   staticRoot: string
   externalRoots?: string[]
   editPath: string
+  hourlyRequestLimit?: number
+  releasePackage?: string
 }
 
 export type StudioMode = "edit" | "view"

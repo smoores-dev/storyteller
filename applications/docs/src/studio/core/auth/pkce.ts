@@ -56,10 +56,14 @@ export function loadTokens(baseUrl: string): TokenSet | null {
 }
 
 export function saveTokens(baseUrl: string, tokens: TokenSet | null) {
-  if (tokens) {
-    localStorage.setItem(storageKey(baseUrl), JSON.stringify(tokens))
-  } else {
-    localStorage.removeItem(storageKey(baseUrl))
+  try {
+    if (tokens) {
+      localStorage.setItem(storageKey(baseUrl), JSON.stringify(tokens))
+    } else {
+      localStorage.removeItem(storageKey(baseUrl))
+    }
+  } catch {
+    return
   }
 }
 

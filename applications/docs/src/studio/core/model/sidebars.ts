@@ -191,6 +191,60 @@ export function updateAt(
   return next
 }
 
+export function renameDocId(
+  items: SidebarJsonItem[],
+  from: string,
+  to: string,
+): SidebarJsonItem[] {
+  return items.map((item) => {
+    if (typeof item === "string") return item === from ? to : item
+    if (item.type === "doc" || item.type === "ref") {
+      return item.id === from ? { ...item, id: to } : item
+    }
+    if (item.type !== "category") return item
+    const link = item.link as { type?: string; id?: string } | undefined
+    return {
+      ...item,
+      items: renameDocId(item.items, from, to),
+      ...(link?.type === "doc" && link.id === from
+        ? { link: { ...link, id: to } }
+        : {}),
+    }
+  })
+}
+
+export interface SidebarDestination {
+  sidebarId: string
+  path: ItemPath
+  label: string
+  depth: number
+}
+
+export function sidebarDestinations(
+  items: SidebarJsonItem[],
+  sidebarId: string,
+  rootLabel: string,
+): SidebarDestination[] {
+  const found: SidebarDestination[] = [
+    { sidebarId, path: [items.length], label: rootLabel, depth: 0 },
+  ]
+  const walk = (list: SidebarJsonItem[], parent: ItemPath, depth: number) => {
+    list.forEach((item, index) => {
+      if (typeof item === "string" || item.type !== "category") return
+      const path = [...parent, index]
+      found.push({
+        sidebarId,
+        path: [...path, item.items.length],
+        label: item.label,
+        depth,
+      })
+      walk(item.items, path, depth + 1)
+    })
+  }
+  walk(items, [], 1)
+  return found
+}
+
 export function newCategory(label: string): SidebarJsonItem {
   return { type: "category", label, items: [] }
 }

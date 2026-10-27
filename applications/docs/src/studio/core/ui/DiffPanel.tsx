@@ -185,7 +185,10 @@ function DiffBody({
   renderPreview: RenderPreview
 }) {
   const file = fileFor(config, entry.repoPath) ?? entry.repoPath
-  const textual = isMarkdownFile(entry.repoPath)
+  const markdown = isMarkdownFile(entry.repoPath)
+  const textual =
+    markdown ||
+    (!entry.binaryUrl && (entry.before !== null || entry.after !== null))
   const diff = useMemo(
     () =>
       textual ? computeLineDiff(entry.before ?? "", entry.after ?? "") : null,
@@ -211,7 +214,7 @@ function DiffBody({
       </div>
     )
   }
-  if (mode === "unified") {
+  if (mode === "unified" || !markdown) {
     return (
       <div className="overflow-auto">
         {entry.renamedFrom && (

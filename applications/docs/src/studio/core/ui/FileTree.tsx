@@ -27,10 +27,13 @@ import {
   newCategory,
   referencedIds,
   removeAt,
+  sidebarDestinations,
+  type SidebarDestination,
   updateAt,
 } from "../model/sidebars"
 
 import { segment, segmented } from "./classes"
+import { SidebarPlaceDialog } from "./dialogs"
 import type { TreeFile } from "./hooks"
 import type { SidebarModel } from "./sidebarModels"
 
@@ -62,7 +65,12 @@ function buildTree(files: TreeFile[], extraPaths: string[]): TreeNode {
         node.children.push(child)
       }
       if (index === parts.length - 1)
-        child.file ??= file ?? { file: path, repoPath: "", kind: kindOf(path) }
+        child.file ??= file ?? {
+          file: path,
+          repoPath: "",
+          blobId: "",
+          kind: kindOf(path),
+        }
       node = child
     })
   }
@@ -96,7 +104,10 @@ const ICON_PATHS = {
   remove: "M4 4l8 8M12 4l-8 8",
   rename: "M3 13h3l7-7-3-3-7 7zM9 4l3 3",
   plus: "M8 3v10M3 8h10",
+  pagePlus: "M4 2.5h5.5L13 6v7.5H4zM9 2.5V6h3.5M8.5 8v4M6.5 10h4",
   library: "M3 3h3v10H3zM7 3h3v10H7zM11.5 3.5l2.5.7-2.3 9-2.5-.7z",
+  category: "M2 4.5h4l1.5 1.5H14v7H2zM6 9.5h4M8.5 8l1.5 1.5L8.5 11",
+  sidebarAdd: "M3 4.5h10M3 8h5M3 11.5h5M11.5 9v4M9.5 11h4",
 } as const
 
 export type IconKind = keyof typeof ICON_PATHS
@@ -160,6 +171,13 @@ interface FolderOptions {
   label?: ReactNode
 }
 
+export interface NewPageTarget {
+  modelKey: string
+  sidebarId: string
+  destination: ItemPath
+  directory: string
+}
+
 interface FileTreeProps {
   files: TreeFile[]
   selected: string | null
@@ -172,6 +190,7 @@ interface FileTreeProps {
   onViewChange: (view: TreeView) => void
   onSelect: (file: string) => void
   onNewFile?: (directory: string) => void
+  onNewPage?: (target: NewPageTarget) => void
   onMove?: (file: string) => void
   onDrop?: (file: string, directory: string) => void
   onSidebarEdit?: (repoPath: string, sidebars: SidebarsJson) => void
@@ -204,6 +223,7 @@ export const FileTree = memo(function FileTree({
   onViewChange,
   onSelect,
   onNewFile,
+  onNewPage,
   onMove,
   onDrop,
   onSidebarEdit,
@@ -218,6 +238,43 @@ export const FileTree = memo(function FileTree({
     key: string
     value: string
   } | null>(null)
+  const [placing, setPlacing] = useState<{
+    model: SidebarModel
+    sidebars: SidebarsJson
+    sourceId: string | null
+    from: ItemPath | null
+    item: SidebarJsonItem
+    page: string
+    destinations: SidebarDestination[]
+  } | null>(null)
+  const openPlacing = (
+    model: SidebarModel,
+    sidebars: SidebarsJson,
+    sourceId: string | null,
+    from: ItemPath | null,
+    item: SidebarJsonItem,
+    page: string,
+  ) => {
+    const ids = Object.keys(sidebars)
+    const destinations = ids
+      .flatMap((id) =>
+        sidebarDestinations(
+          sidebars[id] ?? [],
+          id,
+          ids.length > 1 ? id : "Top level",
+        ),
+      )
+      .filter(
+        (destination) =>
+          from === null ||
+          destination.sidebarId !== sourceId ||
+          destination.path.length <= from.length ||
+          !from.every(
+            (index, position) => destination.path[position] === index,
+          ),
+      )
+    setPlacing({ model, sidebars, sourceId, from, item, page, destinations })
+  }
   const toggle = (path: string) =>
     setCollapsed((current) => {
       const next = new Set(current)
@@ -540,6 +597,40 @@ export const FileTree = memo(function FileTree({
       if (!id || referencedIds(items).has(id)) return
       commit(insertAt(items, destination, id))
     }
+    const directoryFor = (list: SidebarJsonItem[]): string | null => {
+      for (const item of list) {
+        const id = itemId(item)
+        if (id === null) continue
+        const file = fileForDocId(version.contentPath, id, allFiles, known)
+        if (file) return dirname(file)
+      }
+      for (const item of list) {
+        if (typeof item !== "string" && item.type === "category") {
+          const found = directoryFor(item.items)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    const newPageButton = (destination: ItemPath, list: SidebarJsonItem[]) =>
+      onNewPage ? (
+        <button
+          type="button"
+          className={CONTROL}
+          title="New page here"
+          aria-label="New page here"
+          onClick={() =>
+            onNewPage({
+              modelKey: model.key,
+              sidebarId,
+              destination,
+              directory: directoryFor(list) ?? version.contentPath,
+            })
+          }
+        >
+          <FileIcon kind="pagePlus" />
+        </button>
+      ) : null
     const childCount = (path: ItemPath) => {
       if (path.length === 0) return items.length
       const item = getAt(items, path)
@@ -557,6 +648,7 @@ export const FileTree = memo(function FileTree({
         <span className="flex items-center">
           {isCategory && (
             <>
+              {newPageButton([...path, item.items.length], item.items)}
               <button
                 type="button"
                 className={CONTROL}
@@ -590,6 +682,24 @@ export const FileTree = memo(function FileTree({
               </button>
             </>
           )}
+          <button
+            type="button"
+            className={CONTROL}
+            title="Move to another category"
+            aria-label="Move to another category"
+            onClick={() =>
+              openPlacing(
+                model,
+                sidebars,
+                sidebarId,
+                path,
+                item,
+                displayLabel(item, (docId) => titles.get(docId) ?? null),
+              )
+            }
+          >
+            <FileIcon kind="category" />
+          </button>
           <button
             type="button"
             className={CONTROL}
@@ -786,18 +896,21 @@ export const FileTree = memo(function FileTree({
         )
       })
     const rootControls = editable ? (
-      <button
-        type="button"
-        className={CONTROL}
-        title="New category"
-        aria-label="New category"
-        onClick={() => {
-          commit(insertAt(items, [items.length], newCategory("New category")))
-          setRenaming({ key: keyFor([items.length]), value: "New category" })
-        }}
-      >
-        <FileIcon kind="plus" />
-      </button>
+      <span className="flex items-center">
+        {newPageButton([items.length], items)}
+        <button
+          type="button"
+          className={CONTROL}
+          title="New category"
+          aria-label="New category"
+          onClick={() => {
+            commit(insertAt(items, [items.length], newCategory("New category")))
+            setRenaming({ key: keyFor([items.length]), value: "New category" })
+          }}
+        >
+          <FileIcon kind="plus" />
+        </button>
+      </span>
     ) : null
     const rootDrop: DropSpec | undefined = editable
       ? {
@@ -843,6 +956,7 @@ export const FileTree = memo(function FileTree({
     const extras = [...allFiles]
       .filter((file) => {
         if (!file.startsWith(prefix) || !isMarkdownFile(file)) return false
+        if (deleted.has(file)) return false
         if (sidebars) {
           const id = docIdForFile(version.contentPath, file)
           return id !== null && !referenced.has(id)
@@ -910,6 +1024,29 @@ export const FileTree = memo(function FileTree({
                   ? `${file} is not in the sidebar. Drag it into the tree above to add it.`
                   : `${file} is not in the sidebar.`,
                 dragData: editable ? [FILE_DRAG, file] : undefined,
+                controls:
+                  editable && model && sidebars ? (
+                    <button
+                      type="button"
+                      className={CONTROL}
+                      title="Add to the sidebar"
+                      aria-label="Add to the sidebar"
+                      onClick={() => {
+                        const id = docIdForFile(version.contentPath, file)
+                        if (!id) return
+                        openPlacing(
+                          model,
+                          sidebars,
+                          null,
+                          null,
+                          id,
+                          file.slice(prefix.length),
+                        )
+                      }}
+                    >
+                      <FileIcon kind="sidebarAdd" />
+                    </button>
+                  ) : undefined,
               }),
             ),
             { icon: "version" },
@@ -992,6 +1129,54 @@ export const FileTree = memo(function FileTree({
                 : null,
             ]}
       </ul>
+      {placing !== null && (
+        <SidebarPlaceDialog
+          title={
+            placing.from === null ? "Add to the sidebar" : "Move in the sidebar"
+          }
+          page={placing.page}
+          confirmLabel={placing.from === null ? "Add" : "Move"}
+          destinations={placing.destinations}
+          onConfirm={(destination) => {
+            const { model, sidebars, sourceId, from, item } = placing
+            const target = sidebars[destination.sidebarId] ?? []
+            setPlacing(null)
+            if (from === null || sourceId === null) {
+              onSidebarEdit?.(model.repoPath, {
+                ...sidebars,
+                [destination.sidebarId]: insertAt(
+                  target,
+                  destination.path,
+                  item,
+                ),
+              })
+              return
+            }
+            if (sourceId === destination.sidebarId) {
+              onSidebarEdit?.(model.repoPath, {
+                ...sidebars,
+                [sourceId]: moveItem(target, from, destination.path),
+              })
+              return
+            }
+            const { items: remaining, removed } = removeAt(
+              sidebars[sourceId] ?? [],
+              from,
+            )
+            if (!removed) return
+            onSidebarEdit?.(model.repoPath, {
+              ...sidebars,
+              [sourceId]: remaining,
+              [destination.sidebarId]: insertAt(
+                target,
+                destination.path,
+                removed,
+              ),
+            })
+          }}
+          onClose={() => setPlacing(null)}
+        />
+      )}
     </nav>
   )
 })

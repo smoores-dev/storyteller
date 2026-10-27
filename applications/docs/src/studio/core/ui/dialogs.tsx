@@ -16,12 +16,25 @@ import {
   slugify,
   suggestImageName,
 } from "../images/naming"
+import type { ChangesetData } from "../model/changeset"
+import { CommitFailure, summarizeActions } from "../model/commitFailure"
 import type { ConflictDecision, ConflictFile } from "../model/conflicts"
+import type { SidebarDestination } from "../model/sidebars"
 import {
   type Workspace,
   isValidBranchName,
   suggestBranchName,
 } from "../model/workspace"
+import {
+  backupFileName,
+  downloadBlob,
+  downloadText,
+  exportChangesZip,
+  exportDraft,
+  importDraft,
+  zipFileName,
+} from "../storage/backup"
+import type { SaveState } from "../storage/drafts"
 
 import { UnifiedDiff } from "./DiffPanel"
 import {
@@ -35,6 +48,197 @@ import {
   label as labelClass,
   warnText,
 } from "./classes"
+import { describeError, errorDetails } from "./hooks"
+
+export function ErrorPanel({ error }: { error: unknown }) {
+  const [copied, setCopied] = useState(false)
+  const failure = error instanceof CommitFailure ? error : null
+  const message = failure ? failure.message : describeError(error)
+  const details = [
+    errorDetails(failure ? failure.reason : error),
+    failure ? `actions:\n${summarizeActions(failure.actions)}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n")
+  return (
+    <div className="mt-2 flex flex-col gap-2" role="alert">
+      <p className={`m-0 ${errorText}`}>{message}</p>
+      {failure && failure.problems.length > 0 && (
+        <ul className="border-line m-0 max-h-40 list-none overflow-auto rounded-md border p-0 text-[12px]">
+          {failure.problems.map((problem) => (
+            <li
+              key={`${problem.path}:${problem.problem}`}
+              className="border-line border-b px-2 py-1 last:border-b-0"
+            >
+              <code className={codeChip}>{problem.path}</code>{" "}
+              <span className="text-muted">{problem.problem}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <details className="text-[12px]">
+        <summary className="text-muted cursor-pointer">Details</summary>
+        <pre className="bg-surface border-line mt-1 max-h-48 overflow-auto rounded-md border p-2 whitespace-pre-wrap">
+          {details}
+        </pre>
+        <button
+          type="button"
+          className={`${button} mt-1`}
+          onClick={() => {
+            navigator.clipboard
+              .writeText(details)
+              .then(() => setCopied(true))
+              .catch(() => setCopied(false))
+          }}
+        >
+          {copied ? "Copied" : "Copy details"}
+        </button>
+      </details>
+    </div>
+  )
+}
+
+export function BackupDialog({
+  draft,
+  state,
+  onImport,
+  onRetry,
+  onClose,
+}: {
+  draft: ChangesetData | null
+  state: SaveState
+  onImport: (incoming: ChangesetData) => void
+  onRetry: () => Promise<void>
+  onClose: () => void
+}) {
+  const [problem, setProblem] = useState<string | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const picker = React.useRef<HTMLInputElement>(null)
+  const count = draft ? Object.keys(draft.changes).length : 0
+  const download = async () => {
+    if (!draft) return
+    setBusy(true)
+    try {
+      downloadText(backupFileName(draft.branch), await exportDraft(draft))
+    } catch (error) {
+      setProblem(describeError(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const downloadZip = async () => {
+    if (!draft) return
+    setBusy(true)
+    try {
+      downloadBlob(zipFileName(draft.branch), await exportChangesZip(draft))
+    } catch (error) {
+      setProblem(describeError(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const restore = async (file: File) => {
+    if (!draft) return
+    setProblem(null)
+    setDone(null)
+    try {
+      const incoming = importDraft(
+        await file.text(),
+        draft.projectId,
+        draft.branch,
+      )
+      onImport(incoming)
+      setDone(
+        `Restored ${Object.keys(incoming.changes).length} changed files into this draft.`,
+      )
+    } catch (error) {
+      setProblem(describeError(error))
+    }
+  }
+  return (
+    <Modal title="Your draft" onClose={onClose}>
+      <p className={hint}>
+        Changes live in this browser until you commit them.{" "}
+        {count === 0
+          ? "There are no changes right now."
+          : `${count} changed ${count === 1 ? "file" : "files"} in this draft.`}
+      </p>
+      <p className={`mt-2 ${hint}`}>
+        Want a copy that is safe whatever happens to this browser? The zip holds
+        your pages and images as plain files plus a list of what changed, and
+        its name carries the date. The backup file is the one to use with
+        Restore.
+      </p>
+      {state.status === "error" && (
+        <p className={`mt-2 ${errorText}`}>
+          Saving failed: {state.message}{" "}
+          {state.quota
+            ? "Free up browser storage or download a backup, your edits stay on screen until you leave this page."
+            : "Download a backup so nothing is lost."}
+        </p>
+      )}
+      {state.status === "unavailable" && (
+        <p className={`mt-2 ${warnText}`}>
+          {state.message} Your changes only live in this tab, download a backup
+          before you leave.
+        </p>
+      )}
+      {state.status === "saved" && (
+        <p className={`mt-2 ${hint}`}>
+          Last saved {new Date(state.at).toLocaleTimeString()}.
+        </p>
+      )}
+      {problem && <p className={`mt-2 ${errorText}`}>{problem}</p>}
+      {done && <p className={`mt-2 ${hint}`}>{done}</p>}
+      <DialogActions>
+        {(state.status === "error" || state.status === "unavailable") && (
+          <button
+            type="button"
+            className={button}
+            onClick={() => void onRetry()}
+          >
+            Try saving again
+          </button>
+        )}
+        <button
+          type="button"
+          className={button}
+          onClick={() => picker.current?.click()}
+        >
+          Restore from backup…
+        </button>
+        <input
+          ref={picker}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={(event) => {
+            const picked = event.target.files?.[0]
+            event.target.value = ""
+            if (picked) void restore(picked)
+          }}
+        />
+        <button
+          type="button"
+          className={button}
+          disabled={count === 0 || busy}
+          onClick={() => void download()}
+        >
+          Download backup file
+        </button>
+        <button
+          type="button"
+          className={buttonPrimary}
+          disabled={count === 0 || busy}
+          onClick={() => void downloadZip()}
+        >
+          Download zip
+        </button>
+      </DialogActions>
+    </Modal>
+  )
+}
 
 export function Modal({
   title,
@@ -275,14 +479,14 @@ export function CommitDialog({
       : `docs: update ${changedFiles.length} files`,
   )
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const submit = async () => {
     setBusy(true)
     setError(null)
     try {
       await onConfirm(message.trim())
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught))
+      setError(caught)
       setBusy(false)
     }
   }
@@ -314,7 +518,7 @@ export function CommitDialog({
           autoFocus
         />
       </label>
-      {error && <p className={`mt-2 ${errorText}`}>{error}</p>}
+      {error !== null && <ErrorPanel error={error} />}
       <DialogActions>
         <button
           type="button"
@@ -338,23 +542,29 @@ export function CommitDialog({
 }
 
 export function NewFileDialog({
-  directory,
+  directory: initialDirectory,
+  directories,
   config,
   existingPaths,
   onConfirm,
   onClose,
 }: {
   directory: string
+  directories?: string[]
   config: StudioConfig
   existingPaths: Set<string>
   onConfirm: (file: string, title: string) => void
   onClose: () => void
 }) {
+  const [directory, setDirectory] = useState(initialDirectory)
   const [title, setTitle] = useState("")
   const [name, setName] = useState("")
   const [touched, setTouched] = useState(false)
   const fileName = (touched ? name : slugify(title)) || ""
   const file = joinPath(directory, `${fileName}.md`)
+  const directoryOptions = directories
+    ? Array.from(new Set([...directories, initialDirectory])).sort()
+    : null
   const exists = existingPaths.has(joinPath(config.docsRoot, file))
   const valid =
     fileName.length > 0 && /^[a-z0-9][a-z0-9._-]*$/.test(fileName) && !exists
@@ -371,6 +581,22 @@ export function NewFileDialog({
             autoFocus
           />
         </label>
+        {directoryOptions && (
+          <label className={labelClass}>
+            Folder
+            <select
+              className={input}
+              value={directory}
+              onChange={(event) => setDirectory(event.target.value)}
+            >
+              {directoryOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className={labelClass}>
           File name
           <input
@@ -685,9 +911,9 @@ export function MoveDialog({
           {exists && <span className={warnText}> already exists</span>}
         </p>
         <p className={hint}>
-          Relative links inside the moved page are rewritten. Links from other
-          pages to this one are not, the editor flags them as broken when you
-          open those pages.
+          Relative links inside the moved page are rewritten and its sidebar
+          entry follows it. Links from other pages to this one are not, the
+          editor flags them as broken when you open those pages.
         </p>
       </div>
       <DialogActions>
@@ -701,6 +927,65 @@ export function MoveDialog({
           onClick={() => onConfirm(target)}
         >
           Move
+        </button>
+      </DialogActions>
+    </Modal>
+  )
+}
+
+export function SidebarPlaceDialog({
+  title,
+  page,
+  confirmLabel,
+  destinations,
+  onConfirm,
+  onClose,
+}: {
+  title: string
+  page: string
+  confirmLabel: string
+  destinations: SidebarDestination[]
+  onConfirm: (destination: SidebarDestination) => void
+  onClose: () => void
+}) {
+  const [chosen, setChosen] = useState(0)
+  return (
+    <Modal title={title} onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <p className={hint}>
+          Where should <code className={codeChip}>{page}</code> go? It is added
+          at the end of the one you pick. Drag it afterwards to fine tune the
+          order.
+        </p>
+        <fieldset className="border-line m-0 flex max-h-72 flex-col gap-1 overflow-y-auto rounded border p-2">
+          {destinations.map((destination, index) => (
+            <label
+              key={destination.path.join(".")}
+              className="flex items-center gap-2 text-[13px]"
+              style={{ paddingLeft: destination.depth * 14 }}
+            >
+              <input
+                type="radio"
+                name="sidebar-destination"
+                checked={chosen === index}
+                onChange={() => setChosen(index)}
+              />
+              {destination.label}
+            </label>
+          ))}
+        </fieldset>
+      </div>
+      <DialogActions>
+        <button type="button" className={button} onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={buttonPrimary}
+          disabled={destinations[chosen] === undefined}
+          onClick={() => onConfirm(destinations[chosen]!)}
+        >
+          {confirmLabel}
         </button>
       </DialogActions>
     </Modal>
@@ -725,7 +1010,7 @@ export function ConflictDialog({
   )
   const [active, setActive] = useState(files[0]?.repoPath ?? null)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const current = files.find((file) => file.repoPath === active) ?? files[0]
   const submit = async () => {
     setBusy(true)
@@ -733,7 +1018,8 @@ export function ConflictDialog({
     try {
       await onResolve(decisions)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught))
+      setError(caught)
+    } finally {
       setBusy(false)
     }
   }
@@ -809,7 +1095,7 @@ export function ConflictDialog({
           )}
         </div>
       </div>
-      {error && <p className={`mt-2 ${errorText}`}>{error}</p>}
+      {error !== null && <ErrorPanel error={error} />}
       <DialogActions>
         <button type="button" className={button} onClick={onClose}>
           Cancel

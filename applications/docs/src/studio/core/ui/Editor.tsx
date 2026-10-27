@@ -1,4 +1,4 @@
-import { Compartment, EditorState } from "@codemirror/state"
+import { Annotation, Compartment, EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import React, {
   forwardRef,
@@ -13,6 +13,8 @@ import { type LintContext, forceLinting, studioLinter } from "../editor/lint"
 import { editorSetup } from "../editor/setup"
 import { slashCompletion } from "../editor/slashMenu"
 import { type SnippetAction, snippetsFor } from "../editor/snippets"
+
+const fromProps = Annotation.define<boolean>()
 
 export interface EditorHandle {
   view: () => EditorView | null
@@ -86,8 +88,14 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         readOnlyCompartment.current.of(EditorState.readOnly.of(readOnly)),
         blameCompartment.current.of(blame ? blameGutter(blame) : []),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged)
+          if (
+            update.docChanged &&
+            !update.transactions.some((transaction) =>
+              transaction.annotation(fromProps),
+            )
+          ) {
             onChangeRef.current(update.state.doc.toString())
+          }
         }),
         EditorView.domEventHandlers({
           paste: (event) => {
@@ -123,6 +131,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     if (current === value) return
     instance.dispatch({
       changes: { from: 0, to: current.length, insert: value },
+      annotations: fromProps.of(true),
     })
   }, [value])
 

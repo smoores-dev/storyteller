@@ -18,19 +18,19 @@ import {
   parseLocation,
 } from "../config"
 import {
+  type GitLabBranch,
   GitLabClient,
   GitLabError,
   type GitLabMergeRequestDetail,
   type GitLabProject,
   type GitLabTreeEntry,
+  RateLimitError,
 } from "../gitlab/client"
-import {
-  type ChangesetData,
-  emptyChangeset,
-  loadChangeset,
-  saveChangeset,
-} from "../model/changeset"
+import { sharedRateLimitMonitor } from "../gitlab/rateLimit"
+import type { ChangesetData } from "../model/changeset"
 import { type Workspace, resolveWorkspace } from "../model/workspace"
+import { cacheGet, cachePut, cached } from "../storage/cache"
+import { draftPersistence } from "../storage/drafts"
 
 export function useStudioLocation(config: StudioConfig) {
   const [location, setLocationState] = useState<StudioLocation>(() =>
@@ -83,6 +83,7 @@ export function useGitLabClient(session: AuthSession, config: StudioConfig) {
     () =>
       new GitLabClient({
         baseUrl: config.gitlab.baseUrl,
+        monitor: sharedRateLimitMonitor(config.hourlyRequestLimit ?? 5000),
         getToken: () => session.getAccessToken().catch(() => null),
         onUnauthorized: () =>
           session
@@ -160,6 +161,47 @@ export interface TreeFile {
   file: string
   repoPath: string
   kind: "markdown" | "image" | "other"
+  blobId: string
+}
+
+interface LoadedTree {
+  files: TreeFile[]
+  roots: string[]
+}
+
+const knownBlobs = new Map<string, string>()
+const knownHeads = new Map<string, string>()
+const knownTrees = new Map<string, { roots: string[]; paths: Set<string> }>()
+
+function treeKey(projectId: number, branch: string) {
+  return `${projectId}:${branch}`
+}
+
+function rememberTree(projectId: number, branch: string, tree: LoadedTree) {
+  const prefix = `${treeKey(projectId, branch)}:`
+  for (const key of [...knownBlobs.keys()]) {
+    if (key.startsWith(prefix)) knownBlobs.delete(key)
+  }
+  for (const file of tree.files) {
+    knownBlobs.set(`${prefix}${file.repoPath}`, file.blobId)
+  }
+  knownTrees.set(treeKey(projectId, branch), {
+    roots: tree.roots,
+    paths: new Set(tree.files.map((file) => file.repoPath)),
+  })
+}
+
+export function isKnownAbsent(
+  projectId: number,
+  branch: string,
+  repoPath: string,
+): boolean {
+  const tree = knownTrees.get(treeKey(projectId, branch))
+  if (!tree) return false
+  const covered = tree.roots.some(
+    (root) => repoPath === root || repoPath.startsWith(`${root}/`),
+  )
+  return covered && !tree.paths.has(repoPath)
 }
 
 export function useTree(
@@ -167,98 +209,109 @@ export function useTree(
   projectId: number | null,
   branch: string,
   config: StudioConfig,
+  headSha: string | null | undefined,
 ): AsyncState<TreeFile[]> {
   return useAsync(
-    projectId === null
+    projectId === null || headSha === undefined
       ? null
       : async () => {
           const roots = [
             ...config.contentRoots,
             joinPath(config.staticRoot, "img"),
-          ]
-          const entries: GitLabTreeEntry[] = []
-          for (const root of roots) {
-            try {
-              entries.push(
-                ...(await client.listTree(
-                  projectId,
-                  branch,
-                  joinPath(config.docsRoot, root),
-                )),
-              )
-            } catch {
-              continue
+          ].map((root) => joinPath(config.docsRoot, root))
+          const key = headSha
+            ? `tree:${projectId}:${headSha}:${roots.join(",")}`
+            : null
+          const loaded = await cached<LoadedTree>(key, async () => {
+            const entries: GitLabTreeEntry[] = []
+            const listed: string[] = []
+            for (const root of roots) {
+              try {
+                entries.push(
+                  ...(await client.listTree(projectId, branch, root)),
+                )
+                listed.push(root)
+              } catch (error) {
+                if (error instanceof GitLabError && error.status === 404) {
+                  listed.push(root)
+                  continue
+                }
+                throw error
+              }
             }
-          }
-          const prefix = `${config.docsRoot}/`
-          return entries
-            .filter((entry) => entry.type === "blob")
-            .map((entry) => ({
-              file: entry.path.slice(prefix.length),
-              repoPath: entry.path,
-              kind: isMarkdownFile(entry.path)
-                ? ("markdown" as const)
-                : isImageFile(entry.path)
-                  ? ("image" as const)
-                  : ("other" as const),
-            }))
-            .sort((a, b) => a.file.localeCompare(b.file))
+            const prefix = `${config.docsRoot}/`
+            return {
+              roots: listed,
+              files: entries
+                .filter((entry) => entry.type === "blob")
+                .map((entry) => ({
+                  file: entry.path.slice(prefix.length),
+                  repoPath: entry.path,
+                  blobId: entry.id,
+                  kind: isMarkdownFile(entry.path)
+                    ? ("markdown" as const)
+                    : isImageFile(entry.path)
+                      ? ("image" as const)
+                      : ("other" as const),
+                }))
+                .sort((a, b) => a.file.localeCompare(b.file)),
+            }
+          })
+          rememberTree(projectId, branch, loaded)
+          return loaded.files
         },
-    [client, projectId, branch, config],
+    [client, projectId, branch, config, headSha],
   )
 }
 
 export function useDraft(projectId: number | null, branch: string) {
+  const persistence = draftPersistence()
   const [draft, setDraft] = useState<ChangesetData | null>(null)
   useEffect(() => {
     if (projectId === null) {
       setDraft(null)
       return
     }
-    setDraft(
-      loadChangeset(projectId, branch) ??
-        emptyChangeset(projectId, branch, null),
-    )
-  }, [projectId, branch])
+    let cancelled = false
+    setDraft(null)
+    void persistence.load(projectId, branch).then((data) => {
+      if (!cancelled) setDraft(data)
+    })
+    return () => {
+      cancelled = true
+      void persistence.flush()
+    }
+  }, [projectId, branch, persistence])
   const update = useCallback(
     (updater: (current: ChangesetData) => ChangesetData) => {
       setDraft((current) => {
         if (!current) return current
         const next = updater(current)
-        scheduleSave(next)
+        if (next !== current) persistence.schedule(next)
         return next
       })
     },
-    [],
+    [persistence],
   )
   return [draft, update] as const
 }
 
-let pendingSave: ChangesetData | null = null
-let saveTimer: ReturnType<typeof setTimeout> | null = null
-
-function flushSave() {
-  if (saveTimer !== null) clearTimeout(saveTimer)
-  saveTimer = null
-  if (pendingSave) saveChangeset(pendingSave)
-  pendingSave = null
+export function useSaveState() {
+  const persistence = draftPersistence()
+  return useSyncExternalStore(
+    persistence.subscribe,
+    persistence.getState,
+    persistence.getState,
+  )
 }
 
-function scheduleSave(data: ChangesetData) {
-  if (
-    pendingSave &&
-    (pendingSave.projectId !== data.projectId ||
-      pendingSave.branch !== data.branch)
-  ) {
-    flushSave()
-  }
-  pendingSave = data
-  if (saveTimer === null) saveTimer = setTimeout(flushSave, 400)
-}
-
-if (typeof window !== "undefined") {
-  window.addEventListener("pagehide", flushSave)
-  window.addEventListener("beforeunload", flushSave)
+export function useRateLimit(config: StudioConfig) {
+  const monitor = sharedRateLimitMonitor(config.hourlyRequestLimit ?? 5000)
+  return useSyncExternalStore(
+    monitor.subscribe,
+    monitor.getSnapshot,
+    monitor.getSnapshot,
+  )
 }
 
 export interface RemoteFile {
@@ -267,9 +320,37 @@ export interface RemoteFile {
 }
 
 const remoteFileCache = new Map<string, Promise<RemoteFile | null>>()
+const branchCache = new Map<string, Promise<GitLabBranch | null>>()
 
 export function invalidateRemoteFiles() {
   remoteFileCache.clear()
+  branchCache.clear()
+  knownBlobs.clear()
+  knownTrees.clear()
+  knownHeads.clear()
+}
+
+export function fetchBranch(
+  client: GitLabClient,
+  projectId: number,
+  name: string,
+): Promise<GitLabBranch | null> {
+  const key = `${projectId}:${name}`
+  let pending = branchCache.get(key)
+  if (pending === undefined) {
+    pending = client
+      .getBranch(projectId, name)
+      .then((branch) => {
+        if (branch) knownHeads.set(key, branch.commit.id)
+        return branch
+      })
+      .catch((error: unknown) => {
+        branchCache.delete(key)
+        throw error
+      })
+    branchCache.set(key, pending)
+  }
+  return pending
 }
 
 export function fetchRemoteFile(
@@ -281,20 +362,39 @@ export function fetchRemoteFile(
   const key = `${projectId}:${branch}:${repoPath}`
   let pending = remoteFileCache.get(key)
   if (pending === undefined) {
-    pending = client
-      .getFile(projectId, branch, repoPath)
-      .then((file) => ({
-        content: file.content,
-        lastCommitId: file.lastCommitId,
-      }))
-      .catch((error: unknown) => {
-        if ((error as { status?: number }).status === 404) return null
-        remoteFileCache.delete(key)
-        throw error
-      })
+    if (isKnownAbsent(projectId, branch, repoPath)) return Promise.resolve(null)
+    pending = (async () => {
+      const blobId = knownBlobs.get(key)
+      const head = knownHeads.get(`${projectId}:${branch}`)
+      const lookups = [
+        blobId ? `file:${projectId}:${blobId}` : null,
+        head ? `file:${projectId}:${head}:${repoPath}` : null,
+      ].filter((lookup): lookup is string => lookup !== null)
+      for (const lookup of lookups) {
+        const hit = await cacheGet<RemoteFile>(lookup)
+        if (hit) return hit
+      }
+      const file = await client.getFile(projectId, branch, repoPath)
+      const remote = { content: file.content, lastCommitId: file.lastCommitId }
+      void cachePut(`file:${projectId}:${file.blobId}`, remote)
+      if (head) void cachePut(`file:${projectId}:${head}:${repoPath}`, remote)
+      return remote
+    })().catch((error: unknown) => {
+      if ((error as { status?: number }).status === 404) return null
+      remoteFileCache.delete(key)
+      throw error
+    })
     remoteFileCache.set(key, pending)
   }
   return pending
+}
+
+export function knownBlobId(
+  projectId: number,
+  branch: string,
+  repoPath: string,
+): string | null {
+  return knownBlobs.get(`${projectId}:${branch}:${repoPath}`) ?? null
 }
 
 export function useRemoteFile(
@@ -302,12 +402,13 @@ export function useRemoteFile(
   projectId: number | null,
   branch: string,
   repoPath: string | null,
+  headSha: string | null | undefined,
 ): AsyncState<RemoteFile | null> {
   return useAsync(
-    projectId === null || repoPath === null
+    projectId === null || repoPath === null || headSha === undefined
       ? null
       : () => fetchRemoteFile(client, projectId, branch, repoPath),
-    [client, projectId, branch, repoPath],
+    [client, projectId, branch, repoPath, headSha],
   )
 }
 
@@ -321,17 +422,53 @@ export function useDebounced<T>(value: T, delay: number): T {
 }
 
 export function describeError(error: unknown): string {
+  if (error instanceof RateLimitError) {
+    const when = error.resetAt
+      ? new Date(error.resetAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null
+    return when
+      ? `GitLab is rate limiting requests. Everything works again around ${when}. Your drafts are safe.`
+      : "GitLab is rate limiting requests. Wait a minute and try again. Your drafts are safe."
+  }
   if (error instanceof GitLabError) {
-    if (error.status === 429) {
-      return "GitLab is rate limiting requests from this browser. Sign in to raise the limit, or wait a minute."
-    }
+    if (error.status === 0) return error.message
     if (error.status === 401)
       return "Your GitLab session expired. Sign in again."
     if (error.status === 403)
       return "GitLab refused this request. You may not have access to this project."
-    if (error.status === 404) return "Not found on GitLab."
+    if (error.status === 404) {
+      return error.request.path
+        ? `Not found on GitLab: ${decodeURIComponent(error.request.path)}`
+        : "Not found on GitLab."
+    }
+    return error.message
   }
   return error instanceof Error ? error.message : String(error)
+}
+
+export function errorDetails(error: unknown): string {
+  const lines: string[] = [
+    `time: ${new Date().toISOString()}`,
+    `page: ${typeof window === "undefined" ? "" : window.location.href}`,
+  ]
+  if (error instanceof GitLabError) {
+    lines.push(
+      `status: ${error.status}`,
+      `request: ${error.request.method} ${decodeURIComponent(error.request.path)}`,
+      `message: ${error.message}`,
+    )
+    if (error.body && typeof error.body === "object") {
+      lines.push(`body: ${JSON.stringify(error.body)}`)
+    }
+  } else if (error instanceof Error) {
+    lines.push(`error: ${error.name}: ${error.message}`)
+  } else {
+    lines.push(`error: ${String(error)}`)
+  }
+  return lines.join("\n")
 }
 
 export function useMergeRequest(

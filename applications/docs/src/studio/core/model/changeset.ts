@@ -7,7 +7,7 @@ export interface BaseFile {
 
 export type Change =
   | { kind: "text"; content: string; base: BaseFile }
-  | { kind: "binary"; base64: string; mime: string; base: BaseFile }
+  | { kind: "binary"; blob: Blob; mime: string; base: BaseFile }
   | { kind: "delete"; base: BaseFile }
   | { kind: "move"; from: string; content: string | null; base: BaseFile }
 
@@ -22,8 +22,8 @@ export interface ChangesetData {
 
 export const MISSING_BASE: BaseFile = { content: null, lastCommitId: null }
 
-export function changesetKey(projectId: number, branch: string) {
-  return `studio:draft:${projectId}:${branch}`
+export function draftKey(projectId: number, branch: string) {
+  return `${projectId}:${branch}`
 }
 
 export function emptyChangeset(
@@ -39,39 +39,6 @@ export function emptyChangeset(
     createdAt: Date.now(),
     changes: {},
   }
-}
-
-export function loadChangeset(
-  projectId: number,
-  branch: string,
-): ChangesetData | null {
-  try {
-    const raw = localStorage.getItem(changesetKey(projectId, branch))
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as ChangesetData
-    return parsed.version === 1 ? parsed : null
-  } catch {
-    return null
-  }
-}
-
-export function saveChangeset(data: ChangesetData) {
-  const key = changesetKey(data.projectId, data.branch)
-  if (Object.keys(data.changes).length === 0) {
-    localStorage.removeItem(key)
-    return
-  }
-  localStorage.setItem(key, JSON.stringify(data))
-}
-
-export function listDraftKeys(): { projectId: number; branch: string }[] {
-  const drafts: { projectId: number; branch: string }[] = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    const match = key?.match(/^studio:draft:(\d+):(.+)$/)
-    if (match) drafts.push({ projectId: Number(match[1]), branch: match[2]! })
-  }
-  return drafts
 }
 
 export function withTextChange(
@@ -128,15 +95,14 @@ export function withMove(
 export function withBinaryChange(
   data: ChangesetData,
   path: string,
-  base64: string,
-  mime: string,
+  blob: Blob,
   base: BaseFile = MISSING_BASE,
 ): ChangesetData {
   return {
     ...data,
     changes: {
       ...data.changes,
-      [path]: { kind: "binary", base64, mime, base },
+      [path]: { kind: "binary", blob, mime: blob.type || "image/png", base },
     },
   }
 }
@@ -201,7 +167,16 @@ export function textOf(data: ChangesetData, path: string): string | null {
   return null
 }
 
-export function toCommitActions(data: ChangesetData): CommitAction[] {
+export function binaryPaths(data: ChangesetData): string[] {
+  return changedPaths(data).filter(
+    (path) => data.changes[path]!.kind === "binary",
+  )
+}
+
+export function toCommitActions(
+  data: ChangesetData,
+  encoded: ReadonlyMap<string, string> = new Map(),
+): CommitAction[] {
   return changedPaths(data).map((path) => {
     const change = data.changes[path]!
     const exists = change.base.lastCommitId !== null
@@ -225,7 +200,7 @@ export function toCommitActions(data: ChangesetData): CommitAction[] {
       return {
         action: exists ? "update" : "create",
         file_path: path,
-        content: change.base64,
+        content: encoded.get(path) ?? "",
         encoding: "base64",
         last_commit_id: change.base.lastCommitId || undefined,
       }
@@ -244,7 +219,7 @@ export function approximateSize(data: ChangesetData): number {
   for (const change of Object.values(data.changes)) {
     if (change.kind === "text") total += change.content.length
     if (change.kind === "move") total += change.content?.length ?? 0
-    if (change.kind === "binary") total += change.base64.length
+    if (change.kind === "binary") total += change.blob.size
   }
   return total
 }

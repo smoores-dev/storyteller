@@ -114,15 +114,19 @@ export function relativeUrl(fromDir: string, toPath: string): string {
   return up.length === 0 ? `./${joined}` : joined
 }
 
-export function fileToBase64(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(reader.error)
-    reader.onload = () => {
-      const result = String(reader.result)
-      resolve(result.slice(result.indexOf(",") + 1))
-    }
-    reader.readAsDataURL(file)
+export async function fileToBase64(file: Blob): Promise<string> {
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const chunk = 0x8000
+  let binary = ""
+  for (let index = 0; index < bytes.length; index += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunk))
+  }
+  return btoa(binary)
+}
+
+export async function toBlob(file: Blob): Promise<Blob> {
+  return new Blob([await file.arrayBuffer()], {
+    type: file.type || "image/png",
   })
 }
 

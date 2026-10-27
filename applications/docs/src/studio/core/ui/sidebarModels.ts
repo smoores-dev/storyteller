@@ -28,13 +28,14 @@ export function useSidebarModels(
   outline: SidebarOutline,
   draft: ChangesetData | null,
   config: StudioConfig,
+  headSha: string | null | undefined,
 ): SidebarModel[] {
   const versions = useMemo(
     () => outline.versions.filter((version) => version.sidebarFile !== null),
     [outline],
   )
   const remote = useAsync(
-    projectId === null || versions.length === 0
+    projectId === null || versions.length === 0 || headSha === undefined
       ? null
       : () =>
           Promise.all(
@@ -59,7 +60,7 @@ export function useSidebarModels(
               }
             }),
           ),
-    [client, projectId, branch, versions, config],
+    [client, projectId, branch, versions, config, headSha],
   )
   const localKey = JSON.stringify(
     versions.map((version) => {

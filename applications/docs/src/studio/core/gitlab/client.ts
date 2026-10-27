@@ -1,5 +1,7 @@
 import type { BlameChunk } from "../editor/blame"
 
+import { RateLimitMonitor, Semaphore, parseRetryAfter } from "./rateLimit"
+
 export interface GitLabUser {
   id: number
   username: string
@@ -185,8 +187,22 @@ export class GitLabError extends Error {
     message: string,
     readonly status: number,
     readonly body: unknown,
+    readonly request: { method: string; path: string } = {
+      method: "GET",
+      path: "",
+    },
   ) {
     super(message)
+  }
+}
+
+export class RateLimitError extends GitLabError {
+  constructor(
+    readonly resetAt: number | null,
+    body: unknown = null,
+    request?: { method: string; path: string },
+  ) {
+    super("GitLab rate limit reached.", 429, body, request)
   }
 }
 
@@ -194,6 +210,35 @@ interface ClientOptions {
   baseUrl: string
   getToken: () => Promise<string | null>
   onUnauthorized?: () => Promise<string | null>
+  monitor?: RateLimitMonitor
+  concurrency?: number
+}
+
+const MAX_AUTO_WAIT_MS = 15_000
+
+function flattenMessage(value: unknown): string {
+  if (typeof value === "string") return value
+  if (Array.isArray(value)) return value.map(flattenMessage).join(", ")
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .map(([key, inner]) => `${key} ${flattenMessage(inner)}`)
+      .join(", ")
+  }
+  return String(value)
+}
+
+export function messageFromBody(
+  body: unknown,
+  status: number,
+  statusText: string,
+): string {
+  if (body && typeof body === "object") {
+    const record = body as Record<string, unknown>
+    const raw = record.message ?? record.error_description ?? record.error
+    if (raw !== undefined && raw !== null) return flattenMessage(raw)
+  }
+  if (typeof body === "string" && body.trim()) return body.trim().slice(0, 300)
+  return `${status} ${statusText}`.trim()
 }
 
 type Query = Record<string, string | number | boolean | undefined>
@@ -209,7 +254,13 @@ function decodeBase64Utf8(value: string): string {
 }
 
 export class GitLabClient {
-  constructor(private readonly options: ClientOptions) {}
+  private readonly monitor: RateLimitMonitor
+  private readonly slots: Semaphore
+
+  constructor(private readonly options: ClientOptions) {
+    this.monitor = options.monitor ?? new RateLimitMonitor()
+    this.slots = new Semaphore(options.concurrency ?? 6)
+  }
 
   get baseUrl() {
     return this.options.baseUrl
@@ -219,7 +270,13 @@ export class GitLabClient {
     path: string,
     init: RequestInit & { query?: Query } = {},
     retry = true,
+    waits = 0,
   ): Promise<Response> {
+    const method = init.method ?? "GET"
+    const request = { method, path }
+    const blockedUntil = this.monitor.blockedUntil()
+    if (blockedUntil !== null)
+      throw new RateLimitError(blockedUntil, null, request)
     const url = new URL(`${this.options.baseUrl}/api/v4${path}`)
     for (const [key, value] of Object.entries(init.query ?? {})) {
       if (value !== undefined) url.searchParams.set(key, String(value))
@@ -230,7 +287,33 @@ export class GitLabClient {
     if (init.body && !(init.body instanceof FormData)) {
       headers.set("content-type", "application/json")
     }
-    const response = await fetch(url, { ...init, headers })
+    const release = await this.slots.acquire()
+    let response: Response
+    try {
+      this.monitor.record()
+      response = await fetch(url, { ...init, headers })
+    } catch (error) {
+      throw new GitLabError(
+        "Could not reach GitLab. Check your connection and try again.",
+        0,
+        error instanceof Error ? error.message : String(error),
+        request,
+      )
+    } finally {
+      release()
+    }
+    this.monitor.observe(response.headers)
+    if (response.status === 429) {
+      const resetAt = parseRetryAfter(response.headers, Date.now())
+      const until = resetAt ?? Date.now() + 60_000
+      const wait = until - Date.now()
+      if (waits < 2 && wait <= MAX_AUTO_WAIT_MS) {
+        await new Promise((resolve) => setTimeout(resolve, Math.max(wait, 500)))
+        return this.fetch(path, init, retry, waits + 1)
+      }
+      this.monitor.block(until)
+      throw new RateLimitError(until, null, request)
+    }
     if (
       response.status === 401 &&
       retry &&
@@ -238,7 +321,7 @@ export class GitLabClient {
       this.options.onUnauthorized
     ) {
       const refreshed = await this.options.onUnauthorized()
-      if (refreshed) return this.fetch(path, init, false)
+      if (refreshed) return this.fetch(path, init, false, waits)
     }
     if (!response.ok) {
       let body: unknown = null
@@ -247,11 +330,12 @@ export class GitLabClient {
       } catch {
         body = await response.text().catch(() => null)
       }
-      const message =
-        typeof body === "object" && body !== null && "message" in body
-          ? JSON.stringify((body as { message: unknown }).message)
-          : `${response.status} ${response.statusText}`
-      throw new GitLabError(message, response.status, body)
+      throw new GitLabError(
+        messageFromBody(body, response.status, response.statusText),
+        response.status,
+        body,
+        request,
+      )
     }
     return response
   }
@@ -264,7 +348,11 @@ export class GitLabClient {
     return (await response.json()) as T
   }
 
-  private async paginated<T>(path: string, query: Query = {}): Promise<T[]> {
+  private async paginated<T>(
+    path: string,
+    query: Query = {},
+    maxPages = Infinity,
+  ): Promise<T[]> {
     const results: T[] = []
     let page = 1
     for (;;) {
@@ -273,7 +361,7 @@ export class GitLabClient {
       })
       results.push(...((await response.json()) as T[]))
       const next = response.headers.get("x-next-page")
-      if (!next) break
+      if (!next || page >= maxPages) break
       page = Number(next)
     }
     return results
@@ -304,6 +392,7 @@ export class GitLabClient {
     return this.paginated<GitLabBranch>(
       `/projects/${projectId}/repository/branches`,
       { search },
+      3,
     )
   }
 

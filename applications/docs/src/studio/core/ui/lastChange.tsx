@@ -1,6 +1,7 @@
 import React from "react"
 
 import type { GitLabClient, GitLabCommit } from "../gitlab/client"
+import { cached } from "../storage/cache"
 
 import { type AsyncState, useAsync } from "./hooks"
 
@@ -20,33 +21,37 @@ export function useLastChange(
   projectId: number | null,
   ref: string,
   repoPath: string | null,
+  headSha: string | null | undefined,
 ): AsyncState<LastChange | null> {
   return useAsync(
-    projectId === null || repoPath === null
+    projectId === null || repoPath === null || headSha === undefined
       ? null
       : () => {
-          const key = `${projectId}:${ref}:${repoPath}`
+          const key = `${projectId}:${ref}:${headSha}:${repoPath}`
           let pending = cache.get(key)
           if (pending === undefined) {
-            pending = client
-              .listCommits(projectId, ref, repoPath, 1)
-              .then(async (commits) => {
-                const commit = commits[0]
-                if (!commit) return null
-                const tags = await client
-                  .commitTags(projectId, commit.id)
-                  .catch(() => [])
-                return { commit, tag: tags[0]?.name ?? null }
-              })
-              .catch((error: unknown) => {
-                cache.delete(key)
-                throw error
-              })
+            pending = cached<LastChange | null>(
+              headSha ? `last:${projectId}:${headSha}:${repoPath}` : null,
+              () =>
+                client
+                  .listCommits(projectId, ref, repoPath, 1)
+                  .then(async (commits) => {
+                    const commit = commits[0]
+                    if (!commit) return null
+                    const tags = await client
+                      .commitTags(projectId, commit.id)
+                      .catch(() => [])
+                    return { commit, tag: tags[0]?.name ?? null }
+                  }),
+            ).catch((error: unknown) => {
+              cache.delete(key)
+              throw error
+            })
             cache.set(key, pending)
           }
           return pending
         },
-    [client, projectId, ref, repoPath],
+    [client, projectId, ref, repoPath, headSha],
   )
 }
 

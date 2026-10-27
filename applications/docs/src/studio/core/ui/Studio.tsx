@@ -26,11 +26,17 @@ import type { LinkContext } from "../editor/linkCompletion"
 import type { CompileProblem, LintContext, LintNote } from "../editor/lint"
 import type { SnippetAction } from "../editor/snippets"
 import { formatMarkdown } from "../format"
-import { GitLabError, type GitLabProject } from "../gitlab/client"
-import { fileToBase64 } from "../images/naming"
 import {
+  GitLabError,
+  type GitLabProject,
+  RateLimitError,
+} from "../gitlab/client"
+import { fileToBase64, toBlob } from "../images/naming"
+import {
+  type BaseFile,
   type ChangesetData,
   MISSING_BASE,
+  binaryPaths,
   changedPaths,
   emptyChangeset,
   isDirty,
@@ -43,13 +49,21 @@ import {
   withTextChange,
   withoutChange,
 } from "../model/changeset"
+import { explainCommitFailure } from "../model/commitFailure"
 import {
   type ConflictDecision,
   type ConflictFile,
   findConflicts,
 } from "../model/conflicts"
 import { type SidebarOutline, versionForFile } from "../model/outline"
-import { type SidebarsJson, serializeSidebars } from "../model/sidebars"
+import {
+  type SidebarsJson,
+  docIdForFile,
+  insertAt,
+  referencedIds,
+  renameDocId,
+  serializeSidebars,
+} from "../model/sidebars"
 import {
   branchProject,
   createWorkBranch,
@@ -58,10 +72,17 @@ import {
   rememberFork,
   writeProject,
 } from "../model/workspace"
+import {
+  backupFileName,
+  downloadText,
+  exportDraft,
+  mergeDraft,
+} from "../storage/backup"
+import { draftPersistence } from "../storage/drafts"
 
 import { type DiffEntry, DiffPanel, type RenderPreview } from "./DiffPanel"
 import { Editor, type EditorHandle } from "./Editor"
-import { FileTree, type TreeView } from "./FileTree"
+import { FileTree, type NewPageTarget, type TreeView } from "./FileTree"
 import { HistoryPanel } from "./HistoryPanel"
 import { LinkDialog } from "./LinkDialog"
 import {
@@ -88,6 +109,7 @@ import {
   paneHeader,
 } from "./classes"
 import {
+  BackupDialog,
   CommitDialog,
   ConflictDialog,
   ImagePasteDialog,
@@ -97,6 +119,7 @@ import {
 } from "./dialogs"
 import {
   describeError,
+  fetchBranch,
   fetchRemoteFile,
   invalidateRemoteFiles,
   useAsync,
@@ -104,13 +127,17 @@ import {
   useDraft,
   useGitLabClient,
   useMergeRequest,
+  useRateLimit,
   useRemoteFile,
+  useSaveState,
   useStudioLocation,
   useTree,
   useWorkspace,
 } from "./hooks"
 import { LastChanged, invalidateLastChanges, useLastChange } from "./lastChange"
+import { ResizeHandle, usePaneSize } from "./resize"
 import { useSidebarModels } from "./sidebarModels"
+import { RateLimitChip, SaveStatus } from "./status"
 
 type Panel = "none" | "diff" | "history" | "mr"
 
@@ -151,27 +178,71 @@ export function Studio({
   const reading = ws ? readProject(ws, location, config) : null
   const branchSource = ws ? branchProject(ws) : null
   const branches = useAsync(
-    branchSource === null ? null : () => client.listBranches(branchSource.id),
+    branchSource === null
+      ? null
+      : () => client.listBranches(branchSource.id, "^docs/"),
     [client, branchSource?.id],
   )
   const onDefaultBranch = location.branch === config.defaultBranch
+  const branchInfo = useAsync(
+    branchSource === null || onDefaultBranch
+      ? null
+      : () => fetchBranch(client, branchSource.id, location.branch),
+    [client, branchSource?.id, location.branch, onDefaultBranch],
+  )
   const branchExists = onDefaultBranch
     ? true
-    : (branches.data?.some((branch) => branch.name === location.branch) ??
-      false)
+    : branchInfo.status === "ready" && branchInfo.data !== null
+  const branchChecked = onDefaultBranch || branchInfo.status === "ready"
   const pendingBranch =
     ws !== null &&
     reading !== null &&
     reading.id !== ws.upstream.id &&
-    branches.status === "ready" &&
+    branchChecked &&
     !branchExists
   const effectiveProjectId = pendingBranch
     ? ws.upstream.id
     : (reading?.id ?? null)
   const effectiveRef = pendingBranch ? config.defaultBranch : location.branch
 
-  const tree = useTree(client, effectiveProjectId, effectiveRef, config)
+  const head = useAsync(
+    effectiveProjectId === null
+      ? null
+      : () => fetchBranch(client, effectiveProjectId, effectiveRef),
+    [client, effectiveProjectId, effectiveRef],
+  )
+  const headKey = `${effectiveProjectId}:${effectiveRef}`
+  const [settledHead, setSettledHead] = useState<{
+    key: string
+    sha: string | null
+  } | null>(null)
+  const readyHead =
+    head.status === "ready" ? (head.data?.commit.id ?? null) : null
+  useEffect(() => {
+    if (head.status === "ready")
+      setSettledHead({ key: headKey, sha: readyHead })
+  }, [head.status, headKey, readyHead])
+  const headSha =
+    head.status === "ready"
+      ? readyHead
+      : head.status === "error"
+        ? null
+        : settledHead?.key === headKey
+          ? settledHead.sha
+          : undefined
+
+  const tree = useTree(
+    client,
+    effectiveProjectId,
+    effectiveRef,
+    config,
+    headSha,
+  )
   const [draft, updateDraft] = useDraft(reading?.id ?? null, location.branch)
+  const saveState = useSaveState()
+  const rateLimit = useRateLimit(config)
+  const sidebar = usePaneSize("studio:sidebarWidth", 256, 160, 560)
+  const split = usePaneSize("studio:editorShare", 0.5, 0.2, 0.8)
 
   const canEdit =
     signedIn &&
@@ -192,11 +263,22 @@ export function Studio({
   const currentRepoPath = currentFile ? repoPathFor(config, currentFile) : null
   const currentIsMarkdown = currentFile ? isMarkdownFile(currentFile) : false
   const currentFormat = currentFile ? markdownFormat(currentFile) : "md"
-  const remote = useRemoteFile(
+  const change = currentRepoPath ? draft?.changes[currentRepoPath] : undefined
+  const newInDraft =
+    change?.kind === "text" && change.base.lastCommitId === null
+  const fetched = useRemoteFile(
     client,
     effectiveProjectId,
     effectiveRef,
-    currentIsMarkdown ? currentRepoPath : null,
+    currentIsMarkdown && !newInDraft ? currentRepoPath : null,
+    headSha,
+  )
+  const remote = useMemo(
+    () =>
+      newInDraft
+        ? { ...fetched, status: "ready" as const, data: null }
+        : fetched,
+    [fetched, newInDraft],
   )
   const base = useMemo(
     () => ({
@@ -205,7 +287,6 @@ export function Studio({
     }),
     [remote.data],
   )
-  const change = currentRepoPath ? draft?.changes[currentRepoPath] : undefined
   const editorValue =
     change?.kind === "text" || change?.kind === "move"
       ? (change.content ?? "")
@@ -227,12 +308,31 @@ export function Studio({
   const [commitOpen, setCommitOpen] = useState(false)
   const [linkOpen, setLinkOpen] = useState<string | null>(null)
   const [newFileDir, setNewFileDir] = useState<string | null>(null)
+  const [newPageTarget, setNewPageTarget] = useState<NewPageTarget | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [compileFailure, setCompileFailure] = useState<CompileProblem | null>(
     null,
   )
   const [formatting, setFormatting] = useState(false)
   const [blameOn, setBlameOn] = useState(false)
+  const [backupOpen, setBackupOpen] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  useEffect(() => {
+    const report = (reason: unknown) => {
+      const text = describeError(reason)
+      if (/ResizeObserver/i.test(text)) return
+      setProblem(`Something went wrong: ${text}`)
+    }
+    const onRejection = (event: PromiseRejectionEvent) => report(event.reason)
+    const onError = (event: ErrorEvent) => report(event.error ?? event.message)
+    window.addEventListener("unhandledrejection", onRejection)
+    window.addEventListener("error", onError)
+    return () => {
+      window.removeEventListener("unhandledrejection", onRejection)
+      window.removeEventListener("error", onError)
+    }
+  }, [])
 
   const mergeRequest = useMergeRequest(
     client,
@@ -455,6 +555,8 @@ export function Studio({
       setStartRequested(false)
       setPanel("none")
       setLocation({ branch, mode: "edit", project: null })
+      invalidateRemoteFiles()
+      branchInfo.reload()
       branches.reload()
       if (created === "pending") {
         setNotice(
@@ -462,7 +564,15 @@ export function Studio({
         )
       }
     },
-    [ws, writeTarget, client, config.defaultBranch, setLocation, branches],
+    [
+      ws,
+      writeTarget,
+      client,
+      config.defaultBranch,
+      setLocation,
+      branches,
+      branchInfo,
+    ],
   )
 
   const createFork = useCallback(async () => {
@@ -481,7 +591,7 @@ export function Studio({
   )
 
   const commitWith = useCallback(
-    async (source: ChangesetData, message: string) => {
+    async (source: ChangesetData, message: string): Promise<boolean> => {
       if (!ws || !reading || !writeTarget)
         throw new Error("Workspace is not ready.")
       if (!signedIn) throw new Error("Sign in first.")
@@ -504,11 +614,22 @@ export function Studio({
       }
       const exists =
         (await client.getBranch(writeTarget.id, location.branch)) !== null
+      const encoded = new Map<string, string>()
+      for (const path of binaryPaths(prepared)) {
+        const entry = prepared.changes[path]!
+        if (entry.kind === "binary") {
+          encoded.set(path, await fileToBase64(entry.blob))
+        }
+      }
+      const actions = toCommitActions(prepared, encoded)
+      const target = exists
+        ? { projectId: writeTarget.id, ref: location.branch }
+        : { projectId: ws.upstream.id, ref: config.defaultBranch }
       try {
         await client.commit(writeTarget.id, {
           branch: location.branch,
           commit_message: message,
-          actions: toCommitActions(prepared),
+          actions,
           ...(exists
             ? {}
             : {
@@ -517,18 +638,28 @@ export function Studio({
               }),
         })
       } catch (error) {
-        if (error instanceof GitLabError && error.status === 400 && exists) {
+        if (
+          error instanceof GitLabError &&
+          [400, 409, 422].includes(error.status)
+        ) {
           const found = await findConflicts(
             client,
-            writeTarget.id,
-            location.branch,
+            target.projectId,
+            target.ref,
             prepared,
           )
           if (found.length > 0) {
             setConflicts({ message, files: found })
             setCommitOpen(false)
-            return
+            return false
           }
+          throw await explainCommitFailure(
+            client,
+            target.projectId,
+            target.ref,
+            actions,
+            error,
+          )
         }
         throw error
       }
@@ -538,10 +669,12 @@ export function Studio({
       invalidateLastChanges()
       setCommitOpen(false)
       setNotice(`Committed to ${location.branch}.`)
-      tree.reload()
+      head.reload()
+      branchInfo.reload()
       branches.reload()
       remote.reload()
       mergeRequest.reload()
+      return true
     },
     [
       ws,
@@ -551,7 +684,8 @@ export function Studio({
       client,
       config.defaultBranch,
       location.branch,
-      tree,
+      head,
+      branchInfo,
       branches,
       remote,
       mergeRequest,
@@ -560,9 +694,9 @@ export function Studio({
   )
 
   const commit = useCallback(
-    (message: string) => {
+    async (message: string) => {
       if (!draft) throw new Error("Workspace is not ready.")
-      return commitWith(draft, message)
+      await commitWith(draft, message)
     },
     [draft, commitWith],
   )
@@ -587,6 +721,16 @@ export function Studio({
         if (file.theirsCommit === null) {
           if (entry.kind === "delete") {
             next = withoutChange(next, file.repoPath)
+          } else if (entry.kind === "move") {
+            next = withoutChange(next, file.repoPath)
+            if (entry.content !== null) {
+              next = withTextChange(
+                next,
+                file.repoPath,
+                entry.content,
+                MISSING_BASE,
+              )
+            }
           } else if (entry.kind === "text" || entry.kind === "binary") {
             next = {
               ...next,
@@ -612,12 +756,12 @@ export function Studio({
       updateDraft(() => next)
       invalidateRemoteFiles()
       remote.reload()
-      setConflicts(null)
       if (!isDirty(next)) {
+        setConflicts(null)
         setNotice("Nothing left to commit after taking their changes.")
         return
       }
-      await commitWith(next, conflicts.message)
+      if (await commitWith(next, conflicts.message)) setConflicts(null)
     },
     [conflicts, draft, updateDraft, remote, commitWith],
   )
@@ -732,14 +876,9 @@ export function Studio({
   ) => {
     const snippets: string[] = []
     for (const placement of placements) {
-      const base64 = await fileToBase64(placement.file)
+      const blob = await toBlob(placement.file)
       updateDraft((current) =>
-        withBinaryChange(
-          current,
-          placement.destination.repoPath,
-          base64,
-          placement.file.type || "image/png",
-        ),
+        withBinaryChange(current, placement.destination.repoPath, blob),
       )
       snippets.push(`![${placement.alt}](${placement.destination.markdownUrl})`)
     }
@@ -747,31 +886,36 @@ export function Studio({
     editorRef.current?.insertAtCursor(`${snippets.join("\n\n")}\n`)
   }
 
-  const replaceImage = async (repoPath: string, file: File) => {
-    if (effectiveProjectId === null) return
-    const base64 = await fileToBase64(file)
-    const lastCommitId =
-      (await client
-        .lastCommitFor(effectiveProjectId, effectiveRef, repoPath)
-        .catch(() => null)) ?? ""
-    updateDraft((current) =>
-      withBinaryChange(current, repoPath, base64, file.type || "image/png", {
-        content: null,
-        lastCommitId,
-      }),
+  const lookupBase = async (repoPath: string): Promise<BaseFile> => {
+    if (effectiveProjectId === null) return MISSING_BASE
+    const lastCommitId = await client.lastCommitFor(
+      effectiveProjectId,
+      effectiveRef,
+      repoPath,
     )
-    invalidateRemoteAssets()
+    return { content: null, lastCommitId }
+  }
+
+  const replaceImage = async (repoPath: string, file: File) => {
+    try {
+      const blob = await toBlob(file)
+      const imageBase = await lookupBase(repoPath)
+      updateDraft((current) =>
+        withBinaryChange(current, repoPath, blob, imageBase),
+      )
+      invalidateRemoteAssets()
+    } catch (error) {
+      setNotice(`Could not replace the image: ${describeError(error)}`)
+    }
   }
 
   const deleteImage = async (repoPath: string) => {
-    if (effectiveProjectId === null) return
-    const lastCommitId =
-      (await client
-        .lastCommitFor(effectiveProjectId, effectiveRef, repoPath)
-        .catch(() => null)) ?? ""
-    updateDraft((current) =>
-      withDeletion(current, repoPath, { content: null, lastCommitId }),
-    )
+    try {
+      const imageBase = await lookupBase(repoPath)
+      updateDraft((current) => withDeletion(current, repoPath, imageBase))
+    } catch (error) {
+      setNotice(`Could not delete the image: ${describeError(error)}`)
+    }
   }
 
   const workingEntries = useMemo<DiffEntry[]>(() => {
@@ -792,7 +936,7 @@ export function Studio({
           kind: entry.base.lastCommitId ? "modified" : "added",
           before: null,
           after: null,
-          binaryUrl: `data:${entry.mime};base64,${entry.base64}`,
+          binaryUrl: resolver.draftUrl(path),
         }
       }
       if (entry.kind === "move") {
@@ -811,7 +955,7 @@ export function Studio({
         after: entry.content,
       }
     })
-  }, [draft])
+  }, [draft, resolver])
 
   const dirty = draft ? isDirty(draft) : false
   const allChanged = useMemo(() => changedPaths(structural), [structural])
@@ -879,6 +1023,7 @@ export function Studio({
     outline,
     draft,
     config,
+    headSha,
   )
   const onSidebarEdit = useCallback(
     (repoPath: string, sidebars: SidebarsJson) => {
@@ -930,16 +1075,49 @@ export function Studio({
           lastCommitId: remoteFile.lastCommitId,
         }
       } else if (existing?.kind !== "binary") {
-        const lastCommitId = await client
-          .lastCommitFor(effectiveProjectId, effectiveRef, fromRepo)
-          .catch(() => null)
-        base = { content: null, lastCommitId: lastCommitId ?? "" }
+        let lastCommitId: string | null
+        try {
+          lastCommitId = await client.lastCommitFor(
+            effectiveProjectId,
+            effectiveRef,
+            fromRepo,
+          )
+        } catch (error) {
+          setNotice(`Could not move ${fromFile}: ${describeError(error)}`)
+          return
+        }
+        if (lastCommitId === null) {
+          setNotice(`${fromFile} does not exist on ${effectiveRef}.`)
+          return
+        }
+        base = { content: null, lastCommitId }
       }
       if (content !== null && isMarkdownFile(fromFile)) {
         content = rebaseRelativeLinks(content, fromFile, toFile)
       }
+      const renames = sidebarModels.flatMap((model) => {
+        if (!model.sidebars) return []
+        const oldId = docIdForFile(model.version.contentPath, fromFile)
+        const newId = docIdForFile(model.version.contentPath, toFile)
+        if (!oldId || !newId || oldId === newId) return []
+        const used = Object.values(model.sidebars).some((items) =>
+          referencedIds(items).has(oldId),
+        )
+        if (!used) return []
+        const renamed = Object.fromEntries(
+          Object.entries(model.sidebars).map(([name, items]) => [
+            name,
+            renameDocId(items, oldId, newId),
+          ]),
+        )
+        return [{ model, text: serializeSidebars(renamed) }]
+      })
       updateDraft((current) =>
-        withMove(current, fromRepo, toRepo, content, base),
+        renames.reduce(
+          (next, { model, text }) =>
+            withTextChange(next, model.repoPath, text, model.base),
+          withMove(current, fromRepo, toRepo, content, base),
+        ),
       )
       invalidateRemoteAssets()
       if (currentFile === fromFile) setLocation({ file: toFile }, false)
@@ -953,6 +1131,7 @@ export function Studio({
       existingRepoPaths,
       client,
       updateDraft,
+      sidebarModels,
       currentFile,
       setLocation,
     ],
@@ -1007,16 +1186,34 @@ export function Studio({
   const branchMissing =
     ws !== null &&
     reading !== null &&
-    branches.status === "ready" &&
+    branchChecked &&
     !branchExists &&
     !pendingBranch
   const bannerError =
     authError ??
+    problem ??
+    (rateLimit.blockedUntil !== null
+      ? describeError(new RateLimitError(rateLimit.blockedUntil))
+      : null) ??
     (workspace.error ? describeError(workspace.error) : null) ??
     (tree.error ? describeError(tree.error) : null) ??
     (branchMissing
       ? `Branch ${location.branch} does not exist in ${reading.path_with_namespace}.`
       : null)
+
+  const downloadBackup = async () => {
+    if (!draft) return
+    try {
+      downloadText(backupFileName(draft.branch), await exportDraft(draft))
+    } catch (error) {
+      setProblem(`Could not create the backup: ${describeError(error)}`)
+    }
+  }
+  const restoreDraft = (incoming: ChangesetData) =>
+    updateDraft((current) => mergeDraft(current, incoming))
+  const retrySave = async () => {
+    await draftPersistence().retry()
+  }
   const bannerInfo =
     notice ??
     (pendingBranch
@@ -1030,6 +1227,7 @@ export function Studio({
     effectiveProjectId,
     effectiveRef,
     currentIsMarkdown ? currentRepoPath : null,
+    headSha,
   )
   const blameData = useAsync(
     blameOn && editing && effectiveProjectId !== null && currentRepoPath
@@ -1113,6 +1311,14 @@ export function Studio({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <RateLimitChip snapshot={rateLimit} />
+            {editing && (
+              <SaveStatus
+                state={saveState}
+                dirty={dirty}
+                onOpen={() => setBackupOpen(true)}
+              />
+            )}
             {editing && (
               <button
                 type="button"
@@ -1198,17 +1404,62 @@ export function Studio({
           </div>
         </header>
 
+        {(saveState.status === "error" ||
+          (saveState.status === "unavailable" && dirty)) && (
+          <div
+            className="border-danger/40 bg-removed text-danger flex flex-wrap items-center gap-2 border-b px-3 py-1.5 text-[13px]"
+            role="alert"
+          >
+            <span>
+              {saveState.status === "error"
+                ? `Your changes are not being saved in this browser: ${saveState.message}`
+                : `${saveState.message} Your changes only live in this tab.`}
+            </span>
+            <button
+              type="button"
+              className={button}
+              onClick={() => void downloadBackup()}
+            >
+              Download backup
+            </button>
+            <button
+              type="button"
+              className={ghostButton}
+              onClick={() => setBackupOpen(true)}
+            >
+              Options
+            </button>
+          </div>
+        )}
+
         {(bannerError || bannerInfo) && (
           <div
-            className={`border-b px-3 py-1.5 text-[13px] ${bannerError ? "border-danger/40 bg-removed text-danger" : "border-line bg-raised text-muted"}`}
+            className={`flex items-center justify-between gap-2 border-b px-3 py-1.5 text-[13px] ${bannerError ? "border-danger/40 bg-removed text-danger" : "border-line bg-raised text-muted"}`}
             role={bannerError ? "alert" : "status"}
           >
-            {bannerError ?? bannerInfo}
+            <span>{bannerError ?? bannerInfo}</span>
+            {bannerError !== null && bannerError === (problem ?? authError) && (
+              <button
+                type="button"
+                className={ghostButton}
+                onClick={() => {
+                  setProblem(null)
+                  setAuthError(null)
+                }}
+              >
+                Dismiss
+              </button>
+            )}
           </div>
         )}
 
         <div className="flex min-h-0 flex-1">
-          <aside className="border-line bg-raised w-64 shrink-0 overflow-auto border-r py-2 max-md:w-48">
+          <aside
+            className="bg-raised w-48 shrink-0 overflow-auto py-2 md:w-[var(--sidebar-width)]"
+            style={
+              { "--sidebar-width": `${sidebar.size}px` } as React.CSSProperties
+            }
+          >
             {tree.status === "loading" && (
               <p className={`px-3 ${hint}`}>Loading files…</p>
             )}
@@ -1229,12 +1480,22 @@ export function Studio({
                 onViewChange={changeTreeView}
                 onSelect={selectFile}
                 onNewFile={editing ? onTreeNewFile : undefined}
+                onNewPage={editing ? setNewPageTarget : undefined}
                 onMove={editing ? onTreeMove : undefined}
                 onDrop={editing ? onTreeDrop : undefined}
                 showImages={editing}
               />
             )}
           </aside>
+          <ResizeHandle
+            label="Resize the sidebar"
+            value={sidebar.size}
+            step={16}
+            scale="pixels"
+            onChange={sidebar.change}
+            onCommit={sidebar.commit}
+            onReset={sidebar.reset}
+          />
 
           <main className="flex min-w-0 flex-1 flex-col">
             {panel === "diff" && draft && (
@@ -1299,6 +1560,12 @@ export function Studio({
                 onOpenFile={openFileAt}
                 tab={mrTab}
                 onTabChange={setMrTab}
+                draft={draft}
+                onVersionFile={(versionPath, content, versionBase) =>
+                  updateDraft((current) =>
+                    withTextChange(current, versionPath, content, versionBase),
+                  )
+                }
               />
             )}
             {panel === "none" && !currentFile && (
@@ -1329,10 +1596,17 @@ export function Studio({
             )}
             {panel === "none" && currentFile && currentIsMarkdown && (
               <div
-                className={`grid min-h-0 flex-1 ${editing ? "grid-cols-2 max-md:grid-cols-1 max-md:grid-rows-2" : "grid-cols-1"}`}
+                className={`grid min-h-0 flex-1 ${editing ? "grid-cols-1 grid-rows-2 md:[grid-template-columns:var(--split-columns)] md:grid-rows-1" : "grid-cols-1"}`}
+                style={
+                  editing
+                    ? ({
+                        "--split-columns": `minmax(0, ${split.size}fr) 6px minmax(0, ${1 - split.size}fr)`,
+                      } as React.CSSProperties)
+                    : undefined
+                }
               >
                 {editing && (
-                  <div className="border-line flex min-h-0 min-w-0 flex-col border-r max-md:border-r-0 max-md:border-b">
+                  <div className="border-line flex min-h-0 min-w-0 flex-col max-md:border-b">
                     <div className={paneHeader}>
                       <span className="flex min-w-0 items-center gap-3">
                         <span className="truncate font-mono text-[12px]">
@@ -1443,6 +1717,17 @@ export function Studio({
                       </>
                     )}
                   </div>
+                )}
+                {editing && (
+                  <ResizeHandle
+                    label="Resize the editor and preview"
+                    value={split.size}
+                    step={0.02}
+                    scale="share"
+                    onChange={split.change}
+                    onCommit={split.commit}
+                    onReset={split.reset}
+                  />
                 )}
                 <div className="flex min-h-0 min-w-0 flex-col">
                   {editing && (
@@ -1595,6 +1880,15 @@ export function Studio({
             onClose={() => setConflicts(null)}
           />
         )}
+        {backupOpen && (
+          <BackupDialog
+            draft={draft}
+            state={saveState}
+            onImport={restoreDraft}
+            onRetry={retrySave}
+            onClose={() => setBackupOpen(false)}
+          />
+        )}
         {moving !== null && (
           <MoveDialog
             file={moving}
@@ -1603,6 +1897,56 @@ export function Studio({
             existingPaths={existingRepoPaths}
             onConfirm={(target) => void moveFile(moving, target)}
             onClose={() => setMoving(null)}
+          />
+        )}
+        {newPageTarget !== null && (
+          <NewFileDialog
+            directory={newPageTarget.directory}
+            directories={directories.filter(
+              (dir) =>
+                dir === newPageTarget.directory ||
+                dir.split("/")[0] === newPageTarget.directory.split("/")[0],
+            )}
+            config={config}
+            existingPaths={existingRepoPaths}
+            onConfirm={(file, title) => {
+              const target = newPageTarget
+              const model = sidebarModels.find(
+                (candidate) => candidate.key === target.modelKey,
+              )
+              const repoPath = repoPathFor(config, file)
+              const id = model
+                ? docIdForFile(model.version.contentPath, file)
+                : null
+              updateDraft((current) => {
+                let next = withTextChange(
+                  current,
+                  repoPath,
+                  `---\ntitle: ${title}\n---\n\n`,
+                  MISSING_BASE,
+                )
+                if (model?.sidebars && id) {
+                  const items = model.sidebars[target.sidebarId] ?? []
+                  next = withTextChange(
+                    next,
+                    model.repoPath,
+                    serializeSidebars({
+                      ...model.sidebars,
+                      [target.sidebarId]: insertAt(
+                        items,
+                        target.destination,
+                        id,
+                      ),
+                    }),
+                    model.base,
+                  )
+                }
+                return next
+              })
+              setNewPageTarget(null)
+              selectFile(file)
+            }}
+            onClose={() => setNewPageTarget(null)}
           />
         )}
         {newFileDir !== null && (

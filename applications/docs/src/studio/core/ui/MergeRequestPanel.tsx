@@ -9,8 +9,10 @@ import type {
   GitLabProject,
   PipelineStatus,
 } from "../gitlab/client"
+import type { BaseFile, ChangesetData } from "../model/changeset"
 
 import { type DiffEntry, DiffPanel, type RenderPreview } from "./DiffPanel"
+import { VersionFileSection } from "./VersionFile"
 import {
   button,
   buttonPrimary,
@@ -109,6 +111,8 @@ interface MergeRequestPanelProps {
   onOpenFile: (file: string, line: number | null) => void
   tab: MergeRequestTab
   onTabChange: (tab: MergeRequestTab) => void
+  draft: ChangesetData | null
+  onVersionFile: (path: string, content: string, base: BaseFile) => void
 }
 
 export function MergeRequestPanel(props: MergeRequestPanelProps) {
@@ -175,6 +179,9 @@ function OverviewTab({
   canWrite,
   branchExists,
   mergeRequest,
+  config,
+  draft,
+  onVersionFile,
 }: MergeRequestPanelProps) {
   const onDefault = branch === defaultBranch
   const [title, setTitle] = useState(
@@ -292,6 +299,21 @@ function OverviewTab({
             <p className={hint}>Sign in to create a merge request.</p>
           )}
         </>
+      )}
+      {!onDefault && signedIn && canWrite && config.releasePackage && (
+        <div className="mt-4">
+          <VersionFileSection
+            client={client}
+            upstream={upstream}
+            source={source}
+            branch={branch}
+            defaultBranch={defaultBranch}
+            branchExists={branchExists}
+            releasePackage={config.releasePackage}
+            draft={draft}
+            onChange={onVersionFile}
+          />
+        </div>
       )}
       <h3 className="mt-4 mb-0 text-[14px] font-semibold">Preview link</h3>
       <p className={hint}>

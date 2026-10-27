@@ -28,26 +28,31 @@ const files: TreeFile[] = [
   {
     file: "docs/welcome.md",
     repoPath: "applications/docs/docs/welcome.md",
+    blobId: "b",
     kind: "markdown",
   },
   {
     file: "docs/guide/setup.mdx",
     repoPath: "applications/docs/docs/guide/setup.mdx",
+    blobId: "b",
     kind: "markdown",
   },
   {
     file: "docs/guide/shot.png",
     repoPath: "applications/docs/docs/guide/shot.png",
+    blobId: "b",
     kind: "image",
   },
   {
     file: "docs/orphan.md",
     repoPath: "applications/docs/docs/orphan.md",
+    blobId: "b",
     kind: "markdown",
   },
   {
     file: "blog/post.md",
     repoPath: "applications/docs/blog/post.md",
+    blobId: "b",
     kind: "markdown",
   },
 ]
@@ -351,6 +356,8 @@ describe("MergeRequestPanel", () => {
         onOpenFile: () => undefined,
         tab,
         onTabChange: () => undefined,
+        draft: null,
+        onVersionFile: () => undefined,
       }),
     )
   it("counts only open discussions", () => {
