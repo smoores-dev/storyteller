@@ -202,6 +202,31 @@ module.exports = function requireBinding() {
             }
           },
         )
+
+        // @huggingface/transformers loads onnxruntime-node through
+        // createRequire, which esbuild can't follow, so it's left as a runtime
+        // require that fails inside the executable. Turn it into a plain
+        // require so it resolves to the bundled copy.
+        build.onLoad(
+          {
+            filter:
+              /@huggingface[\\/]transformers[\\/]dist[\\/]transformers\.node\.mjs$/,
+          },
+          (args) => {
+            const source = readFileSync(args.path, "utf8")
+            const pattern = /\brequireFromHere\("onnxruntime-node"\)/
+            if (!pattern.test(source)) {
+              throw new Error(
+                `@huggingface/transformers' onnxruntime-node loader changed shape, update ${fileURLToPath(import.meta.url)}`,
+              )
+            }
+            return {
+              loader: "js",
+              resolveDir: dirname(args.path),
+              contents: source.replace(pattern, `require("onnxruntime-node")`),
+            }
+          },
+        )
       },
     },
     {
