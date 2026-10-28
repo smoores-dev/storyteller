@@ -1,9 +1,12 @@
 import assert from "node:assert"
 
-import { type Database } from "better-sqlite3"
 import { describe, it } from "vitest"
 
-import { type TestDbContext, setupTestDb } from "@/__tests__/harness/testDb"
+import {
+  type TestDbContext,
+  seedUser,
+  setupTestDb,
+} from "@/__tests__/harness/testDb"
 import {
   ensureSidebarDefaults,
   getSidebarGroups,
@@ -12,17 +15,6 @@ import {
 import { type UUID } from "@/uuid"
 
 const userId = "11111111-1111-1111-1111-111111111111" as UUID
-
-function seedUser(sqlite: Database) {
-  sqlite
-    .prepare(`INSERT INTO user_permission (uuid, book_list) VALUES (?, 1)`)
-    .run("22222222-2222-2222-2222-222222222222")
-  sqlite
-    .prepare(
-      `INSERT INTO "user" (id, user_permission_uuid, email) VALUES (?, ?, ?)`,
-    )
-    .run(userId, "22222222-2222-2222-2222-222222222222", "t@example.com")
-}
 
 function seedShelf(ctx: TestDbContext, name: string): string {
   const uuid = crypto.randomUUID()
@@ -82,7 +74,7 @@ async function setShelvesGroupHidden(hidden: boolean) {
 describe("sidebar section visibility", () => {
   it("hides a section without touching the items' own hidden flags", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const kept = seedShelf(ctx, "Kept")
     const explicitlyHidden = seedShelf(ctx, "Explicitly hidden")
@@ -106,7 +98,7 @@ describe("sidebar section visibility", () => {
 
   it("brings the section back when a new shelf appears, restoring only the items the user never hid", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const kept = seedShelf(ctx, "Kept")
     const explicitlyHidden = seedShelf(ctx, "Explicitly hidden")
@@ -134,7 +126,7 @@ describe("sidebar section visibility", () => {
 
   it("leaves a hidden section alone when nothing new was added", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     seedShelf(ctx, "Kept")
     await ensureSidebarDefaults(userId)

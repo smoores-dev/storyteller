@@ -8,7 +8,7 @@ import { type NewBookToSeries, getBooks } from "./books"
 import { type ListOptions } from "./collections"
 import { db } from "./connection"
 import type { BookToSeries, DB } from "./schema"
-import { cleanShelfFiltersForDeletedEntity } from "./shelfFilter"
+import { bookVisibleTo, cleanShelfFiltersForDeletedEntity } from "./shelfFilter"
 
 export type Series = Selectable<DB["series"]>
 export type NewSeries = Insertable<DB["series"]>
@@ -22,31 +22,8 @@ export function seriesQuery(userId?: UUID) {
     .$if(!!userId, (qb) =>
       qb
         .innerJoin("bookToSeries", "bookToSeries.seriesUuid", "series.uuid")
-        .leftJoin(
-          "bookToCollection",
-          "bookToSeries.bookUuid",
-          "bookToCollection.bookUuid",
-        )
-        .leftJoin(
-          "collection",
-          "collection.uuid",
-          "bookToCollection.collectionUuid",
-        )
-        .leftJoin(
-          "collectionToUser",
-          "collectionToUser.collectionUuid",
-          "bookToCollection.collectionUuid",
-        )
-        .where((eb) =>
-          eb.or([
-            // The $if condition ensures that this only runs when userId
-            // is not null
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            eb("collectionToUser.userId", "=", userId!),
-            eb("collection.public", "=", true),
-            eb("collection.public", "is", null),
-          ]),
-        ),
+        // oxlint-disable-next-line typescript/no-non-null-assertion
+        .where((eb) => bookVisibleTo(eb, "bookToSeries.bookUuid", userId!)),
     )
     .groupBy("series.uuid")
     .selectAll("series")

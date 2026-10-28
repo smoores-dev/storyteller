@@ -1,5 +1,11 @@
-import { type RawBuilder, sql } from "kysely"
+import {
+  type ExpressionBuilder,
+  type RawBuilder,
+  type ReferenceExpression,
+  sql,
+} from "kysely"
 
+import { type DB } from "@/database/schema.ts"
 import {
   ALIGNMENT_GRADES,
   FIELD_REGISTRY,
@@ -250,46 +256,21 @@ export async function cleanShelfFiltersForDeletedEntity(
   }
 }
 
-export function bookVisibleTo(eb: EB, userId: UUID): FilterExpression {
-  return eb.or([
-    eb.not(
-      eb.exists(
-        eb
-          .selectFrom("bookToCollection")
-          .select(sql.lit(1).as("one"))
-          .whereRef("bookToCollection.bookUuid", "=", "book.uuid"),
-      ),
-    ),
-    eb.exists(
-      eb
-        .selectFrom("bookToCollection")
-        .innerJoin(
-          "collection",
-          "collection.uuid",
-          "bookToCollection.collectionUuid",
-        )
-        .select(sql.lit(1).as("one"))
-        .whereRef("bookToCollection.bookUuid", "=", "book.uuid")
-        .where((e) =>
-          e.or([
-            e("collection.public", "=", true),
-            e("collection.public", "is", null),
-          ]),
-        ),
-    ),
-    eb.exists(
-      eb
-        .selectFrom("bookToCollection")
-        .innerJoin(
-          "collectionToUser",
-          "collectionToUser.collectionUuid",
-          "bookToCollection.collectionUuid",
-        )
-        .select(sql.lit(1).as("one"))
-        .whereRef("bookToCollection.bookUuid", "=", "book.uuid")
-        .where("collectionToUser.userId", "=", userId),
-    ),
-  ])
+export function bookVisibleTo(
+  eb: ExpressionBuilder<DB, keyof DB>,
+  bookUuidRef: ReferenceExpression<
+    DB,
+    "book" | "bookToCreator" | "bookToSeries" | "bookToTag" | "bookToStatus"
+  >,
+  userId: UUID,
+): FilterExpression {
+  return eb.exists(
+    eb
+      .selectFrom("bookAccess")
+      .select(sql.lit(1).as("one"))
+      .whereRef("bookAccess.bookUuid", "=", bookUuidRef)
+      .where("bookAccess.userId", "=", userId),
+  )
 }
 
 export function buildFilterExpression(

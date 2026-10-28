@@ -2,28 +2,17 @@ import assert from "node:assert"
 
 import { describe, it } from "vitest"
 
-import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
+import { seedBooks, seedUser, setupTestDb } from "@/__tests__/harness/testDb"
 import { countBooks } from "@/database/books"
 import { getLibraryCounts, getSectionFacets } from "@/database/libraryCounts"
 import { type UUID } from "@/uuid"
 
 const userId = "11111111-1111-1111-1111-111111111111" as UUID
 
-function seedUser(sqlite: import("better-sqlite3").Database) {
-  sqlite
-    .prepare(`INSERT INTO user_permission (uuid, book_list) VALUES (?, 1)`)
-    .run("22222222-2222-2222-2222-222222222222")
-  sqlite
-    .prepare(
-      `INSERT INTO "user" (id, user_permission_uuid, email) VALUES (?, ?, ?)`,
-    )
-    .run(userId, "22222222-2222-2222-2222-222222222222", "t@example.com")
-}
-
 describe("getSectionFacets show-all", () => {
   it("ratings: shows all 6 buckets, empty ones at 0", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2, b3] = seedBooks(ctx, [
       { title: "one" },
@@ -55,6 +44,7 @@ describe("getSectionFacets show-all", () => {
 
   it("formats: shows all canonical buckets even when empty", async () => {
     using ctx = setupTestDb()
+    seedUser(ctx, userId)
 
     seedBooks(ctx, [
       { title: "a", ebook: "a.epub" },
@@ -81,7 +71,7 @@ describe("getSectionFacets show-all", () => {
 
   it("grades: shows all 6 grades in A+…F order, empty ones at 0", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2, b3] = seedBooks(ctx, [
       { title: "one" },
@@ -116,7 +106,7 @@ describe("getSectionFacets show-all", () => {
 
   it("statuses: shows every status even with zero books", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1] = seedBooks(ctx, [{ title: "one" }])
     const status = ctx.sqlite
@@ -142,7 +132,7 @@ describe("getSectionFacets show-all", () => {
 
   it("shelves: counts manual and smart shelves", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2] = seedBooks(ctx, [
       { title: "e", ebook: "e.epub" },
@@ -189,7 +179,7 @@ describe("getSectionFacets show-all", () => {
 describe("book totals", () => {
   it("getLibraryCounts.books and countBooks agree with the catalog", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2, b3, hidden] = seedBooks(ctx, [
       { title: "one" },

@@ -44,7 +44,9 @@ export type LibraryCounts = Record<BadgeFacetSection, number> & {
 }
 
 export function visibleBooks(userId: UUID, dab = db) {
-  return dab.selectFrom("book").where((eb) => bookVisibleTo(eb, userId))
+  return dab
+    .selectFrom("book")
+    .where((eb) => bookVisibleTo(eb, "book.uuid", userId))
 }
 
 async function countSmartShelf(userId: UUID, filter: ShelfFilter) {

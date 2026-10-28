@@ -1,28 +1,17 @@
 import assert from "node:assert"
 
-import { type Database } from "better-sqlite3"
 import { describe, it } from "vitest"
 
 import {
   type TestDbContext,
   seedBooks,
+  seedUser,
   setupTestDb,
 } from "@/__tests__/harness/testDb"
 import { getNextUpInSeries } from "@/database/nextUp"
 import { type UUID } from "@/uuid"
 
 const userId = "11111111-1111-1111-1111-111111111111" as UUID
-
-function seedUser(sqlite: Database) {
-  sqlite
-    .prepare(`INSERT INTO user_permission (uuid, book_list) VALUES (?, 1)`)
-    .run("22222222-2222-2222-2222-222222222222")
-  sqlite
-    .prepare(
-      `INSERT INTO "user" (id, user_permission_uuid, email) VALUES (?, ?, ?)`,
-    )
-    .run(userId, "22222222-2222-2222-2222-222222222222", "t@example.com")
-}
 
 function seedSeries(
   ctx: TestDbContext,
@@ -62,7 +51,7 @@ function setPosition(ctx: TestDbContext, bookUuid: string, timestamp: number) {
 describe("getNextUpInSeries", () => {
   it("returns the lowest unread position above the highest read one", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2, b3, b4] = seedBooks(ctx, [
       { title: "one" },
@@ -90,7 +79,7 @@ describe("getNextUpInSeries", () => {
 
   it("skips a book being read and shows the next to-be-read one", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2, b3] = seedBooks(ctx, [
       { title: "one" },
@@ -115,7 +104,7 @@ describe("getNextUpInSeries", () => {
 
   it("does not surface series without any read book, or fully read ones", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2, b3, b4] = seedBooks(ctx, [
       { title: "fresh 1" },
@@ -142,7 +131,7 @@ describe("getNextUpInSeries", () => {
 
   it("accepts explicit To read status but not custom statuses", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
     ctx.sqlite
       .prepare(`INSERT INTO status (name, is_default) VALUES ('Abandoned', 0)`)
       .run()
@@ -170,7 +159,7 @@ describe("getNextUpInSeries", () => {
 
   it("ignores a book with no status of its own", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2, b3] = seedBooks(ctx, [
       { title: "one" },
@@ -194,7 +183,7 @@ describe("getNextUpInSeries", () => {
 
   it("orders series by most recent reading activity", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [a1, a2, c1, c2] = seedBooks(ctx, [
       { title: "old series read" },
@@ -226,7 +215,7 @@ describe("getNextUpInSeries", () => {
 
   it("returns a shared book once even when it is next in two series", async () => {
     using ctx = setupTestDb()
-    seedUser(ctx.sqlite)
+    seedUser(ctx, userId)
 
     const [b1, b2, shared] = seedBooks(ctx, [
       { title: "read one" },

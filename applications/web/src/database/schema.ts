@@ -112,6 +112,16 @@ export interface Book {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface BookAccess {
+  bookUuid: import("@/uuid").UUID
+  userId: import("@/uuid").UUID
+}
+
+export interface BookAccessView {
+  bookUuid: import("@/uuid").UUID
+  userId: import("@/uuid").UUID
+}
+
 export interface BookToCollection {
   bookUuid: import("@/uuid").UUID
   collectionUuid: import("@/uuid").UUID
@@ -658,6 +668,8 @@ export interface DB {
   alignmentReport: AlignmentReport
   audiobook: Audiobook
   book: Book
+  bookAccess: BookAccess
+  bookAccessView: BookAccessView
   bookToCollection: BookToCollection
   bookToCreator: BookToCreator
   bookToSeries: BookToSeries

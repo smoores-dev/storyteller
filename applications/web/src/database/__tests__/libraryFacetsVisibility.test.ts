@@ -2,7 +2,7 @@ import assert from "node:assert"
 
 import { describe, it } from "vitest"
 
-import { seedBooks, setupTestDb } from "@/__tests__/harness/testDb"
+import { seedBooks, seedUser, setupTestDb } from "@/__tests__/harness/testDb"
 import {
   NONE_FACET_KEY,
   getLibraryCounts,
@@ -21,14 +21,7 @@ const memberCollection = "66666666-6666-6666-6666-666666666666"
 
 function seedLibrary(ctx: ReturnType<typeof setupTestDb>) {
   const { sqlite } = ctx
-  sqlite
-    .prepare(`INSERT INTO user_permission (uuid, book_list) VALUES (?, 1)`)
-    .run("22222222-2222-2222-2222-222222222222")
-  sqlite
-    .prepare(
-      `INSERT INTO "user" (id, user_permission_uuid, email) VALUES (?, ?, ?)`,
-    )
-    .run(userId, "22222222-2222-2222-2222-222222222222", "t@example.com")
+  seedUser(ctx, userId)
 
   const [open, hidden] = seedBooks(ctx, [
     { title: "open" },

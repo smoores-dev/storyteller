@@ -7,7 +7,7 @@ import { queueWritesToFiles } from "@/writeToFiles/fileWriteDistributor"
 import { type TagUpdate, getBooks } from "./books"
 import { db } from "./connection"
 import type { DB } from "./schema"
-import { cleanShelfFiltersForDeletedEntity } from "./shelfFilter"
+import { bookVisibleTo, cleanShelfFiltersForDeletedEntity } from "./shelfFilter"
 
 export type Tag = Selectable<DB["tag"]>
 
@@ -20,31 +20,8 @@ export async function getTags(
     .$if(!!userId, (qb) =>
       qb
         .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
-        .leftJoin(
-          "bookToCollection",
-          "bookToTag.bookUuid",
-          "bookToCollection.bookUuid",
-        )
-        .leftJoin(
-          "collection",
-          "collection.uuid",
-          "bookToCollection.collectionUuid",
-        )
-        .leftJoin(
-          "collectionToUser",
-          "collectionToUser.collectionUuid",
-          "bookToCollection.collectionUuid",
-        )
-        .where((eb) =>
-          eb.or([
-            // The $if condition ensures that this only runs when userId
-            // is not null
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            eb("collectionToUser.userId", "=", userId!),
-            eb("collection.public", "=", true),
-            eb("collection.public", "is", null),
-          ]),
-        ),
+        // oxlint-disable-next-line typescript/no-non-null-assertion
+        .where((eb) => bookVisibleTo(eb, "bookToTag.bookUuid", userId!)),
     )
     .groupBy("tag.uuid")
     .selectAll("tag")
@@ -60,29 +37,8 @@ export async function getTagByUuid(tagUuid: UUID, userId?: UUID) {
     .$if(!!userId, (qb) =>
       qb
         .innerJoin("bookToTag", "bookToTag.tagUuid", "tag.uuid")
-        .leftJoin(
-          "bookToCollection",
-          "bookToTag.bookUuid",
-          "bookToCollection.bookUuid",
-        )
-        .leftJoin(
-          "collection",
-          "collection.uuid",
-          "bookToCollection.collectionUuid",
-        )
-        .leftJoin(
-          "collectionToUser",
-          "collectionToUser.collectionUuid",
-          "bookToCollection.collectionUuid",
-        )
-        .where((eb) =>
-          eb.or([
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            eb("collectionToUser.userId", "=", userId!),
-            eb("collection.public", "=", true),
-            eb("collection.public", "is", null),
-          ]),
-        ),
+        // oxlint-disable-next-line typescript/no-non-null-assertion
+        .where((eb) => bookVisibleTo(eb, "bookToTag.bookUuid", userId!)),
     )
     .groupBy("tag.uuid")
     .selectAll("tag")

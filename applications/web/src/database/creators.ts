@@ -7,7 +7,7 @@ import { type UUID } from "@/uuid"
 import { getBooks } from "./books"
 import { db } from "./connection"
 import { type DB } from "./schema"
-import { cleanShelfFiltersForDeletedEntity } from "./shelfFilter"
+import { bookVisibleTo, cleanShelfFiltersForDeletedEntity } from "./shelfFilter"
 
 export type Creator = Selectable<DB["creator"]>
 export type NewCreator = Insertable<DB["creator"]>
@@ -25,32 +25,8 @@ function getCreatorBase(userId?: UUID) {
         .as("roles"),
     )
     .$if(!!userId, (qb) =>
-      qb
-        .leftJoin(
-          "bookToCollection",
-          "bookToCreator.bookUuid",
-          "bookToCollection.bookUuid",
-        )
-        .leftJoin(
-          "collection",
-          "collection.uuid",
-          "bookToCollection.collectionUuid",
-        )
-        .leftJoin(
-          "collectionToUser",
-          "collectionToUser.collectionUuid",
-          "bookToCollection.collectionUuid",
-        )
-        .where((eb) =>
-          eb.or([
-            // The $if condition ensures that this only runs when userId
-            // is not null
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            eb("collectionToUser.userId", "=", userId!),
-            eb("collection.public", "=", true),
-            eb("collection.public", "is", null),
-          ]),
-        ),
+      // oxlint-disable-next-line typescript/no-non-null-assertion
+      qb.where((eb) => bookVisibleTo(eb, "bookToCreator.bookUuid", userId!)),
     )
     .groupBy("creator.uuid")
     .selectAll("creator")

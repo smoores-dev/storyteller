@@ -448,7 +448,7 @@ export async function getShelfBooks(
   let query = db
     .selectFrom("book")
     .select("book.uuid")
-    .where((eb) => bookVisibleTo(eb, userId))
+    .where((eb) => bookVisibleTo(eb, "book.uuid", userId))
 
   if (hasFilter && hasManualBooks) {
     query = query.where((eb) =>

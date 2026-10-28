@@ -867,7 +867,7 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
     ])
     .$if(!!userId, (qb) =>
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      qb.where((eb) => bookVisibleTo(eb, userId!)),
+      qb.where((eb) => bookVisibleTo(eb, "book.uuid", userId!)),
     )
     .groupBy("book.uuid")
 }
@@ -1066,8 +1066,10 @@ export async function countBooks(
     userId,
     opts,
   )
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    .$if(!!userId, (qb) => qb.where((eb) => bookVisibleTo(eb, userId!)))
+    .$if(!!userId, (qb) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      qb.where((eb) => bookVisibleTo(eb, "book.uuid", userId!)),
+    )
     .select((eb) => eb.fn.count<number>("book.uuid").distinct().as("count"))
     .executeTakeFirst()
 
@@ -1089,7 +1091,7 @@ export async function getBooks(
     .$if(!!opts?.offset, (qb) => qb.offset(opts?.offset ?? 0))
 
   if (userId) {
-    page = page.where((eb) => bookVisibleTo(eb, userId))
+    page = page.where((eb) => bookVisibleTo(eb, "book.uuid", userId))
   }
 
   const sort: BookSort =
