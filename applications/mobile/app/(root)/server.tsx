@@ -11,10 +11,13 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller"
 
 import { signInWithDeviceCode } from "@/auth/deviceCodeLogin"
 import { LoginButton } from "@/components/LoginButton"
+import { ScreenBackButton } from "@/components/ScreenBackButton"
 import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
 import { Text } from "@/components/ui/text"
+import { usesSystemHeader } from "@/lib/nativeChrome"
+import { cn } from "@/lib/utils"
 import { logger } from "@/logger"
 import { useAppDispatch } from "@/store/appState"
 import { localApi } from "@/store/localApi"
@@ -86,7 +89,15 @@ export default function ServerPage() {
   }
 
   return (
-    <KeyboardAwareScrollView contentContainerClassName="items-stretch px-8">
+    <KeyboardAwareScrollView
+      contentContainerClassName={cn(
+        "items-stretch px-safe-or-8",
+        !usesSystemHeader && "pt-safe",
+      )}
+      contentInsetAdjustmentBehavior={usesSystemHeader ? "automatic" : "never"}
+    >
+      {/* Contributes header options, it does not render a view. */}
+      <ScreenBackButton fallback="/settings" />
       <View className="gap-4 pb-4">
         <Text className="mx-2">Server url</Text>
         <Input

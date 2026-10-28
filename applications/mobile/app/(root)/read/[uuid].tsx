@@ -1,8 +1,10 @@
 import { useLocalSearchParams, useSegments } from "expo-router"
+import { StatusBar } from "expo-status-bar"
 import { useEffect } from "react"
 
 import { Epub } from "@/components/Epub"
 import { LoadingView } from "@/components/LoadingView"
+import { useSpansFold } from "@/lib/pose"
 import { useIsFocused } from "@/hooks/useIsFocused"
 import { useIsNotBackground } from "@/hooks/useIsNotBackground"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
@@ -60,7 +62,18 @@ export default function BookScreen() {
     }
   }, [dispatch, format, showEpub])
 
-  if (!showEpub || !book || !locator) return <LoadingView />
+  const spansFold = useSpansFold()
 
-  return <Epub key={book.uuid} format={format} book={book} locator={locator} />
+  return (
+    <>
+      <StatusBar
+        verticalBarBehaviorIOS={spansFold ? "disabled" : "automatic"}
+      />
+      {!showEpub || !book || !locator ? (
+        <LoadingView />
+      ) : (
+        <Epub key={book.uuid} format={format} book={book} locator={locator} />
+      )}
+    </>
+  )
 }

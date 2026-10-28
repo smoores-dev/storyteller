@@ -1,5 +1,6 @@
 import { skipToken } from "@reduxjs/toolkit/query"
 import { router, useLocalSearchParams } from "expo-router"
+import { StatusBar, useVerticalBarEdgeIOS } from "expo-status-bar"
 import {
   ChevronDown,
   RotateCcw,
@@ -9,17 +10,19 @@ import {
 } from "lucide-react-native"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { TouchableOpacity, View } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { AudiobookCover } from "@/components/AudiobookCover"
 import { LoadingView } from "@/components/LoadingView"
 import { PlayPause } from "@/components/PlayPause"
 import { ProgressBar } from "@/components/ProgressBar"
 import { Toolbar } from "@/components/Toolbar"
-import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
 import { PortalHost } from "@/components/ui/portal-context"
 import { Text } from "@/components/ui/text"
+import { useSpansFold } from "@/lib/pose"
+import { cn } from "@/lib/utils"
 import {
   AUDIOBOOK_TOC_LOOKAHEAD_SECONDS,
   Storyteller,
@@ -47,6 +50,9 @@ import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
 import { type UUID } from "@/uuid"
 
 const ACTIVE_AUDIO_BOOKMARK_WINDOW_SECONDS = 2
+
+/** The air the cover keeps around itself, which the measured square gives back. */
+const coverMargin = 16
 
 function getTrackStartPositions(tracks: StorytellerTrack[]) {
   const positions: Record<string, number> = {}
@@ -80,6 +86,24 @@ export default function PlayerScreen() {
   const rate = useAppSelector(getPlaybackRate)
   const panning = useRef(false)
   const [eagerProgress, setEagerProgress] = useState(position)
+
+  const insets = useSafeAreaInsets()
+  const railEdge = useVerticalBarEdgeIOS()
+  const railWidth =
+    railEdge === "leading"
+      ? insets.left
+      : railEdge === "trailing"
+        ? insets.right
+        : 0
+  const rail = railEdge !== null && railWidth > 0
+
+  const [coverRegion, setCoverRegion] = useState({ height: 0, width: 0 })
+  const coverSize = Math.max(
+    0,
+    Math.min(coverRegion.height, coverRegion.width) - coverMargin * 2,
+  )
+
+  const spansFold = useSpansFold()
 
   useLayoutEffect(() => {
     if (!panning.current) {
@@ -228,9 +252,23 @@ export default function PlayerScreen() {
   if (!book) return null
 
   return (
-    <View className="android:pt-safe relative flex-1">
+    <View className="android:pt-safe relative h-full flex-1">
+      <StatusBar
+        verticalBarBehaviorIOS={spansFold ? "disabled" : "automatic"}
+      />
       <PortalHost>
-        <View className="w-full flex-row items-center justify-between px-4 pt-3 pb-2">
+        <View
+          className={cn(
+            rail
+              ? "absolute top-0 bottom-0 z-3 mr-1 flex-col items-center justify-end pb-26"
+              : "w-full flex-row items-center justify-between px-4 pt-3 pb-2",
+          )}
+          pointerEvents="box-none"
+          style={{
+            width: rail ? railWidth : undefined,
+            ...(railEdge === "trailing" ? { right: 0 } : { left: 0 }),
+          }}
+        >
           <TouchableOpacity
             accessibilityLabel="Minimize player"
             accessibilityRole="button"
@@ -241,16 +279,30 @@ export default function PlayerScreen() {
           >
             <Icon as={ChevronDown} size={24} />
           </TouchableOpacity>
-          <Toolbar mode="audio" activeBookmarks={activeBookmarks} />
+          <Toolbar
+            mode="audio"
+            activeBookmarks={activeBookmarks}
+            vertical={rail}
+          />
         </View>
 
-        <View className="mb-4 h-full flex-1 items-center">
+        <View className="pr-safe mb-4 flex-1 items-center">
           {isLoading && <LoadingView />}
-          <AspectRatio ratio={1} className="mt-2 max-h-[60%] w-full p-4">
-            <View className="h-full w-full flex-1 overflow-hidden rounded-xl">
+          <View
+            className="min-h-0 w-full grow items-center justify-center pt-2"
+            onLayout={({
+              nativeEvent: {
+                layout: { height, width },
+              },
+            }) => setCoverRegion({ height, width })}
+          >
+            <View
+              className="overflow-hidden rounded-xl"
+              style={{ height: coverSize, width: coverSize }}
+            >
               <AudiobookCover book={book} />
             </View>
-          </AspectRatio>
+          </View>
           <View className="w-full px-6 pt-6">
             <Text variant="h4" numberOfLines={2}>
               {book.title}
@@ -286,7 +338,7 @@ export default function PlayerScreen() {
               {remainingProgressTime}
             </Text>
           </View>
-          <View className="mt-6 grow flex-row items-center gap-6 pb-6">
+          <View className="mt-6 flex-row items-center gap-6 pb-6">
             <Button
               accessibilityLabel="Previous track"
               variant="ghost"

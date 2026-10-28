@@ -60,7 +60,7 @@ export function BookTransferFeedback() {
       accessibilityLiveRegion="polite"
     >
       {importStage && (
-        <View className="bg-popover border-border mb-safe-offset-4 mx-4 flex-row items-center gap-3 rounded-xl border p-3 shadow-lg shadow-black/5">
+        <View className="bg-popover border-border mb-safe-offset-4 mx-safe-or-4 flex-row items-center gap-3 rounded-xl border p-3 shadow-lg shadow-black/5">
           <DownloadingIndicator
             progress={IMPORT_PROGRESS[importStage]}
             size={INDICATOR_SIZE}
@@ -71,7 +71,7 @@ export function BookTransferFeedback() {
         </View>
       )}
       {failure && (
-        <View className="bg-popover border-destructive mb-safe-offset-4 mx-4 flex-row items-center gap-3 rounded-xl border p-3 shadow-lg shadow-black/5">
+        <View className="bg-popover border-destructive mb-safe-offset-4 mx-safe-or-4 flex-row items-center gap-3 rounded-xl border p-3 shadow-lg shadow-black/5">
           <Icon
             as={TriangleAlert}
             size={INDICATOR_SIZE}

@@ -1,5 +1,6 @@
 import * as DocumentPicker from "expo-document-picker"
 import { Link, useRouter } from "expo-router"
+import { StatusBar } from "expo-status-bar"
 import { EllipsisVertical } from "lucide-react-native"
 import { useEffect, useMemo, useRef } from "react"
 import {
@@ -7,6 +8,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  type ScrollViewInstance,
   TouchableOpacity,
   View,
 } from "react-native"
@@ -113,11 +115,12 @@ export default function Home() {
     [books, collections],
   )
 
-  const scrollViewRef = useRef<ScrollView>(null)
+  const scrollViewRef = useRef<ScrollViewInstance>(null)
 
   return (
     <View className="pt-safe flex-1 items-center gap-2 bg-transparent">
-      <Group className="items-center gap-2 pr-2 pl-4">
+      <StatusBar verticalBarBehaviorIOS="disabled" />
+      <Group className="pr-safe-or-2 pl-safe-or-4 items-center gap-2">
         <TouchableOpacity
           accessibilityLabel="Scroll to top"
           accessibilityRole="button"
@@ -169,7 +172,7 @@ export default function Home() {
         </Menu>
       </Group>
       <ScrollView
-        className="w-full pl-6"
+        className="pl-safe-or-6 pr-safe w-full"
         contentContainerClassName="gap-4"
         ref={scrollViewRef}
         refreshControl={

@@ -1,6 +1,6 @@
 import { skipToken } from "@reduxjs/toolkit/query"
 import { type RefObject, useRef } from "react"
-import { View } from "react-native"
+import { type ScrollViewInstance, View, type ViewInstance } from "react-native"
 import { ScrollView } from "react-native-gesture-handler"
 
 import { useReaderFormSheetScrollPaddingBottom } from "@/components/toolbarItems/readerFormSheetLayout"
@@ -34,8 +34,8 @@ export function TrackLisk({
   format: formatProp,
   onClose,
 }: Props) {
-  const ref = useRef<null | ScrollView>(null)
-  const currentItemRef = useRef<null | View>(null)
+  const ref = useRef<null | ScrollViewInstance>(null)
+  const currentItemRef = useRef<null | ViewInstance>(null)
 
   const selectedFormat = useAppSelector(getCurrentlyPlayingFormat)
   const bookUuid = bookUuidProp
@@ -85,8 +85,6 @@ export function TrackLisk({
       contentContainerStyle={{ paddingBottom }}
       onLayout={() => {
         if (!ref.current) return
-        // @ts-expect-error ScrollView is a perfectly valid component, not sure what
-        // exactly the issue is here
         currentItemRef.current?.measureLayout(ref.current, (_x, y) => {
           ref.current?.scrollTo({
             y: y - 40,
@@ -113,7 +111,7 @@ function Sublist({
 }: {
   listing: ReadiumLink[]
   currentTocItem: ReadiumLink | undefined
-  currentItemRef: RefObject<View | null>
+  currentItemRef: RefObject<ViewInstance | null>
   onClose?: (() => void) | undefined
 }) {
   const dispatch = useAppDispatch()

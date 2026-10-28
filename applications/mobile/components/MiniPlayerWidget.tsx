@@ -110,7 +110,7 @@ export function MiniPlayerWidget() {
 
   return (
     <Animated.View
-      className="mb-safe-offset-2 absolute right-3 bottom-0 left-3 z-90 rounded-lg"
+      className="mb-safe-offset-2 right-safe-or-3 left-safe-or-3 absolute bottom-0 z-90 rounded-lg"
       style={widgetAnimatedStyle}
     >
       <View

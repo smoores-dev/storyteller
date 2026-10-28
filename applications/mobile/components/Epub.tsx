@@ -1,7 +1,7 @@
 import deepmerge from "deepmerge"
-import Constants from "expo-constants"
 import { useKeepAwake } from "expo-keep-awake"
 import { Tabs, useRouter } from "expo-router"
+import { useVerticalBarEdgeIOS } from "expo-status-bar"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   DeviceEventEmitter,
@@ -9,11 +9,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { type Bookmark } from "@/database/bookmarks"
 import { type BookWithRelations } from "@/database/books"
 import { deepEquals } from "@/deepEquals"
 import { useColorTheme } from "@/hooks/useColorTheme"
+import { useSpansFold } from "@/lib/pose"
 import { cn } from "@/lib/utils"
 import { EPUBView } from "@/modules/readium"
 import {
@@ -52,6 +54,8 @@ type Props = {
 const forwardNavKeyCodes = [93, 117]
 const backwardNavKeyCodes = [92]
 
+const barRowHeight = 52
+
 function EpubKeepAwake() {
   useKeepAwake()
   return null
@@ -61,6 +65,16 @@ export function Epub({ book, format, locator }: Props) {
   const shouldKeepAwake = useAppSelector(getShouldKeepReaderAwake)
 
   const { foreground, background } = useColorTheme()
+  const insets = useSafeAreaInsets()
+  const railEdge = useVerticalBarEdgeIOS()
+  const railWidth =
+    railEdge === "leading"
+      ? insets.left
+      : railEdge === "trailing"
+        ? insets.right
+        : 0
+  const rail = railEdge !== null && railWidth > 0
+  const inlineBar = useSpansFold() && !rail
   const [activeBookmarks, setActiveBookmarks] = useState<Bookmark[]>([])
   const [activeHighlight, setActiveHighlight] = useState<UUID | null>(null)
 
@@ -170,31 +184,53 @@ export function Epub({ book, format, locator }: Props) {
         />
       )}
       <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
-      <HideableView hidden={!preferences?.showReaderUi} className="relative">
-        <Group
-          className={cn("px-sticky z-3 flex-row items-center justify-between", {
-            "bg-background border-b-foreground absolute right-0 left-0 border-b":
-              floatingToolbar,
-          })}
+      {rail ? (
+        <View
+          pointerEvents="box-none"
+          className="absolute top-0 bottom-0 z-3 mr-1 flex-col items-center justify-end pb-26"
           style={{
-            paddingTop: Constants.statusBarHeight,
-          }}
-          onLayout={(event) => {
-            setToolbarHeight(event.nativeEvent.layout.height)
+            width: railWidth,
+            ...(railEdge === "trailing" ? { right: 0 } : { left: 0 }),
           }}
         >
-          <BackButton />
-          <Toolbar mode="text" activeBookmarks={activeBookmarks} />
-        </Group>
-      </HideableView>
+          <HideableView
+            hidden={!preferences?.showReaderUi}
+            className="items-center gap-1"
+          >
+            <BackButton />
+            <Toolbar mode="text" activeBookmarks={activeBookmarks} vertical />
+          </HideableView>
+        </View>
+      ) : (
+        <HideableView hidden={!preferences?.showReaderUi} className="relative">
+          <Group
+            className={cn(
+              "px-safe-or-4 z-3 flex-row items-center",
+              inlineBar ? "gap-4" : "justify-between",
+              {
+                "bg-background border-b-foreground absolute right-0 left-0 border-b":
+                  floatingToolbar,
+              },
+            )}
+            style={{
+              paddingTop: inlineBar
+                ? Math.max(0, insets.top - barRowHeight)
+                : insets.top,
+            }}
+            onLayout={(event) => {
+              setToolbarHeight(event.nativeEvent.layout.height)
+            }}
+          >
+            <BackButton />
+            <Toolbar mode="text" activeBookmarks={activeBookmarks} />
+          </Group>
+        </HideableView>
+      )}
       {selection && (
         <SelectionMenu
           bookUuid={book.uuid}
-          x={selection.x}
-          y={
-            selection.y +
-            (floatingToolbar ? Constants.statusBarHeight : toolbarHeight)
-          }
+          x={selection.x + insets.left}
+          y={selection.y + (floatingToolbar ? insets.top : toolbarHeight)}
           locator={selection.locator}
           existingHighlight={activeHighlight}
           onClose={() => {
@@ -207,11 +243,18 @@ export function Epub({ book, format, locator }: Props) {
         className={cn("z-1 flex-1", {
           "pb-safe-or-2": floatingToolbar,
         })}
-        style={
-          floatingToolbar && {
-            paddingTop: Constants.statusBarHeight,
-          }
-        }
+        style={{
+          backgroundColor: background,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+          ...(floatingToolbar
+            ? {
+                paddingTop: insets.top,
+              }
+            : {
+                paddingTop: 24,
+              }),
+        }}
       >
         <EPUBView
           ref={epubViewRef}

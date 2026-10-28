@@ -163,10 +163,7 @@ export function StorytellerProvider({ children }: { children: ReactNode }) {
         },
       }}
     >
-      <StatusBar
-        barStyle={dark ? "light-content" : "dark-content"}
-        translucent
-      />
+      <StatusBar barStyle={dark ? "light-content" : "dark-content"} />
       <View className="flex-1">
         {ready && children}
         <PortalHost name="migration-error" />

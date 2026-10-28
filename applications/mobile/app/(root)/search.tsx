@@ -16,7 +16,7 @@ export default function SearchScreen() {
       refreshable={false}
       header={
         <Input
-          className="mx-4 mb-2 w-auto"
+          className="mx-safe-or-4 mb-2 w-auto"
           accessibilityLabel="Search books"
           autoFocus
           maxFontSizeMultiplier={2}

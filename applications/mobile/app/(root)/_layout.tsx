@@ -3,13 +3,28 @@ import { Platform } from "react-native"
 import { useReducedMotion } from "react-native-reanimated"
 
 import { BackButton } from "@/components/BackButton"
-import { useAppDispatch } from "@/store/appState"
-import { bookshelfSlice } from "@/store/slices/bookshelfSlice"
+import { usesSystemHeader } from "@/lib/nativeChrome"
+
+/**
+ * The JavaScript back button, for platforms that do not draw a system header.
+ *
+ * A `headerLeft` React view becomes a bar button item with a custom view, and
+ * iOS leaves custom views out of the iPhone Duo rail — which pins the whole bar
+ * to the top of the screen. iOS screens contribute a native item instead; see
+ * `ScreenBackButton`.
+ */
+function javaScriptBackButton(fallback = "/") {
+  return usesSystemHeader
+    ? {}
+    : {
+        headerBackVisible: false,
+        headerLeft: () => <BackButton fallback={fallback} />,
+      }
+}
 
 export default function ModalLayout() {
   const modalPresentation = Platform.OS === "android" ? "formSheet" : "modal"
   const reduceMotion = useReducedMotion()
-  const dispatch = useAppDispatch()
 
   return (
     <Stack
@@ -23,10 +38,9 @@ export default function ModalLayout() {
         name="settings"
         options={{
           headerShown: true,
-          headerBackVisible: false,
           headerShadowVisible: false,
-          headerLeft: () => <BackButton />,
           title: "Settings",
+          ...javaScriptBackButton(),
         }}
       />
       <Stack.Screen name="read/[uuid]" options={{ gestureEnabled: false }} />
@@ -65,23 +79,20 @@ export default function ModalLayout() {
           sheetGrabberVisible: false,
           sheetLargestUndimmedDetentIndex: "last",
         }}
-        listeners={{
-          beforeRemove: () => {
-            dispatch(bookshelfSlice.actions.footnoteClosed())
-          },
-        }}
       />
-      <Stack.Screen name="book/[uuid]" />
+      <Stack.Screen
+        name="book/[uuid]"
+        options={{ headerShown: usesSystemHeader, title: "" }}
+      />
       <Stack.Screen name="shelf/[type]" />
       <Stack.Screen name="author/[uuid]" />
       <Stack.Screen
         name="server"
         options={{
           headerShown: true,
-          headerBackVisible: false,
           headerShadowVisible: false,
-          headerLeft: () => <BackButton fallback="/settings" />,
           title: "Select server",
+          ...javaScriptBackButton("/settings"),
         }}
       />
       <Stack.Screen

@@ -14,12 +14,14 @@ import { LoadingView } from "@/components/LoadingView"
 import { LoginButton } from "@/components/LoginButton"
 import { MiniPlayerWidget } from "@/components/MiniPlayerWidget"
 import { ReadingSettings } from "@/components/ReadingSettings"
+import { ScreenBackButton } from "@/components/ScreenBackButton"
 import { Button } from "@/components/ui/button"
 import { Icon } from "@/components/ui/icon"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Text } from "@/components/ui/text"
 import { DiscordIcon } from "@/icons/DiscordIcon"
+import { usesSystemHeader } from "@/lib/nativeChrome"
 import {
   useDeleteServerMutation,
   useGetGlobalPreferencesQuery,
@@ -36,8 +38,15 @@ export default function Settings() {
   if (!preferences) return <LoadingView />
 
   return (
-    <View className="flex-1 items-start px-6">
-      <ScrollView className="w-full pt-4">
+    <View className="px-safe-or-6 flex-1 items-start">
+      {/* Contributes header options, it does not render a view. */}
+      <ScreenBackButton />
+      <ScrollView
+        className="w-full pt-4"
+        contentInsetAdjustmentBehavior={
+          usesSystemHeader ? "automatic" : "never"
+        }
+      >
         <View>
           <Text variant="h2">Servers</Text>
           <View className="pt-4">

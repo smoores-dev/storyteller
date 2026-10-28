@@ -16,6 +16,7 @@ import BookDescription from "@/components/BookDescription"
 import { BookThumbnailImage } from "@/components/BookThumbnail"
 import { LoadingView } from "@/components/LoadingView"
 import { MiniPlayerWidget } from "@/components/MiniPlayerWidget"
+import { ScreenBackButton } from "@/components/ScreenBackButton"
 import { Group } from "@/components/ui/Group"
 import { Stack } from "@/components/ui/Stack"
 import {
@@ -42,6 +43,7 @@ import { useAvailableFormats } from "@/hooks/useAvailableFormats"
 import { useColorTheme } from "@/hooks/useColorTheme"
 import { useDownloadedFormats } from "@/hooks/useDownloadedFormats"
 import { useListAllServerBooks } from "@/hooks/useListAllServerBooks"
+import { usesSystemHeader } from "@/lib/nativeChrome"
 import {
   useCancelDownloadMutation,
   useDeleteBookMutation,
@@ -123,7 +125,12 @@ export default function BookDetailsScreen() {
 
   return (
     <View className="flex-1">
+      {/* Contributes header options, it does not render a view. */}
+      <ScreenBackButton />
       <ScrollView
+        contentInsetAdjustmentBehavior={
+          usesSystemHeader ? "automatic" : "never"
+        }
         refreshControl={
           book.serverUuid ? (
             <RefreshControl
@@ -138,11 +145,13 @@ export default function BookDetailsScreen() {
           ) : undefined
         }
       >
-        <Stack className="pt-safe">
-          <View className="flex-row justify-between px-2">
-            <BackButton />
-          </View>
-          <Stack className="items-start px-8">
+        <Stack className={usesSystemHeader ? "" : "pt-safe"}>
+          {!usesSystemHeader && (
+            <View className="px-safe-or-2 flex-row justify-between">
+              <BackButton />
+            </View>
+          )}
+          <Stack className="px-safe-or-8 items-start">
             <BookThumbnailImage
               className="self-center"
               book={book}
@@ -530,7 +539,7 @@ export default function BookDetailsScreen() {
               </>
             )}
           </Stack>
-          <View className="pb-safe px-8">
+          <View className="pb-safe px-safe-or-8">
             <BookDescription
               description={book.description}
               textColor={foreground}

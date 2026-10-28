@@ -4,6 +4,7 @@ import { BookOpen, Headphones } from "lucide-react-native"
 import { View } from "react-native"
 
 import { type Bookmark } from "@/database/bookmarks"
+import { cn } from "@/lib/utils"
 import { useAppSelector } from "@/store/appState"
 import { useGetBookQuery } from "@/store/localApi"
 import {
@@ -23,9 +24,13 @@ import { Icon } from "./ui/icon"
 type Props = {
   mode: "audio" | "text"
   activeBookmarks: Bookmark[]
+  /**
+   * Stack the items for the vertical rail instead of laying them out in a bar.
+   */
+  vertical?: boolean
 }
 
-export function Toolbar({ mode, activeBookmarks }: Props) {
+export function Toolbar({ mode, activeBookmarks, vertical = false }: Props) {
   const bookUuid = useAppSelector(getCurrentlyPlayingBookUuid)
   const selectedFormat = useAppSelector(getCurrentlyPlayingFormat)
   const format = selectedFormat ?? "readaloud"
@@ -37,15 +42,21 @@ export function Toolbar({ mode, activeBookmarks }: Props) {
 
   return (
     <>
-      <View className="flex-row items-center gap-1">
+      <View
+        className={cn("items-center gap-1", vertical ? "flex-col" : "flex-row")}
+      >
         {mode === "text" && <LayoutItem />}
         {mode === "text" && <SettingsItem />}
         {mode === "audio" && <SleepTimerItem />}
-        {mode === "text" && (
-          <View className="xs:flex hidden">
+        {mode === "text" &&
+          (vertical ? (
             <SleepTimerItem />
-          </View>
-        )}
+          ) : (
+            // In a bar there is not always room for the sleep timer as well.
+            <View className="xs:flex hidden">
+              <SleepTimerItem />
+            </View>
+          ))}
         <SpeedItem />
         <NavigationItem mode={mode} />
         <BookmarkItem activeBookmarks={activeBookmarks} />

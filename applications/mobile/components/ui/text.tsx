@@ -1,7 +1,12 @@
 import * as Slot from "@rn-primitives/slot"
 import { type VariantProps, cva } from "class-variance-authority"
 import * as React from "react"
-import { Platform, type Role, Text as RNText } from "react-native"
+import {
+  Platform,
+  type Role,
+  Text as RNText,
+  type TextInstance,
+} from "react-native"
 
 import { cn } from "@/lib/utils"
 
@@ -78,19 +83,22 @@ function Text({
   ...props
 }: React.ComponentProps<typeof RNText> &
   TextVariantProps &
-  React.RefAttributes<RNText> & {
+  React.RefAttributes<TextInstance> & {
     asChild?: boolean
   }) {
   const textClass = React.useContext(TextClassContext)
-  const Component = asChild ? Slot.Text : RNText
-  return (
-    <Component
-      maxFontSizeMultiplier={2}
-      className={cn(textVariants({ variant }), textClass, className)}
-      role={variant ? ROLE[variant] : undefined}
-      aria-level={variant ? ARIA_LEVEL[variant] : undefined}
-      {...props}
-    />
+  const textProps = {
+    maxFontSizeMultiplier: 2,
+    className: cn(textVariants({ variant }), textClass, className),
+    role: variant ? ROLE[variant] : undefined,
+    "aria-level": variant ? ARIA_LEVEL[variant] : undefined,
+    ...props,
+  }
+
+  return asChild ? (
+    <Slot.Slot<typeof RNText> {...textProps} />
+  ) : (
+    <RNText {...textProps} />
   )
 }
 
