@@ -58,8 +58,6 @@ dependencies {
     implementation 'androidx.fragment:fragment-ktx:1.8.5'
     implementation 'androidx.compose.ui:ui-android:1.7.6'
     implementation 'org.jsoup:jsoup:1.18.3'
-    implementation 'com.mcxiaoke.koi:async:0.5.5'
-    implementation 'com.mcxiaoke.koi:core:0.5.5'
     implementation "androidx.media3:media3-exoplayer:1.9.0"
     implementation "androidx.media3:media3-exoplayer-dash:1.9.0"
     implementation "androidx.media3:media3-session:1.9.0"

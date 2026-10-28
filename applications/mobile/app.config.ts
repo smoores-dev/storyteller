@@ -81,7 +81,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ],
           },
           android: {
-            compileSdkVersion: 36,
+            compileSdkVersion: 37,
             targetSdkVersion: 36,
             buildToolsVersion: "36.0.0",
             usesCleartextTraffic: true,
@@ -130,7 +130,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           enforceContrast: false,
         },
       ],
-      ["./plugins/withAndroidJetifier.ts"],
       ["./plugins/withKeyDownEvents.ts", { keyCodes: [92, 93, 117] }],
       ["./plugins/withCoreLibraryDesugaring.ts"],
       ["./plugins/withAndroidAuto.ts"],
