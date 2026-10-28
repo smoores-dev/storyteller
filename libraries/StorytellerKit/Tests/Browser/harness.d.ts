@@ -27,7 +27,7 @@ export interface Measurement extends Geometry {
   id: string
 }
 export interface BookDefinition {
-  sections: { id: string; html: string }[]
+  sections: { id: string; html: string; linear?: string }[]
   dir?: "ltr" | "rtl"
   metadata?: { title?: string; language?: string }
 }
@@ -50,7 +50,43 @@ export interface ReaderSnapshot {
   start: number | null
   size: number | null
 }
+export interface ReadingSnapshot {
+  documentID: string
+  ready: boolean
+  navigationBlocked: boolean
+  sequence: number
+  visibleIDs: string[] | null
+  fullyVisibleIDs: string[] | null
+  location: { sectionIndex: number; cfi: string; pageIndex: number } | null
+  command: {
+    id: string
+    status: string
+    location: ReadingSnapshot["location"]
+    error?: string
+  } | null
+  gesture: {
+    id: string
+    active: boolean
+    moved: boolean
+    location: ReadingSnapshot["location"]
+  } | null
+  playhead: { visible: boolean | null } | null
+}
 interface ReaderHarness {
+  scrollingMode(): Promise<void>
+  readingSnapshot(playhead?: {
+    sectionIndex: number
+    textId: string
+  }): ReadingSnapshot
+  presentReading(request: Record<string, unknown>): boolean
+  readingCommand(request: Record<string, unknown>): unknown
+  acknowledgeReading(
+    documentID: string,
+    commandID: string | null,
+    gestureID: string | null,
+  ): void
+  dropReadingMessages(value: boolean): void
+  readingInput(active: boolean): void
   open(options: OpenOptions): Promise<void>
   // Native-facing navigation, followed by layout settlement.
   navigate(href: string): Promise<void>

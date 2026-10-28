@@ -6,25 +6,25 @@ import StorytellerKit
 actor AndroidAudiobookSession {
     static let shared = AndroidAudiobookSession()
 
-    private var stateObserverID: UUID?
-
     func open(bookID: BookID) async throws {
-        try await AudioSessionActor.shared.openAudiobook(bookID: bookID)
-        await installStateObserverIfNeeded()
+        _ = try await ActiveReadingSession.shared.open(bookID: bookID, category: .audio)
     }
 
     func openHeadless(bookID: BookID, category: LocalMediaCategory) async throws {
-        try await HeadlessAudioSession.open(bookID: bookID, category: category)
-        if category == .audio {
-            await installStateObserverIfNeeded()
-        }
+        _ = try await ActiveReadingSession.shared.open(bookID: bookID, category: category)
     }
 
     func close() async {
-        await AudioSessionActor.shared.closeAudiobook()
+        guard let session = await ActiveReadingSession.shared.current,
+            await session.category == .audio
+        else { return }
+        await session.close(.endSession)
     }
 
     func control(command: String, value: Double, text: String) async throws {
+        guard let session = await ActiveReadingSession.shared.current else {
+            throw AudiobookSessionError.audiobookNotOpen
+        }
         let sharedCommand: AudiobookSessionCommand
         switch command {
             case "togglePlayPause":
@@ -44,7 +44,7 @@ actor AndroidAudiobookSession {
             case "setPlaybackRate":
                 sharedCommand = .setPlaybackRate(value)
             case "cyclePlaybackRate":
-                await AudioSessionActor.shared.cyclePlaybackRate()
+                await session.cyclePlaybackRate()
                 return
             case "setVolume":
                 sharedCommand = .setVolume(value)
@@ -62,18 +62,12 @@ actor AndroidAudiobookSession {
                 throw AndroidBridgeError.invalidAudiobookCommand(command)
         }
 
-        try await AudioSessionActor.shared.control(sharedCommand)
+        try await session.control(sharedCommand)
     }
 
-    private func installStateObserverIfNeeded() async {
-        guard stateObserverID == nil else { return }
-        stateObserverID = await AudioSessionActor.shared.addStateObserver { state in
-            publishAndroidAudiobookState(state)
-        }
-    }
 }
 
-private func publishAndroidAudiobookState(_ state: AudiobookSessionState?) {
+func publishAndroidAudiobookState(_ state: AudiobookSessionState?) {
     guard let state else {
         notifyAndroidAudiobookStateDidChange("")
         return

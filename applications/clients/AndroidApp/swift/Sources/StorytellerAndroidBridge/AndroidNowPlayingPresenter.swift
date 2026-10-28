@@ -44,6 +44,7 @@ actor AndroidNowPlayingPresenter: NowPlayingPresenting {
     private var commandToken: String?
     private var commandHandler: (@Sendable (RemoteCommand) -> Void)?
     private var cachedArtwork: Data?
+    private var deliveredChapters: NowPlayingChapters?
 
     private init() {}
 
@@ -72,8 +73,12 @@ actor AndroidNowPlayingPresenter: NowPlayingPresenting {
     }
 
     func updateChapters(_ chapters: NowPlayingChapters?) {
+        if let chapters, chapters == deliveredChapters { return }
         guard let chapters, !chapters.chapters.isEmpty else {
-            try? JavaClass<JavaAndroidNowPlayingBridge>().updateChapters("")
+            do {
+                try JavaClass<JavaAndroidNowPlayingBridge>().updateChapters("")
+                deliveredChapters = chapters
+            } catch {}
             return
         }
         let payload = EncodedChapters(
@@ -90,12 +95,16 @@ actor AndroidNowPlayingPresenter: NowPlayingPresenting {
             },
         )
         guard let data = try? JSONEncoder().encode(payload) else { return }
-        try? JavaClass<JavaAndroidNowPlayingBridge>()
-            .updateChapters(String(decoding: data, as: UTF8.self))
+        do {
+            try JavaClass<JavaAndroidNowPlayingBridge>()
+                .updateChapters(String(decoding: data, as: UTF8.self))
+            deliveredChapters = chapters
+        } catch {}
     }
 
     func clear() {
         cachedArtwork = nil
+        deliveredChapters = nil
         try? JavaClass<JavaAndroidNowPlayingBridge>().clear()
     }
 

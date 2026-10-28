@@ -72,12 +72,15 @@ struct StorytellerReaderApp: App {
                 Task {
                     guard await StorytellerRuntime.start() else { return }
                     await BookServiceActor.shared.setActive(false, source: .mac)
+                    await ActiveReadingSession.shared.current?.handleSceneEnteredBackground()
+                    await mediaViewModel.publishWidgetSnapshot()
                 }
             case .active:
                 debugLog("[macApp] App becoming active")
                 Task {
                     guard await StorytellerRuntime.start() else { return }
                     await BookServiceActor.shared.setActive(true, source: .mac)
+                    await ActiveReadingSession.shared.current?.handleSceneBecameActive()
                 }
             case .inactive:
                 break

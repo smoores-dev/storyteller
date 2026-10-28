@@ -172,6 +172,7 @@ public final class MediaViewModel {
     @ObservationIgnored private var libraryDerivationTask: Task<Void, Never>?
     @ObservationIgnored private var libraryDerivationGeneration = 0
     @ObservationIgnored private var visibleSidebarContents: [SidebarContentKind] = []
+    @ObservationIgnored private var libraryPresentations: Set<UUID> = []
     @ObservationIgnored private var smartShelfBooksCache: [UUID: [BookMetadata]] = [:]
 
     @ObservationIgnored private var downloadManagerObserverId: UUID?
@@ -444,7 +445,10 @@ public final class MediaViewModel {
         }
         await setupSettingsSync()
         await setupPathCacheSync()
-        await BookServiceActor.shared.startPeriodicLibraryRefresh()
+        #if os(iOS) || os(macOS)
+        await publishWidgetSnapshot()
+        observeWidgetPlayback()
+        #endif
         await setupDownloadManagerObserver()
     }
 
@@ -637,7 +641,6 @@ public final class MediaViewModel {
         debugLog(
             "[PerfTrace][MediaViewModel] refreshMetadata complete books=\(library.bookMetaData.count)"
         )
-        scheduleWidgetSnapshotPublish(reason: "refreshMetadata(\(source))")
         let elapsed = (CFAbsoluteTimeGetCurrent() - started) * 1000
         debugLog(
             "[PerfTrace][MediaViewModel] refreshMetadata end source=\(source) elapsedMs=\(String(format: "%.1f", elapsed))"
@@ -706,6 +709,7 @@ public final class MediaViewModel {
     }
 
     private func scheduleLibraryDerivation(reason: String) {
+        guard !libraryPresentations.isEmpty else { return }
         #if !os(iOS)
         guard !visibleSidebarContents.isEmpty else { return }
         #endif
@@ -734,7 +738,9 @@ public final class MediaViewModel {
         )
         libraryDerivationTask = Task { [weak self] in
             guard let self else { return }
-            let snapshot = await self.libraryDerivationActor.deriveSnapshot(from: input)
+            guard let snapshot = try? await self.libraryDerivationActor.deriveSnapshot(from: input),
+                !Task.isCancelled
+            else { return }
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 guard snapshot.generation == self.libraryDerivationGeneration else {
@@ -752,23 +758,84 @@ public final class MediaViewModel {
         }
     }
 
-    private func scheduleWidgetSnapshotPublish(reason: String) {
-        #if os(iOS) || os(macOS)
-        widgetSnapshotPublishTask?.cancel()
-        let metadata = library.bookMetaData
-        let progress = bookProgressCache
-        let sources = bookSources
-        widgetSnapshotPublishTask = Task {
-            try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
-            debugLog("[MediaViewModel] Publishing widget snapshot: \(reason)")
+    public func publishWidgetSnapshot(
+        using publish: @escaping @Sendable () async -> Void = {
+            let library = await BookServiceActor.shared.librarySnapshot(policy: .cachedOnly)
+            let progress = await ProgressSyncActor.shared.getAllBookProgress()
             await StorytellerWidgetSnapshotStore.publishSnapshot(
-                metadata: metadata,
+                metadata: library.books,
                 progress: progress,
-                sources: sources,
+                sources: library.sources,
             )
         }
+    ) async {
+        #if os(iOS) || os(macOS)
+        let previous = widgetSnapshotPublishTask
+        let task = Task {
+            await previous?.value
+            await publish()
+        }
+        widgetSnapshotPublishTask = task
+        await task.value
         #endif
+    }
+
+    public func setLibraryPresentation(_ visible: Bool, owner: UUID) async {
+        let wasVisible = !libraryPresentations.isEmpty
+        if visible {
+            libraryPresentations.insert(owner)
+        } else {
+            libraryPresentations.remove(owner)
+        }
+        let isVisible = !libraryPresentations.isEmpty
+        if wasVisible != isVisible, !isVisible {
+            libraryDerivationTask?.cancel()
+            libraryDerivationGeneration += 1
+        }
+        await BookServiceActor.shared.setLibraryRefreshDemand(visible, owner: owner)
+        if !wasVisible, isVisible {
+            await ActiveReadingSession.shared.current?.saveProgressLocally(reason: .userClosedBook)
+            await refreshMetadata(source: "library presented")
+            await publishWidgetSnapshot()
+        }
+    }
+
+    private func observeWidgetPlayback() {
+        let session = ActiveReadingSession.shared.current
+        let wasPlaying = session?.playbackSnapshot?.isPlaying == true
+        withObservationTracking {
+            _ = ActiveReadingSession.shared.current
+            _ = session?.playbackSnapshot?.isPlaying
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.observeWidgetPlayback()
+                let current = ActiveReadingSession.shared.current
+                if session != nil
+                    && (session !== current
+                        || (wasPlaying && current?.playbackSnapshot?.isPlaying != true))
+                {
+                    await session?.saveProgressLocally(reason: .userPausedPlayback)
+                    await self.publishWidgetSnapshot()
+                }
+            }
+        }
+    }
+
+    private func refreshProgress() async {
+        if !libraryPresentations.isEmpty {
+            await refreshMetadata(source: "progress")
+            return
+        }
+        let pending = await ProgressSyncActor.shared.getPendingProgressSyncs()
+        setIfChanged(
+            \.pendingSyncsByBook,
+            Dictionary(
+                pending.map { ($0.bookID, $0) },
+                uniquingKeysWith: { _, newer in newer },
+            ),
+        )
+        setIfChanged(\.bookProgressCache, await ProgressSyncActor.shared.getAllBookProgress())
     }
 
     private func setupSettingsSync() async {
@@ -777,8 +844,11 @@ public final class MediaViewModel {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 let config = await SettingsActor.shared.config
+                let intervalChanged =
+                    self.cachedConfig.sync.metadataRefreshIntervalSeconds
+                    != config.sync.metadataRefreshIntervalSeconds
                 self.cachedConfig = config
-                await BookServiceActor.shared.restartPeriodicLibraryRefresh()
+                if intervalChanged { await BookServiceActor.shared.restartPeriodicLibraryRefresh() }
             }
         }
 
@@ -796,7 +866,7 @@ public final class MediaViewModel {
 
         await ProgressSyncActor.shared.addObserver { [weak self] in
             Task { @MainActor in
-                await self?.refreshMetadata(source: "ProgressSyncActor.observer")
+                await self?.refreshProgress()
             }
         }
 
@@ -2300,7 +2370,8 @@ public final class MediaViewModel {
         bookID: BookID,
         audio: Bool,
     ) async -> String {
-        guard let data = await CoverCacheActor.shared.cachedFullCoverData(for: bookID, audio: audio)
+        guard
+            let data = await CoverCacheActor.shared.cachedFullCoverData(for: bookID, audio: audio)
         else { return "\(label) reduced size" }
         guard
             let source = CGImageSourceCreateWithData(data as CFData, nil),
@@ -2691,19 +2762,13 @@ public final class MediaViewModel {
 
         missingCoverKeys.remove(key)
 
-        guard persist else {
-            scheduleWidgetSnapshotPublish(reason: "coverCache(\(item.id))")
-            return
-        }
-        Task { [weak self] in
+        guard persist else { return }
+        Task {
             await BookServiceActor.shared.persistCachedCover(
                 bookID: item.id,
                 audio: variant.requestParameters.audio,
                 data: payload.data,
             )
-            await MainActor.run {
-                self?.scheduleWidgetSnapshotPublish(reason: "coverPersisted(\(item.id))")
-            }
         }
     }
 

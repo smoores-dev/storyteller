@@ -33,6 +33,7 @@ struct TVHomeView: View {
                     sectionsView(homeSections)
                 }
             }
+            .libraryRefreshDemand(model: mediaViewModel)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: BookMetadata.self) { book in
                 TVBookDetailView(book: book)

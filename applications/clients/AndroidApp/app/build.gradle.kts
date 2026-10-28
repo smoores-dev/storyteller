@@ -31,6 +31,7 @@ val ciSigningKeyPassword = System.getenv("ANDROID_SIGNING_KEY_PASSWORD")
 android {
     namespace = "dev.smoores.storyteller"
     compileSdk = 36
+    ndkVersion = "27.1.12297006"
 
     defaultConfig {
         applicationId = "dev.smoores.Storyteller"

@@ -27,6 +27,7 @@ struct WatchCurrentlyReadingView: View {
                 bookList
             }
         }
+        .libraryRefreshDemand()
         .navigationTitle("Reading")
         .navigationBarTitleDisplayMode(.inline)
         .task {

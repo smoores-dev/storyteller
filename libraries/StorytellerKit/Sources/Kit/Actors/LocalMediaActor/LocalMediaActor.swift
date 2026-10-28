@@ -252,17 +252,6 @@ public actor LocalMediaActor: GlobalActor {
             )
         }
 
-        let positions = Dictionary(
-            nextMetadata.compactMap { book -> (BookID, BookReadingPosition)? in
-                guard let pos = book.position else { return nil }
-                return (book.id, pos)
-            },
-            uniquingKeysWith: { first, second in
-                (second.timestamp ?? 0) > (first.timestamp ?? 0) ? second : first
-            },
-        )
-        await ProgressSyncActor.shared.updateServerPositions(positions)
-
         await notifyObservers()
     }
 
@@ -429,7 +418,7 @@ public actor LocalMediaActor: GlobalActor {
                 allPositions[book.id] = pos
             }
         }
-        await ProgressSyncActor.shared.updateServerPositions(allPositions)
+        await ProgressSyncActor.shared.restoreCachedPositions(allPositions)
 
         await notifyObservers()
     }

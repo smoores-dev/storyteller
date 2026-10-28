@@ -31,6 +31,7 @@ struct WatchAllBooksView: View {
                 bookList
             }
         }
+        .libraryRefreshDemand()
         .navigationTitle("All Books")
         .navigationBarTitleDisplayMode(.inline)
         .task {

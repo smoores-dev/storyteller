@@ -1,15 +1,26 @@
 import Foundation
+import Observation
 import StorytellerKit
 
-/// App-facing mirror of `AudioSessionActor`'s snapshot for the Kotlin UI. This
-/// is the cross-language equivalent of the Apple app observing the actor
-/// in-process; it is distinct from `NowPlayingPresenting`, which drives the OS
-/// now-playing surface (lock screen / Android Auto).
+/// Publishes reading session state to the Kotlin UI.
+@StorytellerUIActor
 enum AndroidSessionState {
-    static func startObserving() async {
-        _ = await AudioSessionActor.shared.addSnapshotObserver { snapshot in
-            publish(snapshot)
+    private static var started = false
+    static func startObserving() {
+        guard !started else { return }
+        started = true
+        observePlayback()
+    }
+
+    private static func observePlayback() {
+        let (snapshot, audiobook) = withObservationTracking {
+            let session = ActiveReadingSession.shared.current
+            return (session?.playbackSnapshot, session?.audiobookState)
+        } onChange: {
+            Task { @StorytellerUIActor in observePlayback() }
         }
+        publish(snapshot)
+        publishAndroidAudiobookState(audiobook)
     }
 
     private struct Payload: Encodable {

@@ -32,7 +32,7 @@ struct SidebarSpineList: View {
     private func row(for section: SectionInfo) -> some View {
         let isSelected = viewModel.currentSectionIndex == section.index
         return Button {
-            viewModel.progressManager?.handleUserChapterSelected(section.index)
+            viewModel.session?.selectTextSection(section.index)
         } label: {
             HStack(spacing: 10) {
                 Text(String(format: "%02d", section.index + 1))
@@ -47,10 +47,12 @@ struct SidebarSpineList: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if let size = sidebarModel.spineFileSizes[section.id] {
-                    Text(ByteCountFormatter.string(
-                        fromByteCount: Int64(size),
-                        countStyle: .file,
-                    ))
+                    Text(
+                        ByteCountFormatter.string(
+                            fromByteCount: Int64(size),
+                            countStyle: .file,
+                        )
+                    )
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(theme.secondary)
                 }

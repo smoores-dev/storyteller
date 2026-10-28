@@ -41,7 +41,7 @@ public enum ActivitySource: String, Hashable, Sendable {
 
 public actor StorytellerActor {
 
-    private let sourceRecordValue: BookSourceRecord
+    private var sourceRecordValue: BookSourceRecord
     private var observers: (@Sendable () -> Void)? = nil
 
     private var username: String?
@@ -210,7 +210,6 @@ public actor StorytellerActor {
         }
 
         if connectionStatus == .connected, !reconnected {
-            let _ = await fetchLibraryInformation()
             await ProgressSyncActor.shared.scheduleQueueFlush(notifyUser: true)
         }
     }
@@ -329,7 +328,6 @@ public actor StorytellerActor {
         if await authenticate() {
             debugLog("[StorytellerActor] attemptReconnect: success")
             await recordNetworkSuccess()
-            let _ = await fetchLibraryInformation()
             return true
         } else {
             debugLog("[StorytellerActor] attemptReconnect: failed")
@@ -401,11 +399,12 @@ public actor StorytellerActor {
     }
 
     private func recordNetworkSuccess(notifyWhenAlreadyConnected: Bool = true) async {
+        let changed = lastNetworkOpSucceeded != true
         lastNetworkOpSucceeded = true
         resetReconnectBackoff()
         if connectionStatus != .connected {
             await updateConnectionStatus(.connected)
-        } else if notifyWhenAlreadyConnected {
+        } else if changed && notifyWhenAlreadyConnected {
             observers?()
         }
     }
@@ -510,6 +509,11 @@ public actor StorytellerActor {
         } catch {
             return .failure("Could not connect to this server.")
         }
+    }
+
+    func updateSourceRecord(_ record: BookSourceRecord) {
+        precondition(record.id == sourceRecordValue.id)
+        sourceRecordValue = record
     }
 
     public func configureCredentials(
@@ -810,12 +814,15 @@ public actor StorytellerActor {
             }
 
             do {
+                try Task.checkCancellation()
                 let wrapper = try decoder.decode(
                     LenientArrayWrapper<StorytellerBookMetadataPayload>.self,
                     from: response.data,
                 )
                 libraryMetadata = wrapper.values.map { payload in
-                    payload.scoped(to: sourceRecordValue.id)
+                    var book = payload.scoped(to: sourceRecordValue.id)
+                    book.source = book.source ?? sourceRecordValue.name
+                    return book
                 }
 
                 if let jsonArray = try? JSONSerialization.jsonObject(with: response.data) as? [Any]
@@ -837,10 +844,12 @@ public actor StorytellerActor {
                 throw error
             }
 
+            try Task.checkCancellation()
             try? await LocalMediaActor.shared.updateSourceCacheMetadata(
                 libraryMetadata,
                 replacingSourceID: sourceRecordValue.id,
             )
+            await ProgressSyncActor.shared.updateServerPositions(from: libraryMetadata)
 
             await recordNetworkSuccess()
             return libraryMetadata
@@ -2891,7 +2900,9 @@ public actor StorytellerActor {
         JSONEncoder()
     }
 
-    private func jsonRequestHeaders(for token: AccessToken, hasBody: Bool = false) -> [String: String] {
+    private func jsonRequestHeaders(for token: AccessToken, hasBody: Bool = false) -> [String:
+        String]
+    {
         var headers = [
             "Accept": "application/json",
             "Authorization": authorizationHeaderValue(for: token),
@@ -2940,7 +2951,10 @@ public actor StorytellerActor {
                 return nil
             }
             await recordNetworkSuccess()
-            return try Self.plainJSONDecoder().decode([String: JSONValue].self, from: response.data)
+            return try Self.plainJSONDecoder().decode(
+                [String: JSONValue].self,
+                from: response.data,
+            )
         } catch {
             logStorytellerError("fetchUserSettings", error: error)
             return nil
@@ -3001,7 +3015,10 @@ public actor StorytellerActor {
                 return nil
             }
             await recordNetworkSuccess()
-            return try Self.plainJSONDecoder().decode(ServerUserPreferences.self, from: response.data)
+            return try Self.plainJSONDecoder().decode(
+                ServerUserPreferences.self,
+                from: response.data,
+            )
         } catch {
             logStorytellerError("fetchUserPreferences", error: error)
             return nil
@@ -3010,7 +3027,9 @@ public actor StorytellerActor {
 
     /// Writes a single preference key via `/api/v2/user/settings`.
     /// Server implementation: `storyteller/web/src/app/api/v2/user/settings/route.ts` (PUT handler).
-    public func updateUserPreference(_ key: ServerUserPreferenceKey, to value: JSONValue) async -> Bool {
+    public func updateUserPreference(_ key: ServerUserPreferenceKey, to value: JSONValue) async
+        -> Bool
+    {
         await updateUserSettings([key.rawValue: value])
     }
 
@@ -3091,7 +3110,10 @@ public actor StorytellerActor {
             if response.statusCode == 204 || response.data.isEmpty {
                 return .cleared
             }
-            let rating = try Self.plainJSONDecoder().decode(UserBookRating.self, from: response.data)
+            let rating = try Self.plainJSONDecoder().decode(
+                UserBookRating.self,
+                from: response.data,
+            )
             return .saved(rating)
         } catch {
             logStorytellerError("updateBookRating", error: error)
@@ -3964,7 +3986,9 @@ public actor StorytellerActor {
         }
 
         do {
-            let body = try Self.plainJSONEncoder().encode(CreateStatusBody(name: name, label: label))
+            let body = try Self.plainJSONEncoder().encode(
+                CreateStatusBody(name: name, label: label)
+            )
             let response = try await httpPost(
                 url.absoluteString,
                 headers: jsonRequestHeaders(for: token, hasBody: true),

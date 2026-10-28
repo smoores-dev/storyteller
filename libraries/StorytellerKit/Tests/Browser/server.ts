@@ -21,7 +21,7 @@ const types: Record<string, string> = {
   ".json": "application/json",
 }
 
-const server = createServer(async (request, response) => {
+export const server = createServer(async (request, response) => {
   try {
     const path = decodeURIComponent(
       new URL(request.url ?? "/", "http://localhost").pathname,

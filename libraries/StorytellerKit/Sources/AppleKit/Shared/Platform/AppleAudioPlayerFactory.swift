@@ -318,7 +318,10 @@ actor AppleSMILAudioPlayer: AudioPlaying {
     #endif
 }
 
-private final class AudioPlayerFinishRelay: NSObject, AVAudioPlayerDelegate, @unchecked Sendable {
+// Avoid inheriting MainActor isolation from AVAudioPlayerDelegate in newer SDKs.
+private nonisolated final class AudioPlayerFinishRelay: NSObject, AVAudioPlayerDelegate,
+    @unchecked Sendable
+{
     var onFinish: (@Sendable () -> Void)?
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {

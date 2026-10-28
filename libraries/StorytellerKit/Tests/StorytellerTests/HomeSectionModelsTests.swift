@@ -29,9 +29,9 @@ import Testing
     )
     let books = [olderReading, newerReading, start, completed]
     let progress = [
-        olderReading.id: BookProgress(locator: nil, timestamp: 10, source: .server),
-        newerReading.id: BookProgress(locator: nil, timestamp: 20, source: .server),
-        completed.id: BookProgress(locator: nil, timestamp: 30, source: .server),
+        olderReading.id: BookProgress(locator: nil, timestamp: 10, source: .saved),
+        newerReading.id: BookProgress(locator: nil, timestamp: 20, source: .saved),
+        completed.id: BookProgress(locator: nil, timestamp: 30, source: .saved),
     ]
 
     let sections = HomeSectionDeriver.sections(books: books, progress: progress)

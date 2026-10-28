@@ -40,7 +40,11 @@ test("reflow before a new chapter's first navigation settles preserves navigatio
       ),
   ).toBe(true)
   expect(
-    after.messages.filter((message) => message.name === "PageFlipped"),
+    after.messages.filter(
+      (message) =>
+        message.name === "ReadingState" &&
+        (message.body.gesture as { moved?: boolean } | null)?.moved,
+    ),
   ).toEqual([])
 })
 
@@ -83,7 +87,11 @@ test("cross-chapter navigation preserves the destination anchor through reflow",
     ).toBeGreaterThan(0)
     expect(after.relocations.at(-1)?.reason).toBe("anchor")
     expect(
-      after.messages.filter((message) => message.name === "PageFlipped"),
+      after.messages.filter(
+        (message) =>
+          message.name === "ReadingState" &&
+          (message.body.gesture as { moved?: boolean } | null)?.moved,
+      ),
     ).toEqual([])
   } finally {
     await source.dispose()

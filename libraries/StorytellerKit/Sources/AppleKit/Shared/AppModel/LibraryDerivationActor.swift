@@ -667,12 +667,14 @@ public actor LibraryDerivationActor {
         )
     }
 
-    public func deriveSnapshot(from input: LibraryDerivationInput) -> LibraryViewSnapshot {
+    public func deriveSnapshot(from input: LibraryDerivationInput) throws -> LibraryViewSnapshot {
+        try Task.checkCancellation()
         let started = CFAbsoluteTimeGetCurrent()
         var badgeCounts: [String: Int] = [:]
         var context = Context(input: input)
 
         for content in input.sidebarContents {
+            try Task.checkCancellation()
             badgeCounts[content.stableIdentifier] = context.badgeCount(for: content)
         }
         let smartShelfBooks = Dictionary(
@@ -685,6 +687,7 @@ public actor LibraryDerivationActor {
         if input.deriveGroups {
             groups = LibraryGroupSnapshot(generation: input.generation)
             for kind in MediaKind.allCases {
+                try Task.checkCancellation()
                 groups.series[kind] = context.seriesGroups(kind)
                 groups.authors[kind] = context.authorGroups(kind)
                 groups.collections[kind] = context.collectionGroups(kind)

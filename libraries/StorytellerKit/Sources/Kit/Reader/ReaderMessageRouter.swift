@@ -1,16 +1,14 @@
 import Foundation
 
-/// Decodes JS-to-Swift reader messages and dispatches them into the
-/// ReaderCommsBridge callbacks. Platform coordinators feed every incoming
-/// message through `route`; a false return means the message is
-/// platform-local (native selection UI, diagnostics) and the caller keeps it.
+/// Decodes WebView messages and invokes reader callbacks.
+/// Returns false for messages the platform must handle.
 @StorytellerUIActor
 public final class ReaderMessageRouter {
-    public weak var bridge: ReaderCommsBridge?
+    public weak var bridge: ReaderBridge?
     public var onConsoleLog: ((_ level: String, _ message: String) -> Void)?
     public var onReaderReady: (() -> Void)?
 
-    public init(bridge: ReaderCommsBridge? = nil) {
+    public init(bridge: ReaderBridge? = nil) {
         self.bridge = bridge
     }
 
@@ -26,6 +24,8 @@ public final class ReaderMessageRouter {
                 }
                 return true
 
+            case "ElementVisibility":
+                return true  // Ignore renderer diagnostics.
             case "ReaderReady":
                 debugLog("[ReaderMessageRouter] Reader JS modules initialized")
                 onReaderReady?()
@@ -47,25 +47,19 @@ public final class ReaderMessageRouter {
 
         do {
             switch name {
+                case "ReadingNavigate":
+                    let data = try JSONSerialization.data(withJSONObject: body)
+                    bridge.onDocumentNavigationRequest?(
+                        try decoder.decode(DocumentNavigationRequest.self, from: data)
+                    )
+                case "ReadingState":
+                    let data = try JSONSerialization.data(withJSONObject: body)
+                    bridge.onReadingState?(try decoder.decode(ReaderSnapshot.self, from: data))
+
                 case "BookStructureReady":
                     let data = try JSONSerialization.data(withJSONObject: body)
                     let msg = try decoder.decode(BookStructureReadyMessage.self, from: data)
                     bridge.sendSwiftBookStructureReady(msg)
-
-                case "Relocated":
-                    let data = try JSONSerialization.data(withJSONObject: body)
-                    let msg = try decoder.decode(RelocatedMessage.self, from: data)
-                    bridge.sendSwiftRelocated(msg)
-
-                case "PageFlipped":
-                    let data = try JSONSerialization.data(withJSONObject: body)
-                    let msg = try decoder.decode(PageFlippedMessage.self, from: data)
-                    bridge.sendSwiftPageFlipped(msg)
-
-                case "PageTurnSettled":
-                    let data = try JSONSerialization.data(withJSONObject: body)
-                    let msg = try decoder.decode(PageTurnSettledMessage.self, from: data)
-                    bridge.sendSwiftPageTurnSettled(msg)
 
                 case "OverlayToggled":
                     let data = try JSONSerialization.data(withJSONObject: body)
@@ -86,16 +80,6 @@ public final class ReaderMessageRouter {
                     let data = try JSONSerialization.data(withJSONObject: body)
                     let msg = try decoder.decode(MediaOverlaySeekMessage.self, from: data)
                     bridge.sendSwiftMediaOverlaySeek(msg)
-
-                case "MediaOverlayProgress":
-                    let data = try JSONSerialization.data(withJSONObject: body)
-                    let msg = try decoder.decode(MediaOverlayProgressMessage.self, from: data)
-                    bridge.sendSwiftMediaOverlayProgress(msg)
-
-                case "ElementVisibility":
-                    let data = try JSONSerialization.data(withJSONObject: body)
-                    let msg = try decoder.decode(ElementVisibilityMessage.self, from: data)
-                    bridge.sendSwiftElementVisibility(msg)
 
                 case "SearchResults":
                     let data = try JSONSerialization.data(withJSONObject: body)

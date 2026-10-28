@@ -548,6 +548,8 @@ class StorytellerViewModel private constructor(
         client.appDidBecomeActive()
     }
 
+    fun setLibraryRefreshDemand(needed: Boolean) = client.setLibraryRefreshDemand(needed)
+
     // sceneActive waits for onResume so the webview is resumed before any
     // re-anchor navigation is attempted.
     fun appDidResume() {

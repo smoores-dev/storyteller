@@ -563,7 +563,7 @@ public actor AppleWatchActor: NSObject {
         let observerID = UUID()
         smilObserverID = observerID
         Task {
-            await SMILPlayerActor.shared.addStateObserver(id: observerID) { [weak self] _ in
+            await PlaybackEngineActor.shared.addStateObserver(id: observerID) { [weak self] _ in
                 Task { await self?.sendPlaybackStateToWatch() }
             }
         }
@@ -573,7 +573,7 @@ public actor AppleWatchActor: NSObject {
         guard let observerID = smilObserverID else { return }
         smilObserverID = nil
         Task {
-            await SMILPlayerActor.shared.removeStateObserver(id: observerID)
+            await PlaybackEngineActor.shared.removeStateObserver(id: observerID)
         }
     }
 
@@ -587,11 +587,11 @@ public actor AppleWatchActor: NSObject {
     }
 
     private func buildRemotePlaybackState() async -> RemotePlaybackState? {
-        guard let smilState = await SMILPlayerActor.shared.getCurrentState(),
+        guard let smilState = await PlaybackEngineActor.shared.getCurrentState(),
             let bookID = smilState.bookID
         else { return nil }
 
-        let chapters = await SMILPlayerActor.shared.getChapterSummaries()
+        let chapters = await PlaybackEngineActor.shared.getChapterSummaries()
             .enumerated()
             .map { index, chapter in
                 RemoteChapter(
@@ -604,7 +604,7 @@ public actor AppleWatchActor: NSObject {
             chapters.firstIndex { $0.sectionIndex == smilState.currentSectionIndex } ?? 0
 
         return RemotePlaybackState(
-            bookTitle: await SMILPlayerActor.shared.getLoadedBookTitle() ?? "Unknown",
+            bookTitle: await PlaybackEngineActor.shared.getLoadedBookTitle() ?? "Unknown",
             bookID: bookID,
             chapterTitle: smilState.chapterLabel ?? "Chapter \(currentChapterIndex + 1)",
             currentChapterIndex: currentChapterIndex,
@@ -620,26 +620,18 @@ public actor AppleWatchActor: NSObject {
     }
 
     private func handlePlaybackCommand(_ command: RemotePlaybackCommand) async {
-        do {
-            switch command {
-                case .togglePlayPause:
-                    try await SMILPlayerActor.shared.togglePlayPause()
-                case .skipForward:
-                    await SMILPlayerActor.shared.skipForward(seconds: 30)
-                case .skipBackward:
-                    await SMILPlayerActor.shared.skipBackward(seconds: 30)
-                case .seekToChapter(let sectionIndex):
-                    try await SMILPlayerActor.shared.seekToEntry(
-                        sectionIndex: sectionIndex,
-                        entryIndex: 0,
-                    )
-                case .setPlaybackRate(let rate):
-                    await SMILPlayerActor.shared.setPlaybackRate(rate)
-                case .setVolume(let volume):
-                    await SMILPlayerActor.shared.setVolume(volume)
-            }
-        } catch {
-            debugLog("[AppleWatchActor] Playback command failed: \(error)")
+        guard let session = await ActiveReadingSession.shared.current else { return }
+        switch command {
+            case .togglePlayPause: try? await session.togglePlayback()
+            case .skipForward: await session.handlePlaybackCommand(.skipForward(30))
+            case .skipBackward: await session.handlePlaybackCommand(.skipBackward(30))
+            case .seekToChapter(let index):
+                let chapters = await PlaybackEngineActor.shared.getChapterSummaries()
+                if let chapter = chapters.first(where: { $0.sectionIndex == index }) {
+                    await session.selectChapter(id: chapter.id)
+                }
+            case .setPlaybackRate(let rate): await session.setPlaybackRate(rate)
+            case .setVolume(let volume): await session.setVolume(volume)
         }
     }
 

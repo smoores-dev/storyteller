@@ -29,6 +29,7 @@ struct WatchCollectionBooksView: View {
                 bookList
             }
         }
+        .libraryRefreshDemand()
         .navigationTitle(collection.name)
         .navigationBarTitleDisplayMode(.inline)
         .task {

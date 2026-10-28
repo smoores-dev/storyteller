@@ -304,7 +304,7 @@ import Testing
         """
     try manifest.write(to: manifestURL, atomically: true, encoding: .utf8)
 
-    let metadata = try await AudiobookActor.shared.validateAndLoadAudiobook(url: manifestURL)
+    let metadata = try await AudiobookLoader().load(from: manifestURL)
 
     #expect(metadata.title == "Absolute Audio")
     #expect(metadata.tracks.first?.url == audioURL)

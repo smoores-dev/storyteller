@@ -43,6 +43,7 @@ struct WatchLibraryView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .libraryRefreshDemand()
         .navigationTitle("Read Books")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

@@ -20,6 +20,7 @@ public struct LibraryView: View {
     @Environment(MediaViewModel.self) private var mediaViewModel: MediaViewModel
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.appearsActive) private var appearsActive
     #endif
 
     // TODO: wire up search
@@ -94,6 +95,7 @@ public struct LibraryView: View {
                 )
             }
             #if os(macOS)
+            .libraryRefreshDemand(appearsActive, model: mediaViewModel)
             .onChange(of: mediaViewModel.cachedConfig.library.accentColorHex, initial: true) {
                 _,
                 newHex in

@@ -38,19 +38,11 @@ public final class SMILTextPlaybackViewModel: NSObject {
     private var bookStructure: [SectionInfo] = []
     private var epubURL: URL?
     private var currentBookID: BookID?
-    private var lastSyncTime: Date = .distantPast
-    private let syncDebounceInterval: TimeInterval = 10
-    private var hasRestoredPosition = false
-    private var hasUserProgress = false
-    private var lastChapterRestart: Date?
-    private var periodicSyncTask: Task<Void, Never>?
-    private var sentenceNavigationTask: Task<Void, Never>?
-    private static let periodicSyncInterval: TimeInterval = 60
 
     public var showServerPositionDialog = false
     public var pendingServerPosition: IncomingServerPosition? = nil
-    private var incomingPositionObserverId: UUID? = nil
-    private var positionObserverRegistrationTask: Task<Void, Never>? = nil
+
+    private var readingSession: ReadingSession?
 
     #if os(tvOS)
     private let logPrefix = "TVPlayerViewModel"
@@ -170,22 +162,12 @@ public final class SMILTextPlaybackViewModel: NSObject {
 
     public func loadBook(_ book: BookMetadata) async {
         let bookID = book.id
-        let loadedBookID = await SMILPlayerActor.shared.getLoadedBookID()
-        if loadedBookID == bookID {
-            if let state = await SMILPlayerActor.shared.getCurrentState(), state.isPlaying {
-                debugLog("[\(logPrefix)] Book already playing, skipping reload")
-                return
-            }
-        }
-
         #if os(watchOS)
         loadSavedVolume()
         #endif
 
         bookTitle = book.title
         currentBookID = bookID
-        hasRestoredPosition = false
-        hasUserProgress = false
         isLoadingPosition = true
 
         let preparedMedia = try? await BookServiceActor.shared.prepareEbookForReading(
@@ -201,36 +183,42 @@ public final class SMILTextPlaybackViewModel: NSObject {
         }
 
         do {
-            try await SMILPlayerActor.shared.loadBook(
-                epubPath: url,
-                bookID: bookID,
-                title: book.title,
-                author: book.creators?.first?.name ?? book.authors?.first?.name,
+            let session = await ActiveReadingSession.shared.open(
+                metadata: book,
+                category: .synced,
+                localMediaPath: url,
+                settings: nil,
             )
+            readingSession = session
+            session.prepare()
+            await session.awaitPreparation()
+            if let error = session.lastPrepareError { throw error }
+            session.onIncomingServerPosition = { [weak self] position in
+                self?.pendingServerPosition = position
+                self?.showServerPositionDialog = true
+            }
 
-            bookStructure = await SMILPlayerActor.shared.getBookStructure()
-            chapterSummaries = await SMILPlayerActor.shared.getChapterSummaries()
+            bookStructure = await PlaybackEngineActor.shared.getBookStructure()
+            chapterSummaries = await PlaybackEngineActor.shared.getChapterSummaries()
             debugLog("[\(logPrefix)] Loaded book with \(bookStructure.count) sections")
 
-            stateObserverId = await SMILPlayerActor.shared.addStateObserver { [weak self] state in
+            stateObserverId = await PlaybackEngineActor.shared.addStateObserver {
+                [weak self] state in
                 self?.handleStateUpdate(state)
             }
 
             #if os(watchOS)
-            await SMILPlayerActor.shared.setVolume(volume)
+            await readingSession?.setVolume(volume)
             #endif
 
             let config = await SettingsActor.shared.config
-            await SMILPlayerActor.shared.setPlaybackRate(config.playback.defaultPlaybackSpeed)
+            await PlaybackEngineActor.shared.setPlaybackRate(config.playback.defaultPlaybackSpeed)
 
             if let firstSection = bookStructure.first(where: { !$0.mediaOverlay.isEmpty }) {
                 currentSectionIndex = firstSection.index
                 chapterTitle = chapterLabel(forSectionIndex: firstSection.index)
                 updateChapterDuration()
             }
-
-            registerIncomingPositionObserver(bookId: book.id)
-            restorePosition(book)
             isLoadingPosition = false
             await loadCurrentSectionHTML()
         } catch {
@@ -271,18 +259,16 @@ public final class SMILTextPlaybackViewModel: NSObject {
             Task {
                 await loadCurrentSectionHTML()
             }
-            syncProgress()
         }
 
         if playingChanged {
             if isPlaying {
-                startPeriodicSync()
+
                 #if os(tvOS)
                 UIApplication.shared.isIdleTimerDisabled = true
                 #endif
             } else {
-                stopPeriodicSync()
-                syncProgress()
+
                 #if os(tvOS)
                 UIApplication.shared.isIdleTimerDisabled = false
                 #endif
@@ -290,121 +276,39 @@ public final class SMILTextPlaybackViewModel: NSObject {
         }
     }
 
-    private func startPeriodicSync() {
-        periodicSyncTask?.cancel()
-        periodicSyncTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(Self.periodicSyncInterval))
-                guard !Task.isCancelled else { break }
-                self?.syncProgress()
-            }
-        }
-    }
-
-    private func stopPeriodicSync() {
-        periodicSyncTask?.cancel()
-        periodicSyncTask = nil
-    }
-
     public func playPause() {
         guard !isLoadingPosition else { return }
-        hasUserProgress = true
-        Task { @SMILPlayerActor in
-            try? await SMILPlayerActor.shared.togglePlayPause()
+        Task { @MainActor in
+            try? await readingSession?.togglePlayback()
         }
     }
 
     public func skipForward(seconds: Double = 30) {
         guard !isLoadingPosition else { return }
-        hasUserProgress = true
-        Task { @SMILPlayerActor in
-            await SMILPlayerActor.shared.skipForward(seconds: seconds)
+        Task { @MainActor in
+            await readingSession?.handlePlaybackCommand(.skipForward(seconds))
         }
     }
 
     public func skipBackward(seconds: Double = 30) {
         guard !isLoadingPosition else { return }
-        hasUserProgress = true
-        Task { @SMILPlayerActor in
-            await SMILPlayerActor.shared.skipBackward(seconds: seconds)
+        Task { @MainActor in
+            await readingSession?.handlePlaybackCommand(.skipBackward(seconds))
         }
     }
 
     public func nextSentence() {
-        guard !isLoadingPosition else { return }
-        hasUserProgress = true
-        sentenceNavigationTask?.cancel()
-        sentenceNavigationTask = Task { @MainActor in
-            let position = await SMILPlayerActor.shared.getCurrentPosition()
-            guard !Task.isCancelled else { return }
-            let structure = await SMILPlayerActor.shared.getBookStructure()
-            guard !Task.isCancelled else { return }
-            guard position.sectionIndex < structure.count else { return }
-            let section = structure[position.sectionIndex]
-            var targetSectionIndex = position.sectionIndex
-            var targetEntryIndex = position.entryIndex + 1
-
-            if targetEntryIndex >= section.mediaOverlay.count {
-                var nextSectionIndex = position.sectionIndex + 1
-                while nextSectionIndex < structure.count
-                    && structure[nextSectionIndex].mediaOverlay.isEmpty
-                {
-                    nextSectionIndex += 1
-                }
-                guard nextSectionIndex < structure.count else { return }
-                targetSectionIndex = nextSectionIndex
-                targetEntryIndex = 0
-            }
-            try? await SMILPlayerActor.shared.seekToEntry(
-                sectionIndex: targetSectionIndex,
-                entryIndex: targetEntryIndex,
-            )
-        }
+        Task { await readingSession?.skipSentence(by: 1) }
     }
 
     public func previousSentence() {
-        guard !isLoadingPosition else { return }
-        hasUserProgress = true
-        sentenceNavigationTask?.cancel()
-        sentenceNavigationTask = Task { @MainActor in
-            let position = await SMILPlayerActor.shared.getCurrentPosition()
-            guard !Task.isCancelled else { return }
-            let structure = await SMILPlayerActor.shared.getBookStructure()
-            guard !Task.isCancelled else { return }
-            guard position.sectionIndex < structure.count else { return }
-            var targetSectionIndex = position.sectionIndex
-            var targetEntryIndex = position.entryIndex - 1
-
-            if targetEntryIndex < 0 {
-                var prevSectionIndex = position.sectionIndex - 1
-                while prevSectionIndex >= 0
-                    && structure[prevSectionIndex].mediaOverlay.isEmpty
-                {
-                    prevSectionIndex -= 1
-                }
-                guard prevSectionIndex >= 0 else { return }
-                let prevSection = structure[prevSectionIndex]
-                guard let lastEntryIndex = prevSection.mediaOverlay.indices.last else { return }
-                targetSectionIndex = prevSectionIndex
-                targetEntryIndex = lastEntryIndex
-            }
-            let targetSection = structure[targetSectionIndex]
-            guard targetEntryIndex >= 0,
-                targetEntryIndex < targetSection.mediaOverlay.count
-            else {
-                return
-            }
-            try? await SMILPlayerActor.shared.seekToEntry(
-                sectionIndex: targetSectionIndex,
-                entryIndex: targetEntryIndex,
-            )
-        }
+        Task { await readingSession?.skipSentence(by: -1) }
     }
 
     public func setPlaybackRate(_ rate: Double) {
         playbackRate = rate
-        Task { @SMILPlayerActor in
-            await SMILPlayerActor.shared.setPlaybackRate(rate)
+        Task { @MainActor in
+            await readingSession?.setPlaybackRate(rate)
         }
     }
 
@@ -415,8 +319,8 @@ public final class SMILTextPlaybackViewModel: NSObject {
         if newVolume >= Self.minimumVolume {
             UserDefaults.standard.set(newVolume, forKey: Self.volumeKey)
         }
-        Task { @SMILPlayerActor in
-            await SMILPlayerActor.shared.setVolume(newVolume)
+        Task { @MainActor in
+            await readingSession?.setVolume(newVolume)
         }
     }
 
@@ -424,58 +328,25 @@ public final class SMILTextPlaybackViewModel: NSObject {
         if isMuted {
             isMuted = false
             volume = volumeBeforeMute
-            Task { @SMILPlayerActor in
-                await SMILPlayerActor.shared.setVolume(self.volumeBeforeMute)
+            Task { @MainActor in
+                await readingSession?.setVolume(self.volumeBeforeMute)
             }
         } else {
             volumeBeforeMute = volume
             isMuted = true
-            Task { @SMILPlayerActor in
-                await SMILPlayerActor.shared.setVolume(0)
+            Task { @MainActor in
+                await readingSession?.setVolume(0)
             }
         }
     }
     #endif
 
     public func nextChapter() {
-        guard !isLoadingPosition else { return }
-        let nextIndex = currentSectionIndex + 1
-        guard nextIndex < bookStructure.count else { return }
-
-        var targetIndex = nextIndex
-        while targetIndex < bookStructure.count && bookStructure[targetIndex].mediaOverlay.isEmpty {
-            targetIndex += 1
-        }
-        guard targetIndex < bookStructure.count else { return }
-
-        hasUserProgress = true
-        lastChapterRestart = nil
-        Task {
-            await jumpToChapter(targetIndex)
-        }
+        Task { await readingSession?.nextChapter() }
     }
 
     public func previousChapter() {
-        guard !isLoadingPosition else { return }
-        let restarts = previousChapterRestarts(
-            progressInChapter: chapterDuration > 0 ? currentTime / chapterDuration : 0,
-            lastRestartAt: lastChapterRestart,
-        )
-        var target = currentSectionIndex
-        if !restarts,
-            let position = chapterSummaries.firstIndex(where: {
-                $0.sectionIndex == currentSectionIndex
-            }),
-            position > 0
-        {
-            target = chapterSummaries[position - 1].sectionIndex
-        }
-        lastChapterRestart = target == currentSectionIndex ? Date() : nil
-
-        hasUserProgress = true
-        Task {
-            await jumpToChapter(target)
-        }
+        Task { await readingSession?.previousChapter() }
     }
 
     public func jumpToChapter(_ sectionIndex: Int) async {
@@ -483,10 +354,8 @@ public final class SMILTextPlaybackViewModel: NSObject {
 
         let section = bookStructure[sectionIndex]
         guard !section.mediaOverlay.isEmpty else { return }
-
-        hasUserProgress = true
         do {
-            try await SMILPlayerActor.shared.seekToEntry(sectionIndex: sectionIndex, entryIndex: 0)
+            try await readingSession?.seekToEntry(sectionIndex: sectionIndex, entryIndex: 0)
         } catch {
             debugLog("[\(logPrefix)] Failed to jump to chapter: \(error)")
         }
@@ -495,9 +364,8 @@ public final class SMILTextPlaybackViewModel: NSObject {
     public func seekToProgress(_ progress: Double) {
         guard bookDuration > 0 else { return }
         let clampedProgress = max(0, min(1, progress))
-        hasUserProgress = true
-        Task { @SMILPlayerActor in
-            let _ = await SMILPlayerActor.shared.seekToTotalProgression(clampedProgress)
+        Task { @MainActor in
+            let _ = await readingSession?.seekToProgress(clampedProgress)
         }
     }
 
@@ -722,77 +590,6 @@ public final class SMILTextPlaybackViewModel: NSObject {
         return String(format: "%d:%02d", mins, secs)
     }
 
-    private func restorePosition(_ book: BookMetadata) {
-        Task {
-            var locatorToUse: BookLocator? = nil
-
-            if let psaProgress = await ProgressSyncActor.shared.getBookProgress(for: book.id),
-                let psaLocator = psaProgress.locator
-            {
-                debugLog("[\(logPrefix)] Got position from PSA (source: \(psaProgress.source))")
-                locatorToUse = psaLocator
-            } else if let position = book.position, let locator = position.locator {
-                debugLog("[\(logPrefix)] Using position from metadata")
-                locatorToUse = locator
-            }
-
-            guard let locator = locatorToUse else {
-                debugLog("[\(logPrefix)] No saved position for \(book.uuid)")
-                hasRestoredPosition = true
-                return
-            }
-
-            debugLog("[\(logPrefix)] Restoring position - href: \(locator.href)")
-            await navigateToServerPosition(locator)
-            hasRestoredPosition = true
-        }
-    }
-
-    private func syncProgress() {
-        guard let bookID = currentBookID, hasRestoredPosition,
-            hasUserProgress
-        else { return }
-
-        lastSyncTime = Date()
-        let progression = bookDuration > 0 ? bookElapsed / bookDuration : 0
-        let timestamp = floor(Date().timeIntervalSince1970 * 1000)
-
-        guard currentSectionIndex < bookStructure.count else { return }
-        let section = bookStructure[currentSectionIndex]
-        guard currentEntryIndex < section.mediaOverlay.count else { return }
-
-        let entry = section.mediaOverlay[currentEntryIndex]
-
-        let locator = BookLocator(
-            href: entry.textHref,
-            type: "application/xhtml+xml",
-            title: nil,
-            locations: BookLocator.Locations(
-                fragments: [entry.textId],
-                progression: chapterProgress,
-                position: nil,
-                totalProgression: progression,
-                cssSelector: nil,
-                partialCfi: nil,
-                domRange: nil,
-            ),
-            text: nil,
-        )
-
-        let locationDescription = "\(chapterTitle), \(Int(chapterProgress * 100))%"
-
-        Task {
-            let _ = await ProgressSyncActor.shared.syncProgress(
-                bookID: bookID,
-                locator: locator,
-                timestamp: timestamp,
-                reason: .userPausedPlayback,
-                sourceIdentifier: syncSourceIdentifier,
-                locationDescription: locationDescription,
-            )
-        }
-    }
-
     public var serverPositionDescription: String {
         guard let position = pendingServerPosition else {
             return "Another device has synced a more recent reading position."
@@ -810,72 +607,8 @@ public final class SMILTextPlaybackViewModel: NSObject {
             "Another device has synced a more recent reading position\(locationStr). Would you like to go to that location?"
     }
 
-    private func registerIncomingPositionObserver(bookId: BookID) {
-        positionObserverRegistrationTask = Task {
-            let observerId = await ProgressSyncActor.shared.addIncomingPositionObserver(
-                for: bookId
-            ) { [weak self] position in
-                Task { @MainActor [weak self] in
-                    guard let self else { return }
-                    let config = await SettingsActor.shared.config
-                    if config.sync.autoSyncToNewerServerPosition {
-                        await self.navigateToServerPosition(position.locator)
-                    } else {
-                        self.pendingServerPosition = position
-                        self.showServerPositionDialog = true
-                    }
-                }
-            }
-
-            guard !Task.isCancelled else {
-                await ProgressSyncActor.shared.removeIncomingPositionObserver(id: observerId)
-                return
-            }
-
-            await MainActor.run {
-                incomingPositionObserverId = observerId
-            }
-            debugLog("[\(logPrefix)] Registered incoming position observer for \(bookId)")
-        }
-    }
-
     private func navigateToServerPosition(_ locator: BookLocator) async {
-        let isAudioLocator = locator.type.contains("audio")
-        let href = locator.href
-        let textId = locator.locations?.fragments?.first
-        let totalProgression = locator.locations?.totalProgression
-
-        if isAudioLocator, totalProgression == nil {
-            debugLog("[\(logPrefix)] Audio locator missing totalProgression; skipping server nav")
-            return
-        }
-
-        if let textId = textId, !isAudioLocator {
-            debugLog("[\(logPrefix)] Navigating to server position via fragment: \(href)#\(textId)")
-
-            if let sectionIndex = bookStructure.firstIndex(where: { section in
-                section.mediaOverlay.contains { $0.textHref == href }
-            }) {
-                let success = await SMILPlayerActor.shared.seekToFragment(
-                    sectionIndex: sectionIndex,
-                    textId: textId,
-                )
-                if success { return }
-            } else if let sectionIndex = findSectionIndex(for: href, in: bookStructure) {
-                let success = await SMILPlayerActor.shared.seekToFragment(
-                    sectionIndex: sectionIndex,
-                    textId: textId,
-                )
-                if success { return }
-            }
-        }
-
-        if let totalProgression = totalProgression, totalProgression > 0 {
-            debugLog("[\(logPrefix)] Using totalProgression: \(totalProgression)")
-            let _ = await SMILPlayerActor.shared.seekToTotalProgression(totalProgression)
-        } else {
-            debugLog("[\(logPrefix)] Server position has no usable location data, cannot seek")
-        }
+        await readingSession?.restoreLocator(locator)
     }
 
     public func acceptServerPosition() {
@@ -888,38 +621,27 @@ public final class SMILTextPlaybackViewModel: NSObject {
     }
 
     public func declineServerPosition() {
+        Task { try? await readingSession?.control(.declineServerPosition) }
         pendingServerPosition = nil
         showServerPositionDialog = false
     }
 
     public func cleanup() {
-        stopPeriodicSync()
-        syncProgress()
-
-        positionObserverRegistrationTask?.cancel()
 
         #if os(tvOS)
         UIApplication.shared.isIdleTimerDisabled = false
         #endif
         let stateObserver = stateObserverId
-        let positionRegistrationTask = positionObserverRegistrationTask
 
         stateObserverId = nil
         isPlaying = false
 
         Task { @MainActor in
-            await SMILPlayerActor.shared.pause()
+            await readingSession?.pause()
             if let stateObserver {
-                await SMILPlayerActor.shared.removeStateObserver(id: stateObserver)
+                await PlaybackEngineActor.shared.removeStateObserver(id: stateObserver)
             }
 
-            await positionRegistrationTask?.value
-            if let positionObserverId = incomingPositionObserverId {
-                incomingPositionObserverId = nil
-                await ProgressSyncActor.shared.removeIncomingPositionObserver(
-                    id: positionObserverId
-                )
-            }
         }
     }
 }

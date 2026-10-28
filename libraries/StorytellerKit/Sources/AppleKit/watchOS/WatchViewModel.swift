@@ -26,11 +26,6 @@ public final class WatchViewModel {
         started = true
         loadBooks()
         setupObservers()
-        Task {
-            await BookServiceActor.shared.startPeriodicLibraryRefresh(
-                usingProgressSyncInterval: false
-            )
-        }
     }
 
     private func setupObservers() {

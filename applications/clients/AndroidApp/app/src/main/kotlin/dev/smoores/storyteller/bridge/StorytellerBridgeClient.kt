@@ -114,6 +114,7 @@ class StorytellerBridgeClient(context: Context) {
 
     @Volatile
     private var bootstrapped = false
+    private var libraryRefreshNeeded = false
 
     suspend fun bootstrap() {
         AndroidSecureStore.initialize(applicationContext)
@@ -125,6 +126,15 @@ class StorytellerBridgeClient(context: Context) {
         AndroidNetworkMonitor.start(applicationContext)
         bootstrapped = true
         appDidBecomeActive()
+        setLibraryRefreshDemand(libraryRefreshNeeded)
+    }
+
+    fun setLibraryRefreshDemand(needed: Boolean) {
+        libraryRefreshNeeded = needed
+        if (!bootstrapped) return
+        StorytellerAndroidBridge.androidLibraryRefreshDemand(needed).whenComplete { _, error ->
+            if (error != null) Log.e("StorytellerNetwork", "Could not update library demand", error)
+        }
     }
 
     fun appDidBecomeActive() {

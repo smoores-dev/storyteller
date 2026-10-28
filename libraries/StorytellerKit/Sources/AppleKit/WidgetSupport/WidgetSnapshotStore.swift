@@ -144,6 +144,10 @@ public enum StorytellerWidgetSnapshotStore {
         guard let container = sharedContainerURL(bundle: bundle) else {
             return .empty
         }
+        return loadSnapshot(from: container)
+    }
+
+    public static func loadSnapshot(from container: URL) -> StorytellerWidgetSnapshot {
         let url = snapshotURL(in: container)
         guard let data = try? Data(contentsOf: url) else {
             return .empty
@@ -158,12 +162,16 @@ public enum StorytellerWidgetSnapshotStore {
         return coversDirectory(in: container).appendingPathComponent(filename, isDirectory: false)
     }
 
-    public static func publishSnapshot(
+    @concurrent public static func publishSnapshot(
         metadata: [BookMetadata],
         progress: [BookID: BookProgress],
         sources: [BookSourceRecord],
+        container: URL? = nil,
+        coverData: @escaping @Sendable (BookID, Bool) async -> Data? = {
+            await BookServiceActor.shared.cachedCoverData(for: $0, audio: $1)
+        },
     ) async {
-        guard let container = sharedContainerURL() else {
+        guard let container = container ?? sharedContainerURL() else {
             debugLog("[StorytellerWidgetSnapshotStore] App group container unavailable")
             return
         }
@@ -176,7 +184,8 @@ public enum StorytellerWidgetSnapshotStore {
                 progress: progress,
                 sources: sources,
             )
-            try await attachCachedCovers(to: &snapshot, container: container)
+            try await attachCachedCovers(to: &snapshot, container: container, coverData: coverData)
+            try Task.checkCancellation()
             try cleanupStaleCovers(keeping: snapshot.books, container: container)
             try saveSnapshot(snapshot, in: container)
             reloadWidgetTimelines()
@@ -231,22 +240,26 @@ public enum StorytellerWidgetSnapshotStore {
     private static func attachCachedCovers(
         to snapshot: inout StorytellerWidgetSnapshot,
         container: URL,
+        coverData: @Sendable (BookID, Bool) async -> Data?,
     ) async throws {
         guard !snapshot.books.isEmpty else { return }
         let coversDirectory = coversDirectory(in: container)
         try ensureDirectoryExists(at: coversDirectory)
 
         for index in snapshot.books.indices {
+            try Task.checkCancellation()
             let bookID = snapshot.books[index].bookID
             snapshot.books[index].coverFilename = try await writeCachedCover(
                 bookID: bookID,
                 audio: false,
                 coversDirectory: coversDirectory,
+                coverData: coverData,
             )
             snapshot.books[index].audioCoverFilename = try await writeCachedCover(
                 bookID: bookID,
                 audio: true,
                 coversDirectory: coversDirectory,
+                coverData: coverData,
             )
         }
     }
@@ -255,8 +268,9 @@ public enum StorytellerWidgetSnapshotStore {
         bookID: BookID,
         audio: Bool,
         coversDirectory: URL,
+        coverData: @Sendable (BookID, Bool) async -> Data?,
     ) async throws -> String? {
-        guard let data = await BookServiceActor.shared.cachedCoverData(for: bookID, audio: audio)
+        guard let data = await coverData(bookID, audio)
         else { return nil }
         // The filename carries a content hash, so a replaced cover gets a new
         // file (the old one is swept by cleanupStaleCovers) and an existing
@@ -273,7 +287,9 @@ public enum StorytellerWidgetSnapshotStore {
         return filename
     }
 
-    private static func saveSnapshot(_ snapshot: StorytellerWidgetSnapshot, in container: URL) throws {
+    private static func saveSnapshot(_ snapshot: StorytellerWidgetSnapshot, in container: URL)
+        throws
+    {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]

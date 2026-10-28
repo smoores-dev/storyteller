@@ -1,6 +1,7 @@
 #if os(iOS)
 import StorytellerKit
 import SwiftUI
+import Observation
 import UIKit
 
 /// One app-wide subscription to the audio session snapshot, shared by the
@@ -21,13 +22,16 @@ final class AudioSessionMonitor {
     func start() {
         guard !started else { return }
         started = true
-        Task {
-            await AudioSessionActor.shared.addSnapshotObserver { snapshot in
-                Task { @MainActor in
-                    AudioSessionMonitor.shared.apply(snapshot)
-                }
-            }
+        observePlayback()
+    }
+
+    private func observePlayback() {
+        let snapshot = withObservationTracking {
+            ActiveReadingSession.shared.current?.playbackSnapshot
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.observePlayback() }
         }
+        apply(snapshot)
     }
 
     private func apply(_ snapshot: AudioSessionSnapshot?) {
@@ -127,7 +131,7 @@ struct GlobalMiniPlayerBar: View {
             }
 
             Button {
-                Task { try? await AudioSessionActor.shared.transport(.togglePlayPause) }
+                Task { try? await ActiveReadingSession.shared.current?.togglePlayback() }
             } label: {
                 Image(systemName: snapshot.isPlaying ? "pause.fill" : "play.fill")
                     .font(.title3)

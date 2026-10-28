@@ -486,6 +486,7 @@ public struct ReadingSidebarView: View {
 
     private var complicationDisplay: MiniPlayerDisplayModel {
         let data = progressData
+        let selectedChapterId = selectedChapterId
         let bookFraction = data.flatMap { d in
             normalizedFraction(d.bookCurrentFraction)
                 ?? bookAudioFraction(
@@ -507,7 +508,9 @@ public struct ReadingSidebarView: View {
             playbackRate: model.playbackRate,
             volume: model.volume,
             chapterProgress: min(max(chapterProgress, 0), 1),
-            chapterElapsedSeconds: data.flatMap { normalizedSeconds($0.chapterCurrentSecondsAudio) },
+            chapterElapsedSeconds: data.flatMap {
+                normalizedSeconds($0.chapterCurrentSecondsAudio)
+            },
             chapterTotalSeconds: data.flatMap { normalizedSeconds($0.chapterTotalSecondsAudio) },
             bookTimeRemaining: bookRemaining,
             bookFraction: bookFraction,

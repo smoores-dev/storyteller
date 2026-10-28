@@ -1,8 +1,8 @@
-import "./foliate-js/view.js"
 import BookmarkManager from "./BookmarkManager.js"
+import "./foliate-js/view.js"
 import { debugLog } from "./DebugConfig.js"
+import { ReaderBridge } from "./ReaderBridge.js"
 import { SpanHighlighter } from "./SpanHighlighter.js"
-import { getIntersectingElements } from "./VisibilityDetection.js"
 import { Overlayer } from "./foliate-js/overlayer.js"
 
 const getReadaloudCSS = ({
@@ -238,6 +238,12 @@ class FoliateManager {
   #disableReaderAnimations = false
   #hasAudioNarration = false
   #enableMarginClickNavigation = true
+  #bridge = new ReaderBridge({
+    readFacts: (playhead) => this.#readingFacts(playhead),
+    execute: (request) => this.#executeReadingCommand(request),
+    post: (snapshot) =>
+      window.webkit?.messageHandlers?.ReadingState?.postMessage(snapshot),
+  })
   #lastRelocateRange = null
   #highlightedElement = null
   #highlightedSectionIndex = null
@@ -263,6 +269,7 @@ class FoliateManager {
     debugLog("FoliateManager", "Opening file in foliate-view...")
     await this.#view.open(file)
 
+    this.#bridge.ready = true
     this.#bookmarkManager.setView(this.#view)
 
     debugLog("FoliateManager", "Book opened, reporting structure to Swift")
@@ -272,13 +279,19 @@ class FoliateManager {
   }
 
   #attachEventListeners() {
+    this.#view.addEventListener("link", (event) => {
+      event.preventDefault()
+      this.#requestReadingNavigation({
+        kind: "href",
+        value: event.detail.href,
+      })
+    })
     this.#view.addEventListener("relocate", ({ detail }) => {
       this.#reportRelocate(detail)
     })
-
-    this.#view.addEventListener("page-flip", ({ detail }) => {
-      this.#reportPageFlip(detail)
-    })
+    this.#view.addEventListener("interaction", ({ detail }) =>
+      this.#bridge.interaction(detail),
+    )
 
     let clickTimer = null
 
@@ -317,6 +330,7 @@ class FoliateManager {
         })
 
         doc.addEventListener("click", (event) => {
+          if (event.target.closest?.("a[href]")) return
           if (clickTimer !== null) {
             clearTimeout(clickTimer)
             clickTimer = null
@@ -377,6 +391,13 @@ class FoliateManager {
     }
   }
 
+  #requestReadingNavigation(target) {
+    window.webkit?.messageHandlers?.ReadingNavigate?.postMessage({
+      documentID: this.#bridge.documentID,
+      target,
+    })
+  }
+
   #handleKeyDown(event) {
     if (
       event.defaultPrevented ||
@@ -398,20 +419,13 @@ class FoliateManager {
       return
     }
 
-    // Route hardware left/right arrows through the existing EPM bridge when
-    // WKWebView owns the key event. This is required on touch devices, where
-    // SwiftUI never receives the event, and for paginated CSS snap, where the
-    // browser would otherwise scroll the snap container itself. Raw direction
-    // matches the SwiftUI arrow-key handlers and bypasses the RTL flip used by
-    // margin tap zones.
-    if (
-      (navigator.maxTouchPoints > 0 ||
-        this.#view?.renderer?.cssSnapEnabled === true) &&
-      (event.key === "ArrowLeft" || event.key === "ArrowRight")
-    ) {
+    // Forward arrow keys to Swift for page navigation.
+    // Preserve physical direction, matching SwiftUI key handling.
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault()
       event.stopPropagation()
       window.webkit?.messageHandlers?.MarginClickNav?.postMessage({
+        documentID: this.#bridge.documentID,
         direction: event.key === "ArrowLeft" ? "left" : "right",
       })
       return
@@ -431,7 +445,33 @@ class FoliateManager {
       event.preventDefault()
       event.stopPropagation()
       window.webkit?.messageHandlers?.SentenceSkip?.postMessage({
+        documentID: this.#bridge.documentID,
         direction: event.key === "ArrowUp" ? "previous" : "next",
+      })
+      return
+    }
+
+    const navigationKeys = {
+      PageDown: { kind: "next" },
+      PageUp: { kind: "previous" },
+      Home: { kind: "fraction", fraction: 0 },
+      End: { kind: "fraction", fraction: 1 },
+    }
+    if (navigationKeys[event.key]) {
+      event.preventDefault()
+      event.stopPropagation()
+      this.#requestReadingNavigation(navigationKeys[event.key])
+      return
+    }
+    if (
+      this.#scrollingMode &&
+      !this.#hasAudioNarration &&
+      (event.key === "ArrowUp" || event.key === "ArrowDown")
+    ) {
+      event.preventDefault()
+      event.stopPropagation()
+      this.#requestReadingNavigation({
+        kind: event.key === "ArrowUp" ? "scrollUp" : "scrollDown",
       })
       return
     }
@@ -443,6 +483,7 @@ class FoliateManager {
     event.stopPropagation()
 
     window.webkit?.messageHandlers?.SentenceSkip?.postMessage({
+      documentID: this.#bridge.documentID,
       direction: event.key === "ArrowUp" ? "previous" : "next",
     })
   }
@@ -536,7 +577,7 @@ class FoliateManager {
       reason: detail.reason || null,
     }
 
-    window.webkit?.messageHandlers?.Relocated?.postMessage(payload)
+    this.#bridge.relocate(payload)
 
     // Reflow changes sentence geometry without necessarily changing the
     // highlight. Refresh native page-turn timing from the settled viewport.
@@ -625,103 +666,172 @@ class FoliateManager {
         : "left"
       : direction
 
-    // Don't navigate here - let Swift handle it through EPM like arrow keys
+    // Let the session resolve the navigation target.
     window.webkit?.messageHandlers?.MarginClickNav?.postMessage({
+      documentID: this.#bridge.documentID,
       direction: effectiveDirection,
     })
   }
 
-  #reportPageFlip(detail) {
-    if (!detail) {
-      console.warn("[FM2] Page flip event missing detail")
-      return
-    }
-
-    const fromPage = Number.isFinite(detail.fromPage) ? detail.fromPage : null
-    const toPage = Number.isFinite(detail.toPage) ? detail.toPage : null
-
-    if (fromPage == null || toPage == null || fromPage === toPage) {
-      debugLog(
-        "FoliateManager",
-        "Ignoring page flip with invalid page numbers",
-        detail,
-      )
-      return
-    }
-
-    const delta = toPage - fromPage
-    const isRtl = this.#view?.book?.dir === "rtl"
-    let direction = delta > 0 ? "right" : "left"
-    if (isRtl) {
-      direction = direction === "right" ? "left" : "right"
-    }
-
-    debugLog(
-      "FoliateManager",
-      "Posting PageFlipped message to Swift",
-      direction,
-    )
-
-    window.webkit?.messageHandlers?.PageFlipped?.postMessage({
-      direction: direction,
-      fromPage: fromPage,
-      toPage: toPage,
-      delta: delta,
-      isRtl: !!isRtl,
-    })
+  goLeft(animated = true) {
+    return this.#view?.goLeft(animated, true)
+  }
+  goRight(animated = true) {
+    return this.#view?.goRight(animated, true)
   }
 
-  #reportPageTurnSettled(commandId, status) {
-    if (!commandId) return
-    window.webkit?.messageHandlers?.PageTurnSettled?.postMessage({
-      commandId,
-      status,
-    })
-  }
-
-  #runPageTurn(direction, animated, commandId) {
-    debugLog("FoliateManager", `${direction}(${animated}, ${commandId})`)
-    if (!this.#view) {
-      console.warn(`[FM2] ${direction}() called but view not initialized`)
-      this.#reportPageTurnSettled(commandId, "rejected")
-      return false
-    }
-    if (this.#view.renderer?.pageTurnBlocksNavigation) {
-      debugLog(
-        "FoliateManager",
-        `Ignoring ${direction}() while another page turn owns navigation`,
-      )
-      this.#reportPageTurnSettled(commandId, "rejected")
-      return false
-    }
-
-    let turn
-    try {
-      turn =
-        direction === "goLeft"
-          ? this.#view.goLeft(animated, true)
-          : this.#view.goRight(animated, true)
-    } catch (error) {
-      console.error(`[FM2] ${direction}() failed`, error)
-      this.#reportPageTurnSettled(commandId, "rejected")
-      return false
-    }
-    Promise.resolve(turn).then(
-      (status) => this.#reportPageTurnSettled(commandId, status ?? "rejected"),
-      (error) => {
-        console.error(`[FM2] ${direction}() failed`, error)
-        this.#reportPageTurnSettled(commandId, "rejected")
-      },
-    )
+  presentReading({ documentID, playing, highlight, follow, anchor }) {
+    if (documentID !== this.#bridge.documentID) return false
+    this.setPlaybackActive(playing)
+    if (highlight && anchor)
+      this.highlightFragment(anchor.sectionIndex, anchor.textId, false)
+    else this.clearHighlight()
+    if (follow && anchor)
+      this.setReflowAnchor(anchor.sectionIndex, anchor.textId)
     return true
   }
 
-  goLeft(animated = true, commandId = null) {
-    return this.#runPageTurn("goLeft", animated, commandId)
+  readingSnapshot(playhead = null) {
+    return this.#bridge.snapshot(playhead)
+  }
+  readingCommand(request) {
+    return this.#bridge.dispatch(request)
+  }
+  acknowledgeReading(documentID, commandID, gestureID) {
+    this.#bridge.acknowledge(documentID, commandID, gestureID)
   }
 
-  goRight(animated = true, commandId = null) {
-    return this.#runPageTurn("goRight", animated, commandId)
+  #readingFacts(playhead) {
+    const renderer = this.#view?.renderer
+    const measurements = this.#measureElements()
+    const visible = measurements?.filter(
+      ([, geometry]) => geometry?.visibleArea > 0,
+    )
+    let visibility = null
+    if (playhead && renderer && measurements) {
+      const content = renderer
+        .getContents?.()
+        .find((x) => x.index === playhead.sectionIndex)
+      const el = content?.doc?.getElementById(playhead.textId)
+      const geometry = el
+        ? this.#getElementPageInfo(el, content.doc, renderer)
+        : null
+      visibility = {
+        ...playhead,
+        visible: content ? (geometry ? geometry.visibleArea > 0 : null) : false,
+        visibleRatio:
+          geometry?.forwardArea != null
+            ? geometry.visibleArea /
+              (geometry.visibleArea + geometry.forwardArea || 1)
+            : null,
+        offScreenRatio:
+          geometry?.forwardArea != null
+            ? geometry.forwardArea /
+              (geometry.visibleArea + geometry.forwardArea || 1)
+            : null,
+      }
+    }
+    return {
+      navigationBlocked: renderer?.idle === false,
+      visibleIDs: visible?.map(([id]) => id) ?? null,
+      fullyVisibleIDs:
+        visible
+          ?.filter(([, geometry]) => geometry.visibleArea >= geometry.totalArea)
+          .map(([id]) => id) ?? null,
+      playhead: visibility,
+    }
+  }
+
+  async #executeReadingCommand(request) {
+    const view = this.#view
+    const renderer = view?.renderer
+    if (!renderer) throw new Error("Reader has no renderer")
+    let resolved = null
+    switch (request.kind) {
+      case "next":
+        return await view.next(undefined, request.animated !== false, true)
+      case "previous":
+        return await view.prev(undefined, true, true)
+      case "scrollUp":
+        return await view.prev(40, true, true)
+      case "scrollDown":
+        return await view.next(40, true, true)
+      case "left":
+        return await view.goLeft(true, true)
+      case "right":
+        return await view.goRight(request.animated !== false, true)
+      case "href":
+      case "cfi":
+        resolved = view.resolveNavigation(request.value)
+        await renderer.goTo({ ...resolved, smooth: false })
+        break
+      case "section":
+        if (
+          !Number.isInteger(request.sectionIndex) ||
+          !view.book.sections[request.sectionIndex]
+        )
+          throw new Error("Invalid section")
+        await view.goToFractionInSection(
+          request.sectionIndex,
+          request.fraction ?? 0,
+        )
+        break
+      case "image":
+        await this.goToImage(request.sectionIndex, request.value)
+        break
+      case "fraction":
+        if (
+          !Number.isFinite(request.fraction) ||
+          request.fraction < 0 ||
+          request.fraction > 1
+        )
+          throw new Error("Invalid fraction")
+        await view.goToFraction(request.fraction)
+        break
+      case "anchor": {
+        const visibility = this.#readingFacts(request).playhead
+        if (visibility?.visible === true) return "completed"
+        const href = view.book.sections[request.sectionIndex]?.id
+        if (!href) throw new Error("Invalid playhead section")
+        resolved = view.resolveNavigation(`${href}#${request.textId}`)
+        await renderer.goTo({ ...resolved, smooth: false })
+        break
+      }
+      default:
+        throw new Error(`Unknown reading command: ${request.kind}`)
+    }
+    // Wait for layout before measuring the destination.
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    )
+    const location = this.#bridge.location
+    if (!location) throw new Error("Renderer did not report its destination")
+    if (
+      request.kind === "section" &&
+      location.sectionIndex !== request.sectionIndex
+    )
+      throw new Error("Wrong section")
+    if (resolved && location.sectionIndex !== resolved.index)
+      throw new Error("Destination was not reached")
+    if (request.kind === "anchor") {
+      if (this.#readingFacts(request).playhead?.visible !== true)
+        throw new Error("Playhead is not visible")
+    } else if (resolved && typeof resolved.anchor === "function") {
+      const content = renderer
+        .getContents?.()
+        .find((x) => x.index === resolved.index)
+      const anchor = content?.doc && resolved.anchor(content.doc)
+      if (
+        anchor == null ||
+        (typeof anchor !== "number" &&
+          !(
+            this.#getElementPageInfo(anchor, content.doc, renderer)
+              ?.visibleArea > 0
+          ))
+      )
+        throw new Error("Target is not visible")
+    }
+    return "completed"
   }
 
   goTo(href) {
@@ -753,10 +863,12 @@ class FoliateManager {
         const range = doc.createRange()
         range.selectNode(img)
         const cfi = this.#view.getCFI(index, range)
-        if (cfi) this.#view.goTo(cfi)
+        if (!cfi) throw new Error("Image has no reading location")
+        await this.#view.goTo(cfi)
         return
       }
     }
+    throw new Error("Requested image was not found")
   }
 
   async goToFractionInSection(sectionIndex, fraction) {
@@ -1159,73 +1271,33 @@ class FoliateManager {
     )
 
     window.webkit?.messageHandlers?.mediaOverlaySeek?.postMessage({
+      documentID: this.#bridge.documentID,
       sectionIndex: sectionIndex,
       anchor: anchor,
     })
   }
 
-  getFullyVisibleElementIds() {
+  #measureElements() {
     const range = this.#lastRelocateRange
-    if (!range) {
-      console.warn("[FM2] getFullyVisibleElementIds: No range available")
-      return []
-    }
-
-    const doc =
-      range.startContainer?.ownerDocument ||
-      range.commonAncestorContainer?.ownerDocument
-    if (!doc) {
-      console.warn(
-        "[FM2] getFullyVisibleElementIds: Could not get document from range",
-      )
-      return []
-    }
-
-    const ids = []
-    try {
-      const allElements = doc.querySelectorAll("[id]")
-
-      for (const el of allElements) {
-        if (!range.intersectsNode(el)) continue
-
-        const nodeRange = doc.createRange()
-        try {
-          nodeRange.selectNodeContents(el)
-
-          const startsAfterRangeStart =
-            range.compareBoundaryPoints(Range.START_TO_START, nodeRange) <= 0
-          const endsBeforeRangeEnd =
-            range.compareBoundaryPoints(Range.END_TO_END, nodeRange) >= 0
-
-          if (startsAfterRangeStart && endsBeforeRangeEnd) {
-            ids.push(el.id)
-          }
-        } finally {
-          nodeRange.detach?.()
-        }
-      }
-
-      debugLog(
-        "FoliateManager",
-        `Found ${ids.length} fully visible element IDs`,
-      )
-    } catch (err) {
-      console.warn("[FM2] getFullyVisibleElementIds failed:", err)
-    }
-
-    return ids
+    const doc = range?.startContainer?.ownerDocument
+    const renderer = this.#view?.renderer
+    if (!doc || !renderer) return null
+    return Array.from(doc.querySelectorAll("[id]"), (el) => [
+      el.id,
+      this.#getElementPageInfo(el, doc, renderer),
+    ])
   }
 
-  getPartiallyVisibleElementIds() {
-    const range = this.#lastRelocateRange
-    if (!range) return []
-
-    const doc =
-      range.startContainer?.ownerDocument ||
-      range.commonAncestorContainer?.ownerDocument
-    if (!doc) return []
-
-    return getIntersectingElements(doc, range)
+  getFullyVisibleElementIds() {
+    return (
+      this.#measureElements()
+        ?.filter(
+          ([, geometry]) =>
+            geometry?.visibleArea > 0 &&
+            geometry.visibleArea >= geometry.totalArea,
+        )
+        .map(([id]) => id) ?? []
+    )
   }
 
   getFirstVisiblePosition() {
@@ -1521,10 +1593,7 @@ class FoliateManager {
       return
     }
 
-    // A read-aloud anchor navigation would cancel an in-flight native page
-    // snap and pull the reader back to the sentence playback just left. Let
-    // the page turn settle; its PageFlipped/Relocated events will then
-    // reconcile playback and issue the highlight for the destination page.
+    // Following audio during a page snap would undo the user's turn.
     if (seekToLocation && renderer.pageTurnBlocksNavigation) {
       debugLog(
         "FoliateManager",
@@ -1542,7 +1611,8 @@ class FoliateManager {
         "No contents loaded, storing pending highlight and navigating",
       )
       this.#pendingHighlight = { sectionIndex, textId }
-      if (sectionHref) this.#view.goTo(`${sectionHref}#${textId}`)
+      if (seekToLocation && sectionHref)
+        this.#view.goTo(`${sectionHref}#${textId}`)
       return
     }
 
@@ -1553,7 +1623,8 @@ class FoliateManager {
         `Section ${sectionIndex} not currently loaded, storing pending highlight and navigating`,
       )
       this.#pendingHighlight = { sectionIndex, textId }
-      if (sectionHref) this.#view.goTo(`${sectionHref}#${textId}`)
+      if (seekToLocation && sectionHref)
+        this.#view.goTo(`${sectionHref}#${textId}`)
       return
     }
 
@@ -1729,9 +1800,12 @@ class FoliateManager {
   #getElementPageInfo(el, doc, renderer) {
     if (!el || !doc?.defaultView || !renderer) return null
 
-    const rects = Array.from(el.getClientRects()).filter(
-      (rect) => rect.width > 0 && rect.height > 0,
-    )
+    const range = el.startContainer ? el : doc.createRange()
+    if (!el.startContainer) range.selectNodeContents(el)
+    const contentRects = range.getClientRects()
+    const rects = Array.from(
+      contentRects.length ? contentRects : el.getClientRects(),
+    ).filter((rect) => rect.width > 0 && rect.height > 0)
     if (!rects.length) return null
 
     const defaultView = doc.defaultView
@@ -1760,7 +1834,7 @@ class FoliateManager {
 
     const writingMode =
       defaultView.getComputedStyle(doc.body)?.writingMode ?? ""
-    if (writingMode.startsWith("vertical")) return null
+    const horizontal = !writingMode.startsWith("vertical")
 
     const rtl = renderer.getAttribute?.("dir") === "rtl"
 
@@ -1815,8 +1889,12 @@ class FoliateManager {
     return {
       totalArea,
       visibleArea,
-      forwardArea: rtl ? leftHiddenArea : rightHiddenArea,
-      backwardArea: rtl ? rightHiddenArea : leftHiddenArea,
+      forwardArea: horizontal ? (rtl ? leftHiddenArea : rightHiddenArea) : null,
+      backwardArea: horizontal
+        ? rtl
+          ? rightHiddenArea
+          : leftHiddenArea
+        : null,
     }
   }
 
@@ -1824,7 +1902,7 @@ class FoliateManager {
     if (renderer?.scrolled) return null
 
     const pageInfo = this.#getElementPageInfo(el, doc, renderer)
-    if (!pageInfo) return null
+    if (!pageInfo || pageInfo.forwardArea == null) return null
     if (pageInfo.visibleArea === 0) {
       // An entirely hidden sentence is not a fully visible, unsplit sentence.
       // Only its forward portion should request a forward page turn; a stale

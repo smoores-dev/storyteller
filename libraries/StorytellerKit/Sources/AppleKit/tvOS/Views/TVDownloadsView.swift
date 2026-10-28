@@ -22,6 +22,7 @@ struct TVDownloadsView: View {
                     booksGridView(books: downloadedBooks)
                 }
             }
+            .libraryRefreshDemand(model: mediaViewModel)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: BookMetadata.self) { book in
                 TVBookDetailView(book: book)

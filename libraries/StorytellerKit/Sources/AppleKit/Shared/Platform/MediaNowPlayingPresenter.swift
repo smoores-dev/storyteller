@@ -45,8 +45,7 @@ public final class MediaNowPlayingPresenter: NowPlayingPresenting {
         center.playbackState = info.isPlaying ? .playing : .paused
     }
 
-    /// MPNowPlayingInfoCenter has no chapter list; CarPlay builds its own from
-    /// AudioSessionActor instead.
+    // MPNowPlayingInfoCenter does not support chapter lists.
     public func updateChapters(_ chapters: NowPlayingChapters?) {}
 
     public func clear() {

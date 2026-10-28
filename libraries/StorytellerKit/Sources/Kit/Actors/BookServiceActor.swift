@@ -7,6 +7,17 @@ import CoreFoundation
 import FoundationNetworking
 #endif
 
+struct LibraryRefreshSchedule {
+    var owners: Set<UUID> = []
+    var lastAttempt: Date?
+
+    func delay(interval: TimeInterval, now: Date) -> TimeInterval? {
+        guard !owners.isEmpty, interval > 0 else { return nil }
+        guard let lastAttempt else { return 0 }
+        return max(0, lastAttempt.addingTimeInterval(interval).timeIntervalSince(now))
+    }
+}
+
 @globalActor
 public actor BookServiceActor {
     public static let shared = BookServiceActor()
@@ -19,11 +30,17 @@ public actor BookServiceActor {
     private var localMediaObserverID: UUID?
     private var networkAvailable: Bool?
     private var periodicLibraryRefreshTask: Task<Void, Never>?
-    private var periodicRefreshUsesProgressSyncInterval = true
+    private var libraryRefreshSchedule = LibraryRefreshSchedule()
 
     public init() {
         self.sourceRecords = []
         self.sourcesByID = [:]
+    }
+
+    init(sources: [BookSourceRecord: any BookSourceActor]) {
+        sourceRecords = Array(sources.keys)
+        sourcesByID = Dictionary(uniqueKeysWithValues: sources.map { ($0.key.id, $0.value) })
+        sourceRegistryLoaded = true
     }
 
     func start() async {
@@ -266,9 +283,8 @@ public actor BookServiceActor {
                 guard
                     let serverURL = configuration.serverURL,
                     let username = configuration.username,
-                    let password = configuration.password ?? (
-                        configuration.sessionToken != nil ? "" : nil
-                    )
+                    let password = configuration.password
+                        ?? (configuration.sessionToken != nil ? "" : nil)
                 else {
                     return nil
                 }
@@ -362,9 +378,8 @@ public actor BookServiceActor {
                 guard
                     let serverURL = configuration.serverURL,
                     let username = configuration.username,
-                    let password = configuration.password ?? (
-                        configuration.sessionToken != nil ? "" : nil
-                    )
+                    let password = configuration.password
+                        ?? (configuration.sessionToken != nil ? "" : nil)
                 else {
                     return false
                 }
@@ -407,6 +422,7 @@ public actor BookServiceActor {
                 }
 
                 await upsertSourceRecord(updatedRecord)
+                await actor.updateSourceRecord(updatedRecord)
             case .localFolder:
                 guard updatedRecord.storagePath != nil else { return false }
                 if let storagePath = updatedRecord.storagePath {
@@ -531,57 +547,43 @@ public actor BookServiceActor {
         await notifyLibraryObservers()
     }
 
-    /// Re-fetches source libraries on the configured sync interval until stopped.
-    /// Fetches update the local cache, so results reach the UI through the
-    /// existing library cache observers. Progress positions ride along with
-    /// metadata fetches, so the default interval is the smaller of the metadata
-    /// and progress sync intervals; pass usingProgressSyncInterval false to
-    /// refresh on the metadata interval alone (the watch trades sync latency
-    /// for battery).
-    public func startPeriodicLibraryRefresh(usingProgressSyncInterval: Bool = true) {
-        guard periodicLibraryRefreshTask == nil else { return }
-        periodicRefreshUsesProgressSyncInterval = usingProgressSyncInterval
+    public func setLibraryRefreshDemand(_ needed: Bool, owner: UUID) {
+        let previous = libraryRefreshSchedule.owners
+        if needed {
+            libraryRefreshSchedule.owners.insert(owner)
+        } else {
+            libraryRefreshSchedule.owners.remove(owner)
+        }
+        guard previous.isEmpty != libraryRefreshSchedule.owners.isEmpty else { return }
+        restartPeriodicLibraryRefresh()
+    }
+
+    public func restartPeriodicLibraryRefresh() {
+        periodicLibraryRefreshTask?.cancel()
+        periodicLibraryRefreshTask = nil
+        guard !libraryRefreshSchedule.owners.isEmpty else { return }
         periodicLibraryRefreshTask = Task {
             while !Task.isCancelled {
                 let config = await SettingsActor.shared.config
-                if config.sync.isMetadataRefreshDisabled {
-                    try? await Task.sleep(for: .seconds(60))
-                    continue
-                }
-                let interval =
-                    usingProgressSyncInterval
-                    ? min(
-                        config.sync.metadataRefreshIntervalSeconds,
-                        config.sync.progressSyncIntervalSeconds,
+                guard
+                    let delay = libraryRefreshSchedule.delay(
+                        interval: config.sync.metadataRefreshIntervalSeconds,
+                        now: Date(),
                     )
-                    : config.sync.metadataRefreshIntervalSeconds
-                debugLog("[BookServiceActor] Next periodic library refresh in \(Int(interval))s")
-                try? await Task.sleep(for: .seconds(interval))
-                guard !Task.isCancelled else { return }
-                guard await hasConnectedSource() else { continue }
+                else { return }
+                do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+                guard !Task.isCancelled, !libraryRefreshSchedule.owners.isEmpty else { return }
                 _ = await fetchLibraryInformation()
             }
         }
     }
 
-    public func stopPeriodicLibraryRefresh() {
-        periodicLibraryRefreshTask?.cancel()
-        periodicLibraryRefreshTask = nil
-    }
-
-    /// Applies a changed sync interval without waiting out the sleep already
-    /// in flight.
-    public func restartPeriodicLibraryRefresh() {
-        guard periodicLibraryRefreshTask != nil else { return }
-        stopPeriodicLibraryRefresh()
-        startPeriodicLibraryRefresh(
-            usingProgressSyncInterval: periodicRefreshUsesProgressSyncInterval
-        )
-    }
-
     @discardableResult
     public func fetchLibraryInformation() async -> [BookMetadata]? {
         await ensureSourceRegistryLoaded()
+        defer {
+            if !Task.isCancelled { libraryRefreshSchedule.lastAttempt = Date() }
+        }
 
         var metadata: [BookMetadata] = []
         var sawSource = false
@@ -591,6 +593,7 @@ public actor BookServiceActor {
             "[ConnDiag] fetchLibraryInformation: serial loop over \(sourceRecords.count) sources start"
         )
         for record in sourceRecords {
+            guard !Task.isCancelled else { return nil }
             guard let source = sourcesByID[record.id] else { continue }
             sawSource = true
 
@@ -610,12 +613,6 @@ public actor BookServiceActor {
                 return named
             }
             metadata.append(contentsOf: named)
-            if record.kind == .storyteller {
-                try? await LocalMediaActor.shared.updateSourceCacheMetadata(
-                    named,
-                    replacingSourceID: record.id,
-                )
-            }
             CoverCacheActor.shared.noteLibrary(books: named)
         }
 
@@ -638,12 +635,6 @@ public actor BookServiceActor {
             var named = book
             named.source = named.source ?? sourceRecord?.name
             return named
-        }
-        if sourceRecord?.kind == .storyteller {
-            try? await LocalMediaActor.shared.updateSourceCacheMetadata(
-                named,
-                replacingSourceID: sourceID,
-            )
         }
         CoverCacheActor.shared.noteLibrary(books: named)
         return named

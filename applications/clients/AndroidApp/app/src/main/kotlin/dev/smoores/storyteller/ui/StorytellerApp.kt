@@ -53,6 +53,8 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.smoores.storyteller.data.AUTO_UI_SCALE
 import dev.smoores.storyteller.data.DisplayOptions
 import dev.smoores.storyteller.data.DisplayOptionsStore
@@ -131,6 +133,12 @@ fun StorytellerApp(viewModel: StorytellerViewModel) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val drawerScope = rememberCoroutineScope()
     val screen = Screen.valueOf(screenName)
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    LaunchedEffect(screen, lifecycleState) {
+        viewModel.setLibraryRefreshDemand(
+            screen != Screen.Reader && lifecycleState.isAtLeast(Lifecycle.State.STARTED),
+        )
+    }
     val libraryTab = LibraryTab.valueOf(libraryTabName)
     val librarySortField = LibrarySortField.entries
         .firstOrNull { it.name == librarySortFieldName } ?: LibrarySortField.Title

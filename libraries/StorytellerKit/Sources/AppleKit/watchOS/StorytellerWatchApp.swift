@@ -68,6 +68,7 @@ struct StorytellerWatchApp: App {
                 debugLog("[WatchApp] App entering background")
                 Task {
                     guard await StorytellerRuntime.start() else { return }
+                    await ActiveReadingSession.shared.current?.handleSceneEnteredBackground()
                     await BookServiceActor.shared.setActive(false, source: .watch)
                     await WatchSessionManager.shared.relayPendingProgress()
                 }
@@ -95,10 +96,6 @@ struct StorytellerWatchApp: App {
         let result = await ProgressSyncActor.shared.syncPendingQueue()
         debugLog("[WatchApp] Sync on launch: synced=\(result.synced), failed=\(result.failed)")
         await WatchSessionManager.shared.relayPendingProgress()
-
-        if let library = await BookServiceActor.shared.fetchLibraryInformation() {
-            debugLog("[WatchApp] Library metadata updated: \(library.count) books")
-        }
     }
 }
 

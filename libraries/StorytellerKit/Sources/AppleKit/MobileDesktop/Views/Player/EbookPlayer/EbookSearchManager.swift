@@ -24,9 +24,9 @@ class EbookSearchManager {
     var matchCase: Bool = false
     var matchWholeWords: Bool = false
 
-    weak var commsBridge: ReaderCommsBridge?
+    weak var commsBridge: ReaderBridge?
 
-    init(bridge: ReaderCommsBridge? = nil) {
+    init(bridge: ReaderBridge? = nil) {
         self.commsBridge = bridge
         setupBridgeCallbacks()
     }

@@ -65,7 +65,7 @@ struct ChapterReferenceWindow: View {
                 searchControls
 
                 Button("Go to") {
-                    viewModel.progressManager?.handleUserChapterSelected(request.sectionIndex)
+                    viewModel.session?.selectTextSection(request.sectionIndex)
                 }
                 .controlSize(.small)
                 .fixedSize()
@@ -88,16 +88,23 @@ struct ChapterReferenceWindow: View {
         }
         .task {
             fontFaceCSS = await CustomFontsActor.shared.fontFaceCSS(
-                bundledFamily: viewModel.settingsVM.fontFamily)
+                bundledFamily: viewModel.settingsVM.fontFamily
+            )
         }
     }
 
     private func styleCSS(settingsVM: SettingsViewModel) -> String {
         let isDark = colorScheme == .dark
         let backgroundRaw = settingsVM.themeHex(
-            settingsVM.backgroundColor, role: .background, for: colorScheme)
+            settingsVM.backgroundColor,
+            role: .background,
+            for: colorScheme,
+        )
         let foregroundRaw = settingsVM.themeHex(
-            settingsVM.foregroundColor, role: .foreground, for: colorScheme)
+            settingsVM.foregroundColor,
+            role: .foreground,
+            for: colorScheme,
+        )
         let background =
             (backgroundRaw?.isEmpty == false ? backgroundRaw : nil)
             ?? (isDark ? kDefaultBackgroundColorDark : kDefaultBackgroundColorLight)
@@ -238,15 +245,10 @@ private struct ReferenceWebView: NSViewRepresentable {
                 let literal = String(data: encoded, encoding: .utf8)
             else { return }
             let js = """
-                (function() { \
-                var style = document.getElementById('storyteller-ref-style'); \
-                if (!style) { \
-                style = document.createElement('style'); \
-                style.id = 'storyteller-ref-style'; \
-                document.head.appendChild(style); \
-                } \
-                style.textContent = \(literal); \
-                })()
+                (function() { var style = document.getElementById('storyteller-ref-style'); if \
+                (!style) { style = document.createElement('style'); style.id = \
+                'storyteller-ref-style'; document.head.appendChild(style); } style.textContent = \
+                \(literal); })()
                 """
             webView.evaluateJavaScript(js)
         }

@@ -4,7 +4,7 @@ import Observation
 @StorytellerUIActor
 @Observable
 public final class ReaderStyleManager {
-    private weak var bridge: ReaderCommsBridge?
+    private weak var bridge: ReaderBridge?
     private var settingsVM: any ReaderSettingsReading
     private var isDarkMode = false
     private var styleUpdateTask: Task<Void, Never>?
@@ -12,7 +12,7 @@ public final class ReaderStyleManager {
     private var coverTone: CoverHSB?
     @ObservationIgnored private var fontObserverID: UUID?
 
-    public init(settingsVM: any ReaderSettingsReading, bridge: ReaderCommsBridge) {
+    public init(settingsVM: any ReaderSettingsReading, bridge: ReaderBridge) {
         self.settingsVM = settingsVM
         self.bridge = bridge
         setupSettingsObserver()
@@ -23,7 +23,8 @@ public final class ReaderStyleManager {
     }
 
     private func registerFontObserver() async {
-        fontObserverID = await CustomFontsActor.shared.addObserver { @StorytellerUIActor [weak self] in
+        fontObserverID = await CustomFontsActor.shared.addObserver {
+            @StorytellerUIActor [weak self] in
             guard let self else { return }
             Task { @StorytellerUIActor in
                 await self.sendStyleUpdate()
@@ -36,7 +37,7 @@ public final class ReaderStyleManager {
         await sendStyleUpdate()
     }
 
-    public func updateBridge(_ bridge: ReaderCommsBridge) {
+    public func updateBridge(_ bridge: ReaderBridge) {
         self.bridge = bridge
     }
 
@@ -155,7 +156,8 @@ public final class ReaderStyleManager {
             ?? (isDarkMode ? kDefaultForegroundColorDark : kDefaultForegroundColorLight)
 
         var effectiveCustomCSS = await CustomFontsActor.shared.fontFaceCSS(
-            bundledFamily: settingsVM.fontFamily)
+            bundledFamily: settingsVM.fontFamily
+        )
         if let userCSS = settingsVM.customCSS, !userCSS.isEmpty {
             effectiveCustomCSS += "\n" + userCSS
         }

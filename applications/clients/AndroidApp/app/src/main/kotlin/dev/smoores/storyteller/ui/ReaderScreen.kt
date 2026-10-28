@@ -24,6 +24,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.webkit.RenderProcessGoneDetail
 import androidx.browser.customtabs.CustomTabsClient
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.browser.customtabs.CustomTabsServiceConnection
@@ -125,8 +126,12 @@ internal fun ReaderScreen(
     val eink = LocalEink.current
     val systemReduceMotion = !ValueAnimator.areAnimatorsEnabled()
 
-    val webView = remember(book.id, mode) {
-        createReaderWebView(UiScale.unscaledContext(context), readerMessageFromJS)
+    var rendererEpoch by remember(book.id, mode) { mutableIntStateOf(0) }
+    val webView = remember(book.id, mode, rendererEpoch) {
+        createReaderWebView(UiScale.unscaledContext(context), readerMessageFromJS) {
+            readerControl("readerUnavailable", 0.0, "")
+            rendererEpoch++
+        }
     }
 
     var displaySettings by remember(book.id, mode) { mutableStateOf(ReaderDisplaySettings()) }
@@ -1082,6 +1087,7 @@ private fun hasTranslateHandler(context: Context): Boolean {
 private fun createReaderWebView(
     context: Context,
     readerMessageFromJS: (String, String) -> Unit,
+    onRendererGone: () -> Unit,
 ): WebView {
     val assetLoader = WebViewAssetLoader.Builder()
         .addPathHandler(
@@ -1114,7 +1120,7 @@ private fun createReaderWebView(
         settings.builtInZoomControls = false
         settings.displayZoomControls = false
         setBackgroundColor(Color.TRANSPARENT)
-        webViewClient = ReaderWebViewClient(assetLoader)
+        webViewClient = ReaderWebViewClient(assetLoader, onRendererGone)
         addJavascriptInterface(
             object {
                 @JavascriptInterface
@@ -1133,7 +1139,12 @@ private fun createReaderWebView(
 
 private class ReaderWebViewClient(
     private val assetLoader: WebViewAssetLoader,
+    private val onRendererGone: () -> Unit,
 ) : WebViewClientCompat() {
+    override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+        onRendererGone()
+        return true
+    }
     // Fallback for WebViews without DOCUMENT_START_SCRIPT support.
     var fallbackStartScripts: List<String> = emptyList()
 

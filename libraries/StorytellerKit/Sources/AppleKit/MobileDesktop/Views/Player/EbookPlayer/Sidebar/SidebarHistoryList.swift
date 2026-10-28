@@ -135,7 +135,7 @@ struct SidebarHistoryList: View {
     private func positionLabel(for visit: ReadingVisit) -> String {
         guard let progression = visit.endProgression else { return "--" }
         if viewModel.hasAudioNarration,
-            let total = viewModel.mediaOverlayManager?.bookTotalSeconds, total > 0
+            let total = viewModel.session?.audioState?.bookTotal, total > 0
         {
             return formatTime(progression * total)
         }

@@ -444,6 +444,7 @@ public final class WatchSessionManager: NSObject, WCSessionDelegate, @unchecked 
             sourceBooks,
             replacingSourceID: book.sourceID,
         )
+        await ProgressSyncActor.shared.updateServerPositions(from: [book])
     }
 
     private func isNewer(_ incoming: BookMetadata, than current: BookMetadata) -> Bool {
@@ -518,6 +519,7 @@ public final class WatchSessionManager: NSObject, WCSessionDelegate, @unchecked 
                     sourceBooks,
                     replacingSourceID: sourceID,
                 )
+                await ProgressSyncActor.shared.updateServerPositions(from: incomingBooks)
             }
             refreshCachedBooks()
             return !translatedBySource.isEmpty

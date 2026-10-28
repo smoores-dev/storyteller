@@ -18,6 +18,7 @@ struct TVSearchView: View {
                     resultsGridView
                 }
             }
+            .libraryRefreshDemand(model: mediaViewModel)
             .navigationDestination(for: BookMetadata.self) { book in
                 TVBookDetailView(book: book)
             }

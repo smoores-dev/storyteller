@@ -37,6 +37,7 @@ struct TVBookDetailView: View {
             .padding(.top, 132)
             .padding(.bottom, 72)
         }
+        .libraryRefreshDemand(model: mediaViewModel)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
         .defaultFocus($focusedControl, .actions)
@@ -434,7 +435,6 @@ struct TVBookDetailView: View {
         }
         return nil
     }
-
 
     private func metadataLine(label: String, value: String) -> Text {
         Text("\(label) ")

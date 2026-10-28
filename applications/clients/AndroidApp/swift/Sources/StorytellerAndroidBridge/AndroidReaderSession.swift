@@ -1,6 +1,3 @@
-// Android reader orchestration: plays the role EbookPlayerViewModel has on
-// Apple platforms, wrapping the shared ReadingSession + ReaderCommsBridge
-// stack for a Kotlin-owned WebView.
 import Foundation
 import Observation
 import StorytellerKit
@@ -16,7 +13,7 @@ final class AndroidJSEvaluator: JSEvaluating {
     @discardableResult
     func evaluate(_ script: String) async throws -> String? {
         guard !isClosed else {
-            throw ReaderCommsBridgeError.jsNotAvailable
+            throw ReaderBridgeError.jsNotAvailable
         }
 
         let requestID = UUID().uuidString
@@ -51,7 +48,7 @@ final class AndroidJSEvaluator: JSEvaluating {
         let continuations = pending.values
         pending.removeAll()
         for continuation in continuations {
-            continuation.resume(throwing: ReaderCommsBridgeError.jsNotAvailable)
+            continuation.resume(throwing: ReaderBridgeError.jsNotAvailable)
         }
     }
 
@@ -187,7 +184,7 @@ final class AndroidReaderSession {
 
     private let settings = AndroidReaderSettings()
     private var session: ReadingSession?
-    private var bridge: ReaderCommsBridge?
+    private var bridge: ReaderBridge?
     private var evaluator: AndroidJSEvaluator?
     private var router: ReaderMessageRouter?
     private var styleManager: ReaderStyleManager?
@@ -212,7 +209,6 @@ final class AndroidReaderSession {
     private var pendingSelection: TextSelectionMessage?
     private var pendingEditHighlightID: UUID?
     private var translateAvailable = false
-    private var lastChapterRestart: Date?
     private var overlayOptions = OverlayOptions()
     private var miniPlayerConfig = StorytellerGlobalConfig.MiniPlayer()
     private var miniProgressIndicator = kDefaultProgressIndicatorMiniPlayer
@@ -484,14 +480,14 @@ final class AndroidReaderSession {
         )
 
         let evaluator = AndroidJSEvaluator()
-        let bridge = ReaderCommsBridge(js: evaluator)
+        let bridge = ReaderBridge(js: evaluator)
         let router = ReaderMessageRouter(bridge: bridge)
         router.onConsoleLog = { level, message in
             let prefix = level == "error" ? "JS ERROR: " : level == "warn" ? "JS WARN: " : "JS: "
             debugLog("[AndroidReaderSession] \(prefix)\(message)")
         }
 
-        let session = ReadingSessionStore.shared.obtain(
+        let session = await ActiveReadingSession.shared.open(
             metadata: metadata,
             category: category,
             localMediaPath: localMedia?.url,
@@ -520,15 +516,7 @@ final class AndroidReaderSession {
         self.styleManager = styleManager
         scheduleCoverToneRefresh()
 
-        let persistedRate = defaultPlaybackSpeed
-        session.configureMediaOverlayManager = { [weak self] manager in
-            manager.setPlaybackRate(persistedRate)
-            manager.setWakeLock = { on in
-                Task { @StorytellerUIActor in
-                    self?.keepScreenOn = on
-                }
-            }
-        }
+        session.onPlaybackActivityChanged = { [weak self] on in self?.keepScreenOn = on }
         session.onReadaloudAvailabilityChanged = { [weak styleManager] available in
             styleManager?.setReadaloudModeAvailable(available)
         }
@@ -540,21 +528,11 @@ final class AndroidReaderSession {
             }
         }
         session.onIncomingServerPosition = { [weak self] position in
-            Task { @StorytellerUIActor [weak self] in
-                guard let self else { return }
-                // Live reading sync implies the user wants positions followed
-                // silently, so skip the prompt even if auto-sync is off.
-                let sync = await SettingsActor.shared.config.sync
-                if sync.autoSyncToNewerServerPosition || sync.liveReadingSyncEnabled {
-                    self.session?.progressManager?.handleServerPositionUpdate(position.locator)
-                } else {
-                    self.pendingServerPosition = position
-                }
-            }
+            self?.pendingServerPosition = position
         }
 
         session.prepare()
-        session.attachBridge(bridge, isRecovery: false)
+        session.attachBridge(bridge)
         bridge.onOverlayToggled = { [weak self] in
             self?.overlayToggleCount += 1
         }
@@ -644,7 +622,7 @@ final class AndroidReaderSession {
         let closingSession = session
         session = nil
         if let closingSession {
-            await closingSession.close(.endSession)
+            await closingSession.close(.detachView)
         }
 
         evaluator?.close()
@@ -677,14 +655,14 @@ final class AndroidReaderSession {
 
         switch command {
             case "goLeft":
-                session.progressManager?.handleUserNavLeft()
+                session.turnPageLeft()
             case "goRight":
-                session.progressManager?.handleUserNavRight()
+                session.turnPageRight()
             case "selectChapter":
                 if text.isEmpty {
-                    session.progressManager?.handleUserChapterSelected(Int(value))
+                    session.selectTextSection(Int(value))
                 } else {
-                    session.progressManager?.handleUserChapterSelectedWithHref(
+                    session.selectTextSection(
                         Int(value),
                         href: text,
                     )
@@ -697,39 +675,37 @@ final class AndroidReaderSession {
                 if let fragment,
                     let sectionId = session.bookStructure[safe: entry.sectionIndex]?.id
                 {
-                    session.progressManager?.handleUserChapterSelectedWithHref(
+                    session.selectTextSection(
                         entry.sectionIndex,
                         href: "\(sectionId)#\(fragment)",
                     )
                 } else {
-                    session.progressManager?.handleUserChapterSelected(entry.sectionIndex)
+                    session.selectTextSection(entry.sectionIndex)
                 }
             case "seekToFraction":
-                session.progressManager?.handleUserProgressSeek(value)
+                session.seekReaderProgress(value)
             case "prevChapter":
                 prevChapter(session)
             case "nextChapter":
                 nextChapter(session)
             case "togglePlayPause":
-                await session.progressManager?.togglePlaying()
+                try? await session.togglePlayback()
             case "nextSentence":
-                session.mediaOverlayManager?.nextSentence()
+                await session.skipSentence(by: 1)
             case "prevSentence":
-                session.mediaOverlayManager?.prevSentence()
+                await session.skipSentence(by: -1)
             case "setRate":
-                session.mediaOverlayManager?.setPlaybackRate(value)
+                await session.setPlaybackRate(value)
                 defaultPlaybackSpeed = value
                 try await SettingsActor.shared.updateConfig(defaultPlaybackSpeed: value)
             case "setVolume":
-                session.mediaOverlayManager?.setVolume(value)
+                await session.setVolume(value)
             case "startSleepTimer":
-                let type: SleepTimerType = text == "endOfChapter" ? .endOfChapter : .duration
-                session.mediaOverlayManager?.startSleepTimer(
-                    duration: type == .duration ? value : nil,
-                    type: type,
+                try? await session.control(
+                    text == "endOfChapter" ? .startEndOfChapterSleepTimer : .startSleepTimer(value)
                 )
             case "cancelSleepTimer":
-                session.mediaOverlayManager?.cancelSleepTimer()
+                try? await session.control(.cancelSleepTimer)
             case "updateReaderSettings":
                 try settings.apply(json: text)
                 try await persistDisplaySettings()
@@ -744,9 +720,10 @@ final class AndroidReaderSession {
             case "acceptServerPosition":
                 if let position = pendingServerPosition {
                     pendingServerPosition = nil
-                    session.progressManager?.handleServerPositionUpdate(position.locator)
+                    await session.restoreLocator(position.locator)
                 }
             case "declineServerPosition":
+                try await session.control(.declineServerPosition)
                 pendingServerPosition = nil
             case "saveHighlight":
                 try await applyHighlightEdit(json: text)
@@ -810,6 +787,15 @@ final class AndroidReaderSession {
                 timelineForwardLocator = nil
                 timelineForwardDescription = ""
                 publishState(session)
+            case "readerUnavailable":
+                session.readerUnavailable()
+                evaluator?.close()
+                let replacement = AndroidJSEvaluator()
+                evaluator = replacement
+                if let bridge {
+                    bridge.js = replacement
+                    session.attachBridge(bridge)
+                }
             case "sceneActive":
                 await session.handleSceneBecameActive()
             case "sceneBackground":
@@ -942,7 +928,7 @@ final class AndroidReaderSession {
         to locator: BookLocator,
         description: String,
     ) async {
-        session.progressManager?.handleServerPositionUpdate(locator)
+        await session.restoreLocator(locator)
         publishState(session)
         guard let bookID = currentBookID else { return }
         _ = await ProgressSyncActor.shared.restorePosition(
@@ -953,48 +939,28 @@ final class AndroidReaderSession {
     }
 
     private func currentPositionLocator(_ session: ReadingSession) -> BookLocator? {
-        session.progressManager?.currentLocator()
+        session.currentReaderLocator
     }
 
     private func currentPositionDescription(_ session: ReadingSession) -> String {
-        guard let progressManager = session.progressManager else { return "" }
-        if let chapterIndex = progressManager.selectedChapterId,
+        let reading = session
+        if let chapterIndex = reading.readerLocation?.sectionIndex,
             let label = session.bookStructure[safe: chapterIndex]?.label
         {
             return label
         }
-        if let fraction = progressManager.bookFraction {
+        if let fraction = reading.readerLocation?.fraction {
             return "\(Int((fraction * 100).rounded()))% of book"
         }
         return ""
     }
 
     private func prevChapter(_ session: ReadingSession) {
-        guard let progressManager = session.progressManager,
-            let currentIndex = progressManager.selectedChapterId
-        else { return }
-
-        let restarts = previousChapterRestarts(
-            progressInChapter: progressManager.chapterSeekBarValue,
-            lastRestartAt: lastChapterRestart,
-        )
-
-        if !restarts && currentIndex > 0 {
-            progressManager.handleUserChapterSelected(currentIndex - 1)
-            lastChapterRestart = nil
-        } else {
-            progressManager.handleUserProgressSeek(0)
-            lastChapterRestart = Date()
-        }
+        session.navigateTextChapter(by: -1)
     }
 
     private func nextChapter(_ session: ReadingSession) {
-        guard let progressManager = session.progressManager,
-            let currentIndex = progressManager.selectedChapterId,
-            currentIndex < session.bookStructure.count - 1
-        else { return }
-        progressManager.handleUserChapterSelected(currentIndex + 1)
-        lastChapterRestart = nil
+        session.navigateTextChapter(by: 1)
     }
 
     private static let lastUsedHighlightColorKey = "lastUsedHighlightColorId"
@@ -1346,7 +1312,9 @@ final class AndroidReaderSession {
             }
             if let value = fullPlayer.controlSlots {
                 fullPlayerConfig.controlSlots = SlotLayout.sanitized(
-                    value, for: .fullPlayerControls)
+                    value,
+                    for: .fullPlayerControls,
+                )
             }
         }
 
@@ -1806,9 +1774,7 @@ final class AndroidReaderSession {
         let timelineForwardDescription: String?
     }
 
-    // The reader state lives across several @Observable objects whose
-    // instances are replaced mid-session (EPM/MOM generations), so poll and
-    // dedup instead of chaining withObservationTracking registrations.
+    // Poll for display changes and deduplicate updates before crossing JNI.
     private func startStatePublisher() {
         statePublisher?.cancel()
         statePublisher = Task { @StorytellerUIActor [weak self] in
@@ -1821,8 +1787,7 @@ final class AndroidReaderSession {
     }
 
     private func publishState(_ session: ReadingSession) {
-        let progressManager = session.progressManager
-        let overlayManager = session.mediaOverlayManager
+        let reading = session
         let state = ReaderState(
             title: session.metadata.title,
             author: session.metadata.authors?.first?.name ?? "",
@@ -1835,24 +1800,24 @@ final class AndroidReaderSession {
                     sectionIndex: $0.sectionIndex,
                 )
             },
-            selectedChapterId: progressManager?.uiSelectedChapterId,
+            selectedChapterId: reading.readerLocation?.sectionIndex,
             chapterCount: session.bookStructure.count,
-            bookFraction: progressManager?.bookFraction,
-            chapterFraction: progressManager?.chapterSeekBarValue,
-            chapterCurrentPage: progressManager?.chapterCurrentPage,
-            chapterTotalPages: progressManager?.chapterTotalPages,
-            isPlaying: overlayManager?.isPlaying ?? false,
-            playbackRate: overlayManager?.playbackRate ?? 1.0,
-            volume: overlayManager?.volume ?? 1.0,
-            bookTimeRemaining: overlayManager?.bookTimeRemaining?.rounded(),
-            chapterTimeRemaining: overlayManager?.chapterTimeRemaining?.rounded(),
-            chapterElapsedSeconds: overlayManager?.chapterElapsedSeconds?.rounded(),
-            chapterTotalSeconds: overlayManager?.chapterTotalSeconds?.rounded(),
-            sleepTimerActive: overlayManager?.sleepTimerActive ?? false,
-            sleepTimerRemaining: overlayManager?.sleepTimerRemaining?.rounded(),
-            sleepTimerType: overlayManager?.sleepTimerType?.rawValue,
-            sleepTimerEndOfChapter: (overlayManager?.sleepTimerActive ?? false)
-                && overlayManager?.sleepTimerType == .endOfChapter,
+            bookFraction: reading.readerLocation?.fraction,
+            chapterFraction: reading.readerChapterFraction,
+            chapterCurrentPage: reading.readerLocation?.pageIndex,
+            chapterTotalPages: reading.readerLocation?.totalPages,
+            isPlaying: reading.audioState?.isPlaying ?? false,
+            playbackRate: reading.audioState?.playbackRate ?? 1.0,
+            volume: reading.audioState?.volume ?? 1.0,
+            bookTimeRemaining: reading.bookTimeRemaining?.rounded(),
+            chapterTimeRemaining: reading.chapterTimeRemaining?.rounded(),
+            chapterElapsedSeconds: reading.audioState?.chapterElapsed.rounded(),
+            chapterTotalSeconds: reading.audioState?.chapterTotal.rounded(),
+            sleepTimerActive: reading.sleepTimerActive,
+            sleepTimerRemaining: reading.sleepTimerRemaining?.rounded(),
+            sleepTimerType: reading.sleepTimerType?.rawValue,
+            sleepTimerEndOfChapter: (reading.sleepTimerActive)
+                && reading.sleepTimerType == .endOfChapter,
             overlayToggleCount: overlayToggleCount,
             keepScreenOn: keepScreenOn,
             backgroundColor: CoverReaderChrome.resolvedHex(

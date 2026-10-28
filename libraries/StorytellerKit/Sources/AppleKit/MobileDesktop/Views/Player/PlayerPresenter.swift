@@ -54,8 +54,8 @@ public final class PlayerPresenter {
         guard let current = card else { return }
         let bookID = current.data.metadata.id
         Task { @MainActor in
-            let kind = await AudioSessionActor.shared.currentSessionKind()
-            let snapshot = await AudioSessionActor.shared.currentSnapshot()
+            let kind = ActiveReadingSession.shared.current?.audioKind
+            let snapshot = ActiveReadingSession.shared.current?.playbackSnapshot
             let keepsSession = kind?.bookID == bookID && snapshot?.isPlaying == true
             debugLog(
                 "[PlayerPresenter] Dismissing card for \(bookID), keepsSession=\(keepsSession)"
@@ -81,7 +81,7 @@ public final class PlayerPresenter {
 
     public func expandMiniPlayer() {
         Task { @MainActor in
-            guard let kind = await AudioSessionActor.shared.currentSessionKind() else { return }
+            guard let kind = ActiveReadingSession.shared.current?.audioKind else { return }
             guard
                 let data = await Self.loadPlayerBookData(
                     bookID: kind.bookID,
@@ -97,7 +97,7 @@ public final class PlayerPresenter {
 
     public func stopSession() {
         Task { @MainActor in
-            guard let kind = await AudioSessionActor.shared.currentSessionKind() else { return }
+            guard let kind = ActiveReadingSession.shared.current?.audioKind else { return }
             debugLog("[PlayerPresenter] Stopping session for \(kind.bookID)")
             LastOpenBookStore.clearIfMatching(
                 bookId: kind.bookID,
@@ -117,16 +117,10 @@ public final class PlayerPresenter {
     }
 
     private static func endLiveSession(excluding newBookID: BookID?) async {
-        guard let kind = await AudioSessionActor.shared.currentSessionKind(),
-            kind.bookID != newBookID
-        else { return }
-        switch kind {
-            case .readaloud(let id):
-                await ReadingSessionStore.shared.endIfViewDetached(for: id)
-                await AudioSessionActor.shared.close(ifOwnedBy: id)
-            case .audiobook(let id):
-                await AudioSessionActor.shared.close(ifOwnedBy: id)
+        guard let session = ActiveReadingSession.shared.current, session.bookID != newBookID else {
+            return
         }
+        await session.close(.endSession)
     }
 
     private static func loadPlayerBookData(

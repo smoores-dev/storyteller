@@ -8,8 +8,11 @@ private struct ChapterButtonAvailability: Equatable {
     let hasNext: Bool
 }
 
-class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
+class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate,
+    CPInterfaceControllerDelegate
+{
     private var interfaceController: CPInterfaceController?
+    private let libraryRefreshOwner = UUID()
     private var lastChapterButtonAvailability: ChapterButtonAvailability?
     private var isLoadingBook = false
     private var readaloudListTemplate: CPListTemplate?
@@ -23,6 +26,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     ) {
         debugLog("[CarPlay] Connected to CarPlay")
         self.interfaceController = interfaceController
+        interfaceController.delegate = self
 
         Task { @MainActor in
             guard await StorytellerRuntime.start() else { return }
@@ -46,6 +50,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     ) {
         debugLog("[CarPlay] Disconnected from CarPlay")
         self.interfaceController = nil
+        updateLibraryRefreshDemand()
         Task { @MainActor in
             CarPlayCoordinator.shared.isCarPlayConnected = false
             CarPlayCoordinator.shared.onLibraryUpdated = nil
@@ -55,6 +60,27 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         Task {
             guard await StorytellerRuntime.start() else { return }
             await BookServiceActor.shared.setActive(false, source: .carPlay)
+        }
+    }
+
+    func templateDidAppear(_ aTemplate: CPTemplate, animated: Bool) {
+        updateLibraryRefreshDemand()
+    }
+
+    func templateDidDisappear(_ aTemplate: CPTemplate, animated: Bool) {
+        updateLibraryRefreshDemand()
+    }
+
+    private func updateLibraryRefreshDemand() {
+        Task { @MainActor in
+            let top = interfaceController?.topTemplate
+            let needed =
+                top is CPTabBarTemplate
+                || (top != nil && (top === readaloudListTemplate || top === audiobookListTemplate))
+            await BookServiceActor.shared.setLibraryRefreshDemand(
+                needed,
+                owner: libraryRefreshOwner,
+            )
         }
     }
 

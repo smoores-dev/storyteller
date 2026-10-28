@@ -70,11 +70,16 @@ jniLibs, and assembles an optimized APK. Use `--debug` to enable debugging for
 both Swift and Android. Run a full build when switching modes before using
 `--apk-only`.
 
-It needs a swift.org toolchain with the matching `swift sdk install` Android
-bundle (versions must match exactly; the Xcode toolchain cannot cross-compile),
+It needs a swift.org toolchain matching `.swift-version` and the matching
+`swift sdk install` Android bundle (the Xcode toolchain cannot cross-compile),
 an Android SDK/NDK (default location `~/Library/Android/sdk`, override with
 `ANDROID_HOME`), and a host JDK 17+. Use `--swift-only` or `--apk-only` for
 partial builds.
+
+On macOS, the pinned Swift 6.3.1 toolchain uses
+`/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk` by default. Set
+`SDKROOT` to override that path. Other platforms keep their normal host SDK
+configuration.
 
 `scripts/androidrun` installs and launches the built APK, booting the first
 available emulator AVD if no device is connected (override with

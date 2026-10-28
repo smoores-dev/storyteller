@@ -28,8 +28,8 @@ final class WebViewRecoveryManager {
                 viewModel?.extractedEbookPath = path
             },
             flushPosition: { [weak viewModel] in
-                await viewModel?.session?.progressManager?
-                    .syncProgressToServer(reason: .appBackgrounding)
+                viewModel?.session?.readerUnavailable()
+                await viewModel?.session?.saveProgressLocally(reason: .appBackgrounding)
             },
         )
     }

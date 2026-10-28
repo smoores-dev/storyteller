@@ -174,5 +174,11 @@ test("navigation requested during reflow reaches its destination", async ({
   )
   expect(destination.visibleArea).toBeGreaterThan(0)
   expect(result.relocations.at(-1)?.reason).toBe("navigation")
-  expect(result.messages.filter((m) => m.name === "PageFlipped")).toEqual([])
+  expect(
+    result.messages.filter(
+      (m) =>
+        m.name === "ReadingState" &&
+        (m.body.gesture as { moved?: boolean } | null)?.moved,
+    ),
+  ).toEqual([])
 })

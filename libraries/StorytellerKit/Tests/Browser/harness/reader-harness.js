@@ -5,6 +5,7 @@ const container = document.getElementById("reader-container")
 const messages = []
 const relocations = []
 let view, renderer, manager, lastRange
+let dropReadingMessages = false
 let activityAt = performance.now()
 
 window.webkit = {
@@ -12,8 +13,10 @@ window.webkit = {
     {},
     {
       get: (_, name) => ({
-        postMessage: (body) =>
-          messages.push({ name, body, at: performance.now() }),
+        postMessage: (body) => {
+          if (name === "ReadingState" && dropReadingMessages) return
+          messages.push({ name, body, at: performance.now() })
+        },
       }),
     },
   ),
@@ -162,6 +165,28 @@ window.reader = {
     await settled()
   },
   navigate,
+  async scrollingMode() {
+    manager.updateStyles(JSON.stringify({ scrollingMode: true }))
+    await settled()
+  },
+  readingSnapshot(playhead = null) {
+    return manager.readingSnapshot(playhead)
+  },
+  presentReading(request) {
+    return manager.presentReading(request)
+  },
+  readingCommand(request) {
+    return manager.readingCommand(request)
+  },
+  acknowledgeReading(documentID, commandID, gestureID) {
+    manager.acknowledgeReading(documentID, commandID, gestureID)
+  },
+  dropReadingMessages(value) {
+    dropReadingMessages = value
+  },
+  readingInput(active) {
+    doc().dispatchEvent(new Event(active ? "touchstart" : "touchend"))
+  },
   async goTo(href, { smooth = false } = {}) {
     renderer.toggleAttribute("animated", smooth)
     await view.goTo(href, { smooth })

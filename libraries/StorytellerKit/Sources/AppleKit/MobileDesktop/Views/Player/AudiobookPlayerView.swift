@@ -10,10 +10,10 @@ public struct AudiobookPlayerView: View {
 
     @State private var settingsVM = SettingsViewModel()
     @State private var coverPalette: CoverDerivedPalette?
-    @State private var sessionState: AudiobookSessionState?
+    @State private var readingSession: ReadingSession?
+    private var sessionState: AudiobookSessionState? { readingSession?.audiobookState }
     @State private var chapterProgress = 0.0
     @State private var errorMessage: String?
-    @State private var stateObserverID: UUID?
     @State private var showServerPositionDialog = false
     @State private var lastPendingServerPosition: AudiobookSessionServerPosition?
 
@@ -62,6 +62,9 @@ public struct AudiobookPlayerView: View {
                 guard let bookID = bookData?.metadata.id else { return }
                 coverPalette = await CoverDerivedPalette.load(for: bookID)
             }
+            .onChange(of: sessionState) { _, state in
+                applySessionState(state)
+            }
             .onDisappear {
                 #if os(iOS)
                 debugLog(
@@ -78,16 +81,9 @@ public struct AudiobookPlayerView: View {
                 let keepsSession = false
                 #endif
 
-                let observerID = stateObserverID
-                stateObserverID = nil
-                let bookID = bookData?.metadata.id
+                let session = readingSession
                 Task {
-                    if let observerID {
-                        await AudioSessionActor.shared.removeStateObserver(id: observerID)
-                    }
-                    if !keepsSession, let bookID {
-                        await AudioSessionActor.shared.close(ifOwnedBy: bookID)
-                    }
+                    if !keepsSession { await session?.close(.endSession) }
                 }
             }
             #if os(iOS)
@@ -235,19 +231,17 @@ public struct AudiobookPlayerView: View {
         }
 
         do {
-            try await AudioSessionActor.shared.openAudiobook(
-                book: bookData.metadata,
-                mediaURL: mediaURL,
+            let session = await ActiveReadingSession.shared.open(
+                metadata: bookData.metadata,
+                category: .audio,
+                localMediaPath: mediaURL,
+                settings: settingsVM,
             )
-
-            if stateObserverID == nil {
-                stateObserverID = await AudioSessionActor.shared.addStateObserver { state in
-                    Task { @MainActor in
-                        applySessionState(state)
-                    }
-                }
-            }
-            applySessionState(await AudioSessionActor.shared.currentState())
+            readingSession = session
+            session.prepare()
+            await session.awaitPreparation()
+            if let error = session.lastPrepareError { throw error }
+            applySessionState(session.audiobookState)
         } catch {
             errorMessage = "Failed to load audiobook: \(error.localizedDescription)"
         }
@@ -255,7 +249,6 @@ public struct AudiobookPlayerView: View {
 
     @MainActor
     private func applySessionState(_ state: AudiobookSessionState?) {
-        sessionState = state
         if let state {
             chapterProgress = state.chapterProgress
             if state.pendingServerPosition != lastPendingServerPosition {
@@ -271,7 +264,8 @@ public struct AudiobookPlayerView: View {
     private func control(_ command: AudiobookSessionCommand) {
         Task {
             do {
-                try await AudioSessionActor.shared.control(command)
+                guard let readingSession else { throw AudiobookSessionError.audiobookNotOpen }
+                try await readingSession.control(command)
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription

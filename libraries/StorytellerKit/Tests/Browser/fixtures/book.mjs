@@ -5,7 +5,7 @@ export function makeBook({ sections: sources, dir = "ltr", metadata = {} }) {
     throw new Error("A fixture book needs at least one section")
   if (new Set(sources.map(({ id }) => id)).size !== sources.length)
     throw new Error("Fixture section IDs must be unique")
-  const sections = sources.map(({ id, html }) => {
+  const sections = sources.map(({ id, html, linear }) => {
     let url
     // Relative assets resolve against the harness server, not the blob URL.
     const document = new DOMParser().parseFromString(html, "text/html")
@@ -17,6 +17,7 @@ export function makeBook({ sections: sources, dir = "ltr", metadata = {} }) {
     const source = "<!doctype html>" + document.documentElement.outerHTML
     return {
       id,
+      linear,
       size: source.length,
       load() {
         url ??= URL.createObjectURL(new Blob([source], { type: "text/html" }))

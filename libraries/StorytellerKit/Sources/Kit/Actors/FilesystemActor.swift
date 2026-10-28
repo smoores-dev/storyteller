@@ -449,6 +449,10 @@ public actor FilesystemActor {
             isDirectory: false,
         )
 
+        return try Self.readProgressQueue(from: queueURL)
+    }
+
+    static func readProgressQueue(from queueURL: URL) throws -> [PendingProgressSync] {
         let fm = FileManager.default
         guard fm.fileExists(atPath: queueURL.path) else {
             return []
@@ -457,12 +461,14 @@ public actor FilesystemActor {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let data = try Data(contentsOf: queueURL)
-        do {
-            return try decoder.decode([PendingProgressSync].self, from: data)
-        } catch is DecodingError {
-            try fm.removeItem(at: queueURL)
-            return []
-        }
+        return try decoder.decode([PendingProgressSync].self, from: data)
+    }
+
+    static func writeProgressQueue(_ queue: [PendingProgressSync], to queueURL: URL) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(queue).write(to: queueURL, options: .atomic)
     }
 
     public func saveProgressQueue(_ queue: [PendingProgressSync]) async throws {
@@ -480,11 +486,7 @@ public actor FilesystemActor {
             try await withCheckedThrowingContinuation { continuation in
                 ioQueue.async {
                     do {
-                        let encoder = JSONEncoder()
-                        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                        encoder.dateEncodingStrategy = .iso8601
-                        let data = try encoder.encode(queueSnapshot)
-                        try data.write(to: queueURL, options: .atomic)
+                        try Self.writeProgressQueue(queueSnapshot, to: queueURL)
                         continuation.resume()
                     } catch {
                         continuation.resume(throwing: error)

@@ -17,6 +17,7 @@ struct TVLibraryView: View {
                     booksGridView
                 }
             }
+            .libraryRefreshDemand(model: mediaViewModel)
             .navigationDestination(for: BookMetadata.self) { book in
                 TVBookDetailView(book: book)
             }

@@ -101,15 +101,25 @@ public func liveSyncPeerLost(instanceID: String) async {
     AndroidNsdPeerDiscovery.shared.handlePeerLost(id: instanceID)
 }
 
+private let androidLibraryRefreshOwner = UUID()
+
+public func androidLibraryRefreshDemand(needed: Bool) async throws {
+    try requireAndroidBootstrap()
+    await BookServiceActor.shared.setLibraryRefreshDemand(
+        needed,
+        owner: androidLibraryRefreshOwner,
+    )
+}
+
 public func androidAppDidBecomeActive() async throws {
     try requireAndroidBootstrap()
     await BookServiceActor.shared.setActive(true, source: .app)
-    await BookServiceActor.shared.startPeriodicLibraryRefresh()
 }
 
 public func androidAppDidEnterBackground() async throws {
     try requireAndroidBootstrap()
-    await BookServiceActor.shared.stopPeriodicLibraryRefresh()
+    await BookServiceActor.shared.setLibraryRefreshDemand(false, owner: androidLibraryRefreshOwner)
+    await ActiveReadingSession.shared.current?.handleSceneEnteredBackground()
     await BookServiceActor.shared.setActive(false, source: .app)
 }
 
@@ -290,6 +300,8 @@ public func saveAppSettings(requestID: String, json: String) async throws {
             AndroidAppSettingsUpdate.self,
             from: Data(json.utf8),
         )
+        let oldMetadataInterval = await SettingsActor.shared.config.sync
+            .metadataRefreshIntervalSeconds
         try await SettingsActor.shared.updateConfig(
             progressSyncIntervalSeconds: update.progressSyncIntervalSeconds,
             metadataRefreshIntervalSeconds: update.metadataRefreshIntervalSeconds,
@@ -300,6 +312,9 @@ public func saveAppSettings(requestID: String, json: String) async throws {
             doubleCoverAlignment: update.doubleCoverAlignment,
             experimentalSettings: update.experimentalSettings,
         )
+        if let interval = update.metadataRefreshIntervalSeconds, interval != oldMetadataInterval {
+            await BookServiceActor.shared.restartPeriodicLibraryRefresh()
+        }
         await LiveReadingSyncActor.shared.reconcileWithSettings()
         return try await encodeAppSettings()
     }
@@ -682,21 +697,27 @@ public func bulkBookAction(requestID: String, actionJSON: String) async throws {
             case "addTags":
                 success = await service.addTags(action.names ?? [], toBooks: ids)
             case "removeTags":
-                guard let sourceID = action.sourceID else { throw AndroidBridgeError.invalidBulkAction }
+                guard let sourceID = action.sourceID else {
+                    throw AndroidBridgeError.invalidBulkAction
+                }
                 success = await service.removeTags(
                     action.uuids ?? [],
                     fromBooks: ids,
                     sourceID: sourceID,
                 )
             case "addToCollections":
-                guard let sourceID = action.sourceID else { throw AndroidBridgeError.invalidBulkAction }
+                guard let sourceID = action.sourceID else {
+                    throw AndroidBridgeError.invalidBulkAction
+                }
                 success = await service.addBooks(
                     ids,
                     toCollectionUUIDs: action.uuids ?? [],
                     sourceID: sourceID,
                 )
             case "removeFromCollections":
-                guard let sourceID = action.sourceID else { throw AndroidBridgeError.invalidBulkAction }
+                guard let sourceID = action.sourceID else {
+                    throw AndroidBridgeError.invalidBulkAction
+                }
                 success = await service.removeBooks(
                     ids,
                     fromCollectionUUIDs: action.uuids ?? [],
@@ -802,8 +823,9 @@ public func quickEditContextJSON(
 ) async throws {
     try await deliverAndroidBridgePayload(requestID: requestID) {
         try requireAndroidBootstrap()
-        guard await BookServiceActor.shared.bookSources
-            .first(where: { $0.id == sourceID })?.kind == .storyteller
+        guard
+            await BookServiceActor.shared.bookSources
+                .first(where: { $0.id == sourceID })?.kind == .storyteller
         else {
             return try encodeJSON(
                 AndroidQuickEditContext(
@@ -955,8 +977,9 @@ public func bookIdentifierContextJSON(
             )
         }
 
-        guard await BookServiceActor.shared.bookSources
-            .first(where: { $0.id == sourceID })?.kind == .storyteller
+        guard
+            await BookServiceActor.shared.bookSources
+                .first(where: { $0.id == sourceID })?.kind == .storyteller
         else {
             return try encodeJSON(
                 AndroidIdentifierContext(
@@ -1036,7 +1059,8 @@ public func bookIdentifierContextJSON(
                 failureMessage: nil,
                 displayRows: displayRows,
                 rows: rows,
-                types: fetchedTypes
+                types:
+                    fetchedTypes
                     .map { AndroidIdentifierType(uuid: $0.uuid, displayName: $0.displayName) }
                     .sorted {
                         $0.displayName.localizedCaseInsensitiveCompare($1.displayName)
@@ -1586,7 +1610,8 @@ private func adjustedPaletteValues(
     colorIntensity: Double,
 ) -> CoverDerivedPaletteValues {
     let mode = CoverColorMode(rawValue: colorMode) ?? .full
-    let surfaceHSB = CoverColorAverager.surfaceHSB(rgbaPixels: rgbaPixels)
+    let surfaceHSB =
+        CoverColorAverager.surfaceHSB(rgbaPixels: rgbaPixels)
         ?? CoverPaletteAdjustment.fallbackSurfaceHSB
     return CoverPaletteAdjustment.adjustedValues(
         surfaceHSB: surfaceHSB,
@@ -1698,20 +1723,20 @@ public func openHeadlessPlayback(
 
 public func cyclePlaybackRate() async throws {
     try requireAndroidBootstrap()
-    await AudioSessionActor.shared.cyclePlaybackRate()
+    await ActiveReadingSession.shared.current?.cyclePlaybackRate()
 }
 
 public func sessionTogglePlayPause() async throws {
     try requireAndroidBootstrap()
-    try await AudioSessionActor.shared.transport(.togglePlayPause)
+    guard let session = await ActiveReadingSession.shared.current else {
+        throw SMILPlayerError.bookNotLoaded
+    }
+    try await session.togglePlayback()
 }
 
 public func sessionClose() async throws {
     try requireAndroidBootstrap()
-    if case .readaloud(let bookID) = await AudioSessionActor.shared.currentSessionKind() {
-        await ReadingSessionStore.shared.endIfViewDetached(for: bookID)
-    }
-    await AudioSessionActor.shared.closeCurrent()
+    await ActiveReadingSession.shared.current?.close(.endSession)
 }
 
 public func openReader(

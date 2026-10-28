@@ -23,12 +23,14 @@ Options:
 
 Environment:
   ANDROID_HOME                Android SDK path. Default: ~/Library/Android/sdk
-  ANDROID_NDK_HOME            NDK path. Default: newest under ANDROID_HOME/ndk
+  ANDROID_NDK_HOME            NDK path. Default: 27.1.12297006 under ANDROID_HOME/ndk
   STORYTELLER_SWIFT_TOOLCHAIN    Swift toolchain directory or identifier. If unset,
                               infer the matching installed toolchain from the SDK.
                               Set empty to use PATH.
   STORYTELLER_SWIFT_ANDROID_SDK_BUNDLE
                               Swift Android SDK artifact bundle path.
+  SDKROOT                     macOS host SDK override. Default on macOS:
+                              /Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk
 EOF
 }
 
@@ -53,7 +55,8 @@ fi
 # The Android project currently packages one ABI. Keep the Swift target,
 # runtime staging path, libc++, and Gradle abiFilter as one validated set.
 TRIPLE="aarch64-unknown-linux-android28"
-SDK_BUNDLE="${STORYTELLER_SWIFT_ANDROID_SDK_BUNDLE:-${HOME}/Library/org.swift.swiftpm/swift-sdks/swift-6.2.3-RELEASE_android.artifactbundle}"
+SWIFT_VERSION="$(tr -d '[:space:]' < .swift-version)"
+SDK_BUNDLE="${STORYTELLER_SWIFT_ANDROID_SDK_BUNDLE:-${HOME}/Library/org.swift.swiftpm/swift-sdks/swift-${SWIFT_VERSION}-RELEASE_android.artifactbundle}"
 JNILIBS="AndroidApp/app/src/main/jniLibs/arm64-v8a"
 
 SDK_BUNDLE_NAME="$(basename "${SDK_BUNDLE}")"
@@ -77,7 +80,7 @@ if [[ -z "${JAVA_HOME:-}" && -x /usr/libexec/java_home ]]; then
     export JAVA_HOME
 fi
 if [[ -z "${ANDROID_NDK_HOME:-}" ]]; then
-    ANDROID_NDK_HOME="$(ls -d "${ANDROID_HOME}"/ndk/* | sort -V | tail -1)"
+    ANDROID_NDK_HOME="${ANDROID_HOME}/ndk/27.1.12297006"
     export ANDROID_NDK_HOME
 fi
 
@@ -112,13 +115,22 @@ if [[ "${APK_ONLY}" -eq 0 ]]; then
     fi
     echo "Swift compiler: ${SWIFT_BIN} (${SDK_VERSION})"
     export PATH="$(dirname "${SWIFT_BIN}"):${PATH}"
+    if [[ "$(uname -s)" == Darwin ]]; then
+        export SDKROOT="${SDKROOT:-/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk}"
+        if [[ ! -d "${SDKROOT}" ]]; then
+            echo "Host SDK not found: ${SDKROOT}. Set SDKROOT to your macOS 26 SDK." >&2
+            exit 1
+        fi
+        SDKROOT="$(cd "${SDKROOT}" && pwd -P)"
+        echo "Swift host SDK: ${SDKROOT}"
+    fi
 
     # SwiftPM does not invalidate host tools or target modules when the active
     # Swift compiler changes. Clean derived products once for each build
     # environment so modules from (for example) Swift 6.3 cannot be reused by
     # the Swift 6.2 Android toolchain. Dependency checkouts remain cached.
     SWIFT_BUILD_DIR="AndroidApp/swift/.build"
-    SWIFT_BUILD_ENVIRONMENT="${SWIFT_BIN}|${SWIFT_VERSION_OUTPUT%%$'\n'*}|${SDK_BUNDLE}|${TRIPLE}"
+    SWIFT_BUILD_ENVIRONMENT="${SWIFT_BIN}|${SWIFT_VERSION_OUTPUT%%$'\n'*}|${SDK_BUNDLE}|${TRIPLE}|${SDKROOT:-}"
     SWIFT_BUILD_ENVIRONMENT_FILE="${SWIFT_BUILD_DIR}/.storyteller-build-environment"
     PREVIOUS_SWIFT_BUILD_ENVIRONMENT=""
     if [[ -f "${SWIFT_BUILD_ENVIRONMENT_FILE}" ]]; then
@@ -146,6 +158,7 @@ if [[ "${APK_ONLY}" -eq 0 ]]; then
 
     (cd AndroidApp/swift && "${SWIFT_BIN}" build \
             --configuration "${SWIFT_CONFIGURATION}" \
+            --no-color-diagnostics \
             --disable-sandbox \
             --swift-sdk "${TRIPLE}" \
             --product StorytellerAndroidBridge)

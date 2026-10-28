@@ -104,7 +104,8 @@ private func makeBookOpenScript(ebookPath: URL?) -> WKUserScript {
                     }
 
                     window.storytellerOpeningBookPath = window.storytellerBookPath;
-                    console.log('[StorytellerBookOpen] opening book', reason, window.storytellerBookPath);
+                    console.log('[StorytellerBookOpen] opening book', reason, \
+            window.storytellerBookPath);
 
                     const openPromise = loader.openBookFromDirectory(window.storytellerBookPath);
 
@@ -133,7 +134,7 @@ private class WebViewCoordinator2: NSObject, WKNavigationDelegate, WKScriptMessa
     let onNavigationFinished: () -> Void
     let router = ReaderMessageRouter()
     var jsEvaluator: WKWebViewJSEvaluator?
-    var commsBridge: ReaderCommsBridge? {
+    var commsBridge: ReaderBridge? {
         didSet { router.bridge = commsBridge }
     }
     var onContentPurged: (() -> Void)?
@@ -303,7 +304,7 @@ private class WebViewCoordinator2: NSObject, WKNavigationDelegate, WKScriptMessa
 #if os(iOS)
 @available(iOS 17.0, *)
 class HighlightableWebView: WKWebView {
-    var commsBridge: ReaderCommsBridge?
+    var commsBridge: ReaderBridge?
 
     func presentDictionary(for term: String) {
         guard !term.isEmpty,
@@ -350,7 +351,7 @@ class HighlightableWebView: WKWebView {
 #if os(macOS)
 @available(macOS 14.0, *)
 class HighlightableWebView: WKWebView {
-    var commsBridge: ReaderCommsBridge?
+    var commsBridge: ReaderBridge?
 
     func presentDictionary(for term: String, atViewportRect rect: CGRect?) {
         guard !term.isEmpty else { return }
@@ -404,15 +405,12 @@ private func makeWebViewConfiguration2(
     let contentController = WKUserContentController()
     contentController.add(coordinator, name: "ConsoleLog")
     contentController.add(coordinator, name: "BookStructureReady")
-    contentController.add(coordinator, name: "Relocated")
-    contentController.add(coordinator, name: "PageFlipped")
-    contentController.add(coordinator, name: "PageTurnSettled")
+    contentController.add(coordinator, name: "ReadingNavigate")
+    contentController.add(coordinator, name: "ReadingState")
     contentController.add(coordinator, name: "OverlayToggled")
     contentController.add(coordinator, name: "MarginClickNav")
     contentController.add(coordinator, name: "SentenceSkip")
     contentController.add(coordinator, name: "mediaOverlaySeek")
-    contentController.add(coordinator, name: "MediaOverlayProgress")
-    contentController.add(coordinator, name: "ElementVisibility")
     contentController.add(coordinator, name: "SearchResults")
     contentController.add(coordinator, name: "SearchProgress")
     contentController.add(coordinator, name: "SearchComplete")
@@ -440,14 +438,14 @@ private func makeWebViewConfiguration2(
 @available(macOS 14.0, iOS 17.0, *)
 struct EbookPlayerWebView: View {
     let ebookPath: URL?
-    @Binding var commsBridge: ReaderCommsBridge?
-    let onBridgeReady: ((ReaderCommsBridge) -> Void)?
+    @Binding var commsBridge: ReaderBridge?
+    let onBridgeReady: ((ReaderBridge) -> Void)?
     let onContentPurged: (() -> Void)?
 
     init(
         ebookPath: URL?,
-        commsBridge: Binding<ReaderCommsBridge?>,
-        onBridgeReady: ((ReaderCommsBridge) -> Void)?,
+        commsBridge: Binding<ReaderBridge?>,
+        onBridgeReady: ((ReaderBridge) -> Void)?,
         onContentPurged: (() -> Void)? = nil,
     ) {
         self.ebookPath = ebookPath
@@ -470,8 +468,8 @@ struct EbookPlayerWebView: View {
 @available(macOS 14.0, iOS 17.0, *)
 private struct WebViewWrapper2: View {
     let ebookPath: URL?
-    @Binding var commsBridge: ReaderCommsBridge?
-    let onBridgeReady: ((ReaderCommsBridge) -> Void)?
+    @Binding var commsBridge: ReaderBridge?
+    let onBridgeReady: ((ReaderBridge) -> Void)?
     let onContentPurged: (() -> Void)?
     @State private var webView: WKWebView?
 
@@ -543,9 +541,9 @@ private struct WebViewWrapper2: View {
 @available(macOS 14.0, iOS 17.0, *)
 private struct WebViewRepresentable2: PlatformViewRepresentable {
     @Binding var webView: WKWebView?
-    @Binding var commsBridge: ReaderCommsBridge?
+    @Binding var commsBridge: ReaderBridge?
     let ebookPath: URL?
-    let onBridgeReady: ((ReaderCommsBridge) -> Void)?
+    let onBridgeReady: ((ReaderBridge) -> Void)?
     let onReaderReady: () -> Void
     let onContentPurged: (() -> Void)?
 
@@ -598,7 +596,7 @@ private struct WebViewRepresentable2: PlatformViewRepresentable {
         DispatchQueue.main.async {
             self.webView = wkWebView
             let evaluator = WKWebViewJSEvaluator(webView: wkWebView)
-            let bridge = ReaderCommsBridge(js: evaluator)
+            let bridge = ReaderBridge(js: evaluator)
             context.coordinator.jsEvaluator = evaluator
             context.coordinator.commsBridge = bridge
             self.commsBridge = bridge

@@ -104,21 +104,21 @@ class AndroidNowPlayingSessionPlayerTest {
 
         player.pause()
         assertFalse(player.playWhenReady)
-        assertEquals(ReceivedCommand("commands", "pause", 0.0), commands.removeFirst())
+        assertEquals(ReceivedCommand("commands", "pause", 0.0), commands.removeAt(0))
 
         player.seekForward()
-        assertEquals(ReceivedCommand("commands", "skipForward", 15.0), commands.removeFirst())
+        assertEquals(ReceivedCommand("commands", "skipForward", 15.0), commands.removeAt(0))
 
         player.seekTo(42_000L)
         assertEquals(
             ReceivedCommand("commands", "changePlaybackPosition", 42.0),
-            commands.removeFirst(),
+            commands.removeAt(0),
         )
 
         player.setPlaybackSpeed(1.5f)
         assertEquals(
             ReceivedCommand("commands", "changePlaybackRate", 1.5),
-            commands.removeFirst(),
+            commands.removeAt(0),
         )
 
         player.update(snapshot().copy(playbackRate = 1.5))
@@ -168,7 +168,7 @@ class AndroidNowPlayingSessionPlayerTest {
                 value = 0.0,
                 text = "chapter-3",
             ),
-            commands.removeFirst(),
+            commands.removeAt(0),
         )
     }
 
@@ -200,7 +200,7 @@ class AndroidNowPlayingSessionPlayerTest {
                 value = 0.0,
                 text = "chapter-1",
             ),
-            commands.removeFirst(),
+            commands.removeAt(0),
         )
     }
 
@@ -222,7 +222,7 @@ class AndroidNowPlayingSessionPlayerTest {
         player.seekToNext()
         assertEquals(
             ReceivedCommand("commands", "nextChapter", 0.0, ""),
-            commands.removeFirst(),
+            commands.removeAt(0),
         )
 
         // The gesture carries no chapter id.

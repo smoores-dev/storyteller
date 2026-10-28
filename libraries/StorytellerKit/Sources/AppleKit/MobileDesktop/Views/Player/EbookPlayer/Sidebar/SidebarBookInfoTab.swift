@@ -109,8 +109,8 @@ struct SidebarBookInfoTab: View {
     }
 
     private var progressSection: some View {
-        let fraction = normalizedFraction(viewModel.progressManager?.bookFraction)
-        let remaining = viewModel.mediaOverlayManager?.bookTimeRemaining
+        let fraction = normalizedFraction(viewModel.session?.readerLocation?.fraction)
+        let remaining = viewModel.session?.bookTimeRemaining
         return VStack(alignment: .leading, spacing: 4) {
             ProgressView(value: fraction ?? 0)
                 .progressViewStyle(.linear)
@@ -140,10 +140,12 @@ struct SidebarBookInfoTab: View {
     private func publicationRows(_ metadata: BookMetadata) -> [InfoRow] {
         var rows: [InfoRow] = []
         if let date = metadata.publicationDateValue {
-            rows.append(InfoRow(
-                label: "Published",
-                value: date.formatted(date: .long, time: .omitted),
-            ))
+            rows.append(
+                InfoRow(
+                    label: "Published",
+                    value: date.formatted(date: .long, time: .omitted),
+                )
+            )
         }
         if let language = metadata.language, !language.isEmpty {
             let display = Locale.current.localizedString(forIdentifier: language) ?? language
@@ -192,16 +194,20 @@ struct SidebarBookInfoTab: View {
     private func libraryRows(_ metadata: BookMetadata) -> [InfoRow] {
         var rows: [InfoRow] = []
         if let added = metadata.createdAtValue {
-            rows.append(InfoRow(
-                label: "Added",
-                value: added.formatted(date: .abbreviated, time: .omitted),
-            ))
+            rows.append(
+                InfoRow(
+                    label: "Added",
+                    value: added.formatted(date: .abbreviated, time: .omitted),
+                )
+            )
         }
         if let lastRead = metadata.lastReadValue {
-            rows.append(InfoRow(
-                label: "Last opened",
-                value: lastRead.formatted(date: .abbreviated, time: .shortened),
-            ))
+            rows.append(
+                InfoRow(
+                    label: "Last opened",
+                    value: lastRead.formatted(date: .abbreviated, time: .shortened),
+                )
+            )
         }
         var sourceParts: [String] = []
         if let source = metadata.source, !source.isEmpty {
@@ -214,10 +220,12 @@ struct SidebarBookInfoTab: View {
             rows.append(InfoRow(label: "Source", value: sourceParts.joined(separator: " - ")))
         }
         if let collections = metadata.collections, !collections.isEmpty {
-            rows.append(InfoRow(
-                label: "Collections",
-                value: collections.map(\.name).joined(separator: ", "),
-            ))
+            rows.append(
+                InfoRow(
+                    label: "Collections",
+                    value: collections.map(\.name).joined(separator: ", "),
+                )
+            )
         }
         if let status = metadata.status?.name, !status.isEmpty {
             rows.append(InfoRow(label: "Status", value: status))

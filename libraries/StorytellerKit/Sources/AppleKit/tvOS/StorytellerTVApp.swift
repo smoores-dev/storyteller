@@ -37,6 +37,7 @@ struct StorytellerTVApp: App {
                 debugLog("[TVApp] App entering background")
                 Task {
                     guard await StorytellerRuntime.start() else { return }
+                    await ActiveReadingSession.shared.current?.handleSceneEnteredBackground()
                     await BookServiceActor.shared.setActive(false, source: .tv)
                 }
             case .active:
@@ -60,10 +61,6 @@ struct StorytellerTVApp: App {
     private func syncOnLaunch() async {
         let result = await ProgressSyncActor.shared.syncPendingQueue()
         debugLog("[TVApp] Sync on launch: synced=\(result.synced), failed=\(result.failed)")
-
-        if let library = await BookServiceActor.shared.fetchLibraryInformation() {
-            debugLog("[TVApp] Library metadata updated: \(library.count) books")
-        }
     }
 }
 #endif
