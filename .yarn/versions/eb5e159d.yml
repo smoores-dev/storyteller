@@ -1,5 +1,4 @@
 releases:
-  "@storyteller-platform/media-types": patch
   "@storyteller-platform/opds": patch
 
 declined:
