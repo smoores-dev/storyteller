@@ -67,7 +67,11 @@ export function BooksView({
   const isMobile = useIsMobile()
 
   const layout = forceLayout ?? storedLayout
-  const listDisplayFields = listDisplayFieldsOverride ?? listDisplayFieldsPref
+  const listFields = listDisplayFieldsOverride ?? listDisplayFieldsPref
+  const listDisplayFields =
+    shared.displayContext?.seriesUuid && !listFields.includes("seriesPosition")
+      ? (["seriesPosition", ...listFields] satisfies DisplayField[])
+      : listFields
   const resolvedListView = isMobile && listView === "table" ? "list" : listView
 
   if (layout === "list") {

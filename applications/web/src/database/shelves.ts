@@ -28,7 +28,7 @@ import {
   bookVisibleTo,
   buildBookSearchExpression,
   buildFilterExpression,
-  buildSortExpression,
+  buildSortExpressions,
   extractEntityReferences,
 } from "./shelfFilter"
 
@@ -498,10 +498,10 @@ export async function getShelfBooks(
   const orderDirection = opts?.orderDirection ?? shelfOrderDirection ?? "desc"
 
   if (opts?.sortField) {
-    query = query.orderBy(
-      buildSortExpression(opts.sortField, { userId }),
-      orderDirection,
-    )
+    for (const expr of buildSortExpressions(opts.sortField, { userId })) {
+      query = query.orderBy(expr, orderDirection)
+    }
+
     return await hydrateBooks(query, userId, opts)
   }
 
@@ -530,10 +530,9 @@ export async function getShelfBooks(
     return await hydrateBooks(query, userId, opts)
   }
 
-  query = query.orderBy(
-    buildSortExpression(orderBy, { userId }),
-    orderDirection,
-  )
+  for (const expr of buildSortExpressions(orderBy, { userId })) {
+    query = query.orderBy(expr, orderDirection)
+  }
 
   return await hydrateBooks(query, userId, opts)
 }

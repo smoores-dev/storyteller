@@ -488,7 +488,8 @@
     "qualifier": {
       "overall": "Algemeen",
       "anyType": "Elk type",
-      "anyRole": "Elke rol"
+      "anyRole": "Elke rol",
+      "mainSeries": "Hoofdserie"
     },
     "countToggle": "Filter op aantal",
     "noItemsFound": "Geen resultaten",

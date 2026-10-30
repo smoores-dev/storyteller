@@ -57,7 +57,7 @@ import {
   type OpdsFacetSection,
   opdsSectionPath,
 } from "@/facet-sections"
-import { FIELD_REGISTRY, type Field, getFieldDef } from "@/fields"
+import { getFieldDef } from "@/fields"
 import { type ShelfFilterNode } from "@/shelves"
 import { GENERAL_SORT_FIELDS, type SortDirection, type SortField } from "@/sort"
 import { getCoverUrl } from "@/store/api"
@@ -191,9 +191,7 @@ const keptParams = (ctx: BuildContext): URLSearchParams => {
 }
 
 const defaultDirection = (field: SortField): SortDirection =>
-  field in FIELD_REGISTRY
-    ? (getFieldDef(field as Field).defaultSort ?? "asc")
-    : "asc"
+  getFieldDef(field).defaultSort ?? "asc"
 
 const parseSort = (
   ctx: BuildContext,
@@ -815,9 +813,7 @@ export const buildSectionBooks = async (
     source: { kind: "query", query },
     ...(format ? { formats: [format] } : {}),
     sort: ownSort ?? ctx.sort,
-    sortFields: inSeries
-      ? ["seriesPosition", ...GENERAL_SORT_FIELDS]
-      : GENERAL_SORT_FIELDS,
+    sortFields: GENERAL_SORT_FIELDS,
   })
 }
 

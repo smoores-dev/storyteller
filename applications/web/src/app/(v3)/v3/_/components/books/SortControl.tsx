@@ -18,12 +18,7 @@ import {
   useCommon,
   useTranslation,
 } from "@/app/(v3)/v3/_/hooks/use-translation"
-import {
-  FIELD_REGISTRY,
-  type Field,
-  type FieldGroupKey,
-  getFieldDef,
-} from "@/fields"
+import { FIELD_REGISTRY, type FieldGroupKey, getFieldDef } from "@/fields"
 import * as icon from "@/icons"
 import { FieldIcon } from "@/icons"
 
@@ -82,9 +77,7 @@ export function SortControl({
     > = {}
     for (const option of options) {
       const fieldDef =
-        option.value in FIELD_REGISTRY
-          ? getFieldDef(option.value as Field)
-          : undefined
+        option.value in FIELD_REGISTRY ? getFieldDef(option.value) : undefined
       const group = fieldDef?.group ?? "context"
       ;(acc[group] ??= []).push({
         ...option,

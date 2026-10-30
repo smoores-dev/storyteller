@@ -114,7 +114,6 @@ type BookListPageProps = {
 
   seedLabel?: string | undefined
   defaultSort?: BookSort[number] | undefined
-  extraSortFields?: SortField[]
 
   breadcrumbs: [Breadcrumb, ...Breadcrumb[]] | null
   headerActions?: ReactNode
@@ -172,7 +171,6 @@ function BookListPageInner({
   skip = false,
   seedLabel,
   defaultSort,
-  extraSortFields,
   breadcrumbs,
   headerActions,
   banner,
@@ -243,12 +241,8 @@ function BookListPageInner({
   const sortFieldOptions = useMemo<
     { value: SortField; label: string }[]
   >(() => {
-    const fields: SortField[] = [
-      ...(extraSortFields ?? []),
-      ...GENERAL_SORT_FIELDS,
-    ]
-    return fields.map((value) => ({ value, label: tLabel(value) }))
-  }, [extraSortFields, tLabel])
+    return GENERAL_SORT_FIELDS.map((value) => ({ value, label: tLabel(value) }))
+  }, [tLabel])
 
   const booksQueryResult = useListInfiniteBooksInfiniteQuery(
     {

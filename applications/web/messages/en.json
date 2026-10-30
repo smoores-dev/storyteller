@@ -627,7 +627,8 @@
     "qualifier": {
       "overall": "Overall",
       "anyType": "Any type",
-      "anyRole": "Any role"
+      "anyRole": "Any role",
+      "mainSeries": "Main series"
     },
     "countToggle": "Filter by how many",
     "noItemsFound": "No items found",

@@ -35,6 +35,7 @@ export type QualifierKind =
   | "ratingAxis"
   | "identifierScheme"
   | "datePart"
+  | "series"
 
 export type FilterEntityType =
   | "tag"
@@ -68,6 +69,7 @@ export type FieldDefBase = {
   entity?: FilterEntityType
   qualifierEntity?: FilterEntityType
   alias?: { of: string; qualifier: string }
+  filterUnder?: string
   extraOperators?: ShelfFilterOperator[]
   defaultOperator?: ShelfFilterOperator
 }

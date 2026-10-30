@@ -41,11 +41,6 @@ export function parseGetBooksOptions(
   if (orderByParam) {
     if ((SORTABLE_FIELDS as readonly string[]).includes(orderByParam)) {
       opts.orderBy = orderByParam as SortField
-    } else if (
-      orderByParam === "seriesPosition" &&
-      searchParams.get("series")
-    ) {
-      opts.orderBy = "seriesPosition"
     }
   }
 

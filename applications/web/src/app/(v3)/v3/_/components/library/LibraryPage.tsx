@@ -30,7 +30,7 @@ import { useBookInSidePanel } from "@v3/_/hooks/use-open-book"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
 import * as icon from "@/icons"
-import { type DisplayField, type SortField } from "@/sort"
+import { type DisplayField } from "@/sort"
 import {
   api,
   useGetSectionFacetsQuery,
@@ -301,7 +301,7 @@ export function LibraryPage({
       return undefined
     }
     return {
-      field: selectedShelf.orderBy as SortField,
+      field: selectedShelf.orderBy,
       direction:
         selectedShelf.orderDirection === "asc"
           ? ("asc" as const)
@@ -349,7 +349,6 @@ export function LibraryPage({
         skip={!selectedItem}
         seedLabel={selectedItemName}
         defaultSort={shelfDefaultSort ?? section.sort}
-        {...(isSeriesSection ? { extraSortFields: ["seriesPosition"] } : {})}
         breadcrumbs={
           isMobile
             ? [

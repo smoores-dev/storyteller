@@ -46,7 +46,7 @@ import {
   buildBookSearchExpression,
   buildBookSearchRelevance,
   buildFilterExpression,
-  buildSortExpression,
+  buildSortExpressions,
 } from "./shelfFilter"
 import { getDefaultStatus } from "./statuses"
 import { type NewUserBookRating } from "./userRatings"
@@ -654,7 +654,9 @@ export function booksQuery(userId?: UUID, options?: BooksQueryOptions) {
             "series.createdAt",
             "series.updatedAt",
           ])
-          .whereRef("bookToSeries.bookUuid", "=", "book.uuid"),
+          .whereRef("bookToSeries.bookUuid", "=", "book.uuid")
+          .orderBy("bookToSeries.featured", "desc")
+          .orderBy(sql`book_to_series.rowid`),
       ).as("series"),
       jsonArrayFrom(
         eb
@@ -1104,10 +1106,12 @@ export async function getBooks(
     page = page.orderBy(buildBookSearchRelevance(opts.search), "asc")
   } else {
     for (const { field, direction } of sort) {
-      page = page.orderBy(
-        buildSortExpression(field, { userId, seriesContext: opts?.series }),
-        direction,
-      )
+      for (const expr of buildSortExpressions(field, {
+        userId,
+        seriesContext: opts?.series,
+      })) {
+        page = page.orderBy(expr, direction)
+      }
     }
 
     if (sort.length > 0 && sort[sort.length - 1]?.field !== "createdAt") {

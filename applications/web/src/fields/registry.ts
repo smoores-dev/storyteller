@@ -260,6 +260,20 @@ export const FIELD_REGISTRY = {
     entity: "series",
     countable: true,
   },
+  seriesPosition: {
+    control: "number-range",
+    sortable: true,
+    defaultSort: "asc",
+    quick: false,
+    qualifier: { kind: "series" },
+    qualifierEntity: "series",
+    filterUnder: "series",
+    scale: { min: 0, step: 1, unit: "count" },
+    token: "position",
+    labelKey: "seriesPosition",
+    group: "relations",
+    type: "number",
+  },
   authors: {
     control: "facet",
     sortable: true,
@@ -335,7 +349,8 @@ export const FIELD_REGISTRY = {
 
   status: {
     control: "facet",
-    sortable: false,
+    sortable: true,
+    defaultSort: "asc",
     quick: true,
     source: "statuses",
     token: "status",

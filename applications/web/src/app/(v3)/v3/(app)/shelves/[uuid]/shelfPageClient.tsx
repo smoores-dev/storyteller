@@ -11,7 +11,7 @@ import { Button } from "@v3/_/components/ui/button"
 import { useVersionBasePath } from "@v3/_/components/version-context"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { type SortDirection, type SortField } from "@/sort"
+import { type SortDirection } from "@/sort"
 import { useListUserShelvesQuery } from "@/store/api"
 import { extractEmojiIcon } from "@/strings"
 import { type UUID } from "@/uuid"
@@ -35,7 +35,7 @@ export function ShelfPageClient({ shelfUuid }: { shelfUuid: UUID }) {
     shelf?.orderDirection === "asc" ? "asc" : "desc"
   const defaultSort =
     shelfOrderBy && shelfOrderBy !== "position"
-      ? { field: shelfOrderBy as SortField, direction: shelfDirection }
+      ? { field: shelfOrderBy, direction: shelfDirection }
       : undefined
 
   const filterIssues = shelf?.filterIssues ?? []

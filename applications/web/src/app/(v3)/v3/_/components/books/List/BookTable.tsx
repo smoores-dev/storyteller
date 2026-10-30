@@ -75,7 +75,6 @@ import {
   type SortContext,
   type SortDirection,
   type SortField,
-  displaySeriesOf,
 } from "@/sort"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
@@ -164,13 +163,13 @@ const BOOK_COLUMNS: ColumnDef<typeof features, BookWithRelations>[] = [
     meta: { kind: "title", track: "minmax(240px, 30%)" },
   },
   ...DATA_FIELDS.map((field): ColumnDef<typeof features, BookWithRelations> => {
-    const def = field === "seriesPosition" ? undefined : getFieldDef(field)
+    const def = getFieldDef(field)
     return {
       id: field,
       accessorFn: (row) => row,
       size: Math.max(MIN_COLUMN_WIDTH, columnWidths[field] + 40),
-      enableSorting: !!def?.sortable,
-      sortDescFirst: (def?.defaultSort ?? "desc") === "desc",
+      enableSorting: def.sortable,
+      sortDescFirst: (def.defaultSort ?? "desc") === "desc",
       meta: { kind: "data" },
     }
   }),
@@ -1006,9 +1005,6 @@ function BookRow({
   handleOpenMenu: (book: BookWithRelations) => void
 }) {
   const scope = useCoverScope(book)
-  const seriesPosition = displayContext?.seriesUuid
-    ? displaySeriesOf(book, displayContext)?.position
-    : null
 
   return (
     <TableRow
@@ -1038,30 +1034,14 @@ function BookRow({
             return (
               <TableCell key={cell.id}>
                 {toggleSelection && (
-                  <div className="relative w-fit">
-                    <SelectionCheckbox
-                      uuid={book.uuid}
-                      checked={isBookSelected}
-                      isSelecting={isSelecting}
-                      onToggle={toggleSelection}
-                      onSelectRange={handleSelectRange}
-                      className="shrink-0"
-                    />
-                    {/* On a series page, the series position takes the
-                        checkbox's place until the row is hovered or selected. */}
-                    {seriesPosition != null && (
-                      <span
-                        className={cn(
-                          "text-muted-foreground pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs whitespace-nowrap tabular-nums transition-opacity",
-                          isBookSelected || isSelecting
-                            ? "opacity-0"
-                            : "group-focus-within:opacity-0 group-hover:opacity-0",
-                        )}
-                      >
-                        {seriesPosition}
-                      </span>
-                    )}
-                  </div>
+                  <SelectionCheckbox
+                    uuid={book.uuid}
+                    checked={isBookSelected}
+                    isSelecting={isSelecting}
+                    onToggle={toggleSelection}
+                    onSelectRange={handleSelectRange}
+                    className="shrink-0"
+                  />
                 )}
               </TableCell>
             )

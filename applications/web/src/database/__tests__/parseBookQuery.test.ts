@@ -27,12 +27,12 @@ describe("parseGetBooksOptions orderBy", () => {
     )
   })
 
-  it("drops seriesPosition without a series context", () => {
+  it("accepts seriesPosition without a series context", () => {
     const parsed = parseGetBooksOptions(
       new URLSearchParams("orderBy=seriesPosition&orderDirection=asc"),
     )
     assert.ok(parsed.ok)
-    assert.strictEqual(parsed.opts.orderBy, undefined)
+    assert.strictEqual(parsed.opts.orderBy, "seriesPosition")
   })
 
   it("drops unknown sort fields", () => {

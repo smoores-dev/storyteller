@@ -8,6 +8,7 @@ import {
   useFormatRelativeTime,
 } from "@/app/(v3)/v3/_/lib/formatters"
 import { type BookWithRelations } from "@/database/books"
+import { statusDisplayLabel } from "@/database/statusKinds"
 import { type DisplayField, type SortContext, displaySeriesOf } from "@/sort"
 import { formatFileSize } from "@/utils/formatFileSize"
 
@@ -119,6 +120,8 @@ export function ColumnValue({
         : "\u2014"
     case "title":
       return book.title
+    case "status":
+      return book.status ? statusDisplayLabel(book.status) : "\u2014"
     case "alignedAt":
       return book.alignedAt
         ? dateTime(new Date(book.alignedAt), { dateStyle: "medium" })
@@ -142,8 +145,15 @@ export function ColumnValue({
       )
     case "seriesPosition": {
       const s = displaySeriesOf(book, ctx)
-      if (!s || s.position == null) return "\u2014"
-      return `#${s.position}`
+      if (!s) {
+        return "\u2014"
+      }
+
+      if (ctx?.seriesUuid) {
+        return s.position == null ? "\u2014" : `#${s.position}`
+      }
+
+      return s.position == null ? s.name : `${s.name} #${s.position}`
     }
   }
 }
@@ -163,7 +173,8 @@ export const columnWidths: Record<DisplayField, number> = {
   updatedAt: 100,
   alignedAt: 80,
   lastRead: 100,
-  seriesPosition: 30,
+  seriesPosition: 80,
+  status: 60,
   title: 100,
   userRating: 50,
   alignmentConfidence: 60,

@@ -5,7 +5,7 @@ import { withHasPermission } from "@/auth/auth"
 import { booksQuery } from "@/database/books"
 import {
   buildFilterExpression,
-  buildSortExpression,
+  buildSortExpressions,
 } from "@/database/shelfFilter"
 import { type ShelfFilter, type ShelfOrderBy } from "@/shelves"
 
@@ -41,13 +41,13 @@ export const POST = withHasPermission("bookList")(async (request) => {
 
   const orderBy = body.orderBy ?? "createdAt"
   const orderDirection = body.orderDirection ?? "desc"
-  query =
-    orderBy === "position"
-      ? query.orderBy("book.createdAt", orderDirection)
-      : query.orderBy(
-          buildSortExpression(orderBy, { userId: user.id }),
-          orderDirection,
-        )
+  if (orderBy === "position") {
+    query = query.orderBy("book.createdAt", orderDirection)
+  } else {
+    for (const expr of buildSortExpressions(orderBy, { userId: user.id })) {
+      query = query.orderBy(expr, orderDirection)
+    }
+  }
 
   const books = await query.execute()
 

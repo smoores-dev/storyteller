@@ -1,4 +1,8 @@
 import { type BookWithRelations } from "@/database/books"
+import {
+  WELL_KNOWN_STATUS_NAMES,
+  statusDisplayLabel,
+} from "@/database/statusKinds"
 import { ALIGNMENT_GRADES, COMPACT_FIELDS, FIELD_REGISTRY } from "@/fields"
 import { type ShelfFilterNode } from "@/shelves"
 import { type UUID } from "@/uuid"
@@ -9,7 +13,7 @@ export type RegistrySortField = AcceptedKeys<
   typeof FIELD_REGISTRY,
   { sortable: true }
 >
-export type SortField = RegistrySortField | "seriesPosition"
+export type SortField = RegistrySortField
 
 export const SORTABLE_FIELDS = Object.entries(FIELD_REGISTRY)
   .filter(([_f, p]) => p.sortable)
@@ -127,8 +131,6 @@ export function insertDisplayField(
   return [...fields.slice(0, titleIndex), field, ...fields.slice(titleIndex)]
 }
 
-// If ctx contains a seriesUuid, use that series instead of the featured
-// series for displaying data such as series.position.
 export function displaySeriesOf(
   book: BookWithRelations,
   ctx: SortContext | undefined,
@@ -137,13 +139,6 @@ export function displaySeriesOf(
     return book.series.find((s) => s.uuid === ctx.seriesUuid)
   }
   return book.series.find((s) => s.featured) ?? book.series[0]
-}
-
-function seriesPositionOf(
-  book: BookWithRelations,
-  ctx: SortContext | undefined,
-): number | null {
-  return displaySeriesOf(book, ctx)?.position ?? null
 }
 
 function sortValue(
@@ -189,8 +184,42 @@ function sortValue(
     case "lastRead":
       return book.position?.updatedAt ?? null
     case "seriesPosition":
-      return seriesPositionOf(book, ctx)
+      return displaySeriesOf(book, ctx)?.position ?? null
+    case "status": {
+      if (!book.status) {
+        return null
+      }
+
+      const rank = [...WELL_KNOWN_STATUS_NAMES].indexOf(book.status.name)
+      return rank === -1 ? WELL_KNOWN_STATUS_NAMES.size : rank
+    }
   }
+}
+
+type SortKey = (book: BookWithRelations) => string | number | null
+
+function compareSortValues(
+  av: string | number | null,
+  bv: string | number | null,
+  dir: number,
+) {
+  if (av === null && bv === null) {
+    return 0
+  }
+
+  if (av === null) {
+    return 1
+  }
+
+  if (bv === null) {
+    return -1
+  }
+
+  if (typeof av === "string" && typeof bv === "string") {
+    return av.localeCompare(bv) * dir
+  }
+
+  return (Number(av) - Number(bv)) * dir
 }
 
 export function makeBookComparator(
@@ -199,17 +228,25 @@ export function makeBookComparator(
   ctx?: SortContext,
 ): (a: BookWithRelations, b: BookWithRelations) => number {
   const dir = direction === "asc" ? 1 : -1
+  const value: SortKey = (book) => sortValue(book, field, ctx)
+  const keys: SortKey[] =
+    field === "seriesPosition" && !ctx?.seriesUuid
+      ? [(book) => displaySeriesOf(book, ctx)?.name ?? null, value]
+      : field === "status"
+        ? [
+            value,
+            (book) => (book.status ? statusDisplayLabel(book.status) : null),
+          ]
+        : [value]
+
   return (a, b) => {
-    const av = sortValue(a, field, ctx)
-    const bv = sortValue(b, field, ctx)
-
-    if (av === null && bv === null) return 0
-    if (av === null) return 1
-    if (bv === null) return -1
-
-    if (typeof av === "string" && typeof bv === "string") {
-      return av.localeCompare(bv) * dir
+    for (const key of keys) {
+      const result = compareSortValues(key(a), key(b), dir)
+      if (result !== 0) {
+        return result
+      }
     }
-    return (Number(av) - Number(bv)) * dir
+
+    return 0
   }
 }

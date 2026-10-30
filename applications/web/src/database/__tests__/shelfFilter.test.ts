@@ -8,6 +8,7 @@ import { createKyselyDb } from "@/database/factory"
 import {
   buildFilterExpression,
   buildSortExpression,
+  buildSortExpressions,
   extractEntityReferences,
   removeDeletedEntityReferences,
 } from "@/database/shelfFilter"
@@ -961,6 +962,39 @@ describe("buildFilterExpression sql", () => {
     assert.match(sql, /book_to_creator/)
   })
 
+  it("scopes a qualified series position to that series", () => {
+    const sql = compile({
+      type: "and",
+      children: [
+        {
+          type: "condition",
+          field: "seriesPosition",
+          qualifier: "55555555-5555-5555-5555-555555555555",
+          operator: "greaterThan",
+          value: 20,
+        },
+      ],
+    })
+    assert.match(sql, /book_to_series/)
+    assert.match(sql, /series_uuid = \?/)
+    assert.doesNotMatch(sql, /featured/)
+  })
+
+  it("reads an unqualified series position from the main series", () => {
+    const sql = compile({
+      type: "and",
+      children: [
+        {
+          type: "condition",
+          field: "seriesPosition",
+          operator: "greaterThan",
+          value: 20,
+        },
+      ],
+    })
+    assert.match(sql, /order by featured desc, rowid limit 1/)
+  })
+
   it("scopes an identifier value match to the qualifier's type", () => {
     const sql = compile({
       type: "and",
@@ -1179,6 +1213,45 @@ describe("buildSortExpression sql", () => {
     const sql = orderSql("seriesPosition", { seriesContext: seriesUuid })
     assert.match(sql, /book_to_series/)
     assert.match(sql, /position/)
+  })
+
+  it("orders series position by main series name, then position, without a series context", () => {
+    const sql = testDb
+      .selectFrom("book")
+      .select("book.uuid")
+      .$call((qb) =>
+        buildSortExpressions("seriesPosition").reduce(
+          (acc, expr) => acc.orderBy(expr, "asc"),
+          qb,
+        ),
+      )
+      .compile().sql
+    assert.match(sql, /series\.name from book_to_series/)
+    assert.match(
+      sql,
+      /collate nocase asc, \(select position from book_to_series/,
+    )
+  })
+
+  it("orders series position by position alone within a series context", () => {
+    assert.strictEqual(
+      buildSortExpressions("seriesPosition", { seriesContext: seriesUuid })
+        .length,
+      1,
+    )
+  })
+
+  it("orders status by lifecycle rank, then label, for the user", () => {
+    const keys = buildSortExpressions("status", { userId })
+    assert.strictEqual(keys.length, 2)
+    const sql = testDb
+      .selectFrom("book")
+      .select("book.uuid")
+      .$call((qb) => keys.reduce((acc, expr) => acc.orderBy(expr, "asc"), qb))
+      .compile().sql
+    assert.match(sql, /case status\.name when \? then \? /)
+    assert.match(sql, /book_to_status\.user_id = \?/)
+    assert.match(sql, /limit 1\) collate nocase asc$/)
   })
 
   it("coalesces asset tables for an asset-numeric sort", () => {
@@ -1404,6 +1477,38 @@ describe("makeBookComparator", () => {
     })
     assert.ok(cmp(first, second) < 0)
     assert.ok(cmp(second, first) > 0)
+  })
+
+  it("orders by main series name, then position, without a series context", () => {
+    const series = (name: string, position: number | null) =>
+      ({
+        uuid: "b",
+        series: [{ uuid: seriesUuid, name, position, featured: false }],
+      }) as unknown as BookWithRelations
+    const cmp = makeBookComparator("seriesPosition", "asc")
+    assert.ok(cmp(series("Alpha", 9), series("Beta", 1)) < 0)
+    assert.ok(cmp(series("Alpha", 1), series("Alpha", 2)) < 0)
+    assert.ok(cmp(series("Alpha", 1), series("Alpha", null)) < 0)
+  })
+
+  it("orders statuses by lifecycle, then custom ones by label, then none", () => {
+    const withStatus = (name: string | null) =>
+      ({
+        uuid: name ?? "none",
+        status: name ? { uuid: name, name, label: null } : null,
+      }) as unknown as BookWithRelations
+    const sorted = [
+      withStatus(null),
+      withStatus("Zebra"),
+      withStatus("Read"),
+      withStatus("Abandoned"),
+      withStatus("To read"),
+      withStatus("Reading"),
+    ].sort(makeBookComparator("status", "asc"))
+    assert.deepStrictEqual(
+      sorted.map((book) => book.status?.name ?? null),
+      ["To read", "Reading", "Read", "Abandoned", "Zebra", null],
+    )
   })
 
   it("sorts books with no position last regardless of direction", () => {

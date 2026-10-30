@@ -23,6 +23,7 @@ import {
 import { type UUID } from "@/uuid"
 
 import { type DB } from "./schema"
+import { WELL_KNOWN_STATUS_NAMES } from "./statusKinds"
 
 export type EB = ExpressionBuilder<DB, "book">
 export type FilterExpression = ExpressionWrapper<DB, "book", SqlBool>
@@ -623,6 +624,50 @@ const series = relationImpl({
     sql<number>`(select count(*) from book_to_series where book_uuid = book.uuid)`,
 })
 
+export function seriesPositionExpr(seriesUuid: string | undefined) {
+  return seriesUuid
+    ? sql<number>`(select position from book_to_series where book_uuid = book.uuid and series_uuid = ${seriesUuid})`
+    : sql<number>`(select position from book_to_series where book_uuid = book.uuid order by featured desc, rowid limit 1)`
+}
+
+export function mainSeriesNameExpr() {
+  return sql<string>`(select series.name from book_to_series inner join series on series.uuid = book_to_series.series_uuid where book_to_series.book_uuid = book.uuid order by book_to_series.featured desc, book_to_series.rowid limit 1)`
+}
+
+function statusSelect(column: RawBuilder<unknown>, userId: UUID | undefined) {
+  return userId
+    ? sql`(select ${column} from book_to_status inner join status on status.uuid = book_to_status.status_uuid where book_to_status.book_uuid = book.uuid and book_to_status.user_id = ${userId} limit 1)`
+    : sql`(select ${column} from book_to_status inner join status on status.uuid = book_to_status.status_uuid where book_to_status.book_uuid = book.uuid limit 1)`
+}
+
+export function statusRankExpr(userId: UUID | undefined) {
+  return statusSelect(
+    sql`case status.name ${sql.join(
+      [...WELL_KNOWN_STATUS_NAMES].map(
+        (name, i) => sql`when ${name} then ${i}`,
+      ),
+      sql` `,
+    )} else ${WELL_KNOWN_STATUS_NAMES.size} end`,
+    userId,
+  )
+}
+
+export function statusLabelExpr(userId: UUID | undefined) {
+  return sql`${statusSelect(sql`coalesce(status.label, status.name)`, userId)} collate nocase`
+}
+
+const seriesPosition: FieldSqlImpl = {
+  isEmpty: (eb, ctx) => eb(seriesPositionExpr(ctx.qualifier), "is", null),
+  compare: (eb, operator, value, ctx) =>
+    numericExprComparison(
+      eb,
+      seriesPositionExpr(ctx.qualifier),
+      operator,
+      value,
+    ),
+  scalar: (_eb, ctx) => seriesPositionExpr(ctx.qualifier),
+}
+
 const creatorsRelation = relationImpl({
   base: creatorBase,
   single: (qb, uuid) => qb.where("bookToCreator.creatorUuid", "=", uuid),
@@ -1024,6 +1069,7 @@ export const FIELD_SQL = {
   tags,
   collections,
   series,
+  seriesPosition,
   creators,
   status,
   identifiers,

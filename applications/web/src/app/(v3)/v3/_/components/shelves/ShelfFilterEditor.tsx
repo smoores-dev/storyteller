@@ -87,6 +87,7 @@ import {
 import {
   getCoverUrl,
   useListIdentifierTypesQuery,
+  useListSeriesQuery,
   useListStatusesQuery,
 } from "@/store/api"
 
@@ -102,9 +103,10 @@ const FIELD_GROUP_ORDER: FieldGroupKey[] = [
 
 const FIELD_GROUPS = FIELD_GROUP_ORDER.map((key) => ({
   key,
-  fields: FIELDS.filter(
-    (field) => field !== "search" && getFieldDef(field).group === key,
-  ),
+  fields: FIELDS.filter((field) => {
+    const def = getFieldDef(field)
+    return field !== "search" && !def.filterUnder && def.group === key
+  }),
 })).filter((group) => group.fields.length > 0)
 
 type FilterPreset = {
@@ -779,16 +781,21 @@ function ConditionEditor({
   }
 
   const def = getFieldDef(condition.field)
+  const rowField = (def.filterUnder ?? condition.field) as ShelfFilterField
+  const subFields = FIELDS.filter(
+    (field) => getFieldDef(field).filterUnder === rowField,
+  )
   const qualifierKind = def.qualifier?.kind
-  const isCountable = !!def.countable
+  const isCountable = !!getFieldDef(rowField).countable
 
   const countOperators = [...NUMBER_COMPARE_OPERATORS, ...RANGE_OPERATORS]
   const isCountableOperator = countOperators.some(
     (op) => op === condition.operator,
   )
-  const isCount = isCountable && isCountableOperator
+  const isCount =
+    isCountable && condition.field === rowField && isCountableOperator
 
-  const operators: ShelfFilterOperator[] = getOperatorsForField(condition.field)
+  const operators: ShelfFilterOperator[] = getOperatorsForField(rowField)
   const needsValue = operatorRequiresValue(condition.operator)
   const needsArrayValue = operatorRequiresArrayValue(condition.operator)
   const needsRangeValue = operatorRequiresRangeValue(condition.operator)
@@ -821,7 +828,38 @@ function ConditionEditor({
     onChange({ ...condition, qualifier })
   }
 
+  const handleSubFieldOperatorChange = (
+    field: ShelfFilterField,
+    operator: ShelfFilterOperator,
+  ) => {
+    onChange({
+      type: "condition",
+      field,
+      operator,
+      ...(condition.field === field && condition.qualifier !== undefined
+        ? { qualifier: condition.qualifier }
+        : {}),
+      value:
+        condition.field === field && operatorRequiresValue(operator)
+          ? condition.value
+          : undefined,
+    })
+  }
+
   const handleOperatorChange = (operator: ShelfFilterOperator) => {
+    if (condition.field !== rowField) {
+      onChange({
+        type: "condition",
+        field: rowField,
+        operator,
+        ...(countOperators.some((op) => op === operator)
+          ? { aggregate: "count" as const }
+          : {}),
+        value: undefined,
+      })
+      return
+    }
+
     if (countOperators.some((op) => op === operator)) {
       onChange({
         ...condition,
@@ -866,8 +904,8 @@ function ConditionEditor({
                 size="sm"
                 className="rounded-md font-normal"
               >
-                <FieldIcon field={condition.field} className="size-3" />
-                {c(`fields.label.${condition.field}`)}
+                <FieldIcon field={rowField} className="size-3" />
+                {c(`fields.label.${rowField}`)}
                 <icon.ChevronDown className="size-3" />
               </Button>
             }
@@ -928,6 +966,8 @@ function ConditionEditor({
           <FilterableMenuTrigger
             render={
               <Button variant="ghost" size="sm" className="font-normal">
+                {condition.field !== rowField &&
+                  `${c(`fields.short.${condition.field}` as "fields.short.seriesPosition")} `}
                 {t.plain(`operators.${condition.operator}` as "operators.is")}
                 <icon.ChevronDown className="size-3" />
               </Button>
@@ -969,6 +1009,30 @@ function ConditionEditor({
                 ))}
               </FilterableMenuGroup>
             )}
+            {subFields.map((field) => (
+              <FilterableMenuGroup key={field}>
+                <FilterableMenuLabel>
+                  {c(`fields.label.${field}`)}
+                </FilterableMenuLabel>
+                {getOperatorsForField(field).map((op) => (
+                  <FilterableMenuItem
+                    key={op}
+                    textValue={`${c(`fields.short.${field}` as "fields.short.seriesPosition")} ${t.plain(
+                      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
+                      `operators.${op}` as "operators.is",
+                    )}`}
+                    onSelect={() => {
+                      handleSubFieldOperatorChange(field, op)
+                    }}
+                  >
+                    {
+                      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsgolint treats the cast as unnecessary but it still narrows the type
+                      t.plain(`operators.${op}` as "operators.is")
+                    }
+                  </FilterableMenuItem>
+                ))}
+              </FilterableMenuGroup>
+            ))}
           </FilterableMenuContent>
         </FilterableMenu>
 
@@ -1069,13 +1133,18 @@ function QualifierPicker({
     undefined,
     { skip: kind !== "identifierScheme" },
   )
+  const { data: series = [] } = useListSeriesQuery(undefined, {
+    skip: kind !== "series",
+  })
 
   const anyLabel =
     kind === "ratingAxis"
       ? t.plain("qualifier.overall")
       : kind === "identifierScheme"
         ? t.plain("qualifier.anyType")
-        : t.plain("qualifier.anyRole")
+        : kind === "series"
+          ? t.plain("qualifier.mainSeries")
+          : t.plain("qualifier.anyRole")
 
   const isRole = kind === "role"
 
@@ -1086,7 +1155,9 @@ function QualifierPicker({
           ? ratingDimensions
           : DEFAULT_RATING_DIMENSIONS
         ).map((d) => ({ id: d.id, label: d.label }))
-      : identifierTypes.map((i) => ({ id: i.uuid, label: i.name }))
+      : kind === "series"
+        ? series.map((s) => ({ id: s.uuid, label: s.name }))
+        : identifierTypes.map((i) => ({ id: i.uuid, label: i.name }))
 
   const current = isRole
     ? value

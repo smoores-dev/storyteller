@@ -14,13 +14,9 @@ import {
 import { Input } from "@v3/_/components/ui/input"
 import { apiErrorMessage } from "@v3/_/lib/api-error"
 
-import { type ShelfFilterNode, type ShelfOrderBy } from "@/shelves"
+import { type ShelfFilterNode } from "@/shelves"
 import { type SortField } from "@/sort"
 import { useCreateUserShelfMutation } from "@/store/api"
-
-function toShelfOrderBy(field: SortField): ShelfOrderBy {
-  return field === "seriesPosition" ? "position" : field
-}
 
 type SaveAsShelfDialogProps = {
   open: boolean
@@ -49,7 +45,7 @@ export function SaveAsShelfDialog({
         name: trimmed,
         description: null,
         filter,
-        orderBy: toShelfOrderBy(sortField),
+        orderBy: sortField,
         orderDirection: sortDirection,
         limitCount: null,
         books: [],

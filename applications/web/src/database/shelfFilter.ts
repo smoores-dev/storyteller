@@ -37,7 +37,11 @@ import {
   buildBookSearchExpression,
   buildBookSearchRelevance,
   formatPredicate,
+  mainSeriesNameExpr,
   numericExprComparison,
+  seriesPositionExpr,
+  statusLabelExpr,
+  statusRankExpr,
 } from "./fieldSql"
 
 export {
@@ -473,14 +477,32 @@ export function buildSortExpression(
         ? sql`(select rating from user_book_rating where book_uuid = book.uuid and user_id = ${ctx.userId} limit 1)`
         : sql`(select rating from user_book_rating where book_uuid = book.uuid limit 1)`
     case "seriesPosition":
-      return ctx?.seriesContext
-        ? sql`(select position from book_to_series where book_uuid = book.uuid and series_uuid = ${ctx.seriesContext} limit 1)`
-        : sql`null`
+      return seriesPositionExpr(ctx?.seriesContext ?? undefined)
+    case "status":
+      return statusRankExpr(ctx?.userId)
     default: {
       const _exhaustive: never = field
       return sql.lit(true)
     }
   }
+}
+
+export function buildSortExpressions(
+  field: SortField,
+  ctx?: { userId?: UUID; seriesContext?: UUID | null },
+) {
+  if (field === "seriesPosition" && !ctx?.seriesContext) {
+    return [
+      sql`${mainSeriesNameExpr()} collate nocase`,
+      seriesPositionExpr(undefined),
+    ]
+  }
+
+  if (field === "status") {
+    return [statusRankExpr(ctx?.userId), statusLabelExpr(ctx?.userId)]
+  }
+
+  return [buildSortExpression(field, ctx)]
 }
 
 function unknownFieldError(field: string) {

@@ -6,7 +6,7 @@ import { type ShelfFilterField } from "@/shelves"
 import * as icon from "./source"
 import { type StyledIconProps } from "./styled"
 
-type FieldIconKey = ShelfFilterField | "authors" | "seriesPosition"
+type FieldIconKey = ShelfFilterField | "authors"
 
 type FieldIconDef = {
   base: ComponentType<StyledIconProps>
