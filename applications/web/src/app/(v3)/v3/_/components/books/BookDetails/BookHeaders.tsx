@@ -130,7 +130,10 @@ export function BookPanelHeader({
       <AnimatePresence>
         {showCheckbox && (
           <motion.div
-            className={cn("absolute top-4 left-3 z-50 p-1", pill)}
+            className={cn(
+              "absolute top-3 left-3 z-50 size-8 justify-center",
+              pill,
+            )}
             initial={{ x: 0, opacity: 0 }}
             animate={{ x: 3, opacity: 1 }}
             exit={{ x: 0, opacity: 0 }}
@@ -155,7 +158,7 @@ export function BookPanelHeader({
           className={cn(
             "absolute top-3 left-3 z-50",
             "transition-[left]",
-            selection?.isSelecting && "left-12",
+            selection?.isSelecting && "left-13",
             pill,
           )}
         >
@@ -186,7 +189,7 @@ export function BookPanelHeader({
         </ButtonGroup>
       )}
 
-      <div className={cn("absolute top-2.5 right-3 z-50", pill)}>
+      <div className={cn("absolute top-3 right-3 z-50", pill)}>
         <TooltipButton
           variant="real-ghost"
           size="icon-sm"

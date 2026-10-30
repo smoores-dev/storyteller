@@ -127,12 +127,23 @@ export function insertDisplayField(
   return [...fields.slice(0, titleIndex), field, ...fields.slice(titleIndex)]
 }
 
+// If ctx contains a seriesUuid, use that series instead of the featured
+// series for displaying data such as series.position.
+export function displaySeriesOf(
+  book: BookWithRelations,
+  ctx: SortContext | undefined,
+): BookWithRelations["series"][number] | undefined {
+  if (ctx?.seriesUuid) {
+    return book.series.find((s) => s.uuid === ctx.seriesUuid)
+  }
+  return book.series.find((s) => s.featured) ?? book.series[0]
+}
+
 function seriesPositionOf(
   book: BookWithRelations,
   ctx: SortContext | undefined,
 ): number | null {
-  if (!ctx?.seriesUuid) return null
-  return book.series.find((s) => s.uuid === ctx.seriesUuid)?.position ?? null
+  return displaySeriesOf(book, ctx)?.position ?? null
 }
 
 function sortValue(

@@ -38,6 +38,7 @@ import {
   type CreatorDisplayField,
   type DisplayField,
   type SortContext,
+  displaySeriesOf,
   groupDisplayRows,
 } from "@/sort"
 import { useAppSelector } from "@/store/appState"
@@ -118,17 +119,7 @@ export function SecondaryText({
         none
       )
     case "seriesPosition": {
-      let series = book.series[0]
-      for (const s of book.series) {
-        if (s.featured) {
-          series = s
-          break
-        }
-        if (s.uuid === ctx?.seriesUuid) {
-          series = s
-          break
-        }
-      }
+      const series = displaySeriesOf(book, ctx)
 
       if (!series || series.position == null) return none
 

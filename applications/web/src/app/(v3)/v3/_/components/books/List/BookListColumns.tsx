@@ -8,15 +8,17 @@ import {
   useFormatRelativeTime,
 } from "@/app/(v3)/v3/_/lib/formatters"
 import { type BookWithRelations } from "@/database/books"
-import { type DisplayField } from "@/sort"
+import { type DisplayField, type SortContext, displaySeriesOf } from "@/sort"
 import { formatFileSize } from "@/utils/formatFileSize"
 
 export function ColumnValue({
   book,
   field,
+  ctx,
 }: {
   book: BookWithRelations
   field: DisplayField
+  ctx?: SortContext | undefined
 }) {
   const formatRelativeTime = useFormatRelativeTime()
   const formatList = useFormatList()
@@ -139,7 +141,7 @@ export function ColumnValue({
         "\u2014"
       )
     case "seriesPosition": {
-      const s = book.series[0]
+      const s = displaySeriesOf(book, ctx)
       if (!s || s.position == null) return "\u2014"
       return `#${s.position}`
     }

@@ -42,6 +42,7 @@ export function useCoverScope(
     const vars: Record<string, string> = {
       "--cover-1": swatches.primary.css,
       "--primary": swatches.primary.css,
+      "--primary-foreground": swatches.primary.onColor,
     }
     if (swatches.secondary !== swatches.primary) {
       vars["--cover-2"] = swatches.secondary.css

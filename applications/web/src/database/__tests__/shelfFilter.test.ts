@@ -38,7 +38,12 @@ import {
   shelfFilterOperatorSchema,
   shelfFilterValueSchema,
 } from "@/shelves"
-import { SORTABLE_FIELDS, type SortField, makeBookComparator } from "@/sort"
+import {
+  SORTABLE_FIELDS,
+  type SortField,
+  displaySeriesOf,
+  makeBookComparator,
+} from "@/sort"
 import { type UUID } from "@/uuid"
 
 describe("shelfFilterFieldSchema", () => {
@@ -1408,5 +1413,62 @@ describe("makeBookComparator", () => {
     const desc = makeBookComparator("seriesPosition", "desc", { seriesUuid })
     assert.ok(asc(withPos, without) < 0)
     assert.ok(desc(withPos, without) < 0)
+  })
+})
+
+describe("displaySeriesOf", () => {
+  const featuredUuid = "33333333-3333-3333-3333-333333333333" as UUID
+  const viewedUuid = "44444444-4444-4444-4444-444444444444" as UUID
+
+  const bookWithSeries = (
+    series: { uuid: UUID; position: number | null; featured: boolean }[],
+  ): BookWithRelations =>
+    ({ uuid: "a", series }) as unknown as BookWithRelations
+
+  it("uses the viewed series over a different featured series", () => {
+    const book = bookWithSeries([
+      { uuid: featuredUuid, position: null, featured: true },
+      { uuid: viewedUuid, position: 1, featured: false },
+    ])
+    const series = displaySeriesOf(book, { seriesUuid: viewedUuid })
+    assert.strictEqual(series?.uuid, viewedUuid)
+    assert.strictEqual(series.position, 1)
+  })
+
+  it("does not fall back to another series when the viewed series has no position", () => {
+    const book = bookWithSeries([
+      { uuid: featuredUuid, position: 5, featured: true },
+      { uuid: viewedUuid, position: null, featured: false },
+    ])
+    const series = displaySeriesOf(book, { seriesUuid: viewedUuid })
+    assert.strictEqual(series?.uuid, viewedUuid)
+    assert.strictEqual(series.position, null)
+  })
+
+  it("uses the featured series outside of a series context", () => {
+    const book = bookWithSeries([
+      { uuid: viewedUuid, position: 1, featured: false },
+      { uuid: featuredUuid, position: 2, featured: true },
+    ])
+    assert.strictEqual(displaySeriesOf(book, undefined)?.uuid, featuredUuid)
+    assert.strictEqual(
+      displaySeriesOf(book, { seriesUuid: null })?.uuid,
+      featuredUuid,
+    )
+  })
+
+  it("falls back to the first series when none is featured", () => {
+    const book = bookWithSeries([
+      { uuid: viewedUuid, position: 1, featured: false },
+      { uuid: featuredUuid, position: 2, featured: false },
+    ])
+    assert.strictEqual(displaySeriesOf(book, undefined)?.uuid, viewedUuid)
+  })
+
+  it("returns undefined for a book with no series", () => {
+    assert.strictEqual(
+      displaySeriesOf(bookWithSeries([]), undefined),
+      undefined,
+    )
   })
 })
