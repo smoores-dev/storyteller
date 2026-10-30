@@ -9733,4 +9733,426 @@ Returns the children.
 
 Defined in: node_modules/@xmldom/xmldom/index.d.ts:479
 
-One based column position inside the parsed so
+One based column position inside the parsed source,
+if the `locator` was not disabled.
+
+##### Inherited from
+
+`CharacterData.columnNumber`
+
+#### COMMENT_NODE
+
+> `readonly` **COMMENT_NODE**: `8`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:602
+
+node is a Comment node.
+
+##### Inherited from
+
+`CharacterData.COMMENT_NODE`
+
+#### data
+
+> **data**: `string`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1019
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/data)
+
+##### Inherited from
+
+`CharacterData.data`
+
+#### DOCUMENT_FRAGMENT_NODE
+
+> `readonly` **DOCUMENT_FRAGMENT_NODE**: `11`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:608
+
+node is a DocumentFragment node.
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_FRAGMENT_NODE`
+
+#### DOCUMENT_NODE
+
+> `readonly` **DOCUMENT_NODE**: `9`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:604
+
+node is a document.
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_NODE`
+
+#### DOCUMENT_POSITION_CONTAINED_BY
+
+> `readonly` **DOCUMENT_POSITION_CONTAINED_BY**: `16`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:619
+
+Set when other is a descendant of node.
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_POSITION_CONTAINED_BY`
+
+#### DOCUMENT_POSITION_CONTAINS
+
+> `readonly` **DOCUMENT_POSITION_CONTAINS**: `8`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:617
+
+Set when other is an ancestor of node.
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_POSITION_CONTAINS`
+
+#### DOCUMENT_POSITION_DISCONNECTED
+
+> `readonly` **DOCUMENT_POSITION_DISCONNECTED**: `1`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:611
+
+Set when node and other are not in the same tree.
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_POSITION_DISCONNECTED`
+
+#### DOCUMENT_POSITION_FOLLOWING
+
+> `readonly` **DOCUMENT_POSITION_FOLLOWING**: `4`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:615
+
+Set when other is following node.
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_POSITION_FOLLOWING`
+
+#### DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC
+
+> `readonly` **DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC**: `32`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:620
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
+
+#### DOCUMENT_POSITION_PRECEDING
+
+> `readonly` **DOCUMENT_POSITION_PRECEDING**: `2`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:613
+
+Set when other is preceding node.
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_POSITION_PRECEDING`
+
+#### DOCUMENT_TYPE_NODE
+
+> `readonly` **DOCUMENT_TYPE_NODE**: `10`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:606
+
+node is a doctype.
+
+##### Inherited from
+
+`CharacterData.DOCUMENT_TYPE_NODE`
+
+#### ELEMENT_NODE
+
+> `readonly` **ELEMENT_NODE**: `1`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:591
+
+node is an element.
+
+##### Inherited from
+
+`CharacterData.ELEMENT_NODE`
+
+#### ENTITY_NODE
+
+> `readonly` **ENTITY_NODE**: `6`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:598
+
+##### Inherited from
+
+`CharacterData.ENTITY_NODE`
+
+#### ENTITY_REFERENCE_NODE
+
+> `readonly` **ENTITY_REFERENCE_NODE**: `5`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:597
+
+##### Inherited from
+
+`CharacterData.ENTITY_REFERENCE_NODE`
+
+#### firstChild
+
+> `readonly` **firstChild**: [`Node`](#node-1) \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:380
+
+Returns the first child.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/firstChild)
+
+##### Inherited from
+
+`CharacterData.firstChild`
+
+#### isConnected
+
+> `readonly` **isConnected**: `boolean`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:402
+
+Returns true if this node is inside of a document or is the document node itself.
+
+[MDN Reference](https://developer.mozilla.org/en-US/docs/Web/API/Node/isConnected)
+
+##### Inherited from
+
+`CharacterData.isConnected`
+
+#### lastChild
+
+> `readonly` **lastChild**: [`Node`](#node-1) \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:386
+
+Returns the last child.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lastChild)
+
+##### Inherited from
+
+`CharacterData.lastChild`
+
+#### length
+
+> `readonly` **length**: `number`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1021
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/length)
+
+##### Inherited from
+
+`CharacterData.length`
+
+#### lineNumber?
+
+> `optional` **lineNumber**: `number`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:474
+
+Zero based line position inside the parsed source,
+if the `locator` was not disabled.
+
+##### Inherited from
+
+`CharacterData.lineNumber`
+
+#### localName
+
+> **localName**: `string` \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:390
+
+The local part of the qualified name of this node.
+
+##### Inherited from
+
+`CharacterData.localName`
+
+#### namespaceURI
+
+> `readonly` **namespaceURI**: `string` \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:406
+
+The namespace URI of this node.
+
+##### Inherited from
+
+`CharacterData.namespaceURI`
+
+#### nextSibling
+
+> `readonly` **nextSibling**: [`Node`](#node-1) \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:412
+
+Returns the next sibling.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nextSibling)
+
+##### Inherited from
+
+`CharacterData.nextSibling`
+
+#### nodeName
+
+> **nodeName**: `"#text"` \| `"#cdata-section"`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1052
+
+Returns a string appropriate for the type of node.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeName)
+
+##### Overrides
+
+`CharacterData.nodeName`
+
+#### nodeType
+
+> **nodeType**: `3` \| `4`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1053
+
+Returns the type of node.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeType)
+
+##### Overrides
+
+`CharacterData.nodeType`
+
+#### nodeValue
+
+> **nodeValue**: `string` \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:426
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
+
+##### Inherited from
+
+`CharacterData.nodeValue`
+
+#### NOTATION_NODE
+
+> `readonly` **NOTATION_NODE**: `12`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:609
+
+##### Inherited from
+
+`CharacterData.NOTATION_NODE`
+
+#### ownerDocument
+
+> `readonly` **ownerDocument**: [`Document`](#document-1)
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1022
+
+Returns the node document. Returns null for documents.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/ownerDocument)
+
+##### Inherited from
+
+`CharacterData.ownerDocument`
+
+#### parentElement
+
+> `readonly` **parentElement**: [`Element`](#element-1) \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:444
+
+Returns the parent `Node` if it is of type `Element`, otherwise `null`.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/parentElement)
+
+##### Inherited from
+
+`CharacterData.parentElement`
+
+#### parentNode
+
+> `readonly` **parentNode**: [`Node`](#node-1) \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:438
+
+Returns the parent.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/parentNode)
+
+##### Inherited from
+
+`CharacterData.parentNode`
+
+#### prefix
+
+> **prefix**: `string` \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:448
+
+The prefix of the namespace for this node.
+
+##### Inherited from
+
+`CharacterData.prefix`
+
+#### previousSibling
+
+> `readonly` **previousSibling**: [`Node`](#node-1) \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:454
+
+Returns the previous sibling.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/previousSibling)
+
+##### Inherited from
+
+`CharacterData.previousSibling`
+
+#### PROCESSING_INSTRUCTION_NODE
+
+> `readonly` **PROCESSING_INSTRUCTION_NODE**: `7`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:600
+
+node is a ProcessingInstruction node.
+
+##### Inherited from
+
+`CharacterData.PROCESSING_INSTRUCTION_NODE`
+
+#### TEXT_NODE
+
+> `readonly` **TEXT_NODE**: `3`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:594
+
+node is a Text node.
+
+##### Inherited from
+
+`CharacterData.TEXT_NODE`
+
+#### textContent
+
+> **textContent**: `string` \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:468
+
+The text content of
