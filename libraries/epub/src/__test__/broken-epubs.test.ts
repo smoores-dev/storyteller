@@ -7,7 +7,12 @@ import { join } from "node:path"
 import { describe, it } from "vitest"
 import { ZipFile } from "yazl"
 
-import { Epub, EpubVersionError, MemoryAdapter } from "../index.tsx"
+import {
+  Epub,
+  EpubVersionError,
+  MemoryAdapter,
+  TmpFsAdapter,
+} from "../index.tsx"
 
 async function buildZip(
   entries: Record<string, string | Buffer>,
@@ -321,6 +326,169 @@ describe("hrefs pointing at entries whose names need percent encoding", () => {
       navigation?.children[0]?.href,
       `${ENCODED_CHAPTER_HREF}#top`,
     )
+  })
+})
+
+const UTF8_NAME_FLAG = 0x800
+const LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50
+const CENTRAL_DIRECTORY_RECORD_SIGNATURE = 0x02014b50
+const END_OF_CENTRAL_DIRECTORY_SIGNATURE = Buffer.from([0x50, 0x4b, 0x05, 0x06])
+
+const LOCAL_FILE_HEADER_NAME_FLAG = 6
+const CENTRAL_DIRECTORY_RECORD_NAME_FLAG = 8
+
+const END_OF_CENTRAL_DIRECTORY = {
+  recordCount: 10,
+  firstRecordStart: 16,
+} as const
+
+const CENTRAL_DIRECTORY_RECORD = {
+  nameLength: 28,
+  extraFieldLength: 30,
+  fileCommentLength: 32,
+  localFileHeaderStart: 42,
+  size: 46,
+} as const
+
+const UNFLAGGED_CHAPTER = "Text/Ω chapter.xhtml"
+const UNFLAGGED_ARTWORK = "Images/© andrewgenn - Fotolia_fmt.jpeg"
+const UNFLAGGED_CHAPTER_HREF = `Text/${encodeURIComponent("Ω chapter.xhtml")}`
+const UNFLAGGED_ARTWORK_HREF = `Images/${encodeURIComponent("© andrewgenn - Fotolia_fmt.jpeg")}`
+
+const UNFLAGGED_NAV = `<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head><title>Navigation</title></head>
+<body><nav epub:type="toc"><ol><li><a href="${UNFLAGGED_CHAPTER_HREF}">Chapter One</a></li></ol></nav></body>
+</html>
+`
+
+function unflaggedOpf(): string {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" unique-identifier="uid" version="3.0">
+  <metadata>
+    <dc:title>Fotolia</dc:title>
+    <dc:language>en</dc:language>
+    <dc:identifier id="uid">test-unflagged-utf8-names</dc:identifier>
+  </metadata>
+  <manifest>
+    <item href="${UNFLAGGED_CHAPTER_HREF}" id="chapter" media-type="application/xhtml+xml" />
+    <item href="${UNFLAGGED_ARTWORK_HREF}" id="artwork" media-type="image/jpeg" />
+    <item href="nav.xhtml" id="nav" media-type="application/xhtml+xml" properties="nav" />
+  </manifest>
+  <spine>
+    <itemref idref="chapter" />
+  </spine>
+</package>
+`
+}
+
+function clearUtf8NameFlag(zip: Buffer, flagStart: number): void {
+  zip.writeUInt16LE(zip.readUInt16LE(flagStart) & ~UTF8_NAME_FLAG, flagStart)
+}
+
+function withoutUtf8NameFlag(zip: Buffer): Buffer {
+  const cleared = Buffer.from(zip)
+  const endOfCentralDirectory = cleared.lastIndexOf(
+    END_OF_CENTRAL_DIRECTORY_SIGNATURE,
+  )
+  assert.notStrictEqual(
+    endOfCentralDirectory,
+    -1,
+    "no end of central directory",
+  )
+
+  const recordCount = cleared.readUInt16LE(
+    endOfCentralDirectory + END_OF_CENTRAL_DIRECTORY.recordCount,
+  )
+  let record = cleared.readUInt32LE(
+    endOfCentralDirectory + END_OF_CENTRAL_DIRECTORY.firstRecordStart,
+  )
+
+  for (let i = 0; i < recordCount; i++) {
+    assert.strictEqual(
+      cleared.readUInt32LE(record),
+      CENTRAL_DIRECTORY_RECORD_SIGNATURE,
+    )
+    clearUtf8NameFlag(cleared, record + CENTRAL_DIRECTORY_RECORD_NAME_FLAG)
+
+    const localFileHeader = cleared.readUInt32LE(
+      record + CENTRAL_DIRECTORY_RECORD.localFileHeaderStart,
+    )
+    assert.strictEqual(
+      cleared.readUInt32LE(localFileHeader),
+      LOCAL_FILE_HEADER_SIGNATURE,
+    )
+    clearUtf8NameFlag(cleared, localFileHeader + LOCAL_FILE_HEADER_NAME_FLAG)
+
+    record +=
+      CENTRAL_DIRECTORY_RECORD.size +
+      cleared.readUInt16LE(record + CENTRAL_DIRECTORY_RECORD.nameLength) +
+      cleared.readUInt16LE(record + CENTRAL_DIRECTORY_RECORD.extraFieldLength) +
+      cleared.readUInt16LE(record + CENTRAL_DIRECTORY_RECORD.fileCommentLength)
+  }
+
+  return cleared
+}
+
+async function buildUnflaggedEpub(): Promise<Buffer> {
+  return withoutUtf8NameFlag(
+    await buildZip({
+      "META-INF/container.xml": CONTAINER_XML,
+      "content.opf": unflaggedOpf(),
+      [UNFLAGGED_CHAPTER]: CHAPTER_XHTML,
+      [UNFLAGGED_ARTWORK]: Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd9]),
+      "nav.xhtml": UNFLAGGED_NAV,
+    }),
+  )
+}
+
+describe("entry names stored as UTF-8 without the UTF-8 name flag", () => {
+  it("reads an item whose entry name is UTF-8 without the name flag", async () => {
+    using epub = await Epub.using(MemoryAdapter).from(
+      await buildUnflaggedEpub(),
+    )
+    assert.match(await epub.readItemContents("chapter", "utf-8"), /Chapter One/)
+  })
+
+  it("reports the archive length of an entry whose name is UTF-8 without the name flag", async () => {
+    using epub = await Epub.using(MemoryAdapter).from(
+      await buildUnflaggedEpub(),
+    )
+    assert.ok((await epub.getItemArchiveLength("artwork")) > 0)
+  })
+
+  it("extracts entries whose names are UTF-8 without the name flag under those names", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "epub-unflagged-utf8-test-"))
+    const path = join(dir, "unflagged.epub")
+    await writeFile(path, await buildUnflaggedEpub())
+
+    using epub = await Epub.using(TmpFsAdapter).from(path)
+    assert.match(await epub.readItemContents("chapter", "utf-8"), /Chapter One/)
+    assert.ok((await epub.getItemArchiveLength("artwork")) > 0)
+  })
+
+  it("writes entry names back out undamaged when a read archive is saved", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "epub-unflagged-utf8-test-"))
+    const path = join(dir, "unflagged.epub")
+    await writeFile(path, await buildUnflaggedEpub())
+
+    {
+      using epub = await Epub.using(TmpFsAdapter).from(path)
+      await epub.saveAndClose()
+    }
+
+    const saved = await readFile(path)
+    const nameAsStored = Buffer.from("©", "utf-8")
+    const nameAsCp437Mojibake = Buffer.from("┬⌐", "utf-8")
+    assert.ok(saved.includes(nameAsStored))
+    assert.ok(!saved.includes(nameAsCp437Mojibake))
+
+    using reopened = await Epub.using(MemoryAdapter).from(path)
+    assert.match(
+      await reopened.readItemContents("chapter", "utf-8"),
+      /Chapter One/,
+    )
+    assert.ok((await reopened.getItemArchiveLength("artwork")) > 0)
   })
 })
 
