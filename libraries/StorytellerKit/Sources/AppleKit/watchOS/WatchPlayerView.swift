@@ -222,7 +222,7 @@ private struct AudioControlsPage: View {
             HStack(spacing: 3) {
                 Image(systemName: "bookmark.fill")
                     .font(.system(size: 9))
-                Text(formatMinutesSeconds(viewModel.chapterDuration - viewModel.currentTime))
+                Text(formatTimeMinutesSeconds(viewModel.chapterDuration - viewModel.currentTime))
                     .font(.system(size: 11, design: .monospaced))
             }
             .foregroundStyle(.secondary)
@@ -230,7 +230,7 @@ private struct AudioControlsPage: View {
             Spacer()
 
             HStack(spacing: 3) {
-                Text(formatHoursMinutes(viewModel.bookDuration - viewModel.bookElapsed))
+                Text(formatTimeHoursMinutes(viewModel.bookDuration - viewModel.bookElapsed))
                     .font(.system(size: 11, design: .monospaced))
                 Image(systemName: "book.fill")
                     .font(.system(size: 9))
@@ -238,20 +238,6 @@ private struct AudioControlsPage: View {
             .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
-    }
-
-    private func formatMinutesSeconds(_ seconds: Double) -> String {
-        let total = max(0, Int(seconds))
-        let mins = total / 60
-        let secs = total % 60
-        return "\(mins)m\(secs)s"
-    }
-
-    private func formatHoursMinutes(_ seconds: Double) -> String {
-        let total = max(0, Int(seconds))
-        let hrs = total / 3600
-        let mins = (total % 3600) / 60
-        return "\(hrs)h\(mins)m"
     }
 
     private var bottomNav: some View {

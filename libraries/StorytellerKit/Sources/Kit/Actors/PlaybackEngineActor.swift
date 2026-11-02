@@ -32,6 +32,7 @@ public actor PlaybackEngineActor {
     private var generation = UUID()
     private var mutation: Task<Void, Error>?
     private var updateTask: Task<Void, Never>?
+    private var notificationCadence = PlaybackNotificationCadence()
     private var observers: [UUID: @Sendable @StorytellerUIActor (SMILPlaybackState) -> Void] = [:]
     private var audiobookObservers: [UUID: @Sendable (AudiobookPlaybackState) -> Void] = [:]
     private var eventHandler: (@Sendable (AudioPlayerEvent) -> Void)?
@@ -533,8 +534,16 @@ public actor PlaybackEngineActor {
         return id
     }
     public func removeAudiobookObserver(id: UUID) { audiobookObservers.removeValue(forKey: id) }
-    private func notify() async {
+    private func notify(force: Bool = true) async {
         if let state = await getCurrentState() {
+            guard
+                notificationCadence.shouldNotify(
+                    state,
+                    span: spanIndex,
+                    chapter: timeline?.chapterIndex(at: elapsed),
+                    force: force,
+                )
+            else { return }
             for observer in observers.values { await observer(state) }
         }
         if let state = await getAudiobookState() {
@@ -555,7 +564,7 @@ public actor PlaybackEngineActor {
     private func tick(token: UUID) async {
         guard generation == token, playing else { return }
         _ = try? await mutate { [self] in try await advanceIfNeeded(token: token) }
-        await notify()
+        await notify(force: !playing)
     }
     private func advanceIfNeeded(token: UUID, finished: Bool = false) async throws {
         guard generation == token, playing, let timeline else { return }

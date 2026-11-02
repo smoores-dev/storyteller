@@ -99,6 +99,93 @@ test("restoration completes only after the requested anchor is visible", async (
   ).toBe(true)
 })
 
+test("scroll commands acknowledge the settled viewport", async ({ reader }) => {
+  await reader.open({ book: reflowBook() })
+  await reader.page.evaluate(() => window.reader.scrollingMode())
+  await reader.navigate("chapter.xhtml#sentence-40")
+  const before = await reader.page.evaluate(() =>
+    window.reader.readingSnapshot(),
+  )
+  await reader.page.evaluate(
+    (documentID) =>
+      window.reader.readingCommand({
+        documentID,
+        id: "scroll-down",
+        kind: "scrollDown",
+      }),
+    before.documentID,
+  )
+  await expect
+    .poll(() =>
+      reader.page.evaluate(
+        () => window.reader.readingSnapshot().command?.status,
+      ),
+    )
+    .toBe("completed")
+  const completed = await reader.page.evaluate(() =>
+    window.reader.readingSnapshot(),
+  )
+  expect(completed.navigationBlocked).toBe(false)
+  expect(completed.command?.location?.cfi).not.toBe(before.location?.cfi)
+  await reader.page.evaluate(() => window.reader.settled())
+  const after = await reader.page.evaluate(() =>
+    window.reader.readingSnapshot(),
+  )
+  expect(completed.command?.location?.cfi).toBe(after.location?.cfi)
+})
+
+test("user scrolling interrupts smooth following and retains its destination", async ({
+  reader,
+}) => {
+  await reader.open({ book: reflowBook() })
+  await reader.page.evaluate(() => window.reader.scrollingMode())
+  await reader.navigate("chapter.xhtml#sentence-40")
+  const documentID = await reader.page.evaluate(
+    () => window.reader.readingSnapshot().documentID,
+  )
+  const command = {
+    documentID,
+    id: "follow-audio",
+    kind: "anchor",
+    sectionIndex: 0,
+    textId: "sentence-80",
+  }
+  await reader.page.mouse.move(200, 200)
+  await reader.page.evaluate((c) => window.reader.readingCommand(c), command)
+  await expect
+    .poll(() =>
+      reader.page.evaluate(
+        () => window.reader.readingSnapshot().command?.status,
+      ),
+    )
+    .toBe("running")
+  await reader.page.mouse.wheel(0, 400)
+  await expect
+    .poll(() =>
+      reader.page.evaluate(() => {
+        const snapshot = window.reader.readingSnapshot()
+        return (
+          snapshot.gesture?.moved &&
+          !snapshot.gesture.active &&
+          !snapshot.navigationBlocked
+        )
+      }),
+    )
+    .toBe(true)
+  const stopped = await reader.page.evaluate(() =>
+    window.reader.readingSnapshot(),
+  )
+  expect(stopped.command?.status).toBe("interrupted")
+  expect(stopped.gesture?.location?.cfi).toBe(stopped.location?.cfi)
+  await reader.page.evaluate((c) => window.reader.readingCommand(c), command)
+  await reader.page.evaluate(() => window.reader.settled())
+  const retried = await reader.page.evaluate(() =>
+    window.reader.readingSnapshot(),
+  )
+  expect(retried.command?.status).toBe("interrupted")
+  expect(retried.location?.cfi).toBe(stopped.location?.cfi)
+})
+
 test("a missing anchor is a failure rather than a successful JS evaluation", async ({
   reader,
 }) => {

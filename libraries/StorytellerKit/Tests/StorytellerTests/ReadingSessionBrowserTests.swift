@@ -312,6 +312,118 @@ struct ReadingSessionBrowserTests {
     }
 
     @Test(arguments: ["webkit", "chromium"])
+    func scrollingFollowsEachAudioSentenceBeforeItLeavesTheViewport(browser: String) async throws {
+        let h = try await ProtocolTestSession.make(audio: true, audioEntries: pageTurnEntries())
+        let reader = try SessionBrowser(browser: browser, fixture: "page-turns")
+        defer {
+            reader.close()
+            Task { await h.close() }
+        }
+        try await reader.waitUntil("browser loads") { reader.ready }
+        _ = try await reader.evaluate("window.reader.scrollingMode()")
+        let bridge = ReaderBridge(js: reader)
+        reader.bridge = bridge
+        h.session.attachBridge(bridge)
+        try await h.engine.seek(to: 401)
+        await h.session.acceptAudioPosition()
+        let setup = await h.session.ensureSynced(reason: "scroll setup")
+        try await reader.waitUntil("scroll setup settles after \(setup)") {
+            h.session.lastSyncResult == .synced && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil
+        }
+        await h.session.installPlaybackObservation()
+        try await h.session.play()
+        try await reader.waitUntil("playback starts") {
+            h.session.lastSyncResult == .synced && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil
+        }
+        let seeks = await h.factory.player.seeks.count
+
+        for index in 41...43 {
+            let id = "sentence-\(index)"
+            #expect(try await reader.visibleArea(id) > 0)
+            await h.factory.player.advance(to: Double(index) * 10 + 1)
+            try await reader.waitUntil("audio follows \(id)") {
+                try await reader.highlightedID() == id
+                    && h.session.navigation.pending == nil
+                    && h.session.navigation.syncTask == nil
+            }
+            let distance = try await reader.evaluate(
+                """
+                (() => {
+                    const { rects, clip } = window.reader.measure('\(id)');
+                    const middle = (Math.min(...rects.map(r => r.top)) +
+                        Math.max(...rects.map(r => r.bottom))) / 2;
+                    return String(Math.abs(middle - (clip.top + clip.bottom) / 2));
+                })()
+                """
+            )
+            #expect(try #require(Double(distance ?? "")) < 2)
+            #expect(try await bridge.readingSnapshot().navigationBlocked == false)
+            #expect(await h.factory.player.seeks.count == seeks)
+        }
+        #expect(reader.errors.isEmpty)
+        await h.close()
+    }
+
+    @Test(arguments: ["webkit", "chromium"])
+    func scrollingFreeBrowseHoldsTheViewportWhileAudioContinues(browser: String) async throws {
+        let h = try await ProtocolTestSession.make(
+            audio: true,
+            freeBrowse: "always",
+            audioEntries: pageTurnEntries(),
+        )
+        let reader = try SessionBrowser(browser: browser, fixture: "page-turns")
+        defer {
+            reader.close()
+            Task { await h.close() }
+        }
+        try await reader.waitUntil("browser loads") { reader.ready }
+        _ = try await reader.evaluate("window.reader.scrollingMode()")
+        let bridge = ReaderBridge(js: reader)
+        reader.bridge = bridge
+        h.session.attachBridge(bridge)
+        try await h.engine.seek(to: 401)
+        await h.session.acceptAudioPosition()
+        let setup = await h.session.ensureSynced(reason: "scroll setup")
+        try await reader.waitUntil("scroll setup settles after \(setup)") {
+            h.session.lastSyncResult == .synced && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil
+        }
+        await h.session.installPlaybackObservation()
+        try await h.session.play()
+        try await reader.waitUntil("playback starts") {
+            h.session.lastSyncResult == .synced && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil
+        }
+        let seeks = await h.factory.player.seeks.count
+
+        try await reader.wheel(1200)
+        try await reader.waitUntil("free browse scroll is accepted") {
+            let snapshot = try await bridge.readingSnapshot()
+            return h.session.isBrowsing && snapshot.gesture == nil
+                && h.session.navigation.syncTask == nil
+        }
+        let gesture = try #require(try await reader.lastCompletedGesture())
+        #expect(h.session.readerLocation?.cfi == gesture.location?.cfi)
+        await h.factory.player.advance(to: 411)
+        try await reader.waitUntil("audio advances during free browse") {
+            h.session.audioState?.currentFragment == "chapter-0.xhtml#sentence-41"
+                && h.session.navigation.syncTask == nil
+        }
+        #expect(h.session.readerLocation?.cfi == gesture.location?.cfi)
+        #expect(await h.factory.player.seeks.count == seeks)
+        #expect(await h.engine.getCurrentState()?.isPlaying == true)
+
+        await h.session.returnToPlayhead()
+        #expect(!h.session.isBrowsing)
+        #expect(try await reader.visibleArea("sentence-41") > 0)
+        #expect(await h.factory.player.seeks.count == seeks)
+        #expect(reader.errors.isEmpty)
+        await h.close()
+    }
+
+    @Test(arguments: ["webkit", "chromium"])
     func scrollingPreservesTheSentenceStillRenderedInTheMargin(browser: String) async throws {
         let h = try await ProtocolTestSession.make(audio: true, audioEntries: pageTurnEntries())
         let reader = try SessionBrowser(browser: browser, fixture: "page-turns")
@@ -329,11 +441,27 @@ struct ReadingSessionBrowserTests {
         await h.session.acceptAudioPosition()
         #expect(await h.session.ensureSynced(reason: "scroll setup") == .synced)
         let seeks = await h.factory.player.seeks.count
-        try await reader.wheel(800)
+        let distance = try #require(
+            Int(
+                try await reader.evaluate(
+                    """
+                    (() => {
+                        const { rects, clip } = window.reader.measure('sentence-5');
+                        return String(Math.floor(Math.max(...rects.map(r => r.bottom)) - clip.top \
+                    - 4));
+                    })()
+                    """
+                ) ?? ""
+            )
+        )
+        try await reader.wheel(distance)
         try await reader.waitUntil("first scroll completes") {
             let snapshot = try await bridge.readingSnapshot()
-            return snapshot.gesture == nil && h.session.navigation.syncTask == nil
+            return try await reader.lastCompletedGesture() != nil
+                && snapshot.gesture == nil && h.session.navigation.syncTask == nil
         }
+        let firstGesture = try #require(try await reader.lastCompletedGesture())
+        #expect(h.session.readerLocation?.cfi == firstGesture.location?.cfi)
         #expect(try await reader.visibleArea("sentence-5") > 0)
         #expect(await h.factory.player.currentTime == 51)
         #expect(await h.factory.player.seeks.count == seeks)
@@ -341,9 +469,12 @@ struct ReadingSessionBrowserTests {
         try await reader.waitUntil("scroll beyond the current sentence completes") {
             let snapshot = try await bridge.readingSnapshot()
             let seekCount = await h.factory.player.seeks.count
-            return snapshot.gesture == nil && h.session.navigation.syncTask == nil
+            return try await reader.lastCompletedGesture()?.id != firstGesture.id
+                && snapshot.gesture == nil && h.session.navigation.syncTask == nil
                 && seekCount > seeks
         }
+        let secondGesture = try #require(try await reader.lastCompletedGesture())
+        #expect(h.session.readerLocation?.cfi == secondGesture.location?.cfi)
         #expect(try await reader.visibleArea("sentence-5") == 0)
         let expected = try #require(
             try await reader.evaluate(
@@ -355,6 +486,153 @@ struct ReadingSessionBrowserTests {
         )
         #expect(await h.engine.getBackgroundSyncData()?.fragment == expected)
         #expect(h.session.playback.accepted?.locations?.fragments == [expected])
+        #expect(reader.errors.isEmpty)
+        await h.close()
+    }
+
+    @Test(arguments: [false, true])
+    func touchScrollingAcceptsTheSettledDestinationWithoutRecentering(playing: Bool) async throws {
+        let h = try await ProtocolTestSession.make(audio: true, audioEntries: pageTurnEntries())
+        let reader = try SessionBrowser(browser: "chromium", fixture: "page-turns")
+        defer {
+            reader.close()
+            Task { await h.close() }
+        }
+        try await reader.waitUntil("browser loads") { reader.ready }
+        _ = try await reader.evaluate("window.reader.scrollingMode()")
+        let bridge = ReaderBridge(js: reader)
+        reader.bridge = bridge
+        h.session.attachBridge(bridge)
+        try await h.engine.seek(to: 401)
+        await h.session.acceptAudioPosition()
+        _ = await h.session.ensureSynced(reason: "touch scroll setup")
+        try await reader.waitUntil("touch scroll setup settles") {
+            h.session.lastSyncResult == .synced && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil
+        }
+        await h.session.installPlaybackObservation()
+        if playing { try await h.session.play() }
+        try await reader.waitUntil("playback settles") {
+            h.session.lastSyncResult == .synced && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil
+        }
+
+        for direction in [1, -1] {
+            let previousGesture = try await reader.lastCompletedGesture()?.id
+            try await reader.swipe(direction)
+            try await reader.waitUntil("touch scrolling and momentum settle") {
+                let snapshot = try await bridge.readingSnapshot()
+                return try await reader.lastCompletedGesture()?.id != previousGesture
+                    && snapshot.gesture == nil && !snapshot.navigationBlocked
+                    && h.session.navigation.pending == nil && h.session.navigation.syncTask == nil
+            }
+            let gesture = try #require(try await reader.lastCompletedGesture())
+            #expect(h.session.readerLocation?.cfi == gesture.location?.cfi)
+            let firstVisibleSentence = try #require(
+                try await reader.evaluate(
+                    """
+                    Array.from(window.reader.document().querySelectorAll('[id^="sentence-"]'))
+                        .find(el => window.reader.measure(el.id).visibleArea > 0)?.id
+                    """
+                )
+            )
+            #expect(await h.engine.getBackgroundSyncData()?.fragment == firstVisibleSentence)
+            #expect(await h.engine.getCurrentState()?.isPlaying == playing)
+        }
+        #expect(reader.errors.isEmpty)
+        await h.close()
+    }
+
+    @Test(arguments: ["webkit", "chromium"])
+    func terminalWheelEventPreservesThePausedScrollDestination(browser: String) async throws {
+        let h = try await ProtocolTestSession.make(audio: true, audioEntries: pageTurnEntries())
+        let reader = try SessionBrowser(browser: browser, fixture: "page-turns")
+        defer {
+            reader.close()
+            Task { await h.close() }
+        }
+        try await reader.waitUntil("browser loads") { reader.ready }
+        _ = try await reader.evaluate("window.reader.scrollingMode()")
+        let bridge = ReaderBridge(js: reader)
+        reader.bridge = bridge
+        h.session.attachBridge(bridge)
+        try await h.engine.seek(to: 401)
+        await h.session.acceptAudioPosition()
+        _ = await h.session.ensureSynced(reason: "scroll setup")
+        try await reader.waitUntil("setup settles") {
+            h.session.navigation.pending == nil && h.session.navigation.syncTask == nil
+        }
+        await h.session.installPlaybackObservation()
+        try await h.session.play()
+        await h.session.pause()
+
+        var selectedNewSentence = false
+        for _ in 0..<8 {
+            let previous = try #require(await h.engine.getBackgroundSyncData()?.fragment)
+            let time = await h.factory.player.currentTime
+            let seeks = await h.factory.player.seeks.count
+            let before = try #require(
+                Double(
+                    try await reader.evaluate(
+                        "String(document.querySelector('foliate-view').renderer.start)"
+                    ) ?? ""
+                )
+            )
+            for _ in 0..<5 {
+                try await reader.wheel(20)
+                try await Task.sleep(for: .milliseconds(30))
+            }
+            try await reader.waitUntil("wheel movement reaches its destination") {
+                Double(
+                    try await reader.evaluate(
+                        "String(document.querySelector('foliate-view').renderer.start)"
+                    ) ?? ""
+                ) ?? 0 >= before + 99
+            }
+            // Trackpads send a final stationary wheel event. Playwright's WebKit
+            // driver drops zero deltas, so deliver that input event explicitly.
+            _ = try await reader.evaluate(
+                """
+                window.reader.document().dispatchEvent(new WheelEvent('wheel', {
+                    deltaY: 0, bubbles: true
+                })); null
+                """
+            )
+            _ = try await reader.evaluate("window.reader.settled().then(() => null)")
+            try await reader.waitUntil("wheel sequence settles") {
+                let snapshot = try await bridge.readingSnapshot()
+                return snapshot.gesture == nil && !snapshot.navigationBlocked
+                    && h.session.navigation.pending == nil && h.session.navigation.syncTask == nil
+            }
+            let after = try #require(
+                Double(
+                    try await reader.evaluate(
+                        "String(document.querySelector('foliate-view').renderer.start)"
+                    ) ?? ""
+                )
+            )
+            #expect(abs(after - before - 100) <= 1)
+            let expected: String
+            if try await reader.visibleArea(previous) > 0 {
+                expected = previous
+                #expect(await h.factory.player.currentTime == time)
+                #expect(await h.factory.player.seeks.count == seeks)
+            } else {
+                selectedNewSentence = true
+                expected = try #require(
+                    try await reader.evaluate(
+                        """
+                        Array.from(window.reader.document().querySelectorAll('[id^="sentence-"]'))
+                            .find(el => window.reader.measure(el.id).visibleArea > 0)?.id
+                        """
+                    )
+                )
+            }
+            #expect(await h.engine.getBackgroundSyncData()?.fragment == expected)
+            #expect(h.session.playback.accepted?.locations?.fragments == [expected])
+        }
+        #expect(selectedNewSentence)
+        #expect(await h.engine.getCurrentState()?.isPlaying == false)
         #expect(reader.errors.isEmpty)
         await h.close()
     }
@@ -502,6 +780,21 @@ private final class SessionBrowser: JSEvaluating {
     func highlightedID() async throws -> String? {
         try await evaluate(
             "window.reader.document().querySelector('.epub-media-overlay-active')?.id"
+        )
+    }
+
+    func lastCompletedGesture() async throws -> ReaderGesture? {
+        let json = try await evaluate(
+            """
+            JSON.stringify(window.reader.snapshot().messages
+                .filter(m => m.name === 'ReadingState')
+                .map(m => m.body.gesture)
+                .findLast(g => g?.moved && !g.active) ?? null)
+            """
+        )
+        return try JSONDecoder().decode(
+            ReaderGesture?.self,
+            from: Data((json ?? "null").utf8),
         )
     }
 

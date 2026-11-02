@@ -353,7 +353,28 @@ targets:
     dependencies:
       - package: Storyteller
         product: StorytellerAppleKit
+  Reader Layout Tests (iOS):
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../../libraries/StorytellerKit/Tests/iOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: dev.storyteller.ReaderLayoutTests
+        SWIFT_VERSION: 6.2
+    dependencies:
+      - target: Storyteller (iOS)
+
 schemes:
+  Reader Layout Tests (iOS):
+    build:
+      targets:
+        Reader Layout Tests (iOS): [test]
+    test:
+      config: Debug
+      targets:
+        - Reader Layout Tests (iOS)
   "Storyteller (macOS)":
     shared: true
     build:

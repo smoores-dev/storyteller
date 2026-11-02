@@ -45,6 +45,7 @@ struct StorytellerTVApp: App {
                 Task {
                     guard await StorytellerRuntime.start() else { return }
                     await BookServiceActor.shared.setActive(true, source: .tv)
+                    await ActiveReadingSession.shared.current?.handleSceneBecameActive()
                 }
             case .inactive:
                 break

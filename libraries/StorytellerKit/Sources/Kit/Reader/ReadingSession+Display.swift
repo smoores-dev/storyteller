@@ -3,9 +3,10 @@ import Foundation
 extension ReadingSession {
     /// Current viewport location.
     public var readerLocation: ReaderLocation? {
-        navigation.nativeLocation ?? navigation.snapshot?.location
+        navigation.nativeLocation ?? navigation.location
     }
     public var audioState: SMILPlaybackState? { playback.observed }
+    public var isAudioPlaying: Bool { playback.isPlaying }
     public var readerChapterFraction: Double {
         guard let location = readerLocation else { return 0 }
         return location.chapterFraction ?? location.pageIndex.map {

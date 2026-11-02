@@ -78,6 +78,7 @@ struct StorytellerWatchApp: App {
                 Task {
                     guard await StorytellerRuntime.start() else { return }
                     await BookServiceActor.shared.setActive(true, source: .watch)
+                    await ActiveReadingSession.shared.current?.handleSceneBecameActive()
                 }
 
             case .inactive:

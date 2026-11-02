@@ -263,6 +263,7 @@ struct StorytellerReaderApp: App {
         Task {
             guard await StorytellerRuntime.start() else { return }
             await BookServiceActor.shared.setActive(true, source: .app)
+            await ActiveReadingSession.shared.current?.handleSceneBecameActive()
         }
     }
 }

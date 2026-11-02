@@ -104,7 +104,7 @@ extension ReadingSession {
             await engine.reconcilePositionFromPlayer()
             let audio = await engine.getCurrentState()
             if let audio, audio.bookID == bookID {
-                playback.observed = audio
+                await publishPlayback()
                 onPlaybackActivityChanged?(audio.isPlaying)
                 if settings.freeBrowseMode == "paused", audio.isPlaying {
                     navigation.browseLocation = nil
@@ -154,12 +154,12 @@ extension ReadingSession {
                 navigation.revision &+= 1
                 navigation.pending = nil
                 navigation.confirmed = nil
-                let accepted = await acceptUserDestination(
+                let target = await acceptUserDestination(
                     gesture.location,
                     snapshot: snapshot,
                     reason: .userFlippedPage,
                 )
-                guard accepted else {
+                guard let target else {
                     return .deferred("Gesture destination needs valid geometry/audio")
                 }
                 navigation.lastGesture = (snapshot.documentID, gesture.id)
@@ -168,6 +168,11 @@ extension ReadingSession {
                     gestureID: gesture.id,
                 )
                 onUserNavigation?()
+                if snapshot.location?.flow == "scrolled" {
+                    navigation.confirmed = (snapshot.documentID, target)
+                    scheduleReconciliation(reason: "gesture accepted")
+                    return await settledResult()
+                }
             } else if let gesture = snapshot.gesture, !gesture.active {
                 try await bridge.acknowledgeReading(
                     documentID: snapshot.documentID,
@@ -204,7 +209,8 @@ extension ReadingSession {
                     scheduleSplitSentenceFollow(snapshot: snapshot)
                     return await settledResult()
                 }
-                if target.kind == "anchor", snapshot.playhead?.visible == true,
+                if target.kind == "anchor", snapshot.location?.flow != "scrolled",
+                    snapshot.playhead?.visible == true,
                     snapshot.playhead?.sectionIndex == target.sectionIndex,
                     snapshot.playhead?.textId == target.textId
                 {
@@ -259,25 +265,29 @@ extension ReadingSession {
                     receipt.status != "running"
                 {
                     if receipt.status == "completed" {
+                        let confirmedTarget: ReaderTarget
                         switch pending.purpose {
                             case .user(let reason):
                                 guard
-                                    await acceptUserDestination(
-                                        receipt.location,
-                                        snapshot: snapshot,
-                                        reason: reason,
-                                    )
+                                    let target =
+                                        await acceptUserDestination(
+                                            receipt.location,
+                                            snapshot: snapshot,
+                                            reason: reason,
+                                        )
                                 else {
                                     return .deferred(
                                         "Navigation completed; audio/geometry not yet established"
                                     )
                                 }
-                            case .projection: break
+                                confirmedTarget =
+                                    snapshot.location?.flow == "scrolled" ? target : pending.target
+                            case .projection: confirmedTarget = pending.target
                         }
                         guard navigation.pending?.id == pending.id, commsBridge === bridge else {
                             return .deferred("Newer navigation")
                         }
-                        navigation.confirmed = (snapshot.documentID, pending.target)
+                        navigation.confirmed = (snapshot.documentID, confirmedTarget)
                         navigation.pending = nil
                         try await bridge.acknowledgeReading(
                             documentID: snapshot.documentID,
@@ -369,36 +379,40 @@ extension ReadingSession {
         _ location: ReaderLocation?,
         snapshot: ReaderSnapshot,
         reason: SyncReason,
-    ) async -> Bool {
+    ) async -> ReaderTarget? {
         guard !snapshot.navigationBlocked, let location, let locator = location.locator, !isEnded
-        else { return false }
+        else { return nil }
         navigation.peer = nil
         let revision = navigation.revision
         navigation.audioOperation = revision
         defer { finishAudioNavigation(revision) }
         if content.hasAudio, !(await audioFollowsUserNavigation()) {
-            guard revision == navigation.revision, !isEnded else { return false }
+            guard revision == navigation.revision, !isEnded else { return nil }
             navigation.browseLocation = locator
-            return true
+            return .location(locator)
         }
         if content.hasAlignment, let sectionIndex = location.sectionIndex,
             let section = bookStructure[safe: sectionIndex]
         {
             let scrolling = location.flow == "scrolled"
-            if snapshot.playhead?.visible == true {
+            if let playhead = snapshot.playhead, playhead.visible == true {
                 // Moving the viewport does not move audio while its sentence is still visible.
                 if !playback.acceptedAudio {
                     await acceptAudioPosition()
                     playback.origin = .userText
                     await saveProgressLocally(reason: reason)
                 }
-                return true
+                return ReaderTarget(
+                    kind: "anchor",
+                    sectionIndex: playhead.sectionIndex,
+                    textId: playhead.textId,
+                )
             }
-            if let measured = snapshot.playhead, measured.visible == nil { return false }
+            if let measured = snapshot.playhead, measured.visible == nil { return nil }
             if !section.mediaOverlay.isEmpty {
                 guard let visible = snapshot.visibleIDs,
                     let preferred = scrolling ? snapshot.visibleIDs : snapshot.fullyVisibleIDs
-                else { return false }
+                else { return nil }
                 // Prefer a fully visible sentence on page turns, then an intersecting one.
                 if let entry = section.mediaOverlay.first(where: { preferred.contains($0.textId) })
                     ?? section.mediaOverlay.first(where: { visible.contains($0.textId) })
@@ -409,26 +423,30 @@ extension ReadingSession {
                             textId: entry.textId,
                         ),
                         navigation.revision == revision, !isEnded
-                    else { return false }
+                    else { return nil }
                     await acceptAudioPosition()
                     playback.origin = .userText
                     await saveProgressLocally(reason: reason)
                     navigation.browseLocation = nil
-                    return true
+                    return ReaderTarget(
+                        kind: "anchor",
+                        sectionIndex: sectionIndex,
+                        textId: entry.textId,
+                    )
                 }
             }
             // Stop audio updates from overwriting the unnarrated text position.
             playback.acceptedAudio = false
             await engine.pause()
         }
-        guard revision == navigation.revision, !isEnded else { return false }
+        guard revision == navigation.revision, !isEnded else { return nil }
         playback.accepted = locator
         playback.acceptedAudio = false
         playback.acceptedAt = Date().timeIntervalSince1970 * 1000
         playback.origin = .userText
         navigation.browseLocation = nil
         await saveProgressLocally(reason: reason)
-        return true
+        return .location(locator)
     }
 
     private func readerTarget() async -> ReaderTarget {

@@ -114,6 +114,7 @@ public func androidLibraryRefreshDemand(needed: Bool) async throws {
 public func androidAppDidBecomeActive() async throws {
     try requireAndroidBootstrap()
     await BookServiceActor.shared.setActive(true, source: .app)
+    await ActiveReadingSession.shared.current?.handleSceneBecameActive()
 }
 
 public func androidAppDidEnterBackground() async throws {

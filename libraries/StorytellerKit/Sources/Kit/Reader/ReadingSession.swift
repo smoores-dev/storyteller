@@ -74,8 +74,9 @@ public final class ReadingSession {
     public internal(set) var playbackSnapshot: AudioSessionSnapshot?
     public internal(set) var audiobookState: AudiobookSessionState?
     public internal(set) var chapters = SMILChapterListing(chapters: [], currentChapterID: nil)
-    var playback = ReadingPlayback()
-    var navigation = ReadingNavigation()
+    // Playback and navigation fields have independent observation tracking.
+    let playback = ReadingPlayback()
+    let navigation = ReadingNavigation()
     var isEnded = false
     public var isBrowsing: Bool { navigation.browseLocation != nil }
     public var offeredProgress: IncomingServerPosition? { playback.offered }
@@ -272,6 +273,7 @@ public final class ReadingSession {
     public func handleSceneBecameActive() async {
         navigation.foreground = true
         _ = await ensureSynced(reason: "foreground")
+        await publishPlayback()
     }
     public func handleSceneEnteredBackground() async {
         navigation.foreground = false

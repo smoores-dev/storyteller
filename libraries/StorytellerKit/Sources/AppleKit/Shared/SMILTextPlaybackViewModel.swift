@@ -580,9 +580,10 @@ public final class SMILTextPlaybackViewModel: NSObject {
     }
 
     private func formatTime(_ seconds: Double) -> String {
-        let hours = Int(seconds) / 3600
-        let mins = (Int(seconds) % 3600) / 60
-        let secs = Int(seconds) % 60
+        let total = max(0, Int(seconds.rounded()))
+        let hours = total / 3600
+        let mins = (total % 3600) / 60
+        let secs = total % 60
 
         if hours > 0 {
             return String(format: "%d:%02d:%02d", hours, mins, secs)

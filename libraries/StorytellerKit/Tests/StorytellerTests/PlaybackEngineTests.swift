@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import Testing
 
 @testable import StorytellerKit
@@ -370,5 +371,75 @@ private struct SuspendedEngineFactory: AudioPlayerFactory {
     await pause.value
     #expect(!(await factory.player.playing))
     #expect(await engine.getCurrentState()?.isPlaying == false)
+    await engine.cleanup()
+}
+
+// Exercise notifications from the real engine timer, including chapter changes
+// within a track and sentence changes that do not reload the audio file.
+@StorytellerUIActor
+@Test func playbackNotificationsDeliverTransitionsBeforeTheClockDeadline() async throws {
+    let factory = EngineTestFactory()
+    let engine = PlaybackEngineActor(factory: factory)
+    let url = URL(fileURLWithPath: "/tmp/notification-audio")
+    let timeline = PlaybackTimeline(
+        spans: [
+            .init(
+                source: "voice",
+                url: url,
+                sourceStart: 0,
+                sourceEnd: 4,
+                bookStart: 0,
+                alignment: .init(section: 0, entry: 0, href: "text", fragment: "s1"),
+            ),
+            .init(
+                source: "voice",
+                url: url,
+                sourceStart: 4,
+                sourceEnd: 8,
+                bookStart: 4,
+                alignment: .init(section: 0, entry: 1, href: "text", fragment: "s2"),
+            ),
+        ],
+        chapters: [
+            .init(id: "one", title: "One", start: 0, duration: 2, section: 0),
+            .init(id: "two", title: "Two", start: 2, duration: 6, section: 0),
+        ],
+    )
+    try await engine.load(timeline: timeline, bookID: engineTestBook())
+    try await engine.seek(to: 0)
+    let received = Mutex<SMILPlaybackState?>(nil)
+    let observer = await engine.addStateObserver { state in
+        received.withLock { $0 = state }
+    }
+    try await engine.play()
+
+    @StorytellerUIActor
+    func waitFor(_ matches: (SMILPlaybackState) -> Bool) async throws -> Bool {
+        let deadline = ContinuousClock.now.advanced(by: .milliseconds(600))
+        while ContinuousClock.now < deadline {
+            if received.withLock({ $0.map(matches) ?? false }) { return true }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        return false
+    }
+
+    await factory.player.advance(to: 2.1)
+    // Reading the live clock leaves transition notifications pending.
+    #expect(await engine.getCurrentState()?.chapterLabel == "Two")
+    let chapterArrived = try await waitFor { $0.chapterLabel == "Two" }
+    #expect(chapterArrived)
+    await factory.player.advance(to: 4.1)
+    let sentenceArrived = try await waitFor { $0.currentFragment == "text#s2" }
+    #expect(sentenceArrived)
+    await engine.setPlaybackRate(1.5)
+    #expect(received.withLock { $0?.playbackRate } == 1.5)
+    await engine.setVolume(0.5)
+    #expect(received.withLock { $0?.volume } == 0.5)
+    try await engine.seek(to: 4.5)
+    #expect(received.withLock { $0?.bookElapsed } == 4.5)
+    await factory.player.advance(to: 8)
+    let stopped = try await waitFor { !$0.isPlaying }
+    #expect(stopped)
+    await engine.removeStateObserver(id: observer)
     await engine.cleanup()
 }

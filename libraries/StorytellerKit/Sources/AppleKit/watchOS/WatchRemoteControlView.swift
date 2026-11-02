@@ -174,7 +174,7 @@ private struct RemoteControlsPage: View {
             HStack(spacing: 3) {
                 Image(systemName: "bookmark.fill")
                     .font(.system(size: 9))
-                Text(formatMinutesSeconds(state.chapterDuration - state.chapterElapsed))
+                Text(formatTimeMinutesSeconds(state.chapterDuration - state.chapterElapsed))
                     .font(.system(size: 11, design: .monospaced))
             }
             .foregroundStyle(.secondary)
@@ -184,26 +184,12 @@ private struct RemoteControlsPage: View {
             HStack(spacing: 3) {
                 Image(systemName: "book.fill")
                     .font(.system(size: 9))
-                Text(formatHoursMinutes(state.bookDuration - state.bookElapsed))
+                Text(formatTimeHoursMinutes(state.bookDuration - state.bookElapsed))
                     .font(.system(size: 11, design: .monospaced))
             }
             .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
-    }
-
-    private func formatMinutesSeconds(_ seconds: TimeInterval) -> String {
-        let total = max(0, Int(seconds))
-        let mins = total / 60
-        let secs = total % 60
-        return "\(mins)m\(secs)s"
-    }
-
-    private func formatHoursMinutes(_ seconds: TimeInterval) -> String {
-        let total = max(0, Int(seconds))
-        let hrs = total / 3600
-        let mins = (total % 3600) / 60
-        return "\(hrs)h\(mins)m"
     }
 
     private var bottomNav: some View {

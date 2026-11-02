@@ -1620,8 +1620,10 @@ export class Paginator extends HTMLElement {
         this.armCssSnapIdleFallback(this.#cssSnap)
     }
     interruptFromInput(userInitiated) {
-      this.#continuous = null
-      if (userInitiated) this.#paginator.#justAnchored = false
+      if (userInitiated) {
+        this.#paginator.#justAnchored = false
+        if (this.#continuous) this.#continuous.reason = "scroll"
+      }
       this.interruptCssSnap(userInitiated)
     }
     beginContinuousScroll(reason) {

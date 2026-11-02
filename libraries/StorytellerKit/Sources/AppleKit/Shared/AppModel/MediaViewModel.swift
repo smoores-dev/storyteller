@@ -195,6 +195,7 @@ public final class MediaViewModel {
     @ObservationIgnored private var widgetSnapshotPublishTask: Task<Void, Never>?
     @ObservationIgnored private let usesInjectedLibrary: Bool
     @ObservationIgnored private var hasStarted = false
+    @ObservationIgnored private var libraryVisibilityTask: Task<Void, Never>?
 
     private var sourceNamesByID: [BookSourceID: String] {
         Dictionary(uniqueKeysWithValues: bookSources.map { ($0.id, $0.name) })
@@ -385,6 +386,7 @@ public final class MediaViewModel {
     public func start() async {
         guard !usesInjectedLibrary, !hasStarted else { return }
         hasStarted = true
+        observeLibraryVisibility()
 
         await ProgressSyncActor.shared.registerSyncNotificationCallback {
             @MainActor [weak self] synced, failedBookIDs in
@@ -531,6 +533,7 @@ public final class MediaViewModel {
     }
 
     public func refreshMetadata(source: String = "unknown") async {
+        guard !isLibraryHidden else { return }
         let started = CFAbsoluteTimeGetCurrent()
         var checkpoint = started
         debugLog("[PerfTrace][MediaViewModel] refreshMetadata start source=\(source)")
@@ -802,10 +805,10 @@ public final class MediaViewModel {
 
     private func observeWidgetPlayback() {
         let session = ActiveReadingSession.shared.current
-        let wasPlaying = session?.playbackSnapshot?.isPlaying == true
+        let wasPlaying = session?.isAudioPlaying == true
         withObservationTracking {
             _ = ActiveReadingSession.shared.current
-            _ = session?.playbackSnapshot?.isPlaying
+            _ = session?.isAudioPlaying
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
@@ -813,7 +816,7 @@ public final class MediaViewModel {
                 let current = ActiveReadingSession.shared.current
                 if session != nil
                     && (session !== current
-                        || (wasPlaying && current?.playbackSnapshot?.isPlaying != true))
+                        || (wasPlaying && current?.isAudioPlaying != true))
                 {
                     await session?.saveProgressLocally(reason: .userPausedPlayback)
                     await self.publishWidgetSnapshot()
@@ -823,6 +826,7 @@ public final class MediaViewModel {
     }
 
     private func refreshProgress() async {
+        guard !isLibraryHidden else { return }
         if !libraryPresentations.isEmpty {
             await refreshMetadata(source: "progress")
             return
@@ -836,6 +840,38 @@ public final class MediaViewModel {
             ),
         )
         setIfChanged(\.bookProgressCache, await ProgressSyncActor.shared.getAllBookProgress())
+    }
+
+    // Library UI refreshes pause while the app is hidden.
+    // Core progress persistence continues independently.
+    private var isLibraryHidden: Bool {
+        #if os(macOS)
+        NSApplication.shared.isHidden
+        #elseif os(iOS) || os(tvOS)
+        UIApplication.shared.applicationState == .background
+        #else
+        false
+        #endif
+    }
+
+    private func observeLibraryVisibility() {
+        #if os(macOS) || os(iOS) || os(tvOS)
+        #if os(macOS)
+        let notification = NSApplication.didUnhideNotification
+        #else
+        let notification = UIApplication.didBecomeActiveNotification
+        #endif
+        libraryVisibilityTask = Task { @MainActor [weak self] in
+            for await _ in NotificationCenter.default.notifications(named: notification) {
+                guard !Task.isCancelled, let self else { return }
+                await self.refreshMetadata(source: "app visible")
+            }
+        }
+        #endif
+    }
+
+    deinit {
+        libraryVisibilityTask?.cancel()
     }
 
     private func setupSettingsSync() async {

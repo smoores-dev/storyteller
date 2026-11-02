@@ -70,23 +70,36 @@ async function swipe(direction, canceled, repeatAfter) {
   const cdp = await page.context().newCDPSession(page)
   try {
     const bounds = await page.locator("foliate-view").boundingBox()
-    const start = bounds.x + bounds.width * (direction > 0 ? 0.8 : 0.2)
-    const y = bounds.y + bounds.height / 2
-    const touch = (type, x) =>
+    const scrolling = await page.evaluate(
+      () => window.reader.readingSnapshot().location?.flow === "scrolled",
+    )
+    const extent = scrolling ? bounds.height : bounds.width
+    const start =
+      (scrolling ? bounds.y : bounds.x) + extent * (direction > 0 ? 0.8 : 0.2)
+    const touch = (type, position) =>
       cdp.send("Input.dispatchTouchEvent", {
         type,
-        touchPoints: type === "touchEnd" ? [] : [{ x, y, id: 0 }],
+        touchPoints:
+          type === "touchEnd"
+            ? []
+            : [
+                {
+                  x: scrolling ? bounds.x + bounds.width / 2 : position,
+                  y: scrolling ? position : bounds.y + bounds.height / 2,
+                  id: 0,
+                },
+              ],
       })
     const drag = async (canceled) => {
       await touch("touchStart", start)
-      const distance = bounds.width * (canceled ? 0.12 : 0.65) * direction
+      const distance = extent * (canceled ? 0.12 : 0.65) * direction
       for (let step = 1; step <= 6; step++) {
         await touch("touchMove", start - (distance * step) / 6)
         await new Promise((resolve) => setTimeout(resolve, 20))
       }
       if (canceled) await touch("touchMove", start - 10 * direction)
       // Release without momentum so a completed drag turns exactly one page.
-      await new Promise((resolve) => setTimeout(resolve, 150))
+      if (!scrolling) await new Promise((resolve) => setTimeout(resolve, 150))
       await touch("touchEnd")
     }
     await drag(canceled)

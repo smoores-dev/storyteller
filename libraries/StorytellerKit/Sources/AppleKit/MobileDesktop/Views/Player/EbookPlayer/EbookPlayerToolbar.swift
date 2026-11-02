@@ -3,13 +3,13 @@ import SwiftUI
 
 struct EbookPlayerToolbar: ToolbarContent {
     @Bindable var viewModel: EbookPlayerViewModel
-    let display: MiniPlayerDisplayModel
+    let display: () -> MiniPlayerDisplayModel
     let actions: MiniPlayerActions
     @Binding var customizeCard: CustomizeCard?
 
     private var visibleSlots: [PlayerComplication] {
         viewModel.settingsVM.menuBarSlots.filter {
-            $0 != .none && (display.hasAudioNarration || !$0.requiresAudio)
+            $0 != .none && (viewModel.hasAudioNarration || !$0.requiresAudio)
         }
     }
 
@@ -29,12 +29,14 @@ struct EbookPlayerToolbar: ToolbarContent {
         }
         ToolbarItemGroup(placement: .primaryAction) {
             ForEach(Array(visibleSlots.enumerated()), id: \.offset) { _, comp in
-                PlayerComplicationView(
-                    complication: comp,
-                    display: display,
-                    actions: actions,
-                    style: .macToolbar,
-                )
+                ReaderPlaybackContent {
+                    PlayerComplicationView(
+                        complication: comp,
+                        display: display(),
+                        actions: actions,
+                        style: .macToolbar,
+                    )
+                }
             }
         }
         if #available(macOS 26.0, *) {
@@ -45,7 +47,7 @@ struct EbookPlayerToolbar: ToolbarContent {
                 CustomizeMenuContent(
                     customizeCard: $customizeCard,
                     settingsVM: viewModel.settingsVM,
-                    hasAudioNarration: display.hasAudioNarration,
+                    hasAudioNarration: viewModel.hasAudioNarration,
                     onShowKeybindings: { viewModel.showKeybindingsPopover = true },
                 )
             } label: {

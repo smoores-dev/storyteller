@@ -331,7 +331,7 @@ class FoliateManager {
 
         doc.addEventListener("click", (event) => {
           if (event.target.closest?.("a[href]")) return
-          if (clickTimer !== null) {
+          if (clickTimer !== null && event.detail > 1) {
             clearTimeout(clickTimer)
             clickTimer = null
             this.#handleDoubleClick(event, index, doc)
@@ -348,14 +348,15 @@ class FoliateManager {
             return
           }
 
-          clickTimer = setTimeout(() => {
-            clickTimer = null
+          const timer = setTimeout(() => {
+            if (clickTimer === timer) clickTimer = null
             const selectionNow = doc.getSelection?.()
             if (selectionNow && !selectionNow.isCollapsed) {
               return
             }
             this.#handleSingleClick(event)
-          }, 150)
+          }, 300)
+          clickTimer = timer
         })
 
         doc.addEventListener("dblclick", (event) => {
@@ -747,19 +748,26 @@ class FoliateManager {
     const renderer = view?.renderer
     if (!renderer) throw new Error("Reader has no renderer")
     let resolved = null
+    let status = null
     switch (request.kind) {
       case "next":
-        return await view.next(undefined, request.animated !== false, true)
+        status = await view.next(undefined, request.animated !== false, true)
+        break
       case "previous":
-        return await view.prev(undefined, true, true)
+        status = await view.prev(undefined, true, true)
+        break
       case "scrollUp":
-        return await view.prev(40, true, true)
+        status = await view.prev(40, true, true)
+        break
       case "scrollDown":
-        return await view.next(40, true, true)
+        status = await view.next(40, true, true)
+        break
       case "left":
-        return await view.goLeft(true, true)
+        status = await view.goLeft(true, true)
+        break
       case "right":
-        return await view.goRight(request.animated !== false, true)
+        status = await view.goRight(request.animated !== false, true)
+        break
       case "href":
       case "cfi":
         resolved = view.resolveNavigation(request.value)
@@ -790,16 +798,21 @@ class FoliateManager {
         break
       case "anchor": {
         const visibility = this.#readingFacts(request).playhead
-        if (visibility?.visible === true) return "completed"
+        if (!renderer.scrolled && visibility?.visible === true)
+          return "completed"
         const href = view.book.sections[request.sectionIndex]?.id
         if (!href) throw new Error("Invalid playhead section")
         resolved = view.resolveNavigation(`${href}#${request.textId}`)
-        await renderer.goTo({ ...resolved, smooth: false })
+        await renderer.goTo({ ...resolved, smooth: renderer.scrolled })
         break
       }
       default:
         throw new Error(`Unknown reading command: ${request.kind}`)
     }
+    if (status && status !== "completed") return status
+    while (renderer.scrolled && renderer.idle === false)
+      await new Promise(requestAnimationFrame)
+    if (status) return status
     // Wait for layout before measuring the destination.
     await new Promise((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(resolve)),

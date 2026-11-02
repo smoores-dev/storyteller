@@ -99,7 +99,7 @@ public struct EbookPlayerView: View {
             EbookPlayerSettings(settingsVM: viewModel.settingsVM)
             .readerPaletteSurface(coverPalette)
         }
-        .statusBarHidden(!viewModel.isMenuBarVisible)
+        .statusBarHidden(!isPad && !viewModel.isMenuBarVisible)
         .persistentSystemOverlays(viewModel.isMenuBarVisible ? .automatic : .hidden)
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .tabBar)
@@ -148,7 +148,7 @@ public struct EbookPlayerView: View {
         .toolbar {
             EbookPlayerToolbar(
                 viewModel: viewModel,
-                display: playerDisplayModel,
+                display: { playerDisplayModel },
                 actions: macToolbarActions,
                 customizeCard: $customizeCard,
             )
@@ -530,7 +530,9 @@ public struct EbookPlayerView: View {
 
     private var audioSidebarCard: some View {
         let cardWidth = audioSidebarTotalWidth - audioSidebarGutter * 2
-        return audiobookSidebar(palette: coverPalette, containerWidth: cardWidth)
+        return ReaderPlaybackContent {
+            audiobookSidebar(palette: coverPalette, containerWidth: cardWidth)
+        }
             .frame(width: cardWidth)
             .playerCardChrome(coverPalette)
             .overlay(alignment: .leading) {
@@ -642,7 +644,9 @@ public struct EbookPlayerView: View {
                 Rectangle()
                     .fill(separatorColor)
                     .frame(width: 1)
-                audiobookSidebar(foregroundColor: readerForegroundColor, containerWidth: 360)
+                ReaderPlaybackContent {
+                    audiobookSidebar(foregroundColor: readerForegroundColor, containerWidth: 360)
+                }
                     .frame(width: 360)
                     .padding(.horizontal, 14)
                     .transition(.move(edge: .trailing))
@@ -799,55 +803,59 @@ public struct EbookPlayerView: View {
                 && hasEnabledDockItems
 
             if shouldShowDock {
-                EbookDockIos(
-                    leadingSlots: viewModel.settingsVM.dockLeadingSlots,
-                    trailingSlots: viewModel.settingsVM.dockTrailingSlots,
-                    centerSlots: viewModel.settingsVM.dockCenterSlots,
-                    dockTransparency: viewModel.settingsVM.dockTransparency,
-                    display: playerDisplayModel,
-                    backgroundColor: readerBackgroundColor,
-                    positionAtTop: alwaysShowMini,
-                    actions: dockActions,
-                    mirrored: viewModel.settingsVM.miniPlayerMirrored,
-                )
+                ReaderPlaybackContent {
+                    EbookDockIos(
+                        leadingSlots: viewModel.settingsVM.dockLeadingSlots,
+                        trailingSlots: viewModel.settingsVM.dockTrailingSlots,
+                        centerSlots: viewModel.settingsVM.dockCenterSlots,
+                        dockTransparency: viewModel.settingsVM.dockTransparency,
+                        display: playerDisplayModel,
+                        backgroundColor: readerBackgroundColor,
+                        positionAtTop: alwaysShowMini,
+                        actions: dockActions,
+                        mirrored: viewModel.settingsVM.miniPlayerMirrored,
+                    )
+                }
                 .transition(.opacity)
             }
 
             if viewModel.isMenuBarVisible {
-                EbookPlayerMenuBar(
-                    display: playerDisplayModel,
-                    actions: dockActions,
-                    sleepTimerActive: viewModel.session?.sleepTimerActive ?? false,
-                    sleepTimerType: viewModel.session?.sleepTimerType,
-                    showCustomizePopover: $viewModel.showCustomizePopover,
-                    showSearchSheet: $viewModel.showSearchPanel,
-                    showBookmarksPanel: $viewModel.showBookmarksPanel,
-                    showAudioSidebar: $viewModel.showAudioSidebar,
-                    showSleepTimerSheet: $viewModel.showSleepTimerSheet,
-                    searchManager: viewModel.searchManager,
-                    onDismiss: {
-                        if let onClose {
-                            onClose()
-                        } else {
-                            dismiss()
-                        }
-                    },
-                    onSearchResultSelected: viewModel.handleSearchResultNavigation,
-                    onSleepTimerStart: viewModel.handleSleepTimerStart,
-                    onSleepTimerCancel: viewModel.handleSleepTimerCancel,
-                    settingsVM: viewModel.settingsVM,
-                    customizeCard: $customizeCard,
-                    coverPalette: coverPalette,
-                )
+                ReaderPlaybackContent {
+                    EbookPlayerMenuBar(
+                        display: playerDisplayModel,
+                        actions: dockActions,
+                        sleepTimerActive: viewModel.session?.sleepTimerActive ?? false,
+                        sleepTimerType: viewModel.session?.sleepTimerType,
+                        showCustomizePopover: $viewModel.showCustomizePopover,
+                        showSearchSheet: $viewModel.showSearchPanel,
+                        showBookmarksPanel: $viewModel.showBookmarksPanel,
+                        showAudioSidebar: $viewModel.showAudioSidebar,
+                        showSleepTimerSheet: $viewModel.showSleepTimerSheet,
+                        searchManager: viewModel.searchManager,
+                        onDismiss: {
+                            if let onClose {
+                                onClose()
+                            } else {
+                                dismiss()
+                            }
+                        },
+                        onSearchResultSelected: viewModel.handleSearchResultNavigation,
+                        onSleepTimerStart: viewModel.handleSleepTimerStart,
+                        onSleepTimerCancel: viewModel.handleSleepTimerCancel,
+                        settingsVM: viewModel.settingsVM,
+                        customizeCard: $customizeCard,
+                        coverPalette: coverPalette,
+                    )
+                }
                 .transition(.opacity)
             }
 
             if !(isPad && viewModel.showAudioSidebar) {
-                draggableAudioCard
+                ReaderPlaybackContent { draggableAudioCard }
             }
 
             if progressIndicatorEnabled {
-                playbackProgressBar
+                ReaderPlaybackContent { playbackProgressBar }
             }
 
             if viewModel.hasAudioNarration,
@@ -863,21 +871,23 @@ public struct EbookPlayerView: View {
             }
             #else
             if !viewModel.showAudioSidebar && hasEnabledDockItems {
-                EbookDockIos(
-                    leadingSlots: viewModel.settingsVM.dockLeadingSlots,
-                    trailingSlots: viewModel.settingsVM.dockTrailingSlots,
-                    centerSlots: viewModel.settingsVM.dockCenterSlots,
-                    dockTransparency: viewModel.settingsVM.dockTransparency,
-                    display: playerDisplayModel,
-                    backgroundColor: readerBackgroundColor,
-                    positionAtTop: false,
-                    actions: dockActions,
-                )
+                ReaderPlaybackContent {
+                    EbookDockIos(
+                        leadingSlots: viewModel.settingsVM.dockLeadingSlots,
+                        trailingSlots: viewModel.settingsVM.dockTrailingSlots,
+                        centerSlots: viewModel.settingsVM.dockCenterSlots,
+                        dockTransparency: viewModel.settingsVM.dockTransparency,
+                        display: playerDisplayModel,
+                        backgroundColor: readerBackgroundColor,
+                        positionAtTop: false,
+                        actions: dockActions,
+                    )
+                }
                 .transition(.opacity)
             }
 
             if progressIndicatorEnabled {
-                playbackProgressBar
+                ReaderPlaybackContent { playbackProgressBar }
             }
 
             if viewModel.timelineBackLocator != nil || viewModel.timelineForwardLocator != nil {
@@ -1030,7 +1040,7 @@ public struct EbookPlayerView: View {
     #endif
 
     private var isAudioPlaying: Bool {
-        viewModel.session?.audioState?.isPlaying ?? false
+        viewModel.session?.isAudioPlaying ?? false
     }
 
     private var hasEnabledDockItems: Bool {

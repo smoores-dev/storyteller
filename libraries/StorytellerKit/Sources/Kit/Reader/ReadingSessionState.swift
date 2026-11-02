@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 public enum ReadingSyncResult: Sendable, Equatable {
     case synced
@@ -21,9 +22,14 @@ struct ReaderOperation {
 }
 
 @StorytellerUIActor
-struct ReadingNavigation {
+@Observable
+final class ReadingNavigation {
     var nativeLocation: ReaderLocation?
-    var snapshot: ReaderSnapshot?
+    var snapshot: ReaderSnapshot? {
+        didSet { location = snapshot?.location }
+    }
+    // Viewport observers are notified when the snapshot's location changes.
+    private(set) var location: ReaderLocation?
     var pending: ReaderOperation?
     var browseLocation: BookLocator?
     var confirmed: (documentID: String, target: ReaderTarget)?

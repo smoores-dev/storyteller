@@ -1,11 +1,17 @@
 import Foundation
+import Observation
 
 @StorytellerUIActor
-struct ReadingPlayback {
+@Observable
+final class ReadingPlayback {
     enum Origin { case restored, userText, userAudio, playback, remote }
     var origin: Origin = .restored
     var playbackRequestID = UUID()
-    var observed: SMILPlaybackState?
+    var observed: SMILPlaybackState? {
+        didSet { isPlaying = observed?.isPlaying ?? false }
+    }
+    // Observable transport state for views that only display play/pause.
+    private(set) var isPlaying = false
     var observerID: UUID?
     var timer: Task<Void, Never>?
     var cover: Data?
@@ -22,6 +28,16 @@ struct ReadingPlayback {
     var sleepChapterID: String?
     var sleepMode: AudiobookSessionSleepTimerMode?
     var resumeAfterInterruption = false
+
+    // Hidden playback views update for transport, chapter, and deliberate seek changes.
+    func shouldUpdatePresentation(_ state: SMILPlaybackState, foreground: Bool) -> Bool {
+        foreground || observed == nil
+            || observed?.isPlaying != state.isPlaying
+            || observed?.currentSectionIndex != state.currentSectionIndex
+            || observed?.playbackRate != state.playbackRate
+            || observed?.volume != state.volume
+            || observed?.userSeekCount != state.userSeekCount
+    }
 }
 
 extension ReadingSession {
@@ -165,8 +181,8 @@ extension ReadingSession {
         playback.lastObservedFragment = state.currentFragment
         let playingChanged = playback.wasPlaying != state.isPlaying
         playback.wasPlaying = state.isPlaying
-        playback.observed = state
         onPlaybackActivityChanged?(state.isPlaying)
+        await publishPlayback()
         if navigation.audioOperation == nil, playback.acceptedAudio,
             state.isPlaying || paused
         {
@@ -189,7 +205,6 @@ extension ReadingSession {
                 playbackRate: state.playbackRate,
             )
         }
-        await publishPlayback()
     }
 
     func updatePlayback(now: Date = Date()) async {
@@ -215,7 +230,9 @@ extension ReadingSession {
                 }
             }
         }
-        await publishPlayback()
+        // The engine observer publishes playback updates.
+        // This maintenance timer publishes sleep-timer changes.
+        if playback.sleepMode != nil { await publishPlayback() }
     }
 
     func currentAudioLocator() async -> BookLocator? {
@@ -578,19 +595,24 @@ extension ReadingSession {
         )
     }
     func publishPlayback() async {
-        guard !isEnded, ActiveReadingSession.shared.current === self else { return }
-        let stateSnapshot = await currentState()
-        let playbackSnapshot = await currentSnapshot()
-        guard !isEnded, ActiveReadingSession.shared.current === self else { return }
-        if self.audiobookState != stateSnapshot { self.audiobookState = stateSnapshot }
-        if self.playbackSnapshot != playbackSnapshot { self.playbackSnapshot = playbackSnapshot }
-        guard let state = await engine.getCurrentState(),
-            state.bookID == bookID,
-            !isEnded
+        guard !isEnded, let state = await engine.getCurrentState(),
+            state.bookID == bookID
         else { return }
+        if playback.shouldUpdatePresentation(state, foreground: navigation.foreground) {
+            let stateSnapshot = await currentState()
+            let playbackSnapshot = await currentSnapshot()
+            guard !isEnded else { return }
+            playback.observed = state
+            if self.audiobookState != stateSnapshot { self.audiobookState = stateSnapshot }
+            if self.playbackSnapshot != playbackSnapshot {
+                self.playbackSnapshot = playbackSnapshot
+            }
+        }
         let listing = await engine.getChapterListing()
         guard !isEnded else { return }
         if chapters != listing { chapters = listing }
+        // System controls receive live playback time while app views are hidden.
+        guard ActiveReadingSession.shared.current === self else { return }
         await StorytellerPlatform.nowPlaying?.update(
             NowPlayingInfo(
                 title: metadata.title,
