@@ -10155,4 +10155,574 @@ node is a Text node.
 
 Defined in: node_modules/@xmldom/xmldom/index.d.ts:468
 
-The text content of
+The text content of this node and its descendants.
+
+For [Element](#element-1) and DocumentFragment nodes, returns the concatenation of the
+`nodeValue` of every descendant text node, excluding processing instruction and comment
+nodes. For all other node types, returns `nodeValue`.
+
+Setting `textContent` on an element or document fragment replaces all child nodes with a
+single text node; on other nodes it sets `data`, `value`, and `nodeValue` directly.
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/textContent)
+
+##### See
+
+[https://dom.spec.whatwg.org/#dom-node-textcontent](https://dom.spec.whatwg.org/#dom-node-textcontent)
+
+##### Inherited from
+
+`CharacterData.textContent`
+
+### Methods
+
+#### appendChild()
+
+> **appendChild**(`node`): [`Node`](#node-1)
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:482
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/appendChild)
+
+##### Parameters
+
+| Parameter | Type              |
+| --------- | ----------------- |
+| `node`    | [`Node`](#node-1) |
+
+##### Returns
+
+[`Node`](#node-1)
+
+##### Inherited from
+
+`CharacterData.appendChild`
+
+#### appendData()
+
+> **appendData**(`data`): `void`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1024
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/appendData)
+
+##### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `data`    | `string` |
+
+##### Returns
+
+`void`
+
+##### Inherited from
+
+`CharacterData.appendData`
+
+#### cloneNode()
+
+> **cloneNode**(`deep?`): [`Node`](#node-1)
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:533
+
+Returns a copy of node. If deep is true, the copy also includes the node's descendants.
+
+##### Parameters
+
+| Parameter | Type      |
+| --------- | --------- |
+| `deep?`   | `boolean` |
+
+##### Returns
+
+[`Node`](#node-1)
+
+##### Throws
+
+May throw a DOMException if operations within [Element#setAttributeNode](#setattributenode) or
+[Node#appendChild](#appendchild-8) (which are potentially invoked in this method) do not meet their
+specific constraints.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/cloneNode)
+
+##### Inherited from
+
+`CharacterData.cloneNode`
+
+#### compareDocumentPosition()
+
+> **compareDocumentPosition**(`other`): `number`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:540
+
+Returns a bitmask indicating the position of other relative to node.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/compareDocumentPosition)
+
+##### Parameters
+
+| Parameter | Type              |
+| --------- | ----------------- |
+| `other`   | [`Node`](#node-1) |
+
+##### Returns
+
+`number`
+
+##### Inherited from
+
+`CharacterData.compareDocumentPosition`
+
+#### contains()
+
+> **contains**(`other`): `boolean`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:489
+
+Checks whether `other` is an inclusive descendant of this node.
+
+[MDN Reference](https://developer.mozilla.org/en-US/docs/Web/API/Node/contains)
+
+##### Parameters
+
+| Parameter | Type                                       |
+| --------- | ------------------------------------------ |
+| `other`   | [`Node`](#node-1) \| `null` \| `undefined` |
+
+##### Returns
+
+`boolean`
+
+##### Inherited from
+
+`CharacterData.contains`
+
+#### deleteData()
+
+> **deleteData**(`offset`, `count`): `void`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1026
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/deleteData)
+
+##### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `offset`  | `number` |
+| `count`   | `number` |
+
+##### Returns
+
+`void`
+
+##### Inherited from
+
+`CharacterData.deleteData`
+
+#### getRootNode()
+
+> **getRootNode**(`options`): [`Node`](#node-1)
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:502
+
+Searches for the root node of this node.
+
+**This behavior is slightly different from the one in the specs**:
+
+- ignores `options.composed`, since `ShadowRoot`s are unsupported, therefore always
+  returning root.
+
+[MDN Reference](https://developer.mozilla.org/en-US/docs/Web/API/Node/getRootNode)
+
+##### Parameters
+
+| Parameter | Type                 |
+| --------- | -------------------- |
+| `options` | `GetRootNodeOptions` |
+
+##### Returns
+
+[`Node`](#node-1)
+
+##### See
+
+- https://dom.spec.whatwg.org/#dom-node-getrootnode
+- https://dom.spec.whatwg.org/#concept-shadow-including-root
+
+##### Inherited from
+
+`CharacterData.getRootNode`
+
+#### hasChildNodes()
+
+> **hasChildNodes**(): `boolean`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:547
+
+Returns whether node has children.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/hasChildNodes)
+
+##### Returns
+
+`boolean`
+
+##### Inherited from
+
+`CharacterData.hasChildNodes`
+
+#### insertBefore()
+
+> **insertBefore**(`node`, `child`): [`Node`](#node-1)
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:550
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
+
+##### Parameters
+
+| Parameter | Type                        |
+| --------- | --------------------------- |
+| `node`    | [`Node`](#node-1)           |
+| `child`   | [`Node`](#node-1) \| `null` |
+
+##### Returns
+
+[`Node`](#node-1)
+
+##### Inherited from
+
+`CharacterData.insertBefore`
+
+#### insertData()
+
+> **insertData**(`offset`, `data`): `void`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1028
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/insertData)
+
+##### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `offset`  | `number` |
+| `data`    | `string` |
+
+##### Returns
+
+`void`
+
+##### Inherited from
+
+`CharacterData.insertData`
+
+#### isDefaultNamespace()
+
+> **isDefaultNamespace**(`namespace`): `boolean`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:553
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
+
+##### Parameters
+
+| Parameter   | Type               |
+| ----------- | ------------------ |
+| `namespace` | `string` \| `null` |
+
+##### Returns
+
+`boolean`
+
+##### Inherited from
+
+`CharacterData.isDefaultNamespace`
+
+#### isEqualNode()
+
+> **isEqualNode**(`other`): `boolean`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:514
+
+Checks whether the given node is equal to this node.
+
+Two nodes are equal when they have the same type, defining characteristics (for the type),
+and the same `childNodes`. The comparison is iterative to avoid stack overflows on deeply
+nested trees. `Attribute` nodes of each `Element` pair are also compared iteratively.
+
+##### Parameters
+
+| Parameter | Type              |
+| --------- | ----------------- |
+| `other`   | [`Node`](#node-1) |
+
+##### Returns
+
+`boolean`
+
+##### See
+
+- [https://dom.spec.whatwg.org/#concept-node-equals](https://dom.spec.whatwg.org/#concept-node-equals)
+- [https://developer.mozilla.org/en-US/docs/Web/API/Node/isEqualNode](https://developer.mozilla.org/en-US/docs/Web/API/Node/isEqualNode)
+
+##### Inherited from
+
+`CharacterData.isEqualNode`
+
+#### isSameNode()
+
+> **isSameNode**(`other`): `boolean`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:521
+
+Checks whether the given node is this node.
+
+[MDN Reference](https://developer.mozilla.org/en-US/docs/Web/API/Node/isSameNode)
+
+##### Parameters
+
+| Parameter | Type              |
+| --------- | ----------------- |
+| `other`   | [`Node`](#node-1) |
+
+##### Returns
+
+`boolean`
+
+##### Inherited from
+
+`CharacterData.isSameNode`
+
+#### ~~isSupported()~~
+
+> **isSupported**(`feature`, `version`): `true`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:568
+
+Checks whether the DOM implementation implements a specific feature and its version.
+
+##### Parameters
+
+| Parameter | Type     | Description                                                                                                                          |
+| --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `feature` | `string` | The package name of the feature to test. This is the same name that can be passed to the method `hasFeature` on `DOMImplementation`. |
+| `version` | `string` | This is the version number of the package name to test.                                                                              |
+
+##### Returns
+
+`true`
+
+##### Deprecated
+
+Since `DOMImplementation.hasFeature` is deprecated and always returns true.
+
+##### Since
+
+Introduced in DOM Level 2
+
+##### See
+
+DOMImplementation.hasFeature
+
+##### Inherited from
+
+`CharacterData.isSupported`
+
+#### lookupNamespaceURI()
+
+> **lookupNamespaceURI**(`prefix`): `string` \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:571
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
+
+##### Parameters
+
+| Parameter | Type               |
+| --------- | ------------------ |
+| `prefix`  | `string` \| `null` |
+
+##### Returns
+
+`string` \| `null`
+
+##### Inherited from
+
+`CharacterData.lookupNamespaceURI`
+
+#### lookupPrefix()
+
+> **lookupPrefix**(`namespace`): `string` \| `null`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:574
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
+
+##### Parameters
+
+| Parameter   | Type               |
+| ----------- | ------------------ |
+| `namespace` | `string` \| `null` |
+
+##### Returns
+
+`string` \| `null`
+
+##### Inherited from
+
+`CharacterData.lookupPrefix`
+
+#### normalize()
+
+> **normalize**(): `void`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:582
+
+Removes empty exclusive Text nodes and concatenates the data of remaining contiguous
+exclusive Text nodes into the first of their nodes.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/normalize)
+
+##### Returns
+
+`void`
+
+##### Inherited from
+
+`CharacterData.normalize`
+
+#### removeChild()
+
+> **removeChild**(`child`): [`Node`](#node-1)
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:585
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
+
+##### Parameters
+
+| Parameter | Type              |
+| --------- | ----------------- |
+| `child`   | [`Node`](#node-1) |
+
+##### Returns
+
+[`Node`](#node-1)
+
+##### Inherited from
+
+`CharacterData.removeChild`
+
+#### replaceChild()
+
+> **replaceChild**(`node`, `child`): [`Node`](#node-1)
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:588
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
+
+##### Parameters
+
+| Parameter | Type              |
+| --------- | ----------------- |
+| `node`    | [`Node`](#node-1) |
+| `child`   | [`Node`](#node-1) |
+
+##### Returns
+
+[`Node`](#node-1)
+
+##### Inherited from
+
+`CharacterData.replaceChild`
+
+#### replaceData()
+
+> **replaceData**(`offset`, `count`, `data`): `void`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1030
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceData)
+
+##### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `offset`  | `number` |
+| `count`   | `number` |
+| `data`    | `string` |
+
+##### Returns
+
+`void`
+
+##### Inherited from
+
+`CharacterData.replaceData`
+
+#### splitText()
+
+> **splitText**(`offset`): [`Text`](#text-1)
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1059
+
+Splits data at the given offset and returns the remainder as Text node.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/Text/splitText)
+
+##### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `offset`  | `number` |
+
+##### Returns
+
+[`Text`](#text-1)
+
+#### substringData()
+
+> **substringData**(`offset`, `count`): `string`
+
+Defined in: node_modules/@xmldom/xmldom/index.d.ts:1032
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/CharacterData/substringData)
+
+##### Parameters
+
+| Parameter | Type     |
+| --------- | -------- |
+| `offset`  | `number` |
+| `count`   | `number` |
+
+##### Returns
+
+`string`
+
+##### Inherited from
+
+`CharacterData.substringData`
+
+---
+
+## AdapterOptions\<A\>
+
+> **AdapterOptions**\<`A`\> = `A` _extends_ [`EpubStorageAdapterClass`](#epubstorageadapterclass)\<infer Opts\> ? `Opts` : `object`
+
+Defined in: [libraries/epub/src/adapters/interface.ts:111](https://gitlab.com/storyteller-platform/storyteller/-/blob/main/libraries/epub/src/adapters/interface.ts#L111)
+
+### Type Parameters
+
+| Type Parameter |
+| -------------- |
+| `A`            |
+
+---
+
+## ArchiveSource
+
+> **ArchiveSource** = `string` \| `Uint8Array` \| `Blob`
+
+De
