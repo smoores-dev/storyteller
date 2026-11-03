@@ -5,7 +5,7 @@ export function debounce<A extends unknown[]>(
 ): ((...args: A) => void) & {
   cancel: () => void
 } {
-  // `@types/node` ends up in this program (via `@storyteller-platform/audiobook`)
+  // `@types/node` ends up in this program (via `@storyteller/audiobook`)
   // and its `setTimeout` overload can win over the DOM one, so the timer's type
   // is not reliably `number`.
   let timeout: ReturnType<typeof setTimeout> | null

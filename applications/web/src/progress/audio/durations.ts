@@ -3,7 +3,7 @@ import { sep, relative, join } from "node:path"
 
 import { LRUCache } from "lru-cache"
 
-import { Audiobook } from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller/audiobook"
 import { Epub, TmpFsAdapter } from "@storyteller-platform/epub"
 import { MediaType } from "@storyteller-platform/media-types"
 

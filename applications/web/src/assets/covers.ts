@@ -1,7 +1,7 @@
 import { mkdir, open, readdir, rm, writeFile } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 
-import { Audiobook } from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller/audiobook"
 import {
   Epub,
   type EpubReader,

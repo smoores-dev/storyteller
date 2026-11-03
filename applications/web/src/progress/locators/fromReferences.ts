@@ -1,6 +1,6 @@
 import assert from "node:assert"
 
-import { Audiobook } from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller/audiobook"
 import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
 
 import { getAudiobookTracks } from "@/assets/audiobooks.ts"

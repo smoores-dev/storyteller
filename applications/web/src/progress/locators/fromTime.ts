@@ -1,7 +1,7 @@
 import {
   type Audiobook,
   type AudiobookEntry,
-} from "@storyteller-platform/audiobook"
+} from "@storyteller/audiobook"
 import { MediaType } from "@storyteller-platform/media-types"
 
 import { type ReadiumLocator } from "@/database/positions.ts"

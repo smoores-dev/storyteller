@@ -6,7 +6,7 @@ import { cwd } from "node:process"
 
 import { afterEach, describe, it } from "vitest"
 
-import { Audiobook } from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller/audiobook"
 
 import {
   getMetadataFromAudiobook,

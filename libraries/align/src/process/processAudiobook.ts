@@ -8,7 +8,7 @@ import {
   AUDIO_ENCODERS,
   Audiobook,
   outputContainer,
-} from "@storyteller-platform/audiobook"
+} from "@storyteller/audiobook"
 import { isHiddenFile } from "@storyteller-platform/fs"
 import {
   type TimingAggregator,

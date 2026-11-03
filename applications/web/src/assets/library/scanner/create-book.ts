@@ -4,7 +4,7 @@ import { basename, extname } from "node:path"
 import {
   Audiobook,
   type AudiobookInputs,
-} from "@storyteller-platform/audiobook"
+} from "@storyteller/audiobook"
 import {
   Epub,
   type InMemoryEpubReader,

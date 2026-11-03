@@ -8,7 +8,7 @@ import contentDisposition from "content-disposition"
 import { after } from "next/server"
 import { ZipFile } from "yazl"
 
-import { Audiobook } from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller/audiobook"
 import { Epub } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
 import { MediaType } from "@storyteller-platform/media-types"

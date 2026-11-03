@@ -2,7 +2,7 @@ import assert from "node:assert"
 import { readdir } from "node:fs/promises"
 import { join } from "node:path"
 
-import { type AudiobookInputs } from "@storyteller-platform/audiobook"
+import { type AudiobookInputs } from "@storyteller/audiobook"
 import { isHiddenFile } from "@storyteller-platform/fs"
 
 import { isAudioFile } from "@/audio.ts"

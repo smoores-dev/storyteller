@@ -12,7 +12,7 @@ import {
   Metadata,
 } from "@readium/shared"
 
-import { Audiobook, outputContainer } from "@storyteller-platform/audiobook"
+import { Audiobook, outputContainer } from "@storyteller/audiobook"
 import { MediaType } from "@storyteller-platform/media-types"
 
 import { getMetadataFromAudiobook } from "@/assets/metadata"

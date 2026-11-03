@@ -1,4 +1,4 @@
-import { Audiobook } from "@storyteller-platform/audiobook"
+import { Audiobook } from "@storyteller/audiobook"
 import { type InMemoryEpubReader } from "@storyteller-platform/epub"
 
 import { getAudiobookTracks } from "@/assets/audiobooks.ts"

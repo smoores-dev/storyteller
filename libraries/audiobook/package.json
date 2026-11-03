@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/audiobook",
+  "name": "@storyteller/audiobook",
   "version": "0.7.0",
   "type": "module",
   "license": "MIT",

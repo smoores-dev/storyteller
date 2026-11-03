@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { rm } from "node:fs/promises"
 
-import { type Audiobook } from "@storyteller-platform/audiobook"
+import { type Audiobook } from "@storyteller/audiobook"
 import { type InMemoryEpubReader } from "@storyteller-platform/epub"
 import { scratchPath } from "@storyteller-platform/fs"
 

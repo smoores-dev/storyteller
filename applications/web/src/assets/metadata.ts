@@ -4,7 +4,7 @@ import {
   Audiobook,
   type AudiobookInputs,
   getAttachedImageFromPath,
-} from "@storyteller-platform/audiobook"
+} from "@storyteller/audiobook"
 import { type Epub, type EpubReader } from "@storyteller-platform/epub"
 import { MediaType } from "@storyteller-platform/media-types"
 
