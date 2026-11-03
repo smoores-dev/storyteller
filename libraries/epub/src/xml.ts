@@ -256,6 +256,7 @@ export function parse(
   const source = xml.charCodeAt(0) === 0xfeff ? xml.slice(1) : xml
 
   return new DOMParser({
+    xmlns: NS,
     onError: (level, message) => {
       onError?.({
         level,
@@ -290,6 +291,7 @@ const xmlDoc = new DOMParser({ onError: () => {} }).parseFromString(
 export const NS = {
   xmlns: "http://www.w3.org/2000/xmlns/",
   xml: "http://www.w3.org/XML/1998/namespace",
+  xlink: "http://www.w3.org/1999/xlink",
   xhtml: "http://www.w3.org/1999/xhtml",
   opf: "http://www.idpf.org/2007/opf",
   dc: "http://purl.org/dc/elements/1.1/",

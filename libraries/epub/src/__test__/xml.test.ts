@@ -240,6 +240,17 @@ describe("parse", () => {
       ).toEqual(["error"])
     })
   })
+
+  describe("lenience", () => {
+    it("accepts XHTML missing common prefix bindings", () => {
+      expect(
+        collect(
+          `<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><body><image width="600" height="740" xlink:href="../images/cover.jpg"/></body></html>`,
+          XHTML,
+        ),
+      ).toEqual([])
+    })
+  })
 })
 
 describe("serialize", () => {
