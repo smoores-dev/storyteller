@@ -96,7 +96,7 @@ export class TmpFsAdapter implements EpubStorageAdapter {
   async read(entry: string): Promise<Uint8Array>
   async read(entry: string, encoding: "utf-8"): Promise<string>
   async read(entry: string, encoding?: "utf-8"): Promise<string | Uint8Array> {
-    return await readFile(this.diskPath(entry), encoding)
+    return await readFile(this.diskPath(entry), encoding ?? null)
   }
 
   async write(entry: string, data: Uint8Array): Promise<void>

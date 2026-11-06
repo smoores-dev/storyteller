@@ -138,6 +138,7 @@ const nextConfig: import("next").NextConfig = {
   experimental: {
     authInterrupts: true,
     turbopackSourceMaps: true,
+    preloadEntriesOnStart: false,
   },
   ...(process.env.NODE_ENV === "development"
     ? {

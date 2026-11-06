@@ -1,6 +1,6 @@
 publish-fs:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -61,7 +61,7 @@ release-fs:
 
 publish-epub:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -122,7 +122,7 @@ release-epub:
 
 publish-audiobook:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -183,7 +183,7 @@ release-audiobook:
 
 publish-path:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -244,7 +244,7 @@ release-path:
 
 publish-media-types:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -305,7 +305,7 @@ release-media-types:
 
 publish-uri-fragment:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -366,7 +366,7 @@ release-uri-fragment:
 
 publish-mapping:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -427,7 +427,7 @@ release-mapping:
 
 publish-mlx-audio:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -488,7 +488,7 @@ release-mlx-audio:
 
 publish-ghost-story:
   extends: .yarn_cache
-  image: node:24
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -640,7 +640,7 @@ publish-align-sea-darwin-arm64:
     - rm -f certificate.p12
 
 publish-align-sea-linux-x64:
-  image: node:25
+  image: node:26.12.1
   extends: .publish-align-sea-base
   variables:
     VARIANT: "linux-x64"
@@ -649,7 +649,7 @@ publish-align-sea-linux-x64:
     - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
 publish-align-sea-linux-x64-cuda:
-  image: node:25
+  image: node:26.12.1
   extends: .publish-align-sea-base
   variables:
     VARIANT: "linux-x64-cuda"
@@ -659,7 +659,7 @@ publish-align-sea-linux-x64-cuda:
     - DEBIAN_FRONTEND=noninteractive apt install -y jq
 
 publish-align-sea-linux-arm64:
-  image: node:25
+  image: node:26.12.1
   extends: .publish-align-sea-base
   tags: [saas-linux-small-arm64]
   variables:
@@ -747,7 +747,7 @@ publish-align-sea-windows-x64:
 
 publish-align:
   extends: .yarn_cache
-  image: node:25
+  image: node:26.12.1
   stage: publish
   rules:
     - if:
@@ -814,7 +814,7 @@ release-align:
 
 .okmain-build-linux-base:
   stage: build-base
-  image: node:24
+  image: node:26.12.1
   extends: [.okmain-tag-rules, .yarn_cache]
   before_script:
     - apt update
@@ -840,7 +840,7 @@ release-align:
 
 .okmain-build-linux-musl-base:
   stage: build-base
-  image: node:24-alpine
+  image: node:26.12.1-alpine
   extends: [.okmain-tag-rules, .yarn_cache]
   before_script:
     - apk add --no-cache build-base curl pkgconf
@@ -993,7 +993,7 @@ build-okmain-win32-x64-msvc:
 #     TARGET: aarch64-pc-windows-msvc
 
 publish-okmain:
-  image: node:24
+  image: node:26.12.1
   stage: publish
   extends: [.okmain-tag-rules, .yarn_cache]
   # all artifacts should be downloaded to the woking dir

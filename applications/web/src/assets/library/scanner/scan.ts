@@ -1,3 +1,4 @@
+import { filepathFolder, pathBelongsTo } from "@/assets/library/paths"
 import { type BookWithRelations, getBooks } from "@/database/books"
 import { getWatchRules } from "@/database/importRules"
 import { getSetting } from "@/database/settings"
@@ -14,12 +15,7 @@ import {
   type ScanOptions,
   type ScanSource,
 } from "./ctx"
-import {
-  canonicalizePath,
-  listBookCandidates,
-  pathBelongsTo,
-  walkFolders,
-} from "./folder"
+import { canonicalizePath, listBookCandidates, walkFolders } from "./folder"
 import { ingestCandidate } from "./ingest"
 import { reportDelta, snapshot } from "./memoryReport"
 import { scanAudiobook } from "./pipelines/scanAudiobook"
@@ -117,10 +113,6 @@ function candidatesFromExistingBook(book: BookWithRelations): Candidate[] {
   }
 
   return out
-}
-
-export function filepathFolder(filepath: string): string {
-  return filepath.replace(/\/[^/]+$/, "")
 }
 
 async function materializeCandidates(

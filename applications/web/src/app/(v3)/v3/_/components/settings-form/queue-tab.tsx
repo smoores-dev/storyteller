@@ -71,15 +71,15 @@ import {
 import { cn } from "@/app/(v3)/v3/_/lib/utils"
 import { type DisplayJob } from "@/database/jobs"
 import * as icon from "@/icons"
-import { JOB_STATUSES, type JobStatus } from "@/jobEvents"
+import { JOB_STATUSES, type JobStatus } from "@/jobStatuses"
 import {
-  getCoverUrl,
   useCancelJobMutation,
   useGetJobsQuery,
   usePauseJobMutation,
   useReorderJobsMutation,
   useResumeJobMutation,
 } from "@/store/api"
+import { getCoverUrl } from "@/store/urls"
 import { type UUID } from "@/uuid"
 
 const PAGE_SIZE = 25

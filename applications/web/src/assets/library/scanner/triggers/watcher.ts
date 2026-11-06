@@ -5,7 +5,6 @@ import { AsyncMutex } from "@esfx/async-mutex"
 import watcher from "@parcel/watcher"
 
 import { isInsideInternalDirectory } from "@/assets/library/internalDirs"
-import { scan } from "@/assets/library/scanner/scan"
 import {
   getWatcherOptions,
   readSnapshotChanges,
@@ -265,6 +264,7 @@ export class Watcher {
       try {
         const folders = [...bucketByBookFolder(importPath, batch)]
         if (folders.length) {
+          const { scan } = await import("@/assets/library/scanner/scan")
           await scan({
             source: "watcher",
             request: {
@@ -326,6 +326,7 @@ export class Watcher {
       if (controller.signal.aborted || closed) return
 
       if (!startup.snapshotExists) {
+        const { scan } = await import("@/assets/library/scanner/scan")
         await scan({
           source: "watcher",
           request: {

@@ -5,7 +5,7 @@ import { COVER_ORIGINS } from "@/database/images"
 import { toIsoDateString } from "@/dates"
 import { ALIGNMENT_GRADES } from "@/fields"
 import { ICON_IDS } from "@/icons/icon-registry"
-import { JOB_STATUSES } from "@/jobEvents"
+import { JOB_STATUSES } from "@/jobStatuses"
 import { marcRelators } from "@/metadata/marcRelators"
 import { uuidv4 } from "@/schemas/uuid"
 

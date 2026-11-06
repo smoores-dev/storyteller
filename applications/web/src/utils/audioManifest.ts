@@ -23,7 +23,7 @@ import {
   lookupAudioMime,
 } from "@/audio"
 import { getSetting } from "@/database/settings"
-import { getCoverUrl } from "@/store/api"
+import { getCoverUrl } from "@/store/urls"
 import type { UUID } from "@/uuid"
 
 export interface AudioFileInfo {

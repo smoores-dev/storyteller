@@ -1,7 +1,7 @@
 import { cn } from "@v3/_/lib/utils"
 
 import * as icon from "@/icons"
-import { type JobStatus } from "@/jobEvents"
+import { type JobStatus } from "@/jobStatuses"
 
 export function JobStatusGlyph({
   status,

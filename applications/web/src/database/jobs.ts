@@ -1,13 +1,9 @@
 import { type Selectable } from "kysely"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
-import {
-  ACTIVE_JOB_STATUSES,
-  type JobEvent,
-  JobEvents,
-  type JobStatus,
-} from "@/jobEvents"
+import { type JobEvent, JobEvents } from "@/jobEvents"
 import { type JobListFilter, jobListStatuses } from "@/jobList"
+import { ACTIVE_JOB_STATUSES, type JobStatus } from "@/jobStatuses"
 import { type AlignmentGrade } from "@/shelves"
 import type { UUID } from "@/uuid"
 import type { RestartMode } from "@/work/distributor"

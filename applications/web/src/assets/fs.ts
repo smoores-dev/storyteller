@@ -6,6 +6,7 @@ import { reflinkFile } from "@reflink/reflink"
 
 import { getFileChunks } from "@storyteller-platform/fs"
 
+import { pathBelongsTo } from "@/assets/library/paths"
 import { isAudioFile } from "@/audio"
 import {
   type Book,
@@ -18,7 +19,6 @@ import { ASSETS_DIR } from "@/directories"
 import { logger } from "@/logging"
 import { type UUID } from "@/uuid"
 
-import { pathBelongsTo } from "./library/scanner/folder"
 import {
   releasePrefixAfterSettle,
   suppressPrefix,

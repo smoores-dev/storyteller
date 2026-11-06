@@ -97,7 +97,7 @@
       "import_rule_to_collection.collection_uuid": "import(\"@/uuid\").UUID",
       "job.book_uuid": "import(\"@/uuid\").UUID | null",
       "job.uuid": "Generated<import(\"@/uuid\").UUID>",
-      "job.status": "Generated<import(\"@/jobEvents\").JobStatus>",
+      "job.status": "Generated<import(\"@/jobStatuses\").JobStatus>",
       "job.restart": "import('@/work/distributor').RestartMode | null",
       "job.position": "Generated<number>",
       "job.config": "ColumnType<import(\"@/work/runConfig\").RunConfig, string, string> | null",

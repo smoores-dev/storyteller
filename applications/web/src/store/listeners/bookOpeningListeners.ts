@@ -20,7 +20,7 @@ import {
 } from "@/reader/BookService"
 import { type AudioTrack, readerPlayer } from "@/services/AudioPlayerService"
 import { syncPosition } from "@/store/actions"
-import { api, getCoverUrl } from "@/store/api"
+import { api } from "@/store/api"
 import {
   type AudioTextMap,
   type TextAudioMap,
@@ -43,6 +43,7 @@ import {
   readingSessionSlice,
   selectReadingMode,
 } from "@/store/slices/readingSessionSlice"
+import { getCoverUrl } from "@/store/urls"
 import { createCacheBustingFetch } from "@/utils/cacheBustingFetch"
 import type { UUID } from "@/uuid"
 

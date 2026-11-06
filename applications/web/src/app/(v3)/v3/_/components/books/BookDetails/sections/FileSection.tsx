@@ -48,10 +48,10 @@ import { usePermission } from "@/hooks/usePermission"
 import * as icon from "@/icons"
 import { IconReadaloud } from "@/icons/IconReadaloud"
 import {
-  getDownloadUrl,
   useRemoveBookAssetMutation,
   useReplaceBookAssetMutation,
 } from "@/store/api"
+import { getDownloadUrl } from "@/store/urls"
 import { audioDialogExtensions, epubDialogExtensions } from "@/uploadFileTypes"
 import { formatFileSize } from "@/utils/formatFileSize"
 

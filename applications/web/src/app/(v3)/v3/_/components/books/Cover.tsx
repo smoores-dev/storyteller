@@ -22,7 +22,7 @@ import {
   type GridCoverDisplay,
 } from "@/database/userPreferencesTypes"
 import * as icon from "@/icons"
-import { getImageUrl } from "@/store/api"
+import { getImageUrl } from "@/store/urls"
 
 import { getBlurhashDataUri } from "./blurhash-data-uri"
 import {

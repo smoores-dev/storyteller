@@ -1,10 +1,10 @@
 import { type DisplayJob } from "@/database/jobs"
+import { type JobEvent } from "@/jobEvents"
 import {
   ACTIVE_JOB_STATUSES,
-  type JobEvent,
   type JobStatus,
   TERMINAL_JOB_STATUSES,
-} from "@/jobEvents"
+} from "@/jobStatuses"
 import { type JobsQueryV2 } from "@/schemas/v2/job"
 import { type UUID } from "@/uuid"
 

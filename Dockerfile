@@ -105,13 +105,21 @@ WORKDIR /app
 
 # libvulkan1 and the mesa ICDs back onnxruntime's WebGPU provider on AMD and
 # Intel GPUs, NVIDIA mounts its own ICD through the container toolkit
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 libvulkan1 mesa-vulkan-drivers apache2-utils \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg gosu libcurl4 libxml2 libvulkan1 mesa-vulkan-drivers apache2-utils libjemalloc2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s "/usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2" /usr/local/lib/libjemalloc.so.2
+
+# i believe in jemalloc supremacy
+ENV LD_PRELOAD=/usr/local/lib/libjemalloc.so.2
+ENV MALLOC_CONF=background_thread:true
 
 RUN  (userdel -r ubuntu || true) \
     && groupadd -g 1000 storyteller \
     && useradd -u 1000 -g storyteller -m storyteller \
     && (usermod -aG render,video storyteller 2>/dev/null || true)
+
+# note: versions lower than 26.12.1 are UNSAFE
+COPY --from=platformatic/node-caged:26.12.1-slim /usr/local/bin/node /usr/bin/node
 
 COPY --from=ghcr.io/readium/readium:0.9.1 /opt/readium /opt/readium
 RUN ln -sf /opt/readium /usr/local/bin/readium

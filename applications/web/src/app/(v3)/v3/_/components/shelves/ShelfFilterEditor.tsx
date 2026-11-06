@@ -85,11 +85,11 @@ import {
   shelfValueText,
 } from "@/shelves"
 import {
-  getCoverUrl,
   useListIdentifierTypesQuery,
   useListSeriesQuery,
   useListStatusesQuery,
 } from "@/store/api"
+import { getCoverUrl } from "@/store/urls"
 
 const FIELD_GROUP_ORDER: FieldGroupKey[] = [
   "text",

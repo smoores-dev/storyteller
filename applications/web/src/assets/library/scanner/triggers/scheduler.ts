@@ -1,6 +1,5 @@
 import { type ScheduledTask } from "node-cron"
 
-import { scanLibrary } from "@/assets/library/scanner/scan"
 import { getSetting } from "@/database/settings"
 import { logger } from "@/logging"
 
@@ -26,6 +25,7 @@ export class Scheduler {
 
         try {
           logger.info("Running scheduled library scan")
+          const { scanLibrary } = await import("@/assets/library/scanner/scan")
           await scanLibrary({
             source: "scheduled",
             options: { concurrency: 8 },

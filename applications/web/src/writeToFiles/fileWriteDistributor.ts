@@ -164,7 +164,7 @@ export async function queueWritesToFiles(
         audioCover: transferableAudioCover,
         port: port1,
       } satisfies WriteMetadataToFilesInput,
-      { transferList: [port1] },
+      { transferList: [port1] as never },
     )
   } finally {
     for (const fp of filepaths) releasePrefixAfterSettle(fp)

@@ -42,13 +42,13 @@ import {
 } from "@/shelves"
 import { SORTABLE_FIELDS } from "@/sort"
 import {
-  getCoverUrl,
   useCreateUserShelfMutation,
   useGetBookQuery,
   useListInfiniteBooksInfiniteQuery,
   usePreviewShelfFilterMutation,
   useUpdateUserShelfMutation,
 } from "@/store/api"
+import { getCoverUrl } from "@/store/urls"
 import { type UUID } from "@/uuid"
 
 import {

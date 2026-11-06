@@ -16,7 +16,7 @@
 yarn-cache:
   extends: .yarn_cache
   stage: check
-  image: node:24
+  image: node:26.12.1
   tags:
     - saas-linux-large-amd64
   rules:

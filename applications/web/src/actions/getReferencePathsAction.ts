@@ -1,6 +1,6 @@
 "use server"
 
-import { pathBelongsTo } from "@/assets/library/scanner/folder"
+import { pathBelongsTo } from "@/assets/library/paths"
 import { getCurrentUser } from "@/auth/auth"
 import { ASSETS_DIR } from "@/directories"
 

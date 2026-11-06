@@ -7,7 +7,8 @@ import { toast } from "sonner"
 import { useVersionBasePath } from "@v3/_/components/version-context"
 import { useTranslation } from "@v3/_/hooks/use-translation"
 
-import { getCoverUrl, useGetJobsQuery } from "@/store/api"
+import { useGetJobsQuery } from "@/store/api"
+import { getCoverUrl } from "@/store/urls"
 
 export function useFinishedNotifications() {
   const { data: finishedJobs } = useGetJobsQuery({

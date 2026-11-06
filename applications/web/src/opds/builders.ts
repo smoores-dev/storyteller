@@ -60,7 +60,7 @@ import {
 import { getFieldDef } from "@/fields"
 import { type ShelfFilterNode } from "@/shelves"
 import { GENERAL_SORT_FIELDS, type SortDirection, type SortField } from "@/sort"
-import { getCoverUrl } from "@/store/api"
+import { getCoverUrl } from "@/store/urls"
 import type { UUID } from "@/uuid"
 
 import messages from "../../messages/en.json"

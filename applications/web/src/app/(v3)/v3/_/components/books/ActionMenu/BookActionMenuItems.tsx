@@ -71,7 +71,6 @@ import { usePermissions } from "@/hooks/usePermissions"
 import * as icon from "@/icons"
 import { kindleRefusal } from "@/kindle"
 import {
-  getDownloadUrl,
   useAddBooksToCollectionsMutation,
   useBulkRelocateToInternalMutation,
   useClearBooksCacheMutation,
@@ -84,6 +83,7 @@ import {
   useScanBooksMutation,
   useUpgradeBookEpubMutation,
 } from "@/store/api"
+import { getDownloadUrl } from "@/store/urls"
 import { formatBytes } from "@/strings"
 import { type UUID } from "@/uuid"
 

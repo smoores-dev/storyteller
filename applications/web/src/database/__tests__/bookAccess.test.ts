@@ -122,7 +122,10 @@ async function usersWithAccess(ctx: TestDbContext, bookUuid: UUID) {
 /**
  * The materialized table must exactly match the view, in both directions.
  */
-async function assertTableMatchesView(ctx: TestDbContext, message?: string) {
+async function assertTableMatchesView(
+  ctx: TestDbContext,
+  message = "book_access table differs from book_access_view",
+) {
   const { db } = ctx
   const view = db.selectFrom("bookAccessView").select(["userId", "bookUuid"])
   const table = db.selectFrom("bookAccess").select(["userId", "bookUuid"])

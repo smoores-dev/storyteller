@@ -131,14 +131,7 @@ COPY scripts/install-node.sh .
 ARG TARGETARCH
 
 # install node
-RUN NODE_ARCH=$(if [ "${TARGETARCH}" = "amd64" ]; then echo "x64"; else echo "arm64"; fi) && \
-  wget https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-$NODE_ARCH.tar.xz && \
-  tar -xf node-v24.22.1-linux-$NODE_ARCH.tar.xz && \
-  rm node-v24.22.1-linux-$NODE_ARCH.tar.xz && \
-  cp -r node-v24.22.1-linux-$NODE_ARCH/* /usr/ && \
-  rm -r node-v24.22.1-linux-$NODE_ARCH && \
-  corepack enable && \
-  yes | yarn --version
+RUN ./install-node.sh && rm install-node.sh
 
 COPY --link --from=mwader/static-ffmpeg:8.0 /ffmpeg /usr/local/bin/
 COPY --link --from=mwader/static-ffmpeg:8.0 /ffprobe /usr/local/bin/

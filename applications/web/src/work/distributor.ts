@@ -5,8 +5,7 @@ import { MessageChannel } from "node:worker_threads"
 import { AsyncMutex } from "@esfx/async-mutex"
 import Piscina from "piscina"
 
-import { pathBelongsTo } from "@/assets/library/scanner/folder"
-import { filepathFolder, scan } from "@/assets/library/scanner/scan"
+import { filepathFolder, pathBelongsTo } from "@/assets/library/paths"
 import {
   releasePrefixAfterSettle,
   suppressPrefix,
@@ -34,8 +33,8 @@ import {
 } from "@/database/jobs"
 import { getSettings } from "@/database/settings"
 import { env } from "@/env"
-import { ACTIVE_JOB_STATUSES } from "@/jobEvents"
 import { queueJobNext } from "@/jobList"
+import { ACTIVE_JOB_STATUSES } from "@/jobStatuses"
 import { logger } from "@/logging"
 import type { UUID } from "@/uuid"
 
@@ -306,7 +305,7 @@ async function runJob(job: Job, resumed: boolean): Promise<void> {
         config: job.config,
         port: port1,
       } satisfies Parameters<typeof processBook>[0],
-      { transferList: [port1], signal: terminate.signal },
+      { transferList: [port1] as never, signal: terminate.signal },
     )) as JobStats | undefined
 
     const finished = await getBookOrThrow(bookUuid)
@@ -329,6 +328,7 @@ async function runJob(job: Job, resumed: boolean): Promise<void> {
       )
     }
 
+    const { scan } = await import("@/assets/library/scanner/scan")
     await scan({
       source: "readaloud-creation",
       request: {

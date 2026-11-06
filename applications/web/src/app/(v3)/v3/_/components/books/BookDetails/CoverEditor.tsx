@@ -22,12 +22,13 @@ import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 import { TooltipButton } from "@/app/(v3)/v3/_/components/ui/tooltip-button"
 import { cn } from "@/cn"
 import * as icon from "@/icons"
-import { getCoverUrl, useSetUserSettingMutation } from "@/store/api"
+import { useSetUserSettingMutation } from "@/store/api"
 import { useAppDispatch, useAppSelector } from "@/store/appState"
 import {
   selectDetailCoverWidth,
   uiSettingsSlice,
 } from "@/store/slices/uiSettingsSlice"
+import { getCoverUrl } from "@/store/urls"
 
 import { useBookForm } from "./BookFormProvider"
 import { CoverColorsEditor } from "./CoverColorsEditor"

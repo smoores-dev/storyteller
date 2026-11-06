@@ -1,5 +1,3 @@
-import { Agent } from "undici"
-
 import { MediaType } from "@storyteller-platform/media-types"
 
 import { logger } from "@/logging"
@@ -17,12 +15,6 @@ const COMPONENT_MAP: Record<ComponentPrefix, string> = {
   "web-v": "web",
   "mobile-v": "mobile",
 }
-
-const timeoutAgent = new Agent({
-  headersTimeout: 15e3,
-  bodyTimeout: 15e3,
-  connectTimeout: 30e3,
-})
 
 type GitLabRelease = {
   tag_name: string
@@ -55,8 +47,7 @@ async function fetchReleasesPage(
   const response = await fetch(url, {
     headers: { Accept: MediaType.JSON.mime },
     signal: AbortSignal.timeout(10000),
-    dispatcher: timeoutAgent,
-  } as RequestInit)
+  })
 
   if (!response.ok) {
     throw new Error(

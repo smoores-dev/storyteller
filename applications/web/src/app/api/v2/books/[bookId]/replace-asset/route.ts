@@ -3,7 +3,7 @@ import { rm, stat } from "node:fs/promises"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
-import { pathBelongsTo } from "@/assets/library/scanner/folder"
+import { pathBelongsTo } from "@/assets/library/paths"
 import {
   ReplaceAssetInsideBookDirError,
   replaceBookAsset,

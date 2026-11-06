@@ -1,7 +1,7 @@
 import z from "zod"
 
 import { ALIGNMENT_GRADES } from "@/fields"
-import { JOB_STATUSES } from "@/jobEvents"
+import { JOB_STATUSES } from "@/jobStatuses"
 import { uuidv4 } from "@/schemas/uuid"
 import { RunConfigSchema } from "@/work/runConfig"
 

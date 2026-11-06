@@ -1,11 +1,12 @@
 import { type Dirent } from "node:fs"
 import { readdir, realpath } from "node:fs/promises"
-import { extname, join, resolve, sep } from "node:path"
+import { extname, join, resolve } from "node:path"
 
 import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
 import { isHiddenFile } from "@storyteller-platform/fs"
 
 import { isInsideInternalDirectory } from "@/assets/library/internalDirs"
+import { pathBelongsTo } from "@/assets/library/paths"
 import { isAudioFile } from "@/audio"
 import { type BookWithRelations } from "@/database/books"
 import { getIgnorePaths } from "@/database/importRules"
@@ -119,12 +120,6 @@ async function classifyFolder(
     readaloudEpubs,
     audiobookDir: hasAudio ? folder : null,
   }
-}
-
-export function pathBelongsTo(folder: string, candidatePath: string): boolean {
-  const f = resolve(folder)
-  const p = resolve(candidatePath)
-  return p === f || p.startsWith(f + sep)
 }
 
 function booksReferencingFolder(

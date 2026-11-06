@@ -7,7 +7,7 @@ import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
 import { isHiddenFile } from "@storyteller-platform/fs"
 
 import { deleteAssets } from "@/assets/fs"
-import { filepathFolder, scan } from "@/assets/library/scanner/scan"
+import { filepathFolder } from "@/assets/library/paths"
 import { type Candidate } from "@/assets/library/scanner/types"
 import { isAudioFile, isZipArchive } from "@/audio"
 import { withHasPermission } from "@/auth/auth"
@@ -167,6 +167,7 @@ export const POST = withHasPermission("bookCreate")(async (request) => {
     })
   }
 
+  const { scan } = await import("@/assets/library/scanner/scan")
   await scan({
     source: "api",
     request: { kind: "candidates", candidates },

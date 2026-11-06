@@ -1,7 +1,5 @@
-import {
-  canonicalizePath,
-  pathBelongsTo,
-} from "@/assets/library/scanner/folder"
+import { pathBelongsTo } from "@/assets/library/paths"
+import { canonicalizePath } from "@/assets/library/scanner/folder"
 import { type Candidate } from "@/assets/library/scanner/types"
 import {
   type BookWithRelations,

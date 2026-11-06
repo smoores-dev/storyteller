@@ -86,15 +86,16 @@ publish-tauri-macos:
         exit 1
       fi
     - curl -fsSL
-      "https://nodejs.org/dist/v24.22.1/node-v24.22.1-darwin-arm64.tar.gz" | tar
+      "https://nodejs.org/dist/v26.12.1/node-v26.12.1-darwin-arm64.tar.gz" | tar
       -xz -C "$HOME"
-    - export PATH="$HOME/node-v24.22.1-darwin-arm64/bin:$PATH"
+    - export PATH="$HOME/node-v26.12.1-darwin-arm64/bin:$PATH"
     - node --version
     - command -v cargo || (curl --proto '=https' --tlsv1.2 -sSf
       https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain
       stable)
     - export PATH="$CARGO_HOME/bin:$HOME/.cargo/bin:$PATH"
     - cargo --version
+    - npm i -g corepack
     - corepack enable
     - yarn install --immutable
     - cd applications/tauri
@@ -141,7 +142,7 @@ publish-tauri-macos:
 publish-tauri-linux:
   extends: .publish-tauri
   tags: [saas-linux-medium-amd64]
-  image: node:24
+  image: node:26.12.1
   timeout: 2h
   variables:
     # appimage tooling (linuxdeploy/appimagetool) cannot mount fuse inside
@@ -170,6 +171,7 @@ publish-tauri-linux:
       stable)
     - export PATH="$CARGO_HOME/bin:$HOME/.cargo/bin:$PATH"
     - cargo --version
+    - npm i -g corepack
     - corepack enable
     - yarn install --immutable
     - cd applications/tauri

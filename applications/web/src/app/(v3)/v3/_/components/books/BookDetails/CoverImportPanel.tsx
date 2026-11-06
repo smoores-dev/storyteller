@@ -27,11 +27,11 @@ import { PROVIDER_LABELS } from "@/externalSource"
 import * as icon from "@/icons"
 import { type CoverSide, coverSidesOf } from "@/metadataImportTypes"
 import {
-  getImageUrl,
   useGetMetadataProvidersQuery,
   useImportBookCoverMutation,
   useMetadataCoverSearchQuery,
 } from "@/store/api"
+import { getImageUrl } from "@/store/urls"
 
 const SIDE_MEDIA_KIND = {
   text: "ebook",

@@ -3,7 +3,7 @@
 import { toast } from "sonner"
 
 import { type BookWithRelations } from "@/database/books"
-import { getDownloadUrl } from "@/store/api"
+import { getDownloadUrl } from "@/store/urls"
 
 const EPUB_MIME = "application/epub+zip"
 

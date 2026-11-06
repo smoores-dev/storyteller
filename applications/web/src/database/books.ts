@@ -16,7 +16,7 @@ import type {
   ProcessingTaskStatus,
   ProcessingTaskType,
 } from "@/apiModels/models/ProcessingStatus"
-import { pathBelongsTo } from "@/assets/library/scanner/folder"
+import { pathBelongsTo } from "@/assets/library/paths"
 import {
   getMetadataFromAudiobook,
   getMetadataFromEpub,

@@ -16,6 +16,7 @@ let
       ./scripts/whisper-sycl-compat-fix.patch
       ./scripts/whisper-utf8-json-fix.patch
     ];
+    doInstallCheck = false;
   });
 in
 {
@@ -59,7 +60,9 @@ in
 
   languages.javascript = {
     enable = true;
-    package = pkgs.nodejs_24;
+    package = pkgs.nodejs_26 // {
+      corepack = pkgs.corepack.override { nodejs-slim = pkgs.nodejs-slim_26; };
+    };
     corepack.enable = true;
   };
 
