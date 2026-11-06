@@ -759,6 +759,40 @@
       "asc": "Ascending"
     }
   },
+  "SeriesDialog": {
+    "editTitle": "Edit Series",
+    "createTitle": "Create Series",
+    "editDescription": "Update the series name, description, and reading order.",
+    "createDescription": "Create a new series to group related books together.",
+    "name": "Name",
+    "namePlaceholder": "My Series",
+    "nameRequired": "Name is required",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description...",
+    "books": "Books",
+    "booksInSeries": "Books in this series",
+    "createBooksHint": "A series needs at least one book. Added books go to the end; drag them into numbered boxes to set the order.",
+    "editBooksHint": "Drag a book into a numbered box, or type its number. Books can share a number, and boxes can be left empty.",
+    "existingName": "A series named “{name}” already exists. These books will be added to it instead of creating a new series.",
+    "similarName": "A series named “{name}” already exists. This will create a separate series with a nearly identical name.",
+    "booksLoadError": "Couldn't load every book in this series.",
+    "tryAgain": "Try again"
+  },
+  "SeriesOrderEditor": {
+    "noNumber": "No number",
+    "empty": "Empty",
+    "hideRun": "· hide #{start}–{end}",
+    "expandableRun": "#{start}–{end} empty · show",
+    "expandableRunNext": "#{start}–{end} empty · show next {count}",
+    "insertBox": "Insert empty box here (moves this and later books down one)",
+    "insertBoxLabel": "Insert empty box at {box}, moving later books down one",
+    "removeBox": "Remove this empty box (moves later books up one)",
+    "removeBoxLabel": "Remove empty box {box}, moving later books up one",
+    "moveBook": "Move {title}",
+    "bookNumber": "Series number for {title}",
+    "removeBook": "Remove from series",
+    "removeBookLabel": "Remove {title} from series"
+  },
   "SettingsPage": {
     "title": "Settings",
     "breadcrumb": "Settings",

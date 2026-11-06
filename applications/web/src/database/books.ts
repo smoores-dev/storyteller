@@ -46,6 +46,7 @@ import {
   buildBookSearchExpression,
   buildBookSearchRelevance,
   buildFilterExpression,
+  buildSortExpression,
   buildSortExpressions,
 } from "./shelfFilter"
 import { getDefaultStatus } from "./statuses"
@@ -1112,6 +1113,15 @@ export async function getBooks(
       })) {
         page = page.orderBy(expr, direction)
       }
+    }
+
+    // Books sharing a series number (e.g. editions) are ordered oldest added
+    // first, then by title, matching the series edit dialog. Always in that
+    // direction, even when the series is sorted in reverse.
+    if (sort.some(({ field }) => field === "seriesPosition")) {
+      page = page
+        .orderBy(sql`book.created_at`, "asc")
+        .orderBy(buildSortExpression("title"), "asc")
     }
 
     if (sort.length > 0 && sort[sort.length - 1]?.field !== "createdAt") {

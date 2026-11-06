@@ -6,30 +6,13 @@ import {
   type TestDbContext,
   seedBooks,
   seedUser,
+  seedSeries,
   setupTestDb,
 } from "@/__tests__/harness/testDb"
 import { getNextUpInSeries } from "@/database/nextUp"
 import { type UUID } from "@/uuid"
 
 const userId = "11111111-1111-1111-1111-111111111111" as UUID
-
-function seedSeries(
-  ctx: TestDbContext,
-  name: string,
-  members: [bookUuid: string, position: number][],
-): string {
-  const seriesUuid = crypto.randomUUID()
-  ctx.sqlite
-    .prepare(`INSERT INTO series (uuid, name) VALUES (?, ?)`)
-    .run(seriesUuid, name)
-  const insert = ctx.sqlite.prepare(
-    `INSERT INTO book_to_series (series_uuid, book_uuid, position) VALUES (?, ?, ?)`,
-  )
-  for (const [bookUuid, position] of members) {
-    insert.run(seriesUuid, bookUuid, position)
-  }
-  return seriesUuid
-}
 
 function setStatus(ctx: TestDbContext, bookUuid: string, statusName: string) {
   ctx.sqlite
@@ -210,6 +193,38 @@ describe("getNextUpInSeries", () => {
     assert.deepStrictEqual(
       books.map((b) => b.title),
       ["active series next", "old series next"],
+    )
+  })
+
+  it("breaks ties between books sharing a number by oldest added", async () => {
+    using ctx = setupTestDb()
+    seedUser(ctx, userId)
+
+    // Seeded so both insertion order and title order disagree with
+    // created_at order
+    const [b1, newer, older] = seedBooks(ctx, [
+      { title: "one" },
+      { title: "Two (hardcover)" },
+      { title: "two (paperback)" },
+    ]) as [string, string, string]
+    const setCreatedAt = ctx.sqlite.prepare(
+      `UPDATE book SET created_at = ? WHERE uuid = ?`,
+    )
+    setCreatedAt.run("2021-01-01 00:00:00", newer)
+    setCreatedAt.run("2020-01-01 00:00:00", older)
+    seedSeries(ctx, "saga", [
+      [b1, 1],
+      [newer, 2],
+      [older, 2],
+    ])
+    setStatus(ctx, b1, "Read")
+    setStatus(ctx, newer, "To read")
+    setStatus(ctx, older, "To read")
+
+    const books = await getNextUpInSeries(userId)
+    assert.deepStrictEqual(
+      books.map((b) => b.title),
+      ["two (paperback)"],
     )
   })
 

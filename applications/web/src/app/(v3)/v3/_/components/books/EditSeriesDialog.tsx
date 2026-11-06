@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useCallback, useEffect, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod/v4"
 
@@ -20,7 +20,13 @@ import {
 } from "@v3/_/components/ui/field"
 import { Input } from "@v3/_/components/ui/input"
 import { Textarea } from "@v3/_/components/ui/textarea"
+import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"
 
+import { SeriesOrderEditor } from "@/app/(v3)/v3/_/components/books/SeriesOrderEditor"
+import {
+  type SeriesEntry,
+  toSeriesRelations,
+} from "@/app/(v3)/v3/_/components/books/seriesBoxes"
 import {
   useListInfiniteBooksInfiniteQuery,
   useUpdateSeriesMutation,
@@ -28,7 +34,7 @@ import {
 import { type UUID } from "@/uuid"
 
 const seriesSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1),
   description: z.string().optional(),
 })
 
@@ -51,26 +57,57 @@ export function EditSeriesDialog({
   series,
   onUpdated,
 }: EditSeriesDialogProps) {
+  const t = useTranslation("SeriesDialog")
+  const c = useCommon()
   const [updateSeries, { isLoading }] = useUpdateSeriesMutation()
 
-  // TODO: should probably not limit
-  const { data: booksData } = useListInfiniteBooksInfiniteQuery(
-    { series: series?.uuid, limit: 100 },
+  // Saving replaces every book in the series with the ones listed here, so
+  // every page has to load first or books on later pages would be removed
+  const {
+    data: booksData,
+    hasNextPage,
+    isFetchingNextPage,
+    isError,
+    fetchNextPage,
+    refetch,
+  } = useListInfiniteBooksInfiniteQuery(
+    {
+      series: series?.uuid,
+      limit: 100,
+      // A fixed order keeps offset paging from skipping or repeating books
+      orderBy: "seriesPosition",
+      orderDirection: "asc",
+    },
     { skip: !series?.uuid || !open },
   )
 
-  const currentRelations = useMemo(() => {
-    if (!booksData?.pages || !series) return []
-    const books = booksData.pages.flat()
-    return books.map((book) => {
-      const seriesInfo = book.series.find((s) => s.uuid === series.uuid)
-      return {
-        bookUuid: book.uuid,
-        position: seriesInfo?.position ?? null,
-        featured: seriesInfo?.featured ?? false,
-      }
-    })
-  }, [booksData, series])
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage && !isError) {
+      void fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, isError, fetchNextPage])
+
+  const isLoadingBooks = !booksData || hasNextPage
+
+  const seriesUuid = series?.uuid
+  const books = useMemo(() => booksData?.pages.flat() ?? [], [booksData])
+  const [entries, setEntries] = useState<SeriesEntry[]>([])
+
+  useEffect(() => {
+    if (!seriesUuid) return
+    setEntries(
+      books.map((book) => {
+        const seriesInfo = book.series.find((s) => s.uuid === seriesUuid)
+        return {
+          bookUuid: book.uuid,
+          title: book.title,
+          createdAt: book.createdAt,
+          position: seriesInfo?.position ?? null,
+          featured: seriesInfo?.featured ?? false,
+        }
+      }),
+    )
+  }, [books, seriesUuid])
 
   const {
     register,
@@ -107,24 +144,22 @@ export function EditSeriesDialog({
           update: {
             name: data.name,
             description: data.description ?? "",
-            relations: currentRelations,
+            relations: toSeriesRelations(entries),
           },
         }).unwrap()
         onUpdated?.()
         handleClose()
       } catch {}
     },
-    [updateSeries, series, onUpdated, handleClose, currentRelations],
+    [updateSeries, series, onUpdated, handleClose, entries],
   )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] flex-col gap-0">
         <DialogHeader className="pb-4">
-          <DialogTitle>Edit Series</DialogTitle>
-          <DialogDescription>
-            Update the series name and description.
-          </DialogDescription>
+          <DialogTitle>{t("editTitle")}</DialogTitle>
+          <DialogDescription>{t("editDescription")}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -134,33 +169,58 @@ export function EditSeriesDialog({
           <div className="min-h-0 flex-1 overflow-y-auto px-px">
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="edit-series-name">Name</FieldLabel>
+                <FieldLabel htmlFor="edit-series-name">{t("name")}</FieldLabel>
                 <Input
                   id="edit-series-name"
-                  placeholder="Series name"
+                  placeholder={t.plain("namePlaceholder")}
                   {...register("name")}
                 />
-                {errors.name && <FieldError>{errors.name.message}</FieldError>}
+                {errors.name && <FieldError>{t("nameRequired")}</FieldError>}
               </Field>
               <Field>
                 <FieldLabel htmlFor="edit-series-description">
-                  Description
+                  {t("description")}
                 </FieldLabel>
                 <Textarea
                   id="edit-series-description"
-                  placeholder="Optional description..."
+                  placeholder={t.plain("descriptionPlaceholder")}
                   rows={3}
                   {...register("description")}
                 />
               </Field>
             </FieldGroup>
             <div className="py-4">
-              <h2 className="pb-1 text-sm font-medium">Books in this series</h2>
-              <div className="grid grid-cols-1 gap-2">
-                {booksData?.pages.flat().map((book) => (
-                  <div key={book.uuid}>{book.title}</div>
-                ))}
-              </div>
+              <h2 className="pb-1 text-sm font-medium">{t("booksInSeries")}</h2>
+              <p className="text-muted-foreground pb-2 text-xs">
+                {t("editBooksHint")}
+              </p>
+              {/* Hidden until every page loads, so books don't appear
+                  mid-drag */}
+              {isError ? (
+                <p className="text-destructive flex items-center gap-2 text-xs">
+                  {t("booksLoadError")}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={() => {
+                      void refetch()
+                    }}
+                  >
+                    {t("tryAgain")}
+                  </Button>
+                </p>
+              ) : isLoadingBooks ? (
+                <p className="text-muted-foreground text-xs">
+                  {c("states.loading")}
+                </p>
+              ) : (
+                <SeriesOrderEditor
+                  key={seriesUuid}
+                  entries={entries}
+                  onEntriesChange={setEntries}
+                />
+              )}
             </div>
           </div>
           <DialogFooter className="pt-4">
@@ -170,10 +230,15 @@ export function EditSeriesDialog({
               onClick={handleClose}
               disabled={isLoading}
             >
-              Cancel
+              {c("actions.cancel")}
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save"}
+            {/* Saving a partial book list would remove the missing books, and
+                an empty one deletes the series */}
+            <Button
+              type="submit"
+              disabled={isLoading || isLoadingBooks || isError}
+            >
+              {isLoading ? c("states.saving") : c("actions.save")}
             </Button>
           </DialogFooter>
         </form>

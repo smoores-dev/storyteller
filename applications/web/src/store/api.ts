@@ -1375,6 +1375,7 @@ export const api = createApi({
       invalidatesTags: (_result, _error, { uuid }) => [
         "Series",
         { type: "Series", id: uuid },
+        "Books",
       ],
     }),
     deleteSeries: build.mutation<void, { uuid: UUID }>({

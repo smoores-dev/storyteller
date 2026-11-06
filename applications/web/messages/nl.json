@@ -108,8 +108,8 @@
         "description": "Toont boeken met de status 'Aan het lezen'"
       },
       "nextUpInSeries": {
-        "name": "Volgende in reeks",
-        "description": "Toont volgende ongelezen boeken in reeksen die je bent begonnen"
+        "name": "Volgende in serie",
+        "description": "Toont volgende ongelezen boeken in serieen die je bent begonnen"
       },
       "recentlyAdded": {
         "name": "Onlangs toegevoegd",
@@ -497,7 +497,7 @@
     "enterValue": "Voer waarde in...",
     "selectTags": "Zoek labels...",
     "selectCollections": "Zoek collecties...",
-    "selectSeries": "Zoek reeksen...",
+    "selectSeries": "Zoek serieen...",
     "selectCreators": "Zoek auteurs...",
     "selectStatuses": "Zoek statussen...",
     "selectStatus": "Selecteer status...",
@@ -618,6 +618,40 @@
       "desc": "Aflopend",
       "asc": "Oplopend"
     }
+  },
+  "SeriesDialog": {
+    "editTitle": "Serie Bewerken",
+    "createTitle": "Maak een Serie aan",
+    "editDescription": "Update de naam, beschrijving, en volgorde van de serie.",
+    "createDescription": "Maak een nieuwe serie aan om boeken op volgorde te zetten.",
+    "name": "Naam",
+    "namePlaceholder": "Mijn Serie",
+    "nameRequired": "Naam is verplicht",
+    "description": "Beschrijving",
+    "descriptionPlaceholder": "Optionele beschrijving...",
+    "books": "Boeken",
+    "booksInSeries": "Boeken in de serie",
+    "createBooksHint": "Een serie heeft ten minste één boek nodig.",
+    "editBooksHint": "Sleep een boek op een plek met een nummer, of type dat nummer zelf. Je kan meerdere boeken op één nummer in een serie hebben. Je kan een nummer ook leeglaten.",
+    "existingName": "Er bestaat al een serie genaamd “{name}”. Deze boeken zullen aan die serie worden toegevoegd ipv een nieuwe serie te maken. ",
+    "similarName": "Er bestaat al een serie genaamd “{name}”. Als je doorgaat met de huidige serie aanmaken is dat misschien verwarrend.",
+    "booksLoadError": "Kon niet alle boeken in deze serie laden.",
+    "tryAgain": "Opnieuw proberen"
+  },
+  "SeriesOrderEditor": {
+    "noNumber": "Geen nummer",
+    "empty": "Leeg",
+    "hideRun": "· Verberg #{start}–{end}",
+    "expandableRun": "#{start}–{end} leeg · laat zien",
+    "expandableRunNext": "#{start}–{end} leeg · laat volgende {count} zien",
+    "insertBox": "Voeg hier een lege plek in (dit boek en degenen hierna zullen een positie omlaag gaan)",
+    "insertBoxLabel": "Voeg na {box} een lege plek in (boeken na {box} zullen een plek omlaag gaan)",
+    "removeBox": "Verwijder deze lege plek (boeken na deze plek zullen een plek omhoog gaan)",
+    "removeBoxLabel": "Verwijder lege plek {box} (boeken na deze plek zullen een plek omhoog gaan)",
+    "moveBook": "Verplaats {title}",
+    "bookNumber": "Serie nummer voor {title}",
+    "removeBook": "Verwijder uit deze serie",
+    "removeBookLabel": "Verwijder {title} uit deze serie"
   },
   "SettingsPage": {
     "title": "Instellingen",
@@ -1753,7 +1787,7 @@
       "show": "Sectie tonen",
       "move": "Sectie verplaatsen",
       "moreByAuthor": "Meer door auteur",
-      "moreInSeries": "Meer in reeks"
+      "moreInSeries": "Meer in serie"
     },
     "unsavedChanges": {
       "title": "Je hebt niet-opgeslagen wijzigingen",
@@ -2269,7 +2303,7 @@
       "noItemsFound": "Geen items gevonden",
       "noResults": "Geen resultaten",
       "noCollections": "Geen verzamelingen",
-      "noSeries": "Geen reeksen",
+      "noSeries": "Geen serieen",
       "noTags": "Geen labels"
     },
     "importMode": {

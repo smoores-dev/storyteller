@@ -1,3 +1,5 @@
+import { sql } from "kysely"
+
 import { type UUID } from "@/uuid"
 
 import { type BookWithRelations, getBooks } from "./books"
@@ -48,6 +50,7 @@ export async function getNextUpInSeries(
           "bookToSeries.bookUuid",
         )
         .innerJoin("status", "status.uuid", "bookToStatus.statusUuid")
+        .innerJoin("book", "book.uuid", "bookToSeries.bookUuid")
         .where("bookToStatus.userId", "=", userId)
         .where("status.name", "=", STATUS_TO_READ)
         .select((eb) => [
@@ -59,7 +62,11 @@ export async function getNextUpInSeries(
             .over((ob) =>
               ob
                 .partitionBy("bookToSeries.seriesUuid")
-                .orderBy("bookToSeries.position", (ob) => ob.asc().nullsLast()),
+                .orderBy("bookToSeries.position", (ob) => ob.asc().nullsLast())
+                // Books sharing a number (e.g. editions) would otherwise be
+                // picked arbitrarily; match the series view's order
+                .orderBy(sql`book.created_at`)
+                .orderBy(sql`book.title collate nocase`),
             )
             .as("rn"),
         ]),

@@ -239,3 +239,21 @@ export function seedUser(ctx: TestDbContext, userId: UUID) {
     )
     .run(userId, permissionUuid, `${userId}@example.com`)
 }
+
+export function seedSeries(
+  ctx: TestDbContext,
+  name: string,
+  members: [bookUuid: string, position: number][],
+): string {
+  const seriesUuid = randomUUID()
+  ctx.sqlite
+    .prepare(`INSERT INTO series (uuid, name) VALUES (?, ?)`)
+    .run(seriesUuid, name)
+  const insert = ctx.sqlite.prepare(
+    `INSERT INTO book_to_series (series_uuid, book_uuid, position) VALUES (?, ?, ?)`,
+  )
+  for (const [bookUuid, position] of members) {
+    insert.run(seriesUuid, bookUuid, position)
+  }
+  return seriesUuid
+}
