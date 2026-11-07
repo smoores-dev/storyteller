@@ -2,6 +2,7 @@
   "sidebar": [
     "welcome",
     "new-page",
+    "offloading-processing",
     {
       "type": "category",
       "label": "API",

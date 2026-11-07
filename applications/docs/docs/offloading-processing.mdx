@@ -1,0 +1,219 @@
+---
+title: Offloading transcription
+---
+
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
+# Offloading transcription to another machine
+
+:::tip
+
+You likely want to use this when
+
+- You have a gaming PC/Apple Silicon Mac and you are not running Storyteller on
+  it
+- You run Storyteller on an Apple Silicon Device in Docker
+
+:::
+
+A likely scenario you might find yourself in is having your main storyteller
+server run on either a VPS or a small power efficient server running in your
+home, like a Raspberry Pi, and you want to improve transcription performance.
+
+Luckily, Storyteller supports offloading the transcription process to a
+different server / machine entirely.
+
+:::note
+
+This guide primarily focuses on the new CTC based alignment process introduced
+in Storyteller `v3.0.0-beta.44`. For those on Storyteller v2 or wanting to use
+the old whisper-based aligner, you can still get the same behavior as described
+in
+[this guide](../versioned_docs/version-v2/tutorials/offloading-transcription.mdx)
+by running
+
+```sh
+# note the `server`, not `serve`
+ghost-story server
+```
+
+:::
+
+## Setting up the host machine
+
+We will run a small server on your machine of choice which allows Storyteller to
+use your machine to do transcription (and more in the future!)
+
+## Prerequisites
+
+<Tabs groupId="operating-systems">
+  <TabItem value="win" label="Windows">
+
+### Node
+
+You need to have `node` installed on your machine, version `24.x` or higher.
+
+Get the laters version here: https://nodejs.org/en/download
+
+Or, using `choco`:
+
+```bash
+choco install node
+```
+
+### GPU Acceleration
+
+There are two ways to run `ghost-story`, in `WSL` or outside it.
+
+#### Inside WSL
+
+<Tabs groupId="gpu">
+    <TabItem value="rtx" label="NVIDIA RTX">
+Install your drivers, make sure no linux specific drivers are installed however.
+
+See the latter discussion in
+[this issue](https://gitlab.com/storyteller-platform/storyteller/-/work_items/868)
+if you are running into issues!
+
+</TabItem>
+
+<TabItem value="amd" label="AMD/Intel">
+
+To be frank with you I'm not sure this is 100% possible. This is my best
+suggestion!
+
+You need to make sure WSL has the proper Vulkan drivers installed.
+
+To see if this is the case, run
+
+`vulkaninfo --summary`
+
+And see if > 1 device is listed at the bottom, namely your GPU and a CPU
+emulator (`llvmpipe`)
+
+If that doesn't appear, if you are running Ubuntu, you can try
+
+```
+sudo add-apt-repository ppa:kisak/kisak-mesa
+sudo apt update
+sudo apt upgrade
+```
+
+Then your device may appear and `ghost-story` may recognize it.
+
+</TabItem>
+
+</Tabs>
+
+### Outside WSL
+
+This is not a prereq, but you likely want to add `--device DML` when running
+`ghost-story` serve.
+
+  </TabItem>
+  <TabItem value="mac" label="macOS">
+
+### Node
+
+You need to have `node` installed on your machine, version `24.x` or higher.
+
+```bash
+brew install node@24
+```
+
+### GPU Acceleration
+
+To use MLX GPU acceleration you need to be running MacOS Ventura (13) or higher.
+
+  </TabItem>
+  <TabItem value="linux" label="Ubuntu/Debian">
+
+### Node
+
+You need to have `node` installed on your machine, version `24.x` or higher.
+
+```bash
+sudo apt-get install -y nodejs
+```
+
+  </TabItem>
+</Tabs>
+
+## Installing ghost-story
+
+Check that you have the correct `node` version
+
+```bash
+node --version # should print at least 24.x.x
+```
+
+You can now run `ghost-story` globally using `npx`!
+
+To check, you can run
+
+```bash
+npx --allow-scripts=onnxruntime-node @storyteller-platform/ghost-story@latest --version
+```
+
+This should print anything other than `v1.8.3` (which is what an old version
+used to print, don't worry if it's lower than that.)
+
+To make running `ghost-story` a little more convenient, you can do
+
+```sh
+npm config set allow-scripts onnxruntime-node
+```
+
+That way you can drop the `--allow-scripts=onnxruntime=node` (as we will do
+going forward).
+
+:::note[Why do I need to `allow-scripts` for `onnxruntime-node`?]
+
+ONNX Runtime is the way we are running the CTC aligner locally if you are not
+running on a Mac. In order to not make the install-size of that library
+reallllly big for everyone else, if you are using NVIDIA GPUs specifically it
+needs to fetch some extra libraries in order to ensure everything runs smoothly.
+
+:::
+
+## Starting the `ghost-story` server
+
+Now we are ready to start the `ghost-story` server!
+
+```bash title="Basic usage"
+npx @storyteller-platform/ghost-story@latest serve --api-key <some-string-of-characters>
+```
+
+This will start the `ghost-story` server on the default port `8765`.
+
+It'll print a bunch of IP addresses, you will need those later!
+
+## Configuring Storyteller
+
+In the Storyteller settings, under "Transcription settings", set the following:
+
+- "Aligner" to "`CTC Forced Alignment`"
+- "API Key" to the api key you passed with `--api-key`
+- "Base URL" to the URL w the IP address `ghost-story` printed when you ran it,
+  for example `http://192.168.2.40:8765`. (See
+  [determining the server host below](../versioned_docs/version-v2/tutorials/offloading-transcription.mdx#determining-the-server-host))
+
+![Aligner settings screen with the CTC forced alignment option selected and remote server settings below](/img/offloading-processing-selection.png)
+
+The default port is `8765` but you can change it with the `--port` flag.
+
+### Determining the server host
+
+The base URL must contain the IP address or hostname of the machine running the
+`ghost-story` server. You can usually find it as one of the IPs/URLs printed
+when `ghost-story` starts.
+
+If you are running Storyteller in `docker` on the same machine, you will need to
+set the hostname as `host.docker.internal`, eg
+`http://host.docker.internal:8765`. You can also likely use one of the URLs
+`ghost-story` prints.
+
+On Linux you may need to run the container with
+`--add-host=host.docker.internal:host-gateway` and use `host.docker.internal`,
+or use `--network=host` and `localhost`.
