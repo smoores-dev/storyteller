@@ -10,6 +10,7 @@ import { Epub, MemoryAdapter, TmpFsAdapter } from "../index.tsx"
 import { parse } from "../xml.ts"
 
 import {
+  CONTAINER_NS,
   REQUIRED_METADATA,
   buildZip,
   chapterDocument,
@@ -57,6 +58,40 @@ async function opfParts(buffer: Buffer): Promise<OpfParts> {
     itemrefs: Array.from(spine.children),
     entries,
   }
+}
+
+const CONTAINER_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="${CONTAINER_NS}">
+  <rootfiles>
+    <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>
+`
+
+async function publicationZip(
+  opf: string,
+  documents: Record<string, string>,
+): Promise<Buffer> {
+  return buildZip({
+    "META-INF/container.xml": CONTAINER_XML,
+    "content.opf": opf,
+    ...documents,
+  })
+}
+
+function chapterItems(...ids: string[]): string {
+  return ids
+    .map(
+      (id) =>
+        `    <item href="${id}.xhtml" id="${id}" media-type="application/xhtml+xml"/>`,
+    )
+    .join("\n")
+}
+
+function chapterDocuments(...ids: string[]): Record<string, string> {
+  return Object.fromEntries(
+    ids.map((id) => [`${id}.xhtml`, chapterDocument(id)]),
+  )
 }
 
 describe("5.6.1 The manifest element", () => {
@@ -456,17 +491,245 @@ describe("5.7 spine", () => {
   })
 })
 
+describe("5.7.1 The spine element: page-progression-direction", () => {
+  function spineFixture(spineAttributes: string): Promise<Buffer> {
+    return publicationZip(
+      packageXml({
+        metadata: REQUIRED_METADATA,
+        manifest: chapterItems("a"),
+        spine: `    <itemref idref="a"/>`,
+        spineAttributes,
+      }),
+      chapterDocuments("a"),
+    )
+  }
+
+  it("reads the direction declared on the spine element", async () => {
+    for (const direction of ["ltr", "rtl", "default"] as const) {
+      const epubBuffer = await spineFixture(
+        `page-progression-direction="${direction}"`,
+      )
+      using epub = await Epub.using(MemoryAdapter).from(epubBuffer)
+      expect(await epub.getPageProgressionDirection()).toBe(direction)
+    }
+  })
+
+  it("reads a spine with no direction as no preference", async () => {
+    using epub = await Epub.using(MemoryAdapter).from(await spineFixture(""))
+
+    expect(await epub.getPageProgressionDirection()).toBe("default")
+  })
+
+  it("reads a value outside the allowed set as no preference", async () => {
+    using epub = await Epub.using(MemoryAdapter).from(
+      await spineFixture(`page-progression-direction="btt"`),
+    )
+
+    expect(await epub.getPageProgressionDirection()).toBe("default")
+  })
+
+  it("writes the direction on the spine element", async () => {
+    const { buffer } = await createPublication(async (epub) => {
+      await epub.addManifestItem(
+        { id: "b", href: "b.xhtml", mediaType: "application/xhtml+xml" },
+        chapterDocument("B"),
+        "utf-8",
+      )
+      await epub.addSpineItem("b")
+      await epub.setPageProgressionDirection("rtl")
+    })
+    const { spine, itemrefs } = await opfParts(buffer)
+
+    expect(spine.getAttribute("page-progression-direction")).toBe("rtl")
+
+    expect(itemrefs.map((itemref) => itemref.getAttribute("idref"))).toEqual([
+      "chapter1",
+      "b",
+    ])
+  })
+
+  it("reads back the direction it wrote", async () => {
+    for (const direction of ["ltr", "rtl", "default"] as const) {
+      const { buffer } = await createPublication(async (epub) => {
+        await epub.setPageProgressionDirection(direction)
+      })
+      using epub = await Epub.using(MemoryAdapter).from(buffer)
+      expect(await epub.getPageProgressionDirection()).toBe(direction)
+    }
+  })
+})
+
+describe("5.7.2 The itemref element: properties", () => {
+  it("reads the properties of each spine item", async () => {
+    const epubBuffer = await publicationZip(
+      packageXml({
+        metadata: REQUIRED_METADATA,
+        manifest: chapterItems("left", "right", "body"),
+        spine: `    <itemref idref="left" properties="page-spread-left"/>
+    <itemref idref="right" properties="rendition:page-spread-right"/>
+    <itemref idref="body"/>`,
+      }),
+      chapterDocuments("left", "right", "body"),
+    )
+
+    using epub = await Epub.using(MemoryAdapter).from(epubBuffer)
+
+    expect(
+      (await epub.getSpineItems()).map((item) => [
+        item.id,
+        item.spineProperties,
+      ]),
+    ).toEqual([
+      ["left", ["page-spread-left"]],
+      ["right", ["rendition:page-spread-right"]],
+      ["body", []],
+    ])
+  })
+
+  it("reads every value of a space-separated properties list", async () => {
+    const epubBuffer = await publicationZip(
+      packageXml({
+        metadata: REQUIRED_METADATA,
+        manifest: chapterItems("spread"),
+        spine: `    <itemref idref="spread" properties="page-spread-left rendition:orientation-landscape"/>`,
+      }),
+      chapterDocuments("spread"),
+    )
+
+    using epub = await Epub.using(MemoryAdapter).from(epubBuffer)
+
+    const [item] = await epub.getSpineItems()
+    expect(item?.spineProperties).toEqual([
+      "page-spread-left",
+      "rendition:orientation-landscape",
+    ])
+  })
+
+  it("writes spine properties on the itemref, not on the manifest item", async () => {
+    const { buffer } = await createPublication(async (epub) => {
+      await epub.addManifestItem(
+        {
+          id: "spread",
+          href: "spread.xhtml",
+          mediaType: "application/xhtml+xml",
+        },
+        chapterDocument("Spread"),
+        "utf-8",
+      )
+      await epub.addSpineItem("spread", undefined, {
+        spineProperties: [
+          "page-spread-left",
+          "rendition:orientation-landscape",
+        ],
+      })
+    })
+    const { items, itemrefs } = await opfParts(buffer)
+
+    expect(
+      items
+        .find((item) => item.getAttribute("id") === "spread")
+        ?.getAttribute("properties"),
+    ).toBeNull()
+
+    const itemref = itemrefs.find(
+      (ref) => ref.getAttribute("idref") === "spread",
+    )!
+    expect((itemref.getAttribute("properties") ?? "").split(/\s+/)).toEqual([
+      "page-spread-left",
+      "rendition:orientation-landscape",
+    ])
+  })
+
+  it("writes no properties attribute for an item that has none", async () => {
+    const { buffer } = await createPublication(async (epub) => {
+      await epub.addManifestItem(
+        { id: "a", href: "a.xhtml", mediaType: "application/xhtml+xml" },
+        chapterDocument("A"),
+        "utf-8",
+      )
+      await epub.addSpineItem("a", undefined, { spineProperties: [] })
+    })
+    const { itemrefs } = await opfParts(buffer)
+
+    for (const idref of ["chapter1", "a"]) {
+      const itemref = itemrefs.find(
+        (ref) => ref.getAttribute("idref") === idref,
+      )
+      expect(itemref?.getAttribute("properties")).toBeNull()
+    }
+  })
+
+  it("reads back the spine properties it wrote", async () => {
+    const { buffer } = await createPublication(async (epub) => {
+      for (const id of ["left", "spread"]) {
+        await epub.addManifestItem(
+          { id, href: `${id}.xhtml`, mediaType: "application/xhtml+xml" },
+          chapterDocument(id),
+          "utf-8",
+        )
+      }
+      await epub.addSpineItem("left", undefined, {
+        spineProperties: ["page-spread-left"],
+      })
+      await epub.addSpineItem("spread", undefined, {
+        spineProperties: [
+          "page-spread-right",
+          "rendition:orientation-landscape",
+        ],
+      })
+    })
+
+    using epub = await Epub.using(MemoryAdapter).from(buffer)
+
+    expect(
+      (await epub.getSpineItems()).map((item) => [
+        item.id,
+        item.spineProperties,
+      ]),
+    ).toEqual([
+      ["chapter1", []],
+      ["left", ["page-spread-left"]],
+      ["spread", ["page-spread-right", "rendition:orientation-landscape"]],
+    ])
+  })
+
+  it("writes the linear attribute for items leaving the default reading order", async () => {
+    const { buffer } = await createPublication(async (epub) => {
+      for (const id of ["answers", "notes"]) {
+        await epub.addManifestItem(
+          { id, href: `${id}.xhtml`, mediaType: "application/xhtml+xml" },
+          chapterDocument(id),
+          "utf-8",
+        )
+      }
+      await epub.addSpineItem("answers", undefined, { linear: true })
+      await epub.addSpineItem("notes", undefined, { linear: false })
+    })
+    const { itemrefs } = await opfParts(buffer)
+
+    const linearAttribute = (idref: string) =>
+      itemrefs
+        .find((ref) => ref.getAttribute("idref") === idref)
+        ?.getAttribute("linear")
+
+    expect(linearAttribute("answers")).toBe("yes")
+    expect(linearAttribute("notes")).toBe("no")
+
+    using epub = await Epub.using(MemoryAdapter).from(buffer)
+    expect(
+      (await epub.getSpineItems()).map((item) => [item.id, item.linear]),
+    ).toEqual([
+      ["chapter1", true],
+      ["answers", true],
+      ["notes", false],
+    ])
+  })
+})
+
 describe("5.6 and 5.7 reading", () => {
   it("reads a spine that lists items in an arbitrary manifest order", async () => {
-    const epubBuffer = await buildZip({
-      "META-INF/container.xml": `<?xml version="1.0" encoding="UTF-8"?>
-<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-  <rootfiles>
-    <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
-  </rootfiles>
-</container>
-`,
-      "content.opf": packageXml({
+    const epubBuffer = await publicationZip(
+      packageXml({
         metadata: REQUIRED_METADATA,
         manifest: `    <item href="nav.xhtml" id="nav" media-type="application/xhtml+xml" properties="nav"/>
     <item href="three.xhtml" id="three" media-type="application/xhtml+xml"/>
@@ -476,11 +739,13 @@ describe("5.6 and 5.7 reading", () => {
     <itemref idref="one"/>
     <itemref idref="three"/>`,
       }),
-      "nav.xhtml": navDocument(),
-      "one.xhtml": chapterDocument("One"),
-      "two.xhtml": chapterDocument("Two"),
-      "three.xhtml": chapterDocument("Three"),
-    })
+      {
+        "nav.xhtml": navDocument(),
+        "one.xhtml": chapterDocument("One"),
+        "two.xhtml": chapterDocument("Two"),
+        "three.xhtml": chapterDocument("Three"),
+      },
+    )
 
     using epub = await Epub.using(MemoryAdapter).from(epubBuffer)
 
@@ -492,24 +757,15 @@ describe("5.6 and 5.7 reading", () => {
   })
 
   it("reads an itemref whose linear attribute is absent as linear", async () => {
-    const epubBuffer = await buildZip({
-      "META-INF/container.xml": `<?xml version="1.0" encoding="UTF-8"?>
-<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-  <rootfiles>
-    <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
-  </rootfiles>
-</container>
-`,
-      "content.opf": packageXml({
+    const epubBuffer = await publicationZip(
+      packageXml({
         metadata: REQUIRED_METADATA,
-        manifest: `    <item href="a.xhtml" id="a" media-type="application/xhtml+xml"/>
-    <item href="b.xhtml" id="b" media-type="application/xhtml+xml"/>`,
+        manifest: chapterItems("a", "b"),
         spine: `    <itemref idref="a"/>
     <itemref idref="b" linear="no"/>`,
       }),
-      "a.xhtml": chapterDocument("A"),
-      "b.xhtml": chapterDocument("B"),
-    })
+      chapterDocuments("a", "b"),
+    )
 
     using epub = await Epub.using(MemoryAdapter).from(epubBuffer)
 
@@ -524,24 +780,19 @@ describe("5.6 and 5.7 reading", () => {
   })
 
   it("reads a spine that references an item with a manifest fallback chain", async () => {
-    const epubBuffer = await buildZip({
-      "META-INF/container.xml": `<?xml version="1.0" encoding="UTF-8"?>
-<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-  <rootfiles>
-    <rootfile full-path="content.opf" media-type="application/oebps-package+xml"/>
-  </rootfiles>
-</container>
-`,
-      "content.opf": packageXml({
+    const epubBuffer = await publicationZip(
+      packageXml({
         metadata: REQUIRED_METADATA,
         manifest: `    <item href="doc.xhtml" id="doc" media-type="application/xhtml+xml"/>
     <item href="doc.md" id="doc-alt" media-type="text/markdown" fallback="doc"/>`,
         spine: `    <itemref idref="doc"/>
     <itemref idref="doc-alt"/>`,
       }),
-      "doc.xhtml": chapterDocument("Fallback Target"),
-      "doc.md": "# Fallback Target",
-    })
+      {
+        "doc.xhtml": chapterDocument("Fallback Target"),
+        "doc.md": "# Fallback Target",
+      },
+    )
 
     using epub = await Epub.using(MemoryAdapter).from(epubBuffer)
 

@@ -399,7 +399,9 @@ export class Epub {
 
   private manifest: Record<string, ManifestItem> | null = null
 
-  private spine: { itemRef: string; linear: boolean }[] | null = null
+  private spine:
+    | { itemRef: string; linear: boolean; properties: string[] }[]
+    | null = null
 
   private packageLock = new AsyncReaderWriterLock()
 
@@ -2365,11 +2367,21 @@ export class Epub {
         return {
           itemRef: itemref.getAttribute("idref"),
           linear: itemref.getAttribute("linear") !== "no",
+          properties:
+            itemref
+              .getAttribute("properties")
+              ?.split(/\s+/)
+              .filter((property) => !!property) ?? [],
         }
       })
       .filter(
-        (itemref): itemref is { itemRef: string; linear: boolean } =>
-          !!itemref.itemRef,
+        (
+          itemref,
+        ): itemref is {
+          itemRef: string
+          properties: string[]
+          linear: boolean
+        } => !!itemref.itemRef,
       )
 
     return this.spine
@@ -2387,15 +2399,64 @@ export class Epub {
     const spine = await this.getSpine()
     const manifest = await this.getManifest()
 
-    const spineItems: (ManifestItem & { linear: boolean })[] = []
+    const spineItems: (ManifestItem & {
+      linear: boolean
+      spineProperties: string[]
+    })[] = []
 
     for (const itemref of spine) {
       const item = manifest[itemref.itemRef]
       if (!item) continue
-      spineItems.push({ ...item, linear: itemref.linear })
+      spineItems.push({
+        ...item,
+        linear: itemref.linear,
+        spineProperties: itemref.properties,
+      })
     }
 
     return spineItems
+  }
+
+  /**
+   * Get the publication-level page progression direction
+   *
+   * @link https://www.w3.org/TR/epub-33/#attrdef-spine-page-progression-direction
+   */
+  async getPageProgressionDirection() {
+    using _ = await this.packageLock.read()
+
+    const packageElement = await this.getPackageElement(false)
+
+    const spine = findXmlChildByNameNS(NS.opf, "spine", packageElement)
+
+    if (!spine) {
+      throw new Error(
+        "Failed to parse EPUB: Found no spine element in package document",
+      )
+    }
+
+    const dir = spine.getAttribute("page-progression-direction")
+    if (dir === "ltr" || dir === "rtl") return dir
+    return "default"
+  }
+
+  /**
+   * Set the publication-level page progression direction
+   *
+   * @link https://www.w3.org/TR/epub-33/#attrdef-spine-page-progression-direction
+   */
+  async setPageProgressionDirection(dir: "ltr" | "rtl" | "default") {
+    await this.withPackage((packageElement) => {
+      const spine = findXmlChildByNameNS(NS.opf, "spine", packageElement)
+
+      if (!spine) {
+        throw new Error(
+          "Failed to parse EPUB: Found no spine element in package document",
+        )
+      }
+
+      spine.setAttribute("page-progression-direction", dir)
+    })
   }
 
   /**
@@ -2410,8 +2471,18 @@ export class Epub {
    *
    * @link https://www.w3.org/TR/epub-33/#sec-spine-elem
    */
-  async addSpineItem(manifestId: string, index?: number) {
+  async addSpineItem(
+    manifestId: string,
+    index?: number,
+    options?: { linear?: boolean; spineProperties?: string[] },
+  ) {
     const item = <itemref idref={manifestId} />
+    if (options?.linear !== undefined) {
+      item.setAttribute("linear", options.linear ? "yes" : "no")
+    }
+    if (options?.spineProperties?.length) {
+      item.setAttribute("properties", options.spineProperties.join(" "))
+    }
 
     const manifest = await this.getManifest()
     const manifestItem = manifest[manifestId]

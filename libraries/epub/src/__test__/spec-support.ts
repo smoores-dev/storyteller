@@ -61,6 +61,7 @@ export function packageXml(
     manifest?: string
     spine?: string
     packageAttributes?: string
+    spineAttributes?: string
     prefixed?: boolean
   } = {},
 ): string {
@@ -79,7 +80,7 @@ ${options.metadata ?? "    "}
   <${p}manifest>
 ${options.manifest ?? "    "}
   </${p}manifest>
-  <${p}spine>
+  <${p}spine${options.spineAttributes ? " " + options.spineAttributes : ""}>
 ${options.spine ?? "    "}
   </${p}spine>
 </${p}package>
