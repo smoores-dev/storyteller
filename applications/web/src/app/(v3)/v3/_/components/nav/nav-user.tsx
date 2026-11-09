@@ -2,6 +2,7 @@
 
 import { useHotkey } from "@tanstack/react-hotkeys"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { LocaleChanger } from "@v3/_/components/locale-changer"
 import {
@@ -27,8 +28,8 @@ import { useTranslation } from "@v3/_/hooks/use-translation"
 
 import { usePermission } from "@/hooks/usePermission"
 import * as icon from "@/icons"
-import { api } from "@/store/api"
-import { useAppDispatch, useAppSelector } from "@/store/appState"
+import { useLogoutMutation } from "@/store/api"
+import { useAppSelector } from "@/store/appState"
 import { selectTheme } from "@/store/slices/uiSettingsSlice"
 
 import { CreateMenu } from "./create-menu"
@@ -47,11 +48,11 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const basePath = useVersionBasePath()
   const canAccessSettings = usePermission("settingsUpdate")
+  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation()
 
   const displayName = user.name ?? user.username ?? "User"
 
   const t = useTranslation("AppSidebar")
-  const dispatch = useAppDispatch()
   const theme = useAppSelector(selectTheme)
   const { setTheme } = useTheme()
 
@@ -64,6 +65,13 @@ export function NavUser({
   useHotkey("Mod+Shift+L", () => {
     toggleTheme()
   })
+
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await logout()
+    router.refresh()
+  }
 
   return (
     <SidebarMenu className="border-sidebar-border w-full flex-row items-center justify-center gap-0.5 overflow-clip border-t py-1">
@@ -182,20 +190,18 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              render={
-                <Link
-                  href={`/logout?redirectTo=${encodeURIComponent(`${basePath}/login`)}`}
-                  prefetch={false}
-                  className="flex items-center gap-2"
-                  onClick={() => {
-                    dispatch(api.util.invalidateTags(["CurrentUser"]))
-                  }}
-                >
-                  <icon.Logout />
-                  {t("logout")}
-                </Link>
-              }
-            />
+              onClick={() => {
+                void handleLogout()
+              }}
+              className="flex items-center gap-2"
+            >
+              {isLoggingOut ? (
+                <icon.Loader className="size-4 animate-spin" />
+              ) : (
+                <icon.Logout />
+              )}
+              {t("logout")}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

@@ -2774,6 +2774,13 @@ export const api = createApi({
         { type: "Books", id: bookUuid },
       ],
     }),
+    logout: build.mutation<void, void>({
+      query: () => ({
+        url: "/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["CurrentUser"],
+    }),
   }),
 })
 
@@ -2953,6 +2960,7 @@ export const {
   useGetBookOpfQuery,
   useGetBookMediaOverlayQuery,
   useSendToKindleMutation,
+  useLogoutMutation,
 } = api
 
 export type ListBooksQueryArg = {
