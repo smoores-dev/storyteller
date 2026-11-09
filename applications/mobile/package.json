@@ -5,8 +5,8 @@
   "scripts": {
     "start:device": "APP_VARIANT=development expo start --dev-client",
     "sim:android": "APP_VARIANT=development expo start --android",
-    "sim:ios": "APP_VARIANT=develemopnt expo start --ios",
-    "sim": "APP_VARIANT=develemopnt expo start",
+    "sim:ios": "APP_VARIANT=development expo start --ios",
+    "sim": "APP_VARIANT=development expo start",
     "eas-build-post-install": "./scripts/post-install.sh",
     "android": "expo run:android",
     "ios": "expo run:ios",
