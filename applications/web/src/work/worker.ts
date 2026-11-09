@@ -244,7 +244,18 @@ export default async function processBook({
   const remainingStages = STAGES.slice(startIndex)
 
   for (const stage of remainingStages) {
+    const PROGRESS_WRITE_STEPS = 100
+    let lastWrittenProgress = 0
+
     const onProgress = (progress: number) => {
+      const reachedNewStep =
+        Math.floor(progress * PROGRESS_WRITE_STEPS) >
+        Math.floor(lastWrittenProgress * PROGRESS_WRITE_STEPS)
+
+      if (!reachedNewStep) return
+
+      lastWrittenProgress = progress
+
       void updateBook(null, {
         readaloud: {
           status: "PROCESSING",
@@ -287,15 +298,6 @@ export default async function processBook({
 
         const settings = await getEffectiveSettings()
 
-        let previousProgress = 0
-        // prevent excessive progress updates
-        const progressCallback = (progress: number) => {
-          if (Math.floor(progress * 100) > Math.floor(previousProgress * 100)) {
-            previousProgress = progress
-            onProgress(progress)
-          }
-        }
-
         if (settings.aligner === "ctc") {
           logger.info("Generating emissions...")
           const engine = settings.ctcEngine ?? "ctc-local"
@@ -327,7 +329,7 @@ export default async function processBook({
               language: locale,
               serverUrl: settings.ctcServerUrl,
               serverApiKey: settings.ctcServerApiKey,
-              onProgress: progressCallback,
+              onProgress,
               logger,
               signal,
             }),
@@ -340,7 +342,7 @@ export default async function processBook({
               getTranscriptionsFilepath(book),
               locale,
               {
-                onProgress: progressCallback,
+                onProgress,
                 engine: settings.transcriptionEngine,
                 parallelism: settings.parallelTranscribes,
                 model: settings.whisperModel,

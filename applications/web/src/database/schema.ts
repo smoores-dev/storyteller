@@ -243,6 +243,17 @@ export interface Ebook {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface EventLog {
+  bookUuid: string | null
+  createdAt: Generated<string>
+  op: string
+  seq: Generated<number | null>
+  tableName: string
+  token: Generated<string>
+  userId: string | null
+  uuid: string
+}
+
 export interface ExternalData {
   createdAt: Generated<string>
   externalSourceUuid: import("@/uuid").UUID
@@ -631,6 +642,7 @@ export interface UserPermission {
   bookUpdate: Generated<boolean>
   collectionCreate: Generated<boolean>
   createdAt: Generated<string>
+  epoch: Generated<number>
   id: number | null
   inviteDelete: Generated<boolean>
   inviteList: Generated<boolean>
@@ -681,6 +693,7 @@ export interface DB {
   creator: Creator
   deviceAuthorization: DeviceAuthorization
   ebook: Ebook
+  eventLog: EventLog
   externalData: ExternalData
   externalSource: ExternalSource
   homeSection: HomeSection

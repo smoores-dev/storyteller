@@ -12,7 +12,7 @@ export type UserPermissionUpdate = Updateable<DB["userPermission"]>
 
 export type UserPermissionSet = Omit<
   UserPermission,
-  "uuid" | "id" | "createdAt" | "updatedAt"
+  "uuid" | "id" | "createdAt" | "updatedAt" | "epoch"
 >
 
 export type Permission = keyof UserPermissionSet

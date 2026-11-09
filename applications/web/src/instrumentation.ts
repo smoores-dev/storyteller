@@ -31,6 +31,7 @@ export async function register() {
   const { getReadiumService } = await import("./services/readiumService")
   const { env } = await import("./env")
   const { startLogRetention } = await import("./logRetention")
+  const { startEventLogPruning } = await import("./eventLogPruning")
 
   startLogRetention()
 
@@ -53,6 +54,9 @@ export async function register() {
     logger.error("Failed to run database migrations — Aborting startup")
     throw err
   }
+
+  // Start after running db migrations
+  startEventLogPruning()
 
   try {
     await getWatcher().start()

@@ -42,6 +42,7 @@ devenv.local.yaml
 
 /.idea/*
 /.helix/
+/.mitos/
 
 logs/
 !applications/web/src/app/api/v2/logs/
