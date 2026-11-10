@@ -497,6 +497,26 @@ export async function upsertServerBooks(
       }
     }
 
+    const bookUuidChunks = partitionByLength(
+      serverBooks.map((b) => b.uuid),
+      50,
+    )
+    for (const chunk of bookUuidChunks) {
+      await tr
+        .deleteFrom("bookToCreator")
+        .where("bookUuid", "in", chunk)
+        .execute()
+      await tr
+        .deleteFrom("bookToSeries")
+        .where("bookUuid", "in", chunk)
+        .execute()
+      await tr
+        .deleteFrom("bookToCollection")
+        .where("bookUuid", "in", chunk)
+        .execute()
+      await tr.deleteFrom("bookToTag").where("bookUuid", "in", chunk).execute()
+    }
+
     if (bookToCreatorRecords.length > 0) {
       const chunks = partitionByLength(bookToCreatorRecords, 50)
       for (const chunk of chunks) {
