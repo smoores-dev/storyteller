@@ -158,6 +158,7 @@ const TABLES = {
   verificationToken: { exclude: "auth data, not synced" },
   deviceAuthorization: { exclude: "auth data, not synced" },
   tokenRevokation: { exclude: "auth data, not synced" },
+  apiToken: { exclude: "auth data, not synced" },
   serverIdentity: { exclude: "server-internal" },
   migration: { exclude: "server-internal" },
   eventLog: { exclude: "the event log itself" },

@@ -1,5 +1,6 @@
 import { type Selectable, type Transaction, type Updateable } from "kysely"
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
+import { z } from "zod"
 
 import { type UUID } from "@/uuid"
 
@@ -19,6 +20,15 @@ export type Permission = keyof UserPermissionSet
 
 export type User = Selectable<DB["user"]>
 export type UserUpdate = Updateable<DB["user"]>
+
+export const ProfileUpdateSchema = z.strictObject({
+  username: z.string().trim().min(1).optional(),
+  email: z.string().trim().pipe(z.email()).optional(),
+  name: z.string().trim().optional(),
+  password: z.string().min(1).optional(),
+})
+
+export type ProfileUpdate = z.infer<typeof ProfileUpdateSchema>
 
 export type UserWithPermissions = NonNullable<
   Awaited<ReturnType<typeof getUser>>
@@ -438,6 +448,14 @@ export async function getAccounts(id: UUID) {
     .selectFrom("account")
     .select(["account.provider", "account.providerAccountId"])
     .where("account.userId", "=", id)
+    .execute()
+}
+
+export async function deleteAccounts(userId: UUID, provider: string) {
+  await db
+    .deleteFrom("account")
+    .where("account.userId", "=", userId)
+    .where("account.provider", "=", provider)
     .execute()
 }
 

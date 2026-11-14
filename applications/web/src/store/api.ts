@@ -35,6 +35,8 @@ import {
 import { type UpgradeResult } from "@/app/api/v2/books/[bookId]/upgrade-epub/route"
 import { type BackupInfo } from "@/backups"
 import { type ChapterAudio } from "@/chapterAudio"
+import { type ApiTokenCreate } from "@/database/apiTokenTypes"
+import { type ApiTokenSummary } from "@/database/apiTokens"
 import {
   type BookRelationsUpdate,
   type BookUpdate,
@@ -98,7 +100,7 @@ import {
   type UserPreferencesForm,
 } from "@/database/userPreferencesTypes"
 import { type UserBookRating } from "@/database/userRatings"
-import { type UserPermissionSet } from "@/database/users"
+import { type ProfileUpdate, type UserPermissionSet } from "@/database/users"
 import { type SeriesWithBooks } from "@/hooks/useFilterSortedSeries"
 import {
   type JobListFilter,
@@ -200,6 +202,7 @@ export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: "/api/v2" }),
   tagTypes: [
+    "ApiTokens",
     "Invites",
     "Users",
     "Statuses",
@@ -305,6 +308,39 @@ export const api = createApi({
     getCurrentUser: build.query<User, void>({
       query: () => "/user",
       providesTags: () => ["CurrentUser"],
+    }),
+    updateProfile: build.mutation<User, ProfileUpdate>({
+      query: (body) => ({
+        url: "/user",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: () => ["CurrentUser"],
+    }),
+    unlinkAccount: build.mutation<void, { provider: string }>({
+      query: ({ provider }) => ({
+        url: `/user/accounts/${encodeURIComponent(provider)}`,
+        method: "DELETE",
+      }),
+    }),
+    listApiTokens: build.query<ApiTokenSummary[], void>({
+      query: () => "/user/tokens",
+      providesTags: () => ["ApiTokens"],
+    }),
+    createApiToken: build.mutation<{ token: string }, ApiTokenCreate>({
+      query: (body) => ({
+        url: "/user/tokens",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: () => ["ApiTokens"],
+    }),
+    deleteApiToken: build.mutation<void, { uuid: UUID }>({
+      query: ({ uuid }) => ({
+        url: `/user/tokens/${uuid}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: () => ["ApiTokens"],
     }),
     getServerCapabilities: build.query<ServerCapabilities, void>({
       query: () => "/server/capabilities",
@@ -2821,6 +2857,11 @@ export const {
   useDeleteSeriesMutation,
   useDeleteUserMutation,
   useGetCurrentUserQuery,
+  useUpdateProfileMutation,
+  useUnlinkAccountMutation,
+  useListApiTokensQuery,
+  useCreateApiTokenMutation,
+  useDeleteApiTokenMutation,
   useGetGpuBuildWarningQuery,
   useGetMaxUploadChunkSizeQuery,
   useGetServerCapabilitiesQuery,

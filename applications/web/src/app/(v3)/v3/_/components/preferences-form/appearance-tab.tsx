@@ -52,7 +52,7 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
 
   return (
     <div className="space-y-6">
-      <PreferencesSection tab="appearance" section="accent">
+      <PreferencesSection id="accent">
         <Card>
           <CardHeader>
             <CardTitle>{t("accent.title")}</CardTitle>
@@ -102,7 +102,7 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
         </Card>
       </PreferencesSection>
 
-      <PreferencesSection tab="appearance" section="colorfulness">
+      <PreferencesSection id="colorfulness">
         <Card>
           <CardHeader>
             <CardTitle>{t("colorfulness.title")}</CardTitle>
@@ -130,7 +130,7 @@ export function AppearanceTab({ form }: { form: PreferencesFormType }) {
         </Card>
       </PreferencesSection>
 
-      <PreferencesSection tab="appearance" section="motion">
+      <PreferencesSection id="motion">
         <Card>
           <CardHeader>
             <CardTitle>{t("motion.title")}</CardTitle>

@@ -2,8 +2,15 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type Locale } from "next-intl"
-import { parseAsStringLiteral, useQueryState } from "nuqs"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs"
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { type FieldErrors, useForm, useFormState } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
@@ -39,6 +46,7 @@ import {
   useCommon,
   useTranslation,
 } from "@/app/(v3)/v3/_/hooks/use-translation"
+import { type ApiTokenSummary } from "@/database/apiTokens"
 import {
   type PreferenceDefaults,
   type UserPreferencesForm,
@@ -51,19 +59,20 @@ import { useUpdateUserSettingsMutation } from "@/store/api"
 
 import { AppearanceTab } from "./appearance-tab"
 import { BooksTab } from "./books-tab"
+import { DevicesTab } from "./devices-tab"
 import { GeneralTab } from "./general-tab"
 import { LibraryDefaultsProvider } from "./library-defaults"
 import { ProfileTab } from "./profile-tab"
 import { type IsMatch, SearchContext } from "./shared"
 import {
+  FORM_TABS,
+  PREFERENCE_SECTIONS,
   PREFERENCE_TABS,
-  type PreferenceTab,
   type SectionKeywords,
   type Tab,
+  accountTabs,
+  personalizationTabs,
 } from "./tabs"
-
-const formTabs: Tab[] = ["general", "appearance", "books"]
-const userTabs: Tab[] = ["profile"]
 
 type SidebarTabDef = NavSidebarTab<Tab>
 
@@ -103,6 +112,7 @@ export function PreferencesForm({
   preferences,
   sectionKeywords,
   linkedAccounts,
+  apiTokens,
   providers,
   disablePasswordLogin,
   preferenceDefaults,
@@ -113,6 +123,7 @@ export function PreferencesForm({
   preferences: UserPreferencesForm
   sectionKeywords: SectionKeywords
   linkedAccounts: Array<{ provider: string; providerAccountId: string }>
+  apiTokens: ApiTokenSummary[]
   providers: Array<{ id: string; name: string }>
   disablePasswordLogin: boolean
   preferenceDefaults: PreferenceDefaults
@@ -165,6 +176,11 @@ export function PreferencesForm({
     () => [
       { value: "profile", label: t("tabs.profile.title"), icon: icon.User },
       {
+        value: "devices",
+        label: t("tabs.devices.title"),
+        icon: icon.DeviceTablet,
+      },
+      {
         value: "general",
         label: t("tabs.general.title"),
         icon: icon.Settings2,
@@ -196,68 +212,99 @@ export function PreferencesForm({
     [setActiveTab],
   )
 
+  const [targetSection, setTargetSection] = useQueryState(
+    "section",
+    parseAsString.withOptions({ history: "replace" }),
+  )
+  const clearTargetSectionEvent = useEffectEvent(() => {
+    void setTargetSection(null)
+  })
+
+  useEffect(() => {
+    if (!targetSection) {
+      return
+    }
+
+    const frame = requestAnimationFrame(() => {
+      const element = document.getElementById(`preferences-${targetSection}`)
+      if (!element) {
+        return
+      }
+
+      element.scrollIntoView({ block: "start" })
+      clearTargetSectionEvent()
+    })
+    return () => {
+      cancelAnimationFrame(frame)
+    }
+  }, [targetSection, activeTabRaw])
+
   const [searchQuery, setSearchQuery] = useState("")
 
   const matchingSections = useMemo(() => {
-    if (!searchQuery) return null
-
     const query = searchQuery.toLowerCase()
-    const matching = new Set<string>()
-
-    for (const [tab, sections] of Object.entries(sectionKeywords)) {
-      for (const [section, keywords] of Object.entries(sections)) {
-        if (keywords.some((kw) => kw.toLowerCase().includes(query))) {
-          matching.add(`${tab}.${section}`)
-        }
-      }
+    if (!query) {
+      return null
     }
 
-    return matching
+    return new Set<string>(
+      PREFERENCE_SECTIONS.filter((section) =>
+        sectionKeywords[section.id]?.some((keyword) =>
+          keyword.toLowerCase().includes(query),
+        ),
+      ).map((section) => section.id),
+    )
   }, [searchQuery, sectionKeywords])
 
   const matchingTabs = useMemo(() => {
-    if (!matchingSections) return null
+    if (!matchingSections) {
+      return null
+    }
 
     const query = searchQuery.toLowerCase()
-    const sectionTabs = new Set(
-      Array.from(matchingSections).map((key) => key.split(".")[0]),
+    const sectionTabs = new Set<Tab>(
+      PREFERENCE_SECTIONS.filter((section) =>
+        matchingSections.has(section.id),
+      ).map((section) => section.tab),
     )
-    return new Set<PreferenceTab>(
+    return new Set<Tab>(
       allTabs
         .filter(
           (tab) =>
             sectionTabs.has(tab.value) ||
             tab.label.toLowerCase().includes(query),
         )
-        .map((tab) => tab.value as PreferenceTab),
+        .map((tab) => tab.value),
     )
   }, [matchingSections, allTabs, searchQuery])
 
-  const isMatch: IsMatch = (tab, section) =>
-    !matchingSections || matchingSections.has(`${tab}.${section}`)
+  const isMatch: IsMatch = (section) =>
+    !matchingSections || matchingSections.has(section)
 
-  const prefActiveTab = useRef<string>(activeTab)
+  const prefActiveTab = useRef<Tab | null>(activeTab)
   prefActiveTab.current = activeTab
 
   useEffect(() => {
-    if (!matchingTabs) return
+    if (!matchingTabs) {
+      return
+    }
 
     const firstMatch = Array.from(matchingTabs)[0]
 
     if (
       firstMatch &&
-      !matchingTabs.has(prefActiveTab.current as PreferenceTab)
+      (!prefActiveTab.current || !matchingTabs.has(prefActiveTab.current))
     ) {
       void setActiveTab(firstMatch)
     }
   }, [matchingTabs, setActiveTab])
 
   const filteredTabs = matchingTabs
-    ? allTabs.filter((tab) => matchingTabs.has(tab.value as PreferenceTab))
+    ? allTabs.filter((tab) => matchingTabs.has(tab.value))
     : allTabs
 
   const activeTabDef = allTabs.find((t) => t.value === activeTab)
-  const showSaveButton = activeTab !== "profile"
+  const isFormTab = !!activeTab && FORM_TABS.includes(activeTab)
 
   const tabContent = (
     <LibraryDefaultsProvider
@@ -275,9 +322,14 @@ export function PreferencesForm({
           disablePasswordLogin={disablePasswordLogin}
         />
       )}
-      {activeTab === "general" && (
-        <GeneralTab form={form} kindleSender={kindleSender} />
+      {activeTab === "devices" && (
+        <DevicesTab
+          form={form}
+          kindleSender={kindleSender}
+          apiTokens={apiTokens}
+        />
       )}
+      {activeTab === "general" && <GeneralTab form={form} />}
       {activeTab === "appearance" && <AppearanceTab form={form} />}
       {activeTab === "books" && <BooksTab form={form} />}
     </LibraryDefaultsProvider>
@@ -285,7 +337,7 @@ export function PreferencesForm({
 
   const headerActions = (
     <div className="flex items-center gap-3">
-      {showSaveButton && (
+      {isFormTab && (
         <Button
           type="submit"
           form="preferences-form"
@@ -309,8 +361,6 @@ export function PreferencesForm({
       canUpdateSettings={canUpdateSettings ?? false}
     />
   )
-
-  const isFormTab = formTabs.includes(activeTab as PreferenceTab)
 
   const contentArea = (
     <SearchContext.Provider value={{ query: searchQuery, isMatch }}>
@@ -349,7 +399,7 @@ export function PreferencesForm({
                     {c("actions.back")}
                   </Button>
 
-                  {showSaveButton && (
+                  {isFormTab && (
                     <Button
                       type="submit"
                       form="preferences-form"
@@ -423,8 +473,12 @@ function PreferencesSidebar({
   canUpdateSettings: boolean
 }) {
   const t = useTranslation("PreferencesPage")
-  const userSidebarTabs = tabs.filter((tab) => userTabs.includes(tab.value))
-  const prefSidebarTabs = tabs.filter((tab) => formTabs.includes(tab.value))
+  const userSidebarTabs = tabs.filter((tab) =>
+    (accountTabs as readonly Tab[]).includes(tab.value),
+  )
+  const prefSidebarTabs = tabs.filter((tab) =>
+    (personalizationTabs as readonly Tab[]).includes(tab.value),
+  )
 
   return (
     <NavSidebar>

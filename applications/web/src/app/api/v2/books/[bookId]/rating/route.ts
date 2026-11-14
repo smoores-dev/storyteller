@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { withUser } from "@/auth/auth"
+import { withHasPermission } from "@/auth/auth"
 import {
   type RatingDimensionScores,
   isValidDimensionScores,
@@ -17,7 +17,10 @@ type Params = Promise<{ bookId: UUID }>
 /**
  * @summary Get the current user's rating for a book
  */
-export const GET = withUser<Params>(async (request, context) => {
+export const GET = withHasPermission<Params>("manageSelf")(async (
+  request,
+  context,
+) => {
   const { bookId } = await context.params
   const rating = await getUserBookRating(request.auth.user.id, bookId)
   if (!rating) return new Response(null, { status: 404 })
@@ -27,7 +30,10 @@ export const GET = withUser<Params>(async (request, context) => {
 /**
  * @summary Set or update the current user's rating/review for a book
  */
-export const PUT = withUser<Params>(async (request, context) => {
+export const PUT = withHasPermission<Params>("manageSelf")(async (
+  request,
+  context,
+) => {
   const { bookId } = await context.params
   const body = (await request.json()) as {
     rating?: number | null
@@ -65,7 +71,10 @@ export const PUT = withUser<Params>(async (request, context) => {
 /**
  * @summary Remove the current user's rating for a book
  */
-export const DELETE = withUser<Params>(async (request, context) => {
+export const DELETE = withHasPermission<Params>("manageSelf")(async (
+  request,
+  context,
+) => {
   const { bookId } = await context.params
   await deleteUserBookRating(request.auth.user.id, bookId)
   return new Response(null, { status: 204 })

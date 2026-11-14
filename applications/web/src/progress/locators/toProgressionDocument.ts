@@ -13,7 +13,7 @@ export async function locatorToProgressionDocument(
   book: BookWithRelations,
   locator: ReadiumLocator,
   timestamp: number,
-  deviceId: string,
+  device: { id: string; name: string },
 ): Promise<Partial<
   Record<
     "ebook" | "audiobook" | "readaloud",
@@ -63,10 +63,7 @@ export async function locatorToProgressionDocument(
   return mapValues(references, (refs) => ({
     title: locator.title,
     modified: new Date(timestamp).toISOString(),
-    device: {
-      id: deviceId,
-      name: "Unknown",
-    },
+    device,
     progression: locator.locations?.totalProgression ?? 0,
     references: refs,
   }))

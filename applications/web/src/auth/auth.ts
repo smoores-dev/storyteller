@@ -19,7 +19,12 @@ import { cookies, headers, headers as nextHeaders } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { type NextRequest, NextResponse } from "next/server"
 
-import { getCookieDomain, getCookieSecure } from "@/cookies"
+import {
+  READING_SCOPE,
+  getApiTokenUser,
+  isApiToken,
+  scopePermissions,
+} from "@/database/apiTokens"
 import { KyselyAdapter } from "@/database/authAdapter"
 import { db } from "@/database/connection"
 import { type DB } from "@/database/schema"
@@ -444,36 +449,134 @@ export function extractBasicAuthFromUrl(
 
 type VerifiedAuthRequest = NextRequest & { auth: Session }
 
+function withAuth(request: NextRequest, user: UserWithPermissions) {
+  return Object.assign(request, {
+    auth: { user, expires: fromDate(maxAge).toISOString() },
+  }) as VerifiedAuthRequest
+}
+
+type Credential = {
+  user: UserWithPermissions
+  scope: Permission[] | null
+}
+
+export type RoutePermission = Permission | "manageSelf"
+
+async function credentialFromHeaders(
+  request: NextRequest,
+  allowBasicAuth: boolean,
+): Promise<Credential | null | undefined> {
+  const token = extractTokenFromHeader(request.headers)
+  if (token && isApiToken(token)) {
+    return getApiTokenUser(token)
+  }
+
+  if (!allowBasicAuth) {
+    return undefined
+  }
+
+  const settings = await getSettings()
+  if (!settings.opdsEnabled) {
+    return undefined
+  }
+
+  const basicCreds =
+    parseBasicAuth(request.headers.get("Authorization")) ??
+    extractBasicAuthFromUrl(request.url)
+  if (!basicCreds) {
+    return undefined
+  }
+
+  if (isApiToken(basicCreds.password)) {
+    const tokenUser = await getApiTokenUser(basicCreds.password)
+    if (!tokenUser) {
+      return null
+    }
+
+    const login = basicCreds.username.toLowerCase()
+    const matchesLogin =
+      tokenUser.user.username === login || tokenUser.user.email === login
+
+    if (!matchesLogin) {
+      return null
+    }
+
+    return tokenUser
+  }
+
+  const user = await authenticateUser(basicCreds.username, basicCreds.password)
+  if (!user?.permissions) {
+    return null
+  }
+
+  return {
+    user: {
+      ...user,
+      permissions: scopePermissions(user.permissions, READING_SCOPE),
+    },
+    scope: READING_SCOPE,
+  }
+}
+
+function notAuthenticated() {
+  return NextResponse.json(
+    { message: "Not authenticated" },
+    { status: 401, headers: { "WWW-Authenticate": "Bearer" } },
+  )
+}
+
+type RouteHandler<Params> = (
+  request: VerifiedAuthRequest,
+  context: { params: Promise<Params> },
+) => Promise<Response> | Response
+
+type UnauthorizedHandler<Params> = (
+  request: NextRequest,
+  context: { params: Promise<Params> },
+) => Promise<Response> | Response
+
+async function withSession<Params>(
+  request: NextRequest,
+  context: { params: Promise<Params> },
+  handler: RouteHandler<Params>,
+  on401: UnauthorizedHandler<Params>,
+) {
+  const token = extractTokenFromHeader(request.headers)
+  if (token) {
+    request.cookies.set("st_token", token)
+  }
+
+  const h = nextAuth.auth(async (request, context) => {
+    if (!request.auth?.user) {
+      return on401(request, context)
+    }
+
+    return handler(request as VerifiedAuthRequest, context)
+    // We have to do a cast here because NextAuthResult is
+    // typed incorrectly: the `auth` function becmomes async
+    // when passed a lazy init function
+  }) as unknown as Promise<ReturnType<typeof nextAuth.auth>>
+
+  return (await h)(request, context as never) as Promise<Response>
+}
+
 export function withUser<
   Params extends Promise<Record<string, unknown>> = Promise<
     Record<string, unknown>
   >,
->(
-  handler: (
-    request: VerifiedAuthRequest,
-    context: { params: Promise<Params> },
-  ) => Promise<Response> | Response,
-): AppRouteHandlerFn {
-  // cast needed because next-auth's .auth() wrapper returns NextMiddlewareResult
-  // which includes null/undefined, but our handlers always return a Response
-  return (async (request, context) => {
-    const token = extractTokenFromHeader(request.headers)
-    if (token) {
-      request.cookies.set("st_token", token)
+>(handler: RouteHandler<Params>): AppRouteHandlerFn {
+  return (async (request, context: { params: Promise<Params> }) => {
+    const credential = await credentialFromHeaders(request, false)
+
+    if (credential === null) {
+      return notAuthenticated()
     }
-    const h = nextAuth.auth(async (request, context) => {
-      const user = request.auth?.user
-      if (!user) {
-        return NextResponse.json(
-          { message: "Not authenticated" },
-          { status: 401, headers: { "WWW-Authenticate": "Bearer" } },
-        )
-      }
 
-      return handler(request as VerifiedAuthRequest, context)
-    }) as unknown as Promise<ReturnType<typeof nextAuth.auth>>
+    if (credential) {
+      return handler(withAuth(request, credential.user), context)
+    }
 
-    return (await h)(request, context as never)
+    return withSession(request, context, handler, notAuthenticated)
   }) as AppRouteHandlerFn
 }
 
@@ -487,118 +590,64 @@ export function withHasPermission<
     Record<string, unknown>
   >,
 >(
-  permission: Permission | Permission[],
+  permission: RoutePermission | RoutePermission[],
   options?: {
     allowBasicAuth?: boolean
-    on401?: (
-      request: NextRequest,
-      context: { params: Promise<Params> },
-    ) => Promise<Response> | Response
+    sessionOnly?: boolean
+    on401?: UnauthorizedHandler<Params>
   },
 ) {
   const permissions = Array.isArray(permission) ? permission : [permission]
 
-  const holdsPermission = (user: Session["user"] | UserWithPermissions) =>
-    permissions.some((p) => user.permissions?.[p])
+  const holdsPermission = (
+    user: Session["user"] | UserWithPermissions,
+    scope: Permission[] | null,
+  ) =>
+    permissions.some((p) =>
+      p === "manageSelf" ? scope === null : user.permissions?.[p],
+    )
 
-  return (
-    handler: (
-      request: VerifiedAuthRequest,
-      context: { params: Promise<Params> },
-    ) => Promise<Response> | Response,
-  ): AppRouteHandlerFn =>
-    (async (request, context) => {
-      if (options?.allowBasicAuth) {
-        // only allow basic auth if OPDS is enabled
-        const settings = await getSettings()
-        if (settings.opdsEnabled) {
-          // try basic auth from Authorization header first
-          let basicCreds = parseBasicAuth(request.headers.get("Authorization"))
+  const on401 = options?.on401 ?? notAuthenticated
 
-          // if not in header, try to extract from URL (some OPDS clients send credentials in URL)
-          // not sure if this ever makes its way here tho, most http clients convert this to basic auth
-          if (!basicCreds) {
-            basicCreds = extractBasicAuthFromUrl(request.url)
-          }
-
-          if (basicCreds) {
-            const user = await authenticateUser(
-              basicCreds.username,
-              basicCreds.password,
-            )
-
-            if (!user) {
-              if (options.on401) {
-                return options.on401(
-                  request,
-                  context as { params: Promise<Params> },
-                )
-              }
-              return NextResponse.json(
-                { message: "Not authenticated" },
-                { status: 401, headers: { "WWW-Authenticate": "Bearer" } },
-              )
-            }
-
-            if (!holdsPermission(user)) {
-              return NextResponse.json(
-                { message: "Forbidden" },
-                { status: 403 },
-              )
-            }
-
-            const token = await createUserToken(
-              basicCreds.username,
-              basicCreds.password,
-            )
-
-            // opds clients typically don't send Origin header, fall back to request url
-            const origin =
-              request.headers.get("Origin") ?? request.nextUrl.origin
-            const secure = getCookieSecure(origin)
-            const domain = getCookieDomain(origin)
-
-            const cookieStore = await cookies()
-            cookieStore.set("st_token", token.access_token, {
-              secure,
-              // omit domain for localhost since many http clients handle it poorly
-              ...(domain && domain !== "localhost" && { domain }),
-              sameSite: "lax",
-              httpOnly: true,
-              expires: new Date(Date.now() + token.expires_in),
-            })
-
-            request.cookies.set("st_token", token.access_token)
-          }
-        }
-      }
-
+  return (handler: RouteHandler<Params>): AppRouteHandlerFn =>
+    (async (request, context: { params: Promise<Params> }) => {
       const token = extractTokenFromHeader(request.headers)
-
-      if (token) {
-        request.cookies.set("st_token", token)
+      if (options?.sessionOnly && token && isApiToken(token)) {
+        return NextResponse.json(
+          { message: "API tokens can't be used here" },
+          { status: 403 },
+        )
       }
-      const h = nextAuth.auth(async (request, context) => {
-        if (!request.auth) {
-          if (options?.on401) {
-            return options.on401(request, context)
-          }
-          return NextResponse.json(
-            { message: "Not authenticated" },
-            { status: 401, headers: { "WWW-Authenticate": "Bearer" } },
-          )
-        }
-        if (!holdsPermission(request.auth.user)) {
+
+      const credential = await credentialFromHeaders(
+        request,
+        !!options?.allowBasicAuth,
+      )
+
+      if (credential === null) {
+        return on401(request, context)
+      }
+
+      if (credential) {
+        if (!holdsPermission(credential.user, credential.scope)) {
           return NextResponse.json({ message: "Forbidden" }, { status: 403 })
         }
 
-        return handler(request as VerifiedAuthRequest, context)
-        // We have to do a cast here because NextAuthResult is
-        // typed incorrectly: the `auth` function becmomes async
-        // when passed a lazy init function
-      }) as unknown as Promise<ReturnType<typeof nextAuth.auth>>
+        return handler(withAuth(request, credential.user), context)
+      }
 
-      return (await h)(request, context as never)
+      return withSession(
+        request,
+        context,
+        (request, context) => {
+          if (!holdsPermission(request.auth.user, null)) {
+            return NextResponse.json({ message: "Forbidden" }, { status: 403 })
+          }
+
+          return handler(request, context)
+        },
+        on401,
+      )
     }) as AppRouteHandlerFn
 }
 

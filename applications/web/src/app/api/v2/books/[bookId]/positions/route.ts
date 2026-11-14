@@ -15,6 +15,7 @@ import { getStorytellerBaseUrl } from "@/deviceAuthorization.ts"
 import { env } from "@/env"
 import { logger } from "@/logging.ts"
 import { locatorToProgressionDocument } from "@/progress/locators/toProgressionDocument.ts"
+import { describeUserAgent } from "@/userAgent"
 import type { UUID } from "@/uuid"
 
 type Params = Promise<{
@@ -74,7 +75,10 @@ export const POST = withHasPermission<Params>("bookRead")(async (
       book,
       body.locator,
       body.timestamp,
-      baseUrl,
+      {
+        id: baseUrl,
+        name: describeUserAgent(request.headers.get("User-Agent")) ?? "Unknown",
+      },
     )
 
     // If the upsert succeeds, also update the v3 progression document

@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server"
 
-import { createSessionTokenForUserId, nextAuth } from "@/auth/auth"
+import { nextAuth } from "@/auth/auth"
+import { createOPDSToken } from "@/opds/auth"
 
 export const dynamic = "force-dynamic"
 
@@ -19,12 +20,15 @@ export const GET: ReturnType<typeof nextAuth.auth> = await (nextAuth.auth(
       return toLogin(request)
     }
 
-    const token = await createSessionTokenForUserId(request.auth.user.id)
+    const token = await createOPDSToken(
+      request.auth.user.id,
+      request.headers.get("User-Agent"),
+    )
 
     const callback = new URLSearchParams({
       id: "/opds/auth/auth.json",
-      access_token: token.access_token,
-      token_type: token.token_type,
+      access_token: token,
+      token_type: "bearer",
     })
     const state = request.nextUrl.searchParams.get("state")
     if (state !== null) {

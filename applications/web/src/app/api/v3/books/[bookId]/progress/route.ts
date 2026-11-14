@@ -195,7 +195,7 @@ export const GET = withHasPermission<Params>("bookRead")(async (
         book,
         position.locator,
         position.timestamp,
-        baseUrl,
+        { id: baseUrl, name: "Unknown" },
       )
       if (!progressionResult) {
         return Response.json(

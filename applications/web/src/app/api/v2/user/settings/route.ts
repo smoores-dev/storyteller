@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { withUser } from "@/auth/auth"
+import { withHasPermission } from "@/auth/auth"
 import {
   type UserSettingValue,
   getUserSettings,
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic"
 /**
  * @summary Get the current user's settings
  */
-export const GET = withUser(async (request) => {
+export const GET = withHasPermission("manageSelf")(async (request) => {
   const settings = await getUserSettings(request.auth.user.id)
   return NextResponse.json(settings)
 })
@@ -20,7 +20,7 @@ export const GET = withUser(async (request) => {
 /**
  * @summary Merge updates into the current user's settings
  */
-export const PUT = withUser(async (request) => {
+export const PUT = withHasPermission("manageSelf")(async (request) => {
   const body = (await request.json()) as Record<string, UserSettingValue>
   await updateUserSettings(request.auth.user.id, body)
   return NextResponse.json(await getUserSettings(request.auth.user.id))

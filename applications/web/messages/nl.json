@@ -1376,27 +1376,50 @@
       "preferences": "Personalisatie",
       "noMatches": "Geen resultaten"
     },
-    "profile": {
-      "title": "Profiel",
-      "description": "Beheer je accountgegevens.",
-      "username": "Gebruikersnaam",
-      "email": "E-mail",
-      "name": "Naam",
-      "changePassword": "Wachtwoord wijzigen",
-      "addPassword": "Wachtwoord toevoegen",
-      "saveProfile": "Profiel opslaan",
-      "savedSuccessfully": "Profiel opgeslagen",
-      "failedToSave": "Profiel opslaan mislukt",
-      "linkedAccounts": "Gekoppelde accounts",
-      "linkedAccountsDescription": "Beheer je gekoppelde OAuth accounts.",
-      "unlink": "Ontkoppelen",
-      "linkWith": "Koppelen met {provider}",
-      "accountUnlinked": "Account ontkoppeld",
-      "failedToUnlink": "Ontkoppelen mislukt"
-    },
     "tabs": {
       "profile": {
-        "title": "Profiel"
+        "title": "Profiel",
+        "sections": {
+          "details": {
+            "title": "Accountgegevens",
+            "description": "Beheer je accountgegevens.",
+            "username": "Gebruikersnaam",
+            "email": "E-mail",
+            "name": "Naam",
+            "changePassword": "Wachtwoord wijzigen",
+            "addPassword": "Wachtwoord toevoegen",
+            "save": "Profiel opslaan",
+            "savedSuccessfully": "Profiel opgeslagen",
+            "failedToSave": "Profiel opslaan mislukt"
+          },
+          "linkedAccounts": {
+            "title": "Gekoppelde accounts",
+            "description": "Beheer je gekoppelde OAuth accounts.",
+            "unlink": "Ontkoppelen",
+            "linkWith": "Koppelen met {provider}",
+            "accountUnlinked": "Account ontkoppeld",
+            "failedToUnlink": "Ontkoppelen mislukt"
+          }
+        }
+      },
+      "devices": {
+        "title": "Apparaten en tokens",
+        "sections": {
+          "kindle": {
+            "title": "Naar Kindle sturen",
+            "description": "Waar Naar Kindle sturen je e-books aflevert.",
+            "label": "Kindle-e-mailadressen",
+            "namePlaceholder": "Naam (bijv. Paperwhite)",
+            "emailPlaceholder": "naam@kindle.com",
+            "add": "Adres toevoegen",
+            "remove": "Adres verwijderen",
+            "default": "Standaardadres",
+            "setDefault": "Instellen als standaard",
+            "senderLabel": "Goedgekeurde afzender",
+            "senderHint": "Voeg dit adres toe aan de goedgekeurde afzenders in je Amazon-account, onder Instellingen voor persoonlijke documenten.",
+            "notConfigured": "E-mail is niet ingesteld op deze server, dus Naar Kindle sturen werkt pas als een beheerder het instelt."
+          }
+        }
       },
       "general": {
         "title": "Algemeen",
@@ -1416,20 +1439,6 @@
               "list": "Lijst",
               "table": "Tabel"
             }
-          },
-          "kindle": {
-            "title": "Naar Kindle sturen",
-            "description": "Waar Naar Kindle sturen je e-books aflevert.",
-            "label": "Kindle-e-mailadressen",
-            "namePlaceholder": "Naam (bijv. Paperwhite)",
-            "emailPlaceholder": "naam@kindle.com",
-            "add": "Adres toevoegen",
-            "remove": "Adres verwijderen",
-            "default": "Standaardadres",
-            "setDefault": "Instellen als standaard",
-            "senderLabel": "Goedgekeurde afzender",
-            "senderHint": "Voeg dit adres toe aan de goedgekeurde afzenders in je Amazon-account, onder Instellingen voor persoonlijke documenten.",
-            "notConfigured": "E-mail is niet ingesteld op deze server, dus Naar Kindle sturen werkt pas als een beheerder het instelt."
           }
         }
       },

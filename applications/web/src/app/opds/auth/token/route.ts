@@ -3,8 +3,9 @@ import { z } from "zod"
 
 import { MediaType } from "@storyteller-platform/media-types"
 
-import { createUserToken } from "@/auth/auth"
+import { authenticateUser } from "@/auth/auth"
 import { logger } from "@/logging"
+import { createOPDSToken } from "@/opds/auth"
 
 export const dynamic = "force-dynamic"
 
@@ -59,14 +60,31 @@ export async function POST(request: Request) {
       )
     }
 
-    const tokenResponse = await createUserToken(username, password)
+    const user = await authenticateUser(username, password)
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: "invalid_grant",
+          error_description: "Invalid username or password",
+        },
+        { status: 400 },
+      )
+    }
 
-    return NextResponse.json(tokenResponse, {
-      headers: {
-        "Content-Type": MediaType.JSON.mime,
-        "Cache-Control": "no-store",
+    const token = await createOPDSToken(
+      user.id,
+      request.headers.get("User-Agent"),
+    )
+
+    return NextResponse.json(
+      { access_token: token, token_type: "bearer" },
+      {
+        headers: {
+          "Content-Type": MediaType.JSON.mime,
+          "Cache-Control": "no-store",
+        },
       },
-    })
+    )
   } catch {
     return NextResponse.json(
       {

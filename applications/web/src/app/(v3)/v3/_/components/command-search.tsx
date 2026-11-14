@@ -34,7 +34,7 @@ import {
   COLLECTION_ICON,
   SHELF_ICON,
 } from "./nav/sidebar-items"
-import { PREFERENCE_TABS } from "./preferences-form/tabs"
+import { PREFERENCE_SECTIONS, PREFERENCE_TABS } from "./preferences-form/tabs"
 import { TAB_ICONS } from "./settings-form/tab-icons"
 import {
   SETTINGS_SECTIONS,
@@ -164,6 +164,15 @@ function useNavCommands(): NavCommand[] {
         matchParent: true,
         icon: icon.AdjustmentsHorizontal,
         href: `/preferences?tab=${tab}`,
+      })),
+      ...PREFERENCE_SECTIONS.map((section) => ({
+        key: `preferences.section.${section.id}`,
+        label: tPreferences.plain(
+          `tabs.${section.tab}.sections.${section.id}.title` as never,
+        ),
+        parent: `${preferencesLabel} › ${tPreferences.plain(`tabs.${section.tab}.title`)}`,
+        icon: icon.AdjustmentsHorizontal,
+        href: `/preferences?tab=${section.tab}&section=${section.id}`,
       })),
     ]
   }, [permissions, isTauri, tSidebar, tLibrary, tSettings, tPreferences, c])

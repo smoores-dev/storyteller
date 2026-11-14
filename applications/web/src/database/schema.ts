@@ -61,6 +61,24 @@ export interface AlignmentReport {
   uuid: Generated<import("@/uuid").UUID>
 }
 
+export interface ApiToken {
+  createdAt: Generated<string>
+  expiresAt: Date | null
+  idleTimeoutDays: number | null
+  lastUsedAt: Date | null
+  name: string
+  scope: ColumnType<
+    import("@/database/users").Permission[] | null,
+    string | null,
+    string | null
+  >
+  tokenHash: string
+  tokenStart: string
+  updatedAt: Generated<string>
+  userId: import("@/uuid").UUID
+  uuid: Generated<import("@/uuid").UUID>
+}
+
 export interface Audiobook {
   bookUuid: import("@/uuid").UUID
   coverBlurhash: string | null
@@ -678,6 +696,7 @@ export interface DB {
   account: Account
   alignmentDecision: AlignmentDecision
   alignmentReport: AlignmentReport
+  apiToken: ApiToken
   audiobook: Audiobook
   book: Book
   bookAccess: BookAccess

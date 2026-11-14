@@ -9,13 +9,13 @@ import { cn } from "@v3/_/lib/utils"
 
 import { type UserPreferencesFormSchema } from "@/database/userPreferencesTypes"
 
-import { type Tab } from "./tabs"
+import { type PreferenceSectionId } from "./tabs"
 
 export type PreferencesFormType = UseFormReturn<
   z.infer<typeof UserPreferencesFormSchema>
 >
 
-export type IsMatch = (tab: Tab, section: string) => boolean
+export type IsMatch = (section: PreferenceSectionId) => boolean
 
 export type SearchContextValue = {
   query: string
@@ -28,23 +28,24 @@ export const SearchContext = createContext<SearchContextValue>({
 })
 
 export function PreferencesSection({
-  tab,
-  section,
+  id,
   children,
 }: {
-  tab: Tab
-  section: string
+  id: PreferenceSectionId
   children: ReactNode
 }) {
   const { query, isMatch } = useContext(SearchContext)
-  const matches = isMatch(tab, section)
+  const matches = isMatch(id)
 
-  if (query && !matches) return null
+  if (query && !matches) {
+    return null
+  }
 
   return (
     <div
+      id={`preferences-${id}`}
       className={cn(
-        "max-w-3xl rounded-2xl",
+        "max-w-3xl scroll-mt-4 rounded-2xl",
         query && matches && "ring-primary/50 ring-1 ring-offset-0",
       )}
     >

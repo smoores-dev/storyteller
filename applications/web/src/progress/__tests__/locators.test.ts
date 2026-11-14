@@ -25,7 +25,7 @@ import {
 
 const TIMESTAMP = 1700000000000
 const MODIFIED = "2023-11-14T22:13:20.000Z"
-const DEVICE_ID = "tag:test"
+const DEVICE = { id: "tag:test", name: "Firefox on macOS" }
 
 const AUDIOBOOK_DIR = join(cwd(), "src/__fixtures__/books/audiobooks/moby-dick")
 const MOBY_DICK_1 = "mobydick_001_002_melville.mp3"
@@ -84,14 +84,14 @@ describe("locatorToProgressionDocument", () => {
         locations: { fragments: ["ch1-p2"], totalProgression: 0.25 },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result?.ebook).toEqual(
       expect.objectContaining({
         title: "Chapter One",
         modified: MODIFIED,
-        device: { id: DEVICE_ID, name: "Unknown" },
+        device: DEVICE,
         progression: 0.25,
       }),
     )
@@ -107,7 +107,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { fragments: ["ch1-p2"] },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result?.ebook?.progression).toBe(0)
@@ -123,7 +123,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { fragments: ["ch1-p2"], progression: 0.5 },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result?.readaloud?.references.map((ref) => ref.href)).toContain(
@@ -148,7 +148,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { fragments: ["ch1-p1"], progression: 0.9 },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result?.readaloud?.references.map((ref) => ref.href)).toContain(
@@ -166,7 +166,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { fragments: ["t=10"], totalProgression: 0.3 },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result?.readaloud?.references.map((ref) => ref.href)).toContain(
@@ -185,7 +185,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { fragments: ["ch1-p2"] },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result?.audiobook?.references.map((ref) => ref.href)).toEqual([
@@ -203,7 +203,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { progression: 0.5 },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result?.ebook?.references.map((ref) => ref.href)).toContain(
@@ -221,7 +221,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { fragments: ["chapter-1-paragraph-2"], progression: 0.5 },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result?.readaloud?.references.map((ref) => ref.href)).toContain(
@@ -239,7 +239,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { progression: 0.5 },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result).toBeNull()
@@ -255,7 +255,7 @@ describe("locatorToProgressionDocument", () => {
         locations: { fragments: ["ch1-p2"] },
       },
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(result).toBeNull()
@@ -433,7 +433,7 @@ describe("locatorFromReferences", () => {
       books.all,
       locator!,
       TIMESTAMP,
-      DEVICE_ID,
+      DEVICE,
     )
 
     expect(converted?.readaloud?.references.map((ref) => ref.href)).toContain(

@@ -139,7 +139,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
 
   return (
     <div className="space-y-6">
-      <PreferencesSection tab="books" section="gridDisplay">
+      <PreferencesSection id="gridDisplay">
         <Card>
           <CardHeader>
             <CardTitle>{t("gridDisplay.title")}</CardTitle>
@@ -217,7 +217,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
         </Card>
       </PreferencesSection>
 
-      <PreferencesSection tab="books" section="opening">
+      <PreferencesSection id="opening">
         <Card>
           <CardHeader>
             <CardTitle>{t("opening.title")}</CardTitle>
@@ -245,7 +245,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
         </Card>
       </PreferencesSection>
 
-      <PreferencesSection tab="books" section="detail">
+      <PreferencesSection id="detail">
         <Card>
           <CardHeader>
             <CardTitle>{t("detail.title")}</CardTitle>
@@ -279,7 +279,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
         </Card>
       </PreferencesSection>
 
-      <PreferencesSection tab="books" section="ratings">
+      <PreferencesSection id="ratings">
         <Card>
           <CardHeader>
             <CardTitle>{t("ratings.title")}</CardTitle>
@@ -419,7 +419,7 @@ export function BooksTab({ form }: { form: PreferencesFormType }) {
         </Card>
       </PreferencesSection>
 
-      <PreferencesSection tab="books" section="defaultStatus">
+      <PreferencesSection id="defaultStatus">
         <Card>
           <CardHeader>
             <CardTitle>{t("defaultStatus.title")}</CardTitle>

@@ -25,6 +25,11 @@ export default defineConfig({
     },
     testTimeout: 0,
     hookTimeout: 0,
+    server: {
+      deps: {
+        inline: ["next-auth"],
+      },
+    },
   },
   oxc: {
     jsx: {

@@ -4,11 +4,12 @@ import { forbidden } from "next/navigation"
 
 import { PreferencesForm } from "@v3/_/components/preferences-form/preferences-form"
 import {
+  PREFERENCE_SECTIONS,
   type SectionKeywords,
-  preferenceTabs,
 } from "@v3/_/components/preferences-form/tabs"
 import { withPageAuth } from "@v3/_/server/page-auth-wrapper"
 
+import { getApiTokens } from "@/database/apiTokens"
 import {
   getConfigLockedKeys,
   getPreferenceDefaults,
@@ -39,21 +40,23 @@ function generateSectionKeywords(
     { title?: string; sections?: Record<string, unknown> }
   >,
 ): SectionKeywords {
-  const result = {} as SectionKeywords
+  const result: SectionKeywords = {}
 
-  for (const tab of preferenceTabs) {
-    result[tab] = {}
+  for (const section of PREFERENCE_SECTIONS) {
+    const tab = tabsMessages[section.tab]
+    const keys = [
+      section.id,
+      ...("alsoMatches" in section ? section.alsoMatches : []),
+    ]
 
-    const title = tabsMessages[tab]?.title
-    const sections = tabsMessages[tab]?.sections
-    if (!sections) continue
-
-    for (const [sectionKey, sectionData] of Object.entries(sections)) {
-      result[tab][sectionKey] = [
-        ...(title ? [title] : []),
-        ...extractKeywords(sectionData as Record<string, unknown>),
-      ]
-    }
+    result[section.id] = [
+      ...(tab?.title ? [tab.title] : []),
+      ...keys.flatMap((key) =>
+        extractKeywords(
+          (tab?.sections?.[key] ?? {}) as Record<string, unknown>,
+        ),
+      ),
+    ]
   }
 
   return result
@@ -65,14 +68,21 @@ export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([])(
       forbidden()
     }
 
-    const [settings, rawPreferences, linkedAccounts, messages, prefDefaults] =
-      await Promise.all([
-        getSettings(),
-        getUserSettings(user.id),
-        getAccounts(user.id),
-        getMessages(),
-        getPreferenceDefaults(),
-      ])
+    const [
+      settings,
+      rawPreferences,
+      linkedAccounts,
+      apiTokens,
+      messages,
+      prefDefaults,
+    ] = await Promise.all([
+      getSettings(),
+      getUserSettings(user.id),
+      getAccounts(user.id),
+      getApiTokens(user.id),
+      getMessages(),
+      getPreferenceDefaults(),
+    ])
 
     const preferences = formUserPreferences(rawPreferences)
 
@@ -93,6 +103,7 @@ export default withPageAuth<{ params: Promise<Record<string, unknown>> }>([])(
         preferences={preferences}
         sectionKeywords={sectionKeywords}
         linkedAccounts={linkedAccounts}
+        apiTokens={apiTokens}
         providers={oauthProviders.map((provider) =>
           provider.kind === "built-in"
             ? { id: provider.id, name: provider.id }
