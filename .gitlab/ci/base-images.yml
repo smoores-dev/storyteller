@@ -36,7 +36,7 @@ build-base-cpu:
       else
         TAG="main"
       fi
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker run --rm --privileged tonistiigi/binfmt --install arm64
     - docker buildx build --platform linux/amd64,linux/arm64 --push --build-arg
       GPU_VARIANT=cpu -f Dockerfile.base --cache-from
       type=registry,ref=$CI_REGISTRY_IMAGE/storyteller-base/cache:cpu --cache-to
