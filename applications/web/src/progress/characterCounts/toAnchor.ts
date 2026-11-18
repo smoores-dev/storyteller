@@ -1,12 +1,7 @@
 import { relative, dirname } from "node:path/posix"
 
-import {
-  type EpubReader,
-  type Node,
-  parse,
-  isElement,
-} from "@storyteller-platform/epub"
-import { UriFragment } from "@storyteller-platform/uri-fragment"
+import { type EpubReader, type Node, parse, isElement } from "@storyteller/epub"
+import { UriFragment } from "@storyteller/uri-fragment"
 
 import { characterCountToNode } from "@/progress/characterCounts/toNode.ts"
 import { UriReference } from "@/progress/uriReference.ts"

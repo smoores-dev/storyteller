@@ -1,5 +1,5 @@
 releases:
-  "@storyteller-platform/opds": patch
+  "@storyteller/opds": patch
 
 declined:
-  - "@storyteller-platform/web"
+  - "@storyteller/web"

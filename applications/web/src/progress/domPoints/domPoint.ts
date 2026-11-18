@@ -1,4 +1,4 @@
-import { type Document, type Node } from "@storyteller-platform/epub"
+import { type Document, type Node } from "@storyteller/epub"
 
 export interface DomPoint {
   node: Node

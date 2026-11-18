@@ -4,7 +4,7 @@ import {
   MediaDimensions,
   MediaTemporalDimension,
   UriFragment,
-} from "@storyteller-platform/uri-fragment"
+} from "@storyteller/uri-fragment"
 
 import { type BookWithRelations } from "@/database/books.ts"
 import {

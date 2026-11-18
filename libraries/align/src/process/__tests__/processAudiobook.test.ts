@@ -7,7 +7,7 @@ import { join } from "node:path"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { describe, it } from "vitest"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { createLogger } from "../../common/logging.ts"
 import { processFile } from "../processAudiobook.ts"

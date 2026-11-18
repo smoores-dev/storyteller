@@ -20,7 +20,7 @@ import { join } from "node:path"
 import { fromBuffer } from "yauzl-promise"
 import { ZipFile } from "yazl"
 
-import { scratchPath } from "@storyteller-platform/fs"
+import { scratchPath } from "@storyteller/fs"
 
 import { Epub, TmpFsAdapter } from "../index.tsx"
 import { x } from "../xml.ts"

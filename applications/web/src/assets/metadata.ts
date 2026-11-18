@@ -4,9 +4,9 @@ import {
   Audiobook,
   type AudiobookInputs,
   getAttachedImageFromPath,
-} from "@storyteller/audiobook"
-import { type Epub, type EpubReader } from "@storyteller-platform/epub"
-import { MediaType } from "@storyteller-platform/media-types"
+} from "@storyteller/audiobooks"
+import { type Epub, type EpubReader } from "@storyteller/epub"
+import { MediaType } from "@storyteller/media-types"
 
 import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import {
@@ -592,7 +592,7 @@ export async function writeMetadataToEpub(
     await epub.removeCollection(0)
   }
 
-  // There was a bug in previous versions of @storyteller-platform/epub
+  // There was a bug in previous versions of @storyteller/epub
   // where removing collections did not properly remove their corresponding
   // group-position properties, so we clear them all out to remove
   // any junk
@@ -612,7 +612,7 @@ export async function writeMetadataToEpub(
     await epub.removeCreator(0)
   }
 
-  // There was a bug in previous versions of @storyteller-platform/epub
+  // There was a bug in previous versions of @storyteller/epub
   // where removing creators did not properly remove their corresponding
   // role or file-as properties, so we clear them all out to remove
   // any junk
@@ -659,7 +659,7 @@ export async function writeMetadataToEpub(
     (item) => item.properties["property"] === "storyteller:narrator",
   )
 
-  // There was a bug in previous versions of @storyteller-platform/epub
+  // There was a bug in previous versions of @storyteller/epub
   // where collections were incorrectly stored in `<belongs-to-collection>`
   // elements, instead of `<meta>` elements
   await epub.removeMetadata((item) => item.type === "belongs-to-collection")

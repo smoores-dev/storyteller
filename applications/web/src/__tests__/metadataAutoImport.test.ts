@@ -1,12 +1,11 @@
 import assert from "node:assert"
 
-import { beforeEach, describe, it, vi } from "vitest"
-
 import {
   type BookMetadataCandidate,
   type BookMetadataSearchResult,
   type MetadataSearchQuery,
 } from "@storyteller-platform/nodekit"
+import { beforeEach, describe, it, vi } from "vitest"
 
 import {
   type TestDbContext,

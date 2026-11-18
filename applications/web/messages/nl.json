@@ -851,7 +851,7 @@
               },
               "ctc-server": {
                 "label": "Op een andere server",
-                "description": "Stuurt elk audiobestand naar een Ghost Story-server op een andere (hopelijk!) snellere machine, bijvoorbeeld een PC met een GPU. Start er een met npx @storyteller-platform/ghost-story serve."
+                "description": "Stuurt elk audiobestand naar een Ghost Story-server op een andere (hopelijk!) snellere machine, bijvoorbeeld een PC met een GPU. Start er een met npx @storyteller/ghost-story serve."
               }
             },
             "ctcServerUrl": "Server URL",

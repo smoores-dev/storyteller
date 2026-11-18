@@ -1,4 +1,4 @@
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 export interface UpgradeEpubOptions {
   removeNcx?: boolean | undefined

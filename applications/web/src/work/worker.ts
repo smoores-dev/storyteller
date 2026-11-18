@@ -10,15 +10,15 @@ import {
   markup,
   processAudiobook,
   transcribe,
-} from "@storyteller-platform/align"
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
-import { scratchPath } from "@storyteller-platform/fs"
+} from "@storyteller/align"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
+import { scratchPath } from "@storyteller/fs"
 import {
   createTiming,
   formatSingleReport,
   resolveCtcDevice,
-} from "@storyteller-platform/ghost-story"
-import { isCtcModelVariant } from "@storyteller-platform/ghost-story/constants"
+} from "@storyteller/ghost-story"
+import { isCtcModelVariant } from "@storyteller/ghost-story/constants"
 
 import { getExtractedCover } from "@/assets/covers"
 import {

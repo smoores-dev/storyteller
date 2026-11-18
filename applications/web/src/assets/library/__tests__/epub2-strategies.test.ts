@@ -5,7 +5,7 @@ import { dirname, join } from "node:path"
 import { describe, it } from "vitest"
 import { ZipFile } from "yazl"
 
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
 
 import { setupTestDb } from "@/__tests__/harness/testDb"
 import { createTestLibrary } from "@/__tests__/harness/testFs"

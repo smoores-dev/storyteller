@@ -2,7 +2,7 @@ import { cp } from "node:fs/promises"
 
 import { NextResponse } from "next/server"
 
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 import { withHasPermission } from "@/auth/auth"
 import { getBook, getBookUuid } from "@/database/books"

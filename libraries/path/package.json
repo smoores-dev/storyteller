@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/path",
+  "name": "@storyteller/path",
   "version": "0.3.1",
   "type": "module",
   "types": "dist/index.d.ts",

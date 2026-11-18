@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { authenticateUser } from "@/auth/auth"
 import { logger } from "@/logging"

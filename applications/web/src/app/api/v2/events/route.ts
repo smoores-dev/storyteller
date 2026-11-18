@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { hasPermission, withHasPermission } from "@/auth/auth"
 import { subscribeToBookEvents } from "@/events"

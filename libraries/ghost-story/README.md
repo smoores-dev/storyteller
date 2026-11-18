@@ -1,4 +1,4 @@
-# @storyteller-platform/ghost-story
+# @storyteller/ghost-story
 
 Minimal fork of [echogarden](https://github.com/echogarden-project/echogarden)
 to be more specific to the Storyteller platform.
@@ -10,7 +10,7 @@ to be more specific to the Storyteller platform.
 Install the package:
 
 ```sh
-npm i -g @storyteller-platform/ghost-story
+npm i -g @storyteller/ghost-story
 ```
 
 Usage:
@@ -42,7 +42,7 @@ to another machine, for example a gaming PC or a Mac Mini. Run this on that
 machine:
 
 ```sh
-npx @storyteller-platform/ghost-story serve --api-key <a long random string>
+npx @storyteller/ghost-story serve --api-key <a long random string>
 ```
 
 You are required to provide an API key. You can try using `openssl rand -hex 32`
@@ -84,7 +84,7 @@ default) so a second run with another model does not upload the book again.
 The same server can transcribe with whisper.cpp. Pass the model to use:
 
 ```sh
-npx @storyteller-platform/ghost-story serve --api-key <key> --whisper-model large-v3-turbo
+npx @storyteller/ghost-story serve --api-key <key> --whisper-model large-v3-turbo
 ```
 
 The server will install whisper.cpp and specified model before it starts

@@ -3,7 +3,7 @@
 /**
  * @fileoverview
  *
- * The @storyteller-platform/mobile app depends on @storyteller-platform/web
+ * The @storyteller/mobile app depends on @storyteller/web
  * so that it can directly import some API boundary types. This means that in
  * order to install mobile app dependencies, we have to install all of the web
  * dependencies, which we don't want to do, both because it's time consuming
@@ -25,7 +25,7 @@ const manifestContents = await readFile(mobileManifestPath, {
 
 const manifest = JSON.parse(manifestContents)
 
-delete manifest.devDependencies["@storyteller-platform/web"]
+delete manifest.devDependencies["@storyteller/web"]
 
 await writeFile(mobileManifestPath, JSON.stringify(manifest, null, 2), {
   encoding: "utf-8",

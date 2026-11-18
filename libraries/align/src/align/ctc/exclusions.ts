@@ -6,7 +6,7 @@ import {
   getXhtmlBody,
   type ManifestItem,
   type NavigationList,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import {
   EXCLUSION_RULES,

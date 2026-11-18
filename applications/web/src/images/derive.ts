@@ -1,8 +1,8 @@
-import { encode } from "blurhash"
-
-import { MediaType } from "@storyteller-platform/media-types"
 import * as okmain from "@storyteller-platform/okmain"
 import { InputImage } from "@storyteller-platform/okmain"
+import { encode } from "blurhash"
+
+import { MediaType } from "@storyteller/media-types"
 
 import { type StoredCoverColor } from "@/database/coverColors"
 import { env } from "@/env"

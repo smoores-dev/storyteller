@@ -1,5 +1,5 @@
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
-import { MediaType } from "@storyteller-platform/media-types"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
+import { MediaType } from "@storyteller/media-types"
 
 import { type BookWithRelations } from "@/database/books.ts"
 import { type ReadiumLocator } from "@/database/positions.ts"

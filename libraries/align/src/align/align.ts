@@ -30,14 +30,11 @@ import {
   getXhtmlBody,
   type ManifestItem,
   xmlId,
-} from "@storyteller-platform/epub"
-import { isHiddenFile, scratchPath } from "@storyteller-platform/fs"
-import {
-  createAggregator,
-  createTiming,
-} from "@storyteller-platform/ghost-story"
-import { type RecognitionResult } from "@storyteller-platform/ghost-story/recognition"
-import { MediaType } from "@storyteller-platform/media-types"
+} from "@storyteller/epub"
+import { isHiddenFile, scratchPath } from "@storyteller/fs"
+import { createAggregator, createTiming } from "@storyteller/ghost-story"
+import { type RecognitionResult } from "@storyteller/ghost-story/recognition"
+import { MediaType } from "@storyteller/media-types"
 
 import { getTrackDuration } from "../common/ffmpeg.ts"
 import { parseDom } from "../markup/parseDom.ts"

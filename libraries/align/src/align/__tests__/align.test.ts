@@ -4,8 +4,8 @@ import { dirname, join } from "node:path"
 
 import { describe, it, type TestContext } from "vitest"
 
-import { Epub } from "@storyteller-platform/epub"
-import { MediaType } from "@storyteller-platform/media-types"
+import { Epub } from "@storyteller/epub"
+import { MediaType } from "@storyteller/media-types"
 
 import { createLogger } from "../../common/logging.ts"
 import { EmissionsReader } from "../../emit/fs.ts"

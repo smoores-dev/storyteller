@@ -13,7 +13,7 @@ import { basename, extname, join, resolve } from "node:path"
 import { AsyncSemaphore } from "@esfx/async-semaphore"
 import { type Logger } from "pino"
 
-import { isHiddenFile } from "@storyteller-platform/fs"
+import { isHiddenFile } from "@storyteller/fs"
 import {
   type TimingAggregator,
   type WhisperCppOptions,
@@ -22,13 +22,13 @@ import {
   ensureWhisperInstalled,
   formatSingleReport,
   recognize,
-} from "@storyteller-platform/ghost-story"
+} from "@storyteller/ghost-story"
 import {
   type BuildVariant,
   type RecognitionEngine,
   type WhisperModel,
-} from "@storyteller-platform/ghost-story/constants"
-import { MediaType } from "@storyteller-platform/media-types"
+} from "@storyteller/ghost-story/constants"
+import { MediaType } from "@storyteller/media-types"
 
 import { pruneStaleOutputs, readTrackSource } from "../process/trackSource.ts"
 

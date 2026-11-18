@@ -2,7 +2,7 @@ import { relative, dirname } from "node:path/posix"
 
 import { LRUCache } from "lru-cache"
 
-import { type EpubReader, parse } from "@storyteller-platform/epub"
+import { type EpubReader, parse } from "@storyteller/epub"
 
 import { type ReadiumLocator } from "@/database/positions.ts"
 import { countAllDocumentCharacters } from "@/progress/characterCounts/countAllChars.ts"

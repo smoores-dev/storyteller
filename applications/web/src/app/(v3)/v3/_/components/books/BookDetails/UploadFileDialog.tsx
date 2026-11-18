@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import {
   type BookFormat,

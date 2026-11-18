@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { UriFragment } from "@storyteller-platform/uri-fragment"
+import { UriFragment } from "@storyteller/uri-fragment"
 
 import { isAudioFile } from "@/audio.ts"
 

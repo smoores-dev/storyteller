@@ -5,8 +5,8 @@ import { promisify } from "node:util"
 import { Manifest } from "@readium/shared"
 import { beforeAll, describe, it } from "vitest"
 
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
-import { MediaType } from "@storyteller-platform/media-types"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
+import { MediaType } from "@storyteller/media-types"
 
 import { generateReadiumManifest } from "../manifest.ts"
 import { type ReadiumWebPublicationManifest } from "../manifest.types.ts"

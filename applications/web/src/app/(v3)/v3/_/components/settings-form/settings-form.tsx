@@ -8,7 +8,7 @@ import { type FieldErrors, useForm, useFormState } from "react-hook-form"
 import { toast } from "sonner"
 import { type z } from "zod"
 
-import { isCtcModelFamily } from "@storyteller-platform/ghost-story/constants"
+import { isCtcModelFamily } from "@storyteller/ghost-story/constants"
 
 import { SiteHeader } from "@v3/_/components/site-header"
 import { Button } from "@v3/_/components/ui/button"

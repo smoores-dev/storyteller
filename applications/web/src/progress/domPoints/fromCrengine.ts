@@ -2,8 +2,8 @@ import {
   crengineView,
   resolveChapterXPointer,
   chapterIndexOf,
-} from "@storyteller-platform/crengine-xpointer"
-import { type EpubReader } from "@storyteller-platform/epub"
+} from "@storyteller/crengine-xpointer"
+import { type EpubReader } from "@storyteller/epub"
 
 import { getAuthorStylesheets } from "@/progress/characterCounts/crengineView.ts"
 import { type DomPointReference } from "@/progress/domPoints/domPoint.ts"

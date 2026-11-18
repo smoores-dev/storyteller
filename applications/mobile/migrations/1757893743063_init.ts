@@ -1074,9 +1074,7 @@ export interface BookToCreator {
   bookUuid: UUID
   createdAt: Generated<string>
   creatorUuid: UUID
-  role:
-    | import("@storyteller-platform/web/src/metadata/marcRelators").Role
-    | null
+  role: import("@storyteller/web/src/metadata/marcRelators").Role | null
   updatedAt: Generated<string>
   uuid: UUID
 }

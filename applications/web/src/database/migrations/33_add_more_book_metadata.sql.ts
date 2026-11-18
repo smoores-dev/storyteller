@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises"
 
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 import { getEpubAlignedFilepath, getEpubFilepath } from "@/assets/legacy/paths"
 import { getMetadataFromEpub } from "@/assets/metadata"

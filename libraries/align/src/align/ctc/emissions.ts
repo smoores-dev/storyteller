@@ -1,4 +1,4 @@
-import { type EmissionResult } from "@storyteller-platform/ghost-story"
+import { type EmissionResult } from "@storyteller/ghost-story"
 
 export type EmissionTimings = Pick<
   EmissionResult,

@@ -3,7 +3,7 @@ import { type FileHandle, open } from "node:fs/promises"
 
 import { createReadableStreamFromReadable } from "@remix-run/node"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { logger } from "@/logging"
 

@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/opds",
+  "name": "@storyteller/opds",
   "description": "A library for generating, validating, and parsing OPDS 2.0 catalog feeds, compatible with @readium/shared.",
   "keywords": [
     "opds",
@@ -72,7 +72,7 @@
     }
   },
   "dependencies": {
-    "@storyteller-platform/media-types": "workspace:^",
+    "@storyteller/media-types": "workspace:^",
     "fast-xml-builder": "^1.3.1"
   },
   "publishConfig": {

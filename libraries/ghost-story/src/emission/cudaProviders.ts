@@ -48,7 +48,7 @@ async function installCudaProviders() {
     )
   } catch (error) {
     throw new Error(
-      `Could not download the CUDA libraries of onnxruntime-node: ${error instanceof Error ? error.message : String(error)}. Reinstall with install scripts allowed, for example npx --allow-scripts=onnxruntime-node @storyteller-platform/ghost-story serve`,
+      `Could not download the CUDA libraries of onnxruntime-node: ${error instanceof Error ? error.message : String(error)}. Reinstall with install scripts allowed, for example npx --allow-scripts=onnxruntime-node @storyteller/ghost-story serve`,
       { cause: error },
     )
   }

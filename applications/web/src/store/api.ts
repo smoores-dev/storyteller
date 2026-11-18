@@ -6,9 +6,6 @@ import {
   createApi,
   fetchBaseQuery,
 } from "@reduxjs/toolkit/query/react"
-import { v4 as uuidv4 } from "uuid"
-
-import { type EmissionCapabilities } from "@storyteller-platform/ghost-story/emission-client"
 import {
   type BookMetadataCandidate,
   type BookMetadataProvider,
@@ -18,6 +15,9 @@ import {
   type MetadataSearchQuery,
 } from "@storyteller-platform/nodekit/types"
 import { type JsColor } from "@storyteller-platform/okmain"
+import { v4 as uuidv4 } from "uuid"
+
+import { type EmissionCapabilities } from "@storyteller/ghost-story/emission-client"
 
 import {
   type AlignmentDecisions,

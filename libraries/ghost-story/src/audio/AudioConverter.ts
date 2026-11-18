@@ -7,7 +7,7 @@ import { promisify } from "node:util"
 
 import { Converter } from "ffmpeg-stream"
 
-import { scratchPath } from "@storyteller-platform/fs"
+import { scratchPath } from "@storyteller/fs"
 
 const execFilePromisified = promisify(execFile)
 

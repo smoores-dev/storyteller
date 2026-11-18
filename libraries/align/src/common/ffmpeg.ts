@@ -6,8 +6,8 @@ import { promisify } from "node:util"
 import memoize from "memoize"
 import { type Logger } from "pino"
 
-import { AUDIO_ENCODERS, canCopyCodec } from "@storyteller/audiobook"
-import { MediaType } from "@storyteller-platform/media-types"
+import { AUDIO_ENCODERS, canCopyCodec } from "@storyteller/audiobooks"
+import { MediaType } from "@storyteller/media-types"
 
 import { type AudioEncoding } from "../process/AudioEncoding.ts"
 

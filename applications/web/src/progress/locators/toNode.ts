@@ -4,7 +4,7 @@ import {
   isElement,
   isText,
   type Node,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 export function locatorProgressionToNode(
   doc: Document,

@@ -2,7 +2,7 @@
 
 import { useRef } from "react"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { Button } from "@v3/_/components/ui/button"
 import { FieldDescription } from "@v3/_/components/ui/field"

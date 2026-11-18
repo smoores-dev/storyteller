@@ -357,8 +357,7 @@ But don't mind that: we want to talk about our new alignment process!
 - The Quartz/Citrinet variants can be up to 20 times faster than even the most
   highly optimized versions of the previous Whisper based transcription
 - It is available in Storyteller `v3.0.0-beta`,
-  `@storyteller-platform/ghost-story@^0.3.0` and
-  `@storyteller-platform/align@^0.2.0`
+  `@storyteller/ghost-story@^0.3.0` and `@storyteller/align@^0.2.0`
 - Maybe even faster in the future! Try it out now!!
 
 :::
@@ -408,7 +407,7 @@ Now you will have two ways to run the CTC aligner:
   device, or on a Mac where Docker cannot access the GPU.
 - Run
   ```sh
-  npx @storyteller-platform/ghost-story@latest serve --api-key <some api key>
+  npx @storyteller/ghost-story@latest serve --api-key <some api key>
   ```
 - Fill out the API key and the server URL. See the above documentation for info
   on what the URL should be
@@ -990,7 +989,7 @@ different device using `ghost-story`!~~
 That is now _also_ possible! Use
 
 ```sh
-npx @storyteller-platform/ghost-story@latest serve --api-key <some api key>
+npx @storyteller/ghost-story@latest serve --api-key <some api key>
 ```
 
 to spin up a CTC emission server, and configure it in your Storyteller settings.

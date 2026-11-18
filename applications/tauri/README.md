@@ -31,7 +31,7 @@ Library data lives in `data/` next to it.
 ## Building
 
 ```sh
-yarn workspace @storyteller-platform/tauri build
+yarn workspace @storyteller/tauri build
 ```
 
 That runs fetch-binaries + assemble-runtime (including the full web build) and
@@ -40,8 +40,8 @@ then `tauri build`. Artifacts land in `src-tauri/target/release/bundle/`.
 After changing only the shell, skip the web rebuild:
 
 ```sh
-yarn workspace @storyteller-platform/tauri assemble-runtime --skip-build
-yarn workspace @storyteller-platform/tauri build:app-only
+yarn workspace @storyteller/tauri assemble-runtime --skip-build
+yarn workspace @storyteller/tauri build:app-only
 ```
 
 Requires: Rust toolchain, plus the regular web build prerequisites.
@@ -93,8 +93,8 @@ need the key — updater artifacts are only produced in CI via
 
 ## Dev mode
 
-`yarn workspace @storyteller-platform/tauri dev` opens the window against the
-next dev server on `localhost:8001` — start `yarn dev:web` first. The boot flow
+`yarn workspace @storyteller/tauri dev` opens the window against the next dev
+server on `localhost:8001` — start `yarn dev:web` first. The boot flow
 (extract/spawn) is skipped in debug builds; set `STORYTELLER_TAURI_BOOT=1` to
 exercise it.
 
@@ -203,7 +203,7 @@ export APPLE_PASSWORD="app-specific-password"   # appleid.apple.com → app pass
 export APPLE_TEAM_ID="TEAMID"
 # ...or an App Store Connect API key instead:
 # export APPLE_API_ISSUER=... APPLE_API_KEY=... APPLE_API_KEY_PATH=...
-yarn workspace @storyteller-platform/tauri build
+yarn workspace @storyteller/tauri build
 ```
 
 ## Not yet done

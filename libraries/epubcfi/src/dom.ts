@@ -1,7 +1,7 @@
 /**
  * The DOM this library operates on.
  *
- * epubcfi is only ever used against documents parsed by `@storyteller-platform/epub`,
+ * epubcfi is only ever used against documents parsed by `@storyteller/epub`,
  * which is built on `@xmldom/xmldom`. Everything DOM-typed comes from here so that the
  * rest of the package never reaches for `lib.dom` globals.
  */

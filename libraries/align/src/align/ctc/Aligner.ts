@@ -12,15 +12,15 @@ import {
   getXhtmlBody,
   xmlId,
   type ManifestItem,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 import {
   type Timing,
   createAggregator,
   createTiming,
   formatDuration,
-} from "@storyteller-platform/ghost-story"
-import { type Mapping } from "@storyteller-platform/mapping"
-import { MediaType } from "@storyteller-platform/media-types"
+} from "@storyteller/ghost-story"
+import { type Mapping } from "@storyteller/mapping"
+import { MediaType } from "@storyteller/media-types"
 
 import { type EmissionsReader } from "../../emit/fs.ts"
 import { parseDom } from "../../markup/parseDom.ts"

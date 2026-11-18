@@ -74,7 +74,7 @@ if (!skipBuild) {
   for (const path of envFiles) renameSync(path, `${path}.tauri-build-backup`)
   try {
     run(
-      "yarn workspaces foreach -Rpt --from @storyteller-platform/web --exclude @storyteller-platform/eslint run build",
+      "yarn workspaces foreach -Rpt --from @storyteller/web --exclude @storyteller/eslint run build",
       repoRoot,
     )
   } finally {

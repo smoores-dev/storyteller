@@ -1,4 +1,4 @@
-# @storyteller-platform/opds
+# @storyteller/opds
 
 A library for generating, validating, and parsing OPDS 2.0 catalog feeds,
 compatible with [`@readium/shared`](https://github.com/readium/ts-toolkit).
@@ -16,11 +16,11 @@ compatible with [`@readium/shared`](https://github.com/readium/ts-toolkit).
 ## Installation
 
 ```sh
-npm install @storyteller-platform/opds
-# yarn add @storyteller-platform/opds
-# deno install npm:@storyteller-platform/opds
-# pnpm add @storyteller-platform/opds
-# bun add @storyteller-platform/opds
+npm install @storyteller/opds
+# yarn add @storyteller/opds
+# deno install npm:@storyteller/opds
+# pnpm add @storyteller/opds
+# bun add @storyteller/opds
 ```
 
 ## Usage
@@ -38,7 +38,7 @@ import {
   ATOM_NAV,
   OPDS_JSON,
   toAtomXml,
-} from "@storyteller-platform/opds"
+} from "@storyteller/opds"
 
 const feed = new Feed({
   metadata: new FeedMetadata({
@@ -97,7 +97,7 @@ frontend.
 You can use it standalone like this
 
 ```ts
-import { validateFeed } from "@storyteller-platform/opds/validate"
+import { validateFeed } from "@storyteller/opds/validate"
 
 const result = validateFeed(feed.value.serialize())
 if (result.ok) {
@@ -110,8 +110,8 @@ if (result.ok) {
 or when you are consuming a feed from an external source
 
 ```ts
-import { Feed } from "@storyteller-platform/opds"
-import { validateFeed } from "@storyteller-platform/opds/validate"
+import { Feed } from "@storyteller/opds"
+import { validateFeed } from "@storyteller/opds/validate"
 
 const feed = Feed.deserialize(json, { validate: validateFeed })
 if (feed.ok) {

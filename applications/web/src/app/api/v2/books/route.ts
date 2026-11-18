@@ -3,8 +3,8 @@ import { basename, dirname, extname, sep } from "node:path"
 
 import { NextResponse } from "next/server"
 
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
-import { isHiddenFile } from "@storyteller-platform/fs"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
+import { isHiddenFile } from "@storyteller/fs"
 
 import { deleteAssets } from "@/assets/fs"
 import { filepathFolder } from "@/assets/library/paths"

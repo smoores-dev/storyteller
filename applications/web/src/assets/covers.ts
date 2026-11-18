@@ -1,14 +1,10 @@
 import { mkdir, open, readdir, rm, writeFile } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 
-import { Audiobook } from "@storyteller/audiobook"
-import {
-  Epub,
-  type EpubReader,
-  MemoryAdapter,
-} from "@storyteller-platform/epub"
-import { scratchPath } from "@storyteller-platform/fs"
-import { MediaType } from "@storyteller-platform/media-types"
+import { Audiobook } from "@storyteller/audiobooks"
+import { Epub, type EpubReader, MemoryAdapter } from "@storyteller/epub"
+import { scratchPath } from "@storyteller/fs"
+import { MediaType } from "@storyteller/media-types"
 
 import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import { type Book, touchBook } from "@/database/books"

@@ -3,7 +3,7 @@ import {
   isElement,
   isText,
   type Node as DomNode,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import {
   FootnoteNode,

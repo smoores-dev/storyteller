@@ -1,7 +1,6 @@
+import { type JsColor } from "@storyteller-platform/okmain"
 import { NextResponse } from "next/server"
 import z from "zod"
-
-import { type JsColor } from "@storyteller-platform/okmain"
 
 import { deleteAssets } from "@/assets/fs"
 import { withHasPermission } from "@/auth/auth"

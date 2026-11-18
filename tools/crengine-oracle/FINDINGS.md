@@ -405,12 +405,12 @@ above did not survive it:
 I had written `&nbsp;` up as a divergence — xmldom keeping the characters where
 crengine stores one character — because the parity harness parsed the fixtures
 as `application/xml`. That is the wrong media type. Parsed as
-`application/xhtml+xml`, which is what `@storyteller-platform/epub` passes for
-chapter content, xmldom decodes HTML named entities (its
-`src/__test__/xml.test.ts` pins both halves: entities decode as XHTML; as
-`text/xml` the entity is reported and survives as literal text). With the media
-type corrected, the `unicode` fixture matches crengine text for text, entities
-and astral characters included, and every caret in it resolves.
+`application/xhtml+xml`, which is what `@storyteller/epub` passes for chapter
+content, xmldom decodes HTML named entities (its `src/__test__/xml.test.ts` pins
+both halves: entities decode as XHTML; as `text/xml` the entity is reported and
+survives as literal text). With the media type corrected, the `unicode` fixture
+matches crengine text for text, entities and astral characters included, and
+every caret in it resolves.
 
 Keep it as a failure mode rather than a limitation: the wrong media type does
 not throw, it keeps `&nbsp;` as six characters, so every caret after it counts

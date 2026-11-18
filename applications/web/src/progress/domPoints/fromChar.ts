@@ -4,7 +4,7 @@ import {
   getXhtmlBody,
   isText,
   isElement,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 export function domPointFromCharacterCount(
   doc: Document,

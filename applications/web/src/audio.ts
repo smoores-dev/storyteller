@@ -4,8 +4,8 @@ import { promisify } from "util"
 
 import memoize from "memoize"
 
-import { AUDIO_ENCODERS, canCopyCodec } from "@storyteller/audiobook"
-import { MediaType } from "@storyteller-platform/media-types"
+import { AUDIO_ENCODERS, canCopyCodec } from "@storyteller/audiobooks"
+import { MediaType } from "@storyteller/media-types"
 
 import { logger } from "./logging"
 

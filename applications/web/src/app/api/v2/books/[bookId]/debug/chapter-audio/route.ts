@@ -1,4 +1,4 @@
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 import { readChapterAudio } from "@/assets/chapterAudio"
 import { findMediaOverlay } from "@/assets/mediaOverlay"

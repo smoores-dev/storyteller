@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { fetchEmissionCapabilities } from "@storyteller-platform/ghost-story/emission-client"
+import { fetchEmissionCapabilities } from "@storyteller/ghost-story/emission-client"
 
 import { withHasPermission } from "@/auth/auth"
 

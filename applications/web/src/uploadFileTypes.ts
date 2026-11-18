@@ -1,4 +1,4 @@
-import { type Kind, MediaType } from "@storyteller-platform/media-types"
+import { type Kind, MediaType } from "@storyteller/media-types"
 
 // iOS doesn't support extension-based file types, and doesn't allow
 // _any_ file types if one is specified

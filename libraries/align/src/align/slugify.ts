@@ -2,8 +2,8 @@ import { type WordEntry } from "@echogarden/text-segmentation"
 import { getCurrency } from "locale-currency"
 import { toWords } from "to-words"
 
-import { type Mapping } from "@storyteller-platform/mapping"
-import { slugify as transliterateSlugify } from "@storyteller-platform/transliteration"
+import { type Mapping } from "@storyteller/mapping"
+import { slugify as transliterateSlugify } from "@storyteller/transliteration"
 
 import TSCharacters from "./opencc/TSCharacters.json" with { type: "json" }
 

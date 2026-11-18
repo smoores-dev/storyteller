@@ -1,11 +1,11 @@
-/** @jsxImportSource @storyteller-platform/epub */
+/** @jsxImportSource @storyteller/epub */
 
 import { basename } from "node:path"
 
 import { type SegmentationResult } from "@echogarden/text-segmentation"
 import { enumerate } from "itertools"
 
-import { type ManifestItem } from "@storyteller-platform/epub"
+import { type ManifestItem } from "@storyteller/epub"
 
 import {
   type RangeState,

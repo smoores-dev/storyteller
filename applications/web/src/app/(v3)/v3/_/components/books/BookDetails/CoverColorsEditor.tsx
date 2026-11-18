@@ -1,9 +1,8 @@
 "use client"
 
+import { type JsColor } from "@storyteller-platform/okmain"
 import { useState } from "react"
 import { useWatch } from "react-hook-form"
-
-import { type JsColor } from "@storyteller-platform/okmain"
 
 import { Cover } from "@v3/_/components/books/Cover"
 import {

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { type MessagePort } from "node:worker_threads"
 
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 import { deleteCachedCoverImages } from "@/assets/fs"
 import {

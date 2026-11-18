@@ -1,4 +1,4 @@
-import { type Epub, type ManifestItem } from "@storyteller-platform/epub"
+import { type Epub, type ManifestItem } from "@storyteller/epub"
 
 export async function findMediaOverlay(
   epub: Epub,

@@ -13,9 +13,9 @@ import { pipeline } from "node:stream/promises"
 
 import { ZipFile } from "yazl"
 
-import { scratchPath } from "@storyteller-platform/fs"
-import { type Kind, MediaType } from "@storyteller-platform/media-types"
-import { dirname, join, sep } from "@storyteller-platform/path"
+import { scratchPath } from "@storyteller/fs"
+import { type Kind, MediaType } from "@storyteller/media-types"
+import { dirname, join, sep } from "@storyteller/path"
 
 import { openZip } from "../zip.node.ts"
 

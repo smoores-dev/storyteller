@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server"
-
 import { asMetadataProvider } from "@storyteller-platform/nodekit"
+import { NextResponse } from "next/server"
 
 import { withHasPermission } from "@/auth/auth"
 import { getNodeKit } from "@/services/nodekitService"

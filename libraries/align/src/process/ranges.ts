@@ -4,9 +4,9 @@ import { basename, dirname, extname, join } from "node:path"
 
 import { type Logger } from "pino"
 
-import { type AudiobookChapter } from "@storyteller/audiobook"
-import { scratchPath } from "@storyteller-platform/fs"
-import { detectVoiceActivity } from "@storyteller-platform/ghost-story/vad"
+import { type AudiobookChapter } from "@storyteller/audiobooks"
+import { scratchPath } from "@storyteller/fs"
+import { detectVoiceActivity } from "@storyteller/ghost-story/vad"
 
 import { splitFile } from "../common/ffmpeg.ts"
 

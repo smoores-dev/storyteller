@@ -1,9 +1,9 @@
 releases:
-  "@storyteller-platform/opds": patch
-  "@storyteller-platform/tauri": major
-  "@storyteller-platform/web": major
+  "@storyteller/opds": patch
+  "@storyteller/tauri": major
+  "@storyteller/web": major
 
 declined:
-  - "@storyteller-platform/docs"
-  - "@storyteller-platform/mobile"
-  - "@storyteller-platform/media-types"
+  - "@storyteller/docs"
+  - "@storyteller/mobile"
+  - "@storyteller/media-types"

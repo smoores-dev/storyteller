@@ -1,4 +1,4 @@
-import type { TimingSummary } from "@storyteller-platform/ghost-story"
+import type { TimingSummary } from "@storyteller/ghost-story"
 
 import { type AlignmentGrade } from "@/shelves"
 

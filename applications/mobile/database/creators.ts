@@ -1,6 +1,6 @@
 import { type Insertable, type Selectable, type Updateable } from "kysely"
 
-import { type Creator as ServerCreator } from "@storyteller-platform/web/src/database/creators"
+import { type Creator as ServerCreator } from "@storyteller/web/src/database/creators"
 
 import { type UUID } from "@/uuid"
 

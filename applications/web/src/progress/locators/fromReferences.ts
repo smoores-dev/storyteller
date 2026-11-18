@@ -1,7 +1,7 @@
 import assert from "node:assert"
 
-import { Audiobook } from "@storyteller/audiobook"
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { Audiobook } from "@storyteller/audiobooks"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
 
 import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import { type BookWithRelations } from "@/database/books.ts"

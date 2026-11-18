@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 
 import { reflinkFile } from "@reflink/reflink"
 
-import { getFileChunks } from "@storyteller-platform/fs"
+import { getFileChunks } from "@storyteller/fs"
 
 import { pathBelongsTo } from "@/assets/library/paths"
 import { isAudioFile } from "@/audio"
@@ -703,7 +703,7 @@ export async function deleteCachedCoverImages(uuid: UUID) {
 export async function computeFileHash(filePath: string): Promise<string> {
   const hash = createHash("sha256")
 
-  // Use the stream from @storyteller-platform/fs
+  // Use the stream from @storyteller/fs
   // to avoid memory overhead and Node.js file limits.
   for await (const chunk of getFileChunks(filePath)) {
     hash.update(chunk)

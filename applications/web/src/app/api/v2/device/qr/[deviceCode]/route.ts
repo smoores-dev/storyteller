@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import QRCode from "qrcode"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import {
   getDeviceAuthorizationByDeviceCode,

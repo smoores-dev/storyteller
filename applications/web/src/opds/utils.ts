@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { ATOM_ACQ, ATOM_NAV } from "@storyteller-platform/opds"
+import { ATOM_ACQ, ATOM_NAV } from "@storyteller/opds"
 
 import { getSettings } from "@/database/settings"
 import { SETTINGS_DEFAULTS } from "@/database/settingsTypes"

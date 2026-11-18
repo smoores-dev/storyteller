@@ -1,5 +1,11 @@
 "use client"
 
+import {
+  type BookMetadataCandidate,
+  type BookMetadataProvider,
+  type BookMetadataSearchResult,
+  type MetadataEdition,
+} from "@storyteller-platform/nodekit/types"
 import { useLocale } from "next-intl"
 import {
   type CSSProperties,
@@ -11,13 +17,6 @@ import {
   useRef,
   useState,
 } from "react"
-
-import {
-  type BookMetadataCandidate,
-  type BookMetadataProvider,
-  type BookMetadataSearchResult,
-  type MetadataEdition,
-} from "@storyteller-platform/nodekit/types"
 
 import { Button } from "@v3/_/components/ui/button"
 import { DialogFooter } from "@v3/_/components/ui/dialog"

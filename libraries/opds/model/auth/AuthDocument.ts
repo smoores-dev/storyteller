@@ -1,6 +1,6 @@
 import { Links } from "@readium/shared"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { type OPDSError, type Result, err, ok } from "../../result.ts"
 import { type OPDSAuthenticationDocument } from "../../types/authentication.ts"

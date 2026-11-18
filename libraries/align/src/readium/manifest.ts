@@ -16,12 +16,8 @@ import {
 } from "@readium/shared"
 import clockvalue from "smil-clockvalue"
 
-import type {
-  DcCreator,
-  EpubReader,
-  NavigationList,
-} from "@storyteller-platform/epub"
-import { MediaType } from "@storyteller-platform/media-types"
+import type { DcCreator, EpubReader, NavigationList } from "@storyteller/epub"
+import { MediaType } from "@storyteller/media-types"
 
 import {
   type ReadiumWebPublicationManifest,

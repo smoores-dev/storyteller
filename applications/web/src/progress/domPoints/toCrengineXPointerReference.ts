@@ -3,9 +3,9 @@ import { relative, dirname } from "node:path/posix"
 import {
   buildChapterXPointer,
   crengineView,
-} from "@storyteller-platform/crengine-xpointer"
-import { type EpubReader } from "@storyteller-platform/epub"
-import { UriFragment } from "@storyteller-platform/uri-fragment"
+} from "@storyteller/crengine-xpointer"
+import { type EpubReader } from "@storyteller/epub"
+import { UriFragment } from "@storyteller/uri-fragment"
 
 import { getAuthorStylesheets } from "@/progress/characterCounts/crengineView.ts"
 import { type DomPointReference } from "@/progress/domPoints/domPoint.ts"

@@ -1,7 +1,7 @@
 import { format } from "date-fns"
 
-import { MediaType } from "@storyteller-platform/media-types"
-import { OPDS_AUTHENTICATION_JSON } from "@storyteller-platform/opds"
+import { MediaType } from "@storyteller/media-types"
+import { OPDS_AUTHENTICATION_JSON } from "@storyteller/opds"
 
 import { READING_SCOPE, createApiToken } from "@/database/apiTokens"
 import { getSettings } from "@/database/settings"

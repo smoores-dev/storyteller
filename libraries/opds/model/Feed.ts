@@ -13,7 +13,7 @@ export interface DeserializeOptions {
   /**
    * runs before construction, returns the schema errors (with JSON pointer
    * paths) or null when valid. pass `validateFeed` from
-   * `@storyteller-platform/opds/validate` for full AJV validation, omit it to
+   * `@storyteller/opds/validate` for full AJV validation, omit it to
    * (mostly) trust the input
    */
   validate?: (json: unknown) => OPDSError[] | null

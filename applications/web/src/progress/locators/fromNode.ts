@@ -3,7 +3,7 @@ import {
   isElement,
   type Node,
   type Element,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 export function locatorCssSelectorFromNode(
   doc: Document,

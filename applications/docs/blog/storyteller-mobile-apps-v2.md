@@ -1,5 +1,5 @@
 ---
-title: "@storyteller-platform/mobile v2.0.0"
+title: "@storyteller/mobile v2.0.0"
 authors: smoores
 date: 2025-12-15
 ---

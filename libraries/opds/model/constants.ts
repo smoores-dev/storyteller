@@ -1,4 +1,4 @@
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 export const ATOM_NAV =
   `${MediaType.ATOM.mime};profile=opds-catalog;kind=navigation` as const

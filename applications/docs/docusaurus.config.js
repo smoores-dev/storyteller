@@ -28,8 +28,7 @@ const studio = {
   externalRoots: ["libraries"],
   editPath: "/edit",
   hourlyRequestLimit: Number(process.env.STUDIO_GITLAB_HOURLY_LIMIT ?? 5000),
-  releasePackage:
-    process.env.STUDIO_RELEASE_PACKAGE ?? "@storyteller-platform/docs",
+  releasePackage: process.env.STUDIO_RELEASE_PACKAGE ?? "@storyteller/docs",
 }
 
 generateLibraryDocs({

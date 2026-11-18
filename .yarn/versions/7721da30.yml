@@ -1,10 +1,10 @@
 releases:
-  "@storyteller-platform/tauri": patch
+  "@storyteller/tauri": patch
 
 declined:
-  - "@storyteller-platform/docs"
-  - "@storyteller-platform/mobile"
-  - "@storyteller-platform/web"
-  - "@storyteller-platform/mapping"
-  - "@storyteller-platform/nodekit"
-  - "@storyteller-platform/opds"
+  - "@storyteller/docs"
+  - "@storyteller/mobile"
+  - "@storyteller/web"
+  - "@storyteller/mapping"
+  - "@storyteller/nodekit"
+  - "@storyteller/opds"

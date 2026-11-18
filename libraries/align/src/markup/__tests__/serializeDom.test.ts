@@ -2,7 +2,7 @@ import assert from "node:assert"
 
 import { describe, it } from "vitest"
 
-import { x } from "@storyteller-platform/epub"
+import { x } from "@storyteller/epub"
 
 import { Mark, Node, Root, TextNode } from "../model.ts"
 import { serializeDom } from "../serializeDom.ts"

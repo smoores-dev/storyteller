@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/nodekit",
+  "name": "@storyteller/nodekit",
   "version": "0.2.0",
   "description": "Cross-platform native loader and typed wrapper for StorytellerNodeKit",
   "license": "MIT",

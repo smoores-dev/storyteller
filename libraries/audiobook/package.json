@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller/audiobook",
+  "name": "@storyteller/audiobooks",
   "version": "0.7.0",
   "type": "module",
   "license": "MIT",
@@ -35,9 +35,9 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@storyteller-platform/fs": "workspace:^",
-    "@storyteller-platform/media-types": "workspace:^",
-    "@storyteller-platform/path": "workspace:^",
+    "@storyteller/fs": "workspace:^",
+    "@storyteller/media-types": "workspace:^",
+    "@storyteller/path": "workspace:^",
     "@types/node": "catalog:",
     "yauzl-promise": "catalog:",
     "yazl": "catalog:"

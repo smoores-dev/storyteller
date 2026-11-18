@@ -11,9 +11,9 @@ import {
 import { LocalizedString } from "@readium/shared"
 import { ZipFile } from "yazl"
 
-import { Epub } from "@storyteller-platform/epub"
-import { isHiddenFile, scratchPath } from "@storyteller-platform/fs"
-import { MediaType } from "@storyteller-platform/media-types"
+import { Epub } from "@storyteller/epub"
+import { isHiddenFile, scratchPath } from "@storyteller/fs"
+import { MediaType } from "@storyteller/media-types"
 
 import { EmissionsReader } from "../../emit/fs.ts"
 import {

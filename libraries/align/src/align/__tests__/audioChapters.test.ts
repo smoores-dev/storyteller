@@ -5,7 +5,7 @@ import { join } from "node:path"
 
 import { describe, it } from "vitest"
 
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 import { writeAudioChapters } from "../audioChapters.tsx"
 

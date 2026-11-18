@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { ImportFromServerDialog } from "@v3/_/components/files/ImportFromServerDialog"
 import { useCommon, useTranslation } from "@v3/_/hooks/use-translation"

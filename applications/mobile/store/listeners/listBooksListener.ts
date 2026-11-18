@@ -2,7 +2,7 @@ import { Directory, File } from "expo-file-system"
 import { Image } from "expo-image"
 import * as SecureStore from "expo-secure-store"
 
-import { type BookWithRelations as ServerBook } from "@storyteller-platform/web/src/database/books"
+import { type BookWithRelations as ServerBook } from "@storyteller/web/src/database/books"
 
 import {
   type BookWithRelations,

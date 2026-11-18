@@ -1,5 +1,5 @@
 ---
-title: "Announcing @storyteller-platform/epub v1.0.0"
+title: "Announcing @storyteller/epub v1.0.0"
 authors: smoores
 date: 2026-10-01
 ---
@@ -16,7 +16,7 @@ talk about what's new!
 
 ## Storage adapters
 
-`@storyteller-platform/epub` supports two storage adapters; `MemoryAdapter` and
+`@storyteller/epub` supports two storage adapters; `MemoryAdapter` and
 `TmpFsAdapter`.
 
 - `MemoryAdapter` unpacks files lazily into memory when their contents are read.
@@ -37,11 +37,7 @@ We now have browser support! Currently, this is only available for the
 ```tsx
 import { useState, useEffect } from "react"
 
-import {
-  Epub,
-  type EpubReader,
-  MemoryAdapter,
-} from "@storyteller-platform/epub"
+import { Epub, type EpubReader, MemoryAdapter } from "@storyteller/epub"
 
 export function BookCover(file: File) {
   const [cover, setCover] = useState<string | null>(null)
@@ -86,7 +82,7 @@ limited, which made namespace and prefix managing very hard to get right. This
 was especially rough, since EPUBs make heavy use of default and prefixed XML
 namespaces!
 
-Historically, `@storyteller-platform/epub` attempted to make it a big easier for
+Historically, `@storyteller/epub` attempted to make it a big easier for
 consumers to work with XML by exporting a number of utilities for working with
 `fast-xml-parser` trees, like `Epub.getXmlChildren`, `Epub.getXmlAttributes`,
 etc.
@@ -144,7 +140,7 @@ now have a `jsx-runtime` export, so you can literally write your EPUB XML with
 JSX:
 
 ```tsx
-/** @jsxImportSource @storyteller-platform/epub */
+/** @jsxImportSource @storyteller/epub */
 
 const tree = (
   <package
@@ -164,13 +160,12 @@ const tree = (
 
 ## Automatic EPUB 2 upgrades
 
-`@storyteller-platform/epub` only supports EPUB 3 publications, but many
-publishers still distribute EPUB 2 publications. We now export an `Epub.upgrade`
-function that can be used to upgrade an EPUB either in place or into a new
-location:
+`@storyteller/epub` only supports EPUB 3 publications, but many publishers still
+distribute EPUB 2 publications. We now export an `Epub.upgrade` function that
+can be used to upgrade an EPUB either in place or into a new location:
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 async function upgradeInPlace() {
   using epub = await Epub.upgrade("path/to/epub2.epub")

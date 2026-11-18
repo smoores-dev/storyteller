@@ -35,7 +35,7 @@ function assertMetalLibraryInstalled(): void {
   )
   if (!installed) {
     throw new Error(
-      `MLX Metal shader library not found next to the native binding in ${directories.join(", ")}. Run \`yarn workspace @storyteller-platform/mlx-audio build:native:metallib\`.`,
+      `MLX Metal shader library not found next to the native binding in ${directories.join(", ")}. Run \`yarn workspace @storyteller/mlx-audio build:native:metallib\`.`,
     )
   }
 }

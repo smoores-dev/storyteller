@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/uri-fragment",
+  "name": "@storyteller/uri-fragment",
   "description": "An isomorphic, dependency-free parser and serializer for URI fragments",
   "keywords": [
     "uri",

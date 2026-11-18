@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-import { type Aligner } from "@storyteller-platform/ghost-story/constants"
+import { type Aligner } from "@storyteller/ghost-story/constants"
 
 import { AlignerPicker } from "@v3/_/components/settings-form/aligner-picker"
 import { Button } from "@v3/_/components/ui/button"

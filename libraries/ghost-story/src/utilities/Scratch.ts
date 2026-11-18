@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readdir, rm, stat } from "node:fs/promises"
 import { join } from "node:path"
 
-import { scratchPath } from "@storyteller-platform/fs"
+import { scratchPath } from "@storyteller/fs"
 
 const PREFIX = "scratch-"
 

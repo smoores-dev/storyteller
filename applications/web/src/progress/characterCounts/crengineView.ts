@@ -2,7 +2,7 @@ import {
   type EpubReader,
   type Document,
   findXmlDescendantByName,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import { logger } from "@/logging.ts"
 

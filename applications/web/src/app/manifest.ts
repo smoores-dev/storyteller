@@ -1,6 +1,6 @@
 import { type MetadataRoute } from "next"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { getServerIcon } from "@/database/servers"
 import { getSettings } from "@/database/settings"

@@ -1,9 +1,8 @@
 "use client"
 
+import { type BookMetadataProvider } from "@storyteller-platform/nodekit/types"
 import { type ReactNode, useState } from "react"
 import { useWatch } from "react-hook-form"
-
-import { type BookMetadataProvider } from "@storyteller-platform/nodekit/types"
 
 import { Button } from "@v3/_/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@v3/_/components/ui/field"

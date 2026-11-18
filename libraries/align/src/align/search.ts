@@ -1,6 +1,6 @@
 import { enumerate, max, min, range } from "itertools"
 
-import { Mapping } from "@storyteller-platform/mapping"
+import { Mapping } from "@storyteller/mapping"
 
 export function buildNgramIndex(
   text: string,

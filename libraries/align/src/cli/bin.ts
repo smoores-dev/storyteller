@@ -21,8 +21,8 @@ import { run } from "@optique/run"
 import { path } from "@optique/run/valueparser"
 import { Presets, SingleBar } from "cli-progress"
 
-import { Epub } from "@storyteller-platform/epub"
-import { scratchPath } from "@storyteller-platform/fs"
+import { Epub } from "@storyteller/epub"
+import { scratchPath } from "@storyteller/fs"
 
 import packageJson from "../../package.json" with { type: "json" }
 import { align } from "../align/align.ts"

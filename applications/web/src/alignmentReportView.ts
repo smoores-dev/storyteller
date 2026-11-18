@@ -9,7 +9,7 @@ import {
   chapterAligned,
   excludedByRule,
   spineZone,
-} from "@storyteller-platform/align/exclusions"
+} from "@storyteller/align/exclusions"
 import {
   REPORT_VERSION,
   type ReportClassification,
@@ -21,7 +21,7 @@ import {
   assembleReport,
   emptyTotals,
   spanSentences,
-} from "@storyteller-platform/align/report"
+} from "@storyteller/align/report"
 
 import { ALIGNMENT_GRADES } from "@/fields"
 import { type AlignmentGrade } from "@/shelves"

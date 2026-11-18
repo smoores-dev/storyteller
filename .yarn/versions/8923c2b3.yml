@@ -1,8 +1,8 @@
 releases:
-  "@storyteller-platform/okmain": minor
-  "@storyteller-platform/opds": minor
+  "@storyteller/okmain": minor
+  "@storyteller/opds": minor
 
 declined:
-  - "@storyteller-platform/docs"
-  - "@storyteller-platform/mobile"
-  - "@storyteller-platform/web"
+  - "@storyteller/docs"
+  - "@storyteller/mobile"
+  - "@storyteller/web"

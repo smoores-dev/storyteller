@@ -1,4 +1,4 @@
-# @storyteller-platform/uri-fragment
+# @storyteller/uri-fragment
 
 A JavaScript library for parsing, building, and serializing
 [URI fragments](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment).
@@ -36,19 +36,19 @@ multiple dimensions, e.g., `#t=15,75&xywh=percent:25,25,50,50`.
 npm:
 
 ```sh
-npm install @storyteller-platform/uri-fragment
+npm install @storyteller/uri-fragment
 ```
 
 yarn:
 
 ```sh
-yarn add @storyteller-platform/uri-fragment
+yarn add @storyteller/uri-fragment
 ```
 
 deno:
 
 ```sh
-deno install npm:@storyteller-platform/uri-fragment
+deno install npm:@storyteller/uri-fragment
 ```
 
 ## About

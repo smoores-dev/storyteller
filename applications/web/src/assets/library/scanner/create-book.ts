@@ -1,15 +1,8 @@
 import { rm } from "node:fs/promises"
 import { basename, extname } from "node:path"
 
-import {
-  Audiobook,
-  type AudiobookInputs,
-} from "@storyteller/audiobook"
-import {
-  Epub,
-  type InMemoryEpubReader,
-  MemoryAdapter,
-} from "@storyteller-platform/epub"
+import { Audiobook, type AudiobookInputs } from "@storyteller/audiobooks"
+import { Epub, type InMemoryEpubReader, MemoryAdapter } from "@storyteller/epub"
 
 import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import { move } from "@/assets/fs"

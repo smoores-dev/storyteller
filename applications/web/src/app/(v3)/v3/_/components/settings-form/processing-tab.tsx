@@ -7,7 +7,7 @@ import { Controller, useWatch } from "react-hook-form"
 import {
   CTC_DTYPES,
   ctcModelLanguages,
-} from "@storyteller-platform/ghost-story/constants"
+} from "@storyteller/ghost-story/constants"
 
 import { Button } from "@v3/_/components/ui/button"
 import {

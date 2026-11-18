@@ -4,7 +4,7 @@ import { basename, dirname, extname, join, resolve, sep } from "node:path"
 
 import { after } from "next/server"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { getProcessedAudioFilepath } from "@/assets/paths"
 import { getTrackChapters, splitTrack } from "@/audio"

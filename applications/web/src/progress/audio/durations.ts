@@ -3,9 +3,9 @@ import { sep, relative, join } from "node:path"
 
 import { LRUCache } from "lru-cache"
 
-import { Audiobook } from "@storyteller/audiobook"
-import { Epub, TmpFsAdapter } from "@storyteller-platform/epub"
-import { MediaType } from "@storyteller-platform/media-types"
+import { Audiobook } from "@storyteller/audiobooks"
+import { Epub, TmpFsAdapter } from "@storyteller/epub"
+import { MediaType } from "@storyteller/media-types"
 
 import { getAudiobookTracks } from "@/assets/audiobooks.ts"
 import { type BookWithRelations } from "@/database/books.ts"

@@ -5,7 +5,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 
-import { scratchPath } from "@storyteller-platform/fs"
+import { scratchPath } from "@storyteller/fs"
 
 const here = dirname(fileURLToPath(import.meta.url))
 // Vendored epubcheck stays at the package root, two levels above this file.

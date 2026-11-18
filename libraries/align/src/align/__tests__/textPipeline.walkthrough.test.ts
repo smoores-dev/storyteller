@@ -4,11 +4,11 @@ import {
   type EmissionTokenizer,
   encodeUnigram,
   unigramText,
-} from "@storyteller-platform/ghost-story"
+} from "@storyteller/ghost-story"
 import {
   slugify as libSlugify,
   transliterate,
-} from "@storyteller-platform/transliteration"
+} from "@storyteller/transliteration"
 
 import { segmentChapter } from "../../markup/segmentation.ts"
 import { ctcViterbiAlign } from "../ctc/forcedAlign.ts"

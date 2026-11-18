@@ -1,9 +1,9 @@
 releases:
-  "@storyteller-platform/opds": patch
+  "@storyteller/opds": patch
 
 declined:
-  - "@storyteller-platform/web"
-  - "@storyteller-platform/align"
-  - "@storyteller-platform/audiobook"
-  - "@storyteller-platform/epub"
-  - "@storyteller-platform/ghost-story"
+  - "@storyteller/web"
+  - "@storyteller/align"
+  - "@storyteller/audiobook"
+  - "@storyteller/epub"
+  - "@storyteller/ghost-story"

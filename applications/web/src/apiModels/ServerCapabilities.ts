@@ -1,4 +1,4 @@
-import { type ResolvedCtcDevice } from "@storyteller-platform/ghost-story/constants"
+import { type ResolvedCtcDevice } from "@storyteller/ghost-story/constants"
 
 export type ServerCapabilities = {
   ctcDevices: {

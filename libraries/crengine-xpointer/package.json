@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/crengine-xpointer",
+  "name": "@storyteller/crengine-xpointer",
   "description": "Resolve and build koreader/crengine \"xpointers\" against an @xmldom/xmldom tree",
   "keywords": [
     "crengine",

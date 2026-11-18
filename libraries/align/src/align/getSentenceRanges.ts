@@ -3,8 +3,8 @@ import { distance } from "fastest-levenshtein"
 import { enumerate } from "itertools"
 import { runes } from "runes2"
 
-import { type TimelineEntry } from "@storyteller-platform/ghost-story"
-import { type Mapping } from "@storyteller-platform/mapping"
+import { type TimelineEntry } from "@storyteller/ghost-story"
+import { type Mapping } from "@storyteller/mapping"
 
 import { getTrackDuration } from "../common/ffmpeg.ts"
 import { errorAlign } from "../errorAlign/errorAlign.ts"

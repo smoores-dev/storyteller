@@ -6,7 +6,7 @@ import {
   findXmlChildByName,
   isElement,
   type ManifestItem,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import { SentenceRange, type WordRange } from "../../getSentenceRanges.ts"
 import { SMIL_PREFIX, createMediaOverlay } from "../mediaOverlay.tsx"

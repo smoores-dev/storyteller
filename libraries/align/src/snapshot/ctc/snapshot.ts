@@ -14,9 +14,9 @@ import {
   findXmlChildByName,
   getXhtmlBody,
   parse,
-} from "@storyteller-platform/epub"
-import { type EmissionResult } from "@storyteller-platform/ghost-story"
-import { transliterate as romanize } from "@storyteller-platform/transliteration"
+} from "@storyteller/epub"
+import { type EmissionResult } from "@storyteller/ghost-story"
+import { transliterate as romanize } from "@storyteller/transliteration"
 
 import { ctcGreedyDecode } from "../../align/ctc/greedyDecode.ts"
 import { EmissionsReader } from "../../emit/fs.ts"

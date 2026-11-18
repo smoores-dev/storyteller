@@ -231,8 +231,7 @@ async function loadBackend(
         `The mlx device only runs MLX models, and ${run.variant} is not one`,
       )
     }
-    const { loadModel, compute } =
-      await import("@storyteller-platform/mlx-audio")
+    const { loadModel, compute } = await import("@storyteller/mlx-audio")
     const model = await loadModel(packageDir, { dtype: run.dtype })
     return {
       vocab: model.vocab,

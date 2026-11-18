@@ -32,7 +32,7 @@ type ValidationState =
   | { status: "error"; message: string }
 
 const importValidator = () =>
-  import("@storyteller-platform/opds/validate").then((mod) => mod.validateFeed)
+  import("@storyteller/opds/validate").then((mod) => mod.validateFeed)
 
 const SPEC_URL = "https://specs.opds.io/opds-2.0"
 const SOURCE_URL =

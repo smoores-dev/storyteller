@@ -11,7 +11,7 @@ import {
   isElement,
   isText,
   parse,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import { convertEpubDomPointReference } from "@/progress/domPoints/convertEpubDomPointReference.ts"
 import { type DomPointReference } from "@/progress/domPoints/domPoint.ts"

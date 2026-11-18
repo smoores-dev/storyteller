@@ -1,4 +1,4 @@
-import { type Document, type ManifestItem } from "@storyteller-platform/epub"
+import { type Document, type ManifestItem } from "@storyteller/epub"
 
 import { type SentenceRange, type WordRange } from "../getSentenceRanges.ts"
 

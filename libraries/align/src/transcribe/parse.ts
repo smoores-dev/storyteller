@@ -16,7 +16,7 @@ import {
 import { string, url } from "@optique/core/valueparser"
 import { path } from "@optique/run/valueparser"
 
-import { WHISPER_MODELS } from "@storyteller-platform/ghost-story/constants"
+import { WHISPER_MODELS } from "@storyteller/ghost-story/constants"
 
 import {
   languageParser,

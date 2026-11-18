@@ -3,11 +3,7 @@ import assert from "node:assert"
 import { beforeAll, describe, it } from "vitest"
 import { ZipFile } from "yazl"
 
-import {
-  Epub,
-  type EpubReader,
-  MemoryAdapter,
-} from "@storyteller-platform/epub"
+import { Epub, type EpubReader, MemoryAdapter } from "@storyteller/epub"
 
 import {
   type ExclusionSource,

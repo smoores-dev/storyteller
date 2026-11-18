@@ -5,7 +5,7 @@ import { cwd } from "node:process"
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
 
 import { type BookWithRelations } from "@/database/books.ts"
 import { locatorFromReferences } from "@/progress/locators/fromReferences.ts"

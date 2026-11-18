@@ -20,7 +20,7 @@
       "request": "launch",
       "runtimeArgs": [
         "workspace",
-        "@storyteller-platform/web",
+        "@storyteller/web",
         "tsx",
         "--test",
         "${fileDirname}/__tests__/${fileBasenameNoExtension}.test.ts"

@@ -1,7 +1,7 @@
 import assert from "node:assert"
 import { relative, dirname } from "node:path/posix"
 
-import { type EpubReader, parse } from "@storyteller-platform/epub"
+import { type EpubReader, parse } from "@storyteller/epub"
 
 import { type ReadiumLocator } from "@/database/positions.ts"
 import { characterReferenceFromAnchor } from "@/progress/characterCounts/fromAnchor.ts"

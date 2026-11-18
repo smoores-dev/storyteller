@@ -10,7 +10,7 @@ import {
   ReadingProgression,
 } from "@readium/shared"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { getPublication } from "@/store/readerRegistry"
 import { type LayoutMode } from "@/store/slices/preferencesSlice"

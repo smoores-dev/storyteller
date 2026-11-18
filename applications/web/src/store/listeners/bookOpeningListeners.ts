@@ -6,7 +6,7 @@ import {
   Publication,
 } from "@readium/shared"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import type { BookWithRelations } from "@/database/books"
 import {

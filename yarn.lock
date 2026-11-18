@@ -15665,9 +15665,157 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storyteller-platform/align@workspace:*, @storyteller-platform/align@workspace:libraries/align":
+"@storyteller-platform/nodekit-darwin-arm64@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-darwin-arm64@npm:0.1.0"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-darwin-x64@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-darwin-x64@npm:0.1.0"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-linux-arm64-gnu@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-linux-arm64-gnu@npm:0.1.0"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-linux-x64-gnu@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-linux-x64-gnu@npm:0.1.0"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-win32-arm64-msvc@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-win32-arm64-msvc@npm:0.1.0"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit-win32-x64-msvc@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit-win32-x64-msvc@npm:0.1.0"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/nodekit@npm:0.1.0":
+  version: 0.1.0
+  resolution: "@storyteller-platform/nodekit@npm:0.1.0"
+  dependencies:
+    "@storyteller-platform/nodekit-darwin-arm64": "npm:0.1.0"
+    "@storyteller-platform/nodekit-darwin-x64": "npm:0.1.0"
+    "@storyteller-platform/nodekit-linux-arm64-gnu": "npm:0.1.0"
+    "@storyteller-platform/nodekit-linux-x64-gnu": "npm:0.1.0"
+    "@storyteller-platform/nodekit-win32-arm64-msvc": "npm:0.1.0"
+    "@storyteller-platform/nodekit-win32-x64-msvc": "npm:0.1.0"
+  dependenciesMeta:
+    "@storyteller-platform/nodekit-darwin-arm64":
+      optional: true
+    "@storyteller-platform/nodekit-darwin-x64":
+      optional: true
+    "@storyteller-platform/nodekit-linux-arm64-gnu":
+      optional: true
+    "@storyteller-platform/nodekit-linux-x64-gnu":
+      optional: true
+    "@storyteller-platform/nodekit-win32-arm64-msvc":
+      optional: true
+    "@storyteller-platform/nodekit-win32-x64-msvc":
+      optional: true
+  checksum: 10c0/3ba676a690a677c05d6c25027b58f82f644e86f7a39b0c539bdf013eeb26fe8177e8f3c9e743b3acc76ed6f4838a77e454f9b1f48f42da3ebdc5a46414fbd655
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/okmain-darwin-arm64@npm:0.2.3-rc.3":
+  version: 0.2.3-rc.3
+  resolution: "@storyteller-platform/okmain-darwin-arm64@npm:0.2.3-rc.3"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/okmain-darwin-x64@npm:0.2.3-rc.3":
+  version: 0.2.3-rc.3
+  resolution: "@storyteller-platform/okmain-darwin-x64@npm:0.2.3-rc.3"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/okmain-linux-arm64-gnu@npm:0.2.3-rc.3":
+  version: 0.2.3-rc.3
+  resolution: "@storyteller-platform/okmain-linux-arm64-gnu@npm:0.2.3-rc.3"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/okmain-linux-arm64-musl@npm:0.2.3-rc.3":
+  version: 0.2.3-rc.3
+  resolution: "@storyteller-platform/okmain-linux-arm64-musl@npm:0.2.3-rc.3"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/okmain-linux-x64-gnu@npm:0.2.3-rc.3":
+  version: 0.2.3-rc.3
+  resolution: "@storyteller-platform/okmain-linux-x64-gnu@npm:0.2.3-rc.3"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/okmain-linux-x64-musl@npm:0.2.3-rc.3":
+  version: 0.2.3-rc.3
+  resolution: "@storyteller-platform/okmain-linux-x64-musl@npm:0.2.3-rc.3"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/okmain-win32-x64-msvc@npm:0.2.3-rc.3":
+  version: 0.2.3-rc.3
+  resolution: "@storyteller-platform/okmain-win32-x64-msvc@npm:0.2.3-rc.3"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@storyteller-platform/okmain@npm:0.2.3-rc.3":
+  version: 0.2.3-rc.3
+  resolution: "@storyteller-platform/okmain@npm:0.2.3-rc.3"
+  dependencies:
+    "@storyteller-platform/okmain-darwin-arm64": "npm:0.2.3-rc.3"
+    "@storyteller-platform/okmain-darwin-x64": "npm:0.2.3-rc.3"
+    "@storyteller-platform/okmain-linux-arm64-gnu": "npm:0.2.3-rc.3"
+    "@storyteller-platform/okmain-linux-arm64-musl": "npm:0.2.3-rc.3"
+    "@storyteller-platform/okmain-linux-x64-gnu": "npm:0.2.3-rc.3"
+    "@storyteller-platform/okmain-linux-x64-musl": "npm:0.2.3-rc.3"
+    "@storyteller-platform/okmain-win32-x64-msvc": "npm:0.2.3-rc.3"
+  dependenciesMeta:
+    "@storyteller-platform/okmain-darwin-arm64":
+      optional: true
+    "@storyteller-platform/okmain-darwin-x64":
+      optional: true
+    "@storyteller-platform/okmain-linux-arm64-gnu":
+      optional: true
+    "@storyteller-platform/okmain-linux-arm64-musl":
+      optional: true
+    "@storyteller-platform/okmain-linux-x64-gnu":
+      optional: true
+    "@storyteller-platform/okmain-linux-x64-musl":
+      optional: true
+    "@storyteller-platform/okmain-win32-x64-msvc":
+      optional: true
+  checksum: 10c0/c2bf75aafbc1197d040a18f0289e7d3eb0e65639b29c624930617cadaad7b4efff582cbe6a22cc0032121609acfca9c5bae650724e11f74f3812fd412b51c076
+  languageName: node
+  linkType: hard
+
+"@storyteller/align@workspace:*, @storyteller/align@workspace:libraries/align":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/align@workspace:libraries/align"
+  resolution: "@storyteller/align@workspace:libraries/align"
   dependencies:
     "@echogarden/icu-segmentation-wasm": "npm:^0.2.2"
     "@echogarden/text-segmentation": "npm:^0.4.1"
@@ -15675,13 +15823,13 @@ __metadata:
     "@optique/core": "npm:^1.3.2"
     "@optique/run": "npm:^1.3.2"
     "@readium/shared": "catalog:"
-    "@storyteller-platform/epub": "workspace:^"
-    "@storyteller-platform/fs": "workspace:^"
-    "@storyteller-platform/ghost-story": "workspace:^"
-    "@storyteller-platform/mapping": "workspace:*"
-    "@storyteller-platform/media-types": "workspace:^"
-    "@storyteller-platform/transliteration": "npm:^4.0.6"
-    "@storyteller/audiobook": "workspace:^"
+    "@storyteller/audiobooks": "workspace:^"
+    "@storyteller/epub": "workspace:^"
+    "@storyteller/fs": "workspace:^"
+    "@storyteller/ghost-story": "workspace:^"
+    "@storyteller/mapping": "workspace:*"
+    "@storyteller/media-types": "workspace:^"
+    "@storyteller/transliteration": "npm:^4.1.0"
     "@tsconfig/strictest": "catalog:"
     "@types/cli-progress": "catalog:"
     "@types/node": "catalog:"
@@ -15711,9 +15859,35 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/crengine-xpointer@workspace:^, @storyteller-platform/crengine-xpointer@workspace:libraries/crengine-xpointer":
+"@storyteller/audiobooks@workspace:^, @storyteller/audiobooks@workspace:libraries/audiobook":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/crengine-xpointer@workspace:libraries/crengine-xpointer"
+  resolution: "@storyteller/audiobooks@workspace:libraries/audiobook"
+  dependencies:
+    "@storyteller/fs": "workspace:^"
+    "@storyteller/media-types": "workspace:^"
+    "@storyteller/path": "workspace:^"
+    "@tsconfig/strictest": "catalog:"
+    "@types/node": "catalog:"
+    "@types/yauzl-promise": "catalog:"
+    "@types/yazl": "catalog:"
+    "@typescript/native": "npm:typescript@^7.0.2"
+    markdown-toc: "catalog:"
+    remark-toc: "catalog:"
+    tsx: "catalog:"
+    typedoc: "catalog:"
+    typedoc-plugin-markdown: "catalog:"
+    typedoc-plugin-remark: "catalog:"
+    typescript: "npm:@typescript/typescript6@^6.0.2"
+    vite: "catalog:"
+    vitest: "catalog:"
+    yauzl-promise: "catalog:"
+    yazl: "catalog:"
+  languageName: unknown
+  linkType: soft
+
+"@storyteller/crengine-xpointer@workspace:^, @storyteller/crengine-xpointer@workspace:libraries/crengine-xpointer":
+  version: 0.0.0-use.local
+  resolution: "@storyteller/crengine-xpointer@workspace:libraries/crengine-xpointer"
   dependencies:
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
@@ -15724,9 +15898,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/docs@workspace:applications/docs":
+"@storyteller/docs@workspace:applications/docs":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/docs@workspace:applications/docs"
+  resolution: "@storyteller/docs@workspace:applications/docs"
   dependencies:
     "@codemirror/autocomplete": "npm:^6"
     "@codemirror/commands": "npm:^6"
@@ -15749,7 +15923,7 @@ __metadata:
     "@mdx-js/react": "npm:^3.1.0"
     "@readium/shared": "catalog:"
     "@slorber/remark-comment": "npm:^1.0.0"
-    "@storyteller-platform/opds": "workspace:*"
+    "@storyteller/opds": "workspace:*"
     "@tailwindcss/postcss": "catalog:"
     "@tsconfig/docusaurus": "npm:^2.0.3"
     "@types/diff": "npm:^5"
@@ -15787,14 +15961,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/epub@workspace:*, @storyteller-platform/epub@workspace:^, @storyteller-platform/epub@workspace:libraries/epub":
+"@storyteller/epub@workspace:*, @storyteller/epub@workspace:^, @storyteller/epub@workspace:libraries/epub":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/epub@workspace:libraries/epub"
+  resolution: "@storyteller/epub@workspace:libraries/epub"
   dependencies:
     "@esfx/async-readerwriterlock": "npm:^1.0.0"
-    "@storyteller-platform/fs": "workspace:^"
-    "@storyteller-platform/media-types": "workspace:^"
-    "@storyteller-platform/path": "workspace:^"
+    "@storyteller/fs": "workspace:^"
+    "@storyteller/media-types": "workspace:^"
+    "@storyteller/path": "workspace:^"
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
     "@types/yauzl-promise": "catalog:"
@@ -15818,9 +15992,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/epubcfi@workspace:^, @storyteller-platform/epubcfi@workspace:libraries/epubcfi":
+"@storyteller/epubcfi@workspace:^, @storyteller/epubcfi@workspace:libraries/epubcfi":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/epubcfi@workspace:libraries/epubcfi"
+  resolution: "@storyteller/epubcfi@workspace:libraries/epubcfi"
   dependencies:
     "@types/node": "catalog:"
     "@vitest/coverage-v8": "npm:5.0.0"
@@ -15831,9 +16005,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/fs@workspace:*, @storyteller-platform/fs@workspace:^, @storyteller-platform/fs@workspace:libraries/fs":
+"@storyteller/fs@workspace:*, @storyteller/fs@workspace:^, @storyteller/fs@workspace:libraries/fs":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/fs@workspace:libraries/fs"
+  resolution: "@storyteller/fs@workspace:libraries/fs"
   dependencies:
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
@@ -15843,9 +16017,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/ghost-story@workspace:*, @storyteller-platform/ghost-story@workspace:^, @storyteller-platform/ghost-story@workspace:libraries/ghost-story":
+"@storyteller/ghost-story@workspace:*, @storyteller/ghost-story@workspace:^, @storyteller/ghost-story@workspace:libraries/ghost-story":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/ghost-story@workspace:libraries/ghost-story"
+  resolution: "@storyteller/ghost-story@workspace:libraries/ghost-story"
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.994.0"
     "@aws-sdk/client-transcribe": "npm:^3.994.0"
@@ -15853,9 +16027,9 @@ __metadata:
     "@hono/zod-validator": "npm:^0.7.6"
     "@huggingface/transformers": "npm:^4.3.0"
     "@robingenz/zli": "npm:^0.2.0"
-    "@storyteller-platform/fs": "workspace:^"
-    "@storyteller-platform/media-types": "workspace:^"
-    "@storyteller-platform/mlx-audio": "workspace:^"
+    "@storyteller/fs": "workspace:^"
+    "@storyteller/media-types": "workspace:^"
+    "@storyteller/mlx-audio": "workspace:^"
     "@tsconfig/strictest": "catalog:"
     "@types/cli-progress": "catalog:"
     "@types/fs-extra": "npm:~11.0.4"
@@ -15880,16 +16054,16 @@ __metadata:
     vitest: "catalog:"
     zod: "catalog:"
   dependenciesMeta:
-    "@storyteller-platform/mlx-audio":
+    "@storyteller/mlx-audio":
       optional: true
   bin:
     ghost-story: ./dist/cli/bin.js
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/mapping@workspace:*, @storyteller-platform/mapping@workspace:libraries/mapping":
+"@storyteller/mapping@workspace:*, @storyteller/mapping@workspace:libraries/mapping":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/mapping@workspace:libraries/mapping"
+  resolution: "@storyteller/mapping@workspace:libraries/mapping"
   dependencies:
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
@@ -15900,11 +16074,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/media-types@workspace:^, @storyteller-platform/media-types@workspace:libraries/media-types":
+"@storyteller/media-types@workspace:^, @storyteller/media-types@workspace:libraries/media-types":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/media-types@workspace:libraries/media-types"
+  resolution: "@storyteller/media-types@workspace:libraries/media-types"
   dependencies:
-    "@storyteller-platform/path": "workspace:^"
+    "@storyteller/path": "workspace:^"
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
     esbuild: "catalog:"
@@ -15915,9 +16089,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/mlx-audio@workspace:^, @storyteller-platform/mlx-audio@workspace:libraries/mlx-audio":
+"@storyteller/mlx-audio@workspace:^, @storyteller/mlx-audio@workspace:libraries/mlx-audio":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/mlx-audio@workspace:libraries/mlx-audio"
+  resolution: "@storyteller/mlx-audio@workspace:libraries/mlx-audio"
   dependencies:
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
@@ -15926,9 +16100,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/mobile@workspace:applications/mobile":
+"@storyteller/mobile@workspace:applications/mobile":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/mobile@workspace:applications/mobile"
+  resolution: "@storyteller/mobile@workspace:applications/mobile"
   dependencies:
     "@babel/core": "npm:^7.29.0"
     "@babel/plugin-proposal-nullish-coalescing-operator": "npm:^7.18.6"
@@ -15961,7 +16135,7 @@ __metadata:
     "@rn-primitives/slot": "npm:^1.5.2"
     "@rn-primitives/tabs": "npm:^1.5.2"
     "@sentry/react-native": "npm:~8.28.0"
-    "@storyteller-platform/web": "workspace:^"
+    "@storyteller/web": "workspace:^"
     "@tsconfig/strictest": "catalog:"
     "@types/base-64": "npm:^1.0.0"
     "@types/node": "catalog:"
@@ -16049,78 +16223,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/nodekit-darwin-arm64@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@storyteller-platform/nodekit-darwin-arm64@npm:0.1.0"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/nodekit-darwin-x64@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@storyteller-platform/nodekit-darwin-x64@npm:0.1.0"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/nodekit-linux-arm64-gnu@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@storyteller-platform/nodekit-linux-arm64-gnu@npm:0.1.0"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/nodekit-linux-x64-gnu@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@storyteller-platform/nodekit-linux-x64-gnu@npm:0.1.0"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/nodekit-win32-arm64-msvc@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@storyteller-platform/nodekit-win32-arm64-msvc@npm:0.1.0"
-  conditions: os=win32 & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/nodekit-win32-x64-msvc@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@storyteller-platform/nodekit-win32-x64-msvc@npm:0.1.0"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/nodekit@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@storyteller-platform/nodekit@npm:0.1.0"
-  dependencies:
-    "@storyteller-platform/nodekit-darwin-arm64": "npm:0.1.0"
-    "@storyteller-platform/nodekit-darwin-x64": "npm:0.1.0"
-    "@storyteller-platform/nodekit-linux-arm64-gnu": "npm:0.1.0"
-    "@storyteller-platform/nodekit-linux-x64-gnu": "npm:0.1.0"
-    "@storyteller-platform/nodekit-win32-arm64-msvc": "npm:0.1.0"
-    "@storyteller-platform/nodekit-win32-x64-msvc": "npm:0.1.0"
-  dependenciesMeta:
-    "@storyteller-platform/nodekit-darwin-arm64":
-      optional: true
-    "@storyteller-platform/nodekit-darwin-x64":
-      optional: true
-    "@storyteller-platform/nodekit-linux-arm64-gnu":
-      optional: true
-    "@storyteller-platform/nodekit-linux-x64-gnu":
-      optional: true
-    "@storyteller-platform/nodekit-win32-arm64-msvc":
-      optional: true
-    "@storyteller-platform/nodekit-win32-x64-msvc":
-      optional: true
-  checksum: 10c0/3ba676a690a677c05d6c25027b58f82f644e86f7a39b0c539bdf013eeb26fe8177e8f3c9e743b3acc76ed6f4838a77e454f9b1f48f42da3ebdc5a46414fbd655
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/nodekit@workspace:libraries/nodekit":
+"@storyteller/nodekit@workspace:libraries/nodekit":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/nodekit@workspace:libraries/nodekit"
+  resolution: "@storyteller/nodekit@workspace:libraries/nodekit"
   dependencies:
     "@napi-rs/cli": "catalog:"
     "@tsconfig/strictest": "catalog:"
@@ -16138,88 +16243,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/okmain-darwin-arm64@npm:0.2.3-rc.3":
-  version: 0.2.3-rc.3
-  resolution: "@storyteller-platform/okmain-darwin-arm64@npm:0.2.3-rc.3"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/okmain-darwin-x64@npm:0.2.3-rc.3":
-  version: 0.2.3-rc.3
-  resolution: "@storyteller-platform/okmain-darwin-x64@npm:0.2.3-rc.3"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/okmain-linux-arm64-gnu@npm:0.2.3-rc.3":
-  version: 0.2.3-rc.3
-  resolution: "@storyteller-platform/okmain-linux-arm64-gnu@npm:0.2.3-rc.3"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/okmain-linux-arm64-musl@npm:0.2.3-rc.3":
-  version: 0.2.3-rc.3
-  resolution: "@storyteller-platform/okmain-linux-arm64-musl@npm:0.2.3-rc.3"
-  conditions: os=linux & cpu=arm64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/okmain-linux-x64-gnu@npm:0.2.3-rc.3":
-  version: 0.2.3-rc.3
-  resolution: "@storyteller-platform/okmain-linux-x64-gnu@npm:0.2.3-rc.3"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/okmain-linux-x64-musl@npm:0.2.3-rc.3":
-  version: 0.2.3-rc.3
-  resolution: "@storyteller-platform/okmain-linux-x64-musl@npm:0.2.3-rc.3"
-  conditions: os=linux & cpu=x64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/okmain-win32-x64-msvc@npm:0.2.3-rc.3":
-  version: 0.2.3-rc.3
-  resolution: "@storyteller-platform/okmain-win32-x64-msvc@npm:0.2.3-rc.3"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/okmain@npm:0.2.3-rc.3":
-  version: 0.2.3-rc.3
-  resolution: "@storyteller-platform/okmain@npm:0.2.3-rc.3"
-  dependencies:
-    "@storyteller-platform/okmain-darwin-arm64": "npm:0.2.3-rc.3"
-    "@storyteller-platform/okmain-darwin-x64": "npm:0.2.3-rc.3"
-    "@storyteller-platform/okmain-linux-arm64-gnu": "npm:0.2.3-rc.3"
-    "@storyteller-platform/okmain-linux-arm64-musl": "npm:0.2.3-rc.3"
-    "@storyteller-platform/okmain-linux-x64-gnu": "npm:0.2.3-rc.3"
-    "@storyteller-platform/okmain-linux-x64-musl": "npm:0.2.3-rc.3"
-    "@storyteller-platform/okmain-win32-x64-msvc": "npm:0.2.3-rc.3"
-  dependenciesMeta:
-    "@storyteller-platform/okmain-darwin-arm64":
-      optional: true
-    "@storyteller-platform/okmain-darwin-x64":
-      optional: true
-    "@storyteller-platform/okmain-linux-arm64-gnu":
-      optional: true
-    "@storyteller-platform/okmain-linux-arm64-musl":
-      optional: true
-    "@storyteller-platform/okmain-linux-x64-gnu":
-      optional: true
-    "@storyteller-platform/okmain-linux-x64-musl":
-      optional: true
-    "@storyteller-platform/okmain-win32-x64-msvc":
-      optional: true
-  checksum: 10c0/c2bf75aafbc1197d040a18f0289e7d3eb0e65639b29c624930617cadaad7b4efff582cbe6a22cc0032121609acfca9c5bae650724e11f74f3812fd412b51c076
-  languageName: node
-  linkType: hard
-
-"@storyteller-platform/okmain@workspace:libraries/okmain":
+"@storyteller/okmain@workspace:libraries/okmain":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/okmain@workspace:libraries/okmain"
+  resolution: "@storyteller/okmain@workspace:libraries/okmain"
   dependencies:
     "@napi-rs/cli": "catalog:"
     "@tsconfig/strictest": "catalog:"
@@ -16229,12 +16255,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/opds@workspace:*, @storyteller-platform/opds@workspace:libraries/opds":
+"@storyteller/opds@workspace:*, @storyteller/opds@workspace:libraries/opds":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/opds@workspace:libraries/opds"
+  resolution: "@storyteller/opds@workspace:libraries/opds"
   dependencies:
     "@apidevtools/json-schema-ref-parser": "npm:^11.9.3"
-    "@storyteller-platform/media-types": "workspace:^"
+    "@storyteller/media-types": "workspace:^"
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
     "@typescript/native": "npm:typescript@^7.0.2"
@@ -16264,9 +16290,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/path@workspace:^, @storyteller-platform/path@workspace:libraries/path":
+"@storyteller/path@workspace:^, @storyteller/path@workspace:libraries/path":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/path@workspace:libraries/path"
+  resolution: "@storyteller/path@workspace:libraries/path"
   dependencies:
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
@@ -16274,34 +16300,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/tauri@workspace:applications/tauri":
+"@storyteller/tauri@workspace:applications/tauri":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/tauri@workspace:applications/tauri"
+  resolution: "@storyteller/tauri@workspace:applications/tauri"
   dependencies:
-    "@storyteller-platform/web": "workspace:*"
+    "@storyteller/web": "workspace:*"
     "@tauri-apps/cli": "npm:^2.5.0"
     "@types/node": "catalog:"
     tsx: "catalog:"
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/transliteration@npm:^4.0.6":
-  version: 4.0.6
-  resolution: "@storyteller-platform/transliteration@npm:4.0.6"
+"@storyteller/transliteration@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "@storyteller/transliteration@npm:4.1.0"
   dependencies:
-    "@storyteller-platform/mapping": "npm:^0.1.3"
+    "@storyteller/mapping": "npm:^0.2.0"
     havarotjs: "npm:^0.25.4"
     kuroshiro-analyzer-kuromoji: "npm:^1.1.0"
   bin:
     slugify: dist/bin/slugify
     transliterate: dist/bin/transliterate
-  checksum: 10c0/40d02c453288a4ff0fa2cf8b500e7f2e5190f1739b65e8dbc181d58cad1e1143feba9542a31c997f388f10118950106a807e40067373d63b370b6b5a5af5842f
+  checksum: 10c0/cb8b2c153b5d2f26da3775388ee654bf99444dfcacb0d78ab7172d41398126e5f6b665e9b9f5b86a7907fe66a6a88ec5d7372ac3af4d70ada57b6e9c48130d6b
   languageName: node
   linkType: hard
 
-"@storyteller-platform/uri-fragment@workspace:^, @storyteller-platform/uri-fragment@workspace:libraries/uri-fragment":
+"@storyteller/uri-fragment@workspace:^, @storyteller/uri-fragment@workspace:libraries/uri-fragment":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/uri-fragment@workspace:libraries/uri-fragment"
+  resolution: "@storyteller/uri-fragment@workspace:libraries/uri-fragment"
   dependencies:
     "@tsconfig/strictest": "catalog:"
     "@types/node": "catalog:"
@@ -16311,9 +16337,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller-platform/web@workspace:*, @storyteller-platform/web@workspace:^, @storyteller-platform/web@workspace:applications/web":
+"@storyteller/web@workspace:*, @storyteller/web@workspace:^, @storyteller/web@workspace:applications/web":
   version: 0.0.0-use.local
-  resolution: "@storyteller-platform/web@workspace:applications/web"
+  resolution: "@storyteller/web@workspace:applications/web"
   dependencies:
     "@auth/core": "npm:0.41.3"
     "@base-ui/react": "npm:^1.5.0"
@@ -16336,18 +16362,18 @@ __metadata:
     "@reflink/reflink": "npm:^0.1.19"
     "@remix-run/node": "npm:^2.17.5"
     "@speed-highlight/core": "npm:^2.1.0"
-    "@storyteller-platform/align": "workspace:*"
-    "@storyteller-platform/crengine-xpointer": "workspace:^"
-    "@storyteller-platform/epub": "workspace:*"
-    "@storyteller-platform/epubcfi": "workspace:^"
-    "@storyteller-platform/fs": "workspace:*"
-    "@storyteller-platform/ghost-story": "workspace:*"
-    "@storyteller-platform/media-types": "workspace:^"
     "@storyteller-platform/nodekit": "npm:0.1.0"
     "@storyteller-platform/okmain": "npm:0.2.3-rc.3"
-    "@storyteller-platform/opds": "workspace:*"
-    "@storyteller-platform/uri-fragment": "workspace:^"
-    "@storyteller/audiobook": "workspace:^"
+    "@storyteller/align": "workspace:*"
+    "@storyteller/audiobooks": "workspace:^"
+    "@storyteller/crengine-xpointer": "workspace:^"
+    "@storyteller/epub": "workspace:*"
+    "@storyteller/epubcfi": "workspace:^"
+    "@storyteller/fs": "workspace:*"
+    "@storyteller/ghost-story": "workspace:*"
+    "@storyteller/media-types": "workspace:^"
+    "@storyteller/opds": "workspace:*"
+    "@storyteller/uri-fragment": "workspace:^"
     "@t3-oss/env-nextjs": "npm:^0.13.8"
     "@tabler/icons-react": "npm:^3.35.0"
     "@tailwindcss/postcss": "catalog:"
@@ -16436,32 +16462,6 @@ __metadata:
     yauzl: "npm:^3.2.0"
     yazl: "catalog:"
     zod: "catalog:"
-  languageName: unknown
-  linkType: soft
-
-"@storyteller/audiobook@workspace:^, @storyteller/audiobook@workspace:libraries/audiobook":
-  version: 0.0.0-use.local
-  resolution: "@storyteller/audiobook@workspace:libraries/audiobook"
-  dependencies:
-    "@storyteller-platform/fs": "workspace:^"
-    "@storyteller-platform/media-types": "workspace:^"
-    "@storyteller-platform/path": "workspace:^"
-    "@tsconfig/strictest": "catalog:"
-    "@types/node": "catalog:"
-    "@types/yauzl-promise": "catalog:"
-    "@types/yazl": "catalog:"
-    "@typescript/native": "npm:typescript@^7.0.2"
-    markdown-toc: "catalog:"
-    remark-toc: "catalog:"
-    tsx: "catalog:"
-    typedoc: "catalog:"
-    typedoc-plugin-markdown: "catalog:"
-    typedoc-plugin-remark: "catalog:"
-    typescript: "npm:@typescript/typescript6@^6.0.2"
-    vite: "catalog:"
-    vitest: "catalog:"
-    yauzl-promise: "catalog:"
-    yazl: "catalog:"
   languageName: unknown
   linkType: soft
 

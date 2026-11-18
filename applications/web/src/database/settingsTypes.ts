@@ -9,7 +9,7 @@ import {
   CTC_DTYPES,
   CTC_ENGINES,
   WHISPER_MODELS,
-} from "@storyteller-platform/ghost-story/constants"
+} from "@storyteller/ghost-story/constants"
 
 import { Providers } from "@/auth/providers"
 import {

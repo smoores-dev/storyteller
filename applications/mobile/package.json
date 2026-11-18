@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/mobile",
+  "name": "@storyteller/mobile",
   "version": "2.12.0",
   "main": "index.ts",
   "scripts": {
@@ -109,7 +109,7 @@
     "@babel/plugin-transform-template-literals": "^7.23.3",
     "@react-native-reusables/cli": "patch:@react-native-reusables/cli@npm%3A0.5.2#~/.yarn/patches/@react-native-reusables-cli-npm-0.5.2-408f1c8116.patch",
     "@react-native/metro-config": "^0.88.0",
-    "@storyteller-platform/web": "workspace:^",
+    "@storyteller/web": "workspace:^",
     "@tsconfig/strictest": "catalog:",
     "@types/base-64": "^1.0.0",
     "@types/node": "catalog:",

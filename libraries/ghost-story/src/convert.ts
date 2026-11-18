@@ -1,6 +1,6 @@
 import { Converter } from "ffmpeg-stream"
 
-import { scratchPath } from "@storyteller-platform/fs"
+import { scratchPath } from "@storyteller/fs"
 
 import { type AudioFormat, formatToExtension } from "./audio/AudioFormat.ts"
 

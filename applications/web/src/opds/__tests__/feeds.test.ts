@@ -5,8 +5,8 @@ import { cwd } from "node:process"
 
 import { describe, it } from "vitest"
 
-import { type Feed, toAtomXml } from "@storyteller-platform/opds"
-import { parseFeed } from "@storyteller-platform/opds/validate"
+import { type Feed, toAtomXml } from "@storyteller/opds"
+import { parseFeed } from "@storyteller/opds/validate"
 
 import { type TestDbContext, setupTestDb } from "@/__tests__/harness/testDb"
 import { NONE_FACET_KEY } from "@/database/libraryCounts"

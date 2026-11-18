@@ -1,5 +1,6 @@
 "use client"
 
+import { type JsColor } from "@storyteller-platform/okmain"
 import { type Variant } from "motion/react"
 import {
   createContext,
@@ -10,8 +11,6 @@ import {
   useRef,
   useState,
 } from "react"
-
-import { type JsColor } from "@storyteller-platform/okmain"
 
 import { useUserPreferences } from "@/app/(v3)/v3/_/components/user-preferences-provider"
 import { useIsMobile } from "@/app/(v3)/v3/_/hooks/use-mobile"

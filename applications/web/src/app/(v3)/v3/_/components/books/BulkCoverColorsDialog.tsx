@@ -1,9 +1,8 @@
 "use client"
 
+import { type JsColor } from "@storyteller-platform/okmain"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-
-import { type JsColor } from "@storyteller-platform/okmain"
 
 import { Cover } from "@v3/_/components/books/Cover"
 import {

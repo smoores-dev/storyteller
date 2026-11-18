@@ -13,7 +13,7 @@ import he from "he"
 import { createTranslator } from "next-intl"
 import { z } from "zod"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 import {
   ATOM_ACQ,
   ATOM_NAV,
@@ -29,7 +29,7 @@ import {
   OPDS_JSON,
   OPENSEARCH_XML,
   THUMBNAIL_REL,
-} from "@storyteller-platform/opds"
+} from "@storyteller/opds"
 
 import {
   type BookWithRelations,

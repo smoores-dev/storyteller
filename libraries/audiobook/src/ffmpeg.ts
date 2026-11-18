@@ -4,9 +4,9 @@ import { writeFileSync } from "node:fs"
 import { cp, rm, writeFile } from "node:fs/promises"
 import { promisify } from "node:util"
 
-import { scratchPath } from "@storyteller-platform/fs"
-import { MediaType } from "@storyteller-platform/media-types"
-import { extname } from "@storyteller-platform/path"
+import { scratchPath } from "@storyteller/fs"
+import { MediaType } from "@storyteller/media-types"
+import { extname } from "@storyteller/path"
 
 import { imageTypeForCodec } from "./codecs.ts"
 

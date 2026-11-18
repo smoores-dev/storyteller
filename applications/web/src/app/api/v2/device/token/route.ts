@@ -1,6 +1,6 @@
 import { addSeconds, isBefore } from "date-fns"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { createSessionTokenForUserId } from "@/auth/auth"
 import {

@@ -1,4 +1,4 @@
-# `@storyteller-platform/mapping`
+# `@storyteller/mapping`
 
 A library for tracking mutations across integer addressed data models (e.g.,
 strings).

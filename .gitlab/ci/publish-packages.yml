@@ -25,8 +25,8 @@ publish-fs:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/fs
-    - yarn workspace @storyteller-platform/fs npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/fs
+    - yarn workspace @storyteller/fs npm publish --tag="$TAG"
 
 prerelease-fs:
   extends: .prerelease-base
@@ -56,8 +56,8 @@ release-fs:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/fs"
-          url: "https://npmjs.com/package/@storyteller-platform/fs"
+        - name: "NPM package for @storyteller/fs"
+          url: "https://npmjs.com/package/@storyteller/fs"
 
 publish-epub:
   extends: .yarn_cache
@@ -86,8 +86,8 @@ publish-epub:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/epub
-    - yarn workspace @storyteller-platform/epub npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/epub
+    - yarn workspace @storyteller/epub npm publish --tag="$TAG"
 
 prerelease-epub:
   extends: .prerelease-base
@@ -117,8 +117,8 @@ release-epub:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/epub"
-          url: "https://npmjs.com/package/@storyteller-platform/epub"
+        - name: "NPM package for @storyteller/epub"
+          url: "https://npmjs.com/package/@storyteller/epub"
 
 publish-audiobook:
   extends: .yarn_cache
@@ -147,8 +147,8 @@ publish-audiobook:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/audiobook
-    - yarn workspace @storyteller-platform/audiobook npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/audiobook
+    - yarn workspace @storyteller/audiobook npm publish --tag="$TAG"
 
 prerelease-audiobook:
   extends: .prerelease-base
@@ -178,8 +178,8 @@ release-audiobook:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/audiobook"
-          url: "https://npmjs.com/package/@storyteller-platform/audiobook"
+        - name: "NPM package for @storyteller/audiobook"
+          url: "https://npmjs.com/package/@storyteller/audiobook"
 
 publish-path:
   extends: .yarn_cache
@@ -208,8 +208,8 @@ publish-path:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/path
-    - yarn workspace @storyteller-platform/path npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/path
+    - yarn workspace @storyteller/path npm publish --tag="$TAG"
 
 prerelease-path:
   extends: .prerelease-base
@@ -239,8 +239,8 @@ release-path:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/path"
-          url: "https://npmjs.com/package/@storyteller-platform/path"
+        - name: "NPM package for @storyteller/path"
+          url: "https://npmjs.com/package/@storyteller/path"
 
 publish-media-types:
   extends: .yarn_cache
@@ -269,8 +269,8 @@ publish-media-types:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/media-types
-    - yarn workspace @storyteller-platform/media-types npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/media-types
+    - yarn workspace @storyteller/media-types npm publish --tag="$TAG"
 
 prerelease-media-types:
   extends: .prerelease-base
@@ -300,8 +300,8 @@ release-media-types:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/media-types"
-          url: "https://npmjs.com/package/@storyteller-platform/media-types"
+        - name: "NPM package for @storyteller/media-types"
+          url: "https://npmjs.com/package/@storyteller/media-types"
 
 publish-uri-fragment:
   extends: .yarn_cache
@@ -330,8 +330,8 @@ publish-uri-fragment:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/uri-fragment
-    - yarn workspace @storyteller-platform/uri-fragment npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/uri-fragment
+    - yarn workspace @storyteller/uri-fragment npm publish --tag="$TAG"
 
 prerelease-uri-fragment:
   extends: .prerelease-base
@@ -361,8 +361,8 @@ release-uri-fragment:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/uri-fragment"
-          url: "https://npmjs.com/package/@storyteller-platform/uri-fragment"
+        - name: "NPM package for @storyteller/uri-fragment"
+          url: "https://npmjs.com/package/@storyteller/uri-fragment"
 
 publish-mapping:
   extends: .yarn_cache
@@ -391,8 +391,8 @@ publish-mapping:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/mapping
-    - yarn workspace @storyteller-platform/mapping npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/mapping
+    - yarn workspace @storyteller/mapping npm publish --tag="$TAG"
 
 prerelease-mapping:
   extends: .prerelease-base
@@ -422,8 +422,8 @@ release-mapping:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/mapping"
-          url: "https://npmjs.com/package/@storyteller-platform/mapping"
+        - name: "NPM package for @storyteller/mapping"
+          url: "https://npmjs.com/package/@storyteller/mapping"
 
 publish-mlx-audio:
   extends: .yarn_cache
@@ -452,8 +452,8 @@ publish-mlx-audio:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/mlx-audio
-    - yarn workspace @storyteller-platform/mlx-audio npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/mlx-audio
+    - yarn workspace @storyteller/mlx-audio npm publish --tag="$TAG"
 
 prerelease-mlx-audio:
   extends: .prerelease-base
@@ -483,8 +483,8 @@ release-mlx-audio:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/mlx-audio"
-          url: "https://npmjs.com/package/@storyteller-platform/mlx-audio"
+        - name: "NPM package for @storyteller/mlx-audio"
+          url: "https://npmjs.com/package/@storyteller/mlx-audio"
 
 publish-ghost-story:
   extends: .yarn_cache
@@ -513,8 +513,8 @@ publish-ghost-story:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/ghost-story
-    - yarn workspace @storyteller-platform/ghost-story npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/ghost-story
+    - yarn workspace @storyteller/ghost-story npm publish --tag="$TAG"
 
 prerelease-ghost-story:
   extends: .prerelease-base
@@ -544,8 +544,8 @@ release-ghost-story:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/ghost-story"
-          url: "https://npmjs.com/package/@storyteller-platform/ghost-story"
+        - name: "NPM package for @storyteller/ghost-story"
+          url: "https://npmjs.com/package/@storyteller/ghost-story"
 
 .publish-align-sea-base:
   extends: .yarn_cache
@@ -556,8 +556,8 @@ release-ghost-story:
         /^align-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - npm i -g --force corepack
-    - yarn workspaces focus @storyteller-platform/align
-    - yarn workspace @storyteller-platform/align compile
+    - yarn workspaces focus @storyteller/align
+    - yarn workspace @storyteller/align compile
     - |
       PACKAGE_ID=$(curl -s --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_name=stalign&package_version=${CI_COMMIT_TAG}" \
@@ -706,8 +706,8 @@ publish-align-sea-windows-x64:
       yarn --version
   script:
     - npm i -g corepack
-    - yarn workspaces focus @storyteller-platform/align
-    - yarn workspace @storyteller-platform/align compile
+    - yarn workspaces focus @storyteller/align
+    - yarn workspace @storyteller/align compile
     - |
       # Look up existing package
       $packagesResponse = Invoke-RestMethod `
@@ -772,8 +772,8 @@ publish-align:
         *) TAG="latest" ;;
       esac
     - npm i -g --force corepack
-    - yarn workspaces focus @storyteller-platform/align
-    - yarn workspace @storyteller-platform/align npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/align
+    - yarn workspace @storyteller/align npm publish --tag="$TAG"
 
 prerelease-align:
   extends: .prerelease-base
@@ -803,8 +803,8 @@ release-align:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/align"
-          url: "https://npmjs.com/package/@storyteller-platform/align"
+        - name: "NPM package for @storyteller/align"
+          url: "https://npmjs.com/package/@storyteller/align"
 
 .okmain-tag-rules:
   rules:
@@ -828,11 +828,11 @@ release-align:
     - rm rustup.sh
     - export PATH="$HOME/.cargo/bin:$PATH"
     - rustc --version
-    - yarn workspaces focus @storyteller-platform/okmain
+    - yarn workspaces focus @storyteller/okmain
   script:
     - export PATH="$HOME/.cargo/bin:$PATH"
     - rustup target add "$TARGET"
-    - yarn workspace @storyteller-platform/okmain napi build --target "$TARGET"
+    - yarn workspace @storyteller/okmain napi build --target "$TARGET"
       --platform --release
   artifacts:
     paths:
@@ -852,12 +852,12 @@ release-align:
     - rm rustup.sh
     - export PATH="$HOME/.cargo/bin:$PATH"
     - rustc --version
-    - yarn workspaces focus @storyteller-platform/okmain
+    - yarn workspaces focus @storyteller/okmain
   script:
     - export PATH="$HOME/.cargo/bin:$PATH"
     - rustup target add "$TARGET"
     - export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=gcc
-    - yarn workspace @storyteller-platform/okmain napi build --target "$TARGET"
+    - yarn workspace @storyteller/okmain napi build --target "$TARGET"
       --platform --release
   artifacts:
     paths:
@@ -882,11 +882,11 @@ release-align:
     - rm rustup.sh
     - source "$HOME/.cargo/env"
     - rustc --version
-    - yarn workspaces focus @storyteller-platform/okmain
+    - yarn workspaces focus @storyteller/okmain
   script:
     - source "$HOME/.cargo/env"
     - rustup target add "$TARGET"
-    - yarn workspace @storyteller-platform/okmain napi build --target "$TARGET"
+    - yarn workspace @storyteller/okmain napi build --target "$TARGET"
       --platform --release
   artifacts:
     paths:
@@ -918,7 +918,7 @@ release-align:
       $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
       rustup default stable-msvc
       rustc --version
-    - yarn workspaces focus @storyteller-platform/okmain
+    - yarn workspaces focus @storyteller/okmain
   script:
     - |
       $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
@@ -940,7 +940,7 @@ release-align:
           }
         }
       rustup target add $env:TARGET
-      yarn workspace @storyteller-platform/okmain napi build --target $env:TARGET --platform --release
+      yarn workspace @storyteller/okmain napi build --target $env:TARGET --platform --release
   artifacts:
     paths:
       - libraries/okmain/okmain.*.node
@@ -1042,16 +1042,16 @@ publish-okmain:
     - sh rustup.sh -y --profile minimal --default-toolchain stable
     - rm rustup.sh
     - export PATH="$HOME/.cargo/bin:$PATH"
-    - yarn workspaces focus @storyteller-platform/okmain
+    - yarn workspaces focus @storyteller/okmain
     - ls -lah libraries/okmain/*.node
     - mkdir -p libraries/okmain/artifacts
     - mv libraries/okmain/*.node libraries/okmain/artifacts/
-    - yarn workspace @storyteller-platform/okmain napi create-npm-dirs # creates the npm dirs
-    - yarn workspace @storyteller-platform/okmain napi artifacts # moves all the artifacts to the correct npm dir
+    - yarn workspace @storyteller/okmain napi create-npm-dirs # creates the npm dirs
+    - yarn workspace @storyteller/okmain napi artifacts # moves all the artifacts to the correct npm dir
     - ls -latR libraries/okmain/npm
     - export npm_config_tag="$TAG" # necessary because napi prepublish script reads the tag from this env var as the republish the subpackages w/ npm
-    - yarn workspace @storyteller-platform/okmain npm publish --tag="$TAG"
-      --access public
+    - yarn workspace @storyteller/okmain npm publish --tag="$TAG" --access
+      public
 
 prerelease-okmain:
   extends:
@@ -1076,5 +1076,5 @@ release-okmain:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/okmain"
-          url: "https://npmjs.com/package/@storyteller-platform/okmain"
+        - name: "NPM package for @storyteller/okmain"
+          url: "https://npmjs.com/package/@storyteller/okmain"

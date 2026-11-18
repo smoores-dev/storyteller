@@ -1,4 +1,4 @@
-# @storyteller-platform/align
+# @storyteller/align
 
 A library and CLI for forced alignment of ebooks and audiobooks.
 
@@ -12,7 +12,7 @@ of input files. Called with a subcommand, it runs a single pipeline step.
 If you have Node.js 24 or newer, you can run the CLI with `npx`:
 
 ```sh
-npx @storyteller-platform/align --help
+npx @storyteller/align --help
 ```
 
 Standalone executables (no Node.js install required) are published to the GitLab
@@ -388,9 +388,9 @@ The package also exports the alignment library itself, plus the Readium guided
 navigation helpers, the alignment report types, and the emissions reader:
 
 ```ts
-import { ctcAlign, emit, markup } from "@storyteller-platform/align"
-import * as readium from "@storyteller-platform/align/readium"
-import type * as report from "@storyteller-platform/align/report"
+import { ctcAlign, emit, markup } from "@storyteller/align"
+import * as readium from "@storyteller/align/readium"
+import type * as report from "@storyteller/align/report"
 ```
 
 ## Development

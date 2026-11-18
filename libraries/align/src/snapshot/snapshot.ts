@@ -14,11 +14,11 @@ import {
   findXmlChildByName,
   getXhtmlBody,
   parse,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 import {
   type RecognitionResult,
   startsWithSpacelessScript,
-} from "@storyteller-platform/ghost-story"
+} from "@storyteller/ghost-story"
 
 import { slugify } from "../align/slugify.ts"
 import { parseDom } from "../markup/parseDom.ts"

@@ -16,7 +16,7 @@ import chalk from "chalk"
 import { Presets, SingleBar } from "cli-progress"
 import { extract } from "tar"
 
-import { scratchPath } from "@storyteller-platform/fs"
+import { scratchPath } from "@storyteller/fs"
 
 import {
   type BuildVariant,

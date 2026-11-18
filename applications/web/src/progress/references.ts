@@ -1,9 +1,5 @@
-import {
-  type EpubReader,
-  Epub,
-  MemoryAdapter,
-} from "@storyteller-platform/epub"
-import { type UriFragment } from "@storyteller-platform/uri-fragment"
+import { type EpubReader, Epub, MemoryAdapter } from "@storyteller/epub"
+import { type UriFragment } from "@storyteller/uri-fragment"
 
 import { type BookWithRelations } from "@/database/books.ts"
 import { readaloudToStandaloneAudioReference } from "@/progress/audio/readaloudToStandalone.ts"

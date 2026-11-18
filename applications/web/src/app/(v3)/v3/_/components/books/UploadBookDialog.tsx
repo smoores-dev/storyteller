@@ -4,7 +4,7 @@ import { useRef } from "react"
 import { toast } from "sonner"
 import { v4 as uuidv4 } from "uuid"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { UploadDialog } from "@v3/_/components/files/UploadDialog"
 import { type UppyFileType } from "@v3/_/components/files/useTusUpload"

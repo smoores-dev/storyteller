@@ -17,7 +17,7 @@ import {
   constants,
 } from "node:zlib"
 
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
 
 import { type BookWithRelations } from "@/database/books.ts"
 import { CACHE_DIR } from "@/directories.ts"

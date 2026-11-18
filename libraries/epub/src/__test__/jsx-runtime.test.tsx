@@ -1,4 +1,4 @@
-/** @jsxImportSource @storyteller-platform/epub */
+/** @jsxImportSource @storyteller/epub */
 import { describe, expect, it } from "vitest"
 
 import { Fragment } from "../jsx-runtime.ts"

@@ -1,4 +1,4 @@
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
 
 import { withHasPermission } from "@/auth/auth"
 import { getBook } from "@/database/books"

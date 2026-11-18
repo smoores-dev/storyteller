@@ -1,5 +1,5 @@
-import { isElement, type Node } from "@storyteller-platform/epub"
-import { UriFragment } from "@storyteller-platform/uri-fragment"
+import { isElement, type Node } from "@storyteller/epub"
+import { UriFragment } from "@storyteller/uri-fragment"
 
 import { type DomPointReference } from "@/progress/domPoints/domPoint.ts"
 import { UriReference } from "@/progress/uriReference.ts"

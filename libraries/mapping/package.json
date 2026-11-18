@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/mapping",
+  "name": "@storyteller/mapping",
   "description": "A library for mapping character offsets between pre- and post-transformed strings.",
   "keywords": [
     "mapping",

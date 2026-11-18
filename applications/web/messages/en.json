@@ -995,7 +995,7 @@
               },
               "ctc-server": {
                 "label": "On another server",
-                "description": "Offloads the analysis step to a Ghost Story server on a (hopefully!) faster machine, for example a PC with a GPU. Start one there with npx @storyteller-platform/ghost-story serve."
+                "description": "Offloads the analysis step to a Ghost Story server on a (hopefully!) faster machine, for example a PC with a GPU. Start one there with npx @storyteller/ghost-story serve."
               }
             },
             "ctcServerUrl": "Server URL",

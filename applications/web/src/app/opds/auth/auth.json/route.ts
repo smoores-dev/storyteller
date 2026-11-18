@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { OPDS_AUTHENTICATION_JSON } from "@storyteller-platform/opds"
+import { OPDS_AUTHENTICATION_JSON } from "@storyteller/opds"
 
 import { createOPDSAuthenticationDocument } from "@/opds/auth"
 

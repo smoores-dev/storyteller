@@ -4,7 +4,7 @@ import { dirname, extname, join } from "node:path"
 
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 import * as legacyCovers from "@/assets/legacy/covers"
 import * as legacyPaths from "@/assets/legacy/paths"

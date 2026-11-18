@@ -1,6 +1,6 @@
 import { enumerate, range } from "itertools"
 
-import { type Emissions } from "@storyteller-platform/ghost-story"
+import { type Emissions } from "@storyteller/ghost-story"
 
 import { type Match } from "./search.ts"
 

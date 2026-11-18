@@ -19,8 +19,8 @@ import {
   findXmlDescendantByName,
   type ManifestItem,
   parse,
-} from "@storyteller-platform/epub"
-import { MediaType } from "@storyteller-platform/media-types"
+} from "@storyteller/epub"
+import { MediaType } from "@storyteller/media-types"
 
 export function generateGuidedNavigationManifest(
   title: LocalizedString,

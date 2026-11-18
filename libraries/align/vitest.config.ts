@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config"
 export default defineConfig({
   ssr: {
     resolve: {
-      // Resolve @storyteller-platform/epub to src rather than dist
+      // Resolve @storyteller/epub to src rather than dist
       conditions: ["@storyteller", ...defaultServerConditions],
     },
   },
@@ -17,7 +17,7 @@ export default defineConfig({
   },
   oxc: {
     jsx: {
-      // Disable warnings about using namespaced names with @storyteller-platform/epub's
+      // Disable warnings about using namespaced names with @storyteller/epub's
       // JSX runtime
       throwIfNamespace: false,
     },

@@ -20,7 +20,7 @@ import {
   CTC_DEVICES,
   CTC_DTYPES,
   CTC_ENGINES,
-} from "@storyteller-platform/ghost-story/constants"
+} from "@storyteller/ghost-story/constants"
 
 import { languageParser, loggingParser } from "../common/parse.ts"
 

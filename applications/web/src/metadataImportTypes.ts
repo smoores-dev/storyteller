@@ -1,9 +1,8 @@
-import { z } from "zod"
-
 import {
   type BookMetadataCandidate,
   METADATA_PROVIDERS,
 } from "@storyteller-platform/nodekit/types"
+import { z } from "zod"
 
 import { type ImportableField } from "@/fields"
 import { normalizeLanguage } from "@/metadata/language"

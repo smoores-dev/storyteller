@@ -5,4 +5,4 @@ workspace="$1"
 bin="$2"
 shift 2
 
-exec yarn workspace @storyteller-platform/$workspace $bin $@
+exec yarn workspace @storyteller/$workspace $bin $@

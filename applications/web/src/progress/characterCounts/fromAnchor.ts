@@ -6,7 +6,7 @@ import {
   getXhtmlBody,
   type Node,
   isElement,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import {
   characterCountFromNode,

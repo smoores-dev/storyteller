@@ -10,7 +10,7 @@ import {
   type Document,
   isText,
   parse,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import { characterReferenceFromAnchor } from "@/progress/characterCounts/fromAnchor.ts"
 import {

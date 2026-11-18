@@ -5,11 +5,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { promisify } from "node:util"
 
-import {
-  Epub,
-  TmpFsAdapter,
-  type ManifestItem,
-} from "@storyteller-platform/epub"
+import { Epub, TmpFsAdapter, type ManifestItem } from "@storyteller/epub"
 
 import { type BookWithRelations } from "@/database/books.ts"
 import { type UriReference } from "@/progress/uriReference.ts"

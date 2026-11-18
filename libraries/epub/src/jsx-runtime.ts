@@ -2,7 +2,7 @@
  * A JSX runtime that builds XML DOM nodes.
  *
  * Enable it per project with `jsx: "react-jsx"` and
- * `jsxImportSource: "@storyteller-platform/epub"`.
+ * `jsxImportSource: "@storyteller/epub"`.
  *
  * Everything is built through {@link x}, so namespaces behave exactly as they do
  * when calling `x()` directly: a `dc:` prefix resolves to the Dublin Core

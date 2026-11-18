@@ -1,4 +1,4 @@
-/** @jsxImportSource @storyteller-platform/epub */
+/** @jsxImportSource @storyteller/epub */
 
 import { dirname, join, relative } from "node:path/posix"
 
@@ -11,8 +11,8 @@ import {
   insert,
   isElement,
   type ManifestItem,
-} from "@storyteller-platform/epub"
-import { MediaType } from "@storyteller-platform/media-types"
+} from "@storyteller/epub"
+import { MediaType } from "@storyteller/media-types"
 
 import { createAudioChapterOverlay } from "./ctc/mediaOverlay.tsx"
 import { getChapterDuration } from "./getSentenceRanges.ts"

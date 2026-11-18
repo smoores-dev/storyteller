@@ -4,12 +4,7 @@ import { dirname, join } from "node:path"
 
 import { describe, it, type TestContext } from "vitest"
 
-import {
-  Epub,
-  MemoryAdapter,
-  parse,
-  serialize,
-} from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter, parse, serialize } from "@storyteller/epub"
 
 import { markupChapter } from "../markup.ts"
 

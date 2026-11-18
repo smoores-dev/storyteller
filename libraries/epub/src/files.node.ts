@@ -1,7 +1,7 @@
 import { openAsBlob } from "node:fs"
 import { cp, mkdir } from "node:fs/promises"
 
-import { dirname } from "@storyteller-platform/path"
+import { dirname } from "@storyteller/path"
 
 export async function openFile(path: string): Promise<Blob> {
   return await openAsBlob(path)

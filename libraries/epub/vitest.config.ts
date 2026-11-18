@@ -15,7 +15,7 @@ export default defineConfig({
   },
   oxc: {
     jsx: {
-      // Disable warnings about using namespaced names with @storyteller-platform/epub's
+      // Disable warnings about using namespaced names with @storyteller/epub's
       // JSX runtime
       throwIfNamespace: false,
     },

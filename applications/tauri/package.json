@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/tauri",
+  "name": "@storyteller/tauri",
   "version": "0.0.0-alpha.30",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "tauri": "tauri"
   },
   "devDependencies": {
-    "@storyteller-platform/web": "workspace:*",
+    "@storyteller/web": "workspace:*",
     "@tauri-apps/cli": "^2.5.0",
     "@types/node": "catalog:",
     "tsx": "catalog:"

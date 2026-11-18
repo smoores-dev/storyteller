@@ -1,4 +1,4 @@
-import { type Node as DomNode, text, x } from "@storyteller-platform/epub"
+import { type Node as DomNode, text, x } from "@storyteller/epub"
 
 import { type Node, type Root, TextNode } from "./model.ts"
 

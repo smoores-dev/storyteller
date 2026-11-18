@@ -1,3 +1,3 @@
 declined:
-  - "@storyteller-platform/tauri"
-  - "@storyteller-platform/web"
+  - "@storyteller/tauri"
+  - "@storyteller/web"

@@ -2,10 +2,9 @@ import { createReadStream } from "node:fs"
 import { stat } from "node:fs/promises"
 import { Readable } from "node:stream"
 
+import { MediaType } from "@storyteller/media-types"
 import contentDisposition from "content-disposition"
 import { NextResponse } from "next/server"
-
-import { MediaType } from "@storyteller-platform/media-types"
 
 import { withHasPermission } from "@/auth/auth"
 import { deleteBackup, resolveBackupPath } from "@/backups"

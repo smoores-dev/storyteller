@@ -1,6 +1,6 @@
 import { type Insertable, sql } from "kysely"
 
-import { type BookWithRelations as ServerBook } from "@storyteller-platform/web/src/database/books"
+import { type BookWithRelations as ServerBook } from "@storyteller/web/src/database/books"
 
 import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"
 import { type UUID, randomUUID } from "@/uuid"

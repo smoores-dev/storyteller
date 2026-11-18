@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import { jsonObjectFrom } from "kysely/helpers/sqlite"
 
-import { Audiobook } from "@storyteller/audiobook"
+import { Audiobook } from "@storyteller/audiobooks"
 
 import { isAudioFile } from "@/audio"
 import { db } from "@/database/connection"

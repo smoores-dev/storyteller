@@ -6,9 +6,9 @@ import { pipeline } from "node:stream/promises"
 import { open } from "yauzl-promise"
 import { ZipFile } from "yazl"
 
-import { scratchPath } from "@storyteller-platform/fs"
-import { MediaType } from "@storyteller-platform/media-types"
-import { basename, dirname, extname, join } from "@storyteller-platform/path"
+import { scratchPath } from "@storyteller/fs"
+import { MediaType } from "@storyteller/media-types"
+import { basename, dirname, extname, join } from "@storyteller/path"
 
 import { AudiobookEntry } from "./entry.ts"
 import { type AttachedPic } from "./ffmpeg.ts"

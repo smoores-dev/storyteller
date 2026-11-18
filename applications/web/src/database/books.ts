@@ -9,8 +9,8 @@ import {
 } from "kysely"
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/sqlite"
 
-import type { Audiobook as AudiobookAsset } from "@storyteller/audiobook"
-import type { EpubReader } from "@storyteller-platform/epub"
+import type { Audiobook as AudiobookAsset } from "@storyteller/audiobooks"
+import type { EpubReader } from "@storyteller/epub"
 
 import type {
   ProcessingTaskStatus,

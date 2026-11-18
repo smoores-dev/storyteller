@@ -1,6 +1,6 @@
 import { type Insertable, type Selectable, type Updateable } from "kysely"
 
-import { type BookWithRelations as ServerBook } from "@storyteller-platform/web/src/database/books"
+import { type BookWithRelations as ServerBook } from "@storyteller/web/src/database/books"
 
 import { type UUID } from "@/uuid"
 

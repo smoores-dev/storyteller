@@ -1,4 +1,4 @@
-import { type EpubIdentifier } from "@storyteller-platform/epub"
+import { type EpubIdentifier } from "@storyteller/epub"
 
 export interface ParsedIdentifier {
   scheme: string

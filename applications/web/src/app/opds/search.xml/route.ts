@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { OPENSEARCH_XML } from "@storyteller-platform/opds"
+import { OPENSEARCH_XML } from "@storyteller/opds"
 
 import { withHasPermission } from "@/auth/auth"
 import { OPDS_AUTH_OPTIONS } from "@/opds/auth"

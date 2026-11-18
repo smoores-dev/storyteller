@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { withHasPermission } from "@/auth/auth"
 import { ingestImage, probeImage } from "@/images"

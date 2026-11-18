@@ -5,7 +5,7 @@ import { useState } from "react"
 import { type FieldErrors, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
-import { LANGUAGES } from "@storyteller-platform/ghost-story/constants"
+import { LANGUAGES } from "@storyteller/ghost-story/constants"
 
 import { Button } from "@v3/_/components/ui/button"
 import {

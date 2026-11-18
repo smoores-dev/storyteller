@@ -1,10 +1,5 @@
-import {
-  getXhtmlBody,
-  isElement,
-  isText,
-  type Node,
-} from "@storyteller-platform/epub"
-import { CharacterRange, UriFragment } from "@storyteller-platform/uri-fragment"
+import { getXhtmlBody, isElement, isText, type Node } from "@storyteller/epub"
+import { CharacterRange, UriFragment } from "@storyteller/uri-fragment"
 
 import { type DomPointReference } from "@/progress/domPoints/domPoint.ts"
 import { UriReference } from "@/progress/uriReference.ts"

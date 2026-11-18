@@ -1,6 +1,6 @@
 import { type Insertable, type Selectable, type Updateable } from "kysely"
 
-import { type Collection as ServerCollection } from "@storyteller-platform/web/src/database/collections"
+import { type Collection as ServerCollection } from "@storyteller/web/src/database/collections"
 
 import { type UUID } from "@/uuid"
 

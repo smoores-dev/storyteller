@@ -2,7 +2,7 @@ import assert from "node:assert"
 
 import { describe, it } from "vitest"
 
-import { type Emissions } from "@storyteller-platform/ghost-story"
+import { type Emissions } from "@storyteller/ghost-story"
 
 import { ctcViterbiAlign } from "../forcedAlign.ts"
 

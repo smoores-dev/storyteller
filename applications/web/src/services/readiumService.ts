@@ -8,7 +8,7 @@ import { stat } from "node:fs/promises"
 import { isAbsolute, join, resolve } from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 
-import { type ReadiumWebPublicationManifest } from "@storyteller-platform/align/readium"
+import { type ReadiumWebPublicationManifest } from "@storyteller/align/readium"
 
 import { DATA_DIR } from "@/directories"
 import { env } from "@/env"

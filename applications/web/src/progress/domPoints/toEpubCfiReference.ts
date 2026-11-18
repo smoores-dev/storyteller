@@ -4,9 +4,9 @@ import {
   findXmlDescendantByNameNS,
   NS,
   type EpubReader,
-} from "@storyteller-platform/epub"
-import { EpubCfiBuilder } from "@storyteller-platform/epubcfi"
-import { UriFragment } from "@storyteller-platform/uri-fragment"
+} from "@storyteller/epub"
+import { EpubCfiBuilder } from "@storyteller/epubcfi"
+import { UriFragment } from "@storyteller/uri-fragment"
 
 import { type DomPointReference } from "@/progress/domPoints/domPoint.ts"
 import { UriReference } from "@/progress/uriReference.ts"

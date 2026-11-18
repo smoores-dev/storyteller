@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-import { type Feed, OPDS_JSON, toAtomXml } from "@storyteller-platform/opds"
+import { type Feed, OPDS_JSON, toAtomXml } from "@storyteller/opds"
 
 import { withHasPermission } from "@/auth/auth"
 import { OPDS_AUTH_OPTIONS } from "@/opds/auth"

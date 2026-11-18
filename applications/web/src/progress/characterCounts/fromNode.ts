@@ -4,8 +4,8 @@ import {
   getXhtmlBody,
   isText,
   isElement,
-} from "@storyteller-platform/epub"
-import { CharacterRange, UriFragment } from "@storyteller-platform/uri-fragment"
+} from "@storyteller/epub"
+import { CharacterRange, UriFragment } from "@storyteller/uri-fragment"
 
 import { UriReference } from "@/progress/uriReference.ts"
 

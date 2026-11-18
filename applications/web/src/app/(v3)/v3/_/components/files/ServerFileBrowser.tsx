@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/plugin-dialog"
 import { matchSorter } from "match-sorter"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { Badge } from "@v3/_/components/ui/badge"
 import { Button } from "@v3/_/components/ui/button"

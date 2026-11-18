@@ -1,10 +1,9 @@
 "use client"
 
+import { type JsColor } from "@storyteller-platform/okmain"
 import { type PanInfo, motion, useSpring } from "motion/react"
 import { type Author } from "next/dist/lib/metadata/types/metadata-types"
 import { type ReactNode, useMemo, useRef, useState } from "react"
-
-import { type JsColor } from "@storyteller-platform/okmain"
 
 import { Button } from "@v3/_/components/ui/button"
 import {

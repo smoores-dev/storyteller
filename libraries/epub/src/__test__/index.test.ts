@@ -6,8 +6,8 @@ import { join } from "node:path"
 import { type CharacterData, type Element } from "@xmldom/xmldom"
 import { describe, it } from "vitest"
 
-import { streamFile } from "@storyteller-platform/fs"
-import { MediaType } from "@storyteller-platform/media-types"
+import { streamFile } from "@storyteller/fs"
+import { MediaType } from "@storyteller/media-types"
 
 import {
   Epub,

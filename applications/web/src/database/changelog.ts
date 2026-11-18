@@ -1,4 +1,4 @@
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { logger } from "@/logging"
 import { releaseChannelTags } from "@/versions"

@@ -6,7 +6,7 @@ import { FileStore } from "@tus/file-store"
 import { Server } from "@tus/server"
 import { type NextRequest } from "next/server"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { importDebugBundle, isDebugBundle } from "@/assets/debugBundle"
 import { move } from "@/assets/fs"

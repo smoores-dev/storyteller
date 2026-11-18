@@ -2,7 +2,7 @@ import assert from "node:assert"
 
 import { describe, it } from "vitest"
 
-import { type Element, x } from "@storyteller-platform/epub"
+import { type Element, x } from "@storyteller/epub"
 
 import { FootnoteNode, Mark, Node, Root, TextNode } from "../model.ts"
 import { parseDom } from "../parseDom.ts"

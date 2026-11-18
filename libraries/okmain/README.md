@@ -1,4 +1,4 @@
-# `@storyteller-platform/okmain`
+# `@storyteller/okmain`
 
 `napi-rs` port of [okmain](https://github.com/si14/okmain) by
 [Dan Groshev](https://github.com/si14).
@@ -8,7 +8,7 @@ Provides a `colors` function that extracts the dominant colors from an image.
 ## Usage
 
 ```ts
-import { colors } from "@storyteller-platform/okmain"
+import { colors } from "@storyteller/okmain"
 
 const image = await readFile("image.jpg")
 const colors = await colors(image)
@@ -19,7 +19,7 @@ You can also get more detailed information about the colors by using the
 `colorsDetailed` function.
 
 ```ts
-import { colorsDetailed } from "@storyteller-platform/okmain"
+import { colorsDetailed } from "@storyteller/okmain"
 
 const image = await readFile("image.jpg")
 const colors = await colorsDetailed(image)

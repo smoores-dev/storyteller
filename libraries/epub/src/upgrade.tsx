@@ -1,8 +1,8 @@
-/** @jsxImportSource @storyteller-platform/epub */
+/** @jsxImportSource @storyteller/epub */
 
 import { type Document, type Element } from "@xmldom/xmldom"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { type Epub, type NavigationItem } from "./index.tsx"
 import {

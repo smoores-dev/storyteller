@@ -1,4 +1,4 @@
 declined:
-  - "@storyteller-platform/web"
-  - "@storyteller-platform/align"
-  - "@storyteller-platform/epub"
+  - "@storyteller/web"
+  - "@storyteller/align"
+  - "@storyteller/epub"

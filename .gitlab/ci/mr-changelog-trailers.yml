@@ -99,7 +99,7 @@ mr-changelog-trailers:
         printf '%s\n' "$content" >> "$work/content"
       done < "$work/mine"
 
-      # Turn each `  "@storyteller-platform/web": patch` line into a trailer, keeping
+      # Turn each `  "@storyteller/web": patch` line into a trailer, keeping
       # the biggest bump per package. patch -> fixed, minor -> added, major -> breaking.
       awk '
         {

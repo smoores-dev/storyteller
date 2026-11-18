@@ -5,7 +5,7 @@ import {
   encodeUnigram,
   readSentencePieceModel,
   unigramTokenizer,
-} from "@storyteller-platform/ghost-story"
+} from "@storyteller/ghost-story"
 
 const [modelDir, referencePath] = process.argv.slice(2)
 if (!modelDir || !referencePath) {

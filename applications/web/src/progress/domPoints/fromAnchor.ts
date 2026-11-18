@@ -3,7 +3,7 @@ import {
   isElement,
   type Node,
   type Document,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import { type DomPoint } from "@/progress/domPoints/domPoint.ts"
 

@@ -1,7 +1,7 @@
 import {
   type ReadiumWebPublicationManifest,
   generateReadiumManifest,
-} from "@storyteller-platform/align/readium"
+} from "@storyteller/align/readium"
 
 import { getNumericValue } from "@/assets/library/scanner/manifestValue"
 import { defineStep } from "@/assets/library/scanner/step"

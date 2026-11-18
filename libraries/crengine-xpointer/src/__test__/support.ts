@@ -5,13 +5,13 @@ import type { XPointerPosition } from "../index.ts"
 const { DOMParser } = xmldom
 
 /**
- * Parse a fixture the way `@storyteller-platform/epub` parses XHTML content: no
+ * Parse a fixture the way `@storyteller/epub` parses XHTML content: no
  * diagnostics, and with the XHTML media type.
  *
  * The media type is not cosmetic. As `application/xml` xmldom reports an HTML named
  * entity as unknown and keeps the characters, so `&nbsp;` stays text where crengine
  * stores one character, and every caret after it counts the markup instead of the
- * character. `application/xhtml+xml` is what `@storyteller-platform/epub` passes for
+ * character. `application/xhtml+xml` is what `@storyteller/epub` passes for
  * chapter content, and `&unknownent;` still errors there, which is how one without
  * the other is caught.
  *

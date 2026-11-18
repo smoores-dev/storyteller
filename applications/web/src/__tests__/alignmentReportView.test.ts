@@ -6,7 +6,7 @@ import {
   type ReportSpan,
   type ReportV4,
   assembleReport,
-} from "@storyteller-platform/align/report"
+} from "@storyteller/align/report"
 
 import {
   type AlignmentDecisions,

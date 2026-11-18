@@ -7,7 +7,7 @@ import {
   findXmlChildByName,
   findXmlDescendantByName,
   parse,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 import { type UriReference } from "@/progress/uriReference.ts"
 

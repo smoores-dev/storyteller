@@ -1,4 +1,4 @@
-# @storyteller-platform/mlx-audio
+# @storyteller/mlx-audio
 
 [node-swift] bindings for some of the models in
 [mlx-audio-swift](https://github.com/Blaizzy/mlx-audio-swift)
@@ -22,7 +22,7 @@ Download the model from
 [our Gitlab repository](https://gitlab.com/storyteller-platform/storyteller/-/ml/models/3008171/versions/3023067#/artifacts).
 
 ```ts
-import { loadModel, compute } from "@storyteller-platform/mlx-audio"
+import { loadModel, compute } from "@storyteller/mlx-audio"
 
 const model = await loadModel("path/to/unpacked/model")
 

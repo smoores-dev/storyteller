@@ -1,4 +1,4 @@
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 import { findMediaOverlay } from "@/assets/mediaOverlay"
 import { withHasPermission } from "@/auth/auth"

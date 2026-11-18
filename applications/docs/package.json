@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/docs",
+  "name": "@storyteller/docs",
   "version": "2.10.7",
   "private": true,
   "scripts": {
@@ -34,7 +34,7 @@
     "@mdx-js/react": "^3.1.0",
     "@readium/shared": "catalog:",
     "@slorber/remark-comment": "^1.0.0",
-    "@storyteller-platform/opds": "workspace:*",
+    "@storyteller/opds": "workspace:*",
     "@urql/core": "^6.0.1",
     "@urql/exchange-retry": "^2.0.0",
     "clsx": "^1.2.1",

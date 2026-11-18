@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useEffectEvent, useState } from "react"
 import { toast } from "sonner"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { useImportBookPaths } from "@v3/_/components/AddBookButton"
 import {

@@ -29,5 +29,5 @@ export const parseAuthDocument = (json: unknown) =>
   AuthDocument.deserialize(json, { validate: validateAuth })
 
 // the live AJV validators (which bundle ajv, frontend-friendly) are exposed
-// separately at `@storyteller-platform/opds/validate/ajv`
+// separately at `@storyteller/opds/validate/ajv`
 // keeping them out of this entry lets `./validate` ship the self-contained standalone validators

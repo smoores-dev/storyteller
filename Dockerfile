@@ -65,7 +65,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG CI_COMMIT_TAG
 ENV CI_COMMIT_TAG=${CI_COMMIT_TAG}
 
-RUN yarn workspaces foreach -Rpt --from @storyteller-platform/web run build
+RUN yarn workspaces foreach -Rpt --from @storyteller/web run build
 
 # Pre-install whisper.cpp binary and default model in builder stage
 ARG TARGETARCH
@@ -142,8 +142,8 @@ COPY --from=builder /app/scripts/ ./.next/standalone/applications/web/scripts/
 COPY --from=builder /app/applications/web/work-dist ./.next/standalone/applications/web/work-dist
 COPY --from=builder /app/applications/web/file-write-dist ./.next/standalone/applications/web/file-write-dist
 
-COPY --from=builder /app/libraries/align/prebuilds/linux-x64 ./.next/standalone/applications/web/work-dist/@storyteller-platform/align/prebuilds/linux-x64
-COPY --from=builder /app/libraries/align/prebuilds/linux-arm64 ./.next/standalone/applications/web/work-dist/@storyteller-platform/align/prebuilds/linux-arm64
+COPY --from=builder /app/libraries/align/prebuilds/linux-x64 ./.next/standalone/applications/web/work-dist/@storyteller/align/prebuilds/linux-x64
+COPY --from=builder /app/libraries/align/prebuilds/linux-arm64 ./.next/standalone/applications/web/work-dist/@storyteller/align/prebuilds/linux-arm64
 
 # Echogarden tries to naively resolve its own wasm builds
 COPY --from=builder /app/node_modules/@echogarden/icu-segmentation-wasm/wasm/*.wasm ./.next/standalone/applications/web/work-dist/
@@ -164,7 +164,7 @@ ENV READIUM_PORT=9000
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
 
-ENV ERROR_ALIGN_NATIVE_BINDING=/app/.next/standalone/applications/web/work-dist/@storyteller-platform/align/
+ENV ERROR_ALIGN_NATIVE_BINDING=/app/.next/standalone/applications/web/work-dist/@storyteller/align/
 ENV STORYTELLER_WORKER=worker.mjs
 ENV STORYTELLER_FILE_WRITE_WORKER=fileWriteWorker.mjs
 

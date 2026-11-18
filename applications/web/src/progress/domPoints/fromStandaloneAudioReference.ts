@@ -1,4 +1,4 @@
-import { type EpubReader } from "@storyteller-platform/epub"
+import { type EpubReader } from "@storyteller/epub"
 
 import { type BookWithRelations } from "@/database/books.ts"
 import { standaloneToReadaloudAudioReference } from "@/progress/audio/standaloneToReadaloud.ts"

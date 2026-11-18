@@ -3,7 +3,7 @@ import { basename, extname, join } from "node:path"
 
 import { type Logger } from "pino"
 
-import { isHiddenFile } from "@storyteller-platform/fs"
+import { isHiddenFile } from "@storyteller/fs"
 import {
   type CtcServer,
   type LoadedCtcModel,
@@ -19,15 +19,15 @@ import {
   probeSource,
   resolveCtcRun,
   resolveRemoteCtcRun,
-} from "@storyteller-platform/ghost-story"
+} from "@storyteller/ghost-story"
 import {
   type CtcDataType,
   type CtcDevice,
   type CtcEngine,
   type CtcModelFamily,
   type CtcModelVariant,
-} from "@storyteller-platform/ghost-story/constants"
-import { MediaType } from "@storyteller-platform/media-types"
+} from "@storyteller/ghost-story/constants"
+import { MediaType } from "@storyteller/media-types"
 
 import {
   type TrackSource,

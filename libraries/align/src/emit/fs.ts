@@ -14,7 +14,7 @@ import { type Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
 import { setTimeout } from "node:timers/promises"
 
-import { isHiddenFile } from "@storyteller-platform/fs"
+import { isHiddenFile } from "@storyteller/fs"
 import {
   type EmissionData,
   type Emissions,
@@ -23,7 +23,7 @@ import {
   decodeEmissionsHeader,
   encodeEmissions,
   frameByteRange,
-} from "@storyteller-platform/ghost-story"
+} from "@storyteller/ghost-story"
 
 import { type EmissionTimings } from "../align/ctc/emissions.ts"
 

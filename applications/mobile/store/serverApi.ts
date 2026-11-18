@@ -5,9 +5,9 @@ import {
 } from "@reduxjs/toolkit/query/react"
 import * as SecureStore from "expo-secure-store"
 
-import { type BookWithRelations } from "@storyteller-platform/web/src/database/books"
-import { type Position } from "@storyteller-platform/web/src/database/positions"
-import { type Status } from "@storyteller-platform/web/src/database/statuses"
+import { type BookWithRelations } from "@storyteller/web/src/database/books"
+import { type Position } from "@storyteller/web/src/database/positions"
+import { type Status } from "@storyteller/web/src/database/statuses"
 
 import { upsertServerBooks } from "@/database/serverBooks"
 import { type ReadiumLocator } from "@/modules/readium/src/Readium.types"

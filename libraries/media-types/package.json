@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/media-types",
+  "name": "@storyteller/media-types",
   "description": "An isomorphic, dependency-free table of the file extensions and media types Storyteller understands.",
   "keywords": [
     "media-type",
@@ -36,7 +36,7 @@
     "prepack": "yarn build"
   },
   "dependencies": {
-    "@storyteller-platform/path": "workspace:^"
+    "@storyteller/path": "workspace:^"
   },
   "devDependencies": {
     "@tsconfig/strictest": "catalog:",

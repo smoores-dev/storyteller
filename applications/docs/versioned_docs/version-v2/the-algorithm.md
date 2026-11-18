@@ -69,7 +69,7 @@ file size.
 Once we have individual tracks to work with, we begin transcription. This is the
 most resource intensive part of the process. Storyteller supports a number of
 transcription backends via
-[@storyteller-platform/ghost-story](https://github.com/storyteller-platform/storyteller)
+[@storyteller/ghost-story](https://github.com/storyteller-platform/storyteller)
 (see the [transcription engine docs](/docs/settings#transcription-settings) for
 more info). The transcription process is fairly standard; the only interesting
 addition to the process that Storyteller makes is to supply an "initial prompt"

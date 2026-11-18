@@ -1,9 +1,9 @@
-/** @jsxImportSource @storyteller-platform/epub */
+/** @jsxImportSource @storyteller/epub */
 import { AsyncReaderWriterLock } from "@esfx/async-readerwriterlock"
 import type { Attr, Document, Element, Node } from "@xmldom/xmldom"
 import memoize from "mem"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import { copyFile } from "#files"
 import { TmpFsAdapter } from "#tmpfs"
@@ -359,7 +359,7 @@ function spineReferenceable(
  * Example usage:
  *
  * ```ts
- * import { Epub, getBody, findByName, textContent } from '@storyteller-platform/epub';
+ * import { Epub, getBody, findByName, textContent } from '@storyteller/epub';
  *
  * using epub = await Epub.from('./path/to/book.epub');
  * const title = await epub.getTitle();

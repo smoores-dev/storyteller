@@ -574,19 +574,19 @@ describe("commit problems", () => {
 describe("version files", () => {
   const text = [
     "releases:",
-    '  "@storyteller-platform/opds": patch',
-    '  "@storyteller-platform/web": major',
+    '  "@storyteller/opds": patch',
+    '  "@storyteller/web": major',
     "",
     "declined:",
-    '  - "@storyteller-platform/docs"',
+    '  - "@storyteller/docs"',
     "",
   ].join("\n")
 
   it("parses and writes the yarn format", () => {
     const parsed = parseVersionFile(text)
-    assert.equal(decisionFor(parsed, "@storyteller-platform/web"), "major")
-    assert.equal(decisionFor(parsed, "@storyteller-platform/docs"), "none")
-    assert.equal(decisionFor(parsed, "@storyteller-platform/mobile"), null)
+    assert.equal(decisionFor(parsed, "@storyteller/web"), "major")
+    assert.equal(decisionFor(parsed, "@storyteller/docs"), "none")
+    assert.equal(decisionFor(parsed, "@storyteller/mobile"), null)
     assert.equal(serializeVersionFile(parsed), text)
   })
 

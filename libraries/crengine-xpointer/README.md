@@ -1,4 +1,4 @@
-# @storyteller-platform/crengine-xpointer
+# @storyteller/crengine-xpointer
 
 !! This library is almost entirely LLM-generated, ported from crengine. !!
 
@@ -12,11 +12,8 @@ Resolve and build [koreader](https://github.com/koreader/koreader)'s
 ## Usage
 
 ```ts
-import { parse } from "@storyteller-platform/epub"
-import {
-  buildXPointer,
-  resolveXPointer,
-} from "@storyteller-platform/crengine-xpointer"
+import { parse } from "@storyteller/epub"
+import { buildXPointer, resolveXPointer } from "@storyteller/crengine-xpointer"
 
 const document = parse(xhtml, "application/xhtml+xml")
 
@@ -150,7 +147,7 @@ import {
   chapterIndexOf,
   crengineView,
   resolveChapterXPointer,
-} from "@storyteller-platform/crengine-xpointer"
+} from "@storyteller/crengine-xpointer"
 
 const view = crengineView({
   styleSheets: [{ css: bookCss, kind: "author" }],
@@ -300,5 +297,5 @@ rooted, `#id` resolution, the pre-20260812 output form, and the grammar.
 ## Development
 
 ```sh
-yarn workspace @storyteller-platform/crengine-xpointer test
+yarn workspace @storyteller/crengine-xpointer test
 ```

@@ -45,7 +45,7 @@ const binaryPath = stubBinary
 if (!existsSync(binaryPath)) {
   console.error(
     `addon not found at ${binaryPath}\n` +
-      `run 'yarn workspace @storyteller-platform/nodekit build:native' first, ` +
+      `run 'yarn workspace @storyteller/nodekit build:native' first, ` +
       `or pass --stub-binary <path> to exercise packaging with another addon`,
   )
   process.exit(1)
@@ -80,7 +80,7 @@ mkdirSync(artifactsDir, { recursive: true })
 console.log(`==> scratch consumer at ${consumerDir}`)
 
 console.log("==> building js")
-run("yarn", ["workspace", "@storyteller-platform/nodekit", "build"], repoRoot)
+run("yarn", ["workspace", "@storyteller/nodekit", "build"], repoRoot)
 
 console.log("==> creating per-platform npm dirs")
 await cp(binaryPath, join(artifactsDir, binaryName))

@@ -8,7 +8,7 @@ const config = {
   "*.{md,yaml,yml,json}": "yarn oxfmt --no-error-on-unmatched-pattern",
   "applications/web/migrations/*.sql": ["./scripts/dump-schema.sh"],
   "libraries/epub/*": () => [
-    "yarn workspace @storyteller-platform/epub readme",
+    "yarn workspace @storyteller/epub readme",
     "git add libraries/epub/README.md",
   ],
   "{README.md,.github/README.md}": () => [

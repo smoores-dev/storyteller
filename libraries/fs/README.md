@@ -1,4 +1,4 @@
-# `@storyteller-platform/fs`
+# `@storyteller/fs`
 
 Node.js filesystem utilities for Storyteller.
 

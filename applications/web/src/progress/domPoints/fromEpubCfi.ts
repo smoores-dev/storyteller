@@ -1,5 +1,5 @@
-import { type EpubReader } from "@storyteller-platform/epub"
-import { EpubCfiResolver, EpubCfiParser } from "@storyteller-platform/epubcfi"
+import { type EpubReader } from "@storyteller/epub"
+import { EpubCfiResolver, EpubCfiParser } from "@storyteller/epubcfi"
 
 import { logger } from "@/logging.ts"
 import { type DomPointReference } from "@/progress/domPoints/domPoint.ts"

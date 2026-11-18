@@ -1,4 +1,4 @@
-import { extname } from "@storyteller-platform/path"
+import { extname } from "@storyteller/path"
 
 import { type Kind, type MediaTypeRow, TABLE } from "./table.ts"
 

@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/okmain",
+  "name": "@storyteller/okmain",
   "version": "0.2.6",
   "description": "Dominant color extraction from images using okmain",
   "author": "Thomas F. K. Jorna",

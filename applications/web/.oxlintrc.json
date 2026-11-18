@@ -26,9 +26,9 @@
       "error",
       {
         "packages": [
-          "@storyteller-platform/align",
-          "@storyteller-platform/ghost-story",
-          "@storyteller-platform/mlx-audio",
+          "@storyteller/align",
+          "@storyteller/ghost-story",
+          "@storyteller/mlx-audio",
           "@huggingface/transformers",
           "onnxruntime-node"
         ]

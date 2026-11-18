@@ -1,10 +1,7 @@
 import { type FileHandle, open, readFile } from "node:fs/promises"
 import { basename, extname, join } from "node:path/posix"
 
-import {
-  framesToSeconds,
-  secondsToFrames,
-} from "@storyteller-platform/align/emissions"
+import { framesToSeconds, secondsToFrames } from "@storyteller/align/emissions"
 import {
   type Epub,
   findXmlChildByName,
@@ -12,8 +9,8 @@ import {
   type ManifestItem,
   type Node as DomNode,
   parse,
-} from "@storyteller-platform/epub"
-import { decodeEmissions } from "@storyteller-platform/ghost-story/emission-encoding"
+} from "@storyteller/epub"
+import { decodeEmissions } from "@storyteller/ghost-story/emission-encoding"
 
 import { type ChapterAudio, type ChapterAudioClip } from "@/chapterAudio"
 

@@ -1,4 +1,4 @@
-import { UriFragment } from "@storyteller-platform/uri-fragment"
+import { UriFragment } from "@storyteller/uri-fragment"
 
 export class UriReference {
   private url: URL

@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react"
 import dynamic from "next/dynamic"
 import { type ReactNode, useEffect, useRef, useState } from "react"
 
-import { type Aligner } from "@storyteller-platform/ghost-story/constants"
+import { type Aligner } from "@storyteller/ghost-story/constants"
 
 import { RadioGroup, RadioGroupItem } from "@v3/_/components/ui/radio-group"
 import { useTranslation } from "@v3/_/hooks/use-translation"

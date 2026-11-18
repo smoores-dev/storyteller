@@ -16,7 +16,7 @@ import {
   type Publication,
 } from "@readium/shared"
 
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 import type { ReadiumServiceError } from "@/services/readiumService"
 import {

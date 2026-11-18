@@ -4,7 +4,7 @@ import path from "node:path"
 
 import { ensureDir } from "fs-extra"
 
-import { scratchPath } from "@storyteller-platform/fs"
+import { scratchPath } from "@storyteller/fs"
 
 import {
   type AudioFormat,

@@ -7,7 +7,7 @@ const noTmpdir = {
   meta: {
     docs: {
       description:
-        "Use `scratchPath()` from `@storyteller-platform/fs` instead of os.tmpdir()",
+        "Use `scratchPath()` from `@storyteller/fs` instead of os.tmpdir()",
     },
   },
   create(context) {
@@ -22,8 +22,7 @@ const noTmpdir = {
         if (isBare || isMember)
           context.report({
             node,
-            message:
-              "Use `scratchPath()` from `@storyteller-platform/fs` instead",
+            message: "Use `scratchPath()` from `@storyteller/fs` instead",
           })
       },
     }

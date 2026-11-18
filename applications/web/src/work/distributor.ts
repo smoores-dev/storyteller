@@ -111,7 +111,7 @@ if (globalThis.alignmentPiscina) {
     idleTimeout: 30_000,
     // In dev, we don't bundle packages in the worker.
     // These flags allow us to import directly from the
-    // source typescript files for our own packages (e.g. @storyteller-platform/epub)
+    // source typescript files for our own packages (e.g. @storyteller/epub)
     ...(env.NODE_ENV === "development" && {
       env: {
         ...process.env,

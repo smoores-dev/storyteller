@@ -2,8 +2,8 @@ import { type Dirent } from "node:fs"
 import { readdir, realpath } from "node:fs/promises"
 import { extname, join, resolve } from "node:path"
 
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
-import { isHiddenFile } from "@storyteller-platform/fs"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
+import { isHiddenFile } from "@storyteller/fs"
 
 import { isInsideInternalDirectory } from "@/assets/library/internalDirs"
 import { pathBelongsTo } from "@/assets/library/paths"

@@ -1,4 +1,4 @@
-# CI for building and publishing @storyteller-platform/nodekit per-platform binaries.
+# CI for building and publishing @storyteller/nodekit per-platform binaries.
 #
 # Check jobs (MR/main, only when nodekit-relevant files change):
 #   macOS ARM64, Linux GNU x64, Windows x64, Windows ARM64
@@ -387,18 +387,18 @@ publish-nodekit:
       esac
     - npm i -g corepack
     - corepack enable
-    - yarn workspaces focus @storyteller-platform/nodekit
+    - yarn workspaces focus @storyteller/nodekit
     - ls -lah libraries/nodekit/*.node
     # napi artifacts reads from ./artifacts, the build jobs drop the .node files
     # next to package.json
     - mkdir -p libraries/nodekit/artifacts
     - mv libraries/nodekit/*.node libraries/nodekit/artifacts/
-    - yarn workspace @storyteller-platform/nodekit napi create-npm-dirs # creates the npm dirs
-    - yarn workspace @storyteller-platform/nodekit napi artifacts # moves all the artifacts to the correct npm dir
+    - yarn workspace @storyteller/nodekit napi create-npm-dirs # creates the npm dirs
+    - yarn workspace @storyteller/nodekit napi artifacts # moves all the artifacts to the correct npm dir
     - ls -latR libraries/nodekit/npm
     - export npm_config_tag="$TAG" # necessary because napi prepublish script reads the tag from this env var as the republish the subpackages w/ npm
-    - yarn workspace @storyteller-platform/nodekit npm publish --tag="$TAG"
-      --access public
+    - yarn workspace @storyteller/nodekit npm publish --tag="$TAG" --access
+      public
 
 prerelease-nodekit:
   extends:
@@ -423,5 +423,5 @@ release-nodekit:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller-platform/nodekit"
-          url: "https://npmjs.com/package/@storyteller-platform/nodekit"
+        - name: "NPM package for @storyteller/nodekit"
+          url: "https://npmjs.com/package/@storyteller/nodekit"

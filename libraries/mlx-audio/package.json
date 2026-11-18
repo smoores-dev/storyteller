@@ -1,5 +1,5 @@
 {
-  "name": "@storyteller-platform/mlx-audio",
+  "name": "@storyteller/mlx-audio",
   "version": "0.1.2",
   "description": "MLX (Metal) audio toolkit. Wrapper around mlx-audio-swift",
   "license": "MIT",

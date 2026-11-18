@@ -1,6 +1,6 @@
 import { type Insertable, type Selectable, type Updateable } from "kysely"
 
-import { type Series as ServerSeries } from "@storyteller-platform/web/src/database/series"
+import { type Series as ServerSeries } from "@storyteller/web/src/database/series"
 
 import { type UUID } from "@/uuid"
 

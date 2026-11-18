@@ -8,14 +8,14 @@ import {
   AUDIO_ENCODERS,
   Audiobook,
   outputContainer,
-} from "@storyteller/audiobook"
-import { isHiddenFile } from "@storyteller-platform/fs"
+} from "@storyteller/audiobooks"
+import { isHiddenFile } from "@storyteller/fs"
 import {
   type TimingAggregator,
   createAggregator,
   createTiming,
-} from "@storyteller-platform/ghost-story"
-import { MediaType } from "@storyteller-platform/media-types"
+} from "@storyteller/ghost-story"
+import { MediaType } from "@storyteller/media-types"
 
 import {
   getTrackInfo,

@@ -11,12 +11,12 @@ import {
   findXmlChildByName,
   insert,
   NS,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 import {
   type TimingAggregator,
   createAggregator,
   createTiming,
-} from "@storyteller-platform/ghost-story"
+} from "@storyteller/ghost-story"
 
 import { Mark } from "./model.ts"
 import { parseDom } from "./parseDom.ts"

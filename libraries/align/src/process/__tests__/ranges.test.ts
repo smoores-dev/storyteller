@@ -5,8 +5,8 @@ import { join } from "node:path"
 
 import { describe, it } from "vitest"
 
-import { Audiobook } from "@storyteller/audiobook"
-import { detectVoiceActivity } from "@storyteller-platform/ghost-story/vad"
+import { Audiobook } from "@storyteller/audiobooks"
+import { detectVoiceActivity } from "@storyteller/ghost-story/vad"
 
 import { splitFile } from "../../common/ffmpeg.ts"
 import {

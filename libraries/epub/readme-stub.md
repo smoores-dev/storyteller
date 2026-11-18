@@ -1,4 +1,4 @@
-# @storyteller-platform/epub
+# @storyteller/epub
 
 A Node.js/browser library for inspecting, modifying, and creating EPUB 3
 publications.
@@ -26,19 +26,19 @@ publications.
 npm:
 
 ```sh
-npm install @storyteller-platform/epub
+npm install @storyteller/epub
 ```
 
 yarn:
 
 ```sh
-yarn add @storyteller-platform/epub
+yarn add @storyteller/epub
 ```
 
 deno:
 
 ```sh
-deno install npm:@storyteller-platform/epub
+deno install npm:@storyteller/epub
 ```
 
 ## About
@@ -75,9 +75,9 @@ readers will encounter the manifest items by simply turning pages one at a time.
 
 ### What this library does
 
-`@storyteller-platform/epub` provides an API to interact with the metadata,
-manifest, and spine of the EPUB publication. There are higher level APIs that
-mostly abstract away the implementation details of the EPUB specification, like
+`@storyteller/epub` provides an API to interact with the metadata, manifest, and
+spine of the EPUB publication. There are higher level APIs that mostly abstract
+away the implementation details of the EPUB specification, like
 `epub.setTitle(title: string)` and `epub.getCreators()`, as well as lower level
 APIs like `epub.writeItemContents(path: string, contents: Uint8Array)` and
 `epub.addMetadata(entry: MetadataEntry)`, which require some understanding of
@@ -97,7 +97,7 @@ scratch.
 ### Reading from a file
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 using epub = await Epub.from("path/to/book.epub")
 // equivalent to
@@ -111,7 +111,7 @@ Overlays/audio contents), you can instead lazily read the contents of the EPUB
 file into memory.
 
 ```ts
-import { Epub, MemoryAdapter } from "@storyteller-platform/epub"
+import { Epub, MemoryAdapter } from "@storyteller/epub"
 
 using epub = await Epub.using(MemoryAdapter).from("path/to/book.epub")
 console.log(await epub.getTitle())
@@ -130,7 +130,7 @@ incrementally after creation.
 ```ts
 import { randomUUID } from "node:crypto"
 
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 // Implicitly uses the TmpFsAdapter
 const epub = await Epub.create("/path/to/book.epub", {
@@ -146,7 +146,7 @@ const epub = await Epub.create("/path/to/book.epub", {
 ### Adding a chapter
 
 ```tsx
-import { Epub, type ManifestItem, x } from "@storyteller-platform/epub"
+import { Epub, type ManifestItem, x } from "@storyteller/epub"
 
 const epub = await Epub.from("path/to/book.epub")
 
@@ -179,7 +179,7 @@ const xmlContents = await epub.createXhtmlDocument([
 ])
 
 // Or, using JSX
-/** @jsxImportSource @storyteller-platform/epub */
+/** @jsxImportSource @storyteller/epub */
 const xmlContents = await epub.createXhtmlDocument([
   <h1>Chapter 1</h1>,
   <p>At first, there were s'mores.</p>,
@@ -199,7 +199,7 @@ await epub.addSpineItem(manifestItem.id)
 ### Writing to disk
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 const epub = await Epub.from("path/to/book.epub")
 await epub.setTitle("S'mores for Everyone")
@@ -218,7 +218,7 @@ However, it does support upgrading an EPUB 2 file to EPUB 3, after which you can
 use the library like normal.
 
 ```ts
-import { Epub } from "@storyteller-platform/epub"
+import { Epub } from "@storyteller/epub"
 
 using epub = await Epub.upgrade("path/to/epub2.epub", {
   // optional. if omitted the Epub
@@ -241,11 +241,7 @@ files.
 ```tsx
 import { useState, useEffect } from "react"
 
-import {
-  Epub,
-  type EpubReader,
-  MemoryAdapter,
-} from "@storyteller-platform/epub"
+import { Epub, type EpubReader, MemoryAdapter } from "@storyteller/epub"
 
 export function BookCover(file: File) {
   const [cover, setCover] = useState<string | null>(null)

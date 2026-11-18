@@ -4,7 +4,7 @@ import {
   getXhtmlBody,
   isElement,
   isText,
-} from "@storyteller-platform/epub"
+} from "@storyteller/epub"
 
 export function countAllDocumentCharacters(doc: Document): number {
   const body = getXhtmlBody(doc)

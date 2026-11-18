@@ -6,7 +6,7 @@
   "sortImports": {
     "customGroups": [
       {
-        "elementNamePattern": ["@storyteller-platform/**"],
+        "elementNamePattern": ["@storyteller/**"],
         "groupName": "storyteller"
       },
       {

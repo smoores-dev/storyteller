@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises"
 
-import { isHiddenFile } from "@storyteller-platform/fs"
+import { isHiddenFile } from "@storyteller/fs"
 
 import { normalizeReport } from "@/alignmentReportView"
 import { getProcessedAudioFilepath } from "@/assets/paths"

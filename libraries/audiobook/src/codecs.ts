@@ -1,4 +1,4 @@
-import { MediaType } from "@storyteller-platform/media-types"
+import { MediaType } from "@storyteller/media-types"
 
 export const AUDIO_ENCODERS = {
   mp3: "libmp3lame",

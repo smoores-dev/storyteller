@@ -1,6 +1,6 @@
 import { relative, dirname } from "node:path/posix"
 
-import { type EpubReader, parse } from "@storyteller-platform/epub"
+import { type EpubReader, parse } from "@storyteller/epub"
 
 import { type DomPointReference } from "@/progress/domPoints/domPoint.ts"
 import { domPointFromAnchor } from "@/progress/domPoints/fromAnchor.ts"
