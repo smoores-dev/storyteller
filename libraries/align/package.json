@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/align",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "description": "A library and CLI for automatically aligning audiobooks and EPUBs to produce Media Overlays",
   "author": "Shane Friedman",
   "license": "MIT",

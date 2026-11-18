@@ -1,6 +1,6 @@
 {
   "name": "@storyteller/epubcfi",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A spec-compliant library for building, parsing and resolving EPUB CFIs (vendored from colibrio-web-epubcfi)",
   "author": {
     "name": "Andreas Duchen",

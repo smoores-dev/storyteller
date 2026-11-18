@@ -20,7 +20,6 @@
     "sycl-ls",
     "readium"
   ],
-  "ignoreUnresolved": ["node-gyp-build"],
   "workspaces": {
     ".": {
       "entry": [
@@ -44,7 +43,7 @@
       "entry": ["src/cli/bin.ts", "scripts/**/*.{js,mjs,mts,ts}"],
       "ignoreDependencies": ["kuromoji", "node-gyp", "node-addon-api"]
     },
-    "libraries/audiobook": {
+    "libraries/audiobooks": {
       "ignoreDependencies": ["remark-toc"]
     },
     "libraries/epub": {

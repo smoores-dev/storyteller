@@ -18,7 +18,7 @@ test("extracts colors from raw RGB buffer", () => {
 test("extracts colors from a JPEG file", async () => {
   const fixture = await readFile(
     new URL(
-      "../../audiobook/src/__fixtures__/sleepy_hollow.jpg",
+      "../../audiobooks/src/__fixtures__/sleepy_hollow.jpg",
       import.meta.url,
     ),
   )
@@ -40,7 +40,7 @@ test("extracts colors from a JPEG file", async () => {
 test("extracts colors from a JPEG file w more info", async () => {
   const fixture = await readFile(
     new URL(
-      "../../audiobook/src/__fixtures__/sleepy_hollow.jpg",
+      "../../audiobooks/src/__fixtures__/sleepy_hollow.jpg",
       import.meta.url,
     ),
   )

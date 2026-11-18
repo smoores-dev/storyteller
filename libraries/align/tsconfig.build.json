@@ -16,7 +16,7 @@
   "exclude": ["dist", "src/**/__tests__"],
   "references": [
     { "path": "../epub" },
-    { "path": "../audiobook" },
+    { "path": "../audiobooks" },
     { "path": "../ghost-story" },
     { "path": "../media-types" }
   ]

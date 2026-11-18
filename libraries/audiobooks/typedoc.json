@@ -1,19 +1,12 @@
 {
   "$schema": "https://typedoc-plugin-markdown.org/schema.json",
-  "entryPoints": [
-    "./src/index.ts",
-    "./src/base.ts",
-    "./src/entry.ts",
-    "./src/node/index.ts",
-    "./src/node/entry.ts"
-  ],
+  "entryPoints": ["./src/index.ts"],
   "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-remark"],
   "readme": "none",
   "mergeReadme": false,
   "gitRevision": "main",
   "router": "module",
   "out": "./gen",
-  "entryModule": "./src/node/index.ts",
   "cleanOutputDir": true,
   "hidePageHeader": true,
   "hideGroupHeadings": true,

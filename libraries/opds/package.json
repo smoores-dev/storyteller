@@ -7,7 +7,7 @@
     "readium",
     "rwp"
   ],
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "types": "dist/index.d.ts",
   "license": "MIT",

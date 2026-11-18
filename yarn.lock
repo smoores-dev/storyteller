@@ -15859,9 +15859,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@storyteller/audiobooks@workspace:^, @storyteller/audiobooks@workspace:libraries/audiobook":
+"@storyteller/audiobooks@workspace:^, @storyteller/audiobooks@workspace:libraries/audiobooks":
   version: 0.0.0-use.local
-  resolution: "@storyteller/audiobooks@workspace:libraries/audiobook"
+  resolution: "@storyteller/audiobooks@workspace:libraries/audiobooks"
   dependencies:
     "@storyteller/fs": "workspace:^"
     "@storyteller/media-types": "workspace:^"
