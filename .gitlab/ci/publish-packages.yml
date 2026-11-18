@@ -120,14 +120,14 @@ release-epub:
         - name: "NPM package for @storyteller/epub"
           url: "https://npmjs.com/package/@storyteller/epub"
 
-publish-audiobook:
+publish-audiobooks:
   extends: .yarn_cache
   image: node:26.12.1
   stage: publish
   rules:
     - if:
         '$CI_COMMIT_TAG =~
-        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+        /^audiobooks-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   id_tokens:
     NPM_ID_TOKEN:
       aud: "npm:registry.npmjs.org"
@@ -147,28 +147,28 @@ publish-audiobook:
         *) TAG="latest" ;;
       esac
     - npm i -g corepack
-    - yarn workspaces focus @storyteller/audiobook
-    - yarn workspace @storyteller/audiobook npm publish --tag="$TAG"
+    - yarn workspaces focus @storyteller/audiobooks
+    - yarn workspace @storyteller/audiobooks npm publish --tag="$TAG"
 
-prerelease-audiobook:
+prerelease-audiobooks:
   extends: .prerelease-base
   variables:
-    PACKAGE: audiobook
+    PACKAGE: audiobooks
   rules:
     - if:
         '$CI_COMMIT_TAG =~
-        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+        /^audiobooks-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
 
-release-audiobook:
+release-audiobooks:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
-    - job: prerelease-audiobook
+    - job: prerelease-audiobooks
       artifacts: true
   rules:
     - if:
         '$CI_COMMIT_TAG =~
-        /^audiobook-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
+        /^audiobooks-v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|experimental|dev|test|preview)(?:\.\d+)?)?$/'
   script:
     - echo "Creating release for $CI_COMMIT_TAG"
   release:
@@ -178,8 +178,8 @@ release-audiobook:
     ref: "$CI_COMMIT_SHA"
     assets:
       links:
-        - name: "NPM package for @storyteller/audiobook"
-          url: "https://npmjs.com/package/@storyteller/audiobook"
+        - name: "NPM package for @storyteller/audiobooks"
+          url: "https://npmjs.com/package/@storyteller/audiobooks"
 
 publish-path:
   extends: .yarn_cache
