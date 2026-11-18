@@ -332,6 +332,14 @@
       "cover": false
     },
     {
+      "mime": "application/opds-progression+json",
+      "name": "OPDS_PROGRESSION",
+      "kind": "data",
+      "extensions": [],
+      "aliases": [],
+      "cover": false
+    },
+    {
       "mime": "application/atom+xml",
       "name": "ATOM",
       "kind": "manifest",
