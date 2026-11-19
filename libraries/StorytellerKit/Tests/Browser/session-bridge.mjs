@@ -17,10 +17,17 @@ await page.exposeFunction("reportReadingState", (state) => send({ state }))
 page.on("pageerror", (error) => send({ error: String(error) }))
 await page.goto(`http://127.0.0.1:${server.address().port}/harness/reader.html`)
 await page.waitForFunction(() => Boolean(window.reader))
-const pageTurnBook = reflowBook({
-  writingMode: process.argv[3] === "vertical" ? "vertical-rl" : "horizontal-tb",
+const fixture = process.argv[3]
+const book = reflowBook({
+  writingMode: fixture === "vertical" ? "vertical-rl" : "horizontal-tb",
+  chapterCount: fixture === "bookmark" ? 13 : 1,
 })
-pageTurnBook.sections[0].id = "chapter-0.xhtml"
+book.sections[0].id = "chapter-0.xhtml"
+if (fixture === "bookmark") {
+  // Match the element path in the saved page bookmark from the TestFlight report.
+  book.sections[9].html = `<body>${"<p>Earlier paragraph.</p>".repeat(15)}
+    <p>${"<span>Earlier sentence. </span>".repeat(7)}<span id="chapter2-s43">Bookmarked sentence.</span></p></body>`
+}
 await page.evaluate(
   async (book) => {
     const handlers = window.webkit.messageHandlers
@@ -60,7 +67,7 @@ await page.evaluate(
     // The harness forwards these methods directly to the shipped FoliateManager.
     window.foliateManager = window.reader
   },
-  ["page-turns", "vertical"].includes(process.argv[3]) ? pageTurnBook : null,
+  ["page-turns", "vertical", "bookmark"].includes(fixture) ? book : null,
 )
 send({ ready: true })
 

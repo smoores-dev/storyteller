@@ -2,6 +2,7 @@
 import Foundation
 import Testing
 
+@testable import StorytellerAppleKit
 @testable import StorytellerKit
 
 /// Real ReadingSession, engine timer, both bridge endpoints and paginator.
@@ -15,6 +16,46 @@ import Testing
     .enabled(if: ProcessInfo.processInfo.environment["STORYTELLER_READER_BROWSER_TESTS"] == "1"),
 )
 struct ReadingSessionBrowserTests {
+    @Test func pageBookmarkStaysAtItsSentenceAfterReconciliation() async throws {
+        let h = try await ProtocolTestSession.make()
+        let reader = try SessionBrowser(browser: "webkit", fixture: "bookmark")
+        defer {
+            reader.close()
+            Task { await h.close() }
+        }
+        try await reader.waitUntil("browser loads") { reader.ready }
+        let bridge = ReaderBridge(js: reader)
+        reader.bridge = bridge
+        h.session.attachBridge(bridge)
+        h.session.selectTextSection(12, href: "chapter-13.xhtml")
+        try await reader.waitUntil("original chapter settles") {
+            h.session.readerLocation?.sectionIndex == 12 && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil
+        }
+
+        let locator = try JSONDecoder().decode(BookLocator.self, from: Data("""
+            {"href":"chapter-10.xhtml","type":"application/xhtml+xml","locations":{
+                "fragments":["chapter2-s43"],
+                "partialCfi":"epubcfi(/6/20!/4/32,/16[chapter2-s43],/16[chapter2-s43])"}}
+            """.utf8))
+        let bookmark = Highlight(
+            bookID: h.session.bookID, locator: locator, text: "Bookmarked sentence.", color: nil)
+        let player = EbookPlayerViewModel(bookData: nil, session: h.session)
+        player.commsBridge = bridge
+        await player.navigateToHighlight(bookmark)
+        _ = await h.session.ensureSynced()
+        try await reader.waitUntil("bookmark navigation settles") {
+            h.session.navigation.pending == nil && h.session.navigation.syncTask == nil
+        }
+        #expect(await h.session.ensureSynced() == .synced)
+        let chapters = try await reader.evaluate("""
+            window.reader.snapshot().relocations.map(r => r.sectionIndex)
+                .filter((section, i, all) => section !== all[i - 1]).join(",")
+            """)
+        try #require(chapters == "0,12,9")
+        #expect(try await reader.visibleArea("chapter2-s43") > 0)
+    }
+
     @Test(arguments: ["webkit", "chromium"], [false, true])
     func manualPageTurnsSelectTheFirstWholeSentence(browser: String, playing: Bool) async throws {
         let h = try await ProtocolTestSession.make(audio: true, audioEntries: pageTurnEntries())

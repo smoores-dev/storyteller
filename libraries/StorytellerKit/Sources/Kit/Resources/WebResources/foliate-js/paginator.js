@@ -1,5 +1,6 @@
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const WHEEL_INPUT_IDLE_MS = 150
+const android = navigator.userAgent.includes("Android")
 
 class ViewportInput {
   static #attribute = "data-foliate-suppress-selection"
@@ -240,12 +241,20 @@ class CommittedPageTurnInputGuard {
 class CssSnapTrack {
   #element
   #signature = null
+  #selectionMarker = null
 
   constructor(element) {
     this.#element = element
   }
   invalidate() {
     this.#signature = null
+  }
+  setSelectionPage(page) {
+    const marker = page == null ? null : this.#element.children.item(page)
+    if (marker === this.#selectionMarker) return
+    this.#selectionMarker?.classList.remove("selection-page")
+    marker?.classList.add("selection-page")
+    this.#selectionMarker = marker
   }
   update({ vertical, pages, pageSize, canPrev, canNext }) {
     const signature = `${vertical}:${pages}:${pageSize}:${canPrev}:${canNext}`
@@ -264,6 +273,7 @@ class CssSnapTrack {
       return marker
     })
     this.#element.replaceChildren(...markers)
+    this.#selectionMarker = null
   }
 }
 
@@ -762,7 +772,10 @@ export class Paginator extends HTMLElement {
   #input = new ViewportInput(
     () =>
       !this.#locked && !this.#viewport.active && !this.#userChapterTransition,
-    () => this.#viewport.updateInteraction(),
+    () => {
+      this.#viewport.updateInteraction()
+      this.#syncSelectionPage()
+    },
   )
   constructor() {
     super()
@@ -878,6 +891,9 @@ export class Paginator extends HTMLElement {
         #snap-track > div.disabled {
             scroll-snap-align: none;
         }
+        #snap-track:has(> .selection-page) > :not(.selection-page) {
+            scroll-snap-align: none;
+        }
         #header {
             grid-column: 3 / 4;
             grid-row: 1;
@@ -990,6 +1006,8 @@ export class Paginator extends HTMLElement {
     }, 700)
     this.addEventListener("load", ({ detail: { doc } }) => {
       this.#input.attach(doc)
+      if (android)
+        doc.addEventListener("selectionchange", () => this.#syncSelectionPage())
       doc.addEventListener(
         "pointerdown",
         (e) => {
@@ -1358,7 +1376,7 @@ export class Paginator extends HTMLElement {
     beginInteraction() {
       if (this.#interaction) return
       this.#interaction = {
-        from: this.#reflow ? null : this.#lastPosition,
+        from: this.#lastPosition,
         to: null,
       }
       this.#reportInteraction(true)
@@ -1533,6 +1551,9 @@ export class Paginator extends HTMLElement {
         return false
       }
       if (!this.#cssSnap) {
+        // Replacing a chapter can clamp the previous scroll offset. Until the
+        // new chapter has a committed position, that scroll is part of layout.
+        if (this.#committedAnchor == null) return true
         this.#cssSnap = { reason: "snap" }
       }
       const operation = this.#cssSnap
@@ -1608,8 +1629,17 @@ export class Paginator extends HTMLElement {
       pending.resolve?.(false)
       this.armCssSnapIdleFallback(replacement)
     }
-    /** Marks an adopted CSS-snap operation as confirmed user dragging. */
+    /** A page drag that starts after layout takes over from its saved anchor. */
     confirmGesture() {
+      if (
+        this.#reflow &&
+        this.#interaction?.from &&
+        !this.#paginator.scrolled
+      ) {
+        this.abortReflow()
+        this.#paginator.#updateCssSnapLayout()
+        this.#paginator.#afterScroll("anchor", false)
+      }
       this.#paginator.#justAnchored = false
       if (this.#continuous) this.#continuous.reason = "scroll"
       if (this.#cssSnap?.reason === "snap") this.#cssSnap.userInitiated = true
@@ -1833,6 +1863,7 @@ export class Paginator extends HTMLElement {
           error,
         ),
       )
+      this.recordPosition("anchor")
     }
     #scheduleReflowAdvance(transaction) {
       if (this.#reflow !== transaction) return
@@ -2035,6 +2066,17 @@ export class Paginator extends HTMLElement {
     this.#userChapterTransition = null
     this.#input.releaseIfSettled()
   }
+  // A native handle can scroll a fragmented paragraph back a column. While
+  // text is selected at rest, only the visible page is a snap destination.
+  // A short swipe can settle on the same page with that selection still live.
+  #syncSelectionPage() {
+    if (!android) return
+    const hold =
+      this.#input.settled &&
+      !this.scrolled &&
+      this.#view?.document?.getSelection()?.type === "Range"
+    this.#cssSnapTrack.setSelectionPage(hold ? this.page : null)
+  }
   #onWheel() {
     if (this.#committedPageTurnInput.active) return
     this.#input.wheel()
@@ -2094,6 +2136,8 @@ export class Paginator extends HTMLElement {
   async #scrollTo(offset, reason, smooth) {
     const element = this.#container
     const { scrollProp } = this
+    if (element[scrollProp] !== offset)
+      this.#cssSnapTrack.setSelectionPage(null)
     const shouldAnimate = smooth && this.#shouldAnimateScrolling()
     // FIXME: vertical-rl only, not -lr
     if (this.scrolled && this.#vertical) offset = -offset

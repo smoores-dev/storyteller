@@ -954,7 +954,12 @@ class EbookPlayerViewModel {
     func navigateToHighlight(_ highlight: Highlight) async {
         guard let bridge = commsBridge else { return }
 
-        if let cfi = highlight.locator.locations?.partialCfi {
+        let locations = highlight.locator.locations
+        let fragment = locations?.fragments?.first
+        // Page bookmarks store a sentence ID. Selection bookmarks store the CFI as their fragment.
+        let hasBookmarkedElement =
+            highlight.isBookmark && fragment?.contains("#") == false && fragment != locations?.partialCfi
+        if let cfi = locations?.partialCfi, !hasBookmarkedElement {
             do {
                 try await bridge.sendJsGoToCFICommand(cfi: cfi)
                 debugLog("[EbookPlayerViewModel] Navigated to highlight CFI: \(cfi)")
@@ -963,7 +968,7 @@ class EbookPlayerViewModel {
             }
         } else {
             var href = highlight.locator.href
-            if let fragment = highlight.locator.locations?.fragments?.first {
+            if let fragment {
                 href = "\(href)#\(fragment)"
             }
             do {

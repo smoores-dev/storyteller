@@ -128,13 +128,13 @@ async function navigate(href) {
 }
 
 window.reader = {
-  async open({ book, href = book.sections[0]?.id, width = 412, height = 800 }) {
+  async open({ book, href, width = 412, height = 800 }) {
     if (manager)
       throw new Error("Reader already open; use a fresh page for another book")
     container.style.width = `${width}px`
     container.style.height = `${height}px`
     manager = new FoliateManager()
-    await manager.open(makeBook(book))
+    await manager.open(typeof book === "string" ? book : makeBook(book))
     view = document.querySelector("foliate-view")
     renderer = view.renderer
     renderer.setAttribute("gap", "0%")
@@ -160,7 +160,7 @@ window.reader = {
     })
     // Initial font/layout work can finish with an anchor relocation. Let the
     // section finish loading before exercising explicit restored navigation.
-    await view.goTo(href)
+    await view.goTo(href ?? 0)
     await waitUntil(() => relocations.length > 0, "initial section relocation")
     await settled()
   },

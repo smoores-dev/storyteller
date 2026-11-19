@@ -32,7 +32,7 @@ export interface BookDefinition {
   metadata?: { title?: string; language?: string }
 }
 export interface OpenOptions {
-  book: BookDefinition
+  book: BookDefinition | string
   href?: string
   width?: number
   height?: number
