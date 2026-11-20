@@ -4,6 +4,6 @@ releases:
 declined:
   - "@storyteller/web"
   - "@storyteller/align"
-  - "@storyteller/audiobook"
+  - "@storyteller/audiobooks"
   - "@storyteller/epub"
   - "@storyteller/ghost-story"
