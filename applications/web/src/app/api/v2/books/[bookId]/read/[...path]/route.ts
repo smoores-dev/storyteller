@@ -31,7 +31,8 @@ const FORWARDED_REQUEST_HEADERS = [
   "if-range",
 ]
 
-const ONE_SECOND = 1_000
+// Cache-Control max-age is expressed in seconds.
+const ONE_SECOND = 1
 const ONE_MINUTE = 60 * ONE_SECOND
 const ONE_HOUR = 60 * ONE_MINUTE
 const ONE_WEEK = 7 * 24 * ONE_HOUR
