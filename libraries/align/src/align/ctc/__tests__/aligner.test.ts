@@ -215,7 +215,7 @@ describe("extendDominantRun", () => {
       [13, 15],
       [16, 20],
     ])
-    assert.deepStrictEqual(extendDominantRun(a, 0, 2, 0, 2), [10, 20])
+    assert.deepStrictEqual(extendDominantRun(a, 0, 2, 0, 2, 30), [10, 20])
   })
 
   it("extends over a deferred tail at the run's rate", () => {
@@ -228,7 +228,7 @@ describe("extendDominantRun", () => {
       [500, 501],
       [502, 503],
     ])
-    assert.deepStrictEqual(extendDominantRun(a, 0, 5, 0, 3), [0, 60])
+    assert.deepStrictEqual(extendDominantRun(a, 0, 5, 0, 3, 30), [0, 60])
   })
 
   it("never reaches the frames the tail was misplaced onto", () => {
@@ -241,7 +241,7 @@ describe("extendDominantRun", () => {
     ]
     for (let i = 0; i < 20; i++) spans.push([200 + i, 200 + i])
     const a = alignments(spans)
-    assert.deepStrictEqual(extendDominantRun(a, 0, 23, 0, 3), [0, 199])
+    assert.deepStrictEqual(extendDominantRun(a, 0, 23, 0, 3, 30), [0, 199])
   })
 
   it("extends backwards over a head pulled early", () => {
@@ -254,6 +254,47 @@ describe("extendDominantRun", () => {
       [421, 430],
       [431, 440],
     ])
-    assert.deepStrictEqual(extendDominantRun(a, 0, 5, 2, 5), [380, 440])
+    assert.deepStrictEqual(extendDominantRun(a, 0, 5, 2, 5, 30), [380, 440])
+  })
+
+  it("never extends at a rate the chapter's own pace rules out", () => {
+    const chapterFramesPerChar = 3.7
+    const chapterCeiling = chapterFramesPerChar * 3
+
+    const runFrames = 262
+    const runLength = 8
+    assert.ok(
+      runFrames / runLength > chapterCeiling,
+      "fixture: the run's own rate exceeds the chapter's ceiling",
+    )
+
+    const deferredHeadGap = 173
+    const deferredTailGap = 700
+    const deferredHeadChars = 2
+    const deferredTailChars = 1
+    assert.ok(
+      Math.round(deferredHeadChars * chapterCeiling) < deferredHeadGap &&
+        Math.round(deferredTailChars * chapterCeiling) < deferredTailGap,
+      "fixture: neither gap caps the extension",
+    )
+
+    const driftedRun = alignments([
+      [4262, 4262],
+      [4272, 4272],
+      [4445, 4445],
+      [4453, 4453],
+      [4456, 4456],
+      [4469, 4470],
+      [4508, 4509],
+      [4601, 4601],
+      [4656, 4656],
+      [4707, 4707],
+      [5407, 5407],
+    ])
+
+    assert.deepStrictEqual(
+      extendDominantRun(driftedRun, 0, 10, 2, 9, chapterFramesPerChar),
+      [4423, 4718],
+    )
   })
 })

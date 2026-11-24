@@ -586,6 +586,7 @@ export function findBoundariesInDocument(
   return {
     start: Math.round(start),
     end: Math.round(end),
+    slope,
     confidence,
     anchors,
     evidenceRange,

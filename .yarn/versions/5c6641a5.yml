@@ -1,0 +1,5 @@
+releases:
+  "@storyteller/align": patch
+
+declined:
+  - "@storyteller/web"

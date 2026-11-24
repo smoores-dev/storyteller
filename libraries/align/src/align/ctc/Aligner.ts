@@ -122,6 +122,35 @@ function previewOf(sentences: { text: string }[]): string {
  */
 const MAX_INTRA_SENTENCE_GAP_FRAMES = 150
 
+/**
+ * The minimum length for pace to be a reliable signal.
+ */
+const MIN_RUN_LENGTH_FOR_PACE_CHECK = 8
+
+/**
+ * Below this the tokens of a sentence are stacked on top of one another: even
+ * the fastest speech needs about two frames per character at 20 ms frames.
+ */
+const MIN_RUN_FRAMES_PER_CHAR = 2
+
+/**
+ * How far a dominant run may outpace its chapter pace. Beyond this,
+ * we suspect that the run includes characters spread past the actual
+ * sentence boundary.
+ */
+const MAX_RUN_FRAMES_PER_CHAR_FACTOR = 3
+
+/**
+ * Ceiling used when the chapter has no pace fit to compare against.
+ */
+const MAX_RUN_FRAMES_PER_CHAR_WITHOUT_PACE_FIT = 15
+
+export function maxRunFramesPerChar(chapterFramesPerChar: number) {
+  return chapterFramesPerChar > 0
+    ? chapterFramesPerChar * MAX_RUN_FRAMES_PER_CHAR_FACTOR
+    : MAX_RUN_FRAMES_PER_CHAR_WITHOUT_PACE_FIT
+}
+
 export interface AlignOptions {
   reportsPath?: string | null | undefined
   granularity?: "sentence" | "word" | null | undefined
@@ -262,11 +291,15 @@ export function extendDominantRun(
   endOffset: number,
   runStart: number,
   runEnd: number,
+  chapterFramesPerChar: number,
 ): [number, number] {
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
   const runStartFrame = alignments[runStart]!.startFrame
   const runEndFrame = alignments[runEnd]!.endFrame
-  const framesPerChar = (runEndFrame - runStartFrame) / (runEnd + 1 - runStart)
+  const framesPerChar = Math.min(
+    (runEndFrame - runStartFrame) / (runEnd + 1 - runStart),
+    maxRunFramesPerChar(chapterFramesPerChar),
+  )
 
   let startFrame = runStartFrame
   if (runStart > startOffset) {
@@ -575,6 +608,7 @@ export class Aligner {
     emissionsStart: number,
     emissionsEnd: number,
     anchors: Match[],
+    chapterFramesPerChar: number,
     paddedChapterBoundaries: [number, number],
     unpaddedChapterBoundaries: [number, number],
     timing: Timing,
@@ -684,6 +718,7 @@ export class Aligner {
         paddedChapterBoundaries,
         unpaddedChapterBoundaries,
         droppedSentences,
+        chapterFramesPerChar,
       ),
     )
 
@@ -747,6 +782,7 @@ export class Aligner {
     paddedChapterBoundaries: [number, number],
     unpaddedChapterBoundaries: [number, number],
     droppedSentences: Set<number>,
+    chapterFramesPerChar: number,
   ) {
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
     const sentenceRanges: SentenceRange[] = []
@@ -815,7 +851,11 @@ export class Aligner {
         (alignments[runEnd]!.endFrame - alignments[runStart]!.startFrame) /
         runLength
 
-      if (runLength > 8 && (runFramesPerChar < 2 || runFramesPerChar > 15)) {
+      if (
+        runLength >= MIN_RUN_LENGTH_FOR_PACE_CHECK &&
+        (runFramesPerChar < MIN_RUN_FRAMES_PER_CHAR ||
+          runFramesPerChar > maxRunFramesPerChar(chapterFramesPerChar))
+      ) {
         skippedSentences.add(i)
         continue
       }
@@ -826,6 +866,7 @@ export class Aligner {
         endOffset,
         runStart,
         runEnd,
+        chapterFramesPerChar,
       )
       const startFrame = this.refineStartFrame(
         runStartFrame + this.boundaryOffset.start,
@@ -1050,6 +1091,7 @@ export class Aligner {
     emissionsStart: number,
     emissionsEnd: number,
     anchors: Match[],
+    chapterFramesPerChar: number,
     paddedChapterBoundaries: [number, number],
     unpaddedChapterBoundaries: [number, number],
     timing: Timing,
@@ -1082,6 +1124,7 @@ export class Aligner {
       emissionsStart,
       emissionsEnd,
       anchors,
+      chapterFramesPerChar,
       paddedChapterBoundaries,
       unpaddedChapterBoundaries,
       timing,
@@ -1450,6 +1493,7 @@ export class Aligner {
         start,
         end,
         boundaries.anchors,
+        boundaries.slope,
         [chunkEvidenceHead, chunkEvidenceTail],
         [chunkMatchedHead, chunkMatchedTail],
         timing,
