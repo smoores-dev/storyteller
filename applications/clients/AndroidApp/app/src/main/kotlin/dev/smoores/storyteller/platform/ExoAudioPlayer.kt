@@ -49,6 +49,7 @@ internal class ExoAudioPlayer(
     private var activeLoadID: String? = null
     private var pendingLoadID: String? = null
     private var didReportEnd = false
+    private var wasPlayWhenReady = false
 
     init {
         player.addListener(this)
@@ -163,7 +164,13 @@ internal class ExoAudioPlayer(
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
         requirePlayerThread()
+        val wasPlaying = wasPlayWhenReady
+        wasPlayWhenReady = playWhenReady
         if (playWhenReady) return
+        // ExoPlayer also calls this when only the reason changes. After losing
+        // audio focus, pausing an already-paused player reports the focus loss
+        // again; treating that as a new interruption pauses again, forever.
+        if (!wasPlaying) return
         val loadID = activeLoadID ?: return
 
         when (reason) {
