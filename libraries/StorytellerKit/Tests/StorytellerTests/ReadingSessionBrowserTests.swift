@@ -736,6 +736,42 @@ struct ReadingSessionBrowserTests {
         await h.close()
     }
 
+    /// iOS WebKit delivers no touch events for a touch that lands while it still considers the
+    /// scroller moving, so the page sees only the scroll. That scroll is still the user's page
+    /// turn and must not rubber-band back to the playhead.
+    @Test(arguments: ["webkit", "chromium"], [false, true])
+    func aScrollWithoutTouchEventsTurnsThePage(browser: String, playing: Bool) async throws {
+        let h = try await ProtocolTestSession.make(audio: true, audioEntries: pageTurnEntries())
+        let reader = try SessionBrowser(browser: browser, fixture: "page-turns")
+        defer {
+            reader.close()
+            Task { await h.close() }
+        }
+        let bridge = try await openPageSession(h, reader, playing: playing)
+        var navigations = 0
+        h.session.onUserNavigation = { navigations += 1 }
+        var page = try #require(h.session.readerLocation?.pageIndex)
+        for direction in [1, 1, -1, 1] {
+            page += direction
+            let before = navigations
+            _ = try await reader.evaluate("window.reader.flick(\(direction), { touch: false, delay: 0 })")
+            // Only an accepted user page turn counts a navigation. A rubber band projects
+            // back to the playhead instead, so this wait times out.
+            try await reader.waitUntil("scroll is accepted on page \(page)") {
+                let snapshot = try await bridge.readingSnapshot()
+                return navigations == before + 1 && snapshot.gesture == nil
+                    && !snapshot.navigationBlocked && snapshot.location?.pageIndex == page
+                    && h.session.navigation.pending == nil && h.session.navigation.syncTask == nil
+            }
+            let expected = try await reader.firstWholeSentence()
+            #expect(await h.engine.getBackgroundSyncData()?.fragment == expected)
+            #expect(h.session.playback.accepted?.locations?.fragments == [expected])
+            #expect(await h.engine.getCurrentState()?.isPlaying == playing)
+        }
+        #expect(reader.errors.isEmpty)
+        await h.close()
+    }
+
     /// Finger jitter on a tap must not hold the renderer busy, which would hold up the tap's page
     /// turn.
     @Test(arguments: ["webkit", "chromium"])

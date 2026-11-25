@@ -1595,9 +1595,10 @@ export class Paginator extends HTMLElement {
         // Replacing a chapter can clamp the previous scroll offset. Until the
         // new chapter has a committed position, that scroll is part of layout.
         if (this.#committedAnchor == null) return true
-        this.#cssSnap = this.#newCssSnap("snap")
+        this.#cssSnap = this.#newCssSnap("snap", { unowned: true })
       }
       const operation = this.#cssSnap
+      if (operation.unowned) this.#adoptUnownedScroll(operation)
       operation.scrollStarted = true
       // Native scrollend is the only sound way to delimit wheel/trackpad input;
       // an idle pause can occur before that gesture has actually settled. Keep
@@ -1610,6 +1611,33 @@ export class Paginator extends HTMLElement {
       )
         this.armCssSnapIdleFallback(operation)
       return true
+    }
+    /**
+     * iOS WebKit delivers no touch events for a touch that lands while it still
+     * considers the scroller moving, so only the scroll reaches the page.
+     * Programmatic moves always own an operation before they scroll, so a scroll
+     * that leaves the settled page with none and no tracked input is the user's.
+     */
+    #adoptUnownedScroll(operation) {
+      const paginator = this.#paginator
+      // Tracked input already owns the interaction.
+      if (paginator.#input.inputActive) {
+        operation.unowned = false
+        return
+      }
+      const position = this.#lastPosition
+      // RTL text scrolls with a negative offset horizontally but a positive one
+      // when vertical, so compare magnitudes, as `start` does.
+      const offset = paginator.start
+      const pageOffset =
+        position?.index === paginator.#index
+          ? paginator.size * position.offset
+          : offset
+      // Sub-pixel settling at the current page is not a page turn.
+      if (Math.abs(offset - pageOffset) <= 1) return
+      operation.unowned = false
+      operation.userInitiated = true
+      this.beginInteraction()
     }
     /** Resolves after the active transaction and any immediate restart finish. */
     async wait() {
@@ -1632,6 +1660,7 @@ export class Paginator extends HTMLElement {
         userInitiated = true,
         scrollStarted = false,
         awaitingMomentum = false,
+        unowned = false,
         targetOffset,
       } = {},
     ) {
@@ -1644,6 +1673,7 @@ export class Paginator extends HTMLElement {
         targetCorrectionAttempted: false,
         idleFallback: false,
         awaitingMomentum,
+        unowned,
         targetOffset,
       }
     }

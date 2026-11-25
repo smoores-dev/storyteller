@@ -111,7 +111,12 @@ interface ReaderHarness {
   // A touch that lifts before any scroll, optionally followed by momentum.
   flick(
     direction: number,
-    options?: { delay?: number; travel?: number; scroll?: boolean },
+    options?: {
+      delay?: number
+      travel?: number
+      scroll?: boolean
+      touch?: boolean
+    },
   ): Promise<void>
   snapshot(): ReaderSnapshot
 }

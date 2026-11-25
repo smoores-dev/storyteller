@@ -67,18 +67,22 @@ const fireTouch = (type, touches) => {
  */
 async function flick(
   direction,
-  { delay = 30, travel = 60, scroll = true } = {},
+  { delay = 30, travel = 60, scroll = true, touch = true } = {},
 ) {
-  const target = doc().body
-  const x = 200
-  const y = 300
-  fireTouch("touchstart", [touchAt(target, x, y)])
-  for (let step = 1; step <= 2; step++) {
-    fireTouch("touchmove", [
-      touchAt(target, x - (travel * step * direction) / 2, y),
-    ])
+  // `touch: false` models a touch that iOS WebKit keeps to itself because it
+  // landed while the scroller still looked busy: only the scroll reaches the page.
+  if (touch) {
+    const target = doc().body
+    const x = 200
+    const y = 300
+    fireTouch("touchstart", [touchAt(target, x, y)])
+    for (let step = 1; step <= 2; step++) {
+      fireTouch("touchmove", [
+        touchAt(target, x - (travel * step * direction) / 2, y),
+      ])
+    }
+    fireTouch("touchend", [])
   }
-  fireTouch("touchend", [])
   if (!scroll) return
   await new Promise((resolve) => setTimeout(resolve, delay))
   const scroller = shadowRoots.get(renderer).getElementById("container")
