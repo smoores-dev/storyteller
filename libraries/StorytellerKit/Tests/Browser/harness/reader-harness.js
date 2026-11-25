@@ -26,6 +26,66 @@ function doc() {
   return renderer.getContents()[0].doc
 }
 
+// Keep closed shadow roots reachable so tests can move the real scroll
+// container the way native momentum does, independently of touch events.
+const shadowRoots = new WeakMap()
+const attachShadow = Element.prototype.attachShadow
+Element.prototype.attachShadow = function (init) {
+  const root = attachShadow.call(this, init)
+  shadowRoots.set(this, root)
+  return root
+}
+
+// Desktop WebKit cannot construct Touch or TouchEvent. The paginator reads only
+// `touches` and their client coordinates, so a plain event carries them there.
+const touchAt = (target, x, y) => {
+  const init = { identifier: 0, target, clientX: x, clientY: y }
+  try {
+    return new Touch(init)
+  } catch {
+    return init
+  }
+}
+const fireTouch = (type, touches) => {
+  const init = { bubbles: true, cancelable: true }
+  let event
+  try {
+    event = new TouchEvent(type, { ...init, touches, changedTouches: touches })
+  } catch {
+    event = new Event(type, init)
+    Object.defineProperties(event, {
+      touches: { value: touches },
+      changedTouches: { value: touches },
+    })
+  }
+  doc().dispatchEvent(event)
+}
+
+/**
+ * A fast flick whose finger lifts before the first scroll event, after which
+ * momentum scrolls the container to the next page.
+ */
+async function flick(
+  direction,
+  { delay = 30, travel = 60, scroll = true } = {},
+) {
+  const target = doc().body
+  const x = 200
+  const y = 300
+  fireTouch("touchstart", [touchAt(target, x, y)])
+  for (let step = 1; step <= 2; step++) {
+    fireTouch("touchmove", [
+      touchAt(target, x - (travel * step * direction) / 2, y),
+    ])
+  }
+  fireTouch("touchend", [])
+  if (!scroll) return
+  await new Promise((resolve) => setTimeout(resolve, delay))
+  const scroller = shadowRoots.get(renderer).getElementById("container")
+  const page = renderer.page + direction
+  scroller.scrollTo({ left: renderer.size * page, behavior: "smooth" })
+}
+
 // Independent oracle: measure text glyph rectangles and their clipping in
 // outer-window coordinates. Do not use the production visibility helper or
 // its page-index arithmetic. The fixture has zero horizontal paginator gap;
@@ -165,6 +225,7 @@ window.reader = {
     await settled()
   },
   navigate,
+  flick,
   async scrollingMode() {
     manager.updateStyles(JSON.stringify({ scrollingMode: true }))
     await settled()
@@ -185,7 +246,8 @@ window.reader = {
     dropReadingMessages = value
   },
   readingInput(active) {
-    doc().dispatchEvent(new Event(active ? "touchstart" : "touchend"))
+    if (active) fireTouch("touchstart", [touchAt(doc().body, 200, 300)])
+    else fireTouch("touchend", [])
   },
   async goTo(href, { smooth = false } = {}) {
     renderer.toggleAttribute("animated", smooth)

@@ -678,6 +678,105 @@ struct ReadingSessionBrowserTests {
         await h.close()
     }
 
+    /// Opens a page-mode session at the start of the narration and waits for it to settle.
+    private func openPageSession(
+        _ h: ProtocolTestSession,
+        _ reader: SessionBrowser,
+        playing: Bool,
+    ) async throws -> ReaderBridge {
+        try await reader.waitUntil("browser loads") { reader.ready }
+        let bridge = ReaderBridge(js: reader)
+        reader.bridge = bridge
+        h.session.attachBridge(bridge)
+        try await h.engine.seek(to: 1)
+        await h.session.acceptAudioPosition()
+        _ = await h.session.ensureSynced(reason: "page session setup")
+        await h.session.installPlaybackObservation()
+        if playing { try await h.session.play() }
+        try await reader.waitUntil("page session settles") {
+            let snapshot = try await bridge.readingSnapshot()
+            return h.session.lastSyncResult == .synced && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil && !snapshot.navigationBlocked
+        }
+        return bridge
+    }
+
+    /// A fast flick can lift before the browser delivers its first scroll event. The momentum
+    /// that follows is still the user's page turn and must not rubber-band back to the playhead.
+    @Test(arguments: ["webkit", "chromium"], [false, true])
+    func aFlickThatLiftsBeforeScrollingTurnsThePage(browser: String, playing: Bool) async throws {
+        let h = try await ProtocolTestSession.make(audio: true, audioEntries: pageTurnEntries())
+        let reader = try SessionBrowser(browser: browser, fixture: "page-turns")
+        defer {
+            reader.close()
+            Task { await h.close() }
+        }
+        let bridge = try await openPageSession(h, reader, playing: playing)
+        var navigations = 0
+        h.session.onUserNavigation = { navigations += 1 }
+        var page = try #require(h.session.readerLocation?.pageIndex)
+        for direction in [1, 1, -1, 1] {
+            page += direction
+            let before = navigations
+            _ = try await reader.evaluate("window.reader.flick(\(direction))")
+            // Only an accepted user page turn counts a navigation. A rubber band projects
+            // back to the playhead instead, so this wait times out.
+            try await reader.waitUntil("flick is accepted on page \(page)") {
+                let snapshot = try await bridge.readingSnapshot()
+                return navigations == before + 1 && snapshot.gesture == nil
+                    && !snapshot.navigationBlocked && snapshot.location?.pageIndex == page
+                    && h.session.navigation.pending == nil && h.session.navigation.syncTask == nil
+            }
+            let expected = try await reader.firstWholeSentence()
+            #expect(await h.engine.getBackgroundSyncData()?.fragment == expected)
+            #expect(h.session.playback.accepted?.locations?.fragments == [expected])
+            #expect(await h.engine.getCurrentState()?.isPlaying == playing)
+        }
+        #expect(reader.errors.isEmpty)
+        await h.close()
+    }
+
+    /// Finger jitter on a tap must not hold the renderer busy, which would hold up the tap's page
+    /// turn.
+    @Test(arguments: ["webkit", "chromium"])
+    func aJitteryTapDoesNotBlockTheTapPageTurn(browser: String) async throws {
+        let h = try await ProtocolTestSession.make(audio: true, audioEntries: pageTurnEntries())
+        let reader = try SessionBrowser(browser: browser, fixture: "page-turns")
+        defer {
+            reader.close()
+            Task { await h.close() }
+        }
+        let bridge = try await openPageSession(h, reader, playing: true)
+        // Each check reads the renderer in the same evaluation as the touch, so it can't
+        // miss a block that lasts only for the idle fallback.
+        func flickBlocks(_ options: String) async throws -> Bool {
+            try await reader.evaluate(
+                """
+                (window.reader.flick(1, \(options)),
+                    String(window.reader.readingSnapshot().navigationBlocked))
+                """
+            ) == "true"
+        }
+
+        // 4 px of travel and no scroll, as from a margin tap. The tap's page turn must land.
+        let page = try #require(h.session.readerLocation?.pageIndex)
+        #expect(try await flickBlocks("{ travel: 4, scroll: false }") == false)
+        h.session.turnPageRight()
+        try await reader.waitUntil("the tap's page turn lands on page \(page + 1)") {
+            h.session.readerLocation?.pageIndex == page + 1 && h.session.navigation.pending == nil
+                && h.session.navigation.syncTask == nil
+        }
+
+        // A real drag that produces no scroll holds the renderer only briefly.
+        #expect(try await flickBlocks("{ scroll: false }"))
+        try await reader.waitUntil("unscrolled drag releases the renderer") {
+            let snapshot = try await bridge.readingSnapshot()
+            return snapshot.gesture == nil && !snapshot.navigationBlocked
+        }
+        #expect(reader.errors.isEmpty)
+        await h.close()
+    }
+
     @Test(arguments: ["webkit", "chromium"])
     func splitSentenceTurnsTheRealPageAndContinuesHighlighting(browser: String) async throws {
         let h = try await ProtocolTestSession.make(audio: true)

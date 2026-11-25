@@ -72,3 +72,32 @@ test("an offscreen playhead cannot replace the user's reflow anchor", async ({
   expect((await reader.measure("sentence-40")).visibleArea).toBeGreaterThan(0)
   expect((await reader.measure("sentence-80")).visibleArea).toBe(0)
 })
+
+test("a drag that never scrolls keeps the reflow anchor", async ({
+  reader,
+}) => {
+  await reader.open({ book: reflowBook() })
+  await reader.navigate("chapter.xhtml#sentence-40")
+  const { target } = await pageSentences(reader)
+  await reader.navigate(`chapter.xhtml#${target}`)
+  const before = await reader.snapshot()
+
+  // Long enough to count as a flick, but no momentum scroll follows.
+  await reader.page.evaluate(() => window.reader.flick(1, { scroll: false }))
+  await expect
+    .poll(() =>
+      reader.page.evaluate(
+        () => window.reader.readingSnapshot().navigationBlocked,
+      ),
+    )
+    .toBe(false)
+  await reader.page.evaluate(() => window.reader.settled())
+
+  const after = await reader.snapshot()
+  expect(after.start).toBe(before.start)
+  expect(
+    after.relocations.slice(before.relocations.length).map((r) => r.reason),
+  ).not.toContain("snap")
+  await reader.page.evaluate(() => window.reader.reflow({ height: 480 }))
+  expect((await reader.measure(target)).visibleArea).toBeGreaterThan(0)
+})

@@ -1,6 +1,46 @@
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const WHEEL_INPUT_IDLE_MS = 150
 const android = navigator.userAgent.includes("Android")
+// A touch that travels this far is a drag or flick, not a tap with finger jitter.
+const FLICK_MIN_TRAVEL_PX = 10
+
+/**
+ * How far the current touch has travelled from where its first finger landed.
+ * Book scripts run in the chapter iframe and can dispatch touch events with no
+ * touch list, so a missing list counts as empty, as it does in ViewportInput.
+ */
+class TouchTravel {
+  #origin = null
+  #distance = 0
+  /** Starts measuring when the first finger lands. */
+  start(event) {
+    const touches = event.touches ?? []
+    if (touches.length === 1 || !this.#origin) {
+      const [touch] = touches
+      this.#origin = touch ? { x: touch.clientX, y: touch.clientY } : null
+      this.#distance = 0
+    }
+  }
+  /** Keeps the farthest distance the touch has reached from its origin. */
+  move(touch) {
+    if (!touch || !this.#origin) return
+    this.#distance = Math.max(
+      this.#distance,
+      Math.hypot(
+        touch.clientX - this.#origin.x,
+        touch.clientY - this.#origin.y,
+      ),
+    )
+  }
+  /** Stops measuring once the last finger lifts. */
+  end(event) {
+    if (!event.touches?.length) this.#origin = null
+  }
+  /** Whether the touch travelled far enough to be a drag rather than tap jitter. */
+  get isDrag() {
+    return this.#distance >= FLICK_MIN_TRAVEL_PX
+  }
+}
 
 class ViewportInput {
   static #attribute = "data-foliate-suppress-selection"
@@ -765,6 +805,7 @@ export class Paginator extends HTMLElement {
   #mediaQueryListener
   #touchPinched = false
   #touchScrolled
+  #touchTravel = new TouchTravel()
   #viewport = new Paginator.#ViewportOperations(this)
   #userChapterTransition = null
   #lastVisibleRange
@@ -1554,7 +1595,7 @@ export class Paginator extends HTMLElement {
         // Replacing a chapter can clamp the previous scroll offset. Until the
         // new chapter has a committed position, that scroll is part of layout.
         if (this.#committedAnchor == null) return true
-        this.#cssSnap = { reason: "snap" }
+        this.#cssSnap = this.#newCssSnap("snap")
       }
       const operation = this.#cssSnap
       operation.scrollStarted = true
@@ -1579,23 +1620,38 @@ export class Paginator extends HTMLElement {
       if (!this.#handleReflowActivity())
         this.#settleCssSnap(this.#cssSnap, false)
     }
-    /** Starts a programmatic CSS-snap operation, superseding its predecessor. */
-    beginCssSnap(
+    /**
+     * Builds a CSS-snap operation without installing it. Every operation field
+     * and its default is listed here.
+     */
+    #newCssSnap(
       reason,
-      resolve,
-      needsSnapCorrection = false,
-      userInitiated = true,
+      {
+        resolve,
+        needsSnapCorrection = false,
+        userInitiated = true,
+        scrollStarted = false,
+        awaitingMomentum = false,
+        targetOffset,
+      } = {},
     ) {
-      this.#cancelCssSnap()
-      this.#continuous = null
-      const operation = {
+      return {
         reason,
         resolve,
         needsSnapCorrection,
         userInitiated,
-        scrollStarted: false,
+        scrollStarted,
         targetCorrectionAttempted: false,
+        idleFallback: false,
+        awaitingMomentum,
+        targetOffset,
       }
+    }
+    /** Starts a CSS-snap operation, superseding its predecessor. */
+    beginCssSnap(reason, options) {
+      this.#cancelCssSnap()
+      this.#continuous = null
+      const operation = this.#newCssSnap(reason, options)
       this.#cssSnap = operation
       return operation
     }
@@ -1616,15 +1672,13 @@ export class Paginator extends HTMLElement {
       // a tap handled by the native margin zones. Do not report a user page turn
       // until touchmove confirms a drag; otherwise the native tap navigation is
       // rejected while this interrupted scroll is waiting to settle.
-      const replacement = {
-        reason: "snap",
+      const replacement = this.#newCssSnap("snap", {
         needsSnapCorrection: true,
         userInitiated,
         // This owner adopts motion that already started under `pending`. A
         // pointerdown can stop it without producing another scroll event.
         scrollStarted: true,
-        targetCorrectionAttempted: false,
-      }
+      })
       this.#cssSnap = replacement
       pending.resolve?.(false)
       this.armCssSnapIdleFallback(replacement)
@@ -1643,6 +1697,23 @@ export class Paginator extends HTMLElement {
       this.#paginator.#justAnchored = false
       if (this.#continuous) this.#continuous.reason = "scroll"
       if (this.#cssSnap?.reason === "snap") this.#cssSnap.userInitiated = true
+    }
+    /**
+     * Gives a dragged touch that ended before any scroll a provisional user
+     * snap operation. Scroll that arrives within the idle window adopts it.
+     * Otherwise the idle fallback drops it without publishing a relocation, and
+     * the interaction ends unmoved.
+     */
+    awaitMomentum() {
+      const paginator = this.#paginator
+      if (
+        paginator.scrolled ||
+        this.active ||
+        paginator.#committedPageTurnInput.active
+      ) {
+        return
+      }
+      this.beginCssSnap("snap", { awaitingMomentum: true })
     }
     /** Rearms settlement after every touch has ended or been cancelled. */
     endTouch() {
@@ -1768,6 +1839,15 @@ export class Paginator extends HTMLElement {
       // operation has produced scroll activity of its own.
       if (!fromIdleFallback && !operation.scrollStarted) return
 
+      // Momentum that never arrived left the viewport where the user left it.
+      // Settling as a snap would publish a relocation and replace the reading
+      // anchor with the page start, so end the interaction unmoved instead.
+      if (operation.awaitingMomentum && !operation.scrollStarted) {
+        this.#cssSnap = null
+        paginator.#input.releaseIfSettled()
+        return
+      }
+
       const { reason, resolve, needsSnapCorrection, userInitiated } = operation
       const { scrollProp } = paginator
       const offset = paginator.#container[scrollProp]
@@ -1800,13 +1880,11 @@ export class Paginator extends HTMLElement {
         // WebKit can stop an interrupted smooth scroll between snap positions.
         // Correct only the adopted programmatic move, never a normal fling.
         if (needsSnapCorrection && Math.abs(offset - pageOffset) > 1) {
-          const correction = this.beginCssSnap(
-            reason,
+          const correction = this.beginCssSnap(reason, {
             resolve,
-            false,
             userInitiated,
-          )
-          correction.targetOffset = pageOffset
+            targetOffset: pageOffset,
+          })
           paginator.#container[scrollProp] = pageOffset
           this.armCssSnapIdleFallback(correction)
           return
@@ -2082,21 +2160,30 @@ export class Paginator extends HTMLElement {
     this.#input.wheel()
     this.#viewport.interruptFromInput(true)
   }
-  #onTouchStart() {
+  #onTouchStart(e) {
     this.#input.startTouch()
     this.#viewport.interruptFromInput(false)
     this.#touchPinched = false
+    this.#touchTravel.start(e)
   }
   #onTouchMove(e) {
     if (this.#touchPinched) return
     this.#touchPinched = globalThis.visualViewport.scale > 1
     if (this.#touchPinched) return
     if (e.touches.length > 1) return
+    this.#touchTravel.move(e.touches[0])
     this.#viewport.confirmGesture()
     if (!this.scrolled) this.#touchScrolled = true
   }
   #onTouchEnd(e) {
+    // A book script's touch event may have no touch list (see TouchTravel).
+    const lifted = !e.touches?.length
+    const flicked = lifted && this.#touchScrolled && this.#touchTravel.isDrag
     this.#touchScrolled = false
+    this.#touchTravel.end(e)
+    // A fast flick can lift before the browser delivers its first scroll
+    // event. Keep the interaction open so that momentum counts as this gesture.
+    if (flicked) this.#viewport.awaitMomentum()
     this.#input.endTouch(e)
     this.#viewport.endTouch()
   }
@@ -2172,8 +2259,10 @@ export class Paginator extends HTMLElement {
     if (shouldAnimate) return this.#cssSnapPageScrollTo(offset, reason)
     if (!this.scrolled) {
       return new Promise((resolve) => {
-        const pending = this.#viewport.beginCssSnap(reason, resolve)
-        pending.targetOffset = offset
+        const pending = this.#viewport.beginCssSnap(reason, {
+          resolve,
+          targetOffset: offset,
+        })
         element[scrollProp] = offset
         this.#viewport.armCssSnapIdleFallback(pending)
       })
@@ -2193,8 +2282,10 @@ export class Paginator extends HTMLElement {
     const axis = this.scrollProp === "scrollLeft" ? "left" : "top"
 
     return new Promise((resolve) => {
-      const pending = this.#viewport.beginCssSnap(reason, resolve)
-      pending.targetOffset = offset
+      const pending = this.#viewport.beginCssSnap(reason, {
+        resolve,
+        targetOffset: offset,
+      })
       element.scrollTo({ [axis]: offset, behavior: "smooth" })
       this.#viewport.armCssSnapIdleFallback(pending)
     })
